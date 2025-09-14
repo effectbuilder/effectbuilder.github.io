@@ -4841,6 +4841,20 @@ document.addEventListener('DOMContentLoaded', function () {
             objects = [];
             createInitialObjects();
             renderForm();
+
+            // 5. Manually set the general settings form values from the newly built configStore.
+            configStore.filter(c => !(c.property || c.name).startsWith('obj')).forEach(conf => {
+                const key = conf.property || conf.name;
+                const el = form.elements[key];
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = (conf.default === true || conf.default === 'true');
+                    } else {
+                        el.value = conf.default;
+                    }
+                }
+            });
+
             updateFormValuesFromObjects();
             drawFrame();
             recordHistory();
