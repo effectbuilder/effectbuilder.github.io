@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRGB Interactive Effect Builder</title>
+    <meta property="og:title" content="SRGB Interactive Effect Builder">
+    <meta property="og:description" content="A tool for creating and sharing visual effects for SignalRGB.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://joseamirandavelez.github.io/EffectBuilder/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="module" src="firebase.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WS7MGSDJSB"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-WS7MGSDJSB');
+</script>
+
+<body class="d-flex flex-column vh-100">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="./">
+                <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
+                SRGB Interactive Effect Builder
+            </a>
+            <div class="ms-auto d-flex align-items-center">
+
+                <div class="btn-group me-3" role="group" aria-label="Project management actions">
+                    <button class="btn btn-outline-secondary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
+                    <button class="btn btn-outline-primary" id="save-ws-btn" data-bs-toggle="tooltip" title="Save current workspace to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
+                    <button class="btn btn-outline-secondary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
+                    <button class="btn btn-outline-warning" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
+                    <button class="btn btn-outline-info" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
+                    <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"><i class="bi bi-download me-1"></i> Export</button>
+                    <button class="btn btn-outline-success" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
+                </div>
+
+                <div class="btn-group" role="group" aria-label="Help and settings">
+                    <button class="btn btn-outline-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
+                    <button class="btn btn-outline-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
+                    <a class="btn btn-outline-secondary" id="contact-btn" href="https://github.com/joseamirandavelez/EffectBuilder/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
+                        <i class="bi bi-github"></i>
+                    </a>
+                    <button class="btn btn-outline-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
+                        <i class="bi" id="theme-icon"></i>
+                    </button>
+                </div>
+
+                <div class="ms-3">
+                    <button class="btn btn-outline-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
+
+                    <div class="btn-group d-none" id="user-session-group" role="group">
+                        <span class="btn btn-outline-secondary d-flex align-items-center disabled" style="pointer-events: none;">
+                            <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
+                            <span id="user-display"></span>
+                        </span>
+                        <button class="btn btn-outline-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid flex-grow-1 overflow-hidden p-0">
+        <div class="h-100" id="main-split">
+            <div id="left-panel" class="h-100 p-3 border-end bg-body-tertiary" style="overflow: auto;">
+                <div class="h-100 d-flex flex-column">
+                    <div class="flex-grow-1 overflow-auto pe-2">
+                        <h4 class="text-body-emphasis">Controls</h4>
+                        <form id="controls-form"></form>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-success w-100" id="add-object-btn" data-bs-toggle="tooltip" title="Add a new default object to the scene"><i class="bi bi-plus-circle"></i> Add Object</button>
+                        <button class="btn btn-primary w-100" id="add-polyline-btn" data-bs-toggle="tooltip" title="Draw a new polyline"><i class="bi bi-pen"></i> Add Polyline</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="right-panel" class="d-flex flex-column h-100">
+                <div id="toolbar" class="bg-body-tertiary p-2 rounded d-flex flex-wrap">
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group" aria-label="History actions">
+                        <button class="btn btn-outline-secondary" id="undo-btn" data-bs-toggle="tooltip" title="Undo (Ctrl+Z)" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+                        <button class="btn btn-outline-secondary" id="redo-btn" data-bs-toggle="tooltip" title="Redo (Ctrl+Y)" disabled><i class="bi bi-arrow-clockwise"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
+                        <button type="button" class="btn btn-outline-secondary" id="copy-props-btn" data-bs-toggle="tooltip" title="Copy Properties"><i class="bi bi-clipboard-plus"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" id="paste-props-btn" data-bs-toggle="tooltip" title="Paste Properties" disabled><i class="bi bi-clipboard-check"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-left" data-bs-toggle="tooltip" title="Align Left to Screen"><i class="bi bi-align-start"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-h-center" data-bs-toggle="tooltip" title="Align Horizontal Center to Screen"><i class="bi bi-align-center"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-right" data-bs-toggle="tooltip" title="Align Right to Screen"><i class="bi bi-align-end"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-top" data-bs-toggle="tooltip" title="Align Top to Screen"><i class="bi bi-align-top"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-v-center" data-bs-toggle="tooltip" title="Align Vertical Center to Screen"><i class="bi bi-align-middle"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-bottom" data-bs-toggle="tooltip" title="Align Bottom to Screen"><i class="bi bi-align-bottom"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-width" data-bs-toggle="tooltip" title="Match Width of First Selected"><i class="bi bi-arrows-expand-vertical"></i> W</button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-height" data-bs-toggle="tooltip" title="Match Height of First Selected"><i class="bi bi-arrows-expand"></i> H</button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-both" data-bs-toggle="tooltip" title="Match Size of First Selected"><i class="bi bi-fullscreen"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="fit-canvas" data-bs-toggle="tooltip" title="Fit to Canvas"><i class="bi bi-arrows-fullscreen"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
+                        <button type="button" class="btn btn-outline-secondary" id="constrain-btn" data-bs-toggle="tooltip" title="Snap to Canvas"><i class="bi bi-magnet-fill"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" title="Match Text Size to Cell Height" disabled><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
+                        <button id="startAudioBtn" class="btn btn-primary">Start Listening</button>
+                    </div>
+                </div>
+                <div id="right-panel-top" class="d-flex flex-column" style="overflow: auto; min-height: 0;">
+                    <div id="canvas-container" class="mx-auto">
+                        <canvas id="signalCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="ms-auto ps-3 text-body-secondary d-flex align-items-center">
+                    <i class="bi bi-crosshair me-2"></i>
+                    <span id="coords-display" class="font-monospace" style="min-width: 100px;">---, ---</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 99999">
+            <div id="app-toast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000" style="width: 350px; font-size: 1.1rem;">
+                <div id="app-toast-header" class="toast-header text-white d-flex align-items-center">
+                    <i id="app-toast-icon" class="bi me-2"></i>
+                    <strong class="me-auto" id="app-toast-title">Notification</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body bg-dark" id="app-toast-body">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="load-project-modal" tabindex="-1" aria-labelledby="loadProjectModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="loadProjectModalLabel">Load Project</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Select a project to load. This will overwrite your current workspace.</p>
+                        <ul class="list-group" id="load-project-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="save-project-modal" tabindex="-1" aria-labelledby="saveProjectModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="saveProjectModalLabel">Save Project</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="save-project-name-input" class="form-label">Project Name:</label>
+                            <input type="text" class="form-control" id="save-project-name-input" placeholder="Enter a name for your project...">
+                        </div>
+                        <hr>
+                        <p>Existing Projects:</p>
+                        <ul class="list-group" id="save-project-existing-list">
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-save-btn">Save Project</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="notification-modal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="notificationModalLabel">Success</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="notification-modal-body">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="confirm-overwrite-modal" tabindex="-1" aria-labelledby="confirmOverwriteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmOverwriteModalLabel">Confirm Overwrite</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="confirm-overwrite-modal-body">
+                        A project with this name already exists. Do you want to overwrite it?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirm-overwrite-btn">Overwrite</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="help-modal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title me-auto" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i>How to Use the Effect Builder</h5>
+                        <a href="#" class="text-body-secondary ms-2" id="help-modal-share-btn" title="Copy share link" data-bs-toggle="tooltip"><i class="bi bi-share-fill fs-5"></i></a>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Welcome to the SRGB Interactive Effect Builder! This guide explains the main features to help you create stunning visual effects.</p>
+
+                        <a href="engine_documentation.html" target="_blank" class="btn btn-outline-info w-100 mb-4"><i class="bi bi-book me-2"></i>View Full Engine Documentation</a>
+
+                        <div class="ratio ratio-16x9 mb-4">
+                            <iframe src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" title="SRGB Interactive Effect Builder" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        </div>
+
+                        <h6 class="text-info">Layout Overview</h6>
+                        <p>The builder is divided into two main, resizable columns:</p>
+                        <ul>
+                            <li>The <strong>Controls Panel</strong> on the left is where you manage all the objects and global settings for your effect.</li>
+                            <li>The <strong>Canvas Panel</strong> on the right contains the visual editor where you can directly manipulate your objects. The <strong>Toolbar</strong> with alignment, property, and history tools is located just above the canvas.</li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">The Controls Panel (Left)</h6>
+                        <p>This is where you manage all the objects and global settings for your effect.</p>
+                        <ul>
+                            <li><strong>General Settings:</strong> This panel contains properties for your entire effect, such as its Title, Description, and the Global Overrides.</li>
+                            <li><strong>Add New Object / Polyline:</strong> Use the buttons at the bottom to add a new shape or start drawing a new polyline on the canvas.</li>
+                            <li><strong>Object Panels:</strong> Each object gets its own collapsible panel, which contains tabbed sections for different property groups (e.g., Geometry, Fill-Animation, Stroke). You can perform several actions here:
+                                <ul>
+                                    <li><strong>Rename:</strong> Click the object's name (e.g., "Object 1") to edit it.</li>
+                                    <li><strong>Reorder:</strong> Click and drag the <i class="bi bi-grip-vertical"></i> icon to change the rendering order (layers). Objects at the top of the list are drawn last (on top).</li>
+                                    <li><strong>Lock/Unlock:</strong> Use the <i class="bi bi-unlock-fill"></i> / <i class="bi bi-lock-fill"></i> button to prevent an object from being accidentally moved or resized on the canvas.</li>
+                                    <li><strong>Duplicate/Delete:</strong> Use the menu button (<i class="bi bi-list"></i>) to access options for duplicating or deleting an object.</li>
+                                </ul>
+                            </li>
+                            <li><strong class="text-warning">Shape-Specific Settings:</strong> The real power of the builder lies in its specialized shapes. When you change an object's <strong>Shape</strong> property, different settings will appear for shapes like Text, Oscilloscope, Strimer, Tetris, Spawner, and more.</li>
+                            <li><strong>Strokes:</strong> You can add an outline to most shapes by enabling it in the <strong>Stroke</strong> tab within an object's panel. You can customize its color, thickness, and even apply its own independent animations.</li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Using the Polyline Shape</h6>
+                        <p>The Polyline is a powerful tool for creating custom paths and advanced animations. It allows you to draw any shape you can imagine directly on the canvas.</p>
+                        <ul>
+                            <li><strong>Drawing a Polyline:</strong>
+                                <ol>
+                                    <li>Click the <strong><i class="bi bi-pen"></i> Add Polyline</strong> button to activate the drawing tool.</li>
+                                    <li>Click on the canvas to place the starting point (node).</li>
+                                    <li>Continue clicking to add more nodes and define your path.</li>
+                                    <li><strong>Double-click</strong> or press <kbd>Enter</kbd> to finish drawing.</li>
+                                </ol>
+                            </li>
+                            <li><strong>Editing Nodes:</strong> After a polyline is created, you can select it and drag its square node handles to adjust the path. <strong>Double-click</strong> on a line segment to add a new node, or <strong>Alt+Click</strong> on an existing node to delete it.</li>
+                            <li><strong>Curve Styles:</strong> In the Polyline tab, you can change the <code>Curve Style</code>:
+                                <ul>
+                                    <li><code>straight</code>: Connects nodes with sharp, straight lines.</li>
+                                    <li><code>loose-curve</code>: Creates a smooth Bézier curve that is influenced by the nodes.</li>
+                                    <li><code>tight-curve</code>: Creates a smooth spline (Catmull-Rom) that passes directly <em>through</em> every node, perfect for defining precise paths.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Path Animation:</strong> In the <strong>Object</strong> tab, you can enable an animation that travels along your polyline. You can control the animated object's shape, size, speed, and even have multiple objects follow the path with custom spacing.</li>
+                            <li><strong>Along-Path Gradients:</strong> In the <strong>Stroke</strong> tab, you can set the <code>Stroke Scroll Direction</code> to <code>along-path</code> or <code>along-path-reversed</code>. This makes the gradient color flow seamlessly along the entire length of your custom path, from start to end or vice-versa.</li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">The Canvas & Toolbar (Right Panel)</h6>
+                        <p>This is your visual workspace where you can directly manipulate objects using the mouse, keyboard, or the toolbar buttons above the canvas.</p>
+                        <ul>
+                            <li><strong>Select:</strong> Click an object to select it. Hold <kbd>Shift</kbd> or <kbd>Ctrl</kbd> while clicking to select multiple objects. Clicking on an empty area will deselect everything.</li>
+                            <li><strong>Manipulate:</strong> With an object selected, you can:
+                                <ul>
+                                    <li><strong>Drag</strong> to move it.</li>
+                                    <li>Drag the square handles on its bounding box to <strong>resize</strong> it.</li>
+                                    <li>Drag the circular handle at the top to <strong>rotate</strong> it.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Toolbar Actions:</strong>
+                                <ul>
+                                    <li><strong>History:</strong> Use the <i class="bi bi-arrow-counterclockwise"></i> Undo and <i class="bi bi-arrow-clockwise"></i> Redo buttons to step through your recent changes.</li>
+                                    <li><strong>Copy/Paste Properties:</strong> Use <i class="bi bi-clipboard-plus"></i> to copy property groups (like size, color, animation) from one object and <i class="bi bi-clipboard-check"></i> to paste them onto others.</li>
+                                    <li><strong>Alignment:</strong> Align selected objects to the screen edges or center.</li>
+                                    <li><strong>Matching:</strong> With multiple objects selected, match the width, height, or size of the others to the first one you selected.</li>
+                                    <li><strong>Fit to Canvas:</strong> Instantly resize an object to fill the entire canvas area.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Keyboard Shortcuts:</strong>
+                                <ul>
+                                    <li><kbd>Arrow Keys</kbd>: Nudge selected objects by a small amount.</li>
+                                    <li><kbd>Shift</kbd> + <kbd>Arrow Keys</kbd>: Move selected objects in larger steps.</li>
+                                    <li><kbd>Delete</kbd> / <kbd>Backspace</kbd>: Delete all selected objects.</li>
+                                    <li><kbd>Ctrl</kbd>+<kbd>Z</kbd>: Undo the last action.</li>
+                                    <li><kbd>Ctrl</kbd>+<kbd>Y</kbd>: Redo the last undone action.</li>
+                                    <li><kbd>Ctrl</kbd>+<kbd>C</kbd>: Copy properties from the selected object.</li>
+                                    <li><kbd>Ctrl</kbd>+<kbd>V</kbd>: Paste copied properties to the selected object(s).</li>
+                                    <li><kbd>Escape</kbd>: Deselect all objects.</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Using Global Overrides</h6>
+                        <p>To quickly apply a consistent style across all objects, you can use the Global Overrides found in the <strong>General Settings</strong> panel. These are located in their own collapsible section.</p>
+                        <ul>
+                            <li>The <strong>Global Color Palette</strong> allows you to set a master <code>Color 1</code> and <code>Color 2</code>. When enabled, it overrides the individual color settings for every object.</li>
+                            <li>The <strong>Global Color Cycle</strong> forces all objects to cycle through the color spectrum. When enabled, it overrides the individual "Cycle Colors" setting on every object and uses the <code>Global Color Cycle Speed</code> slider.</li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Using Sound Reactivity</h6>
+                        <p>You can make your effects react to audio playing in another browser tab. The shapes will respond to the volume and frequencies (bass, mids, highs) of the sound.</p>
+                        <ol>
+                            <li>Click the <strong>Start Listening</strong> button on the toolbar above the canvas.</li>
+                            <li>Your browser will open a screen sharing prompt. Select the <strong>Tab</strong> option at the top.</li>
+                            <li>Choose the browser tab that is playing music or sound.</li>
+                            <li><strong>Important:</strong> Make sure to check the <strong>"Share tab audio"</strong> checkbox at the bottom of the prompt before clicking "Share".</li>
+                        </ol>
+                        <p>Once enabled for an object, you can select a <code>Reactive Property</code>. Basic shapes can <code>Flash</code>, change <code>Size</code> or <code>Rotation</code>, or turn into a <code>Volume Meter</code>. Specialized shapes like the Spawner have their own unique reactive targets.</p>
+                        <p class="small text-body-secondary">If no audio is connected, shapes will react to a default preview animation for design purposes. <strong>Please note:</strong> This feature is a preview tool, and the audio response may differ slightly from the final effect in SignalRGB's native audio engine.</p>
+
+                        <h6 class="text-info mt-4">Using Sensor Reactivity</h6>
+                        <p>Create animations that react to real-time hardware data like CPU load or temperature. To use this, select an object, go to its <strong>Sensor</strong> tab, and enable reactivity.</p>
+                        <ul>
+                            <li><strong>Sensor Meter:</strong> Changes the object into a vertical bar that fills up based on a sensor's current value (from its minimum to maximum). You can also have it display the numeric value as text.</li>
+                            <li><strong>Time Plot:</strong> Turns the object into a real-time line graph showing the recent history of a sensor's value. You can customize the time scale and fill the area under the curve.</li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Using the Strimer Shape</h6>
+                        <p>This shape is designed to simulate the animated lighting effects of PC cable strimers. It features multiple blocks of light moving vertically within columns.</p>
+                        <ul>
+                            <li><strong>Animation Style:</strong>
+                                <ul>
+                                    <li><code>Bounce</code> / <code>Loop</code>: Blocks move up and down, either rebounding at the edges or wrapping around.</li>
+                                    <li><code>Cascade</code>: Creates a continuous "waterfall" of light as blocks spawn sequentially.</li>
+                                    <li><code>Audio Meter</code>: Turns the columns into a real-time audio visualizer.</li>
+                                    <li><code>Snake</code>: Creates a single "snake" of light that travels in a zig-zag pattern.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Pulse Effect (Modifier):</strong>
+                                <ul>
+                                    <li><code>Pulse Speed</code>: This slider makes the blocks gently fade their brightness in and out, creating a "breathing" effect that can be layered on top of any other animation style.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Movement Controls:</strong>
+                                <ul>
+                                    <li><code>Animation Speed</code>: Controls the speed of block movement, independent of the fill/gradient animation.</li>
+                                    <li><code>Direction</code>: Set blocks to move <code>Up</code>, <code>Down</code>, or <code>Random</code>.</li>
+                                    <li><code>Easing</code>: Controls the acceleration of the blocks for more dynamic motion.</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Using the Spawner Shape</h6>
+                        <p>The Spawner is a powerful and versatile particle emitter. You can control both how particles are spawned and what they look like, allowing for effects from simple snowfall to complex digital rain.</p>
+                        <p>Its controls are organized into several tabs:</p>
+                        <ul>
+                            <li>
+                                <strong>Spawner Tab:</strong> Controls the <strong>emitter's</strong> behavior.
+                                <ul>
+                                    <li><code>Emitter Style</code>: Sets the spawning pattern, like an <code>explode</code> from the center, a falling <code>rain</code>, a rising <code>fountain</code>, or a sideways <code>flow</code>.</li>
+                                    <li><code>Initial Speed</code> & <code>Initial Speed Variance</code>: Control the starting velocity of particles. Variance adds randomness for a more natural look.</li>
+                                    <li><code>Gravity</code>: Applies a constant downward (or upward, if negative) force to particles after they spawn.</li>
+                                    <li>Other controls let you manage the number of particles, their creation rate, and how long they live.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Particle Tab:</strong> Controls the <strong>appearance and special properties</strong> of the individual particles.
+                                <ul>
+                                    <li><strong>Particle Shape:</strong> You can choose from standard shapes like <code>circle</code> or <code>star</code>, or use special types:
+                                        <ul>
+                                            <li><code>matrix</code>: Turns particles into falling trails of characters. You can customize the <code>Character Set</code>, the <code>Trail Length</code>, and add a <code>Glow</code> effect. The lead character's color is set by <strong>Fill Color 1</strong>, while the trail uses <strong>Fill Color 2</strong> (for solid fills) or the full gradient for other fill types.</li>
+                                            <li><code>random</code>: Each new particle will be a random shape from all other available types.</li>
+                                            <li><code>custom</code>: Allows you to use your own SVG path data for the particle shape.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Trail Effect (for any shape):</strong>
+                                        <ul>
+                                            <li>You can add a fading trail to <strong>any</strong> particle type by using the <strong>Trail</strong> settings.</li>
+                                            <li><code>Enable Trail</code>: Toggles the effect on or off.</li>
+                                            <li><code>Trail Length</code>: Controls the number of copies in the trail.</li>
+                                            <li><code>Leader Color</code>: Sets the color of the main particle, while the trail fades into the spawner's main fill color. This allows you to create effects like a trail of fading stars or circles.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Other Properties:</strong> You can also control the particle's <code>Size</code> (with randomness) and <code>Rotation Speed</code> (with variance).</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+
+                        <h6 class="text-info mt-4">Using the Tetris Shape</h6>
+                        <p>This shape creates an animation of falling and stacking blocks that fill the object's bounds.</p>
+                        <ul>
+                            <li><strong>Drop Physics (Animation Style):</strong>
+                                <ul>
+                                    <li><code>Gravity</code> / <code>Linear</code>: Blocks fall one by one with either realistic or constant speed.</li>
+                                    <li><code>Gravity-Fade</code>: Blocks fall with gravity and then fade out after settling.</li>
+                                    <li><code>Fade-in-Stack</code>: Blocks fade in sequentially from the bottom up, then fade out all at once.</li>
+                                    <li><code>Fade-in-Out</code>: Blocks fade in from the bottom, hold for a set duration, and then fade out from the bottom.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Controls:</strong>
+                                <ul>
+                                    <li><code>Drop Speed</code>: Controls the speed of falling or fading blocks.</li>
+                                    <li><code>Bounce Factor</code>: For <code>Gravity</code> physics, controls how much blocks bounce on impact.</li>
+                                    <li><code>Hold Time</code>: For the <code>Fade-in-Out</code> animation, sets how long the fully stacked blocks remain visible before starting to fade out.</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h6 class="text-info mt-4">Exporting and Installing Your Effect</h6>
+                        <p>When you click the <strong><i class="bi bi-download me-1"></i> Export</strong> button, a dialog will appear with several options. One key option is <strong>Minimize Properties for Export</strong>. Checking this box will optimize the exported file by only including essential or shape-relevant controls (like colors and speeds) in the SignalRGB UI. All other properties will be "baked in" to the effect as fixed values. This is great for sharing a clean, easy-to-use version of your effect with others.</p>
+                        <ul class="list-unstyled">
+                            <li>1. Click <strong>Download .zip File</strong>.</li>
+                            <li>2. Find the downloaded `.zip` file and extract its contents into your SignalRGB effects folder, which is typically located at:<br><code>Documents\WhirlwindFX\Effects</code></li>
+                            <li>3. For better organization, it is recommended to place the effect files inside a new subfolder for your effect (e.g., <code>Documents\WhirlwindFX\Effects\MyEffect</code>).</li>
+                            <li>4. Restart the SignalRGB application. Your new effect will now appear in the effects list.</li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="d-flex align-items-center">
+                            <h5 class="modal-title" id="aboutModalLabel"><i class="bi bi-info-circle me-2"></i>About This Tool</h5>
+                            <a href="./?show=about" class="text-body-secondary ms-2" id="about-modal-share-btn" title="Permalink" data-bs-toggle="tooltip"><i class="bi bi-share-fill fs-5"></i></a>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6>SRGB Interactive Effect Builder</h6>
+                        <img src="logo.png" class="img-fluid rounded mb-3" alt="A screenshot of the Interactive Effect Builder UI, showing a complex lighting effect being designed on a canvas with control panels on the side.">
+                        <p>This tool is designed to help developers create, share, and customize complex visual effects for <a href="https://signalrgb.com/" target="_blank" rel="noopener noreferrer">SignalRGB</a>. It provides a simple graphical interface for building effects and can save them to the cloud, share them with others via a link, and export them as standalone files for use with the <a href="https://github.com/joseamirandavelez/EffectClass" target="_blank" rel="noopener">EffectClass</a> template.</p>
+
+                        <p class="small text-body-secondary mt-4">
+                            <strong>Disclaimer:</strong> This tool is an independent project and is not affiliated with, endorsed by, or in any way officially connected with the <a href="https://signalrgb.com/" target="_blank" rel="noopener noreferrer">SignalRGB</a> software or its respective owners.
+                        </p>
+                        <div class="small text-body-secondary mt-4">
+                            <strong>Acknowledgements:</strong> This website uses the following open-source libraries:
+                            <ul>
+                                <li><a href="https://getbootstrap.com/" target="_blank" rel="noopener">Bootstrap</a></li>
+                                <li><a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener">Bootstrap Icons</a></li>
+                                <li><a href="https://github.com/SortableJS/Sortable" target="_blank" rel="noopener">SortableJS</a></li>
+                                <li><a href="https://stuk.github.io/jszip/" target="_blank" rel="noopener">JSZip</a></li>
+                                <li><a href="https://split.js.org/" target="_blank" rel="noopener">Split.js</a></li>
+                            </ul>
+                        </div>
+                        <hr>
+
+                        <p id="about-share-url-container" class="small d-none"></p>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <p class="mb-0"><strong>Developer:</strong> José Miranda</p>
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal">Terms of Usage</a>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <span class="small text-body-secondary" id="last-updated-span">
+                        </span>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="terms-modal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="termsModalLabel"><i class="bi bi-file-text me-2"></i>Terms of Usage</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>By using this Interactive Effect Builder (the "Tool"), you agree to the following terms:</p>
+
+                        <h6 class="mt-4">1. No Warranty</h6>
+                        <p>This Tool is provided "as-is", without any warranties of any kind, express or implied. The
+                            developer makes no guarantees regarding its functionality, reliability, or suitability for any
+                            particular purpose.</p>
+
+                        <h6 class="mt-4">2. Limitation of Liability</h6>
+                        <p>In no event shall the developer be liable for any claim, damages, or other liability arising from
+                            the use of, or inability to use, the Tool.</p>
+
+                        <h6 class="mt-4">3. User Responsibility</h6>
+                        <p>You are solely responsible for the effects you create and their use. It is your responsibility to
+                            ensure they comply with the terms of service of any platform or application they are used with,
+                            including SignalRGB.</p>
+
+                        <h6 class="mt-4">4. Content Disclaimer</h6>
+                        <p>The developer is not responsible for any content, including effects, created or shared by users of this Tool. Some user-generated effects may be inappropriate or unsuitable for certain audiences. Use caution when sharing or loading effects from others.</p>
+
+                        <h6 class="mt-4">5. License</h6>
+                        <p>This Tool is free to use, modify, and distribute. Attribution is appreciated but not required.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="import-meta-modal" tabindex="-1" aria-labelledby="importMetaModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="importMetaModalLabel"><i class="bi bi-code-slash me-2"></i>Import from Meta Tags</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.</p>
+                        </p>
+                        <textarea class="form-control font-monospace" id="import-textarea" rows="10" placeholder="<meta title=... />&#10;<meta description=... />&#10;..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-import-btn">Import Effect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="gallery-offcanvas" aria-labelledby="galleryOffcanvasLabel" style="width: 700px;">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Community Gallery</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <p>Select an effect to load into your workspace. <a href="gallery.html">View full gallery page <i class="bi bi-box-arrow-up-right"></i></a></p>
+                <ul class="list-group" id="gallery-project-list">
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal fade" id="share-modal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="shareModalLabel"><i class="bi bi-share-fill me-2"></i>Share Your Effect</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Anyone with this link can view and load your effect.</p>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="share-link-input" readonly>
+                            <button class="btn btn-primary" type="button" id="copy-share-link-btn">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="export-options-modal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-box-arrow-down me-2"></i>Export Options</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Your effect is ready. How would you like to export it?</p>
+                        <hr>
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="minimize-props-export">
+                            <label class="form-check-label" for="minimize-props-export">Minimize Properties for Export</label>
+                            <div class="form-text mt-1">Reduces editable properties to only the essentials, improving load times.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-success" id="export-download-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Download .zip File</button>
+                        <button type="button" class="btn btn-primary" id="export-copy-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Copy HTML Code</button>
+                    </div>
+                    <div class="modal-body border-top">
+                        <h6 class="text-body-secondary">How to Install in SignalRGB</h6>
+                        <ol>
+                            <li>Click the <strong>Download .zip File</strong> button.</li>
+                            <li>Extract the contents of the '.zip' file into your SignalRGB effects folder, typically found at:<br><code>Documents\WhirlwindFX\Effects</code></li>
+                            <li>It is recommended to place the files in a new subfolder for organization.</li>
+                            <li>Restart the SignalRGB application. Your new effect will now appear in the effects list.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="accept-terms-modal" tabindex="-1" aria-labelledby="acceptTermsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i>Terms of Usage</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p>By using this tool, you agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a>.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal">I Accept</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="copy-props-modal" tabindex="-1" aria-labelledby="copyPropsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="copyPropsModalLabel"><i class="bi bi-clipboard-plus me-2"></i>Copy Properties</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="copy-props-form">
+                        <div class="modal-body">
+                            <p>Select the property groups you want to copy from the source object.</p>
+                            <div class="list-group">
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-position" checked>
+                                    Position (X, Y)
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-size" checked>
+                                    Size (Width, Height)
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-rotation" checked>
+                                    Rotation & Rotation Speed
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-fill-style" checked>
+                                    Fill Style (Type, Colors, Gradient)
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-animation" checked>
+                                    Fill Animation (Mode, Speed, Direction)
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-color-animation" checked>
+                                    Color Animation (Cycle Colors & Speed)
+                                </label>
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-shape-type">
+                                    Shape Type
+                                </label>
+                                <label class="list-group-item d-none" id="shape-specific-props-container">
+                                    <input class="form-check-input me-1" type="checkbox" name="copy-shape-specific">
+                                    Shape-Specific Properties (<span id="shape-specific-name"></span>)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn">Copy to Clipboard</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+        <script src="Shape.js"></script>
+        <script src="util.js"></script>
+        <script src="main.js"></script>
+</body>
+
+</html>

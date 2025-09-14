@@ -1,0 +1,147 @@
+html,
+body {
+    height: 100%;
+}
+
+#right-panel-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    min-height: 0;
+    padding: 1rem;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+#canvas-container {
+    position: relative;
+    cursor: default;
+    flex-shrink: 0; /* Prevent the container from being squished */
+}
+
+#signalCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* This is the div that contains #canvas-container */
+/* It needs to grow and center its content */
+#right-panel-top>.flex-grow-1 {
+    display: flex;
+    justify-content: center;
+    /* Center #canvas-container horizontally */
+    align-items: center;
+    /* Center #canvas-container vertically */
+    flex-grow: 1;
+    /* Ensure it takes available space */
+    min-height: 0;
+    /* Important for flex items to shrink */
+    /* Removed explicit height: 100%; to allow aspect-ratio to work without conflict */
+}
+
+.legend-button {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+    transition: color 0.2s ease;
+}
+
+
+/* This targets the <i> icon inside the clickable header */
+[data-bs-toggle="collapse"] .legend-button .bi {
+    transition: transform 0.2s ease-in-out;
+    display: inline-block;
+}
+
+/* When the header is expanded by Bootstrap, it sets aria-expanded="true".
+   This rule targets the icon inside and rotates it to point down. */
+[data-bs-toggle="collapse"][aria-expanded="true"] .legend-button .bi {
+    transform: rotate(-180deg);
+}
+
+.object-name:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bs-primary);
+}
+
+.gutter {
+    background-color: var(--bs-tertiary-bg);
+    transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gutter:hover {
+    background-color: var(--bs-primary);
+}
+
+.gutter i {
+    color: var(--bs-secondary-color);
+    font-size: 1.25rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.gutter:hover i {
+    color: var(--bs-light);
+}
+
+.gutter.gutter-horizontal {
+    cursor: ew-resize;
+}
+
+#main-split {
+    display: flex;
+    flex-direction: row;
+}
+
+.editable-name-area {
+    padding: 2px 6px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.editable-name-area:hover {
+    cursor: text;
+    background-color: var(--bs-tertiary-bg);
+}
+
+.editable-name-area .bi-pencil-fill {
+    opacity: 0.5;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.editable-name-area:hover .bi-pencil-fill {
+    opacity: 1;
+}
+
+.form-range::-webkit-slider-runnable-track {
+    background-color: var(--bs-border-color);
+}
+
+.form-range::-moz-range-track {
+    background-color: var(--bs-border-color);
+}
+
+[data-bs-toggle="collapse"] {
+    user-select: none;
+}
+
+/* Make enabled toolbar buttons more evident */
+#toolbar .btn.btn-outline-secondary:not([disabled]) {
+    /* Use a slightly brighter gray for the border and icon color */
+    --bs-btn-border-color: var(--bs-gray-600);
+    --bs-btn-color: var(--bs-gray-400);
+}
+
+/* Make the hover effect stronger and more vibrant */
+#toolbar .btn.btn-outline-secondary:not([disabled]):hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: var(--bs-light);
+}

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalRGB Effect Merger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .file-input-label {
+            transition: all 0.2s ease-in-out;
+        }
+        .file-input-label:hover {
+            background-color: #e2e8f0; /* gray-200 */
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8">
+
+    <div class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <header class="mb-6 border-b border-gray-200 pb-4">
+            <h1 class="text-3xl font-bold text-gray-900">SignalRGB Effect Merger</h1>
+            <p class="text-md text-gray-600 mt-1">Combine two effect files into a single layout.</p>
+        </header>
+
+        <main>
+            <!-- Step 1: File Inputs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-lg font-semibold mb-2" for="file1">Effect 1</label>
+                    <input type="file" id="file1" accept=".html" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-violet-50 file:text-violet-700
+                        hover:file:bg-violet-100" required>
+                </div>
+                <div>
+                    <label class="block text-lg font-semibold mb-2" for="file2">Effect 2</label>
+                    <input type="file" id="file2" accept=".html" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-violet-50 file:text-violet-700
+                        hover:file:bg-violet-100" required>
+                </div>
+            </div>
+
+            <!-- Step 2: Layout Options -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-3">Layout Style</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4" id="layout-options">
+                    <!-- Layout options will be injected here by JS -->
+                </div>
+            </div>
+
+            <!-- Step 3: Action Buttons -->
+            <div class="flex items-center justify-center space-x-4 mb-6">
+                <button id="combine-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                    Combine Effects
+                </button>
+                <button id="download-btn" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-transform transform hover:scale-105 hidden">
+                    Download Combined File
+                </button>
+            </div>
+
+            <!-- Status/Error Message Area -->
+            <div id="status" class="text-center min-h-[2rem] flex items-center justify-center"></div>
+
+             <!-- Preview Area -->
+             <div id="preview-container" class="w-full bg-gray-900 rounded-lg p-4 mt-6 hidden">
+                <h3 class="text-lg font-semibold mb-4 text-white">Live Preview</h3>
+                <div class="aspect-w-16 aspect-h-9 bg-black rounded-md overflow-hidden">
+                    <iframe id="preview-frame" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+        });
+
+        // Function to show status messages
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = ''; 
+            const p = document.createElement('p');
+            p.textContent = message;
+            statusDiv.className = 'text-center min-h-[2rem] flex items-center justify-center transition-all duration-300';
+            if (type === 'error') p.className = 'text-red-600 font-semibold';
+            else if (type === 'success') p.className = 'text-green-600 font-semibold';
+            else if (type === 'loading') {
+                const loader = document.createElement('div');
+                loader.className = 'loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 mr-3';
+                statusDiv.appendChild(loader);
+                p.className = 'text-blue-600 font-semibold';
+            } else p.className = 'text-gray-600';
+            statusDiv.appendChild(p);
+        }
+        
+        // --- Main Application Logic ---
+        function initializeApp() {
+            const file1Input = document.getElementById('file1');
+            const file2Input = document.getElementById('file2');
+            const layoutOptionsContainer = document.getElementById('layout-options');
+            const combineBtn = document.getElementById('combine-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const previewContainer = document.getElementById('preview-container');
+            const previewFrame = document.getElementById('preview-frame');
+            
+            let finalHtml = '';
+            showStatus('Ready to combine files.', 'info');
+
+            const layouts = {
+                'left-right': { label: 'Left / Right', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>', style: 'display: flex; flex-direction: row; height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden;', canvasStyle: 'width: 50%; height: 100%;' },
+                'top-bottom': { label: 'Top / Bottom', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>', style: 'display: flex; flex-direction: column; height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden;', canvasStyle: 'width: 100%; height: 50%;' },
+                'overlay': { label: 'Overlay', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="10" height="10" rx="2" ry="2"></rect></svg>', style: 'position: relative; height: 100vh; width: 100vw; margin: 0; padding: 0; overflow: hidden;', canvasStyle: 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;' }
+            };
+
+            function initLayouts() {
+                Object.keys(layouts).forEach((key, index) => {
+                    const layout = layouts[key];
+                    const checked = index === 0 ? 'checked' : '';
+                    const html = `
+                        <label for="${key}" class="cursor-pointer border-2 ${checked ? 'border-blue-500' : 'border-gray-300'} rounded-lg p-3 text-center transition-all duration-200 hover:border-blue-400">
+                            <input type="radio" name="layout" value="${key}" id="${key}" class="sr-only" ${checked}>
+                            <div class="flex flex-col items-center">
+                                ${layout.icon}
+                                <span class="text-sm font-medium mt-1">${layout.label}</span>
+                            </div>
+                        </label>`;
+                    layoutOptionsContainer.innerHTML += html;
+                });
+                
+                document.querySelectorAll('input[name="layout"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        document.querySelectorAll('input[name="layout"] + div').forEach(div => {
+                            div.parentElement.classList.remove('border-blue-500');
+                            div.parentElement.classList.add('border-gray-300');
+                        });
+                        if(radio.checked) {
+                            radio.parentElement.classList.add('border-blue-500');
+                            radio.parentElement.classList.remove('border-gray-300');
+                        }
+                    });
+                });
+            }
+            
+            initLayouts();
+            
+            combineBtn.addEventListener('click', async () => {
+                if (!file1Input.files[0] || !file2Input.files[0]) {
+                    showStatus('Please select two HTML files.', 'error');
+                    return;
+                }
+                
+                showStatus('Processing...', 'loading');
+                combineBtn.disabled = true;
+
+                try {
+                    const file1Content = await readFile(file1Input.files[0]);
+                    const file2Content = await readFile(file2Input.files[0]);
+                    const selectedLayout = document.querySelector('input[name="layout"]:checked').value;
+
+                    const effect1 = processHtmlFile(file1Content, 'effect1', 'Effect 1');
+                    const effect2 = processHtmlFile(file2Content, 'effect2', 'Effect 2');
+                    
+                    finalHtml = createCombinedHtml(effect1, effect2, selectedLayout);
+
+                    previewFrame.srcdoc = finalHtml;
+                    previewContainer.classList.remove('hidden');
+                    downloadBtn.classList.remove('hidden');
+                    showStatus('Combination successful! Preview is available below.', 'success');
+
+                } catch (error) {
+                    console.error('An error occurred:', error);
+                    showStatus(`Error: ${error.message}`, 'error');
+                } finally {
+                    combineBtn.disabled = false;
+                }
+            });
+
+            downloadBtn.addEventListener('click', () => {
+                if (finalHtml) {
+                    const blob = new Blob([finalHtml], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'combined-effect.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            });
+
+            function readFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resolve(event.target.result);
+                    reader.onerror = (error) => reject(error);
+                    reader.readAsText(file);
+                });
+            }
+            
+            function processHtmlFile(htmlContent, prefix, effectName) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                const style = doc.querySelector('style')?.textContent || '';
+                const script = doc.querySelector('script')?.textContent || '';
+
+                const metaTags = [];
+                const metaVarNames = [];
+                doc.querySelectorAll('meta').forEach(meta => {
+                    const name = meta.getAttribute('property') || meta.getAttribute('name');
+                    if (name) {
+                        metaVarNames.push(name);
+                    }
+                    metaTags.push(meta.outerHTML);
+                });
+
+                const rewrittenScript = rewriteJavaScript(script, prefix, metaVarNames);
+                return { style, script: rewrittenScript, prefix, metaTags, effectName };
+            }
+
+            function rewriteJavaScript(scriptContent, prefix, metaVarNames = []) {
+                if (!scriptContent) return '';
+
+                let rewrittenCode = scriptContent;
+
+                // --- Scaling Logic ---
+
+                // 1. Halve the canvas resolution where it's set from the window size.
+                rewrittenCode = rewrittenCode.replace(/(=\s*window\.innerWidth)/g, '$1 / 2');
+                rewrittenCode = rewrittenCode.replace(/(=\s*window\.innerHeight)/g, '$1 / 2');
+
+                // 2. Inject a scale command to shrink all drawing operations by 50%.
+                const getContextRegex = /((?:var|let|const)\s+([a-zA-Z0-9_$]+)\s*=\s*.*?\.getContext\s*\(\s*['"]2d['"]\s*\);)/g;
+                rewrittenCode = rewrittenCode.replace(getContextRegex, (match, fullLine, ctxVar) => {
+                    if (ctxVar && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(ctxVar)) {
+                        return `${fullLine}\n    ${ctxVar}.scale(0.5, 0.5);`;
+                    }
+                    return fullLine;
+                });
+                
+                // 3. Find and scale all standalone numeric constants.
+                const numericConstantRegex = /(?<=[\s,(\[=:])(\d+(\.\d+)?)(?=[\s,)\],;])/g;
+                rewrittenCode = rewrittenCode.replace(numericConstantRegex, (numStr) => {
+                    const num = parseFloat(numStr);
+                    return isNaN(num) ? numStr : num / 2;
+                });
+
+                const declarations = new Set(metaVarNames);
+
+                // --- Variable and function discovery ---
+
+                const canvasVarRegex = /(?:var|let|const)\s+([a-zA-Z0-9_$]+)\s*=\s*document\.getElementById\s*\(\s*['"][^"']+['"]\s*\)/;
+                const canvasVarMatch = scriptContent.match(canvasVarRegex);
+                if (canvasVarMatch) {
+                    declarations.add(canvasVarMatch[1]);
+                } else {
+                    declarations.add('v_canvas'); 
+                }
+
+                const functionRegex = /function\s+([a-zA-Z0-9_$]+)\s*\(/g;
+                let match;
+                while ((match = functionRegex.exec(scriptContent)) !== null) {
+                    declarations.add(match[1]);
+                }
+
+                const varDeclarationRegex = /(?:var|let|const)\s+([^;]+)/g;
+                while ((match = varDeclarationRegex.exec(scriptContent)) !== null) {
+                    const declarationPart = match[1];
+                    declarationPart.split(',').forEach(part => {
+                        const varName = part.split('=')[0].trim();
+                        if (varName && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) {
+                            declarations.add(varName);
+                        }
+                    });
+                }
+                
+                // --- Perform Replacements ---
+
+                declarations.forEach(name => {
+                    const renameRegex = new RegExp(`(?<![a-zA-Z0-9_$./])\\b${name}\\b(?![a-zA-Z0-9_$])`, 'g');
+                    rewrittenCode = rewrittenCode.replace(renameRegex, `${prefix}_${name}`);
+                });
+                
+                const getElementRegex = /(document\.getElementById\s*\(\s*['"])([^"']+)(['"]\s*\))/g;
+                rewrittenCode = rewrittenCode.replace(getElementRegex, `$1${prefix}_canvas$3`);
+
+                return rewrittenCode;
+            }
+
+            function createCombinedHtml(effect1, effect2, layoutKey) {
+                const layout = layouts[layoutKey];
+                const canvas1Id = `${effect1.prefix}_canvas`;
+                const canvas2Id = `${effect2.prefix}_canvas`;
+
+                const processMetaTag = (metaHtml, prefix, effectName) => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = metaHtml;
+                    const metaElement = tempDiv.firstChild;
+                    if (metaElement && metaElement.tagName === 'META') {
+                        // Prefix Label
+                        const label = metaElement.getAttribute('label');
+                        if (label) {
+                            metaElement.setAttribute('label', `${effectName}: ${label}`);
+                        }
+
+                        // Prefix Property/Name
+                        const propName = metaElement.getAttribute('property');
+                        if (propName) {
+                            metaElement.setAttribute('property', `${prefix}_${propName}`);
+                        }
+                        const nameAttr = metaElement.getAttribute('name');
+                        if (nameAttr) {
+                             metaElement.setAttribute('name', `${prefix}_${nameAttr}`);
+                        }
+
+                        // Scale Default Value for Numbers
+                        if (metaElement.getAttribute('type') === 'number') {
+                            const defaultValue = metaElement.getAttribute('default');
+                            if (defaultValue && !isNaN(parseFloat(defaultValue))) {
+                                metaElement.setAttribute('default', parseFloat(defaultValue) / 2);
+                            }
+                        }
+
+                        return metaElement.outerHTML;
+                    }
+                    return metaHtml;
+                };
+
+                const metaTags1 = effect1.metaTags.map(tag => processMetaTag(tag, effect1.prefix, effect1.effectName)).join('\n    ');
+                const metaTags2 = effect2.metaTags.map(tag => processMetaTag(tag, effect2.prefix, effect2.effectName)).join('\n    ');
+
+                const glueCode = `
+                    // --- Merger Glue Code ---
+                    function perFrame(time) {
+                        if(typeof ${effect1.prefix}_perFrame === 'function') ${effect1.prefix}_perFrame(time);
+                        if(typeof ${effect2.prefix}_perFrame === 'function') ${effect2.prefix}_perFrame(time);
+                    }
+                    window.addEventListener('load', () => {
+                        if(typeof ${effect1.prefix}_Initialize === 'function') ${effect1.prefix}_Initialize();
+                        if(typeof ${effect2.prefix}_Initialize === 'function') ${effect2.prefix}_Initialize();
+                    });
+                `;
+
+                return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Combined SignalRGB Effect</title>
+    <!-- Meta tags from Effect 1 -->
+    ${metaTags1}
+    <!-- Meta tags from Effect 2 -->
+    ${metaTags2}
+    <style>
+        body, html { margin: 0; padding: 0; background-color: #000; overflow: hidden; }
+        #container { ${layout.style} }
+        canvas { ${layout.canvasStyle} object-fit: cover; }
+        ${effect1.style}
+        ${effect2.style}
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="${canvas1Id}"></canvas>
+        <canvas id="${canvas2Id}"></canvas>
+    </div>
+    <script>
+        // --- Effect 1 Script ---
+        ${effect1.script}
+        // --- Effect 2 Script ---
+        ${effect2.script}
+        // --- Merger Glue Code ---
+        ${glueCode}
+    <\/script>
+</body>
+</html>`;
+            }
+        }
+    </script>
+</body>
+</html>
+

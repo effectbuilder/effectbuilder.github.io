@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRGB Interactive Effect Builder Declarative Engine Reference</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            position: relative;
+        }
+        .sidebar {
+            position: sticky;
+            top: 1rem;
+            height: calc(100vh - 2rem);
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            padding: .5rem 1rem;
+            color: var(--bs-secondary-color);
+        }
+        .sidebar .nav-link:hover {
+            color: var(--bs-light);
+        }
+        .sidebar .nav-link.active {
+            font-weight: bold;
+            color: var(--bs-primary);
+        }
+        .sidebar .sub-nav .nav-link {
+            padding-left: 2rem;
+            font-size: 0.9rem;
+        }
+        .section-card {
+            scroll-margin-top: 80px; /* Offset for scrollspy */
+        }
+        code {
+            color: var(--bs-warning);
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: .2em .4em;
+            border-radius: .25rem;
+        }
+        .badge {
+            font-weight: 500;
+        }
+        table ul {
+            padding-left: 1.2rem;
+            margin-bottom: 0;
+        }
+        .table-group-divider {
+            border-top: 2px solid var(--bs-border-color);
+        }
+        .table-group-header th {
+            background-color: var(--bs-secondary-bg);
+        }
+    </style>
+</head>
+<body data-bs-spy="scroll" data-bs-target="#sidebarNav" data-bs-offset="100">
+
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="./">
+                <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
+                SRGB Interactive Effect Builder
+            </a>
+            <div class="ms-auto d-flex align-items-center">
+                <a href="./" class="btn btn-primary"><i class="bi bi-pencil-square me-2"></i>Back to Editor</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <nav id="sidebarNav" class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="nav flex-column">
+                    <a class="nav-link" href="#global">Global Settings</a>
+                    <a class="nav-link" href="#core">Core Properties</a>
+                    <a class="nav-link" href="#fill">Fill & Animation</a>
+                    <a class="nav-link" href="#stroke">Stroke (Outline)</a>
+                    <a class="nav-link" href="#audio">Audio Reactivity</a>
+                    <a class="nav-link" href="#sensor">Sensor Reactivity</a>
+                    <a class="nav-link" href="#shapes">Shape-Specific Properties</a>
+                    <div class="nav flex-column sub-nav">
+                        <a class="nav-link" href="#shape-rectangle">Rectangle</a>
+                        <a class="nav-link" href="#shape-star">Star</a>
+                        <a class="nav-link" href="#shape-polygon">Polygon</a>
+                        <a class="nav-link" href="#shape-ring">Ring</a>
+                        <a class="nav-link" href="#shape-text">Text</a>
+                        <a class="nav-link" href="#shape-fire">Fire & Fire-Radial</a>
+                        <a class="nav-link" href="#shape-oscilloscope">Oscilloscope</a>
+                        <a class="nav-link" href="#shape-visualizer">Audio Visualizer</a>
+                        <a class="nav-link" href="#shape-tetris">Tetris</a>
+                        <a class="nav-link" href="#shape-pixelart">Pixel Art</a>
+                        <a class="nav-link" href="#shape-strimer">Strimer</a>
+                        <a class="nav-link" href="#shape-spawner">Spawner</a>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="ms-sm-auto col-lg-10 px-md-4">
+                <div class="p-5 mb-4 bg-dark rounded-3 border">
+                    <div class="container-fluid">
+                        <h1 class="display-5 fw-bold">SRGB Interactive Effect Builder Declarative Engine Reference</h1>
+                        <p class="fs-4">This document provides a complete reference for all configurable properties. The engine is designed to be fully declarative, allowing you to build complex, animated effects by defining <code>&lt;meta&gt;</code> properties in an HTML file's head, with no JavaScript required.</p>
+                    </div>
+                </div>
+
+                <div id="global" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Global Settings</h2></div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">These properties control the entire effect's behavior and are defined without an object prefix (e.g., <code>obj1_</code>).</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>enableAnimation</code></td><td>Enable Animation</td><td><code>boolean</code></td><td>A global toggle for all time-based animations, including gradients, rotations, and shape movements.</td></tr>
+                                    <tr><td><code>enableSound</code></td><td>Enable Sound Reactivity</td><td><code>boolean</code></td><td>A global toggle for all audio-reactive properties on all objects.</td></tr>
+                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Global Color Palette</th></tr>
+                                    <tr><td><code>enablePalette</code></td><td>Enable Global Color Palette</td><td><code>boolean</code></td><td>If true, overrides the individual <code>Color 1</code> and <code>Color 2</code> settings for all objects with the global palette colors defined below.</td></tr>
+                                    <tr><td><code>paletteColor1</code></td><td>Palette Color 1</td><td><code>color</code></td><td>The global color to be used for all <code>Color 1</code> properties when the palette is enabled.</td></tr>
+                                    <tr><td><code>paletteColor2</code></td><td>Palette Color 2</td><td><code>color</code></td><td>The global color to be used for all <code>Color 2</code> properties when the palette is enabled.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="core" class="card section-card mb-4">
+                     <div class="card-header"><h2 class="h3 mb-0">Core Object Properties</h2></div>
+                     <div class="card-body">
+                        <p class="text-body-secondary">These are the fundamental properties required to define an object's position, size, and basic appearance on the canvas.</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>shape</code></td><td>Shape</td><td><code>combobox</code></td><td>Defines the fundamental geometry or behavior of the object, which determines which shape-specific properties are available.</td></tr>
+                                    <tr><td><code>x</code></td><td>X Position</td><td><code>number</code></td><td>The horizontal coordinate of the object's top-left corner in the canvas coordinate system (<code>0</code> is the left edge).</td></tr>
+                                    <tr><td><code>y</code></td><td>Y Position</td><td><code>number</code></td><td>The vertical coordinate of the object's top-left corner in the canvas coordinate system (<code>0</code> is the top edge).</td></tr>
+                                    <tr><td><code>width</code></td><td>Width</td><td><code>number</code></td><td>The total width of the object's bounding box in pixels.</td></tr>
+                                    <tr><td><code>height</code></td><td>Height</td><td><code>number</code></td><td>The total height of the object's bounding box in pixels.</td></tr>
+                                    <tr><td><code>rotation</code></td><td>Static Rotation</td><td><code>number</code></td><td>The base rotation of the object in degrees, where <code>0</code> is no rotation. This is overridden by <code>rotationSpeed</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fill" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Fill, Gradient, & Animation</h2></div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">Controls the object's color, fill style, and how its appearance changes over time.</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>gradType</code></td><td>Fill Type</td><td><code>combobox</code></td>
+                                        <td>Determines the fill style.
+                                            <ul>
+                                                <li><code>solid</code>: A single, solid color using <code>gradColor1</code>.</li>
+                                                <li><code>linear</code>: A linear gradient between <code>gradColor1</code> and <code>gradColor2</code>.</li>
+                                                <li><code>radial</code>: A circular gradient between <code>gradColor1</code> and <code>gradColor2</code>.</li>
+                                                <li><code>alternating</code>: For multi-part objects, alternates between <code>gradColor1</code> and <code>gradColor2</code>.</li>
+                                                <li><code>random</code>: For multi-part objects, randomly assigns either <code>gradColor1</code> or <code>gradColor2</code>.</li>
+                                                <li><code>rainbow</code> / <code>rainbow-radial</code>: An animated, cycling rainbow gradient.</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr><td><code>gradColor1</code></td><td>Color 1</td><td><code>color</code></td><td>The primary color for solid fills or the starting color for gradients. Can be overridden by the Global Color Palette.</td></tr>
+                                    <tr><td><code>gradColor2</code></td><td>Color 2</td><td><code>color</code></td><td>The secondary color used as the end point for gradients. Can be overridden by the Global Color Palette.</td></tr>
+                                    <tr><td><code>cycleColors</code></td><td>Cycle Colors</td><td><code>boolean</code></td><td>If true, smoothly animates <code>gradColor1</code> and <code>gradColor2</code> through the entire color spectrum (hue wheel).</td></tr>
+                                    <tr><td><code>cycleSpeed</code></td><td>Color Cycle Speed</td><td><code>number</code></td><td>Controls the speed of hue animation. <em>Only has an effect when <code>cycleColors</code> is set to <code>true</code>.</em></td></tr>
+                                    <tr><td><code>animationSpeed</code></td><td>Animation Speed</td><td><code>number</code></td><td>A master speed control for the object's primary animation, such as gradient scrolling or fire particle movement.</td></tr>
+                                    <tr><td><code>rotationSpeed</code></td><td>Rotation Speed</td><td><code>number</code></td><td>The speed at which the object continuously rotates. A positive value is clockwise; a negative value is counter-clockwise. Overrides static <code>rotation</code>.</td></tr>
+                                    <tr><td><code>animationMode</code></td><td>Animation Mode</td><td><code>combobox</code></td>
+                                        <td>Determines the behavior of scrolling animations.
+                                            <ul>
+                                                <li><code>loop</code>: The animation repeats seamlessly in one direction.</li>
+                                                <li><code>bounce</code>: The animation moves back and forth.</li>
+                                                <li><code>bounce-reversed</code>: The animation for each part of a grid moves in the opposite direction.</li>
+                                                <li><code>bounce-random</code>: The animation for each part of a grid moves back and forth in a random order.</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr><td><code>scrollDir</code></td><td>Scroll Direction</td><td><code>combobox</code></td><td>Specifies the direction for <code>linear</code> gradients.</td></tr>
+                                    <tr><td><code>useSharpGradient</code></td><td>Use Sharp Gradient</td><td><code>boolean</code></td><td>If true, creates a hard line between colors in a gradient instead of a smooth blend.</td></tr>
+                                    <tr><td><code>gradientStop</code></td><td>Gradient Stop %</td><td><code>number</code></td><td>For smooth gradients, the midpoint of the blend. For sharp gradients, the width of the <code>gradColor1</code> band. A percentage from <code>0</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>phaseOffset</code></td><td>Phase Offset</td><td><code>number</code></td><td>For multi-part objects (grids, rings, etc.), this staggers the start time of each part's animation, creating a delay or wave effect.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="stroke" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Stroke (Outline)</h2></div>
+                    <div class="card-body">
+                         <p class="text-body-secondary">Defines an optional border for an object. Most shapes support strokes.</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>enableStroke</code></td><td>Enable Stroke</td><td><code>boolean</code></td><td>A master switch to render the object's outline.</td></tr>
+                                    <tr><td><code>strokeWidth</code></td><td>Stroke Width</td><td><code>number</code></td><td>The thickness of the outline in pixels.</td></tr>
+                                    <tr><td><code>strokeGradType</code></td><td>Stroke Type</td><td><code>combobox</code></td><td>The fill style for the stroke. Supports all the same gradient and animation types as the main object fill.</td></tr>
+                                    <tr><td><code>strokeGradColor1</code></td><td>Stroke Color 1</td><td><code>color</code></td><td>The primary color for the stroke. Can be overridden by the Global Color Palette.</td></tr>
+                                    <tr><td><code>strokeGradColor2</code></td><td>Stroke Color 2</td><td><code>color</code></td><td>The secondary color for stroke gradients. Can be overridden by the Global Color Palette.</td></tr>
+                                    <tr><td><code>strokeCycleColors</code></td><td>Cycle Stroke Colors</td><td><code>boolean</code></td><td>If true, the stroke colors will animate through the hue spectrum, independent of the main fill.</td></tr>
+                                    <tr><td><code>strokeAnimationSpeed</code></td><td>Stroke Animation Speed</td><td><code>number</code></td><td>Controls the scroll speed of the stroke gradient animation.</td></tr>
+                                    <tr><td><code>strokeScrollDir</code></td><td>Stroke Scroll Direction</td><td><code>combobox</code></td><td>The direction for animated linear stroke gradients.<ul><li><code>right, left, up, down</code>: Standard directions for most shapes.</li><li><code>along-path</code>: For Polylines only. The gradient animates from the start of the path to the end.</li><li><code>along-path-reversed</code>: For Polylines only. The gradient animates from the end of the path to the start.</li></ul></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="audio" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Audio Reactivity</h2></div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">Allows objects to react dynamically to system audio. The global <code>enableSound</code> property must be enabled.</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>enableAudioReactivity</code></td><td>Enable Sound Reactivity</td><td><code>boolean</code></td><td>Toggles audio reactivity on or off for this specific object.</td></tr>
+                                    <tr><td><code>audioTarget</code></td><td>Reactive Property</td><td><code>combobox</code></td><td>The visual property that will be affected by the audio. For example, <code>Size</code> will make the object grow and shrink with the beat. Not all targets work with all shapes.</td></tr>
+                                    <tr><td><code>audioMetric</code></td><td>Audio Metric</td><td><code>combobox</code></td><td>The audio frequency range the object will listen to (e.g., <code>bass</code>, <code>volume</code>).</td></tr>
+                                    <tr><td><code>audioSensitivity</code></td><td>Sensitivity</td><td><code>number</code></td><td>Multiplies the intensity of the audio reaction.</td></tr>
+                                    <tr><td><code>beatThreshold</code></td><td>Beat Threshold</td><td><code>number</code></td><td>Adjusts the sensitivity of the beat detection algorithm. Higher values require a more pronounced "beat" to trigger a reaction.</td></tr>
+                                    <tr><td><code>audioSmoothing</code></td><td>Smoothing</td><td><code>number</code></td><td>Smooths the visual response to audio, reducing flickering. <em>Only affects the <code>Volume Meter</code> target.</em></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sensor" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Sensor Reactivity</h2></div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">Allows objects to visualize real-time system sensor data (e.g., CPU Load, Temperature).</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>enableSensorReactivity</code></td><td>Enable Sensor Reactivity</td><td><code>boolean</code></td><td>Toggles sensor reactivity on or off for this object.</td></tr>
+                                    <tr><td><code>sensorTarget</code></td><td>Reactive Property</td><td><code>combobox</code></td><td>The method used to visualize the sensor data. <code>Sensor Meter</code> creates a fill bar, while <code>Time Plot</code> creates a historical line graph.</td></tr>
+                                    <tr><td><code>userSensor</code></td><td>Sensor</td><td><code>sensor</code></td><td>A dropdown list of available system sensors to monitor.</td></tr>
+                                    <tr><td><code>sensorValueSource</code></td><td>Sensor Value</td><td><code>combobox</code></td><td>The specific data point to use from the sensor (its current <code>value</code>, historical <code>min</code>, or historical <code>max</code>).</td></tr>
+                                    <tr><td><code>timePlotLineThickness</code></td><td>Line Thickness</td><td><code>number</code></td><td>For <code>Time Plot</code>, defines the thickness of the graph line.</td></tr>
+                                    <tr><td><code>timePlotFillArea</code></td><td>Fill Area</td><td><code>boolean</code></td><td>For <code>Time Plot</code>, if true, fills the area beneath the graph line with the object's selected fill style.</td></tr>
+                                    <tr><td><code>sensorMeterShowValue</code></td><td>Show Value</td><td><code>boolean</code></td><td>For <code>Sensor Meter</code>, displays the current sensor value as text.</td></tr>
+                                    <tr><td><code>timePlotAxesStyle</code></td><td>Axes Style</td><td><code>combobox</code></td><td>For <code>Time Plot</code>, controls the visibility of the X and Y axes.</td></tr>
+                                    <tr><td><code>timePlotTimeScale</code></td><td>Time Scale (Seconds)</td><td><code>number</code></td><td>For <code>Time Plot</code>, sets the duration displayed across the graph.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shapes" class="card section-card mb-4">
+                    <div class="card-header"><h2 class="h3 mb-0">Shape Properties</h2></div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">This section provides a complete, all-in-one reference for each shape. Each table lists all applicable general properties followed by the shape's unique properties.</p>
+                        
+                        <h3 id="shape-rectangle" class="mt-4">Rectangle</h3>
+                        <p>A standard rectangle that can be subdivided into a grid for creating complex, phased animations.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>numberOfRows</code></td><td>Number of Rows</td><td><code>number</code></td><td>Divides the rectangle into a specified number of horizontal rows. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>numberOfColumns</code></td><td>Number of Columns</td><td><code>number</code></td><td>Divides the rectangle into a specified number of vertical columns. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-star" class="mt-4">Star</h3>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>points</code></td><td>Star Points</td><td><code>number</code></td><td>The number of points on the star. Range: <code>3</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>starInnerRadius</code></td><td>Star Inner Radius %</td><td><code>number</code></td><td>Defines the radius of the inner vertices as a percentage of the outer radius, controlling how sharp the points are. Range: <code>1</code> to <code>99</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-polygon" class="mt-4">Polygon</h3>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>sides</code></td><td>Polygon Sides</td><td><code>number</code></td><td>The number of equal sides for the polygon (e.g., 3 for a triangle, 8 for an octagon). Range: <code>3</code> to <code>50</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-ring" class="mt-4">Ring</h3>
+                        <p>A circular shape composed of individual, animatable segments.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
+                        <div class="table-responsive">
+                             <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>innerDiameter</code></td><td>Inner Diameter</td><td><code>number</code></td><td>The diameter of the empty space inside the ring, creating the doughnut shape. Range: <code>1</code> to <code>width-2</code>.</td></tr>
+                                    <tr><td><code>numberOfSegments</code></td><td>Number of Segments</td><td><code>number</code></td><td>The total number of individual segments that compose the ring. Range: <code>1</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>angularWidth</code></td><td>Segment Angle</td><td><code>number</code></td><td>The arc length of each individual segment, measured in degrees. Range: <code>1</code> to <code>360</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-text" class="mt-4">Text</h3>
+                        <p>Renders text using a built-in pixelated font.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                             <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>text</code></td><td>Display Text</td><td><code>textfield</code></td><td>The string of text to be rendered.</td></tr>
+                                    <tr><td><code>fontSize</code></td><td>Font Size</td><td><code>number</code></td><td>Controls the scale of the pixel font. Range: <code>2</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>pixelFont</code></td><td>Font Style</td><td><code>combobox</code></td><td>Selects between the available <code>small</code> (3x4) or <code>large</code> (5x5) pixel fonts.</td></tr>
+                                    <tr><td><code>textAlign</code></td><td>Text Align</td><td><code>combobox</code></td><td>Horizontal alignment of the text within its bounding box (<code>left</code>, <code>center</code>, <code>right</code>).</td></tr>
+                                    <tr><td><code>textAnimation</code></td><td>Text Animation</td><td><code>combobox</code></td><td>Applies an animation effect to the text (<code>marquee</code>, <code>wave</code>, <code>typewriter</code>).</td></tr>
+                                    <tr><td><code>textAnimationSpeed</code></td><td>Text Animation Speed</td><td><code>number</code></td><td>Controls the speed of the selected text animation. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>showTime</code></td><td>Show System Time</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system time.</td></tr>
+                                    <tr><td><code>showDate</code></td><td>Show System Date</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system date.</td></tr>
+                                    <tr><td><code>autoWidth</code></td><td>Auto-Width</td><td><code>boolean</code></td><td>If true, the object's <code>width</code> property is automatically adjusted to fit the text content.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-fire" class="mt-4">Fire & Fire-Radial</h3>
+                        <p>A particle-based effect that simulates fire. The base shape defines the emission area for the particles.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>fireSpread</code></td><td>Fire Spread %</td><td><code>number</code></td><td>For the <code>fire-radial</code> shape only. Controls how far particles travel from the center, as a percentage of the shape's radius. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-oscilloscope" class="mt-4">Oscilloscope</h3>
+                        <p>Generates a continuous, animated waveform.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>lineWidth</code></td><td>Line Width</td><td><code>number</code></td><td>The thickness of the drawn waveform. Range: <code>1</code> to <code>20</code>.</td></tr>
+                                    <tr><td><code>waveType</code></td><td>Wave Type</td><td><code>combobox</code></td><td>The mathematical shape of the wave (e.g., <code>sine</code>, <code>square</code>).</td></tr>
+                                    <tr><td><code>frequency</code></td><td>Frequency</td><td><code>number</code></td><td>Controls the number of peaks and troughs visible within the shape's bounds. Range: <code>1</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>pulseDepth</code></td><td>Pulse Depth %</td><td><code>number</code></td><td>Controls the amplitude (height) of the wave. Range: <code>0</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>oscDisplayMode</code></td><td>Display Mode</td><td><code>combobox</code></td><td>The layout of the animation (<code>linear</code>, <code>radial</code>, <code>seismic</code>).</td></tr>
+                                    <tr><td><code>fillShape</code></td><td>Fill Shape</td><td><code>boolean</code></td><td>If true, fills the area under/inside the wave.</td></tr>
+                                    <tr><td><code>enableWaveAnimation</code></td><td>Enable Wave Animation</td><td><code>boolean</code></td><td>Toggles the movement of the wave.</td></tr>
+                                    <tr><td><code>oscAnimationSpeed</code></td><td>Wave Animation Speed</td><td><code>number</code></td><td>Controls the speed of the wave's movement, independent of the fill animation speed. Range: <code>0</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>waveStyle</code></td><td>Seismic Wave Style</td><td><code>combobox</code></td><td>For <code>seismic</code> mode, the style of the expanding rings.</td></tr>
+                                    <tr><td><code>waveCount</code></td><td>Seismic Wave Count</td><td><code>number</code></td><td>For <code>seismic</code> mode, the number of concentric rings to display. Range: <code>1</code> to <code>20</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 id="shape-visualizer" class="mt-4">Audio Visualizer</h3>
+                        <p>A powerful shape that visualizes audio frequencies as a bar, line, or area graph.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>vizLayout</code></td><td>Layout</td><td><code>combobox</code></td><td>The overall arrangement: <code>Linear</code> or <code>Circular</code>.</td></tr>
+                                    <tr><td><code>vizDrawStyle</code></td><td>Draw Style</td><td><code>combobox</code></td><td>How frequencies are rendered: <code>Bars</code>, <code>Line</code>, or <code>Area</code>.</td></tr>
+                                    <tr><td><code>vizBarCount</code></td><td>Bar Count</td><td><code>number</code></td><td>The number of frequency bands to display. Range: <code>2</code> to <code>200</code>.</td></tr>
+                                    <tr><td><code>vizBarSpacing</code></td><td>Bar Spacing</td><td><code>number</code></td><td>The space between each bar. Range: <code>0</code> to <code>20</code>.</td></tr>
+                                    <tr><td><code>vizStyle</code></td><td>Bar Origin</td><td><code>combobox</code></td><td>For <code>Linear</code> layout, determines if bars grow from the <code>bottom</code>, <code>top</code>, or expand from the <code>center</code>.</td></tr>
+                                    <tr><td><code>vizSmoothing</code></td><td>Smoothing</td><td><code>number</code></td><td>Applies smoothing to the bar height changes for less jittery movement. Range: <code>0</code> to <code>99</code>.</td></tr>
+                                    <tr><td><code>vizInnerRadius</code></td><td>Inner Radius %</td><td><code>number</code></td><td>For <code>Circular</code> layout, defines the size of the empty central hole. Range: <code>0</code> to <code>95</code>.</td></tr>
+                                    <tr><td><code>vizLineWidth</code></td><td>Line Width</td><td><code>number</code></td><td>For <code>Line</code> and <code>Area</code> styles, defines the thickness of the graph line. Range: <code>1</code> to <code>20</code>.</td></tr>
+                                    <tr><td><code>vizAutoScale</code></td><td>Auto-Scale Height</td><td><code>boolean</code></td><td>If true, the loudest frequency always reaches the maximum height.</td></tr>
+                                    <tr><td><code>vizMaxBarHeight</code></td><td>Max Bar Height %</td><td><code>number</code></td><td>When <code>vizAutoScale</code> is false, this sets a hard limit on bar height. Range: <code>5</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>vizUseSegments</code></td><td>Use LED Segments</td><td><code>boolean</code></td><td>If true, renders bars as discrete, stacked segments.</td></tr>
+                                    <tr><td><code>vizSegmentCount</code></td><td>Segment Count</td><td><code>number</code></td><td>The number of segments to divide each bar into. Range: <code>2</code> to <code>64</code>.</td></tr>
+                                    <tr><td><code>vizSegmentSpacing</code></td><td>Segment Spacing</td><td><code>number</code></td><td>The spacing between each segment in a bar. Range: <code>0</code> to <code>10</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-tetris" class="mt-5">Tetris</h3>
+                        <p>An animation that simulates falling blocks stacking up within the shape's bounds.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>tetrisBlockCount</code></td><td>Block Count</td><td><code>number</code></td><td>The number of blocks to drop in a single animation cycle. Range: <code>1</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>tetrisAnimation</code></td><td>Drop Physics</td><td><code>combobox</code></td><td>The physics governing block movement. Values: <code>linear</code>, <code>gravity</code>, <code>gravity-fade</code>, <code>fade-in-stack</code>, <code>fade-in-out</code>.</td></tr>
+                                    <tr><td><code>tetrisSpeed</code></td><td>Drop/Fade-in Speed</td><td><code>number</code></td><td>Controls the speed of the animation. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>tetrisBounce</code></td><td>Bounce Factor %</td><td><code>number</code></td><td>How much blocks bounce on impact. Range: <code>0</code> to <code>90</code>. <em>Only affects `gravity` physics.</em></td></tr>
+                                    <tr><td><code>tetrisHoldTime</code></td><td>Hold Time</td><td><code>number</code></td><td>For the <code>fade-in-out</code> animation, this sets how long the fully stacked blocks remain visible before fading out.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-pixelart" class="mt-5">Pixel Art</h3>
+                        <p>Renders a static image based on a 2D array of alpha values provided as a JSON string.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>pixelArtData</code></td><td>Pixel Art Data</td><td><code>textarea</code></td><td>A JSON string representing a 2D array. Each number from <code>0</code> (transparent) to <code>1</code> (opaque) corresponds to a pixel's alpha value. Example: <code>[[1, 0, 1], [0, 1, 0], [1, 0, 1]]</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h3 id="shape-strimer" class="mt-5">Strimer</h3>
+                        <p>A specialized shape that simulates the animated lighting effects of PC cable strimers, featuring multiple columns of moving light blocks.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr class="table-group-header"><th colspan="4">General & Layout</th></tr>
+                                    <tr><td><code>strimerColumns</code></td><td>Columns</td><td><code>number</code></td><td>The number of vertical columns. Range: <code>1</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>strimerBlockCount</code></td><td>Block Count</td><td><code>number</code></td><td>The number of animated blocks per column. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>strimerBlockSize</code></td><td>Block Size</td><td><code>number</code></td><td>The height of each individual light block.</td></tr>
+                                    <tr><td><code>strimerBlockSpacing</code></td><td>Block Spacing</td><td><code>number</code></td><td>For <code>Cascade</code> animation, this sets the vertical distance between blocks.</td></tr>
+                        
+                                    <tr class="table-group-header"><th colspan="4">Animation & Movement</th></tr>
+                                    <tr><td><code>strimerAnimation</code></td><td>Animation</td><td><code>combobox</code></td><td>The primary animation style for the blocks. Values: <code>Bounce</code>, <code>Loop</code>, <code>Cascade</code>, <code>Audio Meter</code>, <code>Snake</code>.</td></tr>
+                                    <tr><td><code>strimerAnimationSpeed</code></td><td>Animation Speed</td><td><code>number</code></td><td>Controls the speed of the block movement, independent of the fill animation speed. Range: <code>0</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>strimerDirection</code></td><td>Direction</td><td><code>combobox</code></td><td>The initial movement direction for blocks in <code>Bounce</code> and <code>Loop</code> modes. Values: <code>Up</code>, <code>Down</code>, <code>Random</code>.</td></tr>
+                                    <tr><td><code>strimerEasing</code></td><td>Easing</td><td><code>combobox</code></td><td>Controls the acceleration curve of the block movement for more dynamic motion.</td></tr>
+                                    <tr><td><code>strimerSnakeDirection</code></td><td>Snake Direction</td><td><code>combobox</code></td><td>For <code>Snake</code> animation, sets the path to be vertical (along columns) or horizontal (across rows).</td></tr>
+                        
+                                    <tr class="table-group-header"><th colspan="4">Effects & Modifiers</th></tr>
+                                    <tr><td><code>strimerPulseSpeed</code></td><td>Pulse Speed</td><td><code>number</code></td><td>A modifier that creates a "breathing" effect by fading blocks in and out. This is layered on top of the primary animation. Set to <code>0</code> to disable.</td></tr>
+                                    <tr><td><code>strimerPulseSync</code></td><td>Sync Columns</td><td><code>boolean</code></td><td>If true, all columns pulse together. If false, they pulse sequentially for a wave-like effect.</td></tr>
+                                    <tr><td><code>strimerGlitchFrequency</code></td><td>Glitch Frequency</td><td><code>number</code></td><td>Makes blocks occasionally stutter or disappear for a high-tech look. Set to <code>0</code> to disable.</td></tr>
+                                    
+                                    <tr class="table-group-header"><th colspan="4">Audio Meter Controls</th></tr>
+                                    <tr><td><code>strimerAudioSensitivity</code></td><td>Audio Sensitivity</td><td><code>number</code></td><td>A general multiplier for the height of the audio bars.</td></tr>
+                                    <tr><td><code>strimerAudioSmoothing</code></td><td>Audio Smoothing</td><td><code>number</code></td><td>Smooths out the bar movement to prevent flickering.</td></tr>
+                                    <tr><td><code>strimerBassLevel</code></td><td>Bass Level</td><td><code>number</code></td><td>Multiplier for the bass column(s). <code>100</code> is normal.</td></tr>
+                                    <tr><td><code>strimerTrebleBoost</code></td><td>Treble Boost</td><td><code>number</code></td><td>Multiplier for the treble/volume columns.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 id="shape-spawner" class="mt-5">Spawner</h3>
+                        <p>A powerful particle emitter that generates and animates a stream of other shapes. The Spawner's own fill/stroke properties are applied to each particle it creates.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr class="table-group-header"><th colspan="4">Emitter Properties</th></tr>
+                                    <tr><td><code>spawn_animation</code></td><td>Emitter Style</td><td><code>combobox</code></td><td>The behavior and direction of particle emission. Values: <code>explode</code>, <code>fountain</code>, <code>rain</code>, <code>flow</code>.</td></tr>
+                                    <tr><td><code>spawn_count</code></td><td>Max Particles</td><td><code>number</code></td><td>The maximum number of particles on screen at once.</td></tr>
+                                    <tr><td><code>spawn_spawnRate</code></td><td>Spawn Rate</td><td><code>number</code></td><td>How many new particles are created per second.</td></tr>
+                                    <tr><td><code>spawn_lifetime</code></td><td>Lifetime (s)</td><td><code>number</code></td><td>How long each particle lasts, in seconds.</td></tr>
+                                    <tr><td><code>spawn_speed</code></td><td>Initial Speed</td><td><code>number</code></td><td>The starting speed of newly created particles.</td></tr>
+                                    <tr><td><code>spawn_speedVariance</code></td><td>Initial Speed Variance (±)</td><td><code>number</code></td><td>Adds randomness to each particle's starting speed.</td></tr>
+                                    <tr><td><code>spawn_gravity</code></td><td>Gravity</td><td><code>number</code></td><td>A constant downward (or upward, if negative) force applied to particles.</td></tr>
+                                    <tr><td><code>spawn_spread</code></td><td>Spread Angle</td><td><code>number</code></td><td>The angle (in degrees) for <code>Explode</code> or <code>Fountain</code> emitters.</td></tr>
+
+                                    <tr class="table-group-header"><th colspan="4">Particle Appearance Properties</th></tr>
+                                    <tr><td><code>spawn_shapeType</code></td><td>Particle Shape</td><td><code>combobox</code></td><td>The geometric shape of the emitted particles. Values: <code>rectangle</code>, <code>circle</code>, <code>polygon</code>, <code>star</code>, <code>sparkle</code>, <code>custom</code>, <code>matrix</code>, <code>random</code>.</td></tr>
+                                    <tr><td><code>spawn_size</code></td><td>Particle Size</td><td><code>number</code></td><td>The base size of each particle in pixels.</td></tr>
+                                    <tr><td><code>spawn_size_randomness</code></td><td>Size Randomness %</td><td><code>number</code></td><td>How much to vary each particle's size from the base size. Range: <code>0</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>spawn_rotationSpeed</code></td><td>Particle Rotation Speed</td><td><code>number</code></td><td>The average rotational speed of each individual particle.</td></tr>
+                                    <tr><td><code>spawn_rotationVariance</code></td><td>Rotation Variance (±deg/s)</td><td><code>number</code></td><td>Adds randomness to each particle's rotation speed.</td></tr>
+                                    <tr><td><code>spawn_initialRotation_random</code></td><td>Random Initial Rotation</td><td><code>boolean</code></td><td>If true, each particle starts at a random angle.</td></tr>
+                                    <tr><td><code>spawn_svg_path</code></td><td>Custom SVG Path</td><td><code>textarea</code></td><td>The SVG <code>d</code> attribute path data for the <code>custom</code> particle shape. The path should be centered on the (0,0) origin for proper rotation.</td></tr>
+                                
+                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Matrix Particle Properties</th></tr>
+                                    <tr><td><code>spawn_matrixCharSet</code></td><td>Matrix Character Set</td><td><code>combobox</code></td><td>The set of characters to use for the <code>matrix</code> particle type.</td></tr>
+                                    <tr><td><code>spawn_matrixTrailLength</code></td><td>Matrix Trail Length</td><td><code>number</code></td><td>The number of characters in each falling <code>matrix</code> trail.</td></tr>
+                                    <tr><td><code>spawn_matrixEnableGlow</code></td><td>Enable Character Glow</td><td><code>boolean</code></td><td>Adds a glow effect to the <code>matrix</code> characters.</td></tr>
+                                    <tr><td><code>spawn_matrixGlowSize</code></td><td>Character Glow Size</td><td><code>number</code></td><td>The size and intensity of the glow effect.</td></tr>
+
+                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Generic Trail Properties</th></tr>
+                                    <tr><td><code>spawn_enableTrail</code></td><td>Enable Trail</td><td><code>boolean</code></td><td>Enables a fading trail behind each particle (any shape except <code>matrix</code>).</td></tr>
+                                    <tr><td><code>spawn_trailLength</code></td><td>Trail Length</td><td><code>number</code></td><td>The number of segments in each particle's trail.</td></tr>
+                                    <tr><td><code>spawn_leaderColor</code></td><td>Leader Color</td><td><code>color</code></td><td>The color of the lead particle. The trail fades to the spawner's main fill color.</td></tr>
+
+                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Audio Reactivity</th></tr>
+                                    <tr><td><code>spawn_audioTarget</code></td><td>Spawner: Reactive Target</td><td><code>combobox</code></td><td>Which property of the spawner will react to sound. Affects <code>Spawn Rate</code>, <code>Initial Speed</code>, <code>Particle Size</code>, etc.</td></tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="[https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js](https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js)"></script>
+</body>
+</html>
