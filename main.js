@@ -2372,27 +2372,36 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
 
-            // Store original properties before any overrides
+            // 1. Save the object's original state before applying any overrides
+            const originalGradient = { ...obj.gradient };
+            const originalStrokeGradient = { ...obj.strokeGradient };
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
 
-            // Apply Global Color Cycle override if enabled
+            // 2. Apply ALL global overrides directly to the object's state
             if (globalCycle.enable) {
                 obj.cycleColors = true;
-                // Scale the UI value (0-100) to the internal value used by the animation logic
                 obj.cycleSpeed = (globalCycle.speed || 0) / 50.0;
             }
+            if (palette.enablePalette) {
+                const pColor1 = palette.paletteColor1;
+                const pColor2 = palette.paletteColor2;
+                obj.gradient.color1 = pColor1;
+                obj.gradient.color2 = pColor2;
+                obj.strokeGradient.color1 = pColor1;
+                obj.strokeGradient.color2 = pColor2;
+            }
 
-            // Now, update the animation state using the potentially overridden values
+            // 3. Animate and Draw the object using the (potentially overridden) state
             obj.updateAnimationState(audioData, sensorData, deltaTime);
+            obj.draw(selectedObjectIds.includes(obj.id), audioData, {}); // Pass an empty palette now
 
-            // Draw the object
-            obj.draw(selectedObjectIds.includes(obj.id), audioData, palette);
-
-            // Restore original properties so the object's true state is preserved
+            // 4. Restore the object's original state for the next frame
+            obj.gradient = originalGradient;
+            obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
-
+            
             obj.dirty = false;
         }
 
@@ -3346,103 +3355,65 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         let shouldAnimate = false;
-        try { shouldAnimate = eval('enableAnimation') == true; } catch(e) {}
+        try { shouldAnimate = eval('enableAnimation'); } catch(e) {}
         
         const audioData = getSignalRGBAudioMetrics();
         const sensorData = {};
-        // Find all unique sensor names used by the objects in this effect.
         const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-
-        // For each needed sensor, get its live value from the engine.
         neededSensors.forEach(sensorName => {
             sensorData[sensorName] = getSensorValue(sensorName);
         });
 
-        // Read global properties from the effect's controls at the start of the frame
+        // Safely read all global properties with fallbacks
         let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
         let enableGlobalCycle = false, globalCycleSpeed = 10;
-
         try { enablePalette = eval('enablePalette'); } catch(e) {}
         try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
         try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
         try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
         try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
 
-        const palette = {
-            enablePalette: enablePalette,
-            paletteColor1: paletteColor1,
-            paletteColor2: paletteColor2
-        };
-        const globalCycle = {
-            enable: enableGlobalCycle,
-            speed: globalCycleSpeed
-        };
-
-        // Use a single loop to update and draw all objects
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
             
-            // --- 1. Read and apply live property updates from SignalRGB UI ---
+            // 1. Update object with its individual properties from the UI
             const prefix = 'obj' + obj.id + '_';
-            const propsToUpdate = { gradient: {}, strokeGradient: {} };
+            const propsToUpdate = {};
             allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
                 const propName = key.substring(prefix.length);
                 try {
-                    let value = eval(key);
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-                    
-                    if (propName.startsWith('gradColor')) {
-                        propsToUpdate.gradient[propName.replace('gradColor', 'color')] = value;
-                    } else if (propName.startsWith('strokeGradColor')) {
-                        propsToUpdate.strokeGradient[propName.replace('strokeGradColor', 'color')] = value;
-                    } else if (propName === 'scrollDir') {
-                        propsToUpdate.scrollDirection = value;
-                    } else if (propName === 'strokeScrollDir') {
-                        propsToUpdate.strokeScrollDir = value;
-                    } else {
-                        propsToUpdate[propName] = value;
-                    }
+                    propsToUpdate[propName] = eval(key);
                 } catch (e) {}
             });
-            
-            const oldStrimerState = {
-                animation: obj.strimerAnimation,
-                direction: obj.strimerDirection,
-                columns: obj.strimerColumns,
-                blockCount: obj.strimerBlockCount
-            };
-
             obj.update(propsToUpdate);
-            
-            // --- 2. Handle state resets for shapes like Strimer if properties changed ---
-            if (obj.shape === 'strimer' && (
-                obj.strimerAnimation !== oldStrimerState.animation ||
-                obj.strimerDirection !== oldStrimerState.direction ||
-                obj.strimerColumns !== oldStrimerState.columns ||
-                obj.strimerBlockCount !== oldStrimerState.blockCount
-            )) {
-                obj.strimerBlocks = [];
-                obj.strimerMeterHeights = [];
-            }
 
-            // --- 3. Apply Global Overrides ---
+            // 2. Save the object's original state before applying global overrides
+            const originalGradient = { ...obj.gradient };
+            const originalStrokeGradient = { ...obj.strokeGradient };
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
-            if (globalCycle.enable) {
+
+            // 3. Apply the global overrides directly to the object's state
+            if (enableGlobalCycle) {
                 obj.cycleColors = true;
-                obj.cycleSpeed = (globalCycle.speed || 0) / 50.0;
+                obj.cycleSpeed = (globalCycleSpeed || 0) / 50.0;
+            }
+            if (enablePalette) {
+                obj.gradient.color1 = paletteColor1;
+                obj.gradient.color2 = paletteColor2;
+                obj.strokeGradient.color1 = paletteColor1;
+                obj.strokeGradient.color2 = paletteColor2;
             }
 
-            // --- 4. Update Animation State ---
+            // 4. Animate and Draw the object using the (potentially overridden) state
             if (shouldAnimate) {
                 obj.updateAnimationState(audioData, sensorData, deltaTime);
             }
-            
-            // --- 5. Draw the object ---
-            obj.draw(false, audioData, palette);
+            obj.draw(false, audioData, {}); // Pass an empty palette
 
-            // --- 6. Restore Overridden Properties ---
+            // 5. Restore the object's original state for the next frame
+            obj.gradient = originalGradient;
+            obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
         }
