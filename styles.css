@@ -145,3 +145,16 @@ body {
     border-color: var(--bs-primary);
     color: var(--bs-light);
 }
+
+#pixel-editor-grid-container {
+    display: grid;
+    grid-gap: 1px;
+    border: 1px solid #444;
+}
+
+.pixel-editor-cell {
+    width: 100%;
+    padding-bottom: 100%; /* Creates a square aspect ratio */
+    background-color: rgba(0, 0, 0, 0.5);
+    position: relative;
+}
