@@ -1447,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div>
                         <div class="d-flex justify-content-between align-items-center">
                             <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                            <button class="btn btn-sm btn-outline-info" 
+                            <button type="button" class="btn btn-sm btn-outline-info" 
                                     data-bs-toggle="modal" 
                                     data-bs-target="#pixelArtEditorModal"
                                     data-target-id="${textareaId}">
@@ -3657,7 +3657,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div>
                     <div class="d-flex justify-content-between align-items-center">
                         <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                        <button class="btn btn-sm btn-outline-info" 
+                        <button type="button" class="btn btn-sm btn-outline-info" 
                                 data-bs-toggle="modal" 
                                 data-bs-target="#pixelArtEditorModal"
                                 data-target-id="${textareaId}">
