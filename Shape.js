@@ -2923,15 +2923,14 @@ class Shape {
                                     this.ctx.globalAlpha = 1.0;
                                 } else if (alphaValue === 0.3) {
                                     // Rule 2: Force to opaque Color 1
-                                    this.ctx.fillStyle = this.gradient.color2 || '#00ff00';
-                                    this.ctx.globalAlpha = 1.0;
-                                } else if (alphaValue === 0.7) {
-                                    // Rule 2: Force to opaque Color 1
                                     this.ctx.fillStyle = this.gradient.color1 || '#ff0000';
                                     this.ctx.globalAlpha = 1.0;
+                                } else if (alphaValue === 0.4) {
+                                    // ADDED: Rule for Color 2
+                                    this.ctx.fillStyle = this.gradient.color2 || '#00FF00';
+                                    this.ctx.globalAlpha = 1.0;
                                 } else {
-                                    // Rule 3: Default behavior for all other values.
-                                    // This calculates the correct style (gradient, solid, etc.) for each pixel.
+                                    // Default behavior for all other values (e.g., 0.5, 0.7)
                                     const cellIndex = r * this.numberOfColumns + c;
                                     this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
                                     this.ctx.globalAlpha = alphaValue;
