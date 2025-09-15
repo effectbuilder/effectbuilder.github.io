@@ -4972,19 +4972,34 @@ document.addEventListener('DOMContentLoaded', function () {
             
             const parser = new DOMParser();
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            // --- NEW, MORE ROBUST GENERAL CONFIG MERGING ---
             const masterGeneralConfigs = Array.from(doc.querySelectorAll('meta'))
                 .map(parseMetaToConfig)
                 .filter(c => !(c.property || c.name).startsWith('obj'));
+            const loadedGeneralConfigs = loadedConfigs.filter(c => !(c.property || c.name).startsWith('obj'));
 
-            const mergedGeneralConfigs = masterGeneralConfigs.map(masterConf => {
-                const key = masterConf.property || masterConf.name;
-                if (loadedConfigMap.has(key)) {
-                    const savedConf = loadedConfigMap.get(key);
-                    return { ...masterConf, default: savedConf.default };
-                }
-                return masterConf;
+            const mergedGeneralConfigMap = new Map();
+
+            // First, add all master configs to the map.
+            masterGeneralConfigs.forEach(conf => {
+                mergedGeneralConfigMap.set(conf.property || conf.name, { ...conf });
             });
-            newConfigStore.push(...mergedGeneralConfigs);
+
+            // Then, iterate through loaded configs. Update existing ones or add new ones.
+            loadedGeneralConfigs.forEach(loadedConf => {
+                const key = loadedConf.property || loadedConf.name;
+                const existingConf = mergedGeneralConfigMap.get(key);
+                if (existingConf) {
+                    // If it exists in the master template, just update its default value.
+                    existingConf.default = loadedConf.default;
+                } else {
+                    // If this is a property not in the master template, add it.
+                    // This is important for forward-compatibility if new globals are added.
+                    mergedGeneralConfigMap.set(key, loadedConf);
+                }
+            });
+
+            newConfigStore.push(...Array.from(mergedGeneralConfigMap.values()));
 
             const allLoadedProps = new Set([...loadedConfigMap.keys(), ...constantsMap.keys()]);
             const objectIds = [...new Set(Array.from(allLoadedProps).map(p => (p || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
