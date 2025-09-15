@@ -1,3748 +1,5888 @@
-// Shape.js
-/**
- * Represents a drawable, interactive shape on the canvas.
- * Manages its own state, including position, size, appearance, and animation properties.
- */
+// Global speed multipliers (adjust these to change animation speeds across the board)
+window.gradientSpeedMultiplier = 1;
+window.shapeSpeedMultiplier = 1;
+window.seismicSpeedMultiplier = 1;
+window.tetrisGravityMultiplier = 4;
+window.textSpeedMultiplier = 1;
 
-// --- DEPENDENCIES: All of these functions are now self-contained in this file. ---
-const FONT_DATA_4PX = {
-    name: 'small', charWidth: 3, charHeight: 4, charSpacing: 1, lineSpacing: 2,
-    map: {
-        'A': ['010', '101', '111', '101'], 'B': ['110', '101', '111', '110'], 'C': ['011', '100', '100', '011'],
-        'D': ['110', '101', '101', '110'], 'E': ['111', '100', '110', '111'], 'F': ['111', '100', '110', '100'],
-        'G': ['011', '100', '101', '011'], 'H': ['101', '101', '111', '101'], 'I': ['111', '010', '010', '111'],
-        'J': ['011', '001', '101', '010'], 'K': ['101', '110', '110', '101'], 'L': ['100', '100', '100', '111'],
-        'M': ['101', '111', '101', '101'], 'N': ['110', '101', '101', '101'], 'O': ['010', '101', '101', '010'],
-        'P': ['111', '101', '110', '100'], 'Q': ['010', '101', '111', '011'], 'R': ['110', '101', '110', '101'],
-        'S': ['011', '100', '010', '110'], 'T': ['111', '010', '010', '010'], 'U': ['101', '101', '101', '011'],
-        'V': ['101', '101', '010', '010'], 'W': ['101', '101', '111', '101'], 'X': ['101', '010', '010', '101'],
-        'Y': ['101', '010', '010', '010'], 'Z': ['111', '001', '010', '111'],
-        'a': ['000', '010', '111', '101'], 'b': ['100', '110', '101', '110'], 'c': ['000', '011', '100', '011'],
-        'd': ['001', '011', '101', '011'], 'e': ['000', '010', '111', '111'], 'f': ['010', '100', '110', '100'],
-        'g': ['011', '101', '011', '001'], 'h': ['100', '110', '101', '101'], 'i': ['010', '000', '010', '010'],
-        'j': ['001', '000', '001', '010'], 'k': ['100', '110', '110', '101'], 'l': ['010', '010', '010', '010'],
-        'm': ['000', '111', '111', '101'], 'n': ['000', '110', '101', '101'], 'o': ['000', '010', '101', '010'],
-        'p': ['110', '101', '110', '100'], 'q': ['011', '101', '011', '001'], 'r': ['000', '110', '100', '100'],
-        's': ['000', '111', '100', '011'], 't': ['100', '111', '100', '010'], 'u': ['000', '101', '101', '011'],
-        'v': ['000', '101', '101', '010'], 'w': ['000', '101', '111', '111'], 'x': ['000', '101', '010', '101'],
-        'y': ['101', '101', '011', '001'], 'z': ['000', '111', '010', '111'],
-        '0': ['010', '101', '101', '010'], '1': ['010', '110', '010', '010'], '2': ['110', '001', '010', '111'],
-        '3': ['111', '010', '101', '010'], '4': ['100', '101', '111', '001'], '5': ['111', '100', '011', '110'],
-        '6': ['011', '100', '111', '010'], '7': ['111', '001', '010', '010'], '8': ['010', '101', '010', '101'],
-        '9': ['010', '111', '001', '110'], '.': ['000', '000', '000', '010'], ',': ['000', '000', '010', '010'],
-        '!': ['010', '010', '000', '010'], '?': ['010', '101', '000', '010'], "'": ['010', '010', '000', '000'],
-        '"': ['101', '101', '000', '000'], ':': ['000', '010', '000', '010'], ';': ['000', '010', '010', '010'],
-        '(': ['010', '100', '100', '010'], ')': ['100', '010', '010', '100'], '-': ['000', '000', '111', '000'],
-        '+': ['000', '010', '111', '010'], '=': ['000', '111', '000', '111'], '*': ['101', '010', '101', '000'],
-        '/': ['001', '010', '100', '000'], '\\': ['100', '010', '001', '000'], '#': ['010', '111', '010', '111'],
-        '$': ['010', '111', '101', '111'], '%': ['101', '001', '010', '101'], '&': ['010', '101', '010', '101'],
-        ' ': ['000', '000', '000', '000']
+const INITIAL_CONFIG_TEMPLATE = `
+    <meta title="Untitled Efffect" />
+    <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
+    <meta publisher="SRGB Interactive Effect Builder" />
+    <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
+    <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
+
+    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
+    <meta property="obj1_y" label="Small Clock: Y Position" type="number" min="0" max="200" default="35" />
+    <meta property="obj1_width" label="Small Clock: Width/Outer Diameter" type="number" min="2" max="320" default="130" />
+    <meta property="obj1_height" label="Small Clock: Height" type="number" min="2" max="200" default="17" />
+    <meta property="obj1_rotation" label="Small Clock: Rotation" type="number" min="-360" max="360" default="0" />
+    <meta property="obj1_innerDiameter" label="Small Clock: Inner Diameter" type="number" min="1" max="318" default="50" />
+    <meta property="obj1_numberOfSegments" label="Small Clock: Segments" type="number" min="1" max="50" default="8" />
+    <meta property="obj1_angularWidth" label="Small Clock: Segment Angle" type="number" min="1" max="360" default="20" />
+    <meta property="obj1_rotationSpeed" label="Small Clock: Rotation Speed" type="number" min="-100" max="100" default="0" />
+    <meta property="obj1_animationSpeed" label="Small Clock: Animation Speed" type="number" min="1" max="50" default="50" />
+    <meta property="obj1_animationMode" label="Small Clock: Animation Mode" type="combobox" values="loop,bounce,bounce-reversed,bounce-random" default="bounce-random" />
+    <meta property="obj1_scrollDir" label="Small Clock: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
+    <meta property="obj1_gradType" label="Small Clock: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
+    <meta property="obj1_useSharpGradient" label="Small Clock: Use Sharp Gradient" type="boolean" default="true" />
+    <meta property="obj1_gradientStop" label="Small Clock: Gradient Stop %" type="number" min="0" max="100" default="72" />
+    <meta property="obj1_gradColor1" label="Small Clock: Color 1" type="color" default="#00ff00" />
+    <meta property="obj1_gradColor2" label="Small Clock: Color 2" type="color" default="#d400ff" />
+    <meta property="obj1_cycleColors" label="Small Clock: Cycle Colors" type="boolean" default="false" />
+    <meta property="obj1_cycleSpeed" label="Small Clock: Color Cycle Speed" type="number" min="1" max="10" default="10" />
+    <meta property="obj1_numberOfRows" label="Small Clock: Number of Rows" type="number" min="1" max="100" default="2" />
+    <meta property="obj1_numberOfColumns" label="Small Clock: Number of Columns" type="number" min="1" max="100" default="1" />
+    <meta property="obj1_phaseOffset" label="Small Clock: Phase Offset" type="number" min="0" max="100" default="100" />
+    <meta property="obj1_text" label="Small Clock: Text" type="textfield" default="Jose Miranda" />
+    <meta property="obj1_fontSize" label="Small Clock: Font Size" type="number" min="2" max="100" default="42" />
+    <meta property="obj1_textAlign" label="Small Clock: Justification" type="combobox" values="left,center,right" default="center" />
+    <meta property="obj1_pixelFont" label="Small Clock: Pixel Font Style" type="combobox" values="small,large" default="small" />
+    <meta property="obj1_textAnimation" label="Small Clock: Text Animation" type="combobox" values="none,marquee,typewriter,wave" default="none" />
+    <meta property="obj1_textAnimationSpeed" label="Small Clock: Text Scroll Speed" type="number" min="1" max="100" default="10" />
+    <meta property="obj1_showTime" label="Small Clock: Show Current Time" type="boolean" default="true" />
+    <meta property="obj1_showDate" label="Small Clock: Show Current Date" type="boolean" default="false" />
+    <meta property="obj1_autoWidth" label="Small Clock: Auto-Width" type="boolean" default="true" />
+    <meta property="obj1_enableAudioReactivity" label="Small Clock: Enable Sound Reactivity" type="boolean" default="true" />
+    <meta property="obj1_audioTarget" label="Small Clock: Reactive Property" values="none,Flash,Size,Rotation,Volume Meter" type="combobox" default="Size" />
+    <meta property="obj1_audioMetric" label="Small Clock: Audio Metric" values="volume,bass,mids,highs" type="combobox" default="volume" />
+    <meta property="obj1_beatThreshold" label="Small Clock: Beat Threshold" min="1" max="100" type="number" default="30" />
+    <meta property="obj1_audioSensitivity" label="Small Clock: Sensitivity" min="0" max="200" type="number" default="50" />
+    <meta property="obj1_audioSmoothing" label="Small Clock: Smoothing" min="0" max="99" type="number" default="50" />
+    <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
+    <meta property="paletteColor1" label="Palette Color 1" type="color" default="#FF8F00" />
+    <meta property="paletteColor2" label="Palette Color 2" type="color" default="#00BFFF" />
+    <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
+    <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
+
+
+
+    <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj2_x" label="Large Text: X Position" type="number" min="0" max="320" default="-3" />
+    <meta property="obj2_y" label="Large Text: Y Position" type="number" min="0" max="200" default="0" />
+    <meta property="obj2_width" label="Large Text: Width/Outer Diameter" type="number" min="2" max="320" default="237" />
+    <meta property="obj2_height" label="Large Text: Height" type="number" min="2" max="200" default="30" />
+    <meta property="obj2_rotation" label="Large Text: Rotation" type="number" min="-360" max="360" default="0" />
+    <meta property="obj2_innerDiameter" label="Large Text: Inner Diameter" type="number" min="1" max="318" default="50" />
+    <meta property="obj2_numberOfSegments" label="Large Text: Segments" type="number" min="1" max="50" default="8" />
+    <meta property="obj2_angularWidth" label="Large Text: Segment Angle" type="number" min="1" max="360" default="20" />
+    <meta property="obj2_rotationSpeed" label="Large Text: Rotation Speed" type="number" min="-100" max="100" default="0" />
+    <meta property="obj2_animationSpeed" label="Large Text: Animation Speed" type="number" min="1" max="50" default="50" />
+    <meta property="obj2_animationMode" label="Large Text: Animation Mode" type="combobox" values="loop,bounce,bounce-reversed,bounce-random" default="bounce-random" />
+    <meta property="obj2_scrollDir" label="Large Text: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
+    <meta property="obj2_gradType" label="Large Text: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
+    <meta property="obj2_useSharpGradient" label="Large Text: Use Sharp Gradient" type="boolean" default="true" />
+    <meta property="obj2_gradientStop" label="Large Text: Gradient Stop %" type="number" min="0" max="100" default="72" />
+    <meta property="obj2_gradColor1" label="Large Text: Color 1" type="color" default="#00ff00" />
+    <meta property="obj2_gradColor2" label="Large Text: Color 2" type="color" default="#d400ff" />
+    <meta property="obj2_cycleColors" label="Large Text: Cycle Colors" type="boolean" default="false" />
+    <meta property="obj2_cycleSpeed" label="Large Text: Color Cycle Speed" type="number" min="1" max="10" default="10" />
+    <meta property="obj2_numberOfRows" label="Large Text: Number of Rows" type="number" min="1" max="100" default="2" />
+    <meta property="obj2_numberOfColumns" label="Large Text: Number of Columns" type="number" min="1" max="100" default="1" />
+    <meta property="obj2_phaseOffset" label="Large Text: Phase Offset" type="number" min="0" max="100" default="100" />
+    <meta property="obj2_text" label="Large Text: Text" type="textfield" default="Interactive Effect Builder" />
+    <meta property="obj2_fontSize" label="Large Text: Font Size" type="number" min="2" max="100" default="60" />
+    <meta property="obj2_textAlign" label="Large Text: Justification" type="combobox" values="left,center,right" default="left" />
+    <meta property="obj2_pixelFont" label="Large Text: Pixel Font Style" type="combobox" values="small,large" default="large" />
+    <meta property="obj2_textAnimation" label="Large Text: Text Animation" type="combobox" values="none,marquee,typewriter,wave" default="marquee" />
+    <meta property="obj2_textAnimationSpeed" label="Large Text: Text Scroll Speed" type="number" min="1" max="100" default="29" />
+    <meta property="obj2_showTime" label="Large Text: Show Current Time" type="boolean" default="false" />
+    <meta property="obj2_showDate" label="Large Text: Show Current Date" type="boolean" default="false" />
+    <meta property="obj2_autoWidth" label="Large Text: Auto-Width" type="boolean" default="false" />
+    <meta property="obj2_enableAudioReactivity" label="Large Text: Enable Sound Reactivity" type="boolean" default="true" />
+    <meta property="obj2_audioTarget" label="Large Text: Reactive Property" values="none,Flash,Size,Rotation,Volume Meter" type="combobox" default="Size" />
+    <meta property="obj2_audioMetric" label="Large Text: Audio Metric" values="volume,bass,mids,highs" type="combobox" default="volume" />
+    <meta property="obj2_beatThreshold" label="Large Text: Beat Threshold" min="1" max="100" type="number" default="30" />
+    <meta property="obj2_audioSensitivity" label="Large Text: Sensitivity" min="0" max="200" type="number" default="50" />
+    <meta property="obj2_audioSmoothing" label="Large Text: Smoothing" min="0" max="99" type="number" default="50" />
+
+    <meta property="obj3_shape" label="Visualizer: Shape" type="combobox" values="rectangle,circle,ring,text,audio-visualizer" default="audio-visualizer" />
+    <meta property="obj3_x" label="Visualizer: X Position" type="number" min="0" max="320" default="10" />
+    <meta property="obj3_y" label="Visualizer: Y Position" type="number" min="0" max="200" default="50" />
+    <meta property="obj3_width" label="Visualizer: Width/Outer Diameter" type="number" min="2" max="320" default="300" />
+    <meta property="obj3_height" label="Visualizer: Height" type="number" min="2" max="200" default="100" />
+    <meta property="obj3_rotation" label="Visualizer: Rotation" type="number" min="-360" max="360" default="0" />
+    <meta property="obj3_gradType" label="Visualizer: Fill Type" type="combobox" values="solid,linear,radial,alternating,random,rainbow" default="rainbow" />
+    <meta property="obj3_gradColor1" label="Visualizer: Color 1" type="color" default="#00ff00" />
+    <meta property="obj3_gradColor2" label="Visualizer: Color 2" type="color" default="#d400ff" />
+    <meta property="obj3_animationSpeed" label="Visualizer: Animation Speed" type="number" min="1" max="50" default="10" />
+    <meta property="obj3_vizLayout" label="Visualizer: Layout" type="combobox" default="Linear" values="Linear,Circular" />
+    <meta property="obj3_vizDrawStyle" label="Visualizer: Draw Style" type="combobox" default="Line" values="Bars,Line,Area" />
+    <meta property="obj3_vizBarCount" label="Visualizer: Bar Count" type="number" default="64" min="2" max="128" />
+    <meta property="obj3_vizBarSpacing" label="Visualizer: Bar Spacing" type="number" default="2" min="0" max="20" />
+    <meta property="obj3_vizSmoothing" label="Visualizer: Smoothing" type="number" default="60" min="0" max="99" />
+`;
+
+// --- State Management ---
+let baselineStateForURL = {};
+let loadedStateSnapshot = null;
+let dirtyProperties = new Set();
+let leftPanelPixelWidth = 0;
+let isRestoring = false;
+let configStore = [];
+let objects = [];
+let selectedObjectIds = [];
+let oldSelection = [];
+let needsRedraw = false;
+let constrainToCanvas = true;
+let verticalSplit, horizontalSplit;
+let lastHSizes, lastVSizes;
+let fps = 50;
+let fpsInterval;
+let then;
+let galleryListener = null;
+let lastVisibleDoc = null;
+let isLoadingMore = false;
+let currentGalleryQuery = null;
+let currentProjectDocId = null;
+let confirmActionCallback = null;
+let exportPayload = {};
+let propertyClipboard = null;
+let sourceObjectId = null;
+
+let cachedSnapTargets = null;
+let snapLines = [];
+let isDragging = false;
+let isResizing = false;
+let isRotating = false;
+let isDraggingNode = false;
+let activeNodeDragState = null;
+let activeResizeHandle = null;
+let initialDragState = [];
+let dragStartX = 0;
+let dragStartY = 0;
+let audioContext;
+let analyser;
+let frequencyData;
+let isAudioSetup = false;
+
+function handleURLParameters() {
+    const params = new URLSearchParams(window.location.search);
+    const modalToShow = params.get('show');
+
+    if (!modalToShow) {
+        return; // No parameter found, do nothing.
     }
-};
 
-const FONT_DATA_5PX = {
-    name: 'large', charWidth: 5, charHeight: 5, charSpacing: 1, lineSpacing: 1,
-    map: {
-        'A': ['01110', '10001', '11111', '10001', '10001'], 'B': ['11110', '10001', '11110', '10001', '11110'],
-        'C': ['01110', '10000', '10000', '10000', '01110'], 'D': ['11110', '10001', '10001', '10001', '11110'],
-        'E': ['11111', '10000', '11110', '10000', '11111'], 'F': ['11111', '10000', '11110', '10000', '10000'],
-        'G': ['01110', '10000', '10111', '10001', '01110'], 'H': ['10001', '10001', '11111', '10001', '10001'],
-        'I': ['11111', '00100', '00100', '00100', '11111'], 'J': ['00111', '00001', '00001', '10001', '01110'],
-        'K': ['10001', '10010', '11100', '10010', '10001'], 'L': ['10000', '10000', '10000', '10000', '11111'],
-        'M': ['10001', '11011', '10101', '10001', '10001'], 'N': ['10001', '11001', '10101', '10011', '10001'],
-        'O': ['01110', '10001', '10001', '10001', '01110'], 'P': ['11110', '10001', '11110', '10000', '10000'],
-        'Q': ['01110', '10001', '10101', '10010', '01101'], 'R': ['11110', '10001', '11110', '10010', '10001'],
-        'S': ['01110', '10000', '01110', '00001', '11110'], 'T': ['11111', '00100', '00100', '00100', '00100'],
-        'U': ['10001', '10001', '10001', '10001', '01110'], 'V': ['10001', '10001', '10001', '01010', '00100'],
-        'W': ['10001', '10001', '10101', '11011', '10001'], 'X': ['10001', '01010', '00100', '01010', '10001'],
-        'Y': ['10001', '01010', '00100', '00100', '00100'], 'Z': ['11111', '00010', '00100', '01000', '11111'],
-        'a': ['00000', '01110', '10001', '01111', '00000'], 'b': ['10000', '10000', '11110', '10001', '11110'],
-        'c': ['00000', '01110', '10000', '10000', '01110'], 'd': ['00001', '00001', '01111', '10001', '01111'],
-        'e': ['00000', '01110', '11111', '10000', '01110'], 'f': ['00110', '01001', '01000', '01000', '01000'],
-        'g': ['00000', '01111', '10001', '01111', '00001'], 'h': ['10000', '10000', '11110', '10001', '10001'],
-        'i': ['01110', '00000', '01100', '01000', '01110'], 'j': ['00110', '00000', '00110', '00100', '11000'],
-        'k': ['10000', '10010', '11100', '11100', '10010'], 'l': ['01000', '01000', '01000', '01000', '01110'],
-        'm': ['00000', '11010', '10101', '10101', '10001'], 'n': ['00000', '11110', '10001', '10001', '10001'],
-        'o': ['00000', '01110', '10001', '10001', '01110'], 'p': ['00000', '11110', '10001', '11110', '10000'],
-        'q': ['00000', '01111', '10001', '01111', '00001'], 'r': ['00000', '10110', '11000', '10000', '10000'],
-        's': ['00000', '01111', '01000', '10010', '11100'], 't': ['01000', '11110', '01000', '01000', '00110'],
-        'u': ['00000', '10001', '10001', '10001', '01111'], 'v': ['00000', '10001', '10001', '01010', '00100'],
-        'w': ['00000', '10101', '10101', '11111', '10101'], 'x': ['00000', '10001', '01110', '01110', '10001'],
-        'y': ['00000', '10001', '10001', '01111', '00001'], 'z': ['00000', '11111', '00110', '01100', '11111'],
-        '0': ['01110', '10011', '10101', '11001', '01110'], '1': ['00100', '01100', '00100', '00100', '01110'],
-        '2': ['01110', '10001', '00110', '01000', '11111'], '3': ['11111', '00010', '01100', '00001', '11110'],
-        '4': ['00110', '01010', '10010', '11111', '00010'], '5': ['11111', '10000', '11110', '00001', '11110'],
-        '6': ['01110', '10000', '11110', '10001', '01110'], '7': ['11111', '00001', '00010', '00100', '00100'],
-        '8': ['01110', '10001', '01110', '10001', '01110'], '9': ['01110', '10001', '01111', '00001', '01110'],
-        ' ': ['00000', '00000', '00000', '00000', '00000'], '.': ['00000', '00000', '00000', '01100', '01100'],
-        ',': ['00000', '00000', '00000', '01100', '01000'], '!': ['01100', '01100', '01100', '00000', '01100'],
-        '?': ['01110', '10001', '00110', '00000', '00100'], "'": ['00110', '00110', '00100', '00000', '00000'],
-        '"': ['11011', '11011', '00000', '00000', '00000'], ':': ['00000', '01100', '00000', '01100', '00000'],
-        ';': ['00000', '00000', '01100', '00000', '01000'], '(': ['00100', '01000', '01000', '01000', '00100'],
-        ')': ['10000', '01000', '01000', '01000', '10000'], '-': ['00000', '00000', '11111', '00000', '00000'],
-        '+': ['00000', '00100', '01110', '00100', '00000'], '=': ['00000', '11111', '00000', '11111', '00000'],
-        '*': ['01010', '01010', '11111', '01010', '01010'], '/': ['00001', '00010', '00100', '01000', '10000'],
-        '\\': ['10000', '01000', '00100', '00010', '00001'], '#': ['01010', '11111', '01010', '11111', '01010'],
-        '$': ['00100', '01110', '10101', '01110', '00100'], '%': ['11001', '01010', '00100', '01010', '10011'],
-        '&': ['01110', '10001', '01110', '10101', '01011']
+    let modalEl = null;
+    if (modalToShow.toLowerCase() === 'about') {
+        modalEl = document.getElementById('about-modal');
+    } else if (modalToShow.toLowerCase() === 'help') {
+        modalEl = document.getElementById('help-modal');
     }
-};
 
-/**
- * A completely isolated function to draw axes for the time plot.
- * It has no dependency on the 'this' context of the Shape class.
- * @param {CanvasRenderingContext2D} ctx The canvas context.
- * @param {number} width The width of the drawing area.
- * @param {number} height The height of the drawing area.
- */
-function drawTimePlotAxes(ctx, width, height) {
-    ctx.save(); // Save the state to ensure we don't interfere with other drawing.
-
-    // Explicitly set all styles for the axes
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 4]);
-    ctx.lineJoin = 'miter';
-    ctx.lineCap = 'butt';
-
-    // Y-Axis (Value)
-    ctx.beginPath();
-    ctx.moveTo(-width / 2, -height / 2);
-    ctx.lineTo(-width / 2, height / 2);
-    ctx.stroke();
-
-    // X-Axis (Time)
-    ctx.beginPath();
-    ctx.moveTo(-width / 2, height / 2);
-    ctx.lineTo(width / 2, height / 2);
-    ctx.stroke();
-
-    ctx.restore(); // Restore the state immediately after.
+    if (modalEl) {
+        // Now we can create and show the modal immediately.
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
 }
 
-function drawPixelText(ctx, shape, textToRender) {
-    const { x, y, width, height, pixelFont, fontSize, textAlign,
-        textAnimation, scrollOffsetX, waveAngle, visibleCharCount } = shape;
+function updateColorControls() {
+    const values = getControlValues();
+    const paletteEnabled = values.enablePalette;
+    const pColor1 = values.paletteColor1;
+    const pColor2 = values.paletteColor2;
 
-    if (typeof textToRender !== 'string') return;
+    const colorControlNames = ['gradColor1', 'gradColor2', 'strokeGradColor1', 'strokeGradColor2'];
 
-    const fontData = pixelFont === 'large' ? FONT_DATA_5PX : FONT_DATA_4PX;
-    const { charWidth, charHeight, charSpacing, lineSpacing, map } = fontData;
-    const pixelSize = fontSize / 10;
+    objects.forEach(obj => {
+        colorControlNames.forEach(name => {
+            const input = form.querySelector(`[name="obj${obj.id}_${name}"]`);
+            if (input) {
+                const hexInput = form.querySelector(`[name="obj${obj.id}_${name}_hex"]`);
+                const isColor1 = name.endsWith('1');
 
-    const animatedText = textToRender.toUpperCase().substring(0, Math.floor(visibleCharCount));
-    const lines = animatedText.split('\n');
+                input.disabled = paletteEnabled;
+                if (hexInput) hexInput.disabled = paletteEnabled;
 
-    ctx.save();
-    ctx.beginPath();
-
-    if (textAnimation === 'wave') {
-        const verticalPadding = 100;
-        ctx.rect(x, y - verticalPadding, width, height + verticalPadding * 2);
-    } else {
-        ctx.rect(x, y, width, height);
-    }
-    ctx.clip();
-
-    lines.forEach((line, lineIndex) => {
-        const lineWidth = line.length * (charWidth + charSpacing) * pixelSize - (charSpacing * pixelSize);
-        let lineStartX = x;
-        if (textAlign === 'center') {
-            lineStartX = x + (width - lineWidth) / 2;
-        } else if (textAlign === 'right') {
-            lineStartX = x + width - lineWidth;
-        }
-
-        for (let i = 0; i < line.length; i++) {
-            const charData = map[line[i]] || map['?'];
-            if (!charData) continue;
-
-            let dx = lineStartX + i * (charWidth + charSpacing) * pixelSize + scrollOffsetX;
-            let dy = y + pixelSize + lineIndex * (charHeight + lineSpacing) * pixelSize;
-
-            if (textAnimation === 'wave') {
-                // The wave is now based on the character's horizontal position (dx),
-                // which creates a proper undulating effect as the text scrolls.
-                dy += Math.sin(waveAngle + dx * 0.05) * (pixelSize * 2);
+                if (paletteEnabled) {
+                    const paletteColor = isColor1 ? pColor1 : pColor2;
+                    input.value = paletteColor;
+                    if (hexInput) hexInput.value = paletteColor;
+                } else {
+                    // Restore the object's actual color
+                    const originalColor = isColor1
+                        ? (name.startsWith('stroke') ? obj.strokeGradient.color1 : obj.gradient.color1)
+                        : (name.startsWith('stroke') ? obj.strokeGradient.color2 : obj.gradient.color2);
+                    input.value = originalColor;
+                    if (hexInput) hexInput.value = originalColor;
+                }
             }
+        });
+    });
+}
 
-            if (dx > x + width || dx < x - (charWidth * pixelSize)) {
+function getBoundingBox(obj) {
+    const corners = [
+        obj.getWorldCoordsOfCorner('top-left'),
+        obj.getWorldCoordsOfCorner('top-right'),
+        obj.getWorldCoordsOfCorner('bottom-right'),
+        obj.getWorldCoordsOfCorner('bottom-left')
+    ];
+    return {
+        minX: Math.min(...corners.map(c => c.x)),
+        minY: Math.min(...corners.map(c => c.y)),
+        maxX: Math.max(...corners.map(c => c.x)),
+        maxY: Math.max(...corners.map(c => c.y)),
+    };
+}
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const srgbLinkBtn = document.getElementById('generate-srgb-link-btn');
+
+    srgbLinkBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        const allProps = getControlValues();
+
+        const effectTitle = allProps['title'] || 'My Effect';
+        const urlSafeTitle = encodeURIComponent(effectTitle);
+        const baseUrl = `https://go.signalrgb.com/app/effect/apply/${urlSafeTitle}`;
+
+        let params = [];
+        const currentState = getControlValues();
+
+        for (const key in currentState) {
+            if (!currentState.hasOwnProperty(key)) {
                 continue;
             }
 
-            for (let r = 0; r < charHeight; r++) {
-                for (let c = 0; c < charWidth; c++) {
-                    if (charData[r] && charData[r][c] === '1') {
-                        ctx.fillRect(dx + c * pixelSize, dy + r * pixelSize, pixelSize, pixelSize);
+            const isDifferentFromBaseline = !baselineStateForURL.hasOwnProperty(key) || String(currentState[key]) !== String(baselineStateForURL[key]);
+
+            // Compare the current value to the baseline value.
+            // If the baseline doesn't have the key, or if the values are different, it's a change.
+            if (isDifferentFromBaseline || dirtyProperties.has(key)) {
+
+                // Filter out metadata that shouldn't be in the link's query string.
+                if (key === 'title' || key === 'description' || key === 'publisher') {
+                    continue;
+                }
+
+                let value = currentState[key];
+
+                // Format the value for the URL.
+                if (typeof value === 'boolean') {
+                    value = value ? 'true' : 'false';
+                } else if (typeof value === 'number') {
+                    value = String(value);
+                }
+
+                if (typeof value === 'string') {
+                    if (value.startsWith('#')) {
+                        value = `%23${value.substring(1)}`;
                     }
+                    value = value.replace(/ /g, '%20');
+                }
+
+                params.push(`${key}=${value}`);
+            }
+        }
+
+        const queryString = params.join('&');
+        const finalUrl = `${baseUrl}?${queryString}`;
+
+        window.open(finalUrl, '_blank');
+
+        const modalBody = 'This link has been opened in a new tab. It will only work if the corresponding effect is already installed in your SignalRGB library.\n\nThe link has also been copied to your clipboard.';
+        showToast(modalBody, 'success');
+
+        navigator.clipboard.writeText(finalUrl).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    });
+
+    document.getElementById('startAudioBtn').addEventListener('click', setupAudio);
+
+    if (!localStorage.getItem('termsAccepted')) {
+        var termsModal = new bootstrap.Modal(document.getElementById('accept-terms-modal'));
+        termsModal.show();
+    }
+    document.getElementById('accept-terms-btn').addEventListener('click', function () {
+        localStorage.setItem('termsAccepted', 'true');
+    });
+    document.getElementById('accept-terms2-btn').addEventListener('click', function () {
+        localStorage.setItem('termsAccepted', 'true');
+    });
+
+    // --- DOM Element References ---
+    const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    const canvas = document.getElementById('signalCanvas');
+
+    if (!canvas) {
+        console.error('Canvas element not found');
+        return;
+    }
+    canvas.width = 1280;
+    canvas.height = 800;
+    const canvasContainer = document.getElementById('canvas-container');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Failed to get 2D context');
+        return;
+    }
+    const form = document.getElementById('controls-form');
+    const toolbar = document.getElementById('toolbar');
+    const constrainBtn = document.getElementById('constrain-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const shareBtn = document.getElementById('share-btn');
+    const addObjectBtn = document.getElementById('add-object-btn');
+    const addPolylineBtn = document.getElementById('add-polyline-btn');
+    const confirmImportBtn = document.getElementById('confirm-import-btn');
+    const confirmBtn = document.getElementById('confirm-overwrite-btn');
+    const coordsDisplay = document.getElementById('coords-display');
+
+    let activeTool = 'select'; // 'select' or 'polyline'
+    let isDrawingPolyline = false;
+    let currentlyDrawingShapeId = null;
+    let previewLine = { startX: 0, startY: 0, endX: 0, endY: 0, active: false };
+
+    // Update this for a new property
+    const shapePropertyMap = {
+        rectangle: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        polyline: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+        ],
+        circle: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        ring: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'innerDiameter', 'numberOfSegments', 'angularWidth',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        polygon: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        star: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        text: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
+            'textAnimationSpeed', 'showTime', 'showDate',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        ],
+        oscilloscope: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+            'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
+            'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        ],
+        'tetris': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
+            'tetrisAnimation', 'tetrisBlockCount', 'tetrisDropDelay', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        ],
+        fire: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+        ],
+        'fire-radial': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+        ],
+        'pixel-art': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
+        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationSpeed', 'scrollDir',
+            'vizLayout', 'vizDrawStyle', 'vizStyle',
+            'vizLineWidth',
+            'vizAutoScale', 'vizMaxBarHeight',
+            'vizBarCount', 'vizBarSpacing', 'vizSmoothing',
+            'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
+            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'
+        ],
+        'strimer': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation',
+            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
+            'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
+            'strimerDirection', 'strimerEasing',
+            'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
+        ],
+        'spawner': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
+            'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
+            'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor',
+            'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
+            'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
+        ],
+        polyline: [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
+            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
+            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
+            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
+            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+        ],
+    };
+
+    const galleryOffcanvasEl = document.getElementById('gallery-offcanvas');
+    const galleryList = document.getElementById('gallery-project-list');
+    const galleryBody = galleryOffcanvasEl.querySelector('.offcanvas-body');
+
+
+
+
+    async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
+        buttonEl.disabled = true;
+        buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+        try {
+            const projectsRef = window.collection(window.db, "projects");
+            const docToToggleRef = window.doc(projectsRef, docIdToToggle);
+
+            // Step 1: Perform all READS before the transaction begins.
+            // Find any effect that is currently featured.
+            const q = window.query(projectsRef, window.where("featured", "==", true));
+            const currentlyFeaturedSnapshot = await window.getDocs(q);
+
+            // Step 2: Perform all WRITES inside the transaction.
+            await window.runTransaction(window.db, async (transaction) => {
+                const docToToggleSnap = await transaction.get(docToToggleRef);
+                if (!docToToggleSnap.exists()) {
+                    throw new Error("Document does not exist!");
+                }
+
+                const isCurrentlyFeatured = docToToggleSnap.data().featured === true;
+                const newFeaturedState = !isCurrentlyFeatured;
+
+                // If we are about to feature this item...
+                if (newFeaturedState === true) {
+                    // ...un-feature all other items found in our read step.
+                    currentlyFeaturedSnapshot.forEach((doc) => {
+                        transaction.update(doc.ref, { featured: false });
+                    });
+                }
+
+                // Finally, set the new featured state on the document we clicked.
+                transaction.update(docToToggleRef, { featured: newFeaturedState });
+            });
+
+            // --- UI update logic ---
+            const allFeatureButtons = document.querySelectorAll('.btn-feature');
+            allFeatureButtons.forEach(btn => {
+                if (btn.dataset.docId === docIdToToggle) {
+                    const isNowFeatured = !buttonEl.classList.contains('btn-warning');
+                    btn.className = `btn btn-sm btn-feature ${isNowFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                    btn.innerHTML = isNowFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
+                    btn.title = isNowFeatured ? 'Unfeature this effect' : 'Feature this effect';
+                } else {
+                    btn.className = 'btn btn-sm btn-feature btn-outline-warning';
+                    btn.innerHTML = '<i class="bi bi-star"></i>';
+                    btn.title = 'Feature this effect';
+                }
+            });
+
+            showToast("Featured effect updated successfully!", 'success');
+
+        } catch (error) {
+            console.error("Error updating featured status: ", error);
+            showToast("Failed to update featured status.", 'danger');
+        } finally {
+            buttonEl.disabled = false;
+        }
+    }
+
+    function drawSnapLines(snapLines) {
+        ctx.save();
+        ctx.resetTransform();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 5]);
+        snapLines.forEach(line => {
+            if (line.duration <= 0) return;
+            ctx.strokeStyle = line.snapType === 'center' ? 'purple' : line.type === 'horizontal' ? 'blue' : 'red';
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            if (line.type === 'horizontal') {
+                ctx.moveTo(0, line.y);
+                ctx.lineTo(canvas.width, line.y);
+            } else if (line.type === 'vertical') {
+                ctx.moveTo(line.x, 0);
+                ctx.lineTo(line.x, canvas.height);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        });
+        ctx.restore();
+    }
+
+
+    /**
+     * Clears all objects and resets the workspace to a blank state.
+     */
+    function resetWorkspace() {
+        // Clear all object-specific data
+        objects = [];
+        configStore = configStore.filter(c => !(c.property || c.name).startsWith('obj'));
+        selectedObjectIds = [];
+
+        // Reset the undo/redo appHistory
+        appHistory.stack = [];
+        appHistory.index = -1;
+
+        // Get the current user and set new default values
+        const user = window.auth.currentUser;
+        const newTitle = (user && user.displayName) ? user.displayName : "SRGB Interactive Effect Builder";
+        const newPublisher = (user && user.displayName) ? user.displayName : "Anonymous";
+        const newDescription = "";
+
+        // Find and update the global settings in the central configStore
+        const titleConf = configStore.find(c => c.name === 'title');
+        if (titleConf) titleConf.default = newTitle;
+
+        const descConf = configStore.find(c => c.name === 'description');
+        if (descConf) descConf.default = newDescription;
+
+        const pubConf = configStore.find(c => c.name === 'publisher');
+        if (pubConf) pubConf.default = newPublisher;
+
+        // Temporarily set the isRestoring flag to prevent state preservation during the render
+        isRestoring = true;
+        renderForm();
+        isRestoring = false;
+
+        drawFrame();
+        updateUndoRedoButtons();
+
+        // Record this new, blank state as the first appHistory entry
+        recordHistory();
+
+        // Clear any saved project ID from the session
+        currentProjectDocId = null;
+        updateShareButtonState();
+
+        loadedStateSnapshot = null;
+        dirtyProperties.clear();
+        baselineStateForURL = getControlValues();
+
+        showToast("New workspace created.", "info");
+    }
+
+    /**
+     * Updates the enabled/disabled state of the share button.
+     */
+    function updateShareButtonState() {
+        shareBtn.disabled = !currentProjectDocId;
+    }
+
+    /**
+     * Populates the gallery panel with projects. Can append or replace content.
+     * @param {Array} projects - The array of project objects to display.
+     * @param {boolean} [append=false] - If true, adds projects to the end of the list.
+     */
+    function populateGallery(projects) {
+        const galleryList = document.getElementById('gallery-project-list');
+        const currentUser = window.auth.currentUser;
+        galleryList.innerHTML = '';
+
+        if (projects.length === 0) {
+            galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
+            return;
+        }
+
+        projects.forEach(project => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.id = `gallery-item-${project.docId}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'd-flex align-items-center flex-grow-1 me-2';
+
+            if (project.thumbnail) {
+                const img = document.createElement('img');
+                img.src = project.thumbnail;
+                img.style.width = '120px';
+                img.style.height = '75px';
+                img.style.objectFit = 'cover';
+                img.className = 'rounded border me-3';
+                contentDiv.appendChild(img);
+            }
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = project.thumbnail ? 'ms-3' : '';
+            infoDiv.style.minWidth = '0';
+
+            const nameEl = document.createElement('strong');
+            nameEl.textContent = project.name;
+
+            const metaEl = document.createElement('small');
+            metaEl.className = 'd-block text-body-secondary';
+            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown Date';
+            metaEl.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
+
+            infoDiv.appendChild(nameEl);
+            infoDiv.appendChild(metaEl);
+
+            if (project.configs) {
+                const descriptionConf = project.configs.find(c => c.name === 'description');
+                if (descriptionConf && descriptionConf.default) {
+                    const descEl = document.createElement('p');
+                    descEl.className = 'mb-0 mt-1 small text-body-secondary';
+                    descEl.textContent = descriptionConf.default;
+                    descEl.title = descriptionConf.default;
+                    infoDiv.appendChild(descEl);
+                }
+            }
+
+            const statsEl = document.createElement('div');
+            statsEl.className = 'mt-1 small text-body-secondary';
+
+            const viewCount = project.viewCount || 0;
+            const downloadCount = project.downloadCount || 0;
+
+            statsEl.innerHTML = `
+                <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
+                <span title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
+            `;
+
+            infoDiv.appendChild(statsEl);
+            contentDiv.appendChild(infoDiv);
+            li.appendChild(contentDiv);
+
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'd-flex flex-column gap-1';
+
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'btn btn-sm btn-outline-primary';
+            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down"></i>';
+            loadBtn.title = "Load Effect";
+            loadBtn.onclick = () => {
+                const viewCountContainer = li.querySelector('span[title="Views"]');
+                if (viewCountContainer) {
+                    // The textContent of the span is just the number
+                    const currentCount = parseInt(viewCountContainer.textContent.trim()) || 0;
+                    viewCountContainer.innerHTML = `<i class="bi bi-eye-fill me-1"></i>${currentCount + 1}`;
+                }
+
+                loadWorkspace(project);
+                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+                galleryOffcanvas.hide();
+                showToast(`Effect "${project.name}" loaded!`, 'success');
+            };
+            controlsDiv.appendChild(loadBtn);
+
+            if (currentUser && currentUser.uid === project.userId) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-outline-danger';
+                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                deleteBtn.title = "Delete Effect";
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showConfirmModal(
+                        'Delete Project',
+                        `Are you sure you want to delete your project "${project.name}"? This cannot be undone.`,
+                        'Delete',
+                        async () => {
+                            try {
+                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
+                                showToast(`Project "${project.name}" deleted.`, 'info');
+                                li.remove();
+                                if (galleryList.children.length === 0) {
+                                    galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
+                                }
+                            } catch (error) {
+                                showToast("Error deleting project.", 'danger');
+                            }
+                        }
+                    );
+                };
+                controlsDiv.appendChild(deleteBtn);
+            }
+
+            if (currentUser && currentUser.uid === ADMIN_UID) {
+                const featureBtn = document.createElement('button');
+                const isFeatured = project.featured === true;
+
+                featureBtn.className = `btn btn-sm btn-feature ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
+                featureBtn.title = isFeatured ? 'Unfeature this effect' : 'Feature this effect';
+                featureBtn.dataset.docId = project.docId;
+
+                featureBtn.onclick = function () {
+                    toggleFeaturedStatus(this, project.docId);
+                };
+
+                controlsDiv.appendChild(featureBtn);
+            }
+
+            li.appendChild(controlsDiv);
+            galleryList.appendChild(li);
+        });
+    }
+
+    // --- START: Theme Switcher Logic ---
+
+    /**
+     * Gets the saved theme from localStorage.
+     * @returns {string|null} The saved theme ('light', 'dark', 'auto') or null.
+     */
+    const getStoredTheme = () => localStorage.getItem('theme');
+    /**
+     * Saves the selected theme to localStorage.
+     * @param {string} theme - The theme to save.
+     */
+    const setStoredTheme = theme => localStorage.setItem('theme', theme);
+
+    /**
+     * Determines the preferred theme based on storage or system preference.
+     * @returns {string} The preferred theme.
+     */
+    const getPreferredTheme = () => {
+        const storedTheme = getStoredTheme();
+        if (storedTheme) {
+            return storedTheme;
+        }
+        return 'dark'; // Default to dark theme
+    };
+
+    /**
+     * Applies the specified theme to the document.
+     * @param {string} theme - The theme to apply ('light', 'dark', 'auto').
+     */
+    const setTheme = theme => {
+        if (theme === 'auto') {
+            document.documentElement.setAttribute('data-bs-theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+        } else {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        }
+    };
+
+    /**
+     * Updates the theme switcher UI to reflect the active theme.
+     * @param {string} theme - The currently active theme.
+     */
+    const updateThemeSwitcherUI = (theme) => {
+        const themeIcon = document.getElementById('theme-icon');
+        const themeButtons = document.querySelectorAll('[data-bs-theme-value]');
+
+        if (theme === 'auto') {
+            themeIcon.className = 'bi bi-circle-half';
+        } else if (theme === 'dark') {
+            themeIcon.className = 'bi bi-moon-stars-fill';
+        } else {
+            themeIcon.className = 'bi bi-sun-fill';
+        }
+
+        themeButtons.forEach(button => {
+            const checkmark = button.querySelector('.bi-check2');
+            if (button.getAttribute('data-bs-theme-value') === theme) {
+                button.classList.add('active');
+                checkmark.classList.remove('d-none');
+            } else {
+                button.classList.remove('active');
+                checkmark.classList.add('d-none');
+            }
+        });
+    };
+
+    const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
+    if (themeSwitcherBtn) {
+        themeSwitcherBtn.addEventListener('click', () => {
+            const themes = ['light', 'dark', 'auto'];
+            const currentTheme = getStoredTheme() || getPreferredTheme();
+            const currentIndex = themes.indexOf(currentTheme);
+            const nextIndex = (currentIndex + 1) % themes.length;
+            const newTheme = themes[nextIndex];
+
+            setStoredTheme(newTheme);
+            setTheme(newTheme);
+            updateThemeSwitcherUI(newTheme);
+        });
+    }
+
+    /**
+     * Fetches the next batch of projects for lazy loading.
+     */
+    async function loadMoreProjects() {
+        if (isLoadingMore || !lastVisibleDoc) return;
+        isLoadingMore = true;
+
+        const loadingIndicator = document.createElement('li');
+        loadingIndicator.className = 'list-group-item text-center loading-indicator';
+        loadingIndicator.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+        galleryList.appendChild(loadingIndicator);
+
+        const nextQuery = window.query(currentGalleryQuery, window.startAfter(lastVisibleDoc), window.limit(10));
+
+        try {
+            const querySnapshot = await window.getDocs(nextQuery);
+            const newProjects = [];
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                newProjects.push({ docId: doc.id, ...data });
+            });
+
+            lastVisibleDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+            populateGallery(newProjects, true);
+        } catch (error) {
+            console.error("Error loading more projects:", error);
+            showToast("Could not load more effects.", 'danger');
+        } finally {
+            isLoadingMore = false;
+        }
+    }
+
+    /**
+     * Initializes and shows the gallery with a specific query.
+     * @param {string} title - The title for the offcanvas panel.
+     * @param {Query} baseQuery - The initial Firestore query.
+     */
+    async function startGallery(title, baseQuery) {
+        document.getElementById('galleryOffcanvasLabel').textContent = title;
+        galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
+        isLoadingMore = true;
+        currentGalleryQuery = baseQuery;
+
+        const firstQuery = window.query(baseQuery, window.limit(10));
+
+        try {
+            const querySnapshot = await window.getDocs(firstQuery);
+            const projects = [];
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                projects.push({ docId: doc.id, ...data });
+            });
+
+            lastVisibleDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+            populateGallery(projects);
+        } catch (error) {
+            console.error("Error loading initial projects:", error);
+            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects.</li>';
+        } finally {
+            isLoadingMore = false;
+        }
+    }
+
+    // Initialize theme on page load
+    const initialTheme = getPreferredTheme();
+    setTheme(initialTheme);
+    updateThemeSwitcherUI(initialTheme);
+
+    // Listen for changes in system theme preference
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (getPreferredTheme() === 'auto') {
+            setTheme('auto');
+        }
+    });
+
+    // Add click listeners to theme switcher buttons
+    // document.querySelectorAll('[data-bs-theme-value]').forEach(button => {
+    //     button.addEventListener('click', () => {
+    //         const theme = button.getAttribute('data-bs-theme-value');
+    //         setStoredTheme(theme);
+    //         setTheme(theme);
+    //         updateThemeSwitcherUI(theme);
+    //     });
+    // });
+
+    // --- END: Theme Switcher Logic ---
+
+    /**
+     * Displays a notification message.
+     * @param {string} message - The message to display.
+     */
+    function showNotification(message) {
+        // This now uses the new toast system
+        showToast(message, 'success');
+    }
+
+    /**
+     * Parses a <meta> element into a configuration object.
+     * Handles both standard property-based and custom named formats.
+     * @param {HTMLMetaElement} metaElement - The meta element to parse.
+     * @returns {object} A configuration object.
+     */
+    function parseMetaToConfig(metaElement) {
+        const config = {};
+        // First, check if it's a standard property-based tag (like enablePalette).
+        if (metaElement.hasAttribute('property')) {
+            for (const attr of metaElement.attributes) {
+                config[attr.name] = attr.value;
+            }
+        }
+        // If not, then check for the special standalone tags.
+        else if (metaElement.hasAttribute('title')) {
+            config.name = 'title';
+            config.default = metaElement.getAttribute('title');
+            config.type = 'text';
+            config.label = 'Effect Title';
+        } else if (metaElement.hasAttribute('description')) {
+            config.name = 'description';
+            config.default = metaElement.getAttribute('description');
+            config.type = 'text';
+            config.label = 'Description';
+        } else if (metaElement.hasAttribute('publisher')) {
+            config.name = 'publisher';
+            config.default = metaElement.getAttribute('publisher');
+            config.type = 'text';
+            config.label = 'Developer Name';
+        }
+        return config;
+    }
+
+    /**
+     * Groups a flat array of configuration objects into general settings and object-specific settings.
+     * @param {object[]} flatConfig - The flat array of config objects.
+     * @returns {{general: object[], objects: Object.<string, object[]>}} The grouped configuration.
+     */
+    function groupConfigs(flatConfig) {
+        const grouped = { general: [], objects: {} };
+        flatConfig.forEach(config => {
+            const key = config.property || config.name;
+            if (key && key.startsWith('obj')) {
+                const match = key.match(/^obj(\d+)_/);
+                if (match) {
+                    const id = match[1];
+                    if (!grouped.objects[id]) grouped.objects[id] = [];
+                    grouped.objects[id].push(config);
+                }
+            } else {
+                grouped.general.push(config);
+            }
+        });
+        return grouped;
+    }
+
+    /**
+     * Creates an HTML form control element based on a configuration object.
+     * @param {object} config - The configuration for the control.
+     * @returns {HTMLDivElement} The generated form group element.
+     */
+    /**
+     * Creates an HTML form control element based on a configuration object.
+     * @param {object} config - The configuration for the control.
+     * @returns {HTMLDivElement} The generated form group element.
+     */
+    function createFormControl(config) {
+        const {
+            property, name, label, type, default: defaultValue,
+            values, min, max, description
+        } = config;
+        const controlId = property || name;
+        const formGroup = document.createElement('div');
+        formGroup.className = 'mb-3';
+        const labelEl = document.createElement('label');
+        labelEl.htmlFor = controlId;
+        labelEl.className = 'form-label';
+        if (label) {
+            const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
+            labelEl.textContent = cleanLabel;
+            if (description) {
+                labelEl.title = description;
+            } else {
+                labelEl.title = `Controls the ${cleanLabel.toLowerCase()}`;
+            }
+        }
+        labelEl.dataset.bsToggle = 'tooltip';
+        formGroup.appendChild(labelEl);
+        if (type === 'number') {
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'd-flex align-items-center';
+            const input = document.createElement('input');
+            input.id = controlId;
+            input.className = 'form-control';
+            input.style.width = '100px';
+            input.name = controlId;
+            input.type = 'number';
+            input.value = defaultValue;
+            if (min) input.min = min;
+            if (max) input.max = max;
+            input.step = config.step || '1'; // This line was updated
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.className = 'form-range flex-grow-1 ms-2';
+            slider.id = `${controlId}_slider`;
+            slider.name = `${controlId}_slider`;
+            if (min) slider.min = min;
+            if (max) slider.max = max;
+            slider.step = config.step || '1'; // This line was added
+            slider.value = defaultValue;
+            inputGroup.appendChild(input);
+            inputGroup.appendChild(slider);
+            formGroup.appendChild(inputGroup);
+        } else if (type === 'text') {
+            const input = document.createElement('input');
+            input.id = controlId;
+            input.className = 'form-control';
+            input.name = controlId;
+            input.type = 'text';
+            input.value = defaultValue;
+            formGroup.appendChild(input);
+        } else if (type === 'combobox') {
+            const vals = values.split(',');
+            vals.sort(); // Sort the options alphabetically
+            const select = document.createElement('select');
+            select.id = controlId;
+            select.className = 'form-select';
+            select.name = controlId;
+            vals.forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace('-', ' ');
+                if (val === defaultValue) option.selected = true;
+                select.appendChild(option);
+            });
+            formGroup.appendChild(select);
+        } else if (type === 'boolean') {
+            const checkGroup = document.createElement('div');
+            checkGroup.className = 'form-check form-switch';
+            const check = document.createElement('input');
+            check.id = controlId;
+            check.type = 'checkbox';
+            check.className = 'form-check-input';
+            check.name = controlId;
+            check.checked = (defaultValue === 'true');
+            const checkLabel = document.createElement('label');
+            checkLabel.className = 'form-check-label';
+            checkLabel.htmlFor = controlId;
+            if (label) {
+                const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
+                checkLabel.textContent = cleanLabel;
+            }
+            checkGroup.appendChild(check);
+            checkGroup.appendChild(checkLabel);
+            formGroup.appendChild(checkGroup);
+        } else if (type === 'textarea' || type === 'textfield') {
+            const textarea = document.createElement('textarea');
+            textarea.id = controlId;
+            textarea.className = 'form-control';
+            textarea.name = controlId;
+            textarea.rows = (type === 'textarea') ? 10 : 3; // Give more rows for pixel art data
+            textarea.textContent = defaultValue.replace(/\\n/g, '\n');
+            formGroup.appendChild(textarea);
+            if (controlId.endsWith('_pixelArtData')) {
+                const toolLink = document.createElement('a');
+                toolLink.href = 'https://pixelart.nolliergb.com/';
+                toolLink.target = '_blank';
+                toolLink.rel = 'noopener noreferrer';
+                toolLink.className = 'form-text d-block mt-2';
+                toolLink.innerHTML = 'Open Pixel Art Data Generator <i class="bi bi-box-arrow-up-right"></i>';
+                formGroup.appendChild(toolLink);
+            } else if (controlId.endsWith('_spawn_svg_path')) {
+                const toolLink = document.createElement('a');
+                toolLink.href = 'https://yqnn.github.io/svg-path-editor/';
+                toolLink.target = '_blank';
+                toolLink.rel = 'noopener noreferrer';
+                toolLink.className = 'form-text d-block mt-2';
+                toolLink.innerHTML = 'Open SVG Path Editor <i class="bi bi-box-arrow-up-right"></i>';
+                formGroup.appendChild(toolLink);
+            }
+        } else if (type === 'color') {
+            const colorGroup = document.createElement('div');
+            colorGroup.className = 'd-flex align-items-center';
+            const input = document.createElement('input');
+            input.id = controlId;
+            input.className = 'form-control form-control-color';
+            input.name = controlId;
+            input.type = 'color';
+            input.value = defaultValue;
+            const hexInput = document.createElement('input');
+            hexInput.type = 'text';
+            hexInput.className = 'form-control ms-2';
+            hexInput.style.width = '100px';
+            hexInput.value = defaultValue;
+            hexInput.id = `${controlId}_hex`;
+            hexInput.name = `${controlId}_hex`;
+            colorGroup.appendChild(input);
+            colorGroup.appendChild(hexInput);
+            formGroup.appendChild(colorGroup);
+        } else if (type === 'sensor') {
+            const select = document.createElement('select');
+            select.id = controlId;
+            select.className = 'form-select';
+            select.name = controlId;
+            const cpuSensors = [
+                'CPU Load', 'Memory Load', 'CPU Temperature', 'CPU Package Temp',
+                ...Array.from({ length: 32 }, (_, i) => `CPU Core #${i + 1}`)
+            ];
+            const gpuSensors = [
+                'GPU Core Voltage', 'GPU Hot Spot Temperature', 'GPU Memory Junction Temp',
+                'GPU Core Temperature', 'GPU Memory Clock', 'GPU Core Clock',
+                'GPU Load', 'GPU VRAM Usage'
+            ];
+            const fanSensors = [
+                ...Array.from({ length: 4 }, (_, i) => `Fan Speed #${i + 1}`),
+                ...Array.from({ length: 7 }, (_, i) => `Fan Load #${i + 1}`)
+            ];
+            const sensorValues = [...cpuSensors, ...gpuSensors, ...fanSensors];
+            sensorValues.forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                if (val === defaultValue) option.selected = true;
+                select.appendChild(option);
+            });
+            formGroup.appendChild(select);
+        } else if (type === 'nodetable') {
+            const container = document.createElement('div');
+            container.className = 'node-table-container';
+
+            // This hidden textarea will still hold the raw JSON data for the application to use.
+            // The table is just a user-friendly way to edit it.
+            const hiddenTextarea = document.createElement('textarea');
+            hiddenTextarea.id = controlId;
+            hiddenTextarea.name = controlId;
+            hiddenTextarea.style.display = 'none';
+            hiddenTextarea.textContent = defaultValue;
+
+            const table = document.createElement('table');
+            table.className = 'table table-dark table-sm node-table';
+            table.innerHTML = `
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">X</th>
+                <th scope="col">Y</th>
+                <th scope="col" style="width: 80px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>`;
+
+            const tbody = table.querySelector('tbody');
+            let nodes = [];
+            try {
+                nodes = JSON.parse(defaultValue);
+            } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
+
+            nodes.forEach((node, index) => {
+                const tr = document.createElement('tr');
+                tr.dataset.index = index;
+                tr.innerHTML = `
+            <td class="align-middle">${index + 1}</td>
+            <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
+            <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
+            <td class="align-middle">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
+            </td>`;
+                tbody.appendChild(tr);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-node';
+            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Node';
+
+            container.appendChild(hiddenTextarea);
+            container.appendChild(table);
+            container.appendChild(addButton);
+            formGroup.appendChild(container);
+            // --- START: NEW PIXEL ART TABLE LOGIC ---
+        } else if (type === 'pixelarttable') {
+            const container = document.createElement('div');
+            container.className = 'pixel-art-table-container';
+
+            const hiddenTextarea = document.createElement('textarea');
+            hiddenTextarea.id = controlId;
+            hiddenTextarea.name = controlId;
+            hiddenTextarea.style.display = 'none';
+            hiddenTextarea.textContent = defaultValue;
+
+            const framesContainer = document.createElement('div');
+            framesContainer.className = 'd-flex flex-column gap-2'; // Use flexbox for spacing
+
+            let frames = [];
+            try {
+                frames = JSON.parse(defaultValue);
+            } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
+
+            frames.forEach((frame, index) => {
+                const frameItem = document.createElement('div');
+                frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
+                frameItem.dataset.index = index;
+
+                frameItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="frame-item-header">Frame #${index + 1}</strong>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
+                    </div>
+                    <div>
+                        <label class="form-label-sm">Frame Data</label>
+                        <textarea class="form-control form-control-sm frame-data-input" rows="6">${frame.data || '[[0]]'}</textarea>
+                    </div>
+                    <div class="mt-2">
+                         <label class="form-label-sm">Duration (seconds)</label>
+                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
+                    </div>
+                `;
+                framesContainer.appendChild(frameItem);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-frame';
+            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
+
+            container.appendChild(hiddenTextarea);
+            container.appendChild(framesContainer);
+            container.appendChild(addButton);
+            formGroup.appendChild(container);
+            // --- END: REVISED PIXEL ART TABLE LOGIC ---
+        }
+        return formGroup;
+    }
+
+    /**
+     * Generates the meta tags and JavaScript variables for the final exported HTML file.
+     * This is where the "Minimize Properties" logic is applied.
+     */
+    function generateOutputScript() {
+        let scriptHTML = '';
+        let jsVars = '';
+        let allKeys = [];
+        const objectMetaPropMap = {};
+
+        const minimize = document.getElementById('minimize-props-export')?.checked || false;
+        const generalValues = getControlValues();
+
+        configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
+            const key = conf.property || conf.name;
+            if (generalValues[key] !== undefined) {
+                allKeys.push(key);
+                let exportValue = generalValues[key];
+                if (conf.name && !conf.property) {
+                    scriptHTML += `<meta ${key}="${exportValue}" />\n`;
+                } else {
+                    let finalExportValue = exportValue;
+                    if (typeof finalExportValue === 'string') {
+                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
+                    }
+                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
+                    if (conf.values) {
+                        const sortedValues = conf.values.split(',').sort().join(',');
+                        attrs.push(`values="${sortedValues}"`);
+                    }
+                    if (conf.min) attrs.push(`min="${conf.min}"`);
+                    if (conf.max) attrs.push(`max="${conf.max}"`);
+                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
+                }
+            }
+        });
+
+        objects.forEach(obj => {
+            const name = obj.name || `Object ${obj.id}`;
+            objectMetaPropMap[obj.id] = [];
+            const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
+            const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
+
+            objectConfigs.forEach(conf => {
+                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                let liveValue = obj[propName];
+
+                if (propName.startsWith('gradColor')) {
+                    liveValue = obj.gradient[propName.replace('gradColor', 'color')];
+                } else if (propName.startsWith('strokeGradColor')) {
+                    liveValue = obj.strokeGradient[propName.replace('strokeGradColor', 'color')];
+                } else if (propName === 'scrollDir') {
+                    liveValue = obj.scrollDirection;
+                } else if (propName === 'strokeScrollDir') {
+                    liveValue = obj.strokeScrollDir;
+                }
+
+                if (liveValue === undefined) {
+                    liveValue = conf.default;
+                    if (conf.type === 'boolean') liveValue = (liveValue === 'true');
+                }
+
+                allKeys.push(conf.property);
+                let exportValue = liveValue;
+                let exportType = conf.type;
+
+                // FIX: Force the type to be 'textfield' for SignalRGB compatibility.
+                if (propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
+                    exportType = 'textfield';
+                }
+
+                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+                if (conf.type === 'number' && typeof liveValue === 'number') {
+                    exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
+                } else if (typeof liveValue === 'boolean') {
+                    exportValue = String(liveValue);
+                }
+
+                const isApplicable = validPropsForShape.includes(propName);
+                const objectSpecificProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
+                let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
+
+                if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
+                    writeAsMeta = false; // Always export complex data as a hard-coded variable
+                }
+
+                if (writeAsMeta) {
+                    objectMetaPropMap[obj.id].push(propName);
+                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
+                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${exportType}"`];
+                    if (conf.values) {
+                        const sortedValues = conf.values.split(',').sort().join(',');
+                        attrs.push(`values="${sortedValues}"`);
+                    }
+                    if (conf.min) attrs.push(`min="${conf.min}"`);
+                    if (conf.max) attrs.push(`max="${conf.max}"`);
+                    let finalExportValue = exportValue;
+
+                    if (typeof finalExportValue === 'object' && finalExportValue !== null) {
+                        finalExportValue = JSON.stringify(finalExportValue);
+                    }
+
+                    if (typeof finalExportValue === 'string') {
+                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
+                    }
+                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
+                } else {
+                    if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
+                        // Manually scale down the node coordinates for export.
+                        const scaledNodes = exportValue.map(node => ({
+                            x: Math.round(node.x / 4),
+                            y: Math.round(node.y / 4)
+                        }));
+                        jsVars += `const ${conf.property} = ${JSON.stringify(scaledNodes)};\n`;
+                    } else {
+                        jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
+                    }
+                }
+            });
+        });
+
+        return { metaTags: scriptHTML.trim(), jsVars: jsVars.trim(), allKeys: allKeys, objectMetaPropMap };
+    }
+
+    function createObjectPanel(obj, objectConfigs, activeCollapseStates, activeTabStates) {
+        const id = obj.id;
+        const objectName = obj.name || `Object ${id}`;
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'border p-2 mb-3 rounded bg-body-tertiary';
+        fieldset.dataset.objectId = id;
+        const headerBar = document.createElement('div');
+        headerBar.className = 'd-flex justify-content-between align-items-center w-100 px-2 py-1';
+        const collapseId = `collapse-obj-${id}`;
+        const showObject = activeCollapseStates[id] === true || selectedObjectIds.includes(id);
+        headerBar.style.cursor = 'pointer';
+        headerBar.dataset.bsToggle = 'collapse';
+        headerBar.dataset.bsTarget = `#${collapseId}`;
+        headerBar.setAttribute('aria-expanded', showObject);
+        headerBar.setAttribute('aria-controls', collapseId);
+        const stopPropagation = (e) => e.stopPropagation();
+        const leftGroup = document.createElement('div');
+        leftGroup.className = 'd-flex align-items-center';
+        leftGroup.addEventListener('click', stopPropagation);
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'drag-handle me-2 text-body-secondary';
+        dragHandle.style.cursor = 'grab';
+        dragHandle.innerHTML = '<i class="bi bi-grip-vertical"></i>';
+        leftGroup.appendChild(dragHandle);
+        const editableArea = document.createElement('div');
+        editableArea.className = 'editable-name-area d-flex align-items-center';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'object-name fs-5 fw-semibold';
+        nameSpan.style.minWidth = '0';
+        nameSpan.contentEditable = true;
+        nameSpan.dataset.id = id;
+        nameSpan.textContent = objectName;
+        editableArea.appendChild(nameSpan);
+        const pencilIcon = document.createElement('i');
+        pencilIcon.className = 'bi bi-pencil-fill ms-2';
+        pencilIcon.addEventListener('click', (e) => {
+            nameSpan.focus();
+            const range = document.createRange();
+            const selection = window.getSelection();
+            range.selectNodeContents(nameSpan);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        });
+        editableArea.appendChild(pencilIcon);
+        leftGroup.appendChild(editableArea);
+        headerBar.appendChild(leftGroup);
+        const controlsGroup = document.createElement('div');
+        controlsGroup.className = 'd-flex align-items-center flex-shrink-0';
+        controlsGroup.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const lockBtn = e.target.closest('.btn-lock');
+            const deleteBtn = e.target.closest('.btn-delete');
+            const duplicateBtn = e.target.closest('.btn-duplicate');
+            if (lockBtn) {
+                const id = parseInt(lockBtn.dataset.id, 10);
+                const obj = objects.find(o => o.id === id);
+                if (obj) {
+                    obj.locked = !obj.locked;
+                    const icon = lockBtn.querySelector('i');
+                    lockBtn.classList.toggle('btn-warning', obj.locked);
+                    lockBtn.classList.toggle('btn-outline-secondary', !obj.locked);
+                    icon.className = `bi ${obj.locked ? 'bi-lock-fill' : 'bi-unlock-fill'}`;
+                    const tooltip = bootstrap.Tooltip.getInstance(lockBtn);
+                    if (tooltip) {
+                        tooltip.setContent({ '.tooltip-inner': obj.locked ? 'Unlock Object' : 'Lock Object' });
+                    }
+                    drawFrame();
+                }
+            }
+            if (deleteBtn) {
+                e.preventDefault();
+                const idToDelete = parseInt(deleteBtn.dataset.id, 10);
+                deleteObjects([idToDelete]);
+            }
+            if (duplicateBtn) {
+                e.preventDefault();
+                const idToCopy = parseInt(duplicateBtn.dataset.id, 10);
+                const objectToCopy = objects.find(o => o.id === idToCopy);
+                if (!objectToCopy) return;
+                const newState = JSON.parse(JSON.stringify(objectToCopy, (key, value) => {
+                    if (key === 'ctx') return undefined;
+                    return value;
+                }));
+                const newId = (objects.reduce((maxId, o) => Math.max(maxId, o.id), 0)) + 1;
+                newState.id = newId;
+                newState.name = `${objectToCopy.name} Copy`;
+                newState.x += 20;
+                newState.y += 20;
+                const newShape = new Shape({ ...newState, ctx, canvasWidth: canvas.width });
+                objects.push(newShape);
+                const oldConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${idToCopy}_`));
+                const newConfigs = oldConfigs.map(oldConf => {
+                    const newConf = { ...oldConf };
+                    const propName = oldConf.property.substring(oldConf.property.indexOf('_') + 1);
+                    newConf.property = `obj${newId}_${propName}`;
+                    newConf.label = `${newState.name}:${oldConf.label.split(':')[1]}`;
+                    let liveValue = newShape[propName];
+                    if (propName.startsWith('gradColor')) {
+                        liveValue = newShape.gradient[propName.replace('gradColor', 'color')];
+                    } else if (propName === 'scrollDir') {
+                        liveValue = newShape.scrollDirection;
+                    }
+                    const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize'];
+                    if (propsToScale.includes(propName)) {
+                        liveValue /= 4;
+                    } else if (propName === 'animationSpeed') {
+                        liveValue *= 10;
+                    } else if (propName === 'cycleSpeed') {
+                        liveValue *= 50;
+                    }
+                    newConf.default = liveValue;
+                    return newConf;
+                });
+                configStore.push(...newConfigs);
+                selectedObjectIds = [newId];
+                renderForm();
+                syncPanelsWithSelection();
+                drawFrame();
+                recordHistory();
+            }
+        });
+        const lockButton = document.createElement('button');
+        const isLocked = obj.locked || false;
+        lockButton.className = `btn btn-sm btn-lock ${isLocked ? 'btn-warning' : 'btn-outline-secondary'} d-flex align-items-center justify-content-center px-2 ms-2`;
+        lockButton.style.height = '28px';
+        lockButton.style.width = '28px';
+        lockButton.type = 'button';
+        lockButton.dataset.id = id;
+        lockButton.dataset.bsToggle = 'tooltip';
+        lockButton.title = isLocked ? 'Unlock Object' : 'Lock Object';
+        lockButton.innerHTML = `<i class="bi ${isLocked ? 'bi-lock-fill' : 'bi-unlock-fill'}"></i>`;
+        controlsGroup.appendChild(lockButton);
+        const dropdown = document.createElement('div');
+        dropdown.className = 'dropdown';
+        dropdown.innerHTML = `<button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>Duplicate</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul>`;
+        controlsGroup.appendChild(dropdown);
+        const collapseIcon = document.createElement('span');
+        collapseIcon.className = `legend-button ${showObject ? '' : 'collapsed'} ms-2`;
+        collapseIcon.innerHTML = `<i class="bi bi-chevron-up"></i>`;
+        controlsGroup.appendChild(collapseIcon);
+        headerBar.appendChild(controlsGroup);
+        const collapseWrapper = document.createElement('div');
+        collapseWrapper.id = collapseId;
+        collapseWrapper.className = `collapse p-3 ${showObject ? 'show' : ''}`;
+        collapseWrapper.appendChild(document.createElement('hr'));
+
+        // --- 4. TABBED INTERFACE CREATION ---
+        const tabNav = document.createElement('ul');
+        tabNav.className = 'nav nav-tabs';
+        tabNav.id = `object-tabs-${id}`;
+        tabNav.setAttribute('role', 'tablist');
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
+        tabContent.id = `object-tab-content-${id}`;
+
+        // Update this for a new property
+        //Tabs
+        const controlGroupMap = {
+            'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
+            'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
+            'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
+            'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
+            'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
+            'Fill-Animation': { props: ['gradType', 'gradColor1', 'gradColor2', 'cycleColors', 'useSharpGradient', 'gradientStop', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
+            'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
+            'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
+            'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
+            'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
+            'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
+            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'], icon: 'bi-bar-chart-line-fill' },
+            'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
+            'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
+            'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
+            'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
+            'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
+        };
+        const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
+        let isFirstTab = true;
+        let firstTabId = null;
+        for (const groupName in controlGroupMap) {
+            const groupProps = controlGroupMap[groupName].props;
+            const relevantProps = objectConfigs.filter(conf => {
+                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                if (propName === 'shape' && groupName === 'Geometry') {
+                    return true;
+                }
+                return groupProps.includes(propName) && validPropsForShape.includes(propName);
+            });
+            if (relevantProps.length > 0) {
+                const safeGroupName = groupName.replace(/[\s&]/g, '-');
+                const tabId = `tab-${id}-${safeGroupName}`;
+                if (isFirstTab) {
+                    firstTabId = tabId;
+                }
+                const paneId = `pane-${id}-${safeGroupName}`;
+                const tabItem = document.createElement('li');
+                tabItem.className = 'nav-item';
+                tabItem.setAttribute('role', 'presentation');
+                const tabButton = document.createElement('button');
+                tabButton.className = `nav-link`;
+                tabButton.id = tabId;
+                tabButton.dataset.bsToggle = 'tab';
+                tabButton.dataset.bsTarget = `#${paneId}`;
+                tabButton.type = 'button';
+                tabButton.setAttribute('role', 'tab');
+                tabButton.setAttribute('aria-controls', paneId);
+                const icon = document.createElement('i');
+                icon.className = `bi ${controlGroupMap[groupName].icon} me-2`;
+                tabButton.appendChild(icon);
+                tabButton.appendChild(document.createTextNode(groupName.replace(/-/g, ' & ')));
+                tabItem.appendChild(tabButton);
+                tabNav.appendChild(tabItem);
+                const pane = document.createElement('div');
+                pane.className = `tab-pane fade`;
+                pane.id = paneId;
+                pane.setAttribute('role', 'tabpanel');
+                pane.setAttribute('aria-labelledby', tabId);
+                const groupCard = document.createElement('div');
+                groupCard.className = 'card card-body bg-body mb-3';
+                const groupHeader = document.createElement('h6');
+                groupHeader.className = 'text-body-secondary border-bottom pb-1 mb-3';
+                groupHeader.textContent = groupName.replace(/-/g, ' & ');
+                groupCard.appendChild(groupHeader);
+                relevantProps.forEach(conf => {
+                    groupCard.appendChild(createFormControl(conf));
+                });
+                pane.appendChild(groupCard);
+                tabContent.appendChild(pane);
+                isFirstTab = false;
+            }
+        }
+        collapseWrapper.appendChild(tabNav);
+        collapseWrapper.appendChild(tabContent);
+        fieldset.appendChild(headerBar);
+        fieldset.appendChild(collapseWrapper);
+        form.appendChild(fieldset);
+
+        const savedTabId = activeTabStates[id] || firstTabId;
+        if (savedTabId) {
+            const tabToActivate = document.getElementById(savedTabId);
+            if (tabToActivate) {
+                const paneId = tabToActivate.dataset.bsTarget;
+                const paneToActivate = document.querySelector(paneId);
+                tabToActivate.classList.add('active');
+                tabToActivate.setAttribute('aria-selected', 'true');
+                if (paneToActivate) {
+                    paneToActivate.classList.add('show', 'active');
+                }
+            } else {
+                const firstTabButton = fieldset.querySelector('.nav-tabs .nav-link');
+                if (firstTabButton) {
+                    const paneId = firstTabButton.dataset.bsTarget;
+                    const paneToActivate = document.querySelector(paneId);
+
+                    if (paneToActivate) {
+                        firstTabButton.classList.add('active');
+                        firstTabButton.setAttribute('aria-selected', 'true');
+                        paneToActivate.classList.add('show', 'active');
+                    }
+                }
+            }
+        }
+
+        return fieldset;
+    }
+
+    /**
+     * Renders the entire controls form based on the current `configStore` and `objects` state.
+     * This function is responsible for dynamically building all the UI in the left panel.
+     */
+    function renderForm() {
+        // --- 1. PREPARATION & STATE PRESERVATION ---
+        const existingTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        existingTooltips.forEach(el => {
+            const tooltip = bootstrap.Tooltip.getInstance(el);
+            if (tooltip) tooltip.dispose();
+        });
+
+        const generalSettingsValues = {};
+        const generalConfigs = configStore.filter(c => !(c.property || c.name).startsWith('obj'));
+        generalConfigs.forEach(conf => {
+            const key = conf.property || conf.name;
+            const el = form.elements[key];
+            if (el) {
+                generalSettingsValues[key] = (el.type === 'checkbox') ? el.checked : el.value;
+            }
+        });
+
+        const generalCollapseEl = form.querySelector('#collapse-general');
+        const generalCollapseState = generalCollapseEl ? generalCollapseEl.classList.contains('show') : true;
+
+        const activeCollapseStates = {};
+        const activeTabStates = {};
+        const allObjectFieldsets = form.querySelectorAll('fieldset[data-object-id]');
+
+        allObjectFieldsets.forEach(fieldset => {
+            const id = parseInt(fieldset.dataset.objectId, 10);
+            const nameSpan = fieldset.querySelector('.object-name');
+            const obj = objects.find(o => o.id === id);
+            if (obj && nameSpan) {
+                obj.name = nameSpan.textContent;
+            }
+
+            const collapseEl = fieldset.querySelector('.collapse');
+            if (collapseEl) {
+                activeCollapseStates[id] = collapseEl.classList.contains('show');
+            }
+            const activeTabButton = fieldset.querySelector('.nav-tabs .nav-link.active');
+            if (activeTabButton) {
+                activeTabStates[id] = activeTabButton.id;
+            }
+        });
+
+        form.innerHTML = '';
+        const grouped = groupConfigs(configStore);
+
+        // --- 2. GENERAL SETTINGS PANEL CREATION ---
+        const generalFieldset = document.createElement('fieldset');
+        generalFieldset.className = 'border p-2 mb-3 rounded bg-body-tertiary';
+        const generalHeaderBar = document.createElement('div');
+        generalHeaderBar.className = 'd-flex justify-content-between align-items-center w-100 px-2 py-1';
+        const generalCollapseId = 'collapse-general';
+        const showGeneral = generalCollapseState;
+        generalHeaderBar.style.cursor = 'pointer';
+        generalHeaderBar.dataset.bsToggle = 'collapse';
+        generalHeaderBar.dataset.bsTarget = `#${generalCollapseId}`;
+        generalHeaderBar.setAttribute('aria-expanded', showGeneral);
+        generalHeaderBar.setAttribute('aria-controls', generalCollapseId);
+        const generalLeftGroup = document.createElement('div');
+        generalLeftGroup.className = 'd-flex align-items-center';
+        const generalHeaderText = document.createElement('span');
+        generalHeaderText.className = 'fs-5 fw-semibold';
+        generalHeaderText.textContent = 'General Settings';
+        generalLeftGroup.appendChild(generalHeaderText);
+        generalHeaderBar.appendChild(generalLeftGroup);
+        const generalRightGroup = document.createElement('div');
+        generalRightGroup.className = 'd-flex align-items-center';
+        const generalCollapseIcon = document.createElement('span');
+        generalCollapseIcon.className = `legend-button ${showGeneral ? '' : 'collapsed'}`;
+        generalCollapseIcon.innerHTML = `<i class="bi bi-chevron-up"></i>`;
+        generalRightGroup.appendChild(generalCollapseIcon);
+        generalHeaderBar.appendChild(generalRightGroup);
+        const generalCollapseWrapper = document.createElement('div');
+        generalCollapseWrapper.id = generalCollapseId;
+        generalCollapseWrapper.className = `collapse p-3 ${showGeneral ? 'show' : ''}`;
+        generalCollapseWrapper.innerHTML = '<hr class="mt-2 mb-3">';
+
+        // --- NEW LOGIC: Separate standard controls from override controls ---
+        const overrideControlKeys = ['enablePalette', 'paletteColor1', 'paletteColor2', 'enableGlobalCycle', 'globalCycleSpeed'];
+        const standardGeneralConfigs = grouped.general.filter(conf => !overrideControlKeys.includes(conf.property || conf.name));
+        const overrideGeneralConfigs = grouped.general.filter(conf => overrideControlKeys.includes(conf.property || conf.name));
+
+        // 1. Add standard controls (Title, Description, etc.)
+        standardGeneralConfigs.forEach(conf => generalCollapseWrapper.appendChild(createFormControl(conf)));
+
+        // 2. Build and add the collapsible "Overrides" section
+        if (overrideGeneralConfigs.length > 0) {
+            generalCollapseWrapper.appendChild(document.createElement('hr'));
+
+            const overridesHeader = document.createElement('div');
+            overridesHeader.className = 'd-flex justify-content-between align-items-center w-100 py-1';
+            overridesHeader.style.cursor = 'pointer';
+            overridesHeader.dataset.bsToggle = 'collapse';
+            overridesHeader.dataset.bsTarget = '#collapse-overrides';
+            overridesHeader.setAttribute('aria-expanded', 'false'); // Start collapsed
+            overridesHeader.innerHTML = `
+            <span class="fs-6 fw-semibold">Global Overrides</span>
+            <span class="legend-button collapsed"><i class="bi bi-chevron-up"></i></span>
+        `;
+            generalCollapseWrapper.appendChild(overridesHeader);
+
+            const overridesCollapseWrapper = document.createElement('div');
+            overridesCollapseWrapper.id = 'collapse-overrides';
+            overridesCollapseWrapper.className = 'collapse p-3 border-start border-end border-bottom rounded-bottom';
+
+            overrideGeneralConfigs.forEach(conf => overridesCollapseWrapper.appendChild(createFormControl(conf)));
+            generalCollapseWrapper.appendChild(overridesCollapseWrapper);
+        }
+        // --- END NEW LOGIC ---
+
+        generalFieldset.appendChild(generalHeaderBar);
+        generalFieldset.appendChild(generalCollapseWrapper);
+        form.appendChild(generalFieldset);
+
+        // --- 3. OBJECT PANELS CREATION (Main Loop) ---
+        objects.forEach(obj => {
+            const fieldset = createObjectPanel(obj, grouped.objects[obj.id] || [], activeCollapseStates, activeTabStates);
+            if (fieldset) {
+                form.appendChild(fieldset);
+            }
+        });
+
+        // --- 5. FINALIZATION ---
+        if (!isRestoring) {
+            for (const key in generalSettingsValues) {
+                const el = form.elements[key];
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = generalSettingsValues[key];
+                    } else {
+                        el.value = generalSettingsValues[key];
+                    }
+                }
+            }
+        }
+
+        updateFormValuesFromObjects();
+
+        form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
+        form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
+        form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
+    }
+
+    function updateSensorControlVisibility(fieldset) {
+        const id = fieldset.dataset.objectId;
+        const colorModeControl = fieldset.querySelector(`[name="obj${id}_sensorColorMode"]`);
+        if (!colorModeControl) return;
+
+        const isThresholds = colorModeControl.value === 'Thresholds';
+        const midControl = fieldset.querySelector(`[name="obj${id}_sensorMidThreshold"]`);
+        const maxControl = fieldset.querySelector(`[name="obj${id}_sensorMaxThreshold"]`);
+
+        if (midControl) midControl.closest('.mb-3').style.display = isThresholds ? '' : 'none';
+        if (maxControl) maxControl.closest('.mb-3').style.display = isThresholds ? '' : 'none';
+    }
+
+    /**
+     * Initializes the Sortable.js library on the controls form to allow
+     * drag-and-drop reordering of object panels.
+     */
+    function initializeSortable() {
+        const formEl = document.getElementById('controls-form');
+        new Sortable(formEl, {
+            animation: 150,
+            handle: '.drag-handle',
+            draggable: 'fieldset[data-object-id]',
+            onEnd: function (evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+
+                // --- 1. Get the new visual order from the UI ---
+                const fieldsets = Array.from(form.querySelectorAll('fieldset[data-object-id]'));
+                const newOrderedIds = fieldsets.map(fieldset => parseInt(fieldset.dataset.objectId, 10));
+
+                // --- 2. Reorder the live `objects` array ---
+                objects.sort((a, b) => newOrderedIds.indexOf(a.id) - newOrderedIds.indexOf(b.id));
+
+                // --- 3. Reorder the `configStore` to match the new object order (THE FIX) ---
+                const generalConfigs = configStore.filter(c => !(c.property || '').startsWith('obj'));
+                const objectConfigs = configStore.filter(c => (c.property || '').startsWith('obj'));
+
+                const configsById = {};
+                objectConfigs.forEach(conf => {
+                    const match = conf.property.match(/^obj(\d+)_/);
+                    if (match) {
+                        const id = parseInt(match[1], 10);
+                        if (!configsById[id]) {
+                            configsById[id] = [];
+                        }
+                        configsById[id].push(conf);
+                    }
+                });
+
+                const reorderedObjectConfigs = [];
+                newOrderedIds.forEach(id => {
+                    if (configsById[id]) {
+                        reorderedObjectConfigs.push(...configsById[id]);
+                    }
+                });
+
+                configStore = [...generalConfigs, ...reorderedObjectConfigs];
+
+                // --- 4. Update the application state ---
+                updateObjectsFromForm();
+                drawFrame();
+                recordHistory();
+            }
+        });
+    }
+
+    /**
+      * Retrieves all current values from the form controls.
+      * @returns {object} An object mapping control IDs to their current values.
+      */
+    function getControlValues() {
+        const data = {};
+        configStore.forEach(conf => {
+            const key = conf.property || conf.name;
+            const el = form.elements[key];
+            if (el) {
+                if (el.type === 'checkbox') {
+                    data[key] = el.checked;
+                } else if (el.type === 'number') {
+                    const value = el.value;
+                    data[key] = value === '' ? 0 : parseFloat(value);
+                } else {
+                    data[key] = el.value;
+                }
+            }
+        });
+        return data;
+    }
+
+
+    /**
+     * Sets the values of form controls based on a data object.
+     * @param {object} data - An object mapping control IDs to values.
+     */
+    function setFormValues(data) {
+        for (const key in data) {
+            const el = form.elements[key];
+            if (el) {
+                if (el.type === 'checkbox') {
+                    el.checked = data[key];
+                } else {
+                    el.value = data[key];
+                }
+            }
+        }
+    }
+
+    /**
+     * Builds an array of shape state objects from the current form values.
+     * @returns {object[]} An array of state objects for all shapes.
+     */
+    function buildStatesFromConfig() {
+        const values = getControlValues();
+        const grouped = groupConfigs(configStore);
+        const finalStates = [];
+
+        objects.forEach(obj => {
+            const id = obj.id;
+            if (!grouped.objects[id]) return;
+
+            const existingObject = obj;
+            const config = {
+                id: parseInt(id),
+                gradient: {},
+                name: existingObject.name,
+                locked: existingObject.locked
+            };
+
+            grouped.objects[id].forEach(conf => {
+                let key = conf.property.replace(`obj${id}_`, '');
+                let value = values[conf.property];
+                const type = conf.type;
+                if (type === 'number') value = parseFloat(value);
+                else if (type === 'boolean') value = (value === true || value === 'true');
+
+                if (key.startsWith('gradColor')) {
+                    config.gradient[key.replace('grad', '').toLowerCase()] = value;
+                } else if (key === 'scrollDir') {
+                    config.scrollDirection = value;
+                } else {
+                    config[key] = value;
+                }
+            });
+
+            config.gradientDirection = (config.scrollDirection === 'up' || config.scrollDirection === 'down') ? 'vertical' : 'horizontal';
+            config.cycleSpeed = (config.cycleSpeed || 0) / 50.0;
+            const speed = config.animationSpeed || 0;
+            config.animationSpeed = speed / 10.0;
+            if (config.shape === 'ring') {
+                config.height = config.width;
+            }
+            finalStates.push(config);
+        });
+
+        return finalStates;
+    }
+
+    form.addEventListener('blur', (e) => {
+        if (e.target.classList.contains('object-name')) {
+            const id = parseInt(e.target.dataset.id, 10);
+            const newName = e.target.textContent || 'Unnamed';
+            const obj = objects.find(o => o.id === id);
+            if (obj) {
+                obj.name = newName;
+                configStore.forEach(conf => {
+                    if (conf.property && conf.property.startsWith(`obj${id}_`)) {
+                        const labelParts = conf.label.split(':');
+                        conf.label = `${newName}:${labelParts[1]}`;
+                    }
+                });
+                generateOutputScript();
+            }
+        }
+    }, true);
+
+    /**
+     * Converts mouse event coordinates to canvas-local coordinates.
+     * @param {MouseEvent} event - The mouse event.
+     * @returns {{x: number, y: number}} The coordinates relative to the canvas.
+     */
+    function getCanvasCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    /**
+     * Enables or disables dependent fill controls based on the 'fillShape' checkbox state.
+     * @param {HTMLElement} fieldset - The fieldset element for a specific object.
+     */
+    function updateDependentControls(fieldset) {
+        const id = fieldset.dataset.objectId;
+        const fillShapeToggle = fieldset.querySelector(`[name="obj${id}_fillShape"]`);
+        if (!fillShapeToggle) return;
+
+        const isFillEnabled = fillShapeToggle.checked;
+
+        // List all controls that depend on the fill being enabled
+        const dependentControls = [
+            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'cycleColors', 'animationMode', 'animationSpeed', 'cycleSpeed', 'scrollDir'
+        ];
+
+        dependentControls.forEach(prop => {
+            const control = fieldset.querySelector(`[name="obj${id}_${prop}"]`);
+            if (control) {
+                control.disabled = !isFillEnabled;
+                // Also handle associated sliders and hex inputs
+                const slider = fieldset.querySelector(`[name="obj${id}_${prop}_slider"]`);
+                if (slider) slider.disabled = !isFillEnabled;
+                const hexInput = fieldset.querySelector(`[name="obj${id}_${prop}_hex"]`);
+                if (hexInput) hexInput.disabled = !isFillEnabled;
+            }
+        });
+    }
+
+    /**
+     * Enables or disables toolbar buttons based on the current selection.
+     */
+    function updateToolbarState() {
+        const multiSelectButtons = toolbar.querySelectorAll('[data-action^="match-"]');
+        const singleSelectButtons = toolbar.querySelectorAll('[data-action^="align-screen-"], [data-action="fit-canvas"]');
+        const matchTextSizeBtn = document.getElementById('match-text-size-btn');
+        const copyBtn = document.getElementById('copy-props-btn');
+        const pasteBtn = document.getElementById('paste-props-btn');
+
+        singleSelectButtons.forEach(btn => btn.disabled = selectedObjectIds.length === 0);
+        multiSelectButtons.forEach(btn => {
+            if (btn.id !== 'match-text-size-btn') {
+                btn.disabled = selectedObjectIds.length < 2;
+            }
+        });
+
+        if (copyBtn) {
+            copyBtn.disabled = selectedObjectIds.length === 0;
+        }
+        if (pasteBtn) {
+            pasteBtn.disabled = !propertyClipboard || selectedObjectIds.length === 0;
+        }
+
+        if (matchTextSizeBtn) {
+            const selected = selectedObjectIds.map(id => objects.find(o => o.id === id)).filter(o => o);
+            const textObjects = selected.filter(obj => obj.shape === 'text');
+            const gridObjects = selected.filter(obj => obj.shape === 'rectangle' && (obj.numberOfRows > 1 || obj.numberOfColumns > 1));
+
+            const canMatchTextToGrid = textObjects.length >= 1 && gridObjects.length >= 1;
+            const canMatchTextToText = textObjects.length >= 2 && gridObjects.length === 0;
+
+            matchTextSizeBtn.disabled = !(canMatchTextToGrid || canMatchTextToText);
+        }
+    }
+
+    /**
+     * Updates the form control values to match the state of the shape objects on the canvas.
+     * This function is called after any direct manipulation on the canvas (drag, resize).
+     */
+    function updateFormFromShapes() {
+        objects.forEach(obj => {
+            const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
+            if (!fieldset) return;
+
+            const updateField = (prop, value) => {
+                const input = fieldset.querySelector(`[name="obj${obj.id}_${prop}"]`);
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = value;
+                    } else {
+                        input.value = value;
+                    }
+                    const slider = fieldset.querySelector(`[name="obj${obj.id}_${prop}_slider"]`);
+                    if (slider) slider.value = value;
+                    const hexInput = fieldset.querySelector(`[name="obj${obj.id}_${prop}_hex"]`);
+                    if (hexInput) hexInput.value = value;
+                }
+            };
+
+            updateField('x', Math.round(obj.x));
+            updateField('y', Math.round(obj.y));
+            updateField('width', Math.round(obj.width));
+            updateField('height', Math.round(obj.height));
+            updateField('fontSize', Math.round(obj.fontSize));
+            updateField('shape', obj.shape);
+            updateField('gradType', obj.gradType);
+
+            // Correct the scaling for animation and cycle speeds
+            updateField('animationSpeed', obj.animationSpeed * 10);
+            updateField('cycleSpeed', obj.cycleSpeed * 50);
+
+            updateField('animationMode', obj.animationMode);
+            updateField('scrollDirection', obj.scrollDirection);
+            updateField('innerDiameter', Math.round(obj.innerDiameter));
+            updateField('angularWidth', obj.angularWidth);
+            updateField('numberOfSegments', obj.numberOfSegments);
+            updateField('rotationSpeed', obj.rotationSpeed);
+            updateField('useSharpGradient', obj.useSharpGradient);
+            updateField('gradientStop', obj.gradientStop);
+            updateField('numberOfRows', obj.numberOfRows);
+            updateField('numberOfColumns', obj.numberOfColumns);
+            updateField('phaseOffset', obj.phaseOffset);
+            updateField('text', obj.text);
+            updateField('fontFamily', obj.fontFamily);
+            updateField('fontWeight', obj.fontWeight);
+            updateField('gradColor1', obj.gradient.color1);
+            updateField('gradColor2', obj.gradient.color2);
+        });
+        generateOutputScript();
+    }
+
+    function drawObject(obj) {
+        ctx.save();
+        ctx.translate(obj.x + obj.width / 2, obj.y + obj.height / 2);
+        if (obj.rotation) {
+            ctx.rotate(obj.rotation * Math.PI / 180);
+        }
+        ctx.translate(-(obj.x + obj.width / 2), -(obj.y + obj.height / 2));
+
+        if (obj.shape === 'rectangle') {
+            ctx.fillStyle = obj.fillColor || 'rgba(0, 0, 255, 0.5)';
+            ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+        } else if (obj.shape === 'circle') {
+            ctx.fillStyle = obj.fillColor || 'rgba(0, 0, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(obj.x + obj.width / 2, obj.y + obj.height / 2, obj.width / 2, 0, 2 * Math.PI);
+            ctx.fill();
+        } else if (obj.shape === 'ring') {
+            ctx.fillStyle = obj.fillColor || 'rgba(0, 0, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(obj.x + obj.width / 2, obj.y + obj.height / 2, obj.width / 2, 0, 2 * Math.PI);
+            ctx.arc(obj.x + obj.width / 2, obj.y + obj.height / 2, obj.innerDiameter / 2, 0, 2 * Math.PI, true);
+            ctx.fill();
+        } else if (obj.shape === 'text') {
+            ctx.font = `${obj.fontSize}px ${obj.fontFamily || 'Arial'}`;
+            ctx.fillStyle = obj.fillColor || 'black';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(obj.text || '', obj.x, obj.y);
+        }
+
+        ctx.restore();
+    }
+
+    // In main.js, find the drawFrame function and replace it
+
+    function drawFrame(audioData = {}, sensorData = {}, deltaTime = 0, palette = {}, globalCycle = {}) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+
+            // Store original properties before any overrides
+            const originalCycleColors = obj.cycleColors;
+            const originalCycleSpeed = obj.cycleSpeed;
+
+            // Apply Global Color Cycle override if enabled
+            if (globalCycle.enable) {
+                obj.cycleColors = true;
+                // Scale the UI value (0-100) to the internal value used by the animation logic
+                obj.cycleSpeed = (globalCycle.speed || 0) / 50.0;
+            }
+
+            // Now, update the animation state using the potentially overridden values
+            obj.updateAnimationState(audioData, sensorData, deltaTime);
+
+            // Draw the object
+            obj.draw(selectedObjectIds.includes(obj.id), audioData, palette);
+
+            // Restore original properties so the object's true state is preserved
+            obj.cycleColors = originalCycleColors;
+            obj.cycleSpeed = originalCycleSpeed;
+
+            obj.dirty = false;
+        }
+
+        if (selectedObjectIds.length > 0) {
+            selectedObjectIds.forEach(id => {
+                const obj = objects.find(o => o.id === id);
+                if (obj && obj instanceof Shape) {
+                    obj.drawSelectionUI();
+                }
+            });
+        }
+        drawSnapLines(snapLines);
+
+        if (previewLine.active) {
+            ctx.save();
+            ctx.resetTransform(); // Draw in screen space, not subject to object transforms
+            ctx.beginPath();
+            ctx.moveTo(previewLine.startX, previewLine.startY);
+            ctx.lineTo(previewLine.endX, previewLine.endY);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    // MODIFIED - A new, time-based animation loop using delta time
+    function animate(timestamp) {
+        requestAnimationFrame(animate);
+
+        const now = timestamp;
+        let deltaTime = (now - then) / 1000.0; // deltaTime in seconds
+        then = now;
+
+        if (deltaTime > 0.1) {
+            deltaTime = 0.1;
+        }
+
+        const generalValues = getControlValues();
+        const soundEnabled = generalValues.enableSound !== false;
+        const isAnimating = generalValues.enableAnimation !== false;
+
+        let audioData = {};
+        let sensorData = {};
+
+        if (isAudioSetup && soundEnabled) {
+            // Case 1: Real audio is connected and enabled. Use it.
+            audioData = getAudioMetrics();
+        } else {
+            // Case 2: In all other situations (no real audio, or sound is disabled), generate the mock preview data.
+            const time = now / 1000;
+            const randomRate = (Math.sin(time * 0.1) + 1.2); // Slower rate of change
+            const mockVol = (Math.sin(time * 0.8 * randomRate) * 0.5 + Math.sin(time * 0.5 * randomRate) * 0.5) / 2 + 0.5;
+            const mockBass = (Math.sin(time * 1.0 * randomRate) * 0.6 + Math.sin(time * 2.1 * randomRate) * 0.4) / 2 + 0.5;
+            const mockMids = (Math.sin(time * 0.7 * randomRate) * 0.5 + Math.sin(time * 1.2 * randomRate) * 0.5) / 2 + 0.5;
+            const mockHighs = (Math.sin(time * 1.5 * randomRate) * 0.7 + Math.sin(time * 3.0 * randomRate) * 0.3) / 2 + 0.5;
+
+            const mockFreqData = new Uint8Array(128);
+            for (let i = 0; i < mockFreqData.length; i++) {
+                const progress = i / mockFreqData.length;
+                const bassEffect = Math.pow(1 - progress, 2) * mockBass;
+                const midEffect = (1 - Math.abs(progress - 0.5) * 2) * mockMids;
+                const highEffect = Math.pow(Math.pow(progress, 2), 0.5) * mockHighs;
+                mockFreqData[i] = ((bassEffect + midEffect + highEffect) / 3) * 255 * (Math.sin(i * 0.2 + time * 2) * 0.1 + 0.9);
+            }
+
+            audioData = {
+                bass: { avg: mockBass, peak: mockBass },
+                mids: { avg: mockMids, peak: mockMids },
+                highs: { avg: mockHighs, peak: mockHighs },
+                volume: { avg: mockVol, peak: mockVol },
+                frequencyData: mockFreqData
+            };
+        }
+
+        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+
+        neededSensors.forEach((sensorName, index) => {
+            // By adding the sensor's index to the sine function, each wave gets a unique phase offset.
+            const mockValue = Math.sin(now / 2000 + index) * 50 + 50;
+            sensorData[sensorName] = {
+                value: mockValue,
+                min: 0,
+                max: 100
+            };
+        });
+
+        const paletteProps = {
+            enablePalette: generalValues.enablePalette,
+            paletteColor1: generalValues.paletteColor1,
+            paletteColor2: generalValues.paletteColor2
+        };
+
+        const globalCycleProps = {
+            enable: generalValues.enableGlobalCycle,
+            speed: generalValues.globalCycleSpeed
+        };
+
+        drawFrame(audioData, sensorData, isAnimating ? deltaTime : 0, paletteProps, globalCycleProps);
+    }
+
+    /**
+     * Deletes one or more objects from the scene.
+     * @param {number[]} idsToDelete - An array of object IDs to delete.
+     */
+    function deleteObjects(idsToDelete) {
+        if (!Array.isArray(idsToDelete) || idsToDelete.length === 0) {
+            return;
+        }
+
+        // Filter the main objects array
+        objects = objects.filter(o => !idsToDelete.includes(o.id));
+
+        // Filter the configuration store to remove definitions for the deleted objects
+        configStore = configStore.filter(conf => {
+            const key = conf.property || conf.name;
+            if (!key.startsWith('obj')) return true; // Keep general configs
+            const match = key.match(/^obj(\d+)_/);
+            if (match) {
+                const id = parseInt(match[1], 10);
+                return !idsToDelete.includes(id);
+            }
+            return true;
+        });
+
+        // Clear the selection
+        selectedObjectIds = [];
+
+        // Update the UI and record the change
+        renderForm();
+        updateFormValuesFromObjects();
+        updateToolbarState();
+        drawFrame();
+        recordHistory();
+    }
+
+    /**
+     * Gathers all form values for a specific object ID.
+     * @param {number} id - The ID of the object to get values for.
+     * @returns {object} An object containing all properties for the shape.
+     */
+    function getFormValuesForObject(id) {
+        const values = {};
+        const prefix = `obj${id}_`;
+        const configs = configStore.filter(c => c.property && c.property.startsWith(prefix));
+
+        // This list now includes the missing polyline animation properties.
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+
+        configs.forEach(conf => {
+            const key = conf.property.replace(prefix, '');
+            const el = form.elements[conf.property];
+            if (el) {
+                let value;
+                if (el.type === 'checkbox') {
+                    value = el.checked;
+                } else if (el.type === 'number') {
+                    value = el.value === '' ? 0 : parseFloat(el.value);
+                } else {
+                    value = el.value;
+                }
+
+                if (propsToScale.includes(key)) {
+                    value *= 4;
+                }
+
+                if (key.startsWith('gradColor')) {
+                    if (!values.gradient) values.gradient = {};
+                    values.gradient[key.replace('grad', '').toLowerCase()] = value;
+                } else if (key.startsWith('strokeGradColor')) {
+                    if (!values.strokeGradient) values.strokeGradient = {};
+                    values.strokeGradient[key.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                } else if (key === 'scrollDir') {
+                    values.scrollDirection = value;
+                } else if (key === 'strokeScrollDir') {
+                    values.strokeScrollDir = value;
+                } else {
+                    values[key] = value;
+                }
+            }
+        });
+
+        if (values.shape === 'ring') {
+            values.height = values.width;
+        }
+
+        return values;
+    }
+
+    /**
+     * Reads all values from the form and updates the live 'objects' array.
+     * This is now the primary way user input affects the application state.
+     */
+    function updateObjectsFromForm() {
+        if (isRestoring) return;
+        const formValues = getControlValues();
+
+        objects.forEach(obj => {
+            const newProps = getFormValuesForObject(obj.id);
+
+            if (obj._pausedRotationSpeed !== null && newProps.rotationSpeed !== undefined) {
+                obj._pausedRotationSpeed = newProps.rotationSpeed;
+                delete newProps.rotationSpeed;
+            }
+
+            obj.update(newProps);
+
+            if (obj.shape === 'polyline') {
+                const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
+                if (fieldset) {
+                    const hiddenTextarea = fieldset.querySelector(`[name="obj${obj.id}_polylineNodes"]`);
+                    if (hiddenTextarea) {
+                        hiddenTextarea.value = JSON.stringify(obj.polylineNodes);
+                    }
+                }
+            }
+        });
+
+        configStore.forEach(conf => {
+            const key = conf.property || conf.name;
+            if (formValues.hasOwnProperty(key)) {
+                let valueToSave = formValues[key];
+                if (conf.type === 'number') {
+                    valueToSave = Number(valueToSave);
+                } else if (typeof valueToSave === 'boolean') {
+                    valueToSave = String(valueToSave);
+                }
+                conf.default = valueToSave;
+            }
+        });
+
+        generateOutputScript();
+    }
+
+    /**
+     * Reads all properties from the 'objects' array and updates the form inputs to match.
+     */
+    function updateFormValuesFromObjects() {
+        // This list now includes the missing polyline animation properties.
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+
+        objects.forEach(obj => {
+            const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
+            if (!fieldset) return;
+
+            const updateField = (prop, value) => {
+                const input = fieldset.querySelector(`[name="obj${obj.id}_${prop}"]`);
+                if (input) {
+                    if (input.type === 'checkbox') input.checked = value;
+                    else input.value = value;
+                    const slider = fieldset.querySelector(`[name="obj${obj.id}_${prop}_slider"]`);
+                    if (slider) slider.value = value;
+                    const hexInput = fieldset.querySelector(`[name="obj${obj.id}_${prop}_hex"]`);
+                    if (hexInput) hexInput.value = value;
+                }
+            };
+
+            Object.keys(obj).forEach(key => {
+                if (key === 'rotationSpeed' && obj._pausedRotationSpeed !== null) {
+                    return;
+                }
+                else if (key === 'polylineNodes') {
+                    const controlId = `obj${obj.id}_polylineNodes`;
+                    const container = fieldset.querySelector('.node-table-container');
+                    const hiddenTextarea = fieldset.querySelector(`[name="${controlId}"]`);
+                    if (!container || !hiddenTextarea) return;
+
+                    const nodes = obj.polylineNodes;
+                    hiddenTextarea.value = JSON.stringify(nodes);
+
+                    const tbody = container.querySelector('tbody');
+                    tbody.innerHTML = ''; // Clear the existing table body
+
+                    // Rebuild the table from the object's current node data
+                    nodes.forEach((node, index) => {
+                        const tr = document.createElement('tr');
+                        tr.dataset.index = index;
+                        tr.innerHTML = `
+                        <td class="align-middle">${index + 1}</td>
+                        <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
+                        <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
+                        <td class="align-middle">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
+                        </td>`;
+                        tbody.appendChild(tr);
+                    });
+
+                }
+                // --- END OF MODIFIED PART ---
+                else if (propsToScale.includes(key)) {
+                    updateField(key, Math.round(obj[key] / 4));
+                } else if (key === 'gradient') {
+                    updateField('gradColor1', obj.gradient.color1);
+                    updateField('gradColor2', obj.gradient.color2);
+                } else if (key === 'strokeGradient') {
+                    updateField('strokeGradColor1', obj.strokeGradient.color1);
+                    updateField('strokeGradColor2', obj.strokeGradient.color2);
+                } else if (key === 'scrollDirection') {
+                    updateField('scrollDir', obj.scrollDirection);
+                } else if (key === 'strokeScrollDir') {
+                    updateField('strokeScrollDir', obj.strokeScrollDir);
+                } else if (typeof obj[key] !== 'object' && typeof obj[key] !== 'function') {
+                    updateField(key, typeof obj[key] === 'number' ? Math.round(obj[key]) : obj[key]);
+                }
+            });
+        });
+        generateOutputScript();
+    }
+
+    /**
+     * A master update function that syncs the shapes from the form and regenerates the output script.
+     */
+    function updateAll() {
+        updateObjectsFromForm();
+        drawFrame();
+    }
+
+    /**
+     * Expands the control panel for the currently selected object and collapses others.
+     */
+    function syncPanelsWithSelection() {
+        const allCollapses = form.querySelectorAll('.collapse');
+        allCollapses.forEach(el => {
+            const instance = bootstrap.Collapse.getInstance(el) || new bootstrap.Collapse(el, { toggle: false });
+            const fieldset = el.closest('fieldset');
+            if (!fieldset) return;
+            const id = parseInt(fieldset.dataset.objectId, 10);
+            if (selectedObjectIds.length === 1 && selectedObjectIds[0] === id) {
+                instance.show();
+            } else {
+                instance.hide();
+            }
+        });
+    }
+
+    /**
+     * Creates the initial set of Shape objects based on the `configStore`.
+     */
+    function createInitialObjects(objectNames = {}) {
+        const allPropKeysFromStore = configStore.map(c => c.property || c.name);
+        if (allPropKeysFromStore.length === 0) return;
+
+        const uniqueIds = [...new Set(allPropKeysFromStore.map(p => {
+            if (!p || !p.startsWith('obj')) return null;
+            const end = p.indexOf('_');
+            if (end <= 3) return null;
+            const idString = p.substring(3, end);
+            const id = parseInt(idString, 10);
+            return isNaN(id) ? null : String(id);
+        }).filter(id => id !== null))];
+
+        const initialStates = uniqueIds.map(id => {
+            const configForThisObject = {
+                id: parseInt(id),
+                gradient: {},
+                strokeGradient: {},
+                name: objectNames[id] || `Object ${id}` // Use the provided name
+            };
+            const objectConfigs = groupConfigs(configStore).objects[id];
+
+            if (!objectConfigs) return null;
+
+            objectConfigs.forEach(conf => {
+                const key = conf.property.replace(`obj${id}_`, '');
+                let value = conf.default;
+
+                if (conf.type === 'number') {
+                    value = parseFloat(value);
+                } else if (conf.type === 'boolean') {
+                    value = (String(value).toLowerCase() === 'true' || value === 1);
+                } else if (conf.type === 'textfield' || conf.type === 'textarea') {
+                    value = String(value).replace(/\\n/g, '\n');
+                }
+
+                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+                if (propsToScale.includes(key) && typeof value === 'number') {
+                    value *= 4;
+                }
+
+                if (key.startsWith('gradColor')) {
+                    configForThisObject.gradient[key.replace('grad', '').toLowerCase()] = value;
+                } else if (key.startsWith('strokeGradColor')) {
+                    configForThisObject.strokeGradient[key.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                } else if (key === 'scrollDir') {
+                    configForThisObject.scrollDirection = value;
+                } else if (key === 'strokeScrollDir') {
+                    configForThisObject.strokeScrollDir = value;
+                } else {
+                    configForThisObject[key] = value;
+                }
+            });
+
+            if (configForThisObject.shape === 'ring') {
+                configForThisObject.height = configForThisObject.width;
+            }
+
+            return configForThisObject;
+        }).filter(Boolean);
+
+        objects = initialStates.map(state => new Shape({ ...state, ctx, canvasWidth: canvas.width }));
+    }
+
+    /**
+     * The new, centralized engine for loading any set of configurations into the workspace.
+     * @param {Array} loadedConfigs - The array of config objects to load.
+     * @param {Array} [savedObjects=[]] - Optional array of saved object data (for names/lock state).
+     */
+    function _loadFromConfigArray(loadedConfigs, savedObjects = []) {
+        try {
+            isRestoring = true;
+
+            const loadedConfigMap = new Map(loadedConfigs.map(c => [(c.property || c.name), c]));
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            const masterConfigTemplates = Array.from(doc.querySelectorAll('meta')).map(parseMetaToConfig);
+
+            const masterGeneralConfigs = masterConfigTemplates.filter(c => !(c.property || c.name).startsWith('obj'));
+            const mergedGeneralConfigs = masterGeneralConfigs.map(masterConf => {
+                const key = masterConf.property || masterConf.name;
+                if (loadedConfigMap.has(key)) {
+                    return { ...masterConf, default: loadedConfigMap.get(key).default };
+                }
+                return masterConf;
+            });
+
+            const objectIds = [...new Set(loadedConfigs.map(c => (c.property || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
+            const finalMergedObjectConfigs = [];
+            objectIds.forEach(id => {
+                const fullDefaultConfigSet = getDefaultObjectConfig(id);
+                const savedObjectConfigsForId = loadedConfigs.filter(c => c.property && c.property.startsWith(`obj${id}_`));
+                const savedPropsMap = new Map(savedObjectConfigsForId.map(c => [c.property, c]));
+                const mergedConfigsForThisObject = fullDefaultConfigSet.map(defaultConf => {
+                    if (savedPropsMap.has(defaultConf.property)) {
+                        const savedConf = savedPropsMap.get(defaultConf.property);
+                        return { ...defaultConf, default: savedConf.default, label: savedConf.label || defaultConf.label };
+                    }
+                    return defaultConf;
+                });
+                finalMergedObjectConfigs.push(...mergedConfigsForThisObject);
+            });
+
+            configStore = [...mergedGeneralConfigs, ...finalMergedObjectConfigs];
+
+            createInitialObjects();
+
+            if (savedObjects.length > 0) {
+                savedObjects.forEach(savedObj => {
+                    const obj = objects.find(o => o.id === savedObj.id);
+                    if (obj) {
+                        obj.name = savedObj.name;
+                        obj.locked = savedObj.locked || false;
+                    }
+                });
+            }
+
+            renderForm();
+
+            configStore.filter(c => !(c.property || c.name).startsWith('obj')).forEach(conf => {
+                const key = conf.property || conf.name;
+                const el = form.elements[key];
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = (conf.default === true || conf.default === 'true');
+                    } else {
+                        el.value = conf.default;
+                    }
+                    const slider = form.querySelector(`#${el.id}_slider`);
+                    if (slider) slider.value = conf.default;
+                    const hexInput = form.querySelector(`#${el.id}_hex`);
+                    if (hexInput) hexInput.value = conf.default;
+                }
+            });
+
+            updateObjectsFromForm();
+            drawFrame();
+            recordHistory();
+        } catch (error) {
+            console.error("Error in _loadFromConfigArray:", error);
+            showToast("Failed to process configuration.", 'danger');
+        } finally {
+            isRestoring = false;
+        }
+    }
+
+    /**
+     * Loads a workspace state from a provided object, ensuring all properties,
+     * including complex shapes and strokes, are correctly applied.
+     * @param {object} workspace - The workspace object to load.
+     */
+
+    function loadWorkspace(workspace) {
+        if (!workspace || !workspace.configs) {
+            showToast("Invalid workspace data provided.", 'danger');
+            return;
+        }
+
+        if (workspace.docId) {
+            (async () => {
+                try {
+                    const docRef = window.doc(window.db, "projects", workspace.docId);
+                    await window.updateDoc(docRef, { viewCount: window.increment(1) });
+                } catch (err) { }
+            })();
+        }
+
+        try {
+            isRestoring = true;
+            _loadFromConfigArray(workspace.configs, workspace.objects);
+
+            currentProjectDocId = workspace.docId || null;
+            updateShareButtonState();
+
+            if (workspace.docId) {
+                const newUrl = `${window.location.pathname}?effectId=${workspace.docId}`;
+                const effectTitle = getControlValues()['title'] || "SRGB Effect Builder";
+                window.history.pushState({ effectId: workspace.docId }, effectTitle, newUrl);
+            }
+        } catch (error) {
+            console.error("Error loading workspace:", error);
+            showToast("Failed to load workspace.", 'danger');
+        } finally {
+            isRestoring = false;
+        }
+    }
+
+    /**
+     * Gets the name of the handle opposite to the given one.
+     * @param {string} handleName - The name of the handle (e.g., 'top-left').
+     * @returns {string} The name of the opposite handle (e.g., 'bottom-right').
+     */
+    function getOppositeHandle(handleName) {
+        let opposite = handleName;
+        if (handleName.includes('top')) {
+            opposite = opposite.replace('top', 'bottom');
+        } else if (handleName.includes('bottom')) {
+            opposite = opposite.replace('bottom', 'top');
+        }
+        if (handleName.includes('left')) {
+            opposite = opposite.replace('left', 'right');
+        } else if (handleName.includes('right')) {
+            opposite = opposite.replace('right', 'left');
+        }
+        return opposite;
+    }
+
+    /**
+     * Generates a default set of configuration properties for a new object.
+     * @param {number} newId - The ID for the new object.
+     * @returns {object[]} An array of default configuration objects.
+     */
+    // Update this for a new property
+    function getDefaultObjectConfig(newId) {
+        return [
+            // Geometry & Transform
+            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' }, // MODIFIED: Added 'spawner'
+            { property: `obj${newId}_x`, label: `Object ${newId}: X Position`, type: 'number', default: '10', min: '0', max: '320', description: 'The horizontal position of the object on the canvas.' },
+            { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
+            { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
+            { property: `obj${newId}_height`, label: `Object ${newId}: Height`, type: 'number', default: '38', min: '2', max: '200', description: 'The height of the object.' },
+            { property: `obj${newId}_rotation`, label: `Object ${newId}: Rotation`, type: 'number', default: '0', min: '-360', max: '360', description: 'The static rotation of the object in degrees.' },
+
+            // Fill Style & Animation
+            { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
+            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
+            { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
+            { property: `obj${newId}_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp gradients, this is the percentage width of the primary color band.' },
+            { property: `obj${newId}_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#00ff00', description: 'The starting color for gradients and solid fills.' },
+            { property: `obj${newId}_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#d400ff', description: 'The ending color for gradients.' },
+            { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
+            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Master speed for gradient scroll, random color flicker, and oscilloscope movement.' },
+            { property: `obj${newId}_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false', description: 'Animates the colors by cycling through the color spectrum.' },
+            { property: `obj${newId}_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which colors cycle when "Cycle Colors" is enabled.' },
+            { property: `obj${newId}_rotationSpeed`, label: `Object ${newId}: Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the object. Overrides static rotation.' },
+            { property: `obj${newId}_scrollDir`, label: `Object ${newId}: Scroll Direction`, type: 'combobox', values: 'right,left,up,down', default: 'right', description: 'The direction the gradient animation moves.' },
+            { property: `obj${newId}_phaseOffset`, label: `Object ${newId}: Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the gradient animation for each item in a grid, seismic wave, or Tetris block, creating a cascading effect.' },
+
+            // Shape-Specific Properties
+            { property: `obj${newId}_sides`, label: `Object ${newId}: Sides`, type: 'number', default: '6', min: '3', max: '50', description: '(Polygon) The number of sides for the polygon.' },
+            { property: `obj${newId}_points`, label: `Object ${newId}: Points`, type: 'number', default: '5', min: '3', max: '50', description: '(Star) The number of points on the star.' },
+            { property: `obj${newId}_starInnerRadius`, label: `Object ${newId}: Inner Radius %`, type: 'number', default: '50', min: '1', max: '99', description: '(Star) The size of the inner points as a percentage of the outer radius.' },
+            { property: `obj${newId}_innerDiameter`, label: `Object ${newId}: Inner Diameter`, type: 'number', default: '25', min: '1', max: '318', description: '(Ring) The diameter of the inner hole of the ring.' },
+            { property: `obj${newId}_numberOfSegments`, label: `Object ${newId}: Segments`, type: 'number', default: '12', min: '1', max: '50', description: '(Ring) The number of individual segments that make up the ring.' },
+            { property: `obj${newId}_angularWidth`, label: `Object ${newId}: Segment Angle`, type: 'number', min: '1', max: '360', default: '20', description: '(Ring) The width of each ring segment, in degrees.' },
+            { property: `obj${newId}_numberOfRows`, label: `Object ${newId}: Number of Rows`, type: 'number', default: '1', min: '1', max: '100', description: '(Grid) The number of vertical cells in the grid.' },
+            { property: `obj${newId}_numberOfColumns`, label: `Object ${newId}: Number of Columns`, type: 'number', default: '1', min: '1', max: '100', description: '(Grid) The number of horizontal cells in the grid.' },
+            { property: `obj${newId}_text`, label: `Object ${newId}: Text`, type: 'textfield', default: 'New Text', description: '(Text) The content displayed within the text object.' },
+            { property: `obj${newId}_fontSize`, label: `Object ${newId}: Font Size`, type: 'number', default: '15', min: '2', max: '100', description: '(Text) The size of the text.' },
+            { property: `obj${newId}_textAlign`, label: `Object ${newId}: Justification`, type: 'combobox', values: 'left,center,right', default: 'center', description: '(Text) The horizontal alignment of the text.' },
+            { property: `obj${newId}_pixelFont`, label: `Object ${newId}: Pixel Font Style`, type: 'combobox', values: 'small,large', default: 'small', description: '(Text) The style of the pixelated font.' },
+            { property: `obj${newId}_textAnimation`, label: `Object ${newId}: Text Animation`, type: 'combobox', values: 'none,marquee,typewriter,wave', default: 'none', description: '(Text) The animation style for the text.' },
+            { property: `obj${newId}_textAnimationSpeed`, label: `Object ${newId}: Text Scroll Speed`, type: 'number', min: '1', max: '100', default: '10', description: '(Text) The speed of the text animation.' },
+            { property: `obj${newId}_showTime`, label: `Object ${newId}: Show Current Time`, type: 'boolean', default: 'false', description: 'Overrides the text content to show the current time.' },
+            { property: `obj${newId}_showDate`, label: `Object ${newId}: Show Current Date`, type: 'boolean', default: 'false', description: 'Overrides the text content to show the current date.' },
+            { property: `obj${newId}_lineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '1', min: '1', max: '20', description: '(Oscilloscope) The thickness of the oscilloscope line.' },
+            { property: `obj${newId}_waveType`, label: `Object ${newId}: Wave Type`, type: 'combobox', default: 'sine', values: 'sine,square,sawtooth,triangle,earthquake', description: '(Oscilloscope) The shape of the wave being displayed.' },
+            { property: `obj${newId}_frequency`, label: `Object ${newId}: Frequency / Wave Peaks`, type: 'number', default: '5', min: '1', max: '50', description: '(Oscilloscope) The number of wave peaks displayed across the shape.' },
+            { property: `obj${newId}_oscDisplayMode`, label: `Object ${newId}: Display Mode`, type: 'combobox', default: 'linear', values: 'linear,radial,seismic', description: '(Oscilloscope) The layout of the oscilloscope animation.' },
+            { property: `obj${newId}_pulseDepth`, label: `Object ${newId}: Pulse Depth`, type: 'number', default: '50', min: '0', max: '100', description: 'The intensity of the wave\'s amplitude or pulse effect.' },
+            { property: `obj${newId}_enableWaveAnimation`, label: `Object ${newId}: Enable Wave Animation`, type: 'boolean', default: 'true', description: 'Toggles the movement of the oscilloscope wave.' },
+            { property: `obj${newId}_oscAnimationSpeed`, label: `Object ${newId}: Wave Animation Speed`, type: 'number', min: '0', max: '100', default: '10', description: 'Controls the speed of the oscilloscope wave movement, independent of the fill animation.' },
+            { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
+            { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
+            { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall. Gravity-fade removes blocks as they settle.' },
+            { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
+            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact. 0 is no bounce.' },
+            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' }, // <-- Add this new object
+            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(fire-radial) Controls how far the flames spread from the center.' },
+
+            // Stroke Fill
+            { property: `obj${newId}_enableStroke`, label: `Object ${newId}: Enable Stroke`, type: 'boolean', default: 'false', description: 'Enables a stroke (outline) for the shape.' },
+            { property: `obj${newId}_strokeWidth`, label: `Object ${newId}: Stroke Width`, type: 'number', default: '2', min: '1', max: '50', description: 'The thickness of the shape\'s stroke.' },
+            { property: `obj${newId}_strokeGradType`, label: `Object ${newId}: Stroke Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use for the stroke.' },
+            { property: `obj${newId}_strokeUseSharpGradient`, label: `Object ${newId}: Stroke Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.' },
+            { property: `obj${newId}_strokeGradientStop`, label: `Object ${newId}: Stroke Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp stroke gradients, this is the percentage width of the primary color band.' },
+            { property: `obj${newId}_strokeGradColor1`, label: `Object ${newId}: Stroke Color 1`, type: 'color', default: '#FFFFFF', description: 'The starting color for the stroke gradient.' },
+            { property: `obj${newId}_strokeGradColor2`, label: `Object ${newId}: Stroke Color 2`, type: 'color', default: '#000000', description: 'The ending color for the stroke gradient.' },
+            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
+            { property: `obj${newId}_strokeAnimationSpeed`, label: `Object ${newId}: Stroke Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Controls the scroll speed of the stroke gradient animation.' },
+            { property: `obj${newId}_strokeCycleColors`, label: `Object ${newId}: Cycle Stroke Colors`, type: 'boolean', default: 'false', description: 'Animates the stroke colors by cycling through the color spectrum.' },
+            { property: `obj${newId}_strokeCycleSpeed`, label: `Object ${newId}: Stroke Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which stroke colors cycle when "Cycle Stroke Colors" is enabled.' },
+            { property: `obj${newId}_strokeRotationSpeed`, label: `Object ${newId}: Stroke Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the stroke\'s conic gradient pattern.' },
+            { property: `obj${newId}_strokeScrollDir`, label: `Object ${newId}: Stroke Scroll Direction`, type: 'combobox', default: 'right', values: 'right,left,up,down,along-path,along-path-reversed', description: 'The direction the stroke gradient animation moves. "Along Path" is for Polylines only.' },
+            { property: `obj${newId}_strokePhaseOffset`, label: `Object ${newId}: Stroke Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the stroke gradient animation for each item in a grid, creating a cascading effect.' },
+
+            //Audiop
+            { property: `obj${newId}_enableAudioReactivity`, label: `Object ${newId}: Enable Sound Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sound.' },
+            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Volume Meter,Path Speed', description: 'Which property of the object will be affected by the sound.' },
+            { property: `obj${newId}_audioMetric`, label: `Object ${newId}: Audio Metric`, type: 'combobox', default: 'volume', values: 'volume,bass,mids,highs', description: 'Which part of the audio spectrum to react to.' },
+            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive. Default is 30.' },
+            { property: `obj${newId}_audioSensitivity`, label: `Object ${newId}: Sensitivity`, type: 'number', default: '50', min: '0', max: '200', description: 'How strongly the object reacts to the audio metric.' },
+            { property: `obj${newId}_audioSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '50', min: '0', max: '99', description: 'Smooths out the reaction to prevent flickering. Higher values are smoother.' },
+            { property: `obj${newId}_autoWidth`, label: `Object ${newId}: Auto-Width`, type: 'boolean', default: 'false', description: 'For text objects, automatically sets the object\'s width to the width of the text.' },
+            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1,0,0,1],[0,1,1,0],[0,1,1,0],[1,0,0,1]]","duration":1}]', description: '(Pixel Art) Manage animation frames. Each frame has data and a duration in seconds.' },
+
+            // Audio visualizer specific
+            { property: `obj${newId}_vizSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Visualizer) How smoothly the bars react to audio changes. Higher is smoother.' },
+            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered (as bars or a continuous line).' },
+            { property: `obj${newId}_vizLayout`, label: `Object ${newId}: Layout`, type: 'combobox', default: 'Linear', values: 'Linear,Circular', description: '(Visualizer) The overall layout of the visualizer.' },
+            { property: `obj${newId}_vizStyle`, label: `Object ${newId}: Style`, type: 'combobox', default: 'bottom', values: 'bottom,center,top', description: '(Visualizer) The alignment of the visualizer bars.' },
+            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle, as a percentage of the total size.' },
+            { property: `obj${newId}_vizLineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '2', min: '1', max: '20', description: '(Visualizer) The thickness of the line for the Line/Area draw styles.' },
+            { property: `obj${newId}_vizAutoScale`, label: `Object ${newId}: Auto-Scale Height`, type: 'boolean', default: 'true', description: '(Visualizer) If checked, the tallest bar will always reach the top of the shape.' },
+            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '12', min: '1', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
+            { property: `obj${newId}_vizBarSpacing`, label: `Object ${newId}: Bar Spacing`, type: 'number', default: '2', min: '0', max: '20', description: '(Visualizer) The space between each bar in pixels.' },
+            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height`, type: 'number', default: '30', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar, as a percentage of the available space.' },
+            { property: `obj${newId}_vizUseSegments`, label: `Object ${newId}: Use LED Segments`, type: 'boolean', default: 'false', description: '(Visualizer) Renders bars as discrete segments instead of solid blocks.' },
+            { property: `obj${newId}_vizSegmentCount`, label: `Object ${newId}: Segment Count`, type: 'number', default: '16', min: '2', max: '64', description: '(Visualizer) The number of vertical LED segments the bar is divided into.' },
+            { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
+            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
+            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+
+            { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
+            { property: `obj${newId}_sensorTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Sensor Meter', values: 'Sensor Meter,Time Plot', description: 'Selects the specific effect that the object will perform in response to sensor data.' },
+            { property: `obj${newId}_sensorValueSource`, label: `Object ${newId}: Sensor Value`, type: 'combobox', default: 'value', values: 'value,min,max', description: 'The source of the data value to use from the selected sensor (current, min, or max).' },
+            { property: `obj${newId}_userSensor`, label: `Object ${newId}: Sensor`, type: 'sensor', default: 'CPU Load', description: 'The hardware sensor to monitor for reactivity.' },
+            { property: `obj${newId}_timePlotLineThickness`, label: `Object ${newId}: Line Thickness`, type: 'number', default: '1', min: '1', max: '50', description: '(Time Plot) Sets the thickness of the time-plot line.' },
+            { property: `obj${newId}_timePlotFillArea`, label: `Object ${newId}: Fill Area`, type: 'boolean', default: 'false', description: '(Time Plot) Fills the area under the time plot line.' },
+            { property: `obj${newId}_sensorColorMode`, label: `Object ${newId}: Color Mode`, type: 'combobox', default: 'None', values: 'None,Value-Based Gradient,Thresholds', description: '(Sensor Meter) The coloring method for the sensor meter.' },
+            { property: `obj${newId}_sensorMidThreshold`, label: `Object ${newId}: Mid Threshold`, type: 'number', default: '50', min: '0', max: '100', description: 'The sensor value at which the color changes from green to orange.' },
+            { property: `obj${newId}_sensorMaxThreshold`, label: `Object ${newId}: Max Threshold`, type: 'number', default: '90', min: '0', max: '100', description: 'The sensor value at which the color changes from orange to red.' },
+            { property: `obj${newId}_sensorMeterShowValue`, label: `Object ${newId}: Show Value`, type: 'boolean', default: 'false', description: '(Sensor Meter) Displays the current sensor value as text on the meter.' },
+            { property: `obj${newId}_timePlotAxesStyle`, label: `Object ${newId}: Axes Style`, type: 'combobox', default: 'None', values: 'None,Lines Only,Lines and Values', description: '(Time Plot) Sets the style for the X and Y axes.' },
+            { property: `obj${newId}_timePlotTimeScale`, label: `Object ${newId}: Time Scale (Seconds)`, type: 'number', default: '5', min: '1', max: '30', description: '(Time Plot) The total duration in seconds displayed across the width of the chart.' },
+            // Strimer
+            { property: `obj${newId}_strimerRows`, label: `Object ${newId}: Rows`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of horizontal rows.' },
+            { property: `obj${newId}_strimerColumns`, label: `Object ${newId}: Columns`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of vertical columns.' },
+            { property: `obj${newId}_strimerBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '4', min: '1', max: '100', description: '(Strimer) Number of animated blocks per column.' },
+            { property: `obj${newId}_strimerBlockSize`, label: `Object ${newId}: Block Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Strimer) Height of each block in pixels.' },
+            { property: `obj${newId}_strimerAnimation`, label: `Object ${newId}: Animation`, type: 'combobox', default: 'Bounce', values: 'Bounce,Loop,Cascade,Audio Meter,Snake', description: '(Strimer) The primary animation style for the blocks.' },
+            { property: `obj${newId}_strimerDirection`, label: `Object ${newId}: Direction`, type: 'combobox', default: 'Random', values: 'Up,Down,Random', description: '(Strimer) The initial direction of the blocks.' },
+            { property: `obj${newId}_strimerEasing`, label: `Object ${newId}: Easing`, type: 'combobox', default: 'Linear', values: 'Linear,Ease-In,Ease-Out,Ease-In-Out', description: '(Strimer) The acceleration curve of the block movement.' },
+            { property: `obj${newId}_strimerAnimationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '20', min: '0', max: '100', description: '(Strimer) The speed of the block movement, independent of the fill animation.' },
+            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake. Vertical (along the colum), Horizontal (across the columns).' },
+            { property: `obj${newId}_strimerBlockSpacing`, label: `Object ${newId}: Block Spacing`, type: 'number', default: '5', min: '0', max: '50', description: '(Cascade) The vertical spacing between blocks in a cascade.' },
+            { property: `obj${newId}_strimerGlitchFrequency`, label: `Object ${newId}: Glitch Frequency`, type: 'number', default: '0', min: '0', max: '100', description: '(Glitch) How often blocks stutter or disappear. 0 is off.' },
+            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together. If unchecked, they pulse sequentially.' },
+            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars. 100 is normal.' },
+            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s). 100 is normal.' },
+            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
+            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement. Higher is smoother.' },
+            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. Applied on top of other animations. 0 is off.' },
+
+            //Spawner
+            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles. "Random" will pick a shape for each particle individually.' },
+            { property: `obj${newId}_spawn_animation`, label: `Object ${newId}: Emitter Style`, type: 'combobox', values: 'explode,fountain,rain,flow', default: 'explode', description: '(Spawner) The behavior and direction of particle emission.' },
+            { property: `obj${newId}_spawn_count`, label: `Object ${newId}: Max Particles`, type: 'number', default: '100', min: '1', max: '500', description: '(Spawner) The maximum number of particles on screen at once.' },
+            { property: `obj${newId}_spawn_spawnRate`, label: `Object ${newId}: Spawn Rate`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) How many new particles are created per second.' },
+            { property: `obj${newId}_spawn_lifetime`, label: `Object ${newId}: Lifetime (s)`, type: 'number', default: '3', min: '0.1', max: '20', description: '(Spawner) How long each particle lasts, in seconds.' },
+            { property: `obj${newId}_spawn_speed`, label: `Object ${newId}: Initial Speed`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) The average starting speed of newly created particles.' },
+            { property: `obj${newId}_spawn_speedVariance`, label: `Object ${newId}: Initial Speed Variance (±)`, type: 'number', default: '0', min: '0', max: '500', description: '(Spawner) Adds randomness to the initial speed of each particle.' },
+            { property: `obj${newId}_spawn_size`, label: `Object ${newId}: Particle Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Spawner) The size of each particle in pixels.' },
+            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size. 0% is uniform, 100% is highly varied.' },
+            { property: `obj${newId}_spawn_gravity`, label: `Object ${newId}: Gravity`, type: 'number', default: '0', min: '-200', max: '200', description: '(Spawner) A constant downward (or upward) force applied to particles.' },
+            { property: `obj${newId}_spawn_spread`, label: `Object ${newId}: Spread Angle`, type: 'number', default: '360', min: '0', max: '360', description: '(Spawner) The angle (in degrees) for Explode or Fountain emitters.' },
+            { property: `obj${newId}_spawn_rotationSpeed`, label: `Object ${newId}: Particle Rotation Speed`, type: 'number', default: '0', min: '-360', max: '360', description: '(Spawner) The average rotational speed of each particle in degrees per second.' },
+            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed. If base speed is 10 and variance is 5, speed will be random between 5 and 15.' },
+            { property: `obj${newId}_spawn_initialRotation_random`, label: `Object ${newId}: Random Initial Rotation`, type: 'boolean', default: 'false', description: '(Spawner) If checked, each particle starts at a random angle.' },
+            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'm -7.1735 47.0399 c -0.4792 -0.1767 -1.8839 -1.1913 -3.1216 -2.2546 c -1.2377 -1.0633 -2.9272 -2.2326 -3.7544 -2.5984 c -0.8272 -0.3658 -3.7682 -1.2585 -6.5357 -1.9837 c -9.9176 -2.599 -11.7218 -3.5122 -14.164 -7.1695 c -1.5926 -2.3849 -2.2275 -4.7408 -2.2275 -8.2651 c 0 -6.2533 2.5468 -11.5705 7.0838 -14.7894 c 3.2916 -2.3353 8.7752 -4.6118 12.8685 -5.3421 c 1.1812 -0.2108 4.0084 -0.359 6.9518 -0.3645 l 4.9609 -0.009 v -0.635 c 0 -0.8312 -1.7502 -9.5695 -1.9966 -9.968 c -0.2606 -0.4217 -1.4724 -0.2265 -7.5545 1.2166 c -7.2798 1.7273 -9.6611 2.0447 -14.3937 1.9184 c -4.6096 -0.123 -5.7086 -0.4664 -7.3607 -2.3004 c -1.8407 -2.0433 -2.1657 -3.1128 -2.1375 -7.0326 c 0.0238 -3.2996 0.076 -3.6119 1.2832 -7.6729 c 0.6921 -2.3283 1.3212 -4.9693 1.398 -5.8688 c 0.1281 -1.5009 0.0606 -1.7882 -0.8212 -3.492 c -1.0541 -2.0368 -1.2327 -3.4948 -0.5479 -4.4725 c 0.9177 -1.3102 3.0926 -1.7702 4.6243 -0.9781 l 0.7777 0.4021 l 1.67 -1.7032 c 1.8981 -1.9358 2.9955 -2.352 4.352 -1.6505 c 1.3396 0.6927 1.6736 2.3514 0.9746 4.8401 c -0.1087 0.3869 0.01 0.7152 0.3668 1.0187 c 1.9232 1.6337 2.403 2.2194 2.5768 3.1459 c 0.3675 1.9589 -0.5582 2.8535 -3.6119 3.4902 c -1.0738 0.2239 -2.1432 0.5798 -2.3765 0.7909 c -0.5528 0.5003 -1.7125 2.88 -2.6976 5.5355 c -1.0971 2.9575 -1.1239 4.939 -0.0869 6.438 c 1.1063 1.5991 2.1559 2.1614 4.0293 2.1587 c 2.781 -0.004 12.4578 -2.2285 16.9021 -3.8853 l 1.3229 -0.4932 l 0.1565 -4.2474 c 0.1411 -3.8282 0.2191 -4.3588 0.7909 -5.3762 c 0.7891 -1.4039 2.4436 -2.4268 3.9593 -2.4477 c 2.2352 -0.0309 3.248 1.4934 4.6276 6.9641 c 0.4807 1.9061 0.9998 3.5915 1.1537 3.7453 c 0.3499 0.3499 4.796 -0.5486 8.3011 -1.6776 c 2.8202 -0.9083 9.427 -4.1284 10.7545 -5.2416 c 1.2659 -1.0615 1.2015 -1.8925 -0.3327 -4.2905 c -1.3545 -2.1171 -1.3884 -2.6034 -0.2531 -3.6341 c 0.5926 -0.538 0.8405 -0.5893 2.092 -0.4329 c 1.0872 0.1358 1.4444 0.0929 1.5251 -0.1834 c 0.0579 -0.1984 0.2412 -0.8615 0.4072 -1.4734 c 0.4699 -1.7318 1.4456 -2.7239 2.679 -2.7239 c 1.0012 0 1.0379 0.0352 1.8649 1.7859 c 0.464 0.9823 0.891 1.8397 0.9488 1.9055 c 0.0579 0.0657 0.8814 0.1998 1.8301 0.298 c 2.072 0.2145 3.0191 0.9167 3.0191 2.2387 c 0 1.0776 -0.7527 2.0267 -2.4874 3.1364 c -1.1065 0.7078 -1.5685 1.2446 -2.3483 2.7288 c -2.304 4.3846 -6.15 8.0726 -10.917 10.4688 c -3.3572 1.6875 -4.8758 2.2252 -12.4889 4.4226 c -1.0536 0.3041 -2.2279 0.8216 -2.6097 1.1499 l -0.6941 0.597 l 0.5599 2.9266 c 0.6144 3.2115 1.1257 4.9111 1.5165 5.0414 c 0.1395 0.0465 1.4396 -0.7627 2.8889 -1.7982 c 2.9621 -2.1163 7.7385 -4.5342 11.4988 -5.8211 c 2.3746 -0.8126 2.7679 -0.8665 7.1159 -0.9742 c 2.9484 -0.0731 5.1828 -0.0008 6.2177 0.2011 c 3.6813 0.7181 8.0035 3.9741 9.7535 7.3477 c 0.8578 1.6535 1.2452 2.9272 1.6447 5.4071 c 0.2192 1.3607 -0.2753 5.0376 -1.198 8.9066 c -0.4288 1.7983 -0.7797 3.627 -0.7797 4.0638 c 0 0.4368 0.5431 2.0413 1.2068 3.5656 c 1.356 3.1141 1.3716 3.7643 0.1228 5.1011 c -0.8692 0.9305 -1.7797 1.0226 -3.8432 0.3889 c -0.7276 -0.2235 -1.6884 -0.3398 -2.1352 -0.2587 c -0.4664 0.0848 -1.9308 1.0443 -3.4396 2.2539 c -4.6511 3.7287 -6.8092 4.4998 -8.1462 2.9108 c -0.6418 -0.7627 -0.6557 -0.8491 -0.3173 -1.9734 c 0.369 -1.2261 1.1506 -2.6405 4.3881 -7.9408 c 2.4033 -3.9345 4.3309 -7.9349 4.9065 -10.182 c 0.2991 -1.1677 0.4026 -2.3933 0.3257 -3.8569 c -0.1241 -2.3648 -0.5762 -3.3923 -2.3039 -5.2362 c -3.8731 -4.1336 -11.4998 -3.4543 -18.7612 1.671 c -2.6959 1.9028 -4.8497 4.1098 -7.6193 7.8072 c -1.3066 1.7444 -2.6896 3.3478 -3.0733 3.5631 c -0.6632 0.3722 -0.8521 0.3169 -3.8245 -1.1193 c -3.9257 -1.8969 -6.3326 -2.4386 -9.8738 -2.2225 c -6.5556 0.4001 -11.7849 2.9718 -14.041 6.9051 c -1.1811 2.0592 -0.9733 5.0568 0.5623 8.1136 c 0.883 1.7575 2.0726 2.8627 4.2818 3.9779 c 3.0127 1.5208 3.4646 1.6127 8.7896 1.7875 L -5 33.5 l 0.388 1.0212 c 0.4018 1.0574 0.3032 1.7764 -0.5186 3.781 c -0.3067 0.7483 -0.2707 0.9915 0.3524 2.3813 c 0.8868 1.9776 1.293 3.8003 1.0821 4.8548 c -0.2753 1.3766 -1.9066 2.0812 -3.4774 1.5019 z m -6.841 -74.1807 c -0.3126 -0.0611 -1.0122 -0.4947 -1.5545 -0.9636 c -0.8512 -0.7358 -1.0045 -1.0439 -1.1205 -2.2516 c -0.087 -0.9059 -0.009 -1.6339 0.2219 -2.065 c 0.5026 -0.9391 2.3363 -1.9449 3.5457 -1.9449 c 0.8549 0 1.2057 0.1989 2.3259 1.3192 c 1.294 1.294 1.3167 1.3445 1.1914 2.6485 c -0.1437 1.495 -0.6427 2.1895 -2.1126 2.9397 c -0.9625 0.4913 -1.3548 0.5412 -2.4972 0.3178 z m 17.2372 -2.1886 c -2.0034 -0.8389 -2.8183 -3.8272 -1.4892 -5.4607 c 0.9736 -1.1966 2.6724 -1.5051 4.3735 -0.7944 c 1.209 0.5051 1.7459 1.3673 1.7459 2.8035 c 0 1.6255 -0.9646 3.0532 -2.3164 3.4286 c -1.1573 0.3214 -1.5909 0.3257 -2.3138 0.023 z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
+            { property: `obj${newId}_spawn_matrixCharSet`, label: `Object ${newId}: Matrix Character Set`, type: 'combobox', default: 'katakana', values: 'katakana,numbers,binary,ascii', description: '(Spawner) The set of characters to use for the Matrix particle type.' },
+            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail (for both generic and matrix types).' },
+            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments. 1 = one particle size.' },
+            { property: `obj${newId}_spawn_enableTrail`, label: `Object ${newId}: Enable Trail`, type: 'boolean', default: 'false', description: '(Spawner/Trail) Enables a fading trail behind each particle.' },
+            { property: `obj${newId}_spawn_matrixEnableGlow`, label: `Object ${newId}: Enable Character Glow`, type: 'boolean', default: 'false', description: '(Spawner/Matrix) Adds a glow effect to the matrix characters.' },
+            { property: `obj${newId}_spawn_matrixGlowSize`, label: `Object ${newId}: Character Glow Size`, type: 'number', default: '10', min: '0', max: '50', description: '(Spawner/Matrix) The size and intensity of the glow effect.' },
+
+            // Polyline
+            { property: `obj${newId}_polylineCurveStyle`, label: `Object ${newId}: Curve Style`, type: 'combobox', default: 'straight', values: 'straight,loose-curve,tight-curve', description: '(Polyline) The style of the line segments.' },
+            { property: `obj${newId}_polylineNodes`, label: `Object ${newId}: Nodes`, type: 'nodetable', default: '[{"x":50,"y":50},{"x":150,"y":100}]', description: '(Polyline) The coordinate data for the polyline nodes.' },
+            { property: `obj${newId}_pathAnim_enable`, label: `Object ${newId}: Enable Animation`, type: 'boolean', default: 'false', description: 'Enables an object that travels along the path.' },
+            { property: `obj${newId}_pathAnim_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'circle', values: 'circle,rectangle,star,polygon', description: 'The shape of the traveling object.' },
+            { property: `obj${newId}_pathAnim_size`, label: `Object ${newId}: Size`, type: 'number', default: '10', min: '1', max: '100', description: 'The size of the traveling object in pixels.' },
+            { property: `obj${newId}_pathAnim_speed`, label: `Object ${newId}: Speed`, type: 'number', default: '50', min: '0', max: '1000', description: 'How fast the object travels along the path (pixels per second).' },
+            { property: `obj${newId}_pathAnim_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic' },
+            { property: `obj${newId}_pathAnim_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false' },
+            { property: `obj${newId}_pathAnim_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100' },
+            { property: `obj${newId}_pathAnim_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#FFFFFF' },
+            { property: `obj${newId}_pathAnim_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#00BFFF' },
+            { property: `obj${newId}_pathAnim_animationMode`, label: `Object ${newId}: Fill Animation`, type: 'combobox', values: 'loop,bounce', default: 'loop' },
+            { property: `obj${newId}_pathAnim_animationSpeed`, label: `Object ${newId}: Fill Speed`, type: 'number', default: '10', min: '0', max: '100' },
+            { property: `obj${newId}_pathAnim_behavior`, label: `Object ${newId}: Behavior`, type: 'combobox', values: 'Loop,Ping-Pong', default: 'Loop', description: 'How the object behaves when it reaches the end of the path.' },
+            { property: `obj${newId}_pathAnim_objectCount`, label: `Object ${newId}: Object Count`, type: 'number', default: '1', min: '1', max: '100', description: 'The number of objects to animate along the path.' },
+            { property: `obj${newId}_pathAnim_objectSpacing`, label: `Object ${newId}: Object Spacing`, type: 'number', default: '25', min: '0', max: '200', description: 'The distance between each object when Object Count is greater than 1.' },
+            { property: `obj${newId}_pathAnim_scrollDir`, label: `Object ${newId}: Scroll Direction`, type: 'combobox', values: 'right,left,up,down', default: 'right' },
+            { property: `obj${newId}_pathAnim_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false' },
+            { property: `obj${newId}_pathAnim_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100' },
+            { property: `obj${newId}_pathAnim_trail`, label: `Object ${newId}: Trail`, type: 'combobox', values: 'None,Fade,Solid', default: 'None', description: 'Adds a trail behind the moving object.' },
+            { property: `obj${newId}_pathAnim_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '20', min: '1', max: '200', description: 'The length of the trail.' },
+            { property: `obj${newId}_pathAnim_trailColor`, label: `Object ${newId}: Trail Color`, type: 'combobox', values: 'Inherit,Rainbow', default: 'Inherit', description: 'The color style of the trail.' },
+        ];
+
+    }
+
+    /**
+     * Enables or disables dependent stroke controls based on the 'enableStroke' checkbox state.
+     * @param {HTMLElement} fieldset - The fieldset element for a specific object.
+     */
+    function updateStrokeDependentControls(fieldset) {
+        const id = fieldset.dataset.objectId;
+        const enableStrokeToggle = fieldset.querySelector(`[name="obj${id}_enableStroke"]`);
+        if (!enableStrokeToggle) return;
+
+        const isStrokeEnabled = enableStrokeToggle.checked;
+
+        const dependentControls = [
+            'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop',
+            'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed',
+            'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode',
+            'strokePhaseOffset', 'strokeScrollDir'
+        ];
+
+        dependentControls.forEach(prop => {
+            const control = fieldset.querySelector(`[name="obj${id}_${prop}"]`);
+            if (control) {
+                control.disabled = !isStrokeEnabled;
+                const slider = fieldset.querySelector(`[name="obj${id}_${prop}_slider"]`);
+                if (slider) slider.disabled = !isStrokeEnabled;
+                const hexInput = fieldset.querySelector(`[name="obj${id}_${prop}_hex"]`);
+                if (hexInput) hexInput.disabled = !isStrokeEnabled;
+            }
+        });
+    }
+
+    function getLocalDateFromUTC(dateUTC) {
+        const offsetInMs = dateUTC.getTimezoneOffset() * 60 * 1000;
+        return new Date(dateUTC.getTime() - offsetInMs);
+    }
+
+    function serializeFontData(fontData, varName) {
+        return 'const ' + varName + ' = ' + JSON.stringify(fontData) + ';';
+    }
+
+    function parseColorToRgba(colorStr) {
+        if (typeof colorStr !== 'string') colorStr = '#000000';
+
+        if (colorStr.startsWith('#')) {
+            let hex = colorStr.slice(1);
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            if (hex.length === 4) hex = hex.split('').map(c => c + c).join('');
+
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const a = hex.length === 8 ? parseInt(hex.substring(6, 8), 16) / 255 : 1;
+            return { r, g, b, a };
+        }
+
+        if (colorStr.startsWith('rgb')) {
+            const parts = colorStr.match(/(\d+(\.\d+)?)/g).map(Number);
+            return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+        }
+
+        if (colorStr.startsWith('hsl')) {
+            const [h, s, l] = colorStr.match(/(\d+(\.\d+)?)/g).map(Number);
+            const s_norm = s / 100;
+            const l_norm = l / 100;
+            if (s_norm === 0) return { r: l_norm * 255, g: l_norm * 255, b: l_norm * 255, a: 1 };
+
+            const c = (1 - Math.abs(2 * l_norm - 1)) * s_norm;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = l_norm - c / 2;
+            let r_temp, g_temp, b_temp;
+
+            if (h >= 0 && h < 60) { [r_temp, g_temp, b_temp] = [c, x, 0]; }
+            else if (h >= 60 && h < 120) { [r_temp, g_temp, b_temp] = [x, c, 0]; }
+            else if (h >= 120 && h < 180) { [r_temp, g_temp, b_temp] = [0, c, x]; }
+            else if (h >= 180 && h < 240) { [r_temp, g_temp, b_temp] = [0, x, c]; }
+            else if (h >= 240 && h < 300) { [r_temp, g_temp, b_temp] = [x, 0, c]; }
+            else { [r_temp, g_temp, b_temp] = [c, 0, x]; }
+
+            return {
+                r: Math.round((r_temp + m) * 255),
+                g: Math.round((g_temp + m) * 255),
+                b: Math.round((b_temp + m) * 255),
+                a: 1
+            };
+        }
+        return { r: 0, g: 0, b: 0, a: 1 }; // Fallback
+    }
+
+    async function incrementDownloadCount() {
+        if (currentProjectDocId) {
+            try {
+                const docRef = window.doc(window.db, "projects", currentProjectDocId);
+                await window.updateDoc(docRef, {
+                    downloadCount: window.increment(1)
+                });
+            } catch (err) {
+                console.warn("Could not increment download count:", err);
+            }
+        }
+    }
+
+    async function exportFile() {
+        const exportButton = document.getElementById('export-btn');
+        exportButton.disabled = true;
+        exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Preparing...';
+
+        try {
+            updateObjectsFromForm();
+            const { metaTags, jsVars, allKeys } = generateOutputScript();
+            const effectTitle = getControlValues()['title'] || 'MyEffect';
+            const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
+            const safeFilename = effectTitle.replace(/[\s\/\\?%*:|"<>]/g, '_');
+
+            const styleContent =
+                '        canvas { width: 100%; height: 100%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #000000; }\n' +
+                '        body { background-color: #000000; overflow: hidden; margin: 0; }\n';
+            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
+            const shapeClasses = [`${Shape.toString()}`].join('\n\n');
+            const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
+
+            const exportedScript = `
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signalCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = 320;
+    canvas.height = 200;
+    let objects = [];
+    
+    ${jsVars}
+
+    window.gradientSpeedMultiplier = ${window.gradientSpeedMultiplier};
+    window.shapeSpeedMultiplier = ${window.shapeSpeedMultiplier};
+    window.seismicSpeedMultiplier = ${window.seismicSpeedMultiplier};
+    window.tetrisGravityMultiplier = ${window.tetrisGravityMultiplier};
+    window.textSpeedMultiplier = ${window.textSpeedMultiplier};
+
+    const getSensorValue = (sensorName) => {
+        try {
+            return engine.getSensorValue(sensorName);
+        } catch (e) {
+            return { value: 0, min: 0, max: 100 };
+        }
+    };
+    
+    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
+    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
+    const parseColorToRgba = ${parseColorToRgba.toString()};
+    const lerpColor = ${lerpColor.toString()};
+    const getPatternColor = ${getPatternColor.toString()};
+    const drawPixelText = ${drawPixelText.toString()};
+    const getSignalRGBAudioMetrics = ${getSignalRGBAudioMetrics.toString()};
+    
+    const Shape = ${Shape.toString()};
+
+    let then;
+    const allPropKeys = ${formattedKeys};
+
+    function createInitialObjects() {
+        if (allPropKeys.length === 0) return;
+
+        const uniqueIds = [...new Set(allPropKeys.map(p => {
+            if (!p.startsWith('obj')) return null;
+            const end = p.indexOf('_');
+            if (end <= 3) return null;
+            const idString = p.substring(3, end);
+            const id = parseInt(idString, 10);
+            return isNaN(id) ? null : String(id);
+        }).filter(id => id !== null))];
+
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize'];
+        
+        objects = uniqueIds.map(id => {
+            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
+            const prefix = 'obj' + id + '_';
+
+            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
+                const propName = key.substring(prefix.length);
+                try {
+                    let value = eval(key);
+
+                    if (value === "true") value = true;
+                    if (value === "false") value = false;
+
+                    if (propsToScale.includes(propName) && typeof value === 'number') {
+                        value *= 4;
+                    }
+
+                    // FIX: This logic correctly separates color and alpha properties.
+                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
+                        try {
+                            config[propName] = (typeof value === 'string') ? JSON.parse(value) : value;
+                        } catch(e) {
+                            console.error(\`Failed to parse \${propName}\`, e);
+                        }
+                    } else if (propName === 'gradColor1' || propName === 'gradColor2') {
+                        config.gradient[propName.replace('grad', '').toLowerCase()] = value;
+                    } else if (propName === 'strokeGradColor1' || propName === 'strokeGradColor2') {
+                        config.strokeGradient[propName.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                    } else if (propName === 'scrollDir') {
+                        config.scrollDirection = value;
+                    } else if (propName === 'strokeScrollDir') {
+                        config.strokeScrollDir = value;
+                    } else {
+                        config[propName] = value;
+                    }
+                } catch (e) {}
+            });
+
+            return new Shape(config);
+        });
+    }
+
+    function drawFrame(deltaTime = 0) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        let shouldAnimate = false;
+        try { shouldAnimate = eval('enableAnimation') == true; } catch(e) {}
+        
+        const audioData = getSignalRGBAudioMetrics();
+        const sensorData = {};
+        // Find all unique sensor names used by the objects in this effect.
+        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+
+        // For each needed sensor, get its live value from the engine.
+        neededSensors.forEach(sensorName => {
+            sensorData[sensorName] = getSensorValue(sensorName);
+        });
+
+        // Read global properties from the effect's controls at the start of the frame
+        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
+        let enableGlobalCycle = false, globalCycleSpeed = 10;
+
+        try { enablePalette = eval('enablePalette'); } catch(e) {}
+        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
+        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
+        try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
+        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
+
+        const palette = {
+            enablePalette: enablePalette,
+            paletteColor1: paletteColor1,
+            paletteColor2: paletteColor2
+        };
+        const globalCycle = {
+            enable: enableGlobalCycle,
+            speed: globalCycleSpeed
+        };
+
+        // Use a single loop to update and draw all objects
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            
+            // --- 1. Read and apply live property updates from SignalRGB UI ---
+            const prefix = 'obj' + obj.id + '_';
+            const propsToUpdate = { gradient: {}, strokeGradient: {} };
+            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
+                const propName = key.substring(prefix.length);
+                try {
+                    let value = eval(key);
+                    if (value === "true") value = true;
+                    if (value === "false") value = false;
+                    
+                    if (propName.startsWith('gradColor')) {
+                        propsToUpdate.gradient[propName.replace('gradColor', 'color')] = value;
+                    } else if (propName.startsWith('strokeGradColor')) {
+                        propsToUpdate.strokeGradient[propName.replace('strokeGradColor', 'color')] = value;
+                    } else if (propName === 'scrollDir') {
+                        propsToUpdate.scrollDirection = value;
+                    } else if (propName === 'strokeScrollDir') {
+                        propsToUpdate.strokeScrollDir = value;
+                    } else {
+                        propsToUpdate[propName] = value;
+                    }
+                } catch (e) {}
+            });
+            
+            const oldStrimerState = {
+                animation: obj.strimerAnimation,
+                direction: obj.strimerDirection,
+                columns: obj.strimerColumns,
+                blockCount: obj.strimerBlockCount
+            };
+
+            obj.update(propsToUpdate);
+            
+            // --- 2. Handle state resets for shapes like Strimer if properties changed ---
+            if (obj.shape === 'strimer' && (
+                obj.strimerAnimation !== oldStrimerState.animation ||
+                obj.strimerDirection !== oldStrimerState.direction ||
+                obj.strimerColumns !== oldStrimerState.columns ||
+                obj.strimerBlockCount !== oldStrimerState.blockCount
+            )) {
+                obj.strimerBlocks = [];
+                obj.strimerMeterHeights = [];
+            }
+
+            // --- 3. Apply Global Overrides ---
+            const originalCycleColors = obj.cycleColors;
+            const originalCycleSpeed = obj.cycleSpeed;
+            if (globalCycle.enable) {
+                obj.cycleColors = true;
+                obj.cycleSpeed = (globalCycle.speed || 0) / 50.0;
+            }
+
+            // --- 4. Update Animation State ---
+            if (shouldAnimate) {
+                obj.updateAnimationState(audioData, sensorData, deltaTime);
+            }
+            
+            // --- 5. Draw the object ---
+            obj.draw(false, audioData, palette);
+
+            // --- 6. Restore Overridden Properties ---
+            obj.cycleColors = originalCycleColors;
+            obj.cycleSpeed = originalCycleSpeed;
+        }
+    }
+
+    function animate(timestamp) {
+        requestAnimationFrame(animate);
+        const now = timestamp;
+        let deltaTime = (now - (then || now)) / 1000.0;
+        if (deltaTime > 0.1) {
+            deltaTime = 0.1;
+        }
+        then = now;
+        
+        drawFrame(deltaTime);
+    }
+
+    function init() {
+        createInitialObjects();
+        then = window.performance.now();
+        animate(then);
+    }
+
+    init();
+});`;
+
+            const finalHtml = [
+                '<!DOCTYPE html>',
+                '<html lang="en">',
+                '<head>',
+                '    <meta charset="UTF-8">',
+                '    <title>' + effectTitle + '</title>',
+                metaTags,
+                '    <style>',
+                styleContent,
+                '    </style>',
+                '</head>',
+                bodyContent,
+                '<script>',
+                exportedScript,
+                '</script>',
+                '</html>'
+            ].join('\n');
+
+            exportPayload = {
+                safeFilename,
+                finalHtml,
+                thumbnailDataUrl,
+                imageExtension: 'png',
+                exportDate: new Date()
+            };
+
+        } catch (error) {
+            console.error('Export preparation failed:', error);
+            showToast('Failed to prepare export: ' + error.message, 'danger');
+        } finally {
+            exportButton.disabled = false;
+            exportButton.innerHTML = '<i class="bi bi-download"></i> Export';
+        }
+    }
+
+    form.addEventListener('input', (e) => {
+        const target = e.target;
+        if (target.name) {
+            dirtyProperties.add(target.name);
+        }
+
+        if (['enablePalette', 'paletteColor1', 'paletteColor2'].includes(target.name)) {
+            updateColorControls();
+        }
+
+        if (target.type === 'number' && document.getElementById(`${target.id}_slider`)) {
+            document.getElementById(`${target.id}_slider`).value = target.value;
+        } else if (target.type === 'range' && target.id.endsWith('_slider')) {
+            document.getElementById(target.id.replace('_slider', '')).value = target.value;
+        }
+
+        if (target.type === 'color' && document.getElementById(`${target.id}_hex`)) {
+            document.getElementById(`${target.id}_hex`).value = target.value;
+        } else if (target.type === 'text' && target.id.endsWith('_hex')) {
+            const colorPicker = document.getElementById(target.id.replace('_hex', ''));
+            if (colorPicker && /^#[0-9A-F]{6}$/i.test(target.value)) {
+                colorPicker.value = target.value;
+            }
+        }
+
+        // Merged logic for node table edits
+        if (target.classList.contains('node-x-input') || target.classList.contains('node-y-input')) {
+            const container = target.closest('.node-table-container');
+            if (container) {
+                const hiddenTextarea = container.querySelector('textarea');
+                const tbody = container.querySelector('tbody');
+                const newNodes = Array.from(tbody.children).map(tr => ({
+                    x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                    y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+                }));
+                hiddenTextarea.value = JSON.stringify(newNodes);
+            }
+        }
+
+        // --- START: NEW PIXEL ART TABLE LOGIC ---
+        // This block reads changes from the frame data/duration fields and updates the hidden master textarea
+        if (target.classList.contains('frame-data-input') || target.classList.contains('frame-duration-input')) {
+            const container = target.closest('.pixel-art-table-container');
+            if (container) {
+                const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+                // CORRECTED SELECTOR: Find the div container, not a tbody
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                if (framesContainer) {
+                    // CORRECTED LOGIC: Iterate over the frame item divs, not table rows
+                    const newFrames = Array.from(framesContainer.children).map(item => ({
+                        data: item.querySelector('.frame-data-input').value,
+                        duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                    }));
+                    hiddenTextarea.value = JSON.stringify(newFrames);
+                }
+            }
+        }
+        // --- END: NEW PIXEL ART TABLE LOGIC ---
+
+        updateObjectsFromForm();
+        drawFrame();
+    });
+
+    form.addEventListener('click', (e) => {
+        // --- START: CONSOLIDATED BUTTON CLICK LOGIC ---
+        const addNodeBtn = e.target.closest('.btn-add-node');
+        const deleteNodeBtn = e.target.closest('.btn-delete-node');
+        const addFrameBtn = e.target.closest('.btn-add-frame');
+        const deleteFrameBtn = e.target.closest('.btn-delete-frame');
+
+        // Handle Polyline Node Table Additions
+        if (addNodeBtn) {
+            const container = addNodeBtn.closest('.node-table-container');
+            const tbody = container.querySelector('tbody');
+            const newIndex = tbody.children.length;
+            const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
+            const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
+            const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
+            const tr = document.createElement('tr');
+            tr.dataset.index = newIndex;
+            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+            tbody.appendChild(tr);
+
+            const hiddenTextarea = container.querySelector('textarea');
+            const newNodes = Array.from(tbody.children).map(tr => ({
+                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+            }));
+            hiddenTextarea.value = JSON.stringify(newNodes);
+            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            recordHistory(); // ADDED: Record this action in the undo/redo stack
+            return;
+        }
+
+        // Handle Polyline Node Table Deletions
+        if (deleteNodeBtn) {
+            const container = deleteNodeBtn.closest('.node-table-container');
+            const tbody = container.querySelector('tbody');
+            if (tbody.children.length > 2) {
+                deleteNodeBtn.closest('tr').remove();
+                Array.from(tbody.children).forEach((tr, index) => {
+                    tr.dataset.index = index;
+                    tr.firstElementChild.textContent = index + 1;
+                });
+            } else {
+                showToast("A polyline must have at least 2 nodes.", "danger");
+            }
+            const hiddenTextarea = container.querySelector('textarea');
+            const newNodes = Array.from(tbody.children).map(tr => ({
+                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+            }));
+            hiddenTextarea.value = JSON.stringify(newNodes);
+            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            recordHistory(); // ADDED: Record this action in the undo/redo stack
+            return;
+        }
+
+        // Handle Pixel Art Frame Additions
+        if (addFrameBtn) {
+            const container = addFrameBtn.closest('.pixel-art-table-container');
+            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+            const newIndex = framesContainer.children.length;
+            const frameItem = document.createElement('div');
+            frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
+            frameItem.dataset.index = newIndex;
+            frameItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="frame-item-header">Frame #${newIndex + 1}</strong>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
+                </div>
+                <div>
+                    <label class="form-label-sm">Frame Data</label>
+                    <textarea class="form-control form-control-sm frame-data-input" rows="6">[[1]]</textarea>
+                </div>
+                <div class="mt-2">
+                     <label class="form-label-sm">Duration (seconds)</label>
+                    <input type="number" class="form-control form-control-sm frame-duration-input" value="1" min="0.1" step="0.1">
+                </div>
+            `;
+            framesContainer.appendChild(frameItem);
+
+            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+            const newFrames = Array.from(framesContainer.children).map(item => ({
+                data: item.querySelector('.frame-data-input').value,
+                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+            }));
+            hiddenTextarea.value = JSON.stringify(newFrames);
+            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            recordHistory(); // ADDED: Record this action in the undo/redo stack
+            return;
+        }
+
+        // Handle Pixel Art Frame Deletions
+        if (deleteFrameBtn) {
+            const container = deleteFrameBtn.closest('.pixel-art-table-container');
+            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+            if (framesContainer.children.length > 1) {
+                deleteFrameBtn.closest('.pixel-art-frame-item').remove();
+                Array.from(framesContainer.children).forEach((item, index) => {
+                    item.dataset.index = index;
+                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
+                });
+            } else {
+                showToast("Pixel Art object must have at least one frame.", "warning");
+            }
+
+            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+            const newFrames = Array.from(framesContainer.children).map(item => ({
+                data: item.querySelector('.frame-data-input').value,
+                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+            }));
+            hiddenTextarea.value = JSON.stringify(newFrames);
+            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            recordHistory(); // ADDED: Record this action in the undo/redo stack
+            return;
+        }
+        // --- END: CONSOLIDATED BUTTON CLICK LOGIC ---
+
+        // Original logic for selecting a panel
+        const fieldset = e.target.closest('fieldset[data-object-id]');
+        const isInteractive = e.target.closest('button, a, input, [contenteditable="true"]');
+        if (fieldset && !isInteractive) {
+            const idToSelect = parseInt(fieldset.dataset.objectId, 10);
+            if (!(selectedObjectIds.length === 1 && selectedObjectIds[0] === idToSelect)) {
+                selectedObjectIds = [idToSelect];
+                updateToolbarState();
+                syncPanelsWithSelection();
+                drawFrame();
+            }
+        }
+    });
+
+    // MODIFIED - Added Ctrl+C and Ctrl+V keyboard shortcuts for copy/paste
+    function finalizePolyline() {
+        if (!isDrawingPolyline) return;
+
+        const shape = objects.find(o => o.id === currentlyDrawingShapeId);
+        if (shape) {
+            // Final update to recalculate bounding box correctly
+            shape.update({ polylineNodes: shape.polylineNodes });
+            updateFormValuesFromObjects();
+        }
+
+        isDrawingPolyline = false;
+        currentlyDrawingShapeId = null;
+        previewLine.active = false;
+        activeTool = 'select';
+        canvasContainer.style.cursor = 'default';
+
+        recordHistory();
+        drawFrame();
+        showToast("Polyline created!", "success");
+    }
+
+    canvasContainer.addEventListener('dblclick', e => {
+        if (isDrawingPolyline) {
+            finalizePolyline();
+            return;
+        }
+
+        // Handle adding a node to an existing polyline
+        if (activeTool === 'select' && selectedObjectIds.length === 1) {
+            const selectedObject = objects.find(o => o.id === selectedObjectIds[0]);
+            if (selectedObject && selectedObject.shape === 'polyline' && !selectedObject.locked) {
+                const { x, y } = getCanvasCoordinates(e);
+
+                // This new method will do the hard work.
+                const nodeAdded = selectedObject.addNodeAtPoint(x, y);
+
+                if (nodeAdded) {
+                    // If a node was added, update the form and record history
+                    updateFormValuesFromObjects();
+                    recordHistory();
+                    drawFrame();
                 }
             }
         }
     });
 
-    ctx.restore();
-}
-
-function parseColorToRgba(colorStr) {
-    if (typeof colorStr !== 'string') colorStr = '#000000';
-
-    if (colorStr.startsWith('#')) {
-        let hex = colorStr.slice(1);
-        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-        if (hex.length === 4) hex = hex.split('').map(c => c + c).join('');
-
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-        const a = hex.length === 8 ? parseInt(hex.substring(6, 8), 16) / 255 : 1;
-        return { r, g, b, a };
-    }
-
-    if (colorStr.startsWith('rgb')) {
-        const parts = colorStr.match(/(\d+(\.\d+)?)/g).map(Number);
-        return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
-    }
-
-    if (colorStr.startsWith('hsl')) {
-        const [h, s, l] = colorStr.match(/(\d+(\.\d+)?)/g).map(Number);
-        const s_norm = s / 100;
-        const l_norm = l / 100;
-        if (s_norm === 0) return { r: l_norm * 255, g: l_norm * 255, b: l_norm * 255, a: 1 };
-
-        const c = (1 - Math.abs(2 * l_norm - 1)) * s_norm;
-        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-        const m = l_norm - c / 2;
-        let r_temp, g_temp, b_temp;
-
-        if (h >= 0 && h < 60) { [r_temp, g_temp, b_temp] = [c, x, 0]; }
-        else if (h >= 60 && h < 120) { [r_temp, g_temp, b_temp] = [x, c, 0]; }
-        else if (h >= 120 && h < 180) { [r_temp, g_temp, b_temp] = [0, c, x]; }
-        else if (h >= 180 && h < 240) { [r_temp, g_temp, b_temp] = [0, x, c]; }
-        else if (h >= 240 && h < 300) { [r_temp, g_temp, b_temp] = [x, 0, c]; }
-        else { [r_temp, g_temp, b_temp] = [c, 0, x]; }
-
-        return {
-            r: Math.round((r_temp + m) * 255),
-            g: Math.round((g_temp + m) * 255),
-            b: Math.round((b_temp + m) * 255),
-            a: 1
-        };
-    }
-    return { r: 0, g: 0, b: 0, a: 1 }; // Fallback
-}
-
-/**
- * Linearly interpolates between two hexadecimal colors.
- * @param {string} a - The starting color in hex format (e.g., "#RRGGBB").
- * @param {string} b - The ending color in hex format (e.g., "#RRGGBB").
- * @param {number} amount - The interpolation amount (0.0 to 1.0).
- * @returns {string} The interpolated color in hex format.
- */
-// Replace the entire lerpColor function with this:
-function lerpColor(a, b, amount) {
-    const amt = (typeof amount === 'number' && isFinite(amount)) ? Math.max(0, Math.min(1, amount)) : 0;
-
-    const c1 = parseColorToRgba(a);
-    const c2 = parseColorToRgba(b);
-
-    const r = Math.round(c1.r + amt * (c2.r - c1.r));
-    const g = Math.round(c1.g + amt * (c2.g - c1.g));
-    const b_val = Math.round(c1.b + amt * (c2.b - c1.b)); // Use 'b_val' to avoid conflict
-    const alpha = c1.a + amt * (c2.a - c1.a);
-
-    return `rgba(${r}, ${g}, ${b_val}, ${alpha})`;
-}
-
-/**
- * Generates a color from a two-color pattern based on a time value.
- * Supports both HSL and hex color formats.
- * @param {number} t - The time value (typically 0.0 to 1.0) for the pattern.
- * @param {string} c1 - The first color (hex or HSL).
- * @param {string} c2 - The second color (hex or HSL).
- * @returns {string} The calculated color string.
- */
-function getPatternColor(t, c1, c2) {
-    t = (t % 1.0 + 1.0) % 1.0;
-    const isHsl = c1.startsWith('hsl');
-    if (isHsl) {
-        const hue1 = parseFloat(c1.match(/hsl\((\d+\.?\d*)/)[1]);
-        const hue2 = parseFloat(c2.match(/hsl\((\d+\.?\d*)/)[1]);
-        let finalHue;
-        if (t < 0.5) {
-            finalHue = hue1 + (t / 0.5) * (hue2 - hue1);
-        } else {
-            finalHue = hue2 + ((t - 0.5) / 0.5) * (hue1 - hue2);
+    document.addEventListener('keydown', (e) => {
+        if (isDrawingPolyline && (e.key === 'Enter' || e.key === 'Escape')) {
+            e.preventDefault();
+            finalizePolyline();
+            return;
         }
-        return `hsl(${finalHue % 360}, 100%, 50%)`;
-    } else {
-        if (t < 0.5) return lerpColor(c1, c2, t / 0.5);
-        else return lerpColor(c2, c1, (t - 0.5) / 0.5);
-    }
-}
 
-// Update this for a new property
-class Shape {
-    constructor({ id, name, shape, x, y, width, height, rotation, gradient, gradType, scrollDirection, cycleColors, cycleSpeed, animationSpeed, ctx,
-        innerDiameter, angularWidth, numberOfSegments, rotationSpeed, useSharpGradient, gradientStop, locked, numberOfRows, numberOfColumns, phaseOffset,
-        animationMode, text, fontSize, textAlign, pixelFont, textAnimation, textAnimationSpeed, showTime, showDate, autoWidth, lineWidth, waveType,
-        frequency, oscDisplayMode, pulseDepth, fillShape, enableWaveAnimation, waveStyle, waveCount, tetrisBlockCount, tetrisAnimation, tetrisSpeed,
-        tetrisBounce, tetrisHoldTime, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeScrollDir,
-        strokeCycleColors, strokeCycleSpeed, strokeAnimationSpeed, strokeAnimationMode, strokeUseSharpGradient, strokeGradientStop, strokeRotationSpeed,
-        strokePhaseOffset, fireSpread, pixelArtData, enableAudioReactivity, audioTarget, audioMetric, audioSensitivity, audioSmoothing = 50, beatThreshold,
-        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth,
-        enableSensorReactivity, sensorTarget, sensorValueSource, userSensor, sensorMeterFill, timePlotLineThickness, timePlotFillArea = false,
-        sensorMeterShowValue = false, timePlotAxesStyle = 'None', timePlotTimeScale = 5, gradientSpeedMultiplier, shapeAnimationSpeedMultiplier,
-        seismicAnimationSpeedMultiplier, wavePhaseAngle, oscAnimationSpeed, strimerColumns, strimerBlockCount, strimerBlockSize, strimerAnimation,
-        strimerDirection, strimerEasing, strimerBlockSpacing, strimerGlitchFrequency, strimerPulseSync, strimerAudioSensitivity, strimerBassLevel,
-        strimerTrebleBoost, strimerAudioSmoothing, strimerPulseSpeed, vizBassLevel, vizTrebleBoost, strimerSnakeIndex, strimerAnimationSpeed,
-        strimerSnakeProgress, sensorColorMode, sensorMidThreshold, sensorMaxThreshold, spawn_shapeType, spawn_animation, spawn_count, spawn_spawnRate, spawn_lifetime, spawn_speed,
-        spawn_size, spawn_gravity, spawn_spread, spawn_rotationSpeed, spawn_size_randomness, spawn_initialRotation_random, spawn_svg_path,
-        spawn_rotationVariance, spawn_speedVariance, spawn_matrixCharSet, spawn_matrixEnableGlow, spawn_glowSize, spawn_matrixGlowSize, spawn_enableTrail,
-        spawn_trailLength, spawn_audioTarget, spawn_trailSpacing, polylineNodes, polylineCurveStyle, pathAnim_enable, pathAnim_shape, pathAnim_size,
-        pathAnim_speed, pathAnim_gradType, pathAnim_useSharpGradient, pathAnim_gradientStop, pathAnim_gradColor1, pathAnim_gradColor2,
-        pathAnim_cycleColors, pathAnim_cycleSpeed, pathAnim_animationMode, pathAnim_animationSpeed, pathAnim_scrollDir, pathAnim_trail,
-        pathAnim_trailLength, pathAnim_behavior, pathAnim_objectCount, pathAnim_objectSpacing, pathAnim_trailColor }) {
-        // --- ALL properties are assigned here first ---
-        this.lastDeltaTime = 0;
-        this.dirty = true;
-        this.id = id;
-        this.name = name || `Object ${id}`;
-        this.shape = shape || 'rectangle';
-        this.isBeingManuallyRotated = false;
-        this.x = x || 0;
-        this.y = y || 0;
-        this.width = width || 200;
-        this.height = height || 152;
-        this.rotation = rotation || 0;
-        this.baseRotation = this.rotation;
-        this.baseAnimationAngle = 0;
-        this.gradType = gradType || 'solid';
-        this.gradient = gradient ? { ...gradient } : { color1: '#000000', color2: '#000000' };
-        this.scrollDirection = scrollDirection || 'right';
-        this.cycleColors = cycleColors || false;
-        this.cycleSpeed = cycleSpeed || 0;
-        this.animationSpeed = animationSpeed || 0;
-        this.animationMode = animationMode || 'loop';
-        this.ctx = ctx;
-        this.hue1 = 0;
-        this.hue2 = 90;
-        this.scrollOffset = 0;
-        this.enableStroke = enableStroke || false;
-        this.strokeWidth = strokeWidth || 2;
-        this.strokeGradType = strokeGradType || 'solid';
-        this.strokeGradient = strokeGradient ? { ...strokeGradient } : { color1: '#FFFFFF', color2: '#000000' };
-        this.strokeScrollDir = strokeScrollDir || 'right';
-        this.strokeAnimationMode = strokeAnimationMode || 'loop';
-        this.strokeCycleColors = strokeCycleColors || false;
-        this.strokeCycleSpeed = strokeCycleSpeed || 0;
-        this.strokeAnimationSpeed = strokeAnimationSpeed || 0;
-        this.strokeUseSharpGradient = strokeUseSharpGradient || false;
-        this.strokeGradientStop = strokeGradientStop || 50;
-        this.strokeRotationSpeed = strokeRotationSpeed || 0;
-        this.strokePhaseOffset = strokePhaseOffset || 10;
-        this.strokeAnimationAngle = 0;
-        this.strokeHue1 = 0;
-        this.strokeHue2 = 90;
-        this.strokeScrollOffset = 0;
-        this.isReversing = false;
-        this.randomStrokeElementState = null;
-        this._strokeConicPatternCache = null;
-        this.animationState = 'scrolling';
-        this.waitTimer = 0;
-        this.innerDiameter = innerDiameter || 100;
-        this.angularWidth = angularWidth || 20;
-        this.numberOfSegments = numberOfSegments || 12;
-        this.rotationSpeed = rotationSpeed || 0;
-        this.rotationAngle = 0;
-        this.animationAngle = 0;
-        this.wavePhaseAngle = wavePhaseAngle || 0;
-        this.oscAnimationSpeed = oscAnimationSpeed || 0;
-        this.useSharpGradient = useSharpGradient !== undefined ? useSharpGradient : false;
-        this.gradientStop = gradientStop !== undefined ? parseFloat(gradientStop) : 50;
-        this.locked = locked || false;
-        this.numberOfRows = numberOfRows || 1;
-        this.numberOfColumns = numberOfColumns || 1;
-        this.phaseOffset = phaseOffset || 10;
-        this.cellOrder = [];
-        this._shuffleCellOrder();
-        this.handleSize = 15;
-        this.rotationHandleOffset = -30;
-        this.rotationHandleRadius = 15;
-        this.handles = [{ name: 'top-left', cursor: 'nwse-resize' }, { name: 'top', cursor: 'ns-resize' }, { name: 'top-right', cursor: 'nesw-resize' }, { name: 'left', cursor: 'ew-resize' }, { name: 'right', cursor: 'ew-resize' }, { name: 'bottom-left', cursor: 'nesw-resize' }, { name: 'bottom', cursor: 'ns-resize' }, { name: 'bottom-right', cursor: 'nwse-resize' }];
-        this.randomElementState = null;
-        this.text = text || 'Hello';
-        this.fontSize = fontSize || 60;
-        this.textAlign = textAlign || 'center';
-        this.pixelFont = pixelFont || 'small';
-        this.textAnimation = textAnimation || 'none';
-        this.textAnimationSpeed = textAnimationSpeed || 10;
-        this.scrollOffsetX = 0;
-        this.scrollTimer = 0;
-        this.visibleCharCount = 0;
-        this.waveAngle = 0;
-        this.typewriterWaitTimer = 0;
-        this.showTime = showTime || false;
-        this.showDate = showDate || false;
-        this.autoWidth = autoWidth || false;
-        this.lineWidth = lineWidth || 1;
-        this.waveType = waveType || 'sine';
-        this.frequency = frequency || 5;
-        this.pulseDepth = pulseDepth !== undefined ? pulseDepth : 50;
-        this.fillShape = fillShape || false;
-        this.enableWaveAnimation = enableWaveAnimation !== undefined ? enableWaveAnimation : true;
-        this.oscDisplayMode = oscDisplayMode || 'linear';
-        this._pausedRotationSpeed = null;
-        this._pausedAnimationSpeed = null;
-        this.waveStyle = waveStyle || 'wavy';
-        this.waveCount = waveCount || 5;
-        this.tetrisBlockCount = tetrisBlockCount || 10;
-        this.tetrisAnimation = tetrisAnimation || 'gravity';
-        this.tetrisSpeed = tetrisSpeed || 5;
-        this.tetrisBounce = tetrisBounce || 50;
-        this.tetrisHoldTime = tetrisHoldTime || 50;
-        this.tetrisHoldTimer = 0;
-        this.tetrisSpeedDivisor = 10.0;
-        this.tetrisBlocks = [];
-        this.tetrisSpawnTimer = 0;
-        this.tetrisStackHeight = 0;
-        this.tetrisActiveBlockIndex = 0;
-        this.tetrisFadeState = 'in';
-        this.sides = sides || 6;
-        this.points = points || 5;
-        this.starInnerRadius = starInnerRadius || 50;
-        this.fireParticles = [];
-        this.fireSpread = fireSpread || 100;
-        this.particleSpawnCounter = 0;
-        this.nextParticleId = 0;
-        this.pixelArtData = pixelArtData || '[[1]]';
-        this.internalScale = 1.0;
-        this.colorOverride = null;
-        this.audioHistory = new Array(30).fill(0);
-        this.flashDecay = 0;
-        this.beatThreshold = beatThreshold || 30;
-        this.baseBeatThreshold = this.beatThreshold;
-        this.enableAudioReactivity = enableAudioReactivity || false;
-        this.audioTarget = audioTarget || 'size';
-        this.audioMetric = audioMetric || 'volume';
-        this.audioSensitivity = audioSensitivity || 10;
-        this.audioSmoothing = audioSmoothing;
-        this.smoothedAudioValue = 0;
-        this.volumeMeterFill = 0;
-        this.vizBarCount = vizBarCount || 32;
-        this.vizBarSpacing = vizBarSpacing || 2;
-        this.vizSmoothing = vizSmoothing || 60;
-        this.vizStyle = vizStyle || 'bottom';
-        this.vizBarHeights = new Array(parseInt(this.vizBarCount, 10)).fill(0);
-        this.vizLayout = vizLayout || 'Linear';
-        this.vizDrawStyle = vizDrawStyle || 'Bars';
-        this.vizUseSegments = vizUseSegments || false;
-        this.vizSegmentCount = vizSegmentCount || 16;
-        this.vizSegmentSpacing = vizSegmentSpacing || 1;
-        this.vizLineWidth = vizLineWidth || 8;
-        this.vizBassLevel = vizBassLevel || 50;
-        this.vizTrebleBoost = vizTrebleBoost || 125;
-        this.enableSensorReactivity = enableSensorReactivity || false;
-        this.sensorTarget = sensorTarget || 'Sensor Meter';
-        this.sensorValueSource = sensorValueSource || 'value';
-        this.userSensor = userSensor || 'CPU Load';
-        this.sensorMeterFill = sensorMeterFill || 0;
-        this.timePlotLineThickness = timePlotLineThickness || 1;
-        this.timePlotFillArea = timePlotFillArea;
-        this.sensorMeterShowValue = sensorMeterShowValue;
-        this.timePlotAxesStyle = timePlotAxesStyle;
-        this.timePlotTimeScale = timePlotTimeScale;
-        this.sensorRawValue = 0
-        this.baseWidth = this.width;
-        this.baseHeight = this.height;
-        this.baseRotation = this.rotation;
-        this.baseAnimationSpeed = this.animationSpeed;
-        this.baseStrokeWidth = this.strokeWidth;
-        this.baseGradient = { ...this.gradient };
-        this.baseGradientStop = this.gradientStop;
-        this.baseStarInnerRadius = this.starInnerRadius;
-        this.baseInnerDiameter = this.innerDiameter;
-        this.basePulseDepth = this.pulseDepth;
-        this.sensorHistory = [];
-        this.gradientSpeedMultiplier = gradientSpeedMultiplier || (1 / 400);
-        this.shapeAnimationSpeedMultiplier = shapeAnimationSpeedMultiplier || 0.05;
-        this.seismicAnimationSpeedMultiplier = seismicAnimationSpeedMultiplier || 0.015;
-        this.strimerMeterHeights = [];
-        this.strimerColumns = strimerColumns || 4;
-        this.strimerBlockCount = strimerBlockCount || 3;
-        this.strimerBlockSize = strimerBlockSize || 40;
-        this.strimerAnimation = strimerAnimation || 'Bounce';
-        this.strimerDirection = strimerDirection || 'Random';
-        this.strimerEasing = strimerEasing || 'Linear';
-        this.strimerBlocks = [];
-        this.strimerBlockSpacing = strimerBlockSpacing || 20;
-        this.strimerGlitchFrequency = strimerGlitchFrequency || 0;
-        this.strimerPulseSync = strimerPulseSync || true;
-        this.strimerPulseSpeed = strimerPulseSpeed || 0;
-        this.pulseProgress = 0;
-        this.strimerAudioSensitivity = strimerAudioSensitivity || 100;
-        this.strimerBassLevel = strimerBassLevel || 50;
-        this.strimerTrebleBoost = strimerTrebleBoost || 150;
-        this.strimerSnakeIndex = strimerSnakeIndex || 0;
-        this.strimerSnakeDirection = 'Vertical';
-        this.strimerAnimationSpeed = strimerAnimationSpeed || 20;
-        this.strimerSnakeProgress = strimerSnakeProgress || 0;
-        this.sensorColorMode = sensorColorMode || 'None';
-        this.sensorMidThreshold = sensorMidThreshold || 50;
-        this.sensorMaxThreshold = sensorMaxThreshold || 90;
-        this.spawn_audioTarget = spawn_audioTarget || 'none';
+        const target = e.target;
+        const isInputFocused = target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.isContentEditable;
 
-        // Spawner
-        this.spawn_shapeType = spawn_shapeType || 'circle';
-        this.spawn_animation = spawn_animation || 'explode';
-        this.spawn_count = spawn_count || 100;
-        this.spawn_spawnRate = spawn_spawnRate || 50;
-        this.spawn_lifetime = spawn_lifetime || 3;
-        this.spawn_speed = spawn_speed || 50;
-        this.spawn_speedVariance = spawn_speedVariance || 0;
-        this.spawn_size = spawn_size || 10;
-        this.spawn_gravity = spawn_gravity || 0;
-        this.spawn_spread = spawn_spread || 360;
-        this.spawn_rotationSpeed = spawn_rotationSpeed || 0;
-        this.spawn_rotationVariance = spawn_rotationVariance || 0;
-        this.spawn_size_randomness = spawn_size_randomness || 0;
-        this.spawn_initialRotation_random = spawn_initialRotation_random || false;
-        this.spawn_svg_path = spawn_svg_path || 'M -20 -20 L 20 -20 L 20 20 L -20 20 Z';
-        this.spawn_matrixCharSet = spawn_matrixCharSet || 'katakana';
-        this.spawn_matrixEnableGlow = spawn_matrixEnableGlow || false;
-        this.spawn_matrixGlowSize = spawn_matrixGlowSize || 10;
-        this.spawn_glowSize = spawn_glowSize || 10;
-        this.spawn_enableTrail = spawn_enableTrail || false;
-        this.spawn_trailLength = spawn_trailLength || 10;
-        this.spawn_trailSpacing = spawn_trailSpacing || 1;
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                const state = appHistory.undo();
+                applyHistoryState(state);
+                return;
+            } else if (e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                const state = appHistory.redo();
+                applyHistoryState(state);
+                return;
+            } else if (e.key.toLowerCase() === 'c') {
+                if (isInputFocused) {
+                    return;
+                }
+                e.preventDefault();
+                if (selectedObjectIds.length > 0) {
+                    // Trigger the same logic as the copy button click
+                    document.getElementById('copy-props-btn').click();
+                }
+                return;
+            } else if (e.key.toLowerCase() === 'v') {
+                if (isInputFocused) {
+                    return;
+                }
+                e.preventDefault();
+                if (propertyClipboard && selectedObjectIds.length > 0) {
+                    // Trigger the same logic as the paste button click
+                    document.getElementById('paste-props-btn').click();
+                }
+                return;
+            }
+        }
 
-        // Polyline properties
+        // Block other application-specific hotkeys if an input is focused.
+        if (isInputFocused) {
+            return;
+        }
+
+        // Handle Escape key to deselect all objects.
+        if (e.key === 'Escape' && selectedObjectIds.length > 0) {
+            e.preventDefault();
+            selectedObjectIds = [];
+            updateToolbarState();
+            syncPanelsWithSelection();
+            drawFrame();
+        }
+
+        // Handle keyboard movement for selected objects
+        if (selectedObjectIds.length > 0) {
+            let moveAmount = 4; // Corresponds to 1 UI pixel
+            if (e.shiftKey) {
+                moveAmount = 40; // Corresponds to 10 UI pixels
+            }
+
+            let moved = false;
+            selectedObjectIds.forEach(id => {
+                const obj = objects.find(o => o.id === id);
+                if (obj && !obj.locked) {
+                    let newX = obj.x;
+                    let newY = obj.y;
+
+                    switch (e.key) {
+                        case 'ArrowUp':
+                            newY -= moveAmount;
+                            moved = true;
+                            break;
+                        case 'ArrowDown':
+                            newY += moveAmount;
+                            moved = true;
+                            break;
+                        case 'ArrowLeft':
+                            newX -= moveAmount;
+                            moved = true;
+                            break;
+                        case 'ArrowRight':
+                            newX += moveAmount;
+                            moved = true;
+                            break;
+                    }
+
+                    if (moved) {
+                        if (constrainToCanvas) {
+                            newX = Math.max(0, Math.min(newX, canvas.width - obj.width));
+                            newY = Math.max(0, Math.min(newY, canvas.height - obj.height));
+                        }
+                        obj.x = newX;
+                        obj.y = newY;
+                    }
+                }
+            });
+
+            if (moved) {
+                e.preventDefault();
+                updateFormValuesFromObjects();
+                drawFrame();
+                recordHistory();
+            }
+        }
+
+        // Handle Delete key for selected objects
+        if ((e.key === 'Delete') && selectedObjectIds.length > 0) {
+            e.preventDefault();
+            deleteObjects([...selectedObjectIds]);
+        }
+    });
+
+    document.getElementById('export-copy-btn').addEventListener('click', async () => {
+        // Run the export process now, with the latest checkbox value
+        await exportFile();
+        await incrementDownloadCount();
+
+        if (exportPayload.finalHtml) {
+            navigator.clipboard.writeText(exportPayload.finalHtml).then(() => {
+                showToast("HTML code copied to clipboard!", 'success');
+                const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
+                if (exportModal) exportModal.hide();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                showToast("Could not copy code. See console for details.", 'danger');
+            });
+        }
+    });
+
+    document.getElementById('export-download-btn').addEventListener('click', async () => {
+        // Run the export process now, with the latest checkbox value
+        await exportFile();
+
+        await incrementDownloadCount();
+
+        const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = exportPayload;
+        if (!finalHtml) return;
+
         try {
-            const initialNodes = polylineNodes || '[{"x":50,"y":50},{"x":150,"y":100}]';
-            if (typeof initialNodes === 'string') {
-                this.polylineNodes = JSON.parse(initialNodes);
-            } else {
-                this.polylineNodes = initialNodes;
-            }
-        } catch (e) {
-            console.error("Error parsing initial polyline nodes, falling back to default.", e);
-            this.polylineNodes = [{ x: 50, y: 50 }, { x: 150, y: 100 }];
+            const zip = new JSZip();
+            zip.file(`${safeFilename}.html`, finalHtml, { date: exportDate });
+            const imageResponse = await fetch(thumbnailDataUrl);
+            const imageBlob = await imageResponse.blob();
+            zip.file(`${safeFilename}.${imageExtension}`, imageBlob, { date: exportDate });
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(zipBlob);
+            link.download = `${safeFilename}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+
+            const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
+            if (exportModal) exportModal.hide();
+            showToast("Zip file download started.", 'info');
+        } catch (error) {
+            console.error('Zip creation failed:', error);
+            showToast('Failed to create .zip file.', 'danger');
         }
-        this.polylineCurveStyle = polylineCurveStyle || 'straight';
+    });
 
-        // Particle system state
-        this.particles = [];
-        this.spawnCounter = 0;
-        this.nextParticleId = 0;
-        this.customParticlePath = null;
-        this.matrixActiveCharSet = '';
-        this.availableParticleShapes = ['rectangle', 'circle', 'polygon', 'star', 'sparkle', 'custom', 'matrix'];
+    /**
+     * Updates the global configStore with the current state of all form controls.
+     * This makes the form the single source of truth at the moment of saving.
+     */
+    function syncConfigStoreWithState() {
+        const formValues = getControlValues();
 
-        this.pathAnim_enable = pathAnim_enable || false;
-        this.pathAnim_shape = pathAnim_shape || 'circle';
-        this.pathAnim_size = pathAnim_size || 40; // This is the scaled value (UI value * 4)
-        this.pathAnim_speed = pathAnim_speed || 200; // This is the scaled value (UI value * 4)
-        this.pathAnim_gradType = pathAnim_gradType || 'solid';
-        this.pathAnim_useSharpGradient = pathAnim_useSharpGradient || false;
-        this.pathAnim_gradientStop = pathAnim_gradientStop || 50;
-        this.pathAnim_gradColor1 = pathAnim_gradColor1 || '#FFFFFF';
-        this.pathAnim_gradColor2 = pathAnim_gradColor2 || '#00BFFF';
-        this.pathAnim_cycleColors = pathAnim_cycleColors || false;
-        this.pathAnim_cycleSpeed = pathAnim_cycleSpeed || 0;
-        this.pathAnim_animationMode = pathAnim_animationMode || 'loop';
-        this.pathAnim_animationSpeed = pathAnim_animationSpeed || 0;
-        this.pathAnim_scrollDir = pathAnim_scrollDir || 'right';
-        this.pathAnim_trail = pathAnim_trail || 'None';
-        this.pathAnim_trailLength = pathAnim_trailLength || 80; // Scaled value
+        configStore.forEach(conf => {
+            const key = conf.property || conf.name;
 
-        // State variables for the sub-object's fill animation
-        this.pathAnim_hue1 = 0;
-        this.pathAnim_scrollOffset = 0;
-        this.pathAnim_extraRotation = 0;
+            // Ensure we only update properties that exist in the form
+            if (formValues.hasOwnProperty(key)) {
+                let valueToSave = formValues[key];
 
-        // State variables for the animation
-        this._cachedPathSegments = null; // To store path calculations for performance
-        this.pathAnim_distance = 0;      // Current distance along the path
-
-        this.pathAnim_behavior = pathAnim_behavior || 'Loop';
-        this.pathAnim_objectCount = pathAnim_objectCount || 1;
-        this.pathAnim_objectSpacing = pathAnim_objectSpacing || 100; // Scaled value
-        this.pathAnim_trailColor = pathAnim_trailColor || 'Inherit';
-
-        // State variables
-        this.pathAnim_direction = 1; // For Ping-Pong
-        this.pathAnim_speedBurst = 0; // For audio reactivity
-    }
-
-    _getPointOnCatmullRomSpline(p0, p1, p2, p3, t) {
-        const t2 = t * t;
-        const t3 = t2 * t;
-
-        const x = 0.5 * ((2 * p1.x) +
-            (-p0.x + p2.x) * t +
-            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-
-        const y = 0.5 * ((2 * p1.y) +
-            (-p0.y + p2.y) * t +
-            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
-
-        return { x: x, y: y };
-    }
-
-    _getPointOnQuadraticBezier(p0, p1, p2, t) {
-        const oneMinusT = 1 - t;
-        const x = oneMinusT * oneMinusT * p0.x + 2 * oneMinusT * t * p1.x + t * t * p2.x;
-        const y = oneMinusT * oneMinusT * p0.y + 2 * oneMinusT * t * p1.y + t * t * p2.y;
-        return { x: x, y: y };
-    }
-
-    _getQuadraticCurveLength(p0, p1, p2, segments = 20) {
-        let length = 0;
-        let lastPoint = p0;
-        for (let i = 1; i <= segments; i++) {
-            const t = i / segments;
-            const currentPoint = this._getPointOnQuadraticBezier(p0, p1, p2, t);
-            const dx = currentPoint.x - lastPoint.x;
-            const dy = currentPoint.y - lastPoint.y;
-            length += Math.sqrt(dx * dx + dy * dy);
-            lastPoint = currentPoint;
-        }
-        return length;
-    }
-
-    _drawSubObject(shape, size) {
-        this.ctx.beginPath();
-        switch (shape) {
-            case 'rectangle':
-                this.ctx.rect(-size / 2, -size / 2, size, size);
-                break;
-            case 'star':
-                const points = 5; const innerRadius = 0.5;
-                for (let i = 0; i < 2 * points; i++) {
-                    const r = (i % 2 === 0) ? size / 2 : size / 2 * innerRadius;
-                    const a = (i / (2 * points)) * 2 * Math.PI - (Math.PI / 2);
-                    this.ctx[i === 0 ? 'moveTo' : 'lineTo'](r * Math.cos(a), r * Math.sin(a));
+                // The form holds UI-scaled values, which is what we need to save.
+                // We just need to ensure the data types are correct for saving.
+                if (conf.type === 'number') {
+                    valueToSave = Math.round(Number(valueToSave));
+                } else if (typeof valueToSave === 'boolean') {
+                    valueToSave = String(valueToSave);
                 }
-                this.ctx.closePath();
-                break;
-            case 'polygon':
-                const sides = 6;
-                for (let i = 0; i < sides; i++) {
-                    const a = (i / sides) * 2 * Math.PI - (Math.PI / 2);
-                    this.ctx[i === 0 ? 'moveTo' : 'lineTo'](size / 2 * Math.cos(a), size / 2 * Math.sin(a));
-                }
-                this.ctx.closePath();
-                break;
-            case 'circle':
-            default:
-                this.ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
-                break;
-        }
-        this.ctx.fill('evenodd');
+
+                conf.default = valueToSave;
+            }
+        });
     }
 
-    _drawParticleShape(particle) {
-        const s = particle.size / 2;
+    /**
+     * SAVE BUTTON: Checks for duplicates before saving.
+     */
+    document.getElementById('save-ws-btn').addEventListener('click', async () => {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to save.", 'danger');
+            return;
+        }
 
-        const isMatrix = particle.actualShape === 'matrix';
-        const glowEnabled = this.spawn_matrixEnableGlow;
-        const glowSize = this.spawn_matrixGlowSize
+        syncConfigStoreWithState();
 
-        if (glowEnabled && glowSize > 0) {
-            this.ctx.shadowBlur = glowSize;
-            if (typeof this.ctx.fillStyle === 'string') {
-                this.ctx.shadowColor = this.ctx.fillStyle;
-            } else {
-                // Fallback for gradients: use the primary solid color for the glow.
-                // This respects the global palette override as well.
-                this.ctx.shadowColor = this.gradient.color1;
+        const name = getControlValues()['title'] || 'Untitled Effect';
+        const trimmedName = name.trim();
+
+        const sanitizedConfigs = configStore.map(conf => {
+            const sanitized = {};
+            for (const key in conf) {
+                if (conf[key] !== undefined) {
+                    sanitized[key] = conf[key];
+                }
             }
+            return sanitized;
+        });
+
+        const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
+        const projectData = {
+            name: trimmedName,
+            thumbnail: thumbnail,
+            configs: sanitizedConfigs,
+            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked })),
+            updatedAt: new Date()
+        };
+
+        const q = window.query(window.collection(window.db, "projects"), window.where("userId", "==", user.uid), window.where("name", "==", trimmedName));
+        const querySnapshot = await window.getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const existingDocId = querySnapshot.docs[0].id;
+            showConfirmModal(
+                'Confirm Overwrite',
+                `A project named "${trimmedName}" already exists. Do you want to overwrite it?`,
+                'Overwrite',
+                async () => {
+                    try {
+                        const docRef = window.doc(window.db, "projects", existingDocId);
+                        await window.updateDoc(docRef, projectData);
+                        currentProjectDocId = existingDocId;
+                        updateShareButtonState();
+                        showToast(`Project "${trimmedName}" was overwritten successfully!`, 'success');
+                    } catch (error) {
+                        console.error("Error overwriting document: ", error);
+                        showToast("Error overwriting project: " + error.message, 'danger');
+                    }
+                }
+            );
         } else {
-            this.ctx.shadowBlur = 0;
-        }
+            try {
+                projectData.userId = user.uid;
+                projectData.creatorName = user.displayName || 'Anonymous';
+                projectData.isPublic = true;
+                projectData.createdAt = new Date();
 
-        switch (particle.actualShape) {
-            case 'custom':
-                if (this.customParticlePath) {
-                    this.ctx.save();
-                    const scale = particle.size / 40;
-                    this.ctx.scale(scale, scale);
-                    this.ctx.translate(-20, -20);
-                    this.ctx.fill(this.customParticlePath);
-                    if (this.enableStroke) this.ctx.stroke(this.customParticlePath);
-                    this.ctx.restore();
-                }
-                break;
-
-            case 'matrix':
-                if (particle.matrixChars && particle.matrixChars.length > 0) {
-                    this.ctx.font = `bold ${particle.size}px monospace`;
-                    this.ctx.textAlign = 'center';
-                    this.ctx.textBaseline = 'middle';
-                    // This helper now ONLY draws the first character of the array it's given.
-                    this.ctx.fillText(particle.matrixChars[0] || '?', 0, 0);
-                }
-                break;
-
-            default:
-                this.ctx.beginPath();
-                if (particle.actualShape === 'circle') {
-                    this.ctx.arc(0, 0, s, 0, 2 * Math.PI);
-                } else if (particle.actualShape === 'sparkle') {
-                    this.ctx.moveTo(0, -s);
-                    this.ctx.lineTo(s * 0.3, -s * 0.3);
-                    this.ctx.lineTo(s, 0);
-                    this.ctx.lineTo(s * 0.3, s * 0.3);
-                    this.ctx.lineTo(0, s);
-                    this.ctx.lineTo(-s * 0.3, s * 0.3);
-                    this.ctx.lineTo(-s, 0);
-                    this.ctx.lineTo(-s * 0.3, -s * 0.3);
-                    this.ctx.closePath();
-                } else if (particle.actualShape === 'polygon') {
-                    const sides = Math.max(3, this.sides);
-                    for (let i = 0; i < sides; i++) {
-                        const a = (i / sides) * 2 * Math.PI - (Math.PI / 2);
-                        this.ctx[i === 0 ? 'moveTo' : 'lineTo'](s * Math.cos(a), s * Math.sin(a));
-                    }
-                    this.ctx.closePath();
-                } else if (particle.actualShape === 'star') {
-                    const points = Math.max(3, this.points);
-                    const iS = s * (this.starInnerRadius / 100);
-                    for (let i = 0; i < 2 * points; i++) {
-                        const r = (i % 2 === 0) ? s : iS;
-                        const a = (i / (2 * points)) * 2 * Math.PI - (Math.PI / 2);
-                        this.ctx[i === 0 ? 'moveTo' : 'lineTo'](r * Math.cos(a), r * Math.sin(a));
-                    }
-                    this.ctx.closePath();
-                } else { // rectangle
-                    this.ctx.rect(-s, -s, particle.size, particle.size);
-                }
-                this.ctx.fill();
-                if (this.enableStroke) this.ctx.stroke();
-                break;
-        }
-    }
-
-    _applySensorReactivity(sensorData) {
-        if (!this.enableSensorReactivity || this.sensorTarget === 'none') {
-            this.sensorMeterFill = 0;
-            this.sensorHistory = [];
-            return;
-        }
-
-        const sensor = sensorData[this.userSensor];
-
-        if (!sensor || typeof sensor.value !== 'number') {
-            this.sensorMeterFill = 0;
-            return;
-        }
-
-        const rawValue = sensor.value;
-        this.sensorRawValue = rawValue;
-        const min = sensor.min;
-        const max = sensor.max;
-
-        let normalizedValue = (rawValue - min) / (max - min);
-        normalizedValue = Math.min(1.0, Math.max(0, normalizedValue));
-
-        if (this.sensorTarget === 'Sensor Meter') {
-            this.sensorMeterFill = normalizedValue;
-        } else if (this.sensorTarget === 'Time Plot') {
-            this.sensorHistory.push(normalizedValue);
-
-            // MODIFIED: History length is now based on time scale, assuming ~60fps
-            const framesToKeep = (this.timePlotTimeScale || 5) * 60;
-            if (this.sensorHistory.length > framesToKeep) {
-                this.sensorHistory.shift();
+                const docRef = await window.addDoc(window.collection(window.db, "projects"), projectData);
+                currentProjectDocId = docRef.id;
+                updateShareButtonState();
+                showToast(`Effect "${trimmedName}" was saved successfully!`, 'success');
+            } catch (error) {
+                console.error("Error saving new document: ", error);
+                showToast("Error saving project: " + error.message, 'danger');
             }
         }
-    }
+    });
 
-    _drawTimePlot() {
-        if (this.sensorHistory.length < 2) return;
-
-        const timeScale = this.timePlotTimeScale || 5;
-
-        // --- 1. Draw the plot line and fill area FIRST ---
-        this.ctx.beginPath();
-        if (this.timePlotFillArea) {
-            this.ctx.moveTo(-this.width / 2, this.height / 2);
+    // MY PROJECTS BUTTON
+    document.getElementById('load-ws-btn').addEventListener('click', () => {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to see your projects.", 'danger');
+            const galleryOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('gallery-offcanvas'));
+            galleryOffcanvas.hide();
+            return;
         }
 
-        const framesToShow = timeScale * 60;
-        const startIndex = Math.max(0, this.sensorHistory.length - framesToShow);
-        const dataToPlot = this.sensorHistory.slice(startIndex);
+        document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+        const galleryList = document.getElementById('gallery-project-list');
+        galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
 
-        const xStep = this.width / (framesToShow - 1);
-        const halfHeight = this.height / 2;
+        if (galleryListener) galleryListener();
 
-        dataToPlot.forEach((value, i) => {
-            const x = -this.width / 2 + i * xStep;
-            const y = halfHeight - (value * this.height);
-            if (i === 0 && !this.timePlotFillArea) {
-                this.ctx.moveTo(x, y);
+        const q = window.query(window.collection(window.db, "projects"), window.where("userId", "==", user.uid));
+        galleryListener = window.onSnapshot(q, (querySnapshot) => {
+            const projects = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                projects.push({ docId: doc.id, ...data });
+            });
+            projects.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            populateGallery(projects);
+        }, (error) => {
+            console.error("My Projects listener error:", error);
+            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load your projects.</li>';
+        });
+    });
+
+    /**
+     * Handles toolbar button clicks for alignment and matching actions.
+     * @param {Event} e - The click event.
+     */
+    function handleToolbarAction(e) {
+        const button = e.target.closest('button');
+        if (!button || button.disabled || !button.dataset.action) {
+            return;
+        }
+
+        const action = button.dataset.action;
+        if (selectedObjectIds.length === 0) {
+            return;
+        }
+
+        const selectedObjects = selectedObjectIds.map(id => objects.find(o => o.id === id)).filter(o => o);
+        if (selectedObjects.length === 0) {
+            return;
+        }
+        const anchor = selectedObjects[0];
+
+        switch (action) {
+            case 'align-screen-left':
+                selectedObjects.forEach(o => o.x = 0);
+                break;
+            case 'align-screen-right':
+                selectedObjects.forEach(o => o.x = canvas.width - o.width);
+                break;
+            case 'align-screen-h-center':
+                selectedObjects.forEach(o => o.x = (canvas.width - o.width) / 2);
+                break;
+            case 'align-screen-top':
+                selectedObjects.forEach(o => o.y = 0);
+                break;
+            case 'align-screen-bottom':
+                selectedObjects.forEach(o => o.y = canvas.height - o.height);
+                break;
+            case 'align-screen-v-center':
+                selectedObjects.forEach(o => o.y = (canvas.height - o.height) / 2);
+                break;
+            case 'match-width':
+                selectedObjects.slice(1).forEach(o => o.width = anchor.width);
+                break;
+            case 'match-height':
+                selectedObjects.slice(1).forEach(o => o.height = anchor.height);
+                break;
+            case 'match-both':
+                selectedObjects.slice(1).forEach(o => {
+                    o.width = anchor.width;
+                    o.height = anchor.height;
+                });
+                break;
+            case 'fit-canvas':
+                selectedObjects.forEach(o => {
+                    const oldWidth = o.width;
+                    const oldHeight = o.height;
+
+                    // 1. Directly update the object's properties as before.
+                    o.x = 0;
+                    o.y = 0;
+                    o.width = canvas.width;
+                    o.height = canvas.height;
+
+                    if (o.shape === 'polyline' && oldWidth > 0 && oldHeight > 0) {
+                        const scaleX = o.width / oldWidth;
+                        const scaleY = o.height / oldHeight;
+                        o.polylineNodes = o.polylineNodes.map(node => ({
+                            x: node.x * scaleX,
+                            y: node.y * scaleY
+                        }));
+                        // 2. Manually invalidate the object's internal path cache. This is the critical step.
+                        o._cachedPathSegments = null;
+                    }
+
+                    if (o.shape === 'text') {
+                        o._updateFontSizeFromHeight();
+                    }
+                });
+
+                // 3. After all objects are updated, sync the form with their new state.
+                updateFormValuesFromObjects();
+                break;
+            case 'match-text-size':
+                const textObjects = selectedObjects.filter(obj => obj.shape === 'text');
+                const gridObjects = selectedObjects.filter(obj => obj.shape === 'rectangle' && (obj.numberOfRows > 1 || obj.numberOfColumns > 1));
+                if (textObjects.length >= 1 && gridObjects.length >= 1) {
+                    const sourceGrid = gridObjects[0];
+                    const cellHeight = sourceGrid.height / sourceGrid.numberOfRows;
+                    textObjects.forEach(textObject => {
+                        textObject.fontSize = cellHeight * 10;
+                        textObject._updateTextMetrics();
+                    });
+                } else if (textObjects.length >= 2 && gridObjects.length === 0) {
+                    const sourceText = textObjects[0];
+                    const sourceFontSize = sourceText.fontSize;
+                    textObjects.slice(1).forEach(targetText => {
+                        targetText.fontSize = sourceFontSize;
+                        targetText._updateTextMetrics();
+                    });
+                }
+                break;
+        }
+
+        selectedObjects.forEach(o => {
+            o.x = Math.round(o.x);
+            o.y = Math.round(o.y);
+        });
+
+        updateFormValuesFromObjects();
+        recordHistory();
+        drawFrame();
+    }
+
+    toolbar.addEventListener('click', handleToolbarAction);
+
+    /**
+     * Handles the click event for the "Constrain to Canvas" button.
+     * Toggles the constrainToCanvas state and updates the button's appearance.
+     */
+    constrainBtn.addEventListener('click', () => {
+        constrainToCanvas = !constrainToCanvas;
+
+        // Remove all possible style classes first to avoid conflicts
+        constrainBtn.classList.remove('btn-primary', 'btn-outline-secondary', 'btn-secondary');
+
+        // Add the correct class based on the new state
+        if (constrainToCanvas) {
+            constrainBtn.classList.add('btn-secondary');
+        } else {
+            constrainBtn.classList.add('btn-outline-secondary');
+        }
+    });
+
+    /**
+     * Handles the mousedown event on the canvas to initiate dragging or resizing.
+     * @param {MouseEvent} e - The mousedown event object.
+     */
+    canvasContainer.addEventListener('mousedown', e => {
+        if (activeTool === 'polyline') {
+            e.preventDefault();
+            const { x, y } = getCanvasCoordinates(e);
+
+            if (!isDrawingPolyline) {
+                // First click: Create the shape and start the preview
+                isDrawingPolyline = true;
+                const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
+                currentlyDrawingShapeId = newId;
+
+                const newShape = new Shape({
+                    id: newId, shape: 'polyline', name: `Polyline ${newId}`,
+                    x: x, y: y, width: 1, height: 1,
+                    polylineNodes: [{ x: 0, y: 0 }],
+                    ctx: ctx, enableStroke: true, strokeWidth: 4
+                });
+                objects.unshift(newShape);
+
+                const newObjectConfigs = getDefaultObjectConfig(newId).filter(
+                    conf => (shapePropertyMap['polyline'] || []).includes(conf.property.substring(conf.property.indexOf('_') + 1))
+                );
+
+                // Manually override the defaults for the new configs to match the instantiated shape
+                const enableStrokeConf = newObjectConfigs.find(c => c.property === `obj${newId}_enableStroke`);
+                if (enableStrokeConf) {
+                    enableStrokeConf.default = 'true';
+                }
+                const strokeWidthConf = newObjectConfigs.find(c => c.property === `obj${newId}_strokeWidth`);
+                if (strokeWidthConf) {
+                    strokeWidthConf.default = '4';
+                }
+
+                const firstObjectConfigIndex = configStore.findIndex(c => (c.property || '').startsWith('obj'));
+                if (firstObjectConfigIndex === -1) { configStore.push(...newObjectConfigs); }
+                else { configStore.splice(firstObjectConfigIndex, 0, ...newObjectConfigs); }
+
+                selectedObjectIds = [newId];
+                renderForm();
+                updateFormValuesFromObjects();
+
+                // Correctly start the preview line FROM and TO the first click location
+                previewLine.startX = x;
+                previewLine.startY = y;
+                previewLine.endX = x;
+                previewLine.endY = y;
+                previewLine.active = true;
+
             } else {
-                this.ctx.lineTo(x, y);
+                // Subsequent clicks: Add a new node
+                const shape = objects.find(o => o.id === currentlyDrawingShapeId);
+                if (!shape) return;
+
+                const center = shape.getCenter();
+                const angle = -shape.getRenderAngle();
+                const localClickX = (x - center.x) * Math.cos(angle) - (y - center.y) * Math.sin(angle);
+                const localClickY = (x - center.x) * Math.sin(angle) + (y - center.y) * Math.cos(angle);
+                const nodeX = localClickX + shape.width / 2;
+                const nodeY = localClickY + shape.height / 2;
+
+                const newNodes = [...shape.polylineNodes, { x: nodeX, y: nodeY }];
+                shape.update({ polylineNodes: newNodes });
+
+                updateFormValuesFromObjects();
+
+                // Update the preview line's start to this new point
+                previewLine.startX = x;
+                previewLine.startY = y;
+            }
+            drawFrame();
+            return;
+        }
+
+        e.preventDefault();
+        const { x, y } = getCanvasCoordinates(e);
+        dragStartX = x;
+        dragStartY = y;
+
+        let activeObject = null;
+        if (selectedObjectIds.length === 1) {
+            activeObject = objects.find(o => o.id === selectedObjectIds[0]);
+        }
+
+        if (activeObject && !activeObject.locked) {
+            const handle = activeObject.getHandleAtPoint(x, y);
+            if (handle) {
+                // NEW: Handle Alt+Click to delete a node
+                if (e.altKey && handle.type === 'node') {
+                    const nodeDeleted = activeObject.deleteNode(handle.index);
+                    if (nodeDeleted) {
+                        updateFormValuesFromObjects();
+                        recordHistory();
+                        drawFrame();
+                    }
+                    return; // Stop further processing
+                }
+
+                if (handle.type === 'rotation') {
+                    isRotating = true;
+                    activeObject.isBeingManuallyRotated = true;
+                    if (activeObject.rotationSpeed !== 0) {
+                        activeObject._pausedRotationSpeed = activeObject.rotationSpeed;
+                        activeObject.rotationSpeed = 0;
+                        activeObject.rotation = activeObject.rotationAngle * 180 / Math.PI;
+                    }
+                    const center = activeObject.getCenter();
+                    const startAngle = Math.atan2(y - center.y, x - center.x);
+                    initialDragState = [{
+                        id: activeObject.id,
+                        startAngle: startAngle,
+                        initialObjectAngle: activeObject.getRenderAngle()
+                    }];
+                } else if (handle.type === 'node') {
+                    isDraggingNode = true;
+                    activeNodeDragState = {
+                        id: activeObject.id,
+                        nodeIndex: handle.index
+                    };
+                } else {
+                    isResizing = true;
+                    activeResizeHandle = handle.name;
+                    const oppositeHandleName = getOppositeHandle(handle.name);
+                    const anchorPoint = activeObject.getWorldCoordsOfCorner(oppositeHandleName);
+                    initialDragState = [{
+                        id: activeObject.id, initialX: activeObject.x, initialY: activeObject.y,
+                        initialWidth: activeObject.width, initialHeight: activeObject.height,
+                        anchorPoint: anchorPoint,
+                        diameterRatio: activeObject.shape === 'ring' ? activeObject.innerDiameter / activeObject.width : 1
+                    }];
+                }
+            }
+        }
+
+        if (!isRotating && !isResizing && !isDraggingNode) {
+            const hitObject = objects.find(obj => obj.isPointInside(x, y));
+            if (hitObject) {
+                const isNewlySelected = !selectedObjectIds.includes(hitObject.id);
+
+                if (!selectedObjectIds.includes(hitObject.id)) {
+                    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                        selectedObjectIds.push(hitObject.id);
+                    } else {
+                        selectedObjectIds = [hitObject.id];
+                    }
+                }
+
+                updateToolbarState();
+                syncPanelsWithSelection();
+                drawFrame();
+
+                // If a single object was newly selected, scroll its panel into view.
+                if (isNewlySelected && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                    const fieldset = form.querySelector(`fieldset[data-object-id="${hitObject.id}"]`);
+                    if (fieldset) {
+                        // A short delay allows the collapse animation to start before scrolling.
+                        setTimeout(() => {
+                            fieldset.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 200);
+                    }
+                }
+
+                if (!hitObject.locked) {
+                    isDragging = true;
+                    initialDragState = selectedObjectIds.map(id => {
+                        const obj = objects.find(o => o.id === id);
+                        return { id, x: obj.x, y: obj.y };
+                    });
+                }
+            } else {
+                selectedObjectIds = [];
+                updateToolbarState();
+                syncPanelsWithSelection();
+                drawFrame();
+            }
+        }
+
+        const handleMouseMove = (moveEvent) => {
+            moveEvent.preventDefault();
+            const { x, y } = getCanvasCoordinates(moveEvent);
+            if (isRotating) {
+                const initial = initialDragState[0];
+                const obj = objects.find(o => o.id === initial.id);
+                if (obj) {
+                    const center = obj.getCenter();
+                    const currentAngle = Math.atan2(y - center.y, x - center.x);
+                    const angleDelta = currentAngle - initial.startAngle;
+                    obj.rotation = (initial.initialObjectAngle + angleDelta) * 180 / Math.PI;
+                    drawFrame();
+                }
+            }
+        };
+
+        const handleMouseUp = (upEvent) => {
+            upEvent.preventDefault();
+            window.removeEventListener('mousemove', handleMouseMove);
+
+            const wasManipulating = isDragging || isResizing || isRotating || isDraggingNode;
+            if (isRotating) {
+                const obj = objects.find(o => o.id === initialDragState[0].id);
+                if (obj) {
+                    obj.isBeingManuallyRotated = false;
+                    if (obj._pausedRotationSpeed !== null) {
+                        obj.rotationSpeed = obj._pausedRotationSpeed;
+                        obj.rotationAngle = obj.rotation * Math.PI / 180;
+                        obj._pausedRotationSpeed = null;
+                    }
+                }
+            }
+
+            if (wasManipulating) {
+                objects.forEach(obj => {
+                    if (selectedObjectIds.includes(obj.id)) {
+                        obj.x = Math.round(obj.x);
+                        obj.y = Math.round(obj.y);
+                        obj.width = Math.round(obj.width);
+                        obj.height = Math.round(obj.height);
+                        if (obj.innerDiameter) obj.innerDiameter = Math.round(obj.innerDiameter);
+                        if (obj.fontSize) obj.fontSize = Math.round(obj.fontSize);
+                        obj.rotation = Math.round(obj.rotation);
+
+                        // --- START OF FIX ---
+                        // Call the object's update method to save its new rotation
+                        // as the "base" rotation for the audio reactivity system.
+                        obj.update({ rotation: obj.rotation });
+                        // --- END OF FIX ---
+                    }
+                });
+                updateFormValuesFromObjects();
+                recordHistory();
+            }
+
+            isDragging = isResizing = isRotating = isDraggingNode = false;
+            activeResizeHandle = null;
+            activeNodeDragState = null;
+            initialDragState = [];
+            snapLines = [];
+            cachedSnapTargets = null;
+            drawFrame();
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp, { once: true });
+    });
+
+
+    const debouncedUpdateForm = debounce(updateFormValuesFromObjects, 10);
+
+    /**
+     * Handles mouse movement over the canvas for dragging, resizing, and cursor updates.
+     * @param {MouseEvent} e - The mousemove event object.
+     */
+    canvasContainer.addEventListener('mousemove', e => {
+        // This part only updates the state. The 'animate' loop handles the redraw.
+        if (isDrawingPolyline && previewLine.active) {
+            const { x, y } = getCanvasCoordinates(e);
+            previewLine.endX = x;
+            previewLine.endY = y;
+            // NOTE: We do NOT call drawFrame() here. We just update the state.
+            return;
+        }
+
+        // --- This is the original logic for dragging, resizing, and showing coordinates ---
+        if (coordsDisplay) {
+            const { x, y } = getCanvasCoordinates(e);
+            coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}: (${Math.round(x)}, ${Math.round(y)})`;
+        }
+
+        e.preventDefault();
+        const { x, y } = getCanvasCoordinates(e);
+
+        if (isDraggingNode) {
+            const { id, nodeIndex } = activeNodeDragState;
+            const shape = objects.find(o => o.id === id);
+            if (!shape) return;
+
+            const center = shape.getCenter();
+            const staticAngle = -shape.getRenderAngle();
+            const s = Math.sin(staticAngle);
+            const c = Math.cos(staticAngle);
+            const dx = x - center.x;
+            const dy = y - center.y;
+            const localX = dx * c - dy * s;
+            const localY = dx * s + dy * c;
+
+            let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
+
+            nodes[nodeIndex].x = localX + shape.width / 2;
+            nodes[nodeIndex].y = localY + shape.height / 2;
+
+            shape.update({ polylineNodes: nodes });
+
+            updateFormValuesFromObjects();
+            drawFrame();
+            return;
+        }
+
+        if (!isDragging && !isResizing && !isRotating && e.buttons === 1 && initialDragState.length > 0) {
+            const dx = x - dragStartX;
+            const dy = y - dragStartY;
+            if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                isDragging = true;
+                const hitObject = [...objects].reverse().find(obj => obj.isPointInside(dragStartX, dragStartY));
+                if (hitObject && !selectedObjectIds.includes(hitObject.id)) {
+                    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                        selectedObjectIds = [hitObject.id];
+                        updateToolbarState();
+                        syncPanelsWithSelection();
+                    }
+                }
+            }
+        }
+
+        if (isRotating) {
+            const initial = initialDragState[0];
+            const obj = objects.find(o => o.id === initial.id);
+            if (obj) {
+                const center = obj.getCenter();
+                const currentAngle = Math.atan2(y - center.y, x - center.x);
+                const angleDelta = currentAngle - initial.startAngle;
+
+                // Use obj.update to correctly apply the new rotation and trigger a redraw.
+                obj.update({ rotation: (initial.initialObjectAngle + angleDelta) * 180 / Math.PI });
+            }
+            // This is a necessary flag to ensure the animation loop knows to pause auto-rotation.
+            objects.forEach(o => {
+                if (o.id === initialDragState[0].id) {
+                    o.isBeingManuallyRotated = true;
+                }
+            });
+            debouncedUpdateForm();
+            needsRedraw = true;
+
+        } else if (isResizing) {
+            snapLines = [];
+            const SNAP_THRESHOLD = 10;
+            const initial = initialDragState[0];
+            let mouseX = x;
+            let mouseY = y;
+            snapLines = [];
+
+            if (!cachedSnapTargets) {
+                cachedSnapTargets = [];
+                const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
+                otherObjects.forEach(otherObj => cachedSnapTargets.push(...getWorldPoints(otherObj)));
+                cachedSnapTargets.push(
+                    { x: canvas.width / 2, y: canvas.height / 2, type: 'center' }, { x: canvas.width / 2, y: 0, type: 'edge' }, { x: canvas.width / 2, y: canvas.height, type: 'edge' }, { x: 0, y: canvas.height / 2, type: 'edge' }, { x: canvas.width, y: canvas.height / 2, type: 'edge' }
+                );
+            }
+
+            const unSnappedState = (() => {
+                const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
+                const anchorPoint = initial.anchorPoint;
+                const resizeAngle = tempObj.rotation * Math.PI / 180;
+                const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                if (isSideHandle) {
+                    const dragVecX = x - dragStartX;
+                    const dragVecY = y - dragStartY;
+                    const s = Math.sin(resizeAngle);
+                    const c = Math.cos(resizeAngle);
+                    let newWidth = initial.initialWidth;
+                    let newHeight = initial.initialHeight;
+                    let centerShiftX = 0, centerShiftY = 0;
+                    if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
+                        const change = dragVecX * c + dragVecY * s;
+                        newWidth += activeResizeHandle === 'left' ? -change : change;
+                        centerShiftX = (change / 2) * c;
+                        centerShiftY = (change / 2) * s;
+                    } else {
+                        const change = -dragVecX * s + dragVecY * c;
+                        newHeight += activeResizeHandle === 'top' ? -change : change;
+                        centerShiftX = (change / 2) * -s;
+                        centerShiftY = (change / 2) * c;
+                    }
+                    const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
+                    const newCenterX = initialCenter.x + centerShiftX;
+                    const newCenterY = initialCenter.y + centerShiftY;
+                    tempObj.width = newWidth;
+                    tempObj.height = newHeight;
+                    tempObj.x = newCenterX - tempObj.width / 2;
+                    tempObj.y = newCenterY - tempObj.height / 2;
+                } else {
+                    const worldVecX = x - anchorPoint.x;
+                    const worldVecY = y - anchorPoint.y;
+                    const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
+                    const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
+                    const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
+                    const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
+                    tempObj.width = localVecX * handleXSign;
+                    tempObj.height = localVecY * handleYSign;
+                    const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
+                    const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
+                    const newCenterX = anchorPoint.x + worldSizingVecX / 2;
+                    const newCenterY = anchorPoint.y + worldSizingVecY / 2;
+                    tempObj.x = newCenterX - tempObj.width / 2;
+                    tempObj.y = newCenterY - tempObj.height / 2;
+                }
+                return tempObj;
+            })();
+
+            const ghostPoints = getWorldPoints(unSnappedState);
+            let pointsToSnap;
+            const isHorizontalOnly = activeResizeHandle === 'left' || activeResizeHandle === 'right';
+            const isVerticalOnly = activeResizeHandle === 'top' || activeResizeHandle === 'bottom';
+
+            if (isHorizontalOnly) {
+                pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
+            } else if (isVerticalOnly) {
+                pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
+            } else {
+                pointsToSnap = ghostPoints;
+            }
+
+            const hSnaps = [], vSnaps = [];
+
+            pointsToSnap.forEach(point => {
+                cachedSnapTargets.forEach(target => {
+                    if (point.type === target.type) {
+                        if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x });
+                        if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y });
+                    }
+                });
+            });
+
+            if (!isVerticalOnly && hSnaps.length > 0) {
+                hSnaps.sort((a, b) => a.dist - b.dist);
+                mouseX += hSnaps[0].adj;
+                snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2 });
+            }
+            if (!isHorizontalOnly && vSnaps.length > 0) {
+                vSnaps.sort((a, b) => a.dist - b.dist);
+                mouseY += vSnaps[0].adj;
+                snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2 });
+            }
+
+            const obj = objects.find(o => o.id === initial.id);
+            if (obj) {
+                const finalState = (() => {
+                    const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
+                    const anchorPoint = initial.anchorPoint;
+                    const resizeAngle = tempObj.rotation * Math.PI / 180;
+                    const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                    if (isSideHandle) {
+                        const dragVecX = mouseX - dragStartX;
+                        const dragVecY = mouseY - dragStartY;
+                        const s = Math.sin(resizeAngle);
+                        const c = Math.cos(resizeAngle);
+                        let newWidth = initial.initialWidth;
+                        let newHeight = initial.initialHeight;
+                        let centerShiftX = 0, centerShiftY = 0;
+                        if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
+                            const change = dragVecX * c + dragVecY * s;
+                            newWidth += activeResizeHandle === 'left' ? -change : change;
+                            centerShiftX = (change / 2) * c;
+                            centerShiftY = (change / 2) * s;
+                        } else {
+                            const change = -dragVecX * s + dragVecY * c;
+                            newHeight += activeResizeHandle === 'top' ? -change : change;
+                            centerShiftX = (change / 2) * -s;
+                            centerShiftY = (change / 2) * c;
+                        }
+                        const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
+                        const newCenterX = initialCenter.x + centerShiftX;
+                        const newCenterY = initialCenter.y + centerShiftY;
+                        tempObj.width = newWidth;
+                        tempObj.height = newHeight;
+                        tempObj.x = newCenterX - tempObj.width / 2;
+                        tempObj.y = newCenterY - tempObj.height / 2;
+                    } else {
+                        const worldVecX = mouseX - anchorPoint.x;
+                        const worldVecY = mouseY - anchorPoint.y;
+                        const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
+                        const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
+                        const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
+                        const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
+                        tempObj.width = localVecX * handleXSign;
+                        tempObj.height = localVecY * handleYSign;
+                        const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
+                        const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
+                        const newCenterX = anchorPoint.x + worldSizingVecX / 2;
+                        const newCenterY = anchorPoint.y + worldSizingVecY / 2;
+                        tempObj.x = newCenterX - tempObj.width / 2;
+                        tempObj.y = newCenterY - tempObj.height / 2;
+                    }
+                    return tempObj;
+                })();
+
+                obj.update({
+                    x: Math.round(finalState.x),
+                    y: Math.round(finalState.y),
+                    width: Math.round(Math.max(10, finalState.width)),
+                    height: Math.round(Math.max(10, finalState.height)),
+                    innerDiameter: obj.shape === 'ring' ? Math.round(obj.width * initial.diameterRatio) : undefined
+                });
+
+                debouncedUpdateForm();
+                needsRedraw = true;
+            }
+        } else if (isDragging) {
+            snapLines = [];
+            const dx = x - dragStartX;
+            const dy = y - dragStartY;
+            const SNAP_THRESHOLD = 10;
+            let finalDx = dx;
+            let finalDy = dy;
+
+            if (!cachedSnapTargets) {
+                cachedSnapTargets = [];
+                const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
+                otherObjects.forEach(otherObj => {
+                    cachedSnapTargets.push(...getWorldPoints(otherObj));
+                });
+                cachedSnapTargets.push(
+                    { x: canvas.width / 2, y: canvas.height / 2, type: 'center' },
+                    { x: canvas.width / 2, y: 0, type: 'edge' },
+                    { x: canvas.width / 2, y: canvas.height, type: 'edge' },
+                    { x: 0, y: canvas.height / 2, type: 'edge' },
+                    { x: canvas.width, y: canvas.height / 2, type: 'edge' }
+                );
+            }
+
+            const hSnaps = [], vSnaps = [];
+
+            initialDragState.forEach(state => {
+                const obj = objects.find(o => o.id === state.id);
+                if (obj) {
+                    const originalX = obj.x;
+                    const originalY = obj.y;
+                    obj.x = state.x + dx;
+                    obj.y = state.y + dy;
+                    const selectedPoints = getWorldPoints(obj);
+                    selectedPoints.forEach(point => {
+                        cachedSnapTargets.forEach(target => {
+                            if (point.type === target.type) {
+                                if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x, snapType: point.type });
+                                if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y, snapType: point.type });
+                            }
+                        });
+                    });
+                    obj.x = originalX;
+                    obj.y = originalY;
+                }
+            });
+
+            if (hSnaps.length > 0) {
+                hSnaps.sort((a, b) => a.dist - b.dist);
+                finalDx += hSnaps[0].adj;
+                snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2, snapType: hSnaps[0].snapType });
+            }
+            if (vSnaps.length > 0) {
+                vSnaps.sort((a, b) => a.dist - b.dist);
+                finalDy += vSnaps[0].adj;
+                snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2, snapType: vSnaps[0].snapType });
+            }
+
+            initialDragState.forEach(state => {
+                const obj = objects.find(o => o.id === state.id);
+                if (obj) {
+                    let newX = state.x + finalDx;
+                    let newY = state.y + finalDy;
+                    if (constrainToCanvas) {
+                        const tempObj = new Shape({ ...obj, x: newX, y: newY });
+                        const { minX, minY, maxX, maxY } = getBoundingBox(tempObj);
+                        if (minX < 0) newX -= minX;
+                        if (maxX > canvas.width) newX -= (maxX - canvas.width);
+                        if (minY < 0) newY -= minY;
+                        if (maxY > canvas.height) newY -= (maxY - canvas.height);
+                    }
+                    obj.x = newX;
+                    obj.y = newY;
+                }
+            });
+            debouncedUpdateForm();
+            needsRedraw = true;
+        } else {
+            let cursor = 'default';
+            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+            if (topObject) {
+                cursor = 'pointer';
+                if (selectedObjectIds.includes(topObject.id)) {
+                    const handle = topObject.getHandleAtPoint(x, y);
+                    if (handle) {
+                        cursor = handle.cursor;
+                    } else if (!topObject.locked) {
+                        cursor = 'move';
+                    }
+                }
+            }
+            canvasContainer.style.cursor = cursor;
+        }
+    });
+
+    exportBtn.addEventListener('click', exportFile);
+
+    /**
+     * The main initialization function for the application.
+     * It sets up the initial configuration, creates objects, renders the form,
+     * initializes tooltips, starts the animation loop, and sets up the resizable panels.
+     */
+    async function init() {
+        handleURLParameters();
+        const constrainBtn = document.getElementById('constrain-btn');
+        constrainBtn.classList.remove('btn-secondary', 'btn-outline-secondary');
+        if (constrainToCanvas) {
+            constrainBtn.classList.add('btn-secondary');
+        } else {
+            constrainBtn.classList.add('btn-outline-secondary');
+        }
+
+        const effectLoaded = await loadSharedEffect();
+
+        if (!effectLoaded) {
+            // Attempt to load a single featured effect if no shared effect was loaded.
+            const featuredEffectLoaded = await loadFeaturedEffect();
+
+            if (!featuredEffectLoaded) {
+                // Fall back to the default template if neither a shared nor a featured effect was found.
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+                const metaElements = Array.from(doc.querySelectorAll('meta'));
+
+                configStore = metaElements.map(parseMetaToConfig);
+                createInitialObjects();
+                renderForm();
+                generateOutputScript(); // Generate script after setup
+            }
+        }
+
+        // updateObjectsFromForm();
+        updateToolbarState();
+
+        fpsInterval = 1000 / fps;
+        then = window.performance.now();
+        requestAnimationFrame(animate);
+
+        const savedVSizes = getCookie('split-v-sizes');
+        const initialVSizes = savedVSizes ? JSON.parse(savedVSizes) : [30, 70];
+
+        lastVSizes = initialVSizes;
+
+        horizontalSplit = Split(['#left-panel', '#right-panel'], {
+            sizes: initialVSizes,
+            minSize: [400, 500],
+            gutterSize: 12,
+            gutter: (index, direction) => {
+                const gutter = document.createElement('div');
+                gutter.className = `gutter gutter-${direction}`;
+                const icon = document.createElement('i');
+                icon.className = 'bi bi-three-dots-vertical';
+                gutter.appendChild(icon);
+                return gutter;
+            },
+            onDragEnd: function (sizes) {
+                setCookie('split-v-sizes', JSON.stringify(sizes), 365);
+                lastVSizes = sizes;
+                // On manual resize, update the target pixel width
+                const leftPanel = document.getElementById('left-panel');
+                if (leftPanel) {
+                    leftPanelPixelWidth = leftPanel.offsetWidth;
+                }
             }
         });
 
-        if (this.timePlotFillArea) {
-            this.ctx.lineTo(this.width / 2, this.height / 2);
-            this.ctx.closePath();
-            this.ctx.fillStyle = this._createLocalFillStyle();
-            this.ctx.fill();
+        const mainSplitEl = document.getElementById('main-split');
+
+        // This new function handles the logic for fixing the panel width
+        function fixLeftPanelWidth() {
+            if (!horizontalSplit || leftPanelPixelWidth <= 0 || !mainSplitEl) return;
+
+            const totalWidth = mainSplitEl.offsetWidth;
+            if (totalWidth === 0) return;
+
+            // Calculate the percentage the left panel *should* be to maintain its pixel width
+            const newLeftPercentage = (leftPanelPixelWidth / totalWidth) * 100;
+            horizontalSplit.setSizes([newLeftPercentage, 100 - newLeftPercentage]);
         }
-        this.ctx.strokeStyle = this._createLocalFillStyle();
-        this.ctx.lineWidth = this.timePlotLineThickness;
-        this.ctx.lineJoin = 'round';
-        this.ctx.stroke();
 
-        // --- 2. Draw the Axes and Ticks on top ---
-        const showLines = this.timePlotAxesStyle === 'Lines Only' || this.timePlotAxesStyle === 'Lines and Values';
-        const showValues = this.timePlotAxesStyle === 'Lines and Values';
+        // Set the initial pixel width shortly after page load
+        setTimeout(() => {
+            const leftPanel = document.getElementById('left-panel');
+            if (leftPanel) {
+                leftPanelPixelWidth = leftPanel.offsetWidth;
+            }
+        }, 200);
 
-        if (showLines) {
-            this.ctx.save();
-            this.ctx.strokeStyle = this.gradient.color2 || '#FFFFFF';
-            this.ctx.globalAlpha = 0.6;
-            this.ctx.lineWidth = 8;
+        const lastUpdatedSpan = document.getElementById('last-updated-span');
+        if (lastUpdatedSpan) {
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            const formattedTime = now.toLocaleTimeString('en-US', {
+                hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+            });
+            lastUpdatedSpan.textContent = `Current as of: ${formattedDate}, ${formattedTime}`;
+        }
 
-            // Draw main Y-Axis and X-Axis Lines
-            this.ctx.beginPath();
-            this.ctx.moveTo(-this.width / 2, -this.height / 2);
-            this.ctx.lineTo(-this.width / 2, this.height / 2);
-            this.ctx.moveTo(-this.width / 2, this.height / 2);
-            this.ctx.lineTo(this.width / 2, this.height / 2);
-            this.ctx.stroke();
+        fixLeftPanelWidth();
+        initializeSortable();
+        recordHistory();
+        updateUndoRedoButtons();
+        baselineStateForURL = getControlValues();
+        initializeTooltips();
+    }
 
-            // Y-Axis Ticks and Values
-            if (showValues) {
-                this.ctx.fillStyle = this.gradient.color2 || '#FFFFFF';
-                this.ctx.globalAlpha = 1;
-                this.ctx.font = 'bold 24px Arial';
-                this.ctx.textAlign = 'left';
-                this.ctx.textBaseline = 'middle';
+    // --- SHARE BUTTON LOGIC ---
+    document.getElementById('share-btn').addEventListener('click', async () => {
+        const user = window.auth.currentUser;
+        syncConfigStoreWithForm();
+        const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
+        const name = getControlValues()['title'] || 'My Shared Effect';
 
-                const yTickCount = 4;
-                for (let i = 0; i <= yTickCount; i++) {
-                    const value = i * (100 / yTickCount);
-                    const yPos = (this.height / 2) - (value / 100) * this.height;
+        const shareableData = {
+            userId: user ? user.uid : 'anonymous',
+            creatorName: user ? (user.displayName || 'Anonymous') : 'Anonymous',
+            isPublic: true,
+            createdAt: new Date(),
+            name: name,
+            thumbnail: thumbnail, // Add the thumbnail data
+            configs: configStore,
+            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked }))
+        };
 
-                    this.ctx.globalAlpha = 1;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(-this.width / 2, yPos);
-                    this.ctx.lineTo(-this.width / 2 + 15, yPos);
-                    this.ctx.stroke();
+        try {
+            const docRef = await window.addDoc(window.collection(window.db, "projects"), shareableData);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${docRef.id}`;
+            navigator.clipboard.writeText(shareUrl)
+                .then(() => showToast("Share link copied to clipboard!", 'success'))
+                .catch(() => prompt("Copy this link:", shareUrl));
+        } catch (error) {
+            console.error("Error creating share link: ", error);
+            showToast("Could not create share link.", 'danger');
+        }
+    });
 
-                    let textYPos = yPos;
-                    if (i === 0) { textYPos -= 15; }
-                    if (i === yTickCount) { textYPos += 15; }
+    if (galleryOffcanvasEl) {
+        galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
+            if (galleryListener) {
+                // console.log("Detaching gallery listener.");
+                galleryListener(); // This is the unsubscribe function
+                galleryListener = null;
+            }
+        });
+    }
 
-                    this.ctx.globalAlpha = 1;
-                    this.ctx.fillText(value.toFixed(0), -this.width / 2 + 20, textYPos);
+    // BROWSE GALLERY BUTTON
+    document.getElementById('browse-btn').addEventListener('click', async () => {
+        document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
+        const galleryList = document.getElementById('gallery-project-list');
+        galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
+
+        const q = window.query(window.collection(window.db, "projects"), window.where("isPublic", "==", true), window.orderBy("createdAt", "desc"));
+
+        try {
+            const querySnapshot = await window.getDocs(q);
+            const projects = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                projects.push({ docId: doc.id, ...data });
+            });
+            populateGallery(projects);
+        } catch (error) {
+            console.error("Error loading public gallery:", error);
+            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects.</li>';
+        }
+    });
+
+    // --- LOAD FROM SHARE LINK LOGIC ---
+    // This function runs automatically when the page loads.
+    async function loadSharedEffect() {
+        const params = new URLSearchParams(window.location.search);
+        const effectId = params.get('effectId');
+
+        if (effectId) {
+            try {
+                const effectDocRef = window.doc(window.db, "projects", effectId);
+                const effectDoc = await window.getDoc(effectDocRef);
+
+                if (effectDoc.exists()) {
+                    const projectData = { docId: effectDoc.id, ...effectDoc.data() };
+                    if (projectData.isPublic) {
+                        loadWorkspace(projectData);
+                        showToast("Shared effect loaded!", 'success');
+                        return true;
+                    } else {
+                        showToast("This effect is not public.", 'danger');
+                    }
+                } else {
+                    showToast("Shared effect not found.", 'danger');
+                }
+            } catch (error) {
+                console.error("Error loading shared effect:", error);
+                showToast("Could not load the shared effect.", 'danger');
+            }
+        }
+
+        // If no effectId was in the URL or the loading failed, return false.
+        // This removes the "featured effect" fallback and forces the app to use the default config.
+        return false;
+    }
+
+    // MY PROJECTS BUTTON
+    document.getElementById('load-ws-btn').addEventListener('click', async () => {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to see your projects.", 'danger');
+            const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+            if (galleryOffcanvas) galleryOffcanvas.hide();
+            return;
+        }
+
+        document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+        const galleryList = document.getElementById('gallery-project-list');
+        galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
+
+        const q = window.query(window.collection(window.db, "projects"), window.where("userId", "==", user.uid), window.orderBy("createdAt", "desc"));
+
+        try {
+            const querySnapshot = await window.getDocs(q);
+            const projects = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                projects.push({ docId: doc.id, ...data });
+            });
+            populateGallery(projects);
+        } catch (error) {
+            console.error("Error loading user projects:", error);
+            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load your projects.</li>';
+        }
+    });
+
+    // Add scroll listener for lazy loading
+    galleryBody.addEventListener('scroll', () => {
+        if (isLoadingMore) return;
+        const { scrollTop, scrollHeight, clientHeight } = galleryBody;
+        if (scrollHeight - scrollTop - clientHeight < 100) { // Load when 100px from bottom
+            loadMoreProjects();
+        }
+    });
+
+    // Clean up listener when offcanvas is closed
+    galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
+        if (galleryListener) {
+            galleryListener();
+            galleryListener = null;
+        }
+        lastVisibleDoc = null; // Reset for next time
+    });
+
+    /**
+     * Displays a prominent toast notification in the bottom-right corner.
+     * @param {string} message - The message to display.
+     * @param {string} [type='info'] - The type of toast ('success', 'danger', 'info').
+     */
+    function showToast(message, type = 'info') {
+        const toastEl = document.getElementById('app-toast');
+        if (!toastEl) {
+            console.error('Toast element #app-toast not found in HTML!');
+            return;
+        }
+        const toastHeader = document.getElementById('app-toast-header');
+        const toastTitle = document.getElementById('app-toast-title');
+        const toastBody = document.getElementById('app-toast-body');
+        const toastIcon = document.getElementById('app-toast-icon');
+
+        toastBody.innerHTML = message.replace(/\n/g, '<br>');
+
+        toastHeader.classList.remove('bg-success', 'bg-danger', 'bg-primary');
+        toastIcon.className = 'bi me-2';
+
+        switch (type) {
+            case 'success':
+                toastHeader.classList.add('bg-success');
+                toastTitle.textContent = 'Success';
+                toastIcon.classList.add('bi-check-circle-fill');
+                break;
+            case 'danger':
+                toastHeader.classList.add('bg-danger');
+                toastTitle.textContent = 'Error';
+                toastIcon.classList.add('bi-exclamation-triangle-fill');
+                break;
+            default: // 'info'
+                toastHeader.classList.add('bg-primary');
+                toastTitle.textContent = 'Notification';
+                toastIcon.classList.add('bi-info-circle-fill');
+                break;
+        }
+
+        // Use Bootstrap's recommended 'getOrCreateInstance' method, which is more robust.
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+        toast.show();
+    }
+
+    /**
+     * Generates a small data URL thumbnail from the main canvas, ensuring no selection UI is visible.
+     * @param {HTMLCanvasElement} sourceCanvas - The main canvas to capture.
+     * @returns {string} A dataURL string of the thumbnail.
+     */
+    function generateThumbnail(sourceCanvas, width = 200) {
+        // Temporarily store the current selection
+        const originalSelection = [...selectedObjectIds];
+
+        // Deselect all objects to hide the selection UI
+        selectedObjectIds = [];
+        drawFrame(); // Redraw the canvas without selection boxes
+
+        const thumbnailCanvas = document.createElement('canvas');
+        const thumbWidth = width;
+        const thumbHeight = (sourceCanvas.height / sourceCanvas.width) * thumbWidth;
+        thumbnailCanvas.width = thumbWidth;
+        thumbnailCanvas.height = thumbHeight;
+        const thumbCtx = thumbnailCanvas.getContext('2d');
+
+        // Draw the clean main canvas onto the smaller thumbnail canvas
+        thumbCtx.drawImage(sourceCanvas, 0, 0, thumbWidth, thumbHeight);
+        const dataUrl = thumbnailCanvas.toDataURL('image/jpeg', 0.7);
+
+        // Restore the original selection and redraw the canvas for the user
+        selectedObjectIds = originalSelection;
+        drawFrame();
+
+        return dataUrl;
+    }
+
+    /**
+     * Shows a generic confirmation modal and sets up a callback for the confirm button.
+     * @param {string} title - The title for the modal header.
+     * @param {string} body - The message for the modal body.
+     * @param {string} buttonText - The text for the confirmation button (e.g., "Delete").
+     * @param {function} onConfirm - The function to execute when the confirm button is clicked.
+     */
+    function showConfirmModal(title, body, buttonText, onConfirm) {
+        const confirmModalEl = document.getElementById('confirm-overwrite-modal');
+        const confirmModalInstance = bootstrap.Modal.getInstance(confirmModalEl) || new bootstrap.Modal(confirmModalEl);
+        const confirmModalTitle = document.getElementById('confirmOverwriteModalLabel');
+        const confirmModalBody = document.getElementById('confirm-overwrite-modal-body');
+        const confirmBtn = document.getElementById('confirm-overwrite-btn');
+
+        confirmModalTitle.textContent = title;
+        confirmModalBody.textContent = body;
+        confirmBtn.textContent = buttonText;
+        confirmBtn.className = `btn ${buttonText.toLowerCase() === 'delete' ? 'btn-danger' : 'btn-primary'}`;
+
+        const handleConfirm = async () => {
+            if (typeof onConfirm === 'function') {
+                await onConfirm(); // Wait for the async action (like saving) to complete
+            }
+            confirmModalInstance.hide(); // Hide the modal after the action is done
+        };
+
+        confirmBtn.addEventListener('click', handleConfirm, { once: true });
+
+        // This listener cleans up in case the user closes the modal without confirming
+        const handleModalHide = () => {
+            confirmBtn.removeEventListener('click', handleConfirm);
+        };
+        confirmModalEl.addEventListener('hidden.bs.modal', handleModalHide, { once: true });
+
+        confirmModalInstance.show();
+    }
+
+    /**
+     * Loads an entire workspace from a string containing HTML with meta tags.
+     * This function resets the current state and builds a new one.
+     * @param {string} htmlString The raw HTML content of the effect file.
+     */
+    function loadEffectFromMetaHTML(htmlString) {
+        if (!htmlString || !htmlString.trim()) {
+            showToast("The provided file or text is empty.", 'danger');
+            return;
+        }
+
+        try {
+            isRestoring = true;
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlString;
+
+            // --- 1. PARSE ALL DATA ---
+            const metaElements = Array.from(tempDiv.querySelectorAll('meta'));
+            const loadedConfigs = metaElements.map(parseMetaToConfig).filter(c => c.property || c.name);
+            const loadedConfigMap = new Map(loadedConfigs.map(c => [(c.property || c.name), c]));
+
+            const constantsMap = new Map();
+            const scriptEl = tempDiv.querySelector('script');
+            if (scriptEl) {
+                const scriptContent = scriptEl.textContent;
+                const regex = /const\s+([a-zA-Z0-9_]+)\s*=\s*(.*?);/sg;
+                let match;
+                while ((match = regex.exec(scriptContent)) !== null) {
+                    if (match[1] && match[2] !== undefined) {
+                        const key = match[1];
+                        let value = match[2];
+                        try { value = JSON.parse(value); } catch (e) { }
+                        constantsMap.set(key, value);
+                    }
                 }
             }
 
-            // Moving X-Axis Ticks (without text labels)
-            this.ctx.globalAlpha = 1;
-            const pixelsPerSecond = this.width / timeScale;
-            const frameOffset = this.sensorHistory.length % 60;
-            const pixelOffset = (frameOffset / 60) * pixelsPerSecond;
-
-            for (let i = 0; i <= timeScale; i++) {
-                const xPos = (this.width / 2) - (i * pixelsPerSecond) - pixelOffset;
-                if (xPos < -this.width / 2) break;
-
-                this.ctx.beginPath();
-                this.ctx.moveTo(xPos, this.height / 2);
-                this.ctx.lineTo(xPos, this.height / 2 - 15);
-                this.ctx.stroke();
+            if (loadedConfigMap.size === 0 && constantsMap.size === 0) {
+                showToast("No valid properties were found in the file.", 'danger');
+                isRestoring = false;
+                return;
             }
-            this.ctx.restore();
+
+            // --- 2. BUILD THE NEW CONFIGURATION STORE ---
+            const newConfigStore = [];
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            // --- NEW, MORE ROBUST GENERAL CONFIG MERGING ---
+            const masterGeneralConfigs = Array.from(doc.querySelectorAll('meta'))
+                .map(parseMetaToConfig)
+                .filter(c => !(c.property || c.name).startsWith('obj'));
+            const loadedGeneralConfigs = loadedConfigs.filter(c => !(c.property || c.name).startsWith('obj'));
+
+            const mergedGeneralConfigMap = new Map();
+
+            // First, add all master configs to the map.
+            masterGeneralConfigs.forEach(conf => {
+                mergedGeneralConfigMap.set(conf.property || conf.name, { ...conf });
+            });
+
+            // Then, iterate through loaded configs. Update existing ones or add new ones.
+            loadedGeneralConfigs.forEach(loadedConf => {
+                const key = loadedConf.property || loadedConf.name;
+                const existingConf = mergedGeneralConfigMap.get(key);
+                if (existingConf) {
+                    // If it exists in the master template, just update its default value.
+                    existingConf.default = loadedConf.default;
+                } else {
+                    // If this is a property not in the master template, add it.
+                    // This is important for forward-compatibility if new globals are added.
+                    mergedGeneralConfigMap.set(key, loadedConf);
+                }
+            });
+
+            newConfigStore.push(...Array.from(mergedGeneralConfigMap.values()));
+
+            const allLoadedProps = new Set([...loadedConfigMap.keys(), ...constantsMap.keys()]);
+            const objectIds = [...new Set(Array.from(allLoadedProps).map(p => (p || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
+
+            const objectData = {};
+            objectIds.forEach(id => {
+                objectData[id] = { props: [], name: `Object ${id}` };
+                allLoadedProps.forEach(prop => {
+                    if (prop && prop.startsWith(`obj${id}_`)) {
+                        objectData[id].props.push(prop.substring(prop.indexOf('_') + 1));
+                    }
+                });
+
+                const aPropToGetNameFrom = Array.from(allLoadedProps).find(p => p && p.startsWith(`obj${id}_`) && loadedConfigMap.has(p));
+                if (aPropToGetNameFrom) {
+                    const conf = loadedConfigMap.get(aPropToGetNameFrom);
+                    if (conf && conf.label) {
+                        const nameParts = conf.label.split(':');
+                        if (nameParts.length > 1) objectData[id].name = nameParts[0].trim();
+                    }
+                }
+            });
+
+            for (const id in objectData) {
+                const props = objectData[id].props;
+                let bestMatch = 'rectangle'; let maxScore = 0;
+                for (const shapeType in shapePropertyMap) {
+                    let currentScore = 0;
+                    props.forEach(prop => { if (shapePropertyMap[shapeType].includes(prop)) currentScore++; });
+                    if (currentScore > maxScore) { maxScore = currentScore; bestMatch = shapeType; }
+                }
+                objectData[id].shape = bestMatch;
+            }
+
+            objectIds.forEach(id => {
+                const defaults = getDefaultObjectConfig(id);
+                const { name, shape } = objectData[id];
+                defaults.forEach(conf => {
+                    const key = conf.property;
+                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
+                    if (key === `obj${id}_shape`) conf.default = shape;
+                    if (constantsMap.has(key)) conf.default = constantsMap.get(key);
+                    else if (loadedConfigMap.has(key)) conf.default = loadedConfigMap.get(key).default;
+                });
+                newConfigStore.push(...defaults);
+            });
+
+            // --- 3. APPLY THE NEW STATE ---
+            configStore = newConfigStore;
+            objects = [];
+            const names = {};
+            for (const id in objectData) { names[id] = objectData[id].name; }
+            createInitialObjects(names);
+
+            renderForm();
+
+            configStore.filter(c => !(c.property || c.name).startsWith('obj')).forEach(conf => {
+                const key = conf.property || conf.name;
+                const el = form.elements[key];
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = (conf.default === true || conf.default === 'true');
+                    } else {
+                        el.value = conf.default;
+                    }
+                    // Also update any dependent UI elements like sliders or hex inputs
+                    const slider = form.querySelector(`#${el.id}_slider`);
+                    if (slider) slider.value = conf.default;
+                    const hexInput = form.querySelector(`#${el.id}_hex`);
+                    if (hexInput) hexInput.value = conf.default;
+                }
+            });
+
+            updateObjectsFromForm();
+            drawFrame();
+            recordHistory();
+
+            showToast("Effect loaded successfully!", 'success');
+
+            const importModalEl = document.getElementById('import-meta-modal');
+            if (importModalEl) {
+                const importModal = bootstrap.Modal.getInstance(importModalEl);
+                if (importModal) { importModal.hide(); }
+            }
+        } catch (error) {
+            console.error("Error importing file:", error);
+            showToast("Could not parse the provided file. Please check the format.", 'danger');
+        } finally {
+            isRestoring = false;
         }
     }
 
-    _applyAudioReactivity(audioData) {
-        // Reset all reactive properties
-        this.internalScale = 1.0; this.colorOverride = null; this.flashOpacity = 0;
-        this.pathAnim_internalScale = 1.0; this.pathAnim_colorOverride = null; this.pathAnim_flashOpacity = 0;
-        this.pathAnim_extraRotation = 0;
+    confirmImportBtn.addEventListener('click', () => {
+        const importText = document.getElementById('import-textarea').value;
+        loadEffectFromMetaHTML(importText);
+    });
 
-        // Decay flash
-        if (this.flashDecay > 0) { this.flashDecay -= 0.1; }
+    // --- START: NEW Upload from File Logic ---
+    const uploadEffectBtn = document.getElementById('upload-effect-btn');
+    const effectFileInput = document.getElementById('effect-file-input');
+
+    uploadEffectBtn.addEventListener('click', () => {
+        effectFileInput.click(); // Programmatically click the hidden file input
+    });
+
+    effectFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileContent = event.target.result;
+            loadEffectFromMetaHTML(fileContent);
+        };
+        reader.onerror = () => {
+            showToast(`Error reading file: ${reader.error}`, 'danger');
+        };
+        reader.readAsText(file);
+
+        // Reset the input value to allow uploading the same file again
+        e.target.value = null;
+    });
+    // --- END: NEW Upload from File Logic ---
+
+    /**
+     * SHARE BUTTON: Opens a modal with the share link if the project is saved.
+     */
+    shareBtn.addEventListener('click', () => {
+        if (!currentProjectDocId) {
+            showToast("Please save the effect before sharing.", 'info');
+            return; // Stop if not saved
+        }
+
+        // If saved, populate the input and show the modal
+        const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${currentProjectDocId}`;
+        const shareLinkInput = document.getElementById('share-link-input');
+        shareLinkInput.value = shareUrl;
+
+        const shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
+        shareModal.show();
+    });
+
+    /**
+      * COPY SHARE LINK BUTTON: Copies the link from the share modal.
+      */
+    document.getElementById('copy-share-link-btn').addEventListener('click', () => {
+        const shareLinkInput = document.getElementById('share-link-input');
+        navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+            showToast("Link copied to clipboard!", 'success');
+        });
+    });
+
+    document.getElementById('new-ws-btn').addEventListener('click', () => {
+        showConfirmModal(
+            'Create New Workspace',
+            'Are you sure you want to clear the current workspace? Any unsaved changes will be lost.',
+            'Clear Workspace',
+            () => {
+                resetWorkspace();
+            }
+        );
+    });
+
+    addPolylineBtn.addEventListener('click', () => {
+        activeTool = 'polyline';
+        canvasContainer.style.cursor = 'crosshair';
+        isDrawingPolyline = false; // Reset state
+        currentlyDrawingShapeId = null;
+        previewLine.active = false;
+        showToast("Polyline tool activated. Click on the canvas to start drawing. Double-click to finish.", "info");
+    });
+
+    addObjectBtn.addEventListener('click', () => {
+        activeTool = 'select';
+        canvasContainer.style.cursor = 'default';
+        currentProjectDocId = null;
+        updateShareButtonState();
+        const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
+        const newConfigs = getDefaultObjectConfig(newId);
+
+        // Find the insertion point (after general settings, before existing object settings).
+        const firstObjectConfigIndex = configStore.findIndex(c => (c.property || c.name || '').startsWith('obj'));
+
+        if (firstObjectConfigIndex === -1) {
+            // If no other objects exist, just add the new configs to the end.
+            configStore.push(...newConfigs);
+        } else {
+            // Otherwise, insert the new configs before the first existing object's configs.
+            configStore.splice(firstObjectConfigIndex, 0, ...newConfigs);
+        }
+
+        const state = {
+            id: newId,
+            name: `Object ${newId}`, // Explicitly sets the default name
+            gradient: {}
+        };
+
+        newConfigs.forEach(conf => {
+            const key = conf.property.replace(`obj${newId}_`, '');
+            let value = conf.default;
+
+            if (conf.type === 'number') {
+                value = parseFloat(value);
+            } else if (conf.type === 'boolean') {
+                value = (value === 'true');
+            }
+
+            if (key.startsWith('gradColor')) {
+                state.gradient[key.replace('grad', '').toLowerCase()] = value;
+            } else if (key === 'scrollDir') {
+                state.scrollDirection = value;
+            } else {
+                state[key] = value;
+            }
+        });
+
+        const propsToScale = [
+            'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
+            'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
+            'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'
+        ];
+        propsToScale.forEach(prop => {
+            if (state[prop] !== undefined) {
+                state[prop] *= 4;
+            }
+        });
+
+        const newShape = new Shape({ ...state, ctx, canvasWidth: canvas.width });
+
+        // Add the new shape to the beginning of the objects array to place it on the top layer.
+        objects.unshift(newShape);
+
+
+        renderForm();
+        updateFormValuesFromObjects();
+        drawFrame();
+        recordHistory();
+    });
+
+    /**
+     * CONFIRMATION MODAL: General listener for confirm button.
+     */
+    confirmBtn.addEventListener('click', () => {
+        if (typeof confirmActionCallback === 'function') {
+            confirmActionCallback();
+        }
+    });
+
+    /**
+     * Creates a debounced version of a function that delays invoking the function
+     * until after a certain number of milliseconds have passed since the last time
+     * the debounced function was invoked.
+     * @param {Function} func The function to debounce.
+     * @param {number} delay The number of milliseconds to delay.
+     * @returns {Function} The new debounced function.
+     */
+    function debounce(func, delay) {
+        let timeout;
+        return function (...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
+    const debouncedRecordHistory = debounce(recordHistory, 500);
+
+
+    // This handles committed changes from text boxes, dropdowns, color pickers, and checkboxes.
+    form.addEventListener('change', (e) => {
+        const target = e.target;
+
+        if (target.name && target.name.endsWith('_enableStroke')) {
+            const fieldset = target.closest('fieldset[data-object-id]');
+            if (fieldset) {
+                updateStrokeDependentControls(fieldset);
+            }
+        }
+
+        if (target.name && target.name.includes('_sensorColorMode')) {
+            const fieldset = target.closest('fieldset[data-object-id]');
+            if (fieldset) {
+                updateSensorControlVisibility(fieldset);
+            }
+        }
+
+        if (target.name) {
+            dirtyProperties.add(target.name); // <-- Add this line
+        }
+
+        // --- START: NEW, CORRECTED LOGIC FOR SHAPE CHANGES ---
+        if (target.name && /^obj\d+_shape$/.test(target.name)) {
+            const idMatch = target.name.match(/^obj(\d+)_/);
+            if (!idMatch) return;
+
+            const id = parseInt(idMatch[1], 10);
+            const oldObj = objects.find(o => o.id === id);
+            if (!oldObj) return;
+
+            const newShapeType = target.value;
+
+            // 1. Preserve essential properties from the old object (using live, scaled values)
+            const preservedProps = {
+                name: oldObj.name, locked: oldObj.locked,
+                x: oldObj.x, y: oldObj.y, width: oldObj.width, height: oldObj.height, rotation: oldObj.rotation,
+                gradient: { ...oldObj.gradient }, strokeGradient: { ...oldObj.strokeGradient },
+                enableAudioReactivity: oldObj.enableAudioReactivity, audioTarget: oldObj.audioTarget,
+                audioMetric: oldObj.audioMetric, beatThreshold: oldObj.beatThreshold,
+                audioSensitivity: oldObj.audioSensitivity, audioSmoothing: oldObj.audioSmoothing
+            };
+
+            // 2. Remove the old object's configuration from the central store
+            configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
+
+            // 3. Get a fresh, default set of configurations for the new shape type
+            const newConfigs = getDefaultObjectConfig(id);
+
+            // 4. Update these new default configurations with the preserved properties
+            newConfigs.forEach(conf => {
+                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                let valueToSet;
+
+                // Explicitly handle shape type
+                if (propName === 'shape') {
+                    valueToSet = newShapeType;
+                } else if (propName.startsWith('gradColor')) {
+                    valueToSet = preservedProps.gradient[propName.replace('gradColor', 'color')];
+                } else if (propName.startsWith('strokeGradColor')) {
+                    valueToSet = preservedProps.strokeGradient[propName.replace('strokeGradColor', 'color')];
+                } else {
+                    valueToSet = preservedProps[propName];
+                }
+
+                if (valueToSet !== undefined) {
+                    // Scale live values back down to UI values for the form's 'default'
+                    const propsToScaleDown = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth'];
+                    if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
+                    else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
+                    else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') { valueToSet *= 50; }
+
+                    if (typeof valueToSet === 'boolean') { valueToSet = String(valueToSet); }
+                    conf.default = valueToSet;
+                }
+                conf.label = `${preservedProps.name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
+            });
+
+            // 5. Insert the new, correct set of configs back into the main store
+            const nextObjectConfigIndex = configStore.findIndex(c => {
+                const match = (c.property || '').match(/^obj(\d+)_/);
+                return match && parseInt(match[1], 10) > id;
+            });
+            const insertionIndex = nextObjectConfigIndex === -1 ? configStore.length : nextObjectConfigIndex;
+            configStore.splice(insertionIndex, 0, ...newConfigs);
+
+            // 6. Recreate the objects array from the now-correct configStore
+            createInitialObjects();
+
+            // 7. Re-render the UI and finalize the state
+            renderForm();
+            updateObjectsFromForm();
+            drawFrame();
+            debouncedRecordHistory();
+
+            dirtyProperties.clear();
+            dirtyProperties.add(target.name); // Re-add the shape property itself, as it was the source of the change.
+
+            return;
+        }
+        // --- END: NEW, CORRECTED LOGIC FOR SHAPE CHANGES ---
+
+        // Handle UI re-rendering for other controls with dependencies
+        if (target.name && (
+            target.name.includes('_shape') ||
+            target.name.includes('_vizDrawStyle') ||
+            target.name.includes('_numberOfRows') ||
+            target.name.includes('_numberOfColumns') ||
+            target.name.includes('_oscDisplayMode') ||
+            target.name.includes('_strimerAnimation')
+        )) {
+            updateObjectsFromForm();
+            renderForm();
+            updateFormValuesFromObjects();
+        }
+
+        debouncedRecordHistory();
+    });
+
+
+    // Copy and Paste section
+    const copyPropsBtn = document.getElementById('copy-props-btn');
+    const pastePropsBtn = document.getElementById('paste-props-btn');
+    const copyPropsModalEl = document.getElementById('copy-props-modal');
+    const confirmCopyBtn = document.getElementById('confirm-copy-props-btn');
+    const copyPropsForm = document.getElementById('copy-props-form');
+
+    if (copyPropsBtn && pastePropsBtn && copyPropsModalEl && confirmCopyBtn && copyPropsForm) {
+        const copyPropsModal = new bootstrap.Modal(copyPropsModalEl);
+
+        copyPropsBtn.addEventListener('click', () => {
+            if (selectedObjectIds.length === 0) return;
+            sourceObjectId = selectedObjectIds[0];
+            const sourceObject = objects.find(o => o.id === sourceObjectId);
+            if (!sourceObject) return;
+
+            copyPropsForm.reset();
+
+            const shapeSpecificContainer = document.getElementById('shape-specific-props-container');
+            const shapeSpecificName = document.getElementById('shape-specific-name');
+            const shapeSpecificProps = ['ring', 'oscilloscope', 'text', 'rectangle', 'polygon', 'star', 'tetris', 'fire-radial', 'pixel-art', 'audio-visualizer'];
+
+            if (shapeSpecificProps.includes(sourceObject.shape)) {
+                shapeSpecificName.textContent = sourceObject.shape.charAt(0).toUpperCase() + sourceObject.shape.slice(1);
+                shapeSpecificContainer.classList.remove('d-none');
+            } else {
+                shapeSpecificContainer.classList.add('d-none');
+            }
+
+            copyPropsModal.show();
+        });
+
+        confirmCopyBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            const sourceObject = objects.find(o => o.id === sourceObjectId);
+            if (!sourceObject) return;
+
+            const propsToCopy = {};
+
+            // Helper to copy properties from the source object
+            const copyProps = (propNames) => {
+                propNames.forEach(prop => {
+                    if (sourceObject[prop] !== undefined) {
+                        propsToCopy[prop] = sourceObject[prop];
+                    }
+                });
+            };
+
+            if (copyPropsForm.elements['copy-position'].checked) copyProps(['x', 'y']);
+            if (copyPropsForm.elements['copy-size'].checked) copyProps(['width', 'height']);
+            if (copyPropsForm.elements['copy-rotation'].checked) copyProps(['rotation', 'rotationSpeed']);
+            if (copyPropsForm.elements['copy-fill-style'].checked) Object.assign(propsToCopy, { gradType: sourceObject.gradType, useSharpGradient: sourceObject.useSharpGradient, gradientStop: sourceObject.gradientStop, gradient: { ...sourceObject.gradient } });
+            if (copyPropsForm.elements['copy-animation'].checked) copyProps(['animationMode', 'animationSpeed', 'scrollDirection', 'phaseOffset']);
+            if (copyPropsForm.elements['copy-color-animation'].checked) copyProps(['cycleColors', 'cycleSpeed']);
+            if (copyPropsForm.elements['copy-shape-type'].checked) copyProps(['shape']);
+
+            if (copyPropsForm.elements['copy-shape-specific'].checked) {
+                // Update this
+                const shapeSpecificMap = {
+                    'ring': ['innerDiameter', 'numberOfSegments', 'angularWidth'],
+                    'oscilloscope': ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'],
+                    'text': ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate', 'autoWidth'],
+                    'rectangle': ['numberOfRows', 'numberOfColumns'],
+                    'polygon': ['sides'],
+                    'star': ['points', 'starInnerRadius'],
+                    'tetris': ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce'],
+                    'fire-radial': ['fireSpread'],
+                    'pixel-art': ['pixelArtData'],
+                    'audio-visualizer': ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'],
+                    'strimer': ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerDirection', 'strimerEasing', 'strimerSnakeDirection'],
+                    'spawner': ['spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_size', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_size_randomness', 'spawn_initialRotation_random', 'sides', 'points', 'starInnerRadius', 'spawn_svg_path']
+                };
+                if (shapeSpecificMap[sourceObject.shape]) {
+                    copyProps(shapeSpecificMap[sourceObject.shape]);
+                }
+            }
+
+            propertyClipboard = propsToCopy;
+            updateToolbarState();
+            showToast("Properties copied!", 'info');
+            copyPropsModal.hide();
+        });
+
+        pastePropsBtn.addEventListener('click', () => {
+            if (!propertyClipboard || selectedObjectIds.length === 0) return;
+
+            const destObjects = selectedObjectIds.map(id => objects.find(o => o.id === id));
+            let shapeChanged = false;
+
+            destObjects.forEach(obj => {
+                if (obj) {
+                    if (propertyClipboard.shape && obj.shape !== propertyClipboard.shape) {
+                        shapeChanged = true;
+                    }
+                    obj.update(propertyClipboard);
+                }
+            });
+
+            // If the shape type was pasted, the entire form needs to be rebuilt
+            if (shapeChanged) {
+                // Update the central configStore to reflect the shape change
+                destObjects.forEach(obj => {
+                    const shapeConf = configStore.find(c => c.property === `obj${obj.id}_shape`);
+                    if (shapeConf) {
+                        shapeConf.default = obj.shape;
+                    }
+                });
+                renderForm();
+            }
+
+            updateFormValuesFromObjects();
+            drawFrame();
+            recordHistory();
+            showToast(`Properties pasted to ${destObjects.length} object(s).`, 'success');
+        });
+    }
+
+    /**
+     * Analyzes the current audio frame and returns calculated metrics, including average and peak values.
+     * @returns {object} An object with bass, mids, highs, and volume properties.
+     */
+    function getAudioMetrics() {
+        if (!analyser) {
+            return {
+                bass: { avg: 0, peak: 0 },
+                mids: { avg: 0, peak: 0 },
+                highs: { avg: 0, peak: 0 },
+                volume: { avg: 0, peak: 0 },
+                frequencyData: new Uint8Array(analyser ? analyser.frequencyBinCount : 128).fill(0)
+            };
+        }
+
+        analyser.getByteFrequencyData(frequencyData);
+
+        const bassEndIndex = Math.floor(analyser.frequencyBinCount * 0.1);
+        const midsEndIndex = Math.floor(analyser.frequencyBinCount * 0.4);
+
+        let bassTotal = 0, midsTotal = 0, highsTotal = 0;
+        let bassPeak = 0, midsPeak = 0, highsPeak = 0;
+        let volumeTotal = 0;
+
+        for (let i = 0; i < analyser.frequencyBinCount; i++) {
+            const value = frequencyData[i];
+            volumeTotal += value;
+
+            if (i < bassEndIndex) {
+                bassTotal += value;
+                if (value > bassPeak) bassPeak = value;
+            } else if (i < midsEndIndex) {
+                midsTotal += value;
+                if (value > midsPeak) midsPeak = value;
+            } else {
+                highsTotal += value;
+                if (value > highsPeak) highsPeak = value;
+            }
+        }
+
+        const volumeAvg = (volumeTotal / analyser.frequencyBinCount) / 255;
+
+        return {
+            bass: {
+                avg: (bassTotal / (bassEndIndex || 1)) / 255,
+                peak: bassPeak / 255
+            },
+            mids: {
+                avg: (midsTotal / ((midsEndIndex - bassEndIndex) || 1)) / 255,
+                peak: midsPeak / 255
+            },
+            highs: {
+                avg: (highsTotal / ((analyser.frequencyBinCount - midsEndIndex) || 1)) / 255,
+                peak: highsPeak / 255
+            },
+            volume: {
+                avg: volumeAvg,
+                peak: volumeAvg
+            },
+            frequencyData: frequencyData // Pass the full, unfiltered array
+        };
+    }
+
+    /**
+ * Sets up the Web Audio API to listen to a specific browser tab's audio.
+ */
+    async function setupAudio() {
+        if (isAudioSetup) return;
+
+        try {
+            // Step 1: Request permission to capture a tab. 
+            // We must request video:true to get the audio permission prompt.
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+
+            // Step 2: Check if the user actually shared audio.
+            if (stream.getAudioTracks().length === 0) {
+                // Stop the video track to remove the "sharing this screen" icon.
+                stream.getVideoTracks()[0].stop();
+                alert("Audio sharing was not enabled. Please try again and make sure to check the 'Share tab audio' box.");
+                return;
+            }
+
+            // Step 3: Create the audio context and connect the nodes (same as before).
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            isAudioSetup = true;
+
+            // Stop the video track, as we only need the audio.
+            // This also removes the "sharing this screen" bar from the browser.
+            stream.getVideoTracks()[0].stop();
+
+            // Update the button UI
+            const startBtn = document.getElementById('startAudioBtn');
+            startBtn.textContent = 'Listening...';
+            startBtn.disabled = true;
+            showToast("Tab audio connected! Your visualizer is now live.", "success");
+
+        } catch (err) {
+            // This error happens if the user clicks "Cancel".
+            console.error('Error capturing tab:', err);
+            showToast("Tab capture was canceled or failed.", "error");
+        }
+    }
+
+    /**
+     * [SignalRGB Export] Analyzes SignalRGB's audio engine data and returns calculated metrics.
+     * @returns {object} An object with bass, mids, highs, and volume properties (0-1 range).
+     */
+    function getSignalRGBAudioMetrics() {
+        try {
+            if (enableSound) {
+                const freqArray = engine.audio.freq || new Array(200).fill(0);
+                const level = engine.audio.level || -100;
+
+                const bassEndIndex = 20;
+                const midsEndIndex = 80;
+                let bassTotal = 0, midsTotal = 0, highsTotal = 0;
+
+                for (let i = 0; i < bassEndIndex; i++) { bassTotal += freqArray[i]; }
+                for (let i = bassEndIndex; i < midsEndIndex; i++) { midsTotal += freqArray[i]; }
+                for (let i = midsEndIndex; i < freqArray.length; i++) { highsTotal += freqArray[i]; }
+
+                const bass = (bassTotal / (bassEndIndex || 1));
+                const mids = (midsTotal / ((midsEndIndex - bassEndIndex) || 1));
+                const highs = (highsTotal / ((freqArray.length - midsEndIndex) || 1));
+                const volume = (level + 100) / 100.0;
+
+                return {
+                    bass: { avg: bass, peak: bass },
+                    mids: { avg: mids, peak: mids },
+                    highs: { avg: highs, peak: highs },
+                    volume: { avg: volume, peak: volume },
+                    frequencyData: freqArray // FIX: Return the full, unfiltered array
+                };
+            }
+        } catch (e) {
+            // This catch block handles cases where the 'engine' object might not be available.
+        }
+
+        return {
+            bass: { avg: 0, peak: 0 },
+            mids: { avg: 0, peak: 0 },
+            highs: { avg: 0, peak: 0 },
+            volume: { avg: 0, peak: 0 },
+            frequencyData: new Array(200).fill(0)
+        };
+    }
+
+    /**
+     * [SignalRGB Export] A version of _applyAudioReactivity that works within SignalRGB.
+     * This function is converted to a method of the Shape class during export.
+     */
+    function srgb_applyAudioReactivity(audioData) {
+        if (this.isBeingManuallyRotated) {
+            return;
+        }
+
+        // Reset properties at the start of each frame.
+        this.rotation = this.baseRotation || 0;
+        this.internalScale = 1.0;
+        this.colorOverride = null;
+        this.gradient = { ...(this.baseGradient || { color1: '#000000', color2: '#000000' }) };
+
+        // 1. Update Flash Decay
+        if (this.flashDecay > 0) {
+            this.flashDecay -= 0.18;
+        }
         this.flashDecay = Math.max(0, this.flashDecay);
 
-        if (!this.enableAudioReactivity || !audioData || !audioData[this.audioMetric] || this.audioTarget === 'none') return;
+        // Exit if reactivity is disabled.
+        if (!this.enableAudioReactivity || !audioData || !audioData[this.audioMetric] || this.audioTarget === 'none') {
+            return;
+        }
 
-        // Beat detection logic
         const rawAudioValue = audioData[this.audioMetric].avg || 0;
         this.audioHistory.push(rawAudioValue);
-        if (this.audioHistory.length > 30) this.audioHistory.shift();
+        this.audioHistory.shift();
+
         const n = this.audioHistory.length;
         const mean = this.audioHistory.reduce((a, b) => a + b, 0) / n;
         const stdDev = Math.sqrt(this.audioHistory.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / n);
         const thresholdMultiplier = 0.5 + ((this.beatThreshold || 30) / 100.0) * 2.0;
         const threshold = mean + thresholdMultiplier * stdDev;
-        let reactiveValue = 0;
+
         if (rawAudioValue > threshold) {
             const sensitivity = (this.audioSensitivity / 100.0) * 1.5;
             this.flashDecay = Math.min(1.5, sensitivity);
         }
-        reactiveValue = this.flashDecay;
 
-        const isPathAnim = this.pathAnim_enable;
+        const reactiveValue = this.flashDecay;
+        const randomSign = Math.random() < 0.5 ? -1 : 1;
 
         switch (this.audioTarget) {
             case 'Flash':
                 if (reactiveValue > 0) {
-                    // Affects main stroke AND path anim object
                     this.colorOverride = '#FFFFFF';
                     this.flashOpacity = Math.min(1.0, reactiveValue);
-                    if (isPathAnim) {
-                        this.pathAnim_colorOverride = '#FFFFFF';
-                        this.pathAnim_flashOpacity = Math.min(1.0, reactiveValue);
-                    }
-                }
+                } else { this.flashOpacity = 0; }
                 break;
             case 'Size':
-                if (isPathAnim) {
-                    this.pathAnim_internalScale = 1.0 + reactiveValue;
-                } else {
-                    this.internalScale = 1.0 + reactiveValue;
-                }
+                this.internalScale = 1.0 + reactiveValue;
                 break;
             case 'Rotation':
-                if (isPathAnim) {
-                    this.pathAnim_extraRotation = reactiveValue * 360 * (Math.random() < 0.5 ? -1 : 1);
-                } else {
-                    this.animationAngle = this.baseAnimationAngle + ((Math.random() < 0.5 ? -1 : 1) * reactiveValue * 30);
-                }
-                break;
-            case 'Path Speed':
-                if (isPathAnim && reactiveValue > 0) {
-                    this.pathAnim_speedBurst = reactiveValue;
-                }
+                this.rotation = this.baseRotation + (randomSign * reactiveValue * 30);
                 break;
         }
     }
 
-    _drawFill(phase = 0) {
-        if (this.enableSensorReactivity && this.sensorTarget === 'Sensor Meter' && this.sensorMeterFill >= 0) {
-            this.ctx.save();
-            this.ctx.clip();
+    function applyHistoryState(state) {
+        if (!state) return;
+        isRestoring = true;
 
-            // Draw the empty part of the meter
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            this.ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+        // ADDED: Restore the form's configuration from history
+        configStore = state.configStore;
 
-            // Calculate and draw the filled part of the meter
-            if (this.sensorMeterFill > 0) {
-                const fillHeight = this.height * this.sensorMeterFill;
-                const fillY = this.height / 2 - fillHeight;
+        objects = state.objects.map(data => new Shape({ ...data, ctx }));
+        selectedObjectIds = state.selectedObjectIds;
 
-                if (this.sensorColorMode === 'Thresholds') {
-                    const mid = this.sensorMidThreshold;
-                    const max = this.sensorMaxThreshold;
-                    if (this.sensorRawValue >= max) {
-                        this.ctx.fillStyle = "#ff0000"; // "Red"
-                    } else if (this.sensorRawValue >= mid) {
-                        this.ctx.fillStyle = "#ffa500"; // "Orange"
-                    } else {
-                        this.ctx.fillStyle = '#00ff00'; // Green
-                    }
-                } else if (this.sensorColorMode === 'Value-Based Gradient') {
-                    let color;
-                    if (this.sensorMeterFill < 0.5) {
-                        color = lerpColor("#00ff00", "#ffa500", this.sensorMeterFill * 2);
-                    } else {
-                        color = lerpColor("#ffa500", "#ff0000", (this.sensorMeterFill - 0.5) * 2);
-                    }
-                    this.ctx.fillStyle = color;
-                } else {
-                    this.ctx.fillStyle = this._createLocalFillStyle();
-                }
+        // Now that configStore is correct, renderForm will build the correct UI
+        renderForm();
 
-                this.ctx.fillRect(-this.width / 2, fillY, this.width, fillHeight);
-            }
-
-            // NEW: Draw the sensor value text if enabled
-            if (this.sensorMeterShowValue) {
-                const fontSize = Math.max(10, Math.round(this.width / 3));
-                this.ctx.font = `bold ${fontSize}px Arial`;
-                this.ctx.fillStyle = this.sensorColorMode === 'Thresholds' ? '#FFFFFF' : (this.gradient.color2 || '#FFFFFF');
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(this.sensorRawValue.toFixed(1), 0, 0); // Display value with one decimal
-
-                this.ctx.font = `bold ${fontSize / 3}px Arial`;
-                this.ctx.fillStyle = this.sensorColorMode === 'Thresholds' ? '#FFFFFF' : (this.gradient.color2 || '#FFFFFF');
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(this.userSensor, 0, -fontSize / 1.5); // Display value with one decimal
-            }
-
-            this.ctx.restore();
-
-        } else if (this.enableAudioReactivity && this.audioTarget === 'Volume Meter' && this.volumeMeterFill > 0) {
-            this.ctx.save();
-            this.ctx.clip();
-
-            // Draw the "empty" part of the meter
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            this.ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-
-            // Calculate the filled part's height and position
-            const fillHeight = this.height * Math.min(1, this.volumeMeterFill);
-            const fillY = this.height / 2 - fillHeight;
-
-            // Draw the filled part
-            this.ctx.fillStyle = this._createLocalFillStyle(phase);
-            this.ctx.fillRect(-this.width / 2, fillY, this.width, fillHeight);
-
-            this.ctx.restore();
-
-        } else {
-            // If not a meter, use the original fill logic
-            const fillStyle = this._createLocalFillStyle(phase);
-            this.ctx.fillStyle = fillStyle;
-            if (fillStyle instanceof CanvasPattern && fillStyle.offsetX) {
-                this.ctx.save();
-                this.ctx.translate(fillStyle.offsetX, fillStyle.offsetY);
-                this.ctx.fill();
-                this.ctx.restore();
-            } else {
-                this.ctx.fill();
-            }
-        }
+        drawFrame();
+        updateToolbarState();
+        updateUndoRedoButtons();
+        isRestoring = false;
     }
 
-    getDisplayText() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const year = now.getFullYear();
-        const dateString = `${month}/${day}/${year}`;
-        if (this.showDate && this.showTime) {
-            return `${dateString} ${timeString}`;
-        } else if (this.showTime) {
-            return timeString;
-        } else if (this.showDate) {
-            return dateString;
-        }
-        return this.text || '';
+    if (undoBtn) {
+        undoBtn.addEventListener('click', () => {
+            const state = appHistory.undo();
+            applyHistoryState(state);
+        });
+    }
+    if (redoBtn) {
+        redoBtn.addEventListener('click', () => {
+            const state = appHistory.redo();
+            applyHistoryState(state);
+        });
     }
 
-    getWrappedText() {
-        const text = this.getDisplayText();
-        return text;
-    }
-
-    _getRandomColorForElement(elementIndex) {
-        if (this.cycleColors) {
-            const hue = (this.hue1 + elementIndex * this.phaseOffset) % 360;
-            return `hsl(${hue}, 100%, 50%)`;
-        }
-
-        if (this.gradType !== 'random') {
-            return this.gradient.color1;
-        }
-
-        if (!this.randomElementState) {
-            this.randomElementState = {};
-        }
-
-        if (!this.randomElementState[elementIndex]) {
-            this.randomElementState[elementIndex] = {
-                color: Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2,
-                timer: Math.random() * 5 + 5
-            };
-        }
-
-        const state = this.randomElementState[elementIndex];
-
-        if (this.lastDeltaTime > 0) {
-            // This now correctly uses animationSpeed instead of cycleSpeed
-            const flickerSpeed = (this.animationSpeed || 0) * this.lastDeltaTime * 60;
-            // state.timer -= flickerSpeed;
-        }
-
-        if (state.timer <= 0) {
-            state.color = Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2;
-            state.timer = Math.random() * 5 + 5;
-        }
-
-        return state.color;
-    }
-
-    _updateTextMetrics() {
-        if (this.shape !== 'text' || !this.ctx) return;
-        const fontData = this.pixelFont === 'large' ? FONT_DATA_5PX : FONT_DATA_4PX;
-        const { charWidth, charHeight, charSpacing, lineSpacing } = fontData;
-        const textToMeasure = this.getWrappedText() || ' ';
-        const lines = textToMeasure.split('\n');
-        const pixelSize = this.fontSize / 10;
-        const textBlockHeight = lines.length * (charHeight + lineSpacing) * pixelSize - (lineSpacing * pixelSize);
-        this.height = textBlockHeight + (2 * pixelSize);
-    }
-
-    _updateFontSizeFromHeight() {
-        if (this.shape !== 'text') return;
-
-        const fontData = this.pixelFont === 'large' ? FONT_DATA_5PX : FONT_DATA_4PX;
-        const { charHeight, lineSpacing } = fontData;
-        const textToMeasure = this.getWrappedText() || ' ';
-        const lines = textToMeasure.split('\n');
-
-        const denominator = (lines.length * (charHeight + lineSpacing) - lineSpacing + 2);
-        if (denominator <= 0) return;
-
-        const newPixelSize = this.height / denominator;
-        this.fontSize = Math.max(20, Math.round(newPixelSize * 10));
-    }
-
-    _shuffleCellOrder() {
-        const totalCells = this.numberOfRows * this.numberOfColumns;
-        this.cellOrder = Array.from({ length: totalCells }, (_, i) => i);
-        for (let i = this.cellOrder.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.cellOrder[i], this.cellOrder[j]] = [this.cellOrder[j], this.cellOrder[i]];
-        }
-    }
-
-    getCenter() {
-        return { x: this.x + this.width / 2, y: this.y + this.height / 2 };
-    }
-
-    getRenderAngle() {
-        return (this.rotation * Math.PI / 180);
-    }
-
-    getWorldCoordsOfCorner(handleName) {
-        const center = this.getCenter();
-        const halfW = this.width / 2;
-        const halfH = this.height / 2;
-
-        let localCorner = { x: 0, y: 0 };
-        if (handleName.includes('left')) localCorner.x = -halfW;
-        if (handleName.includes('right')) localCorner.x = halfW;
-        if (handleName.includes('top')) localCorner.y = -halfH;
-        if (handleName.includes('bottom')) localCorner.y = halfH;
-
-        const angle = this.getRenderAngle();
-        const s = Math.sin(angle);
-        const c = Math.cos(angle);
-        const rotatedX = localCorner.x * c - localCorner.y * s;
-        const rotatedY = localCorner.x * s + localCorner.y * c;
-
-        return { x: center.x + rotatedX, y: center.y + rotatedY };
-    }
-
-    getHandleAtPoint(px, py) {
-        if (this.locked) return null;
-
-        const center = this.getCenter();
-        const staticAngle = this.rotation * Math.PI / 180;
-        const halfW = this.width / 2;
-        const halfH = this.height / 2;
-
-        // Transform the world mouse coordinates into the shape's local, unrotated space
-        const localPoint = {
-            x: (px - center.x) * Math.cos(-staticAngle) - (py - center.y) * Math.sin(-staticAngle),
-            y: (px - center.x) * Math.sin(-staticAngle) + (py - center.y) * Math.cos(-staticAngle)
-        };
-
-        if (this.shape === 'polyline') {
-            let nodes;
-            try {
-                nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : this.polylineNodes;
-            } catch (e) { return null; }
-
-            if (Array.isArray(nodes)) {
-                const offsetX = this.width / 2;
-                const offsetY = this.height / 2;
-                const handleRadius = 8; // Larger hit area
-
-                for (let i = 0; i < nodes.length; i++) {
-                    const node = nodes[i];
-                    const nodeX = node.x - offsetX;
-                    const nodeY = node.y - offsetY;
-                    const dist = Math.sqrt(Math.pow(localPoint.x - nodeX, 2) + Math.pow(localPoint.y - nodeY, 2));
-                    if (dist <= handleRadius) {
-                        return { name: `node-${i}`, cursor: 'move', type: 'node', index: i };
-                    }
-                }
-            }
-        }
-
-        const h2 = this.handleSize / 2;
-
-        // Check for rotation handle first
-        const rotHandlePos = this.getRotationHandlePosition();
-        const dist = Math.sqrt(Math.pow(localPoint.x - rotHandlePos.x, 2) + Math.pow(localPoint.y - rotHandlePos.y, 2));
-
-        if (dist <= this.rotationHandleRadius + h2) {
-            return { name: 'rotate', cursor: 'crosshair', type: 'rotation' };
-        }
-
-        // Check for resize handles
-        const handlePositions = {
-            'top-left': { x: -halfW, y: -halfH }, 'top': { x: 0, y: -halfH }, 'top-right': { x: halfW, y: -halfH },
-            'left': { x: -halfW, y: 0 }, 'right': { x: halfW, y: 0 },
-            'bottom-left': { x: -halfW, y: halfH }, 'bottom': { x: 0, y: halfH }, 'bottom-right': { x: halfW, y: halfH }
-        };
-
-        for (const handle of this.handles) {
-            const pos = handlePositions[handle.name];
-            if (localPoint.x >= pos.x - h2 && localPoint.x <= pos.x + h2 && localPoint.y >= pos.y - h2 && localPoint.y <= pos.y + h2) {
-                return handle;
-            }
-        }
-
-        return null;
-    }
-
-    getRotationHandlePosition() {
-        const halfH = this.height / 2;
-        const threshold = 50; // How close to the top edge (in pixels) to trigger the flip
-
-        // Check if the shape's top is near the canvas's top edge
-        if (this.y < threshold) {
-            // Place handle at the bottom
-            return { x: 0, y: halfH - this.rotationHandleOffset };
-        } else {
-            // Place handle at the top (default)
-            return { x: 0, y: -halfH + this.rotationHandleOffset };
-        }
-    }
-
-    isPointInside(px, py) {
-        const center = this.getCenter();
-        const angle = -this.getRenderAngle();
-        const s = Math.sin(angle);
-        const c = Math.cos(angle);
-
-        const dx = px - center.x;
-        const dy = py - center.y;
-
-        const localX = dx * c - dy * s;
-        const localY = dx * s + dy * c;
-
-        const halfWidth = this.width / 2;
-        const halfHeight = this.height / 2;
-
-        return (localX >= -halfWidth && localX <= halfWidth &&
-            localY >= -halfHeight && localY <= halfHeight);
-    }
-
-    addNodeAtPoint(worldX, worldY) {
-        if (this.shape !== 'polyline' || this.locked) return false;
-
-        let nodes;
+    /**
+ * Loads the featured project from the database if no shared effect is specified.
+ * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
+ */
+    async function loadFeaturedEffect() {
         try {
-            nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : [...this.polylineNodes];
-        } catch (e) {
-            console.error("Failed to parse polylineNodes for adding a node:", e);
+            const projectsRef = window.collection(window.db, "projects");
+            const q = window.query(projectsRef, window.where("featured", "==", true), window.limit(1));
+            const querySnapshot = await window.getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const doc = querySnapshot.docs[0];
+                const projectData = { docId: doc.id, ...doc.data() };
+                if (projectData.createdAt && projectData.createdAt.toDate) {
+                    projectData.createdAt = projectData.createdAt.toDate();
+                }
+                loadWorkspace(projectData);
+                showToast(`Featured effect "${projectData.name}" loaded!`, 'success');
+                return true;
+            } else {
+                console.log("No featured effect found in the database.");
+                return false;
+            }
+        } catch (error) {
+            console.error("Error loading featured effect:", error);
             return false;
         }
-
-        if (nodes.length < 2) return false;
-
-        // --- 1. Transform world click coordinates to local, unrotated space relative to the shape's center ---
-        const center = this.getCenter();
-        const angle = -this.getRenderAngle();
-        const s = Math.sin(angle);
-        const c = Math.cos(angle);
-        const dx = worldX - center.x;
-        const dy = worldY - center.y;
-        const localClickX = dx * c - dy * s;
-        const localClickY = dx * s + dy * c;
-
-        // --- 2. Adjust local click to be relative to the top-left corner of the bounding box (like the nodes) ---
-        const clickPoint = {
-            x: localClickX + this.width / 2,
-            y: localClickY + this.height / 2
-        };
-
-        let bestSegmentIndex = -1;
-        let minDistanceSq = Infinity;
-        let closestPointOnSegment = null;
-
-        // --- 3. Find the closest line segment to the click point ---
-        for (let i = 0; i < nodes.length - 1; i++) {
-            const p1 = nodes[i];
-            const p2 = nodes[i + 1];
-
-            const l2 = Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2);
-            if (l2 === 0) { // If the segment has zero length, just check distance to the point
-                const distSq = Math.pow(clickPoint.x - p1.x, 2) + Math.pow(clickPoint.y - p1.y, 2);
-                if (distSq < minDistanceSq) {
-                    minDistanceSq = distSq;
-                    bestSegmentIndex = i;
-                    closestPointOnSegment = { ...p1 };
-                }
-                continue;
-            }
-
-            // 't' is the projection of the point onto the line segment.
-            // t < 0 means the closest point is p1.
-            // t > 1 means the closest point is p2.
-            // Otherwise, it's a point on the segment.
-            let t = ((clickPoint.x - p1.x) * (p2.x - p1.x) + (clickPoint.y - p1.y) * (p2.y - p1.y)) / l2;
-            t = Math.max(0, Math.min(1, t));
-
-            const closest = {
-                x: p1.x + t * (p2.x - p1.x),
-                y: p1.y + t * (p2.y - p1.y)
-            };
-
-            const distSq = Math.pow(clickPoint.x - closest.x, 2) + Math.pow(clickPoint.y - closest.y, 2);
-
-            if (distSq < minDistanceSq) {
-                minDistanceSq = distSq;
-                bestSegmentIndex = i;
-                closestPointOnSegment = closest;
-            }
-        }
-
-        // --- 4. Insert the new node if a suitable segment was found ---
-        // Add a threshold to avoid adding nodes when clicking far away from the line
-        const threshold = (this.strokeWidth || 1) * 4; // A generous threshold
-        if (bestSegmentIndex !== -1 && Math.sqrt(minDistanceSq) < threshold) {
-            const newNode = {
-                x: Math.round(closestPointOnSegment.x),
-                y: Math.round(closestPointOnSegment.y)
-            };
-
-            nodes.splice(bestSegmentIndex + 1, 0, newNode);
-
-            // Trigger an update to recalculate bounding box and redraw
-            this.update({ polylineNodes: nodes });
-            return true;
-        }
-
-        return false;
     }
 
-    deleteNode(indexToDelete) {
-        if (this.shape !== 'polyline' || this.locked) return false;
+    // --- Canvas Scaling Logic ---
+    // const canvasContainer = document.getElementById('canvas-container');
+    const rightPanelTop = document.getElementById('right-panel-top');
 
-        let nodes;
-        try {
-            nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : [...this.polylineNodes];
-        } catch (e) {
-            console.error("Failed to parse polylineNodes for deleting a node:", e);
-            return false;
+    // This observer watches the panel containing the canvas for size changes.
+    const canvasResizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            // Get the available width and height from the panel.
+            const rect = entry.contentRect;
+            const containerWidth = rect.width;
+            const containerHeight = rect.height;
+
+            if (containerWidth === 0 || containerHeight === 0) return;
+
+            const aspectRatio = 1280 / 800;
+
+            // Calculate the largest size that fits within the panel while maintaining the aspect ratio.
+            let newWidth = containerWidth;
+            let newHeight = newWidth / aspectRatio;
+
+            if (newHeight > containerHeight) {
+                newHeight = containerHeight;
+                newWidth = newHeight * aspectRatio;
+            }
+
+            // Apply the new, calculated size directly to the canvas container's style.
+            canvasContainer.style.width = `${newWidth}px`;
+            canvasContainer.style.height = `${newHeight}px`;
         }
+    });
 
-        // Prevent deleting nodes if it would result in less than 2 nodes
-        if (nodes.length <= 2) {
-            console.warn("Cannot delete node, polyline must have at least 2 nodes.");
-            return false;
-        }
-
-        if (indexToDelete >= 0 && indexToDelete < nodes.length) {
-            nodes.splice(indexToDelete, 1);
-
-            // Trigger an update to recalculate bounding box and redraw
-            this.update({ polylineNodes: nodes });
-            return true;
-        }
-
-        return false;
+    // Start observing the panel.
+    if (rightPanelTop) {
+        canvasResizeObserver.observe(rightPanelTop);
     }
 
-    update(props) {
-        // --- Store original state for calculations ---
-        const oldWidth = this.width;
-        const oldHeight = this.height;
-        const oldVizBarCount = this.vizBarCount;
-        const oldRows = this.numberOfRows;
-        const oldCols = this.numberOfColumns;
-        const oldGradType = this.gradType;
-        const oldStrimerColumns = this.strimerColumns;
-        const oldStrimerBlockCount = this.strimerBlockCount;
-        const oldStrimerDirection = this.strimerDirection;
-        const oldStrimerAnimation = this.strimerAnimation;
-        const oldSpawnAnimation = this.spawn_animation;
-        const oldSpawnShape = this.spawn_shapeType;
-
-        // --- PRE-UPDATE LOGIC ---
-        // When the SVG path string changes, invalidate the cached Path2D object
-        // so it will be regenerated on the next frame.
-        if (props.spawn_svg_path !== undefined && props.spawn_svg_path !== this.spawn_svg_path) {
-            console.log('[UPDATE] Invalidating customParticlePath due to new SVG path.');
-            this.customParticlePath = null;
-        }
-        const textChanged = props.text !== undefined && props.text !== this.text;
-        const animationChanged = props.textAnimation !== undefined && props.textAnimation !== this.textAnimation;
-        if ((textChanged && this.textAnimation === 'typewriter') || (animationChanged && props.textAnimation === 'typewriter')) {
-            this.visibleCharCount = 0;
-            this.typewriterWaitTimer = 0;
-        }
-        const animationTypeChanged = props.tetrisAnimation !== undefined && props.tetrisAnimation !== this.tetrisAnimation;
-        const gradTypeChangedToTetris = (props.gradType !== undefined && props.gradType.startsWith('tetris')) && !this.gradType.startsWith('tetris');
-        const blockCountChanged = props.tetrisBlockCount !== undefined && props.tetrisBlockCount !== this.tetrisBlockCount;
-        if (animationTypeChanged || gradTypeChangedToTetris || blockCountChanged) {
-            this.tetrisBlocks = [];
-            this.tetrisSpawnTimer = 0;
-            this.tetrisActiveBlockIndex = 0;
-            this.tetrisFadeState = 'in';
-            this.tetrisHoldTimer = 0;
-        }
-        if ((textChanged && (this.textAnimation === 'marquee' || this.textAnimation === 'wave')) || (animationChanged && (this.textAnimation === 'marquee' || this.textAnimation === 'wave'))) {
-            this.scrollOffsetX = 0;
-            this.waveAngle = 0;
-        }
-
-        // --- UNIFIED UPDATE LOGIC ---
-        // Determine the user's intent before applying properties.
-        // If only nodes are changing, they are the source of truth for the bounding box.
-        const nodesAreSourceOfTruth = this.shape === 'polyline' &&
-            props.polylineNodes !== undefined &&
-            props.width === undefined &&
-            props.height === undefined;
-        // --- 1. APPLY ALL INCOMING PROPERTIES ---
-        // This loop applies all changes from the props object. It may create a
-        // temporary inconsistent state, which we will resolve immediately after.
-        for (const key in props) {
-            if (props[key] === undefined) continue;
-
-            if (key === 'polylineNodes') {
-                this._cachedPathSegments = null;
-                try {
-                    const propValue = props.polylineNodes;
-                    this.polylineNodes = (typeof propValue === 'string') ? JSON.parse(propValue) : propValue;
-                } catch (e) {
-                    console.error("Error parsing polyline nodes in update:", e);
-                }
-            } else if (key === 'gradient' && typeof props[key] === 'object' && props[key] !== null) {
-                Object.assign(this.gradient, props.gradient);
-            } else if (key === 'strokeGradient' && typeof props[key] === 'object' && props[key] !== null) {
-                Object.assign(this.strokeGradient, props.strokeGradient);
-            } else {
-                this[key] = props[key];
+    function initializeTooltips() {
+        const tooltipTriggerList = document.querySelectorAll('[title]');
+        tooltipTriggerList.forEach(tooltipTriggerEl => {
+            // Only initialize if it doesn't already have one
+            if (!bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
             }
-        }
-
-        const widthChanged = this.width !== oldWidth;
-        const heightChanged = this.height !== oldHeight;
-
-        // --- 2. RESOLVE THE POLYLINE STATE ---
-        // Now, resolve the state based on the intent we determined earlier.
-        if (nodesAreSourceOfTruth) {
-            // INTENT 1: Nodes were dragged. Recalculate the bounding box to fit them.
-            if (Array.isArray(this.polylineNodes) && this.polylineNodes.length > 0) {
-                const minX = Math.min(...this.polylineNodes.map(n => n.x));
-                const minY = Math.min(...this.polylineNodes.map(n => n.y));
-                const maxX = Math.max(...this.polylineNodes.map(n => n.x));
-                const maxY = Math.max(...this.polylineNodes.map(n => n.y));
-                this.x += minX;
-                this.y += minY;
-                this.width = Math.max(1, maxX - minX);
-                this.height = Math.max(1, maxY - minY);
-                // Normalize nodes to the new bounding box
-                this.polylineNodes = this.polylineNodes.map(n => ({ x: n.x - minX, y: n.y - minY }));
-            }
-        } else if (this.shape === 'polyline' && (widthChanged || heightChanged)) {
-            // INTENT 2: Bounding box was resized. Scale the nodes to fit it.
-            if (oldWidth > 0 && oldHeight > 0) {
-                const scaleX = this.width / oldWidth;
-                const scaleY = this.height / oldHeight;
-                this.polylineNodes = this.polylineNodes.map(node => ({
-                    x: node.x * scaleX,
-                    y: node.y * scaleY
-                }));
-            }
-        }
-
-        this.dirty = true;
-
-        if (props.width !== undefined || props.height !== undefined) {
-            const dWidth = oldWidth - this.width;
-            const dHeight = oldHeight - this.height;
-            if (!props.x) this.x += dWidth / 2;
-            if (!props.y) this.y += dHeight / 2;
-        }
-
-        // --- Snapshot base properties AFTER updating ---
-        this.baseWidth = this.width;
-        this.baseHeight = this.height;
-        this.baseRotation = this.rotation;
-        this.baseAnimationSpeed = this.animationSpeed;
-        this.baseStrokeWidth = this.strokeWidth;
-        this.baseGradient = { ...this.gradient };
-        this.baseGradientStop = this.gradientStop;
-        this.baseStarInnerRadius = this.starInnerRadius;
-        this.baseInnerDiameter = this.innerDiameter;
-        this.basePulseDepth = this.pulseDepth;
-
-        // --- POST-UPDATE LOGIC ---
-        if (props.spawn_animation !== undefined && props.spawn_animation !== oldSpawnAnimation ||
-            props.spawn_shapeType !== undefined && props.spawn_shapeType !== oldSpawnShape) {
-            this.particles = [];
-        }
-
-        if (this.shape === 'strimer' && (this.strimerColumns !== oldStrimerColumns || this.strimerBlockCount !== oldStrimerBlockCount || this.strimerDirection !== oldStrimerDirection || this.strimerAnimation !== oldStrimerAnimation)) {
-            this.strimerBlocks = [];
-            this.strimerMeterHeights = [];
-        }
-        if (this.numberOfRows !== oldRows || this.numberOfColumns !== oldCols) {
-            this._shuffleCellOrder();
-        }
-        if (this.shape === 'text') {
-            if (props.height !== undefined && props.height !== oldHeight) {
-                this._updateFontSizeFromHeight();
-            }
-            this._updateTextMetrics();
-        }
-
-        const vizBarCountChanged = this.vizBarCount !== oldVizBarCount;
-        if (this.shape === 'audio-visualizer' && (!this.vizBarHeights || vizBarCountChanged)) {
-            this.vizBarHeights = new Array(parseInt(this.vizBarCount, 10) || 0).fill(0);
-        }
-
-        const gradTypeChangedToRandom = this.gradType === 'random' && oldGradType !== 'random';
-        const gridChanged = this.numberOfRows !== oldRows || this.numberOfColumns !== oldCols;
-
-        if (this.gradType === 'random' && (gradTypeChangedToRandom || gridChanged)) {
-            this.randomElementState = {};
-            const totalCells = this.numberOfRows * this.numberOfColumns;
-            for (let i = 0; i < totalCells; i++) {
-                this.randomElementState[i] = {
-                    color: Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2,
-                    timer: Math.random() * 5 + 5
-                };
-            }
-        }
-    }
-
-    _calculatePathSegments() {
-        if (this._cachedPathSegments) return this._cachedPathSegments;
-
-        let nodes;
-        try {
-            nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : this.polylineNodes;
-        } catch (e) { return { segments: [], totalLength: 0 }; }
-
-        if (!Array.isArray(nodes) || nodes.length < 2) {
-            return { segments: [], totalLength: 0 };
-        }
-
-        const offsetX = -this.width / 2;
-        const offsetY = -this.height / 2;
-        const segments = [];
-        let totalLength = 0;
-        const curveDetail = 30; // Number of small lines to approximate a curve segment
-
-        if (this.polylineCurveStyle === 'loose-curve' && nodes.length > 2) {
-            // ... [Original Quadratic Bézier logic remains unchanged] ...
-            let currentPoint = { x: nodes[0].x + offsetX, y: nodes[0].y + offsetY };
-            for (let i = 1; i < nodes.length - 1; i++) {
-                const controlPoint = { x: nodes[i].x + offsetX, y: nodes[i].y + offsetY };
-                const endPoint = { x: (nodes[i].x + nodes[i + 1].x) / 2 + offsetX, y: (nodes[i].y + nodes[i + 1].y) / 2 + offsetY };
-                const segmentLength = this._getQuadraticCurveLength(currentPoint, controlPoint, endPoint, curveDetail);
-                // ... [lookup table creation remains unchanged] ...
-                segments.push({ type: 'curve', p0: currentPoint, p1: controlPoint, p2: endPoint, length: segmentLength, startLength: totalLength, lookupTable: [] }); // Simplified for brevity
-                totalLength += segmentLength;
-                currentPoint = endPoint;
-            }
-            const finalNode = { x: nodes[nodes.length - 1].x + offsetX, y: nodes[nodes.length - 1].y + offsetY };
-            const finalSegmentLength = Math.sqrt(Math.pow(finalNode.x - currentPoint.x, 2) + Math.pow(finalNode.y - currentPoint.y, 2));
-            segments.push({ type: 'line', p0: currentPoint, p1: finalNode, length: finalSegmentLength, startLength: totalLength });
-            totalLength += finalSegmentLength;
-
-        } else if (this.polylineCurveStyle === 'tight-curve') {
-            for (let i = 0; i < nodes.length - 1; i++) {
-                const p0 = nodes[i === 0 ? i : i - 1];
-                const p1 = nodes[i];
-                const p2 = nodes[i + 1];
-                const p3 = nodes[i === nodes.length - 2 ? i + 1 : i + 2];
-
-                const points = [p0, p1, p2, p3].map(p => ({ x: p.x + offsetX, y: p.y + offsetY }));
-
-                let segmentLength = 0;
-                let lastPoint = points[1];
-                for (let j = 1; j <= curveDetail; j++) {
-                    const t = j / curveDetail;
-                    const currentPoint = this._getPointOnCatmullRomSpline(points[0], points[1], points[2], points[3], t);
-                    segmentLength += Math.sqrt(Math.pow(currentPoint.x - lastPoint.x, 2) + Math.pow(currentPoint.y - lastPoint.y, 2));
-                    lastPoint = currentPoint;
-                }
-                segments.push({ type: 'tight-curve', p0: points[0], p1: points[1], p2: points[2], p3: points[3], length: segmentLength, startLength: totalLength });
-                totalLength += segmentLength;
-            }
-        } else { // Straight lines
-            for (let i = 0; i < nodes.length - 1; i++) {
-                const p0 = { x: nodes[i].x + offsetX, y: nodes[i].y + offsetY };
-                const p1 = { x: nodes[i + 1].x + offsetX, y: nodes[i + 1].y + offsetY };
-                const segmentLength = Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
-                segments.push({ type: 'line', p0: p0, p1: p1, length: segmentLength, startLength: totalLength });
-                totalLength += segmentLength;
-            }
-        }
-
-        this._cachedPathSegments = { segments, totalLength };
-        return this._cachedPathSegments;
-    }
-
-    _getPointAndAngleAtDistance(distance) {
-        const { segments, totalLength } = this._calculatePathSegments();
-        if (totalLength === 0) return { x: 0, y: 0, angle: 0 };
-
-        const d = distance;
-        const firstSeg = segments[0];
-        const lastSeg = segments[segments.length - 1];
-
-        if (d < 0) {
-            const dx = firstSeg.p1.x - firstSeg.p0.x;
-            const dy = firstSeg.p1.y - firstSeg.p0.y;
-            return { x: firstSeg.p0.x, y: firstSeg.p0.y, angle: Math.atan2(dy, dx) };
-        }
-        if (d > totalLength) {
-            const endPoint = (lastSeg.type === 'line' || lastSeg.type === 'curve') ? lastSeg.p1 : lastSeg.p2;
-            const prevPoint = lastSeg.p0;
-            const dx = endPoint.x - prevPoint.x;
-            const dy = endPoint.y - prevPoint.y;
-            return { x: endPoint.x, y: endPoint.y, angle: Math.atan2(dy, dx) };
-        }
-
-        for (const seg of segments) {
-            if (d >= seg.startLength && d <= seg.startLength + seg.length) {
-                const localDist = d - seg.startLength;
-                const t = seg.length > 0 ? localDist / seg.length : 0;
-                let p, p_next;
-
-                if (seg.type === 'line') {
-                    p = { x: seg.p0.x + t * (seg.p1.x - seg.p0.x), y: seg.p0.y + t * (seg.p1.y - seg.p0.y) };
-                    p_next = { x: seg.p0.x + (t + 0.01) * (seg.p1.x - seg.p0.x), y: seg.p0.y + (t + 0.01) * (seg.p1.y - seg.p0.y) };
-                } else if (seg.type === 'tight-curve') {
-                    p = this._getPointOnCatmullRomSpline(seg.p0, seg.p1, seg.p2, seg.p3, t);
-                    p_next = this._getPointOnCatmullRomSpline(seg.p0, seg.p1, seg.p2, seg.p3, t + 0.01);
-                } else { // curve (quadratic)
-                    // ... [Original quadratic bézier logic remains unchanged] ...
-                    p = this._getPointOnQuadraticBezier(seg.p0, seg.p1, seg.p2, t);
-                    p_next = this._getPointOnQuadraticBezier(seg.p0, seg.p1, seg.p2, t + 0.01);
-                }
-
-                const dx = p_next.x - p.x;
-                const dy = p_next.y - p.y;
-                return { x: p.x, y: p.y, angle: Math.atan2(dy, dx) };
-            }
-        }
-        return { x: firstSeg.p0.x, y: firstSeg.p0.y, angle: 0 }; // Fallback
-    }
-
-    _createLocalStrokeStyle(phase = 0) {
-        if (this.colorOverride) {
-            return this.colorOverride;
-        }
-
-        const safeColor = (c) => (typeof c === 'string' && c.length > 0) ? c : '#000000';
-        const c1 = this.strokeCycleColors ? `hsl(${(this.strokeHue1 + phase * this.phaseOffset) % 360}, 100%, 50%)` : safeColor(this.strokeGradient.color1);
-        const c2 = this.strokeCycleColors ? `hsl(${(this.strokeHue2 + phase * this.phaseOffset) % 360}, 100%, 50%)` : safeColor(this.strokeGradient.color2);
-
-        const gradType = this.strokeGradType;
-
-        if (gradType === 'solid') return c1;
-        if (gradType === 'alternating') return (phase % 2 === 0) ? c1 : c2;
-        if (gradType === 'random') {
-            if (!this.randomStrokeElementState) this.randomStrokeElementState = {};
-            if (!this.randomStrokeElementState[phase]) {
-                this.randomStrokeElementState[phase] = {
-                    color: Math.random() < 0.5 ? this.strokeGradient.color1 : this.strokeGradient.color2,
-                    timer: Math.random() * 10 + 5
-                };
-            }
-            return this.randomStrokeElementState[phase].color;
-        }
-
-        const p = (this.strokeScrollOffset + this._getPhaseIndex(phase) * this.strokePhaseOffset / 100.0);
-        const progress = (p % 1.0 + 1.0) % 1.0;
-
-        let grad;
-        const halfW = this.width / 2;
-        const halfH = this.height / 2;
-
-        const useSharpGradient = this.strokeUseSharpGradient;
-        const gradientStop = (typeof this.strokeGradientStop === 'number' && isFinite(this.strokeGradientStop)) ? this.strokeGradientStop / 100.0 : 0.5;
-
-        if (gradType === 'linear' || gradType === 'radial') {
-            const isRadial = gradType === 'radial';
-            const maxRadius = Math.max(halfW, halfH);
-
-            if (isRadial) {
-                if (maxRadius <= 0) return 'black';
-                grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius);
-            } else {
-                const dir = this.strokeScrollDir;
-                const gradCoords = {
-                    up: [0, halfH, 0, -halfH], down: [0, -halfH, 0, halfH],
-                    left: [halfW, 0, -halfW, 0], right: [-halfW, 0, halfW, 0]
-                };
-                grad = this.ctx.createLinearGradient(...(gradCoords[dir] || gradCoords.right));
-            }
-
-            if (this.strokeAnimationMode.includes('bounce')) {
-                const bounceProgress = (progress < 0.5) ? (progress * 2) : ((1 - progress) * 2);
-                if (useSharpGradient) {
-                    const p1 = bounceProgress * (1.0 - gradientStop);
-                    const p2 = p1 + gradientStop;
-                    if (isRadial) {
-                        grad.addColorStop(0, c1); grad.addColorStop(p1, c1);
-                        grad.addColorStop(p1, c2); grad.addColorStop(p2, c2);
-                        grad.addColorStop(p2, c1); grad.addColorStop(1, c1);
-                    } else {
-                        grad.addColorStop(0, c2); grad.addColorStop(p1, c2);
-                        grad.addColorStop(p1, c1); grad.addColorStop(p2, c1);
-                        grad.addColorStop(p2, c2); grad.addColorStop(1, c2);
-                    }
-                } else {
-                    const center = bounceProgress;
-                    const p1 = Math.max(0, center - gradientStop / 2);
-                    const p2 = Math.min(1, center + gradientStop / 2);
-                    grad.addColorStop(0, c1); grad.addColorStop(p1, c1);
-                    grad.addColorStop(center, c2);
-                    grad.addColorStop(p2, c1); grad.addColorStop(1, c1);
-                }
-            } else { // Loop
-                if (useSharpGradient) {
-                    const p1 = progress;
-                    const p2 = p1 + gradientStop;
-                    if (p2 > 1.0) {
-                        const wrapped_p2 = p2 - 1.0;
-                        grad.addColorStop(0, c1); grad.addColorStop(wrapped_p2, c1);
-                        grad.addColorStop(wrapped_p2, c2); grad.addColorStop(p1, c2);
-                        grad.addColorStop(p1, c1); grad.addColorStop(1, c1);
-                    } else {
-                        grad.addColorStop(0, c2); grad.addColorStop(p1, c2);
-                        grad.addColorStop(p1, c1); grad.addColorStop(p2, c1);
-                        grad.addColorStop(p2, c2); grad.addColorStop(1, c2);
-                    }
-                } else {
-                    const midPoint = gradientStop;
-                    const getPatternColorAtTime = (time) => {
-                        const t = (time % 1.0 + 1.0) % 1.0;
-                        if (midPoint <= 0.0001) return c2;
-                        if (midPoint >= 0.9999) return c1;
-                        if (t < midPoint) return lerpColor(c1, c2, t / midPoint);
-                        return lerpColor(c2, c1, (t - midPoint) / (1 - midPoint));
-                    };
-                    const stops = [{ pos: 0, color: getPatternColorAtTime(0 - progress) }, { pos: 1, color: getPatternColorAtTime(1 - progress) }];
-                    for (let i = -2; i <= 2; i++) {
-                        const c1_pos = i + progress;
-                        const c2_pos = i + midPoint + progress;
-                        if (c1_pos > 0 && c1_pos < 1) stops.push({ pos: c1_pos, color: c1 });
-                        if (c2_pos > 0 && c2_pos < 1) stops.push({ pos: c2_pos, color: c2 });
-                    }
-                    stops.sort((a, b) => a.pos - b.pos)
-                        .filter((stop, index, self) => index === 0 || stop.pos > self[index - 1].pos + 0.0001)
-                        .forEach(stop => grad.addColorStop(stop.pos, stop.color));
-                }
-            }
-            return grad;
-        }
-
-        if (gradType === 'rainbow' || gradType === 'rainbow-radial') {
-            let animProgress = progress;
-            if (this.strokeAnimationMode.includes('bounce')) {
-                animProgress = (progress < 0.5) ? (progress * 2) : ((1 - progress) * 2);
-            }
-            const hueOffset = (animProgress * 360);
-
-            const isRadial = gradType === 'rainbow-radial';
-            if (isRadial) {
-                grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(halfW, halfH));
-            } else {
-                const dir = this.strokeScrollDir;
-                const gradCoords = {
-                    up: [0, halfH, 0, -halfH], down: [0, -halfH, 0, halfH],
-                    left: [halfW, 0, -halfW, 0], right: [-halfW, 0, halfW, 0]
-                };
-                grad = this.ctx.createLinearGradient(...(gradCoords[dir] || gradCoords.right));
-            }
-
-            for (let i = 0; i <= 60; i++) {
-                grad.addColorStop(i / 60, `hsl(${(i * 6 + hueOffset) % 360}, 100%, 50%)`);
-            }
-            return grad;
-        }
-
-        if (gradType === 'conic' || gradType === 'rainbow-conic') {
-            if (this._strokeConicPatternCache) return this._strokeConicPatternCache;
-            const size = Math.ceil(Math.sqrt(this.width * this.width + this.height * this.height));
-            if (size <= 0) return 'black';
-
-            let animProgress = progress;
-            if (this.strokeAnimationMode.includes('bounce')) {
-                animProgress = (progress < 0.5) ? (progress * 2) : ((1 - progress) * 2);
-            }
-            const rotationOffset = animProgress * 2 * Math.PI + this.strokeAnimationAngle;
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = size; tempCanvas.height = size;
-            const tempCtx = tempCanvas.getContext('2d');
-            const centerX = size / 2; const centerY = size / 2;
-
-            const segments = 360;
-            for (let i = 0; i < segments; i++) {
-                const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
-                let segmentColor;
-                if (gradType === 'rainbow-conic') {
-                    segmentColor = `hsl(${(i + this.strokeHue1) % 360}, 100%, 50%)`;
-                } else {
-                    const colorProgress = i / segments;
-                    if (useSharpGradient) {
-                        segmentColor = colorProgress < gradientStop ? c1 : c2;
-                    } else {
-                        segmentColor = lerpColor(c1, c2, colorProgress);
-                    }
-                }
-                tempCtx.beginPath();
-                tempCtx.moveTo(centerX, centerY);
-                tempCtx.arc(centerX, centerY, size / 2, startAngle, endAngle);
-                tempCtx.closePath();
-                tempCtx.fillStyle = segmentColor;
-                tempCtx.fill();
-            }
-            const pattern = this.ctx.createPattern(tempCanvas, 'no-repeat');
-            pattern.offsetX = -centerX;
-            pattern.offsetY = -centerY;
-            this._strokeConicPatternCache = pattern;
-            return pattern;
-        }
-
-        return c1; // Fallback
-    }
-
-    _createFillStyleForSubObject(size) {
-        let c1 = this.pathAnim_gradColor1;
-        let c2 = this.pathAnim_gradColor2;
-
-        if (this.pathAnim_cycleColors) {
-            c1 = `hsl(${this.pathAnim_hue1 % 360}, 100%, 50%)`;
-            c2 = `hsl(${(this.pathAnim_hue1 + 90) % 360}, 100%, 50%)`;
-        }
-
-        const p = (this.pathAnim_scrollOffset % 1.0 + 1.0) % 1.0;
-
-        switch (this.pathAnim_gradType) {
-            case 'linear':
-                return this._createLinearGradient(c1, c2, p, size, size, this.pathAnim_animationMode, this.pathAnim_useSharpGradient, this.pathAnim_gradientStop, this.pathAnim_scrollDir);
-            case 'radial':
-                return this._createRadialGradient(c1, c2, p, size, size, this.pathAnim_animationMode, this.pathAnim_useSharpGradient, this.pathAnim_gradientStop);
-            case 'rainbow':
-            case 'rainbow-radial': {
-                let animProgress = p;
-                if (this.pathAnim_animationMode.includes('bounce')) {
-                    animProgress = (p < 0.5) ? (p * 2) : ((1 - p) * 2);
-                }
-                const hueOffset = animProgress * 360;
-                let grad;
-                if (this.pathAnim_gradType === 'rainbow-radial') {
-                    grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, size / 2);
-                } else {
-                    grad = this.ctx.createLinearGradient(-size / 2, 0, size / 2, 0);
-                }
-                for (let i = 0; i <= 60; i++) {
-                    grad.addColorStop(i / 60, `hsl(${(i * 6 + hueOffset) % 360}, 100%, 50%)`);
-                }
-                return grad;
-            }
-            case 'solid':
-            default:
-                return c1;
-        }
+        });
     }
 
     /**
-     * Creates a fill style for the shape's context, delegating to specialized helper methods.
-     * This is the main dispatcher for creating gradients and fills.
-     * @param {number} [phase=0] - The phase offset for animations, used in grids/groups.
-     * @returns {CanvasGradient|string} The generated canvas style.
+     * Finds and completely disposes of all tooltip instances on the page.
      */
-    _createLocalFillStyle(phase = 0) {
-        if (this.colorOverride) {
-            return this.colorOverride;
-        }
-        const safeColor = (c) => (typeof c === 'string' && c.length > 0) ? c : '#000000';
-        let c1 = safeColor(this.gradient.color1);
-        let c2 = safeColor(this.gradient.color2);
-
-        if (this.cycleColors) {
-            c1 = `hsl(${(this.hue1 + phase * this.phaseOffset) % 360}, 100%, 50%)`;
-            c2 = `hsl(${(this.hue2 + phase * this.phaseOffset) % 360}, 100%, 50%)`;
-        }
-
-        if (this.gradType === 'alternating') {
-            return (phase % 2 === 0) ? c1 : c2;
-        }
-
-        const phaseIndex = this._getPhaseIndex(phase);
-        const p = this._getAnimationProgress(phaseIndex);
-
-        switch (this.gradType) {
-            case 'linear':
-                return this._createLinearGradient(c1, c2, p);
-            case 'radial':
-                return this._createRadialGradient(c1, c2, p);
-            case 'rainbow':
-            case 'rainbow-radial': {
-                let animProgress = p; // Loop progress (0 -> 1)
-                if (this.animationMode.includes('bounce')) {
-                    animProgress = (p < 0.5) ? (p * 2) : ((1 - p) * 2); // Bounce progress (0 -> 1 -> 0)
-                }
-                const hueOffset = (animProgress * 360) + (phaseIndex * (this.phaseOffset / 100.0) * 360);
-                return this._createRainbowGradient(hueOffset);
+    function disposeTooltips() {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], .tooltip');
+        tooltipTriggerList.forEach(tooltipTriggerEl => {
+            const tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (tooltip) {
+                tooltip.dispose();
             }
-            case 'random':
-                return this._getRandomColorForElement(phase);
-            case 'conic':
-            case 'rainbow-conic': {
-                if (this._conicPatternCache) {
-                    return this._conicPatternCache;
-                }
-                const size = Math.ceil(Math.sqrt(this.width * this.width + this.height * this.height));
-                if (size <= 0) return 'black';
-
-                let animProgress = p; // Loop progress (0 -> 1)
-                if (this.animationMode.includes('bounce')) {
-                    animProgress = (p < 0.5) ? (p * 2) : ((1 - p) * 2); // Bounce progress (0 -> 1 -> 0)
-                }
-                const rotationOffset = animProgress * 2 * Math.PI;
-
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = size;
-                tempCanvas.height = size;
-                const tempCtx = tempCanvas.getContext('2d');
-                const centerX = size / 2;
-                const centerY = size / 2;
-                const segments = 360;
-                for (let i = 0; i < segments; i++) {
-                    const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                    const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
-                    let segmentColor;
-                    if (this.gradType === 'rainbow-conic') {
-                        const hue = ((i / segments) * 360 + this.hue1) % 360;
-                        segmentColor = `hsl(${hue}, 100%, 50%)`;
-                    } else {
-                        const progress = i / segments;
-                        if (this.useSharpGradient) {
-                            const stopPoint = this.gradientStop / 100.0;
-                            segmentColor = progress < stopPoint ? c1 : c2;
-                        } else {
-                            segmentColor = lerpColor(c1, c2, progress);
-                        }
-                    }
-                    tempCtx.beginPath();
-                    tempCtx.moveTo(centerX, centerY);
-                    tempCtx.arc(centerX, centerY, size, startAngle, endAngle);
-                    tempCtx.closePath();
-                    tempCtx.fillStyle = segmentColor;
-                    tempCtx.fill();
-                }
-                const pattern = this.ctx.createPattern(tempCanvas, 'no-repeat');
-                pattern.offsetX = -centerX;
-                pattern.offsetY = -centerY;
-                this._conicPatternCache = pattern;
-                return pattern;
-            }
-            default: // solid
-                return c1 || 'black';
-        }
+        });
+        // Also remove any orphaned tooltip elements from the DOM
+        document.querySelectorAll('.tooltip').forEach(el => el.remove());
     }
 
-    /**
-     * Determines the effective index for an animation phase, accounting for different animation modes.
-     * @param {number} phase - The base phase value.
-     * @returns {number} The calculated phase index.
-     * @private
-     */
-    _getPhaseIndex(phase) {
-        if (this.animationMode === 'bounce-random') {
-            return (this.cellOrder && this.cellOrder.length > phase) ? this.cellOrder[phase] : phase;
-        }
-        if (this.animationMode === 'bounce-reversed' && this.isReversing) {
-            let lastCellIndex = (this.numberOfRows * this.numberOfColumns) - 1;
-            if (this.shape === 'tetris') {
-                lastCellIndex = Math.max(0, this.tetrisBlockCount - 1);
-            } else if (this.shape === 'pixel-art') {
-                try {
-                    const data = JSON.parse(this.pixelArtData);
-                    lastCellIndex = Math.max(0, (data.length * data[0].length) - 1);
-                } catch (e) { lastCellIndex = 0; }
-            }
-            return lastCellIndex - phase;
-        }
-        return phase;
-    }
-
-    /**
-     * Calculates the animation progress value 'p' based on a phase index.
-     * @param {number} phaseIndex - The effective phase index.
-     * @returns {number} The animation progress value, always between 0.0 and 1.0.
-     * @private
-     */
-    _getAnimationProgress(phaseIndex) {
-        const effectiveScrollOffset = this.scrollOffset + phaseIndex * this.phaseOffset / 100.0;
-        return (effectiveScrollOffset % 1.0 + 1.0) % 1.0;
-    }
-
-    _applyEasing(t) {
-        switch (this.strimerEasing) {
-            case 'Ease-In': return t * t;
-            case 'Ease-Out': return t * (2 - t);
-            case 'Ease-In-Out': return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-            default: return t; // Linear
-        }
-    }
-
-    /**
-     * Creates a linear gradient style.
-     * @param {string} c1 - The first color.
-     * @param {string} c2 - The second color.
-     * @param {number} p - The animation progress (0.0 to 1.0).
-     * @returns {CanvasGradient} The generated linear gradient.
-     * @private
-     */
-    _createLinearGradient(c1, c2, p, width = this.width, height = this.height, animationMode = this.animationMode, useSharpGradient = this.useSharpGradient, gradientStop = this.gradientStop, scrollDirection = this.scrollDirection) {
-        const stop = (typeof gradientStop === 'number' && isFinite(gradientStop)) ? gradientStop / 100.0 : 0.5;
-        const progress = (typeof p === 'number' && isFinite(p)) ? p : 0;
-        const halfW = width / 2;
-        const halfH = height / 2;
-
-        const gradCoords = {
-            up: [0, halfH, 0, -halfH], down: [0, -halfH, 0, halfH],
-            left: [halfW, 0, -halfW, 0], right: [-halfW, 0, halfW, 0]
-        };
-        const grad = this.ctx.createLinearGradient(...(gradCoords[scrollDirection] || gradCoords.right));
-
-        if (this.animationSpeed === 0 && this.pathAnim_animationSpeed === 0) {
-            if (useSharpGradient) {
-                grad.addColorStop(0, c1); grad.addColorStop(stop, c1);
-                grad.addColorStop(Math.min(1, stop + 0.001), c2); grad.addColorStop(1, c2);
-            } else {
-                grad.addColorStop(0, c1); grad.addColorStop(1, c2);
-            }
-            return grad;
-        }
-
-        if (animationMode.includes('bounce')) {
-            const bounceProgress = (progress < 0.5) ? (progress * 2) : ((1 - progress) * 2);
-            if (useSharpGradient) {
-                const p1 = bounceProgress * (1.0 - stop);
-                const p2 = p1 + stop;
-                grad.addColorStop(0, c2); grad.addColorStop(p1, c2);
-                grad.addColorStop(p1, c1); grad.addColorStop(p2, c1);
-                grad.addColorStop(p2, c2); grad.addColorStop(1, c2);
-            } else {
-                const center = bounceProgress;
-                const p1 = Math.max(0, center - stop / 2);
-                const p2 = Math.min(1, center + stop / 2);
-                grad.addColorStop(0, c1); grad.addColorStop(p1, c1);
-                grad.addColorStop(center, c2);
-                grad.addColorStop(p2, c1); grad.addColorStop(1, c1);
-            }
-        } else { // Loop mode
-            if (useSharpGradient) {
-                const p1 = progress; const p2 = p1 + stop;
-                if (p2 > 1.0) {
-                    const wrapped_p2 = p2 - 1.0;
-                    grad.addColorStop(0, c1); grad.addColorStop(wrapped_p2, c1);
-                    grad.addColorStop(wrapped_p2, c2); grad.addColorStop(p1, c2);
-                    grad.addColorStop(p1, c1); grad.addColorStop(1, c1);
-                } else {
-                    grad.addColorStop(0, c2); grad.addColorStop(p1, c2);
-                    grad.addColorStop(p1, c1); grad.addColorStop(p2, c1);
-                    grad.addColorStop(p2, c2); grad.addColorStop(1, c2);
-                }
-            } else {
-                const getPatternColorAtTime = (time) => {
-                    const t = (time % 1.0 + 1.0) % 1.0;
-                    if (stop <= 0.0001) return c2; if (stop >= 0.9999) return c1;
-                    if (t < stop) return lerpColor(c1, c2, t / stop);
-                    return lerpColor(c2, c1, (t - stop) / (1 - stop));
-                };
-                const stops = [{ pos: 0, color: getPatternColorAtTime(0 - progress) }, { pos: 1, color: getPatternColorAtTime(1 - progress) }];
-                for (let i = -2; i <= 2; i++) {
-                    const c1_pos = i + progress; const c2_pos = i + stop + progress;
-                    if (c1_pos > 0 && c1_pos < 1) stops.push({ pos: c1_pos, color: c1 });
-                    if (c2_pos > 0 && c2_pos < 1) stops.push({ pos: c2_pos, color: c2 });
-                }
-                stops.sort((a, b) => a.pos - b.pos).filter((s, i, self) => i === 0 || s.pos > self[i - 1].pos + 0.0001).forEach(s => grad.addColorStop(Math.max(0, Math.min(1, s.pos)), s.color));
-            }
-        }
-        return grad;
-    }
-
-    /**
-     * Creates a radial gradient style, resulting in a smooth pulse.
-     * @param {string} c1 - The first color.
-     * @param {string} c2 - The second color.
-     * @param {number} p - The animation progress (0.0 to 1.0).
-     * @returns {CanvasGradient} The generated radial gradient.
-     * @private
-     */
-    _createRadialGradient(c1, c2, p, width = this.width, height = this.height, animationMode = this.animationMode, useSharpGradient = this.useSharpGradient, gradientStop = this.gradientStop) {
-        const stop = (typeof gradientStop === 'number' && isFinite(gradientStop)) ? gradientStop / 100.0 : 0.5;
-        const progress = (typeof p === 'number' && isFinite(p)) ? p : 0;
-        const maxRadius = Math.max(width, height) / 2;
-        if (maxRadius <= 0) return 'black';
-        const grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius);
-
-        if (animationMode.includes('bounce')) {
-            const bounceProgress = (progress < 0.5) ? (progress * 2) : ((1 - progress) * 2);
-            if (useSharpGradient) {
-                const p1 = bounceProgress * (1.0 - stop);
-                const p2 = p1 + stop;
-                grad.addColorStop(0, c1); grad.addColorStop(p1, c1);
-                grad.addColorStop(p1, c2); grad.addColorStop(p2, c2);
-                grad.addColorStop(p2, c1); grad.addColorStop(1, c1);
-            } else {
-                const center = bounceProgress;
-                const p1 = Math.max(0, center - stop / 2);
-                const p2 = Math.min(1, center + stop / 2);
-                grad.addColorStop(0, c1); grad.addColorStop(p1, c1);
-                grad.addColorStop(center, c2);
-                grad.addColorStop(p2, c1); grad.addColorStop(1, c1);
-            }
-        } else { // Loop mode
-            if (useSharpGradient) {
-                const p1 = progress; const p2 = p1 + stop;
-                if (p2 > 1.0) {
-                    const wrapped_p2 = p2 - 1.0;
-                    grad.addColorStop(0, c1); grad.addColorStop(wrapped_p2, c1);
-                    grad.addColorStop(wrapped_p2, c2); grad.addColorStop(p1, c2);
-                    grad.addColorStop(p1, c1); grad.addColorStop(1, c1);
-                } else {
-                    grad.addColorStop(0, c2); grad.addColorStop(p1, c2);
-                    grad.addColorStop(p1, c1); grad.addColorStop(p2, c1);
-                    grad.addColorStop(p2, c2); grad.addColorStop(1, c2);
-                }
-            } else {
-                const getPatternColorAtTime = (time) => {
-                    const t = (time % 1.0 + 1.0) % 1.0;
-                    if (stop <= 0.0001) return c2; if (stop >= 0.9999) return c1;
-                    if (t < stop) return lerpColor(c1, c2, t / stop);
-                    return lerpColor(c2, c1, (t - stop) / (1 - stop));
-                };
-                const stops = [{ pos: 0, color: getPatternColorAtTime(0 - progress) }, { pos: 1, color: getPatternColorAtTime(1 - progress) }];
-                for (let i = -2; i <= 2; i++) {
-                    const c1_pos = i + progress; const c2_pos = i + stop + progress;
-                    if (c1_pos > 0 && c1_pos < 1) stops.push({ pos: c1_pos, color: c1 });
-                    if (c2_pos > 0 && c2_pos < 1) stops.push({ pos: c2_pos, color: c2 });
-                }
-                stops.sort((a, b) => a.pos - b.pos).filter((s, i, self) => i === 0 || s.pos > self[i - 1].pos + 0.0001).forEach(s => grad.addColorStop(Math.max(0, Math.min(1, s.pos)), s.color));
-            }
-        }
-        return grad;
-    }
-
-    /**
-     * Creates a rainbow gradient style (linear or radial).
-     * @param {number} hueOffset - The starting hue for the rainbow animation.
-     * @returns {CanvasGradient} The generated rainbow gradient.
-     * @private
-     */
-    _createRainbowGradient(hueOffset) {
-        let grad;
-        const isVertical = this.scrollDirection === 'up' || this.scrollDirection === 'down';
-
-        if (this.gradType === 'rainbow-radial') {
-            const maxRadius = Math.max(this.width, this.height) / 2;
-            if (maxRadius <= 0) return 'black';
-            grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius);
-        } else {
-            const halfW = this.width / 2;
-            const halfH = this.height / 2;
-            grad = isVertical
-                ? this.ctx.createLinearGradient(0, halfH, 0, -halfH)
-                : this.ctx.createLinearGradient(halfW, 0, -halfW, 0);
-        }
-
-        const numStops = 60;
-        for (let i = 0; i <= numStops; i++) {
-            const hue = (i * (360 / numStops) + hueOffset) % 360;
-            grad.addColorStop(i / numStops, `hsl(${hue}, 100%, 50%)`);
-        }
-        return grad;
-    }
-
-    // In Shape.js, replace the entire updateAnimationState method.
-
-    // In Shape.js, replace the entire updateAnimationState method.
-
-    updateAnimationState(audioData, sensorData, deltaTime = 0) {
-        this._conicPatternCache = null;
-        this._strokeConicPatternCache = null;
-        this._applyAudioReactivity(audioData);
-        this._applySensorReactivity(sensorData);
-
-        const animSpeed = (this.animationSpeed || 0) * deltaTime;
-        const cycleSpeed = (this.cycleSpeed || 0) * deltaTime;
-        const strokeAnimSpeed = (this.strokeAnimationSpeed || 0) * deltaTime;
-        const strokeCycleSpeed = (this.strokeCycleSpeed || 0) * deltaTime;
-        const oscAnimSpeed = (this.oscAnimationSpeed || 0);
-        const textAnimSpeed = (this.textAnimationSpeed || 0) * deltaTime;
-        const rotationSpeed = (this.rotationSpeed || 0) * deltaTime;
-        const tetrisSpeed = (this.tetrisSpeed || 0);
-        this.strokeAnimationAngle += (this.strokeRotationSpeed || 0) * deltaTime * 0.06;
-
-        if (this.shape === 'spawner') {
-            let spawnRate = Number(this.spawn_spawnRate) || 0;
-            let initialSpeed = Number(this.spawn_speed) || 0;
-            let particleSize = Number(this.spawn_size) || 0;
-            let gravity = Number(this.spawn_gravity) || 0;
-            let spreadAngle = Number(this.spawn_spread) || 0;
-
-            if (this.enableAudioReactivity && this.spawn_audioTarget !== 'none') {
-                const audioValue = this.smoothedAudioValue;
-                const sensitivity = (this.audioSensitivity || 10) / 50.0;
-                const reactiveAmount = audioValue * sensitivity;
-
-                switch (this.spawn_audioTarget) {
-                    case 'spawnRate': spawnRate *= (1 + reactiveAmount * 3); break;
-                    case 'initialSpeed': initialSpeed *= (1 + reactiveAmount * 1.5); break;
-                    case 'particleSize': particleSize *= (1 + reactiveAmount * 2); break;
-                    case 'gravity': gravity -= reactiveAmount * 100; break;
-                    case 'spreadAngle': spreadAngle = Math.min(360, spreadAngle + reactiveAmount * 180); break;
-                }
-            }
-
-            const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-            const numbers = '0123456789';
-            const binary = '01';
-            const ascii = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-
-            switch (this.spawn_matrixCharSet) {
-                case 'numbers': this.matrixActiveCharSet = numbers; break;
-                case 'binary': this.matrixActiveCharSet = binary; break;
-                case 'ascii': this.matrixActiveCharSet = ascii; break;
-                default: this.matrixActiveCharSet = katakana;
-            }
-
-            this.spawnCounter += spawnRate * deltaTime;
-            const particlesToSpawn = Math.floor(this.spawnCounter);
-            this.spawnCounter -= particlesToSpawn;
-
-            for (let i = 0; i < particlesToSpawn; i++) {
-                if (this.particles.length >= this.spawn_count) break;
-
-                const baseSize = particleSize;
-                const sizeRandomness = (Number(this.spawn_size_randomness) || 0) / 100.0;
-                const sizeVariation = baseSize * sizeRandomness * (Math.random() - 0.5) * 2;
-                const finalSize = Math.max(1, baseSize + sizeVariation);
-
-                const baseRotSpeed = Number(this.spawn_rotationSpeed) || 0;
-                const rotVariance = Number(this.spawn_rotationVariance) || 0;
-                const rotDeviation = rotVariance * (Math.random() - 0.5) * 2;
-                const finalRotSpeed = baseRotSpeed + rotDeviation;
-
-                const baseSpeed = initialSpeed;
-                const speedVariance = Number(this.spawn_speedVariance) || 0;
-                const randomBaseSpeed = baseSpeed + (speedVariance * (Math.random() - 0.5) * 2);
-                const sizeFactor = finalSize / (baseSize || 10);
-                const finalSpeed = Math.max(0, randomBaseSpeed * sizeFactor);
-
-                const particle = {
-                    id: this.nextParticleId++,
-                    life: 0,
-                    maxLife: this.spawn_lifetime,
-                    x: this.width / 2,
-                    y: this.height / 2,
-                    vx: 0,
-                    vy: 0,
-                    size: finalSize,
-                    rotation: this.spawn_initialRotation_random ? (Math.random() * 2 * Math.PI) : 0,
-                    rotationSpeed: finalRotSpeed,
-                    actualShape: this.spawn_shapeType,
-                    trail: []
-                };
-
-                if (particle.actualShape === 'random') {
-                    particle.actualShape = this.availableParticleShapes[Math.floor(Math.random() * this.availableParticleShapes.length)];
-                }
-
-                if (particle.actualShape === 'matrix' && this.matrixActiveCharSet.length > 0) {
-                    const trailLength = Math.max(1, Number(this.spawn_trailLength) || 0);
-                    particle.matrixChars = Array.from({ length: trailLength + 1 }, () => this.matrixActiveCharSet[Math.floor(Math.random() * this.matrixActiveCharSet.length)]);
-                }
-
-                const speed = finalSpeed;
-                switch (this.spawn_animation) {
-                    case 'explode': {
-                        const angle = Math.random() * (spreadAngle * Math.PI / 180) - (spreadAngle * Math.PI / 360);
-                        particle.vx = Math.cos(angle) * speed;
-                        particle.vy = Math.sin(angle) * speed;
-                        break;
-                    }
-                    case 'fountain': {
-                        const spreadRad = spreadAngle * Math.PI / 180;
-                        const angle = (Math.random() - 0.5) * spreadRad - (Math.PI / 2);
-                        particle.vx = Math.cos(angle) * speed;
-                        particle.vy = Math.sin(angle) * speed;
-                        particle.y = this.height;
-                        break;
-                    }
-                    case 'rain':
-                        particle.x = Math.random() * this.width;
-                        particle.y = 0;
-                        particle.vy = speed;
-                        break;
-                    case 'flow':
-                        particle.x = 0;
-                        particle.y = Math.random() * this.height;
-                        particle.vx = speed;
-                        break;
-                }
-                this.particles.push(particle);
-            }
-
-            this.particles = this.particles.filter(p => p.life < p.maxLife);
-            this.particles.forEach(p => {
-                p.life += deltaTime;
-                p.vy += gravity * deltaTime;
-                p.x += p.vx * deltaTime;
-                p.y += p.vy * deltaTime;
-                p.rotation += (p.rotationSpeed * Math.PI / 180) * deltaTime;
-
-                const trailEnabled = p.actualShape === 'matrix' || this.spawn_enableTrail;
-                if (trailEnabled) {
-                    p.trail.unshift({ x: p.x, y: p.y, size: p.size, rotation: p.rotation });
-                    const trailLength = Number(this.spawn_trailLength) || 15;
-                    const spacingFactor = 1 + this.spawn_trailSpacing * p.size;
-                    const historyLength = Math.floor((trailLength + 2) * spacingFactor);
-                    if (p.trail.length > historyLength) {
-                        p.trail.length = historyLength;
-                    }
-                }
-
-                if (p.actualShape === 'matrix' && p.matrixChars && Math.random() > 0.9) {
-                    const charIndexToChange = Math.floor(Math.random() * p.matrixChars.length);
-                    p.matrixChars[charIndexToChange] = this.matrixActiveCharSet[Math.floor(Math.random() * this.matrixActiveCharSet.length)];
-                }
-            });
-        }
-
-        if (this.shape === 'audio-visualizer' && audioData && audioData.frequencyData) {
-            const fullFreqData = audioData.frequencyData;
-            const smoothingFactor = (this.vizSmoothing || 0) / 100.0;
-            const barCount = parseInt(this.vizBarCount, 10);
-            const freqDataSize = fullFreqData.length;
-            const step = Math.floor(freqDataSize / barCount);
-
-            if (!this.vizBarHeights || this.vizBarHeights.length !== barCount) {
-                this.vizBarHeights = new Array(barCount).fill(0);
-            }
-
-            const mappedData = [];
-            for (let i = 0; i < barCount; i++) {
-                const startFreqIndex = i * step;
-                const endFreqIndex = Math.min((i + 1) * step, freqDataSize);
-                let sum = 0;
-                let count = 0;
-                for (let j = startFreqIndex; j < endFreqIndex; j++) {
-                    let value = fullFreqData[j];
-                    const bassBoostFactor = (this.vizBassLevel || 50) / 100.0;
-                    const trebleBoostFactor = (this.vizTrebleBoost || 125) / 100.0;
-                    const boostFactor = bassBoostFactor + (i / barCount) * (trebleBoostFactor - bassBoostFactor);
-                    value *= boostFactor;
-                    sum += value;
-                    count++;
-                }
-                const avg = count > 0 ? sum / count : 0;
-                mappedData.push(avg);
-            }
-
-            let peakValue = Math.max(...mappedData);
-            if (peakValue <= 0) peakValue = 1;
-
-            for (let i = 0; i < barCount; i++) {
-                const normalizedValue = mappedData[i];
-                let targetHeight;
-                if (this.vizAutoScale) {
-                    let scaleFactor = (255 / peakValue);
-                    if (barCount === 1) scaleFactor = 1;
-                    targetHeight = normalizedValue * scaleFactor;
-                } else {
-                    targetHeight = normalizedValue;
-                }
-
-                let shapeMaxHeight;
-                if (this.vizLayout === 'Circular') {
-                    const outerRadius = Math.min(this.width, this.height) / 2;
-                    const innerRadiusRatio = (this.vizInnerRadius || 0) / 100.0;
-                    shapeMaxHeight = outerRadius * (1.0 - innerRadiusRatio);
-                } else {
-                    shapeMaxHeight = this.height;
-                }
-
-                let finalHeight;
-                if (barCount === 1) {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
-                    const audioValue = (audioData.volume.avg || 0) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
-                } else {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
-                    const audioValue = (targetHeight / 255) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
-                }
-                this.vizBarHeights[i] = smoothingFactor * this.vizBarHeights[i] + (1.0 - smoothingFactor) * finalHeight;
-            }
-        }
-
-        if (this.shape === 'strimer') {
-            const needsInitialization = this.strimerBlocks.length === 0 || this.strimerBlocks.length !== (this.strimerColumns * this.strimerBlockCount);
-            if (needsInitialization) {
-                this.strimerBlocks = [];
-                for (let i = 0; i < this.strimerColumns; i++) {
-                    for (let j = 0; j < this.strimerBlockCount; j++) {
-                        const direction = this.strimerDirection === 'Random' ? (j % 2 === 0 ? -1 : 1) : (this.strimerDirection === 'Up' ? -1 : 1);
-                        this.strimerBlocks.push({
-                            col: i,
-                            progress: this.strimerAnimation === 'Cascade' ? (j / this.strimerBlockCount) : Math.random(),
-                            speed: (Math.random() * 0.5 + 0.5) * 0.01,
-                            direction: direction,
-                            colorIndex: Math.floor(Math.random() * 100),
-                            glitchTimer: 0,
-                            isGlitched: false
-                        });
-                    }
-                }
-            }
-
-            if (this.strimerPulseSpeed > 0) {
-                const pulseSpeed = (this.strimerPulseSpeed / 10) * 0.05;
-                this.pulseProgress = (this.pulseProgress + pulseSpeed * deltaTime * 60) % (2 * Math.PI);
-            }
-
-            switch (this.strimerAnimation) {
-                case 'Audio Meter':
-                    if (!this.strimerMeterHeights || this.strimerMeterHeights.length !== this.strimerColumns) {
-                        this.strimerMeterHeights = new Array(this.strimerColumns).fill(0);
-                    }
-                    const metrics = ['bass', 'mids', 'highs', 'volume'];
-                    const smoothingFactor = (this.strimerAudioSmoothing || 0) / 100.0;
-                    for (let i = 0; i < this.strimerColumns; i++) {
-                        const metricName = metrics[i % metrics.length];
-                        let audioValue = (audioData && audioData[metricName]) ? audioData[metricName].avg : 0;
-                        const startPoint = (this.strimerBassLevel || 50) / 400.0;
-                        const endPoint = (this.strimerTrebleBoost || 150) / 10.0;
-                        const boost = startPoint + (i / (this.strimerColumns - 1 || 1)) * (endPoint - startPoint);
-                        audioValue *= boost;
-                        const targetHeight = Math.min(this.height, audioValue * (this.strimerAudioSensitivity / 5000.0) * this.height);
-                        this.strimerMeterHeights[i] = smoothingFactor * this.strimerMeterHeights[i] + (1.0 - smoothingFactor) * targetHeight;
-                    }
-                    break;
-                case 'Snake':
-                    const totalBlocks = this.strimerColumns * this.strimerRows;
-                    const animationSpeed = (this.strimerAnimationSpeed / 10) * deltaTime;
-                    this.strimerSnakeProgress += animationSpeed;
-                    if (this.strimerSnakeProgress >= 1.0) {
-                        this.strimerSnakeProgress -= 1.0;
-                        this.strimerSnakeIndex++;
-                        if (this.strimerSnakeIndex >= totalBlocks) {
-                            this.strimerSnakeIndex = 0;
-                        }
-                    }
-                    break;
-                default:
-                    this.strimerBlocks.forEach(block => {
-                        if (this.strimerGlitchFrequency > 0) {
-                            if (block.glitchTimer > 0) {
-                                block.glitchTimer -= deltaTime * 60;
-                                if (block.glitchTimer <= 0) block.isGlitched = false;
-                            } else if (Math.random() < (this.strimerGlitchFrequency / 5000)) {
-                                block.isGlitched = true;
-                                block.glitchTimer = Math.random() * 10 + 5;
-                            }
-                        }
-                        if (block.isGlitched) return;
-                        block.progress += block.speed * (this.strimerAnimationSpeed / 10) * block.direction * deltaTime * 60;
-                        if (this.strimerAnimation === 'Bounce') {
-                            if (block.progress >= 1.0) { block.progress = 1.0; block.direction *= -1; }
-                            else if (block.progress <= 0) { block.progress = 0; block.direction *= -1; }
-                        } else {
-                            block.progress = (block.progress % 1.0 + 1.0) % 1.0;
-                        }
-                    });
-                    break;
-            }
-        }
-
-        if (this.shape === 'tetris') {
-            const baseSpeed = tetrisSpeed;
-            if (this.tetrisAnimation === 'fade-in-out') {
-                const fadeSpeed = baseSpeed * 0.01;
-                if (this.tetrisBlocks.length === 0 && this.tetrisFadeState !== 'out') {
-                    const blockHeight = this.height / this.tetrisBlockCount;
-                    for (let i = 0; i < this.tetrisBlockCount; i++) {
-                        this.tetrisBlocks.push({ w: this.width, h: blockHeight, x: 0, y: this.height - (i + 1) * blockHeight, life: 0, settled: true });
-                    }
-                    this.tetrisActiveBlockIndex = 0;
-                    this.tetrisFadeState = 'in';
-                    this.tetrisHoldTimer = this.tetrisHoldTime;
-                }
-                if (this.tetrisFadeState === 'in') {
-                    if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
-                        const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
-                        activeBlock.life += fadeSpeed * deltaTime * 60;
-                        if (activeBlock.life >= 1.0) {
-                            activeBlock.life = 1.0;
-                            this.tetrisActiveBlockIndex++;
-                        }
-                    } else {
-                        this.tetrisFadeState = 'hold';
-                    }
-                }
-                else if (this.tetrisFadeState === 'hold') {
-                    this.tetrisHoldTimer -= deltaTime * 60;
-                    if (this.tetrisHoldTimer <= 0) {
-                        this.tetrisFadeState = 'out';
-                        this.tetrisActiveBlockIndex = 0;
-                    }
-                }
-                else if (this.tetrisFadeState === 'out') {
-                    if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
-                        const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
-                        activeBlock.life -= fadeSpeed * deltaTime * 60;
-                        if (activeBlock.life <= 0) {
-                            activeBlock.life = 0;
-                            this.tetrisActiveBlockIndex++;
-                        }
-                    } else {
-                        this.tetrisBlocks = [];
-                        this.tetrisFadeState = 'in';
-                    }
-                }
-            } else if (this.tetrisAnimation === 'fade-in-stack') {
-                const fadeSpeed = baseSpeed * 0.01;
-                if (this.tetrisBlocks.length === 0) {
-                    const blockHeight = this.height / this.tetrisBlockCount;
-                    for (let i = 0; i < this.tetrisBlockCount; i++) {
-                        this.tetrisBlocks.push({ w: this.width, h: blockHeight, x: 0, y: this.height - (i + 1) * blockHeight, life: 0, settled: true });
-                    }
-                    this.tetrisActiveBlockIndex = 0;
-                    this.tetrisFadeState = 'in';
-                }
-                if (this.tetrisFadeState === 'in') {
-                    if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
-                        const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
-                        activeBlock.life += fadeSpeed * deltaTime * 60;
-                        if (activeBlock.life >= 1.0) {
-                            activeBlock.life = 1.0;
-                            this.tetrisActiveBlockIndex++;
-                        }
-                    } else {
-                        this.tetrisFadeState = 'out';
-                    }
-                } else {
-                    let allFadedOut = true;
-                    this.tetrisBlocks.forEach(block => {
-                        block.life -= fadeSpeed * deltaTime * 60;
-                        if (block.life > 0) { allFadedOut = false; } else { block.life = 0; }
-                    });
-                    if (allFadedOut) { this.tetrisBlocks = []; }
-                }
-            } else {
-                this.tetrisSpawnTimer -= deltaTime * 60;
-                if (this.tetrisBlocks.length === 0 && this.tetrisSpawnTimer < 0) {
-                    this.tetrisSpawnTimer = 0;
-                    this.tetrisActiveBlockIndex = 0;
-                }
-                if (this.tetrisSpawnTimer <= 0 && this.tetrisBlocks.length < this.tetrisBlockCount) {
-                    let newBlock = { vy: 0, vx: 0, life: 1.0, settled: false, fading: false };
-                    const blockHeight = this.height / this.tetrisBlockCount;
-                    newBlock.w = this.width; newBlock.h = blockHeight;
-                    newBlock.x = 0; newBlock.y = -newBlock.h;
-                    this.tetrisBlocks.push(newBlock);
-                    if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
-                        this.tetrisSpawnTimer = 10;
-                    }
-                }
-                if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
-                    this.tetrisBlocks.forEach((block, index) => {
-                        if (block.settled) return;
-                        const gravity = baseSpeed * 0.01 * window.tetrisGravityMultiplier * deltaTime * 60;
-                        const bounceFactor = this.tetrisBounce / 100.0;
-                        let bounceBoundaryTop = this.height;
-                        this.tetrisBlocks.forEach((other, i) => {
-                            if (i !== index && other.y > block.y) {
-                                bounceBoundaryTop = Math.min(bounceBoundaryTop, other.y);
-                            }
-                        });
-                        block.vy += gravity;
-                        block.y += block.vy;
-                        if (block.y + block.h >= bounceBoundaryTop) {
-                            block.y = bounceBoundaryTop - block.h;
-                            block.vy *= -bounceFactor;
-                            let stableBoundaryTop = this.height;
-                            this.tetrisBlocks.forEach((other, i) => {
-                                if (i !== index && other.settled) {
-                                    stableBoundaryTop = Math.min(stableBoundaryTop, other.y);
-                                }
-                            });
-                            if (block.y + block.h >= stableBoundaryTop - 1 && Math.abs(block.vy) < 1) {
-                                block.settled = true;
-                            }
-                        }
-                    });
-                } else {
-                    if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
-                        const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
-                        if (!activeBlock.settled) {
-                            const speed = baseSpeed * 0.05 * deltaTime * 60;
-                            let boundary = (this.tetrisActiveBlockIndex > 0) ? this.tetrisBlocks[this.tetrisActiveBlockIndex - 1].y : this.height;
-                            activeBlock.y += speed;
-                            if (activeBlock.y + activeBlock.h >= boundary) {
-                                activeBlock.y = boundary - activeBlock.h;
-                                activeBlock.settled = true;
-                                this.tetrisActiveBlockIndex++;
-                            }
-                        }
-                    }
-                }
-                if (this.tetrisAnimation === 'gravity-fade') {
-                    this.tetrisBlocks.forEach(block => { if (block.settled) block.fading = true; });
-                } else {
-                    const allSpawned = this.tetrisBlocks.length === this.tetrisBlockCount;
-                    const allSettled = this.tetrisBlocks.every(b => b.settled);
-                    if (allSpawned && allSettled) {
-                        this.tetrisBlocks.forEach(b => b.fading = true);
-                    }
-                }
-                this.tetrisBlocks.forEach(block => { if (block.fading) block.life -= 3 * deltaTime; });
-                this.tetrisBlocks = this.tetrisBlocks.filter(b => b.life > 0);
-            }
-        }
-
-        if (this.shape === 'polyline' && this.pathAnim_enable) {
-            if (!Array.isArray(this.pathAnim_history)) {
-                this.pathAnim_history = [];
-            }
-            const { totalLength } = this._calculatePathSegments();
-            const objectCount = Math.max(1, this.pathAnim_objectCount || 1);
-            const spacing = this.pathAnim_objectSpacing || 100;
-            const swarmLength = (objectCount - 1) * spacing;
-
-            const baseSpeed = this.pathAnim_speed || 0;
-            const burstSpeed = this.pathAnim_speedBurst * 500;
-            const finalSpeed = baseSpeed + burstSpeed;
-            this.pathAnim_distance += finalSpeed * deltaTime * this.pathAnim_direction;
-
-            if (this.pathAnim_behavior === 'Ping-Pong') {
-                if (this.pathAnim_direction === 1 && (this.pathAnim_distance - swarmLength) >= totalLength) {
-                    this.pathAnim_distance = totalLength + swarmLength;
-                    this.pathAnim_direction = -1;
-                } else if (this.pathAnim_direction === -1 && this.pathAnim_distance < 0) {
-                    this.pathAnim_distance = 0;
-                    this.pathAnim_direction = 1;
-                }
-            } else if (this.pathAnim_behavior === 'Loop') {
-                const loopDistance = totalLength + swarmLength;
-                if (this.pathAnim_distance > loopDistance) {
-                    this.pathAnim_distance -= loopDistance;
-                }
-            }
-            this.pathAnim_speedBurst *= 0.95;
-
-            const pathAnimSpeed = (this.pathAnim_animationSpeed || 0) * deltaTime;
-            const pathCycleSpeed = (this.pathAnim_cycleSpeed || 0) * deltaTime;
-            this.pathAnim_hue1 += pathCycleSpeed * 20;
-            const increment = pathAnimSpeed * 0.025;
-            const directionMultiplier = (this.pathAnim_scrollDir === 'left' || this.pathAnim_scrollDir === 'up') ? -1 : 1;
-            this.pathAnim_scrollOffset += increment * directionMultiplier;
-            const { x, y, angle } = this._getPointAndAngleAtDistance(this.pathAnim_distance);
-            this.pathAnim_history.unshift({ x, y, angle });
-            const trailLength = this.pathAnim_trailLength || 80;
-            if (this.pathAnim_history.length > trailLength) {
-                this.pathAnim_history.length = Math.ceil(trailLength);
-            }
-        } else if (this.shape === 'polyline') {
-            this.pathAnim_history = [];
-        }
-
-        if (this.gradType === 'random' && this.randomElementState) {
-            for (const key in this.randomElementState) {
-                this.randomElementState[key].timer -= animSpeed * 1;
-            }
-        }
-
-        this.hue1 += cycleSpeed * 20;
-        this.hue2 += cycleSpeed * 20;
-        this.strokeHue1 += strokeCycleSpeed * 20;
-        this.strokeHue2 += strokeCycleSpeed * 20;
-
-        const currentText = this.getDisplayText();
-        switch (this.textAnimation) {
-            case 'marquee':
-            case 'wave': {
-                const fontData = this.pixelFont === 'large' ? FONT_DATA_5PX : FONT_DATA_4PX;
-                const pixelSize = this.fontSize / 10;
-                const textWidth = currentText.length * (fontData.charWidth + fontData.charSpacing) * pixelSize;
-                if (this.textAnimation === 'marquee') {
-                    const scrollInterval = 5 / (this.textAnimationSpeed || 10);
-                    this.scrollTimer += deltaTime;
-                    if (pixelSize > 0 && this.scrollTimer >= scrollInterval) {
-                        const stepsToTake = Math.floor(this.scrollTimer / scrollInterval);
-                        this.scrollOffsetX -= stepsToTake * pixelSize;
-                        this.scrollTimer -= stepsToTake * scrollInterval;
-                    }
-                } else {
-                    this.scrollOffsetX -= textAnimSpeed * 20;
-                }
-                if (this.scrollOffsetX < -textWidth) {
-                    this.scrollOffsetX = this.width;
-                }
-                this.visibleCharCount = currentText.length;
-                break;
-            }
-            case 'typewriter':
-                if (this.typewriterWaitTimer > 0) {
-                    this.typewriterWaitTimer -= deltaTime * 60;
-                    if (this.typewriterWaitTimer <= 0) {
-                        this.visibleCharCount = 0;
-                    }
-                } else {
-                    this.visibleCharCount += textAnimSpeed;
-                    if (this.visibleCharCount >= currentText.length) {
-                        this.visibleCharCount = currentText.length;
-                        this.typewriterWaitTimer = 50;
-                    }
-                }
-                this.scrollOffsetX = 0;
-                break;
-            default:
-                this.scrollOffsetX = 0;
-                this.visibleCharCount = currentText.length;
-                break;
-        }
-
-        if (this.gradType !== 'solid' && this.gradType !== 'alternating' && this.gradType !== 'random') {
-            const increment = animSpeed * 0.025;
-            const directionMultiplier = (this.scrollDirection === 'left' || this.scrollDirection === 'up') ? -1 : 1;
-            this.scrollOffset += increment * directionMultiplier;
-        }
-
-        if (this.strokeGradType !== 'solid' && this.strokeGradType !== 'alternating' && this.strokeGradType !== 'random') {
-            const increment = strokeAnimSpeed * 0.025;
-            const directionMultiplier = (this.strokeScrollDir === 'left' || this.strokeScrollDir === 'up' || this.strokeScrollDir === 'along-path-reversed') ? -1 : 1;
-            this.strokeScrollOffset += increment * directionMultiplier;
-        }
-
-        let shapeIncrement;
-        if (this.shape === 'oscilloscope') {
-            if (this.oscDisplayMode === 'seismic') {
-                shapeIncrement = oscAnimSpeed * this.seismicAnimationSpeedMultiplier * deltaTime;
-                const directionMultiplier = (this.scrollDirection === 'right' || this.scrollDirection === 'down') ? 1 : 1;
-                shapeIncrement *= directionMultiplier;
-            } else {
-                shapeIncrement = oscAnimSpeed * 0.5 * deltaTime;
-            }
-        } else {
-            shapeIncrement = animSpeed * 0.5;
-        }
-
-        this.animationAngle += rotationSpeed * 0.06;
-
-        if (this.shape === 'oscilloscope') {
-            this.wavePhaseAngle += shapeIncrement;
-        }
-
-        if (this.shape === 'fire' || this.shape === 'fire-radial') {
-            this.particleSpawnCounter += animSpeed * 0.25;
-            const particlesToSpawn = Math.floor(this.particleSpawnCounter);
-            this.particleSpawnCounter -= particlesToSpawn;
-            if (this.shape === 'fire') {
-                this.fireParticles.forEach(p => { p.y -= p.speed; p.age += deltaTime * 60; });
-                this.fireParticles = this.fireParticles.filter(p => p.age < p.maxAge);
-                for (let i = 0; i < particlesToSpawn; i++) {
-                    if (this.fireParticles.length < 300) {
-                        const halfH = this.height / 2;
-                        const maxAge = (Math.random() * 60 + 90);
-                        const particleSpeed = (this.height / maxAge) * (Math.random() * 0.2 + 0.8) * 60 * deltaTime;
-                        const startSize = (Math.random() * 0.5 + 0.5) * (this.width / 7);
-                        const spreadMultiplier = this.fireSpread / 100.0;
-                        const newParticle = { id: this.nextParticleId++, x: (Math.random() - 0.5) * this.width * spreadMultiplier, y: halfH, sizeX: startSize, sizeY: startSize * (Math.random() * 1.5 + 0.5), age: 0, maxAge: maxAge, speed: particleSpeed };
-                        let baseColor;
-                        const gradProgress = (newParticle.x + (this.width / 2)) / this.width;
-                        if (this.cycleColors) {
-                            const hue = (this.hue1 + newParticle.id * this.phaseOffset) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'rainbow' || this.gradType === 'rainbow-radial') {
-                            const hue = (gradProgress * 360 + this.hue1) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'random') {
-                            baseColor = Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'alternating') {
-                            baseColor = newParticle.id % 2 === 0 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'linear') {
-                            baseColor = lerpColor(this.gradient.color1, this.gradient.color2, gradProgress);
-                        } else {
-                            baseColor = this.gradient.color1;
-                        }
-                        newParticle.color = baseColor;
-                        this.fireParticles.push(newParticle);
-                    }
-                }
-            } else {
-                this.fireParticles.forEach(p => {
-                    const speed = p.speed * 60 * deltaTime;
-                    p.x += Math.cos(p.angle) * speed;
-                    p.y += Math.sin(p.angle) * speed;
-                    p.age += deltaTime * 60;
-                });
-                this.fireParticles = this.fireParticles.filter(p => p.age < p.maxAge);
-                for (let i = 0; i < particlesToSpawn; i++) {
-                    if (this.fireParticles.length < 300) {
-                        const spreadMultiplier = this.fireSpread / 100.0;
-                        const maxRadius = Math.min(this.width, this.height) / 2;
-                        const maxAge = (Math.random() * 60 + 90);
-                        const particleSpeed = (maxRadius / maxAge) * spreadMultiplier;
-                        const startSize = (Math.random() * 0.5 + 0.5) * (Math.min(this.width, this.height) / 8);
-                        if (maxAge < 1) continue;
-                        const newParticle = { id: this.nextParticleId++, x: 0, y: 0, sizeX: startSize, sizeY: startSize, age: 0, maxAge: maxAge, speed: particleSpeed, angle: Math.random() * 2 * Math.PI };
-                        let baseColor;
-                        const gradProgress = newParticle.angle / (2 * Math.PI);
-                        if (this.cycleColors) {
-                            const hue = (this.hue1 + newParticle.id * this.phaseOffset) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'rainbow' || this.gradType === 'rainbow-radial') {
-                            const hue = (gradProgress * 360 + this.hue1) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'random') {
-                            baseColor = Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'alternating') {
-                            baseColor = newParticle.id % 2 === 0 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'radial' || this.gradType === 'linear') {
-                            baseColor = lerpColor(this.gradient.color1, this.gradient.color2, gradProgress);
-                        } else {
-                            baseColor = this.gradient.color1;
-                        }
-                        newParticle.color = baseColor;
-                        this.fireParticles.push(newParticle);
-                    }
-                }
-            }
-        } else {
-            if (this.fireParticles.length > 0) {
-                this.fireParticles = [];
-            }
-        }
-    }
-
-    draw(isSelected, audioData = {}, palette = {}) {
-        // Store original colors
-        const originalGradient = { ...this.gradient };
-        const originalStrokeGradient = { ...this.strokeGradient };
-
-        // Apply Global Color Palette override if enabled
-        if (palette.enablePalette) {
-            const pColor1 = palette.paletteColor1 || '#000000';
-            const pColor2 = palette.paletteColor2 || '#000000';
-            this.gradient.color1 = pColor1;
-            this.gradient.color2 = pColor2;
-            this.strokeGradient.color1 = pColor1;
-            this.strokeGradient.color2 = pColor2;
-        }
-
-        const centerX = this.x + this.width / 2;
-        const centerY = this.y + this.height / 2;
-        const angleToUse = this.getRenderAngle();
-
-        this.ctx.save();
-        this.ctx.translate(centerX, centerY);
-        this.ctx.rotate(angleToUse);
-        this.ctx.rotate(this.animationAngle);
-
-        if (this.internalScale && this.internalScale !== 1.0) {
-            this.ctx.scale(this.internalScale, this.internalScale);
-        }
-
-        // Flash opacity is now applied on a case-by-case basis within each shape's drawing logic
-        // to avoid affecting UI elements like the polyline placeholder.
-
-        const applyStrokeInside = () => {
-            if (this.enableStroke && this.strokeWidth > 0) {
-                const strokeStyle = this._createLocalStrokeStyle();
-                this.ctx.save();
-                this.ctx.clip();
-                this.ctx.strokeStyle = strokeStyle;
-                this.ctx.lineWidth = this.strokeWidth * 2;
-
-                if (strokeStyle instanceof CanvasPattern && strokeStyle.offsetX) {
-                    this.ctx.save();
-                    this.ctx.translate(strokeStyle.offsetX, strokeStyle.offsetY);
-                    this.ctx.stroke();
-                    this.ctx.restore();
-                } else {
-                    this.ctx.stroke();
-                }
-
-                this.ctx.restore();
-            }
-        };
-
-        // --- SENSOR REACTIVITY OVERRIDE ---
-        if (this.enableSensorReactivity && (this.sensorTarget === 'Time Plot' || this.sensorTarget === 'Sensor Meter')) {
-            // Create the correct shape path before clipping and drawing the sensor effect.
-            this.ctx.beginPath();
-            if (this.shape === 'circle') {
-                this.ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, 2 * Math.PI);
-            } else if (this.shape === 'polygon') {
-                const rX = this.width / 2;
-                const rY = this.height / 2;
-                const sides = Math.max(3, this.sides);
-                for (let i = 0; i < sides; i++) {
-                    const a = (i / sides) * 2 * Math.PI - (Math.PI / 2);
-                    this.ctx[i === 0 ? 'moveTo' : 'lineTo'](rX * Math.cos(a), rY * Math.sin(a));
-                }
-                this.ctx.closePath();
-            } else if (this.shape === 'star') {
-                const oRX = this.width / 2;
-                const oRY = this.height / 2;
-                const iRX = oRX * (this.starInnerRadius / 100);
-                const iRY = oRY * (this.starInnerRadius / 100);
-                const points = Math.max(3, this.points);
-                for (let i = 0; i < 2 * points; i++) {
-                    const rX = (i % 2 === 0) ? oRX : iRX;
-                    const rY = (i % 2 === 0) ? oRY : iRY;
-                    const a = (i / (2 * points)) * 2 * Math.PI - (Math.PI / 2);
-                    this.ctx[i === 0 ? 'moveTo' : 'lineTo'](rX * Math.cos(a), rY * Math.sin(a));
-                }
-                this.ctx.closePath();
-            } else { // Default to rectangle for sensor effects on complex/unsupported shapes
-                this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
-            }
-
-            if (this.sensorTarget === 'Time Plot') {
-                this.ctx.save(); // Save state before clipping
-                this.ctx.clip();
-                this._drawTimePlot();
-                this.ctx.restore(); // Restore state to remove clipping
-            } else { // Sensor Meter
-                // _drawFill handles its own clipping and state saving/restoring
-                this._drawFill();
-            }
-
-        } else {
-            // --- ALL REGULAR SHAPE DRAWING LOGIC IS NOW INSIDE THIS ELSE BLOCK ---
-            if (this.shape === 'fire' || this.shape === 'fire-radial') {
-                this.ctx.save();
-                this.ctx.beginPath();
-                this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
-                this.ctx.clip();
-                this.ctx.globalCompositeOperation = 'lighter';
-                this.fireParticles.forEach(p => {
-                    const lifeRatio = 1.0 - (p.age / p.maxAge);
-                    this.ctx.beginPath();
-                    const ageOpacity = Math.sin(lifeRatio * Math.PI);
-                    if (this.colorOverride && this.flashOpacity > 0) {
-                        this.ctx.fillStyle = this.colorOverride;
-                        this.ctx.globalAlpha = this.flashOpacity * ageOpacity;
-                    } else {
-                        const baseColor = parseColorToRgba(p.color);
-                        const finalAlpha = baseColor.a * ageOpacity;
-                        this.ctx.fillStyle = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${finalAlpha})`;
-                        this.ctx.globalAlpha = 1.0;
-                    }
-                    this.ctx.ellipse(p.x, p.y, p.sizeX * lifeRatio, p.sizeY * lifeRatio, 0, 0, 2 * Math.PI);
-                    this.ctx.fill();
-                });
-                this.ctx.restore();
-            } else if (this.shape === 'pixel-art') {
-                try {
-                    if (!this.pixelArtData) return;
-                    const data = (typeof this.pixelArtData === 'string') ? JSON.parse(this.pixelArtData) : this.pixelArtData;
-                    if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) { return; }
-                    const rows = data.length;
-                    const cols = data[0].length;
-                    if (cols === 0) return;
-                    const cellWidth = this.width / cols;
-                    const cellHeight = this.height / rows;
-                    const isGradientFill = this.gradType === 'linear' || this.gradType === 'radial' || this.gradType.startsWith('rainbow');
-                    if (isGradientFill) { this.ctx.fillStyle = this._createLocalFillStyle(); }
-                    for (let r = 0; r < rows; r++) {
-                        for (let c = 0; c < cols; c++) {
-                            const alphaValue = data[r] && data[r][c] ? data[r][c] : 0;
-                            if (alphaValue > 0) {
-                                if (!isGradientFill) {
-                                    const cellIndex = r * cols + c;
-                                    this.ctx.fillStyle = this.gradType === 'random' ? this._getRandomColorForElement(cellIndex) : this._createLocalFillStyle(cellIndex);
-                                }
-                                this.ctx.globalAlpha = alphaValue;
-                                this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
-                            }
-                        }
-                    }
-                } catch (e) { console.error("Failed to draw pixel art:", e); }
-            } else if (this.shape === 'tetris') {
-                this.ctx.save();
-                this.ctx.beginPath();
-                this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
-                this.ctx.clip();
-                this.tetrisBlocks.forEach((block, index) => {
-                    this.ctx.fillStyle = this.gradType === 'random' ? this._getRandomColorForElement(index) : this._createLocalFillStyle(index);
-                    this.ctx.globalAlpha = block.life;
-                    const drawX = block.x - (this.width / 2);
-                    const drawY = block.y - (this.height / 2);
-                    this.ctx.fillRect(Math.round(drawX), Math.round(drawY), Math.ceil(block.w), Math.ceil(block.h));
-                });
-                this.ctx.restore();
-
-            } else if (this.shape === 'spawner') {
-                this.ctx.save();
-                this.ctx.beginPath();
-                this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
-                this.ctx.clip();
-
-                // Ensure the custom particle path is created if needed
-                if (this.spawn_shapeType === 'custom' || this.spawn_shapeType === 'random') {
-                    if (!this.customParticlePath && this.spawn_svg_path) {
-                        console.log('[DRAW] customParticlePath is null, attempting to create new Path2D.');
-                        try {
-                            this.customParticlePath = new Path2D(this.spawn_svg_path);
-                        } catch (e) {
-                            console.error("Invalid custom particle SVG path:", e);
-                            this.customParticlePath = null;
-                        }
-                    }
-                }
-
-                this.particles.forEach(p => {
-                    let overallAlpha = Math.sin((p.life / p.maxLife) * Math.PI);
-                    const isFlashActive = this.enableAudioReactivity && this.audioTarget === 'Flash' && this.flashOpacity > 0;
-
-                    if (isFlashActive) {
-                        overallAlpha *= this.flashOpacity;
-                    }
-
-                    if (overallAlpha <= 0) return;
-
-                    // --- Draw the Trail (Matrix or Generic) ---
-                    const isMatrixTrail = p.actualShape === 'matrix' && p.matrixChars && p.trail && p.trail.length > 0;
-                    const isGenericTrail = this.spawn_enableTrail && p.actualShape !== 'matrix' && p.trail && p.trail.length > 0;
-
-                    if (isMatrixTrail || isGenericTrail) {
-                        const spacing = (this.spawn_trailSpacing || 1) * p.size;
-                        const trailLength = Number(this.spawn_trailLength) || 15;
-                        const history = p.trail;
-
-                        if (spacing > 0 && history.length > 1) {
-                            let distanceNeededForNextChar = spacing;
-                            let distanceTraveledAlongPath = 0;
-                            let drawnCharIndex = 0;
-
-                            for (let i = 1; i < history.length; i++) {
-                                if (drawnCharIndex >= trailLength) break;
-
-                                const p1 = history[i - 1];
-                                const p2 = history[i];
-                                const segmentDist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-
-                                // Prevent division by zero if particle hasn't moved
-                                if (segmentDist < 0.001) continue;
-
-                                while (distanceTraveledAlongPath + segmentDist >= distanceNeededForNextChar) {
-                                    const ratio = (distanceNeededForNextChar - distanceTraveledAlongPath) / segmentDist;
-                                    if (ratio > 1) break;
-                                    const charX = p1.x + (p2.x - p1.x) * ratio;
-                                    const charY = p1.y + (p2.y - p1.y) * ratio;
-
-                                    this.ctx.save();
-                                    this.ctx.translate(charX - this.width / 2, charY - this.height / 2);
-                                    this.ctx.rotate(p1.rotation);
-
-                                    const trailOpacity = Math.max(0.1, 1.0 - (drawnCharIndex / trailLength));
-                                    this.ctx.globalAlpha = overallAlpha * trailOpacity;
-
-                                    if (isMatrixTrail) {
-                                        this.ctx.fillStyle = isFlashActive ? '#FFFFFF' : ((this.gradType === 'solid') ? this.gradient.color2 : this._createLocalFillStyle(p.id + drawnCharIndex));
-                                        this._drawParticleShape({ ...p, size: p.size, matrixChars: [p.matrixChars[drawnCharIndex + 1]] });
-                                    } else { // isGenericTrail
-                                        // Set fill for the trail based on the "split-color" logic
-                                        if (isFlashActive) {
-                                            this.ctx.fillStyle = '#FFFFFF';
-                                        } else if (this.gradType === 'solid') {
-                                            this.ctx.fillStyle = this.gradient.color2; // Trail uses Color 2 for solid fills
-                                        } else {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex); // Trail uses full effect for gradients
-                                        }
-
-                                        if (this.enableStroke) this.ctx.strokeStyle = this.ctx.fillStyle;
-
-                                        // Calculate shrinking size for the trail segment
-                                        const sizeRatio = Math.max(0, 1.0 - (drawnCharIndex / trailLength));
-                                        const trailSize = p.size * sizeRatio;
-
-                                        this._drawParticleShape({ ...p, size: trailSize });
-                                    }
-
-                                    this.ctx.restore();
-
-                                    drawnCharIndex++;
-                                    distanceNeededForNextChar += spacing;
-                                    if (drawnCharIndex >= trailLength) break;
-                                }
-                                distanceTraveledAlongPath += segmentDist;
-                            }
-                        }
-                    }
-
-                    // --- Draw the Leader Particle ---
-                    this.ctx.save();
-                    this.ctx.translate(p.x - this.width / 2, p.y - this.height / 2);
-                    this.ctx.rotate(p.rotation);
-                    this.ctx.globalAlpha = overallAlpha;
-
-                    // Set leader particle color based on "split-color" logic
-                    if (isFlashActive) {
-                        this.ctx.fillStyle = '#FFFFFF';
-                    } else if (p.actualShape === 'matrix' || this.spawn_enableTrail) {
-                        // Matrix leaders and generic leaders (when trail is on) use Color 1
-                        this.ctx.fillStyle = this.gradient.color1;
-                    } else {
-                        // No trail, so the single particle uses the full fill effect
-                        this.ctx.fillStyle = this._createLocalFillStyle(p.id);
-                    }
-
-
-                    if (this.enableStroke) {
-                        this.ctx.strokeStyle = this.ctx.fillStyle;
-                    }
-
-                    this._drawParticleShape(p);
-                    this.ctx.restore();
-                });
-                this.ctx.restore();
-            } else if (this.shape === 'text') {
-                const textToRender = this.getDisplayText();
-                const centeredShape = { ...this, x: -this.width / 2, y: -this.height / 2, };
-                this.ctx.fillStyle = this._createLocalFillStyle();
-                drawPixelText(this.ctx, centeredShape, textToRender);
-            } else if (this.shape === 'audio-visualizer') {
-                const barCount = parseInt(this.vizBarCount, 10) || 32;
-                const fillStyle = this._createLocalFillStyle();
-                this.ctx.fillStyle = fillStyle;
-                this.ctx.strokeStyle = fillStyle;
-                if (this.vizLayout === 'Circular') {
-                    const centerX = 0;
-                    const centerY = 0;
-                    const outerRadius = Math.min(this.width, this.height) / 2;
-                    const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
-                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        if (barCount < 2) return;
-                        this.ctx.beginPath();
-                        for (let i = 0; i <= barCount; i++) {
-                            const index = i % barCount;
-                            const barHeight = this.vizBarHeights[index] || 0;
-                            const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
-                            const radius = innerRadius + barHeight;
-                            const x = centerX + radius * Math.cos(angle);
-                            const y = centerY + radius * Math.sin(angle);
-                            if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
-                        }
-                        if (this.vizDrawStyle === 'Area') {
-                            this.ctx.closePath();
-                            this.ctx.fill();
-                        } else {
-                            this.ctx.lineWidth = this.vizLineWidth;
-                            this.ctx.stroke();
-                        }
-                    } else {
-                        if (this.vizUseSegments) {
-                            const segmentCount = this.vizSegmentCount || 16;
-                            const segmentSpacing = this.vizSegmentSpacing || 1;
-                            const availableBarSpace = outerRadius - innerRadius;
-                            const totalSpacing = (segmentCount - 1) * segmentSpacing;
-                            const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
-                            if (segmentLength > 0) {
-                                const angleStep = (2 * Math.PI) / barCount;
-                                const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                                for (let i = 0; i < barCount; i++) {
-                                    const barLength = this.vizBarHeights[i] || 0;
-                                    if (barLength <= 0) continue;
-                                    const litSegments = Math.floor(barLength / (segmentLength + segmentSpacing));
-                                    const baseAngle = this.rotation * (Math.PI / 180);
-                                    const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                                    const endAngle = startAngle + barAngularWidth;
-                                    for (let j = 0; j < litSegments; j++) {
-                                        const segmentStartRadius = innerRadius + j * (segmentLength + segmentSpacing);
-                                        const segmentEndRadius = segmentStartRadius + segmentLength;
-                                        this.ctx.beginPath();
-                                        this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
-                                        this.ctx.arc(centerX, centerY, segmentStartRadius, endAngle, startAngle, true);
-                                        this.ctx.closePath();
-                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                        }
-                                        this.ctx.fill();
-                                    }
-                                }
-                            }
-                        } else {
-                            const angleStep = (2 * Math.PI) / barCount;
-                            const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                            for (let i = 0; i < barCount; i++) {
-                                const barLength = this.vizBarHeights[i] || 0;
-                                if (barLength <= 0) continue;
-                                const startRadius = innerRadius;
-                                const endRadius = innerRadius + barLength;
-                                const baseAngle = this.rotation * (Math.PI / 180);
-                                const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                                const endAngle = startAngle + barAngularWidth;
-                                this.ctx.beginPath();
-                                this.ctx.arc(centerX, centerY, endRadius, startAngle, endAngle);
-                                this.ctx.arc(centerX, centerY, startRadius, endAngle, startAngle, true);
-                                this.ctx.closePath();
-                                this.ctx.fill();
-                            }
-                        }
-                    }
-                } else {
-                    const totalSpacing = (barCount - 1) * this.vizBarSpacing;
-                    const barWidth = (this.width - totalSpacing) / barCount;
-                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        this.ctx.beginPath();
-                        const halfW = this.width / 2;
-                        const halfH = this.height / 2;
-                        const firstBarHeight = this.vizBarHeights[0] || 0;
-                        this.ctx.moveTo(-halfW, halfH - firstBarHeight);
-                        for (let i = 0; i < barCount; i++) {
-                            const barHeight = this.vizBarHeights[i] || 0;
-                            const x = -halfW + i * (barWidth + this.vizBarSpacing) + barWidth / 2;
-                            const y = halfH - barHeight;
-                            this.ctx.lineTo(x, y);
-                        }
-                        if (this.vizDrawStyle === 'Area') {
-                            this.ctx.lineTo(halfW, halfH);
-                            this.ctx.lineTo(-halfW, halfH);
-                            this.ctx.closePath();
-                            this.ctx.fill();
-                        } else {
-                            this.ctx.lineWidth = this.vizLineWidth;
-                            this.ctx.stroke();
-                        }
-                    } else {
-                        for (let i = 0; i < barCount; i++) {
-                            const barHeight = this.vizBarHeights[i] || 0;
-                            if (barHeight < 1) continue;
-                            const x = -this.width / 2 + i * (barWidth + this.vizBarSpacing);
-                            if (this.vizUseSegments) {
-                                const segmentCount = this.vizSegmentCount || 16;
-                                const segmentSpacing = this.vizSegmentSpacing || 2;
-                                const totalSegSpacing = (segmentCount - 1) * segmentSpacing;
-                                const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
-                                if (segmentHeight > 0) {
-                                    const litSegments = Math.floor(barHeight / (segmentHeight + segmentSpacing));
-                                    for (let j = 0; j < litSegments; j++) {
-                                        let y;
-                                        const segYPos = j * (segmentHeight + segmentSpacing);
-                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                        }
-                                        switch (this.vizStyle) {
-                                            case 'top': y = -this.height / 2 + segYPos; break;
-                                            case 'center':
-                                                const totalPossibleHeight = segmentCount * (segmentHeight + segmentSpacing) - segmentSpacing;
-                                                y = -totalPossibleHeight / 2 + j * (segmentHeight + segmentSpacing);
-                                                break;
-                                            default: y = this.height / 2 - segmentHeight - segYPos; break;
-                                        }
-                                        this.ctx.fillRect(x, y, barWidth, segmentHeight);
-                                    }
-                                }
-                            } else {
-                                let y;
-                                switch (this.vizStyle) {
-                                    case 'top': y = -this.height / 2; break;
-                                    case 'center': y = -barHeight / 2; break;
-                                    default: y = this.height / 2 - barHeight; break;
-                                }
-                                this.ctx.fillRect(x, y, barWidth, barHeight);
-                            }
-                        }
-                    }
-                }
-            } else if (this.shape === 'oscilloscope') {
-                const activeWavePhase = this.enableWaveAnimation ? this.wavePhaseAngle : 0;
-                if (this.oscDisplayMode === 'radial') {
-                    this.ctx.lineWidth = this.vizLineWidth;
-                    this.ctx.strokeStyle = this._createLocalFillStyle();
-                    const totalRadius = (Math.min(this.width, this.height) / 2) - (this.ctx.lineWidth / 2);
-                    if (totalRadius > 0) {
-                        this.ctx.beginPath();
-                        const baseRadius = totalRadius * (0.5 + (this.pulseDepth || 0) / 100.0 * 0.5);
-                        const maxAmplitude = totalRadius - baseRadius;
-                        for (let i = 0; i <= 360; i++) {
-                            const angleRad = (i * Math.PI) / 180;
-                            const waveFuncAngle = 2 * Math.PI * this.frequency * (i / 360) + activeWavePhase * 2;
-                            let y_wave;
-                            switch (this.waveType) {
-                                case 'square': y_wave = Math.sin(waveFuncAngle) >= 0 ? 1 : -1; break;
-                                case 'sawtooth': y_wave = (((waveFuncAngle / (2 * Math.PI)) % 1) * 2) - 1; break;
-                                case 'triangle': y_wave = Math.asin(Math.sin(waveFuncAngle)) * (2 / Math.PI); break;
-                                case 'earthquake': y_wave = Math.sin(waveFuncAngle * 0.8) * 0.5 + Math.sin(waveFuncAngle * 2.2) * 0.3 + Math.sin(waveFuncAngle * 5.0) * 0.2; break;
-                                default: y_wave = Math.sin(waveFuncAngle); break;
-                            }
-                            const finalRadius = baseRadius + y_wave * maxAmplitude;
-                            if (i === 0) this.ctx.moveTo(finalRadius * Math.cos(angleRad), finalRadius * Math.sin(angleRad));
-                            else this.ctx.lineTo(finalRadius * Math.cos(angleRad), finalRadius * Math.sin(angleRad));
-                        }
-                        this.ctx.closePath();
-                        this.ctx.stroke();
-                    }
-                } else if (this.oscDisplayMode === 'seismic') {
-                    this.ctx.lineWidth = this.lineWidth;
-                    const maxRadius = Math.min(this.width, this.height) / 2;
-                    const waveCount = Math.max(1, this.waveCount);
-                    const spacing = maxRadius / waveCount;
-                    const totalCycle = maxRadius + spacing;
-                    const progress = ((activeWavePhase * 10) % totalCycle + totalCycle) % totalCycle;
-                    for (let i = waveCount - 1; i >= 0; i--) {
-                        let radius = (progress + i * spacing) % totalCycle;
-                        if (radius > maxRadius) continue;
-                        let alpha = 1.0 - (radius / maxRadius);
-                        const fadeInLimit = spacing;
-                        if (radius < fadeInLimit) alpha *= (radius / fadeInLimit);
-                        if (alpha <= 0) continue;
-                        this.ctx.globalAlpha = alpha;
-                        this.ctx.beginPath();
-                        if (this.waveStyle === 'wavy') {
-                            const points = Math.max(60, this.frequency * 20);
-                            const maxAmplitude = (this.pulseDepth / 100) * 20;
-                            const amplitude = maxAmplitude * (radius / maxRadius);
-                            const rotationalPhase = (activeWavePhase / 10.0) - (i * (this.phaseOffset / this.frequency) * (Math.PI / 2));
-                            for (let j = 0; j <= points; j++) {
-                                const angle = (j / points) * 2 * Math.PI;
-                                const freqAngle = angle * this.frequency;
-                                let y_wave;
-                                switch (this.waveType) {
-                                    case 'square': y_wave = Math.sin(freqAngle) >= 0 ? 1 : -1; break;
-                                    case 'sawtooth': y_wave = (((freqAngle / (2 * Math.PI)) % 1) * 2) - 1; break;
-                                    case 'triangle': y_wave = Math.asin(Math.sin(freqAngle)) * (2 / Math.PI); break;
-                                    case 'earthquake': y_wave = Math.sin(freqAngle * 0.8) * 0.5 + Math.sin(freqAngle * 2.2) * 0.3 + Math.sin(freqAngle * 5.0) * 0.2; break;
-                                    default: y_wave = Math.sin(freqAngle); break;
-                                }
-                                const r = radius + y_wave * amplitude;
-                                const finalAngle = angle + rotationalPhase;
-                                this.ctx[j === 0 ? 'moveTo' : 'lineTo'](Math.cos(finalAngle) * r, Math.sin(finalAngle) * r);
-                            }
-                        } else { this.ctx.arc(0, 0, radius, 0, 2 * Math.PI); }
-                        this.ctx.closePath();
-                        const style = this._createLocalFillStyle(i);
-                        this.ctx.strokeStyle = style;
-                        this.ctx.fillStyle = style;
-                        if (this.fillShape) { this.ctx.fill(); } else { this.ctx.stroke(); }
-                    }
-                } else {
-                    const halfW = this.width / 2;
-                    const halfH = this.height / 2;
-                    const activeLineWidth = this.lineWidth;
-                    const amplitude = Math.max(1, (this.height - activeLineWidth) / 2);
-                    this.ctx.beginPath();
-                    for (let i = 0; i <= this.width; i++) {
-                        const progress = i / this.width;
-                        const angle = 2 * Math.PI * this.frequency * progress + activeWavePhase;
-                        let y_wave;
-                        switch (this.waveType) {
-                            case 'square': y_wave = Math.sin(angle) >= 0 ? 1 : -1; break;
-                            case 'sawtooth': y_wave = (((angle / (Math.PI * 2)) % 1) * 2) - 1; break;
-                            case 'triangle': y_wave = Math.asin(Math.sin(angle)) * (2 / Math.PI); break;
-                            case 'earthquake': y_wave = Math.sin(angle * 0.8) * 0.5 + Math.sin(angle * 2.2) * 0.3 + Math.sin(angle * 5.0) * 0.2; break;
-                            default: y_wave = Math.sin(angle); break;
-                        }
-                        const px = -halfW + i;
-                        const py = -y_wave * amplitude;
-                        if (i === 0) this.ctx.moveTo(px, py); else this.ctx.lineTo(px, py);
-                    }
-                    if (this.fillShape) {
-                        this.ctx.save();
-                        this.ctx.lineTo(halfW, halfH);
-                        this.ctx.lineTo(-halfW, halfH);
-                        this.ctx.closePath();
-                        this.ctx.fillStyle = this._createLocalFillStyle();
-                        this.ctx.fill();
-                        this.ctx.restore();
-                    }
-                    this.ctx.strokeStyle = this._createLocalFillStyle();
-                    this.ctx.lineWidth = this.lineWidth;
-                    if (this.ctx.lineWidth <= 0 || !isFinite(this.ctx.lineWidth)) { this.ctx.lineWidth = 1; }
-                    this.ctx.stroke();
-                }
-            } else if (this.shape === 'ring') {
-                const oR = this.width / 2;
-                const iR = this.innerDiameter / 2;
-                if (iR >= 0 && iR < oR && this.numberOfSegments > 0) {
-                    const aStep = (2 * Math.PI) / this.numberOfSegments;
-                    const segAngle = (this.angularWidth * Math.PI) / 180;
-                    for (let i = 0; i < this.numberOfSegments; i++) {
-                        this.ctx.beginPath();
-                        const startAngle = i * aStep + this.animationAngle;
-                        const endAngle = startAngle + segAngle;
-                        this.ctx.moveTo(Math.cos(startAngle) * oR, Math.sin(startAngle) * oR);
-                        this.ctx.arc(0, 0, oR, startAngle, endAngle, false);
-                        this.ctx.lineTo(Math.cos(endAngle) * iR, Math.sin(endAngle) * iR);
-                        this.ctx.arc(0, 0, iR, endAngle, startAngle, true);
-                        this.ctx.closePath();
-                        this._drawFill(i);
-                        applyStrokeInside();
-                    }
-                }
-            } else if (this.shape === 'rectangle' && (this.numberOfRows > 1 || this.numberOfColumns > 1)) {
-                const cellW = this.width / this.numberOfColumns;
-                const cellH = this.height / this.numberOfRows;
-                for (let row = 0; row < this.numberOfRows; row++) {
-                    for (let col = 0; col < this.numberOfColumns; col++) {
-                        const cellIndex = row * this.numberOfColumns + col;
-                        this.ctx.beginPath();
-                        this.ctx.rect(-this.width / 2 + col * cellW, -this.height / 2 + row * cellH, cellW, cellH);
-                        this._drawFill(cellIndex);
-                        applyStrokeInside();
-                    }
-                }
-                // In Shape.js, inside the draw method, replace the entire polyline block.
-
-            // In Shape.js, inside the draw method, replace the entire polyline block.
-
-            } else if (this.shape === 'polyline') {
-                let nodes;
-                try {
-                    nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : this.polylineNodes;
-                } catch (e) { nodes = []; }
-
-                if (Array.isArray(nodes) && nodes.length >= 2) {
-                    if (this.enableStroke) {
-                        if (this.enableAudioReactivity && this.audioTarget === 'Flash' && this.flashOpacity > 0) {
-                            this.ctx.globalAlpha = this.flashOpacity;
-                        }
-                        this.ctx.setLineDash([]);
-                        this.ctx.lineWidth = this.strokeWidth;
-                        this.ctx.lineCap = 'round';
-                        this.ctx.lineJoin = 'round';
-
-                        if (this.strokeScrollDir === 'along-path' || this.strokeScrollDir === 'along-path-reversed') {
-                            const { segments, totalLength } = this._calculatePathSegments();
-                            
-                            if (totalLength > 0) {
-                                for (const seg of segments) {
-                                    const startFraction = seg.startLength / totalLength;
-                                    const endFraction = (seg.startLength + seg.length) / totalLength;
-                                    let grad;
-
-                                    if (seg.type === 'line') {
-                                        grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y);
-                                    } else if (seg.type === 'tight-curve') {
-                                        grad = this.ctx.createLinearGradient(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
-                                    } else { // quadratic 'curve'
-                                        grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p2.x, seg.p2.y);
-                                    }
-
-                                    const animOffset = (this.strokeScrollOffset % 1.0 + 1.0) % 1.0;
-                                    
-                                    if (this.strokeGradType === 'rainbow') {
-                                        // The static gradient is no longer reversed, only the animation.
-                                        const startHue = (startFraction * 360 + animOffset * 360) % 360;
-                                        const endHue = (endFraction * 360 + animOffset * 360) % 360;
-                                        grad.addColorStop(0, `hsl(${startHue}, 100%, 50%)`);
-                                        grad.addColorStop(1, `hsl(${endHue}, 100%, 50%)`);
-                                    } else {
-                                        // The static gradient is no longer reversed, only the animation.
-                                        const c1 = this.strokeGradient.color1;
-                                        const c2 = this.strokeGradient.color2;
-                                        const startColor = lerpColor(c1, c2, (startFraction + animOffset) % 1.0);
-                                        const endColor = lerpColor(c1, c2, (endFraction + animOffset) % 1.0);
-                                        grad.addColorStop(0, startColor);
-                                        grad.addColorStop(1, endColor);
-                                    }
-                                    
-                                    this.ctx.strokeStyle = grad;
-                                    this.ctx.beginPath();
-
-                                    if (seg.type === 'line') {
-                                        this.ctx.moveTo(seg.p0.x, seg.p0.y);
-                                        this.ctx.lineTo(seg.p1.x, seg.p1.y);
-                                    } else if (seg.type === 'tight-curve') {
-                                        this.ctx.moveTo(seg.p1.x, seg.p1.y);
-                                        const curveDetail = 30;
-                                        for (let j = 1; j <= curveDetail; j++) {
-                                            const t = j / curveDetail;
-                                            const point = this._getPointOnCatmullRomSpline(seg.p0, seg.p1, seg.p2, seg.p3, t);
-                                            this.ctx.lineTo(point.x, point.y);
-                                        }
-                                    } else { // quadratic 'curve'
-                                        this.ctx.moveTo(seg.p0.x, seg.p0.y);
-                                        this.ctx.quadraticCurveTo(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
-                                    }
-                                    this.ctx.stroke();
-                                }
-                            }
-                        } else {
-                            // General stroking logic for non-'along-path' styles
-                            this.ctx.beginPath();
-                            this.ctx.moveTo(nodes[0].x - this.width / 2, nodes[0].y - this.height / 2);
-                            if (this.polylineCurveStyle === 'loose-curve' && nodes.length > 2) {
-                                for (let i = 1; i < nodes.length - 1; i++) {
-                                    const xc = (nodes[i].x + nodes[i + 1].x) / 2 - this.width / 2;
-                                    const yc = (nodes[i].y + nodes[i + 1].y) / 2 - this.height / 2;
-                                    this.ctx.quadraticCurveTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2, xc, yc);
-                                }
-                                this.ctx.lineTo(nodes[nodes.length - 1].x - this.width / 2, nodes[nodes.length - 1].y - this.height / 2);
-                            } else if (this.polylineCurveStyle === 'tight-curve') {
-                                const curveDetail = 30;
-                                for (let i = 0; i < nodes.length - 1; i++) {
-                                    const p0 = nodes[i === 0 ? i : i - 1];
-                                    const p1 = nodes[i];
-                                    const p2 = nodes[i + 1];
-                                    const p3 = nodes[i === nodes.length - 2 ? i + 1 : i + 2];
-                                    for (let j = 1; j <= curveDetail; j++) {
-                                        const t = j / curveDetail;
-                                        const point = this._getPointOnCatmullRomSpline(p0, p1, p2, p3, t);
-                                        this.ctx.lineTo(point.x - this.width / 2, point.y - this.height / 2);
-                                    }
-                                }
-                            } else { // Straight
-                                for (let i = 1; i < nodes.length; i++) {
-                                    this.ctx.lineTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2);
-                                }
-                            }
-                            this.ctx.strokeStyle = this._createLocalStrokeStyle();
-                            this.ctx.stroke();
-                        }
-                    } else if (typeof engine == 'undefined') {
-                        // Dotted line placeholder logic
-                        this.ctx.save();
-                        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                        this.ctx.lineWidth = 2;
-                        this.ctx.setLineDash([4, 4]);
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(nodes[0].x - this.width / 2, nodes[0].y - this.height / 2);
-                        if (this.polylineCurveStyle === 'loose-curve' && nodes.length > 2) {
-                            for (let i = 1; i < nodes.length - 1; i++) {
-                                const xc = (nodes[i].x + nodes[i + 1].x) / 2 - this.width / 2;
-                                const yc = (nodes[i].y + nodes[i + 1].y) / 2 - this.height / 2;
-                                this.ctx.quadraticCurveTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2, xc, yc);
-                            }
-                            this.ctx.lineTo(nodes[nodes.length - 1].x - this.width / 2, nodes[nodes.length - 1].y - this.height / 2);
-                        } else if (this.polylineCurveStyle === 'tight-curve') {
-                            const curveDetail = 30;
-                            for (let i = 0; i < nodes.length - 1; i++) {
-                                const p0 = nodes[i === 0 ? i : i - 1];
-                                const p1 = nodes[i];
-                                const p2 = nodes[i + 1];
-                                const p3 = nodes[i === nodes.length - 2 ? i + 1 : i + 2];
-                                for (let j = 1; j <= curveDetail; j++) {
-                                    const t = j / curveDetail;
-                                    const point = this._getPointOnCatmullRomSpline(p0, p1, p2, p3, t);
-                                    this.ctx.lineTo(point.x - this.width / 2, point.y - this.height / 2);
-                                }
-                            }
-                        } else { // Straight
-                            for (let i = 1; i < nodes.length; i++) {
-                                this.ctx.lineTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2);
-                            }
-                        }
-                        this.ctx.stroke();
-                        this.ctx.restore();
-                    }
-                }
-
-                if (this.pathAnim_enable) {
-                    const { totalLength } = this._calculatePathSegments();
-                    if (totalLength <= 0) return;
-
-                    const baseSize = this.pathAnim_size || 40;
-                    const objectCount = Math.max(1, this.pathAnim_objectCount || 1);
-                    const spacing = this.pathAnim_objectSpacing || 100;
-                    const trailLength = this.pathAnim_trailLength || 80;
-
-                    for (let i = 0; i < objectCount; i++) {
-                        const objectDistance = this.pathAnim_distance - (i * spacing);
-
-                        // Draw trail
-                        if (this.pathAnim_trail !== 'None' && trailLength > 0) {
-                            const trailSegmentCount = 30;
-                            for (let j = 1; j <= trailSegmentCount; j++) {
-                                const progress = j / trailSegmentCount;
-                                const trailDist = objectDistance - (progress * trailLength * this.pathAnim_direction);
-
-                                // Skip drawing if segment is outside the path's bounds
-                                if (trailDist < 0 || trailDist > totalLength) {
-                                    continue;
-                                }
-
-                                const { x, y, angle } = this._getPointAndAngleAtDistance(trailDist);
-                                const trailSize = baseSize * (1 - progress);
-                                if (trailSize < 1) continue;
-
-                                this.ctx.save();
-                                this.ctx.translate(x, y);
-                                this.ctx.rotate(angle);
-                                let trailFillStyle;
-                                if (this.pathAnim_colorOverride) {
-                                    trailFillStyle = this.pathAnim_colorOverride;
-                                } else if (this.pathAnim_trailColor === 'Rainbow') {
-                                    const hue = (progress * 360) % 360;
-                                    trailFillStyle = `hsl(${hue}, 100%, 50%)`;
-                                } else {
-                                    trailFillStyle = this._createFillStyleForSubObject(trailSize);
-                                }
-                                this.ctx.fillStyle = trailFillStyle;
-                                if (this.pathAnim_trail === 'Fade') {
-                                    this.ctx.globalAlpha = (1 - progress) * 0.7;
-                                }
-                                this._drawSubObject(this.pathAnim_shape, trailSize);
-                                this.ctx.restore();
-                            }
-                        }
-
-                        // Draw main object
-                        if (objectDistance >= 0 && objectDistance <= totalLength) {
-                            const { x, y, angle } = this._getPointAndAngleAtDistance(objectDistance);
-                            this.ctx.save();
-                            this.ctx.translate(x, y);
-                            this.ctx.rotate(angle + this.pathAnim_extraRotation);
-                            if (this.pathAnim_flashOpacity > 0) { this.ctx.globalAlpha = this.pathAnim_flashOpacity; }
-                            this.ctx.scale(this.pathAnim_internalScale, this.pathAnim_internalScale);
-                            this.ctx.fillStyle = this.pathAnim_colorOverride || this._createFillStyleForSubObject(baseSize);
-                            this._drawSubObject(this.pathAnim_shape, baseSize);
-                            this.ctx.restore();
-                        }
-                    }
-                }
-            } else {
-                if (this.enableAudioReactivity && this.audioTarget === 'Flash' && this.flashOpacity > 0) {
-                    this.ctx.globalAlpha = this.flashOpacity;
-                }
-                this.ctx.beginPath();
-                if (this.shape === 'circle') {
-                    this.ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, 2 * Math.PI);
-                } else if (this.shape === 'polygon') {
-                    const rX = this.width / 2;
-                    const rY = this.height / 2;
-                    const sides = Math.max(3, this.sides);
-                    for (let i = 0; i < sides; i++) {
-                        const a = (i / sides) * 2 * Math.PI - (Math.PI / 2);
-                        this.ctx[i === 0 ? 'moveTo' : 'lineTo'](rX * Math.cos(a), rY * Math.sin(a));
-                    }
-                    this.ctx.closePath();
-                } else if (this.shape === 'star') {
-                    const oRX = this.width / 2;
-                    const oRY = this.height / 2;
-                    const iRX = oRX * (this.starInnerRadius / 100);
-                    const iRY = oRY * (this.starInnerRadius / 100);
-                    const points = Math.max(3, this.points);
-                    for (let i = 0; i < 2 * points; i++) {
-                        const rX = (i % 2 === 0) ? oRX : iRX;
-                        const rY = (i % 2 === 0) ? oRY : iRY;
-                        const a = (i / (2 * points)) * 2 * Math.PI - (Math.PI / 2);
-                        this.ctx[i === 0 ? 'moveTo' : 'lineTo'](rX * Math.cos(a), rY * Math.sin(a));
-                    }
-                    this.ctx.closePath();
-                } else {
-                    this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
-                }
-                this._drawFill();
-                applyStrokeInside();
-            }
-        }
-
-        // Restore original properties after drawing
-        this.gradient = originalGradient;
-        this.strokeGradient = originalStrokeGradient;
-
-        this.ctx.restore();
-    }
-
-    drawSelectionUI() {
-        const selectionColor = this.locked ? 'orange' : '#00f6ff';
-        const center = this.getCenter();
-        const staticAngle = this.rotation * Math.PI / 180;
-
-        this.ctx.save();
-        this.ctx.translate(center.x, center.y);
-        this.ctx.rotate(staticAngle);
-
-        const halfW = this.width / 2;
-        const halfH = this.height / 2;
-
-        this.ctx.strokeStyle = selectionColor;
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([6, 4]);
-        this.ctx.strokeRect(-halfW, -halfH, this.width, this.height);
-        this.ctx.setLineDash([]);
-
-        if (this.shape === 'polyline') {
-            let nodes;
-            try {
-                nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : this.polylineNodes;
-            } catch (e) { return; }
-
-            if (Array.isArray(nodes)) {
-                const offsetX = -this.width / 2;
-                const offsetY = -this.height / 2;
-                const handleSize = 8;
-                this.ctx.fillStyle = selectionColor;
-
-                nodes.forEach(node => {
-                    this.ctx.fillRect(
-                        node.x + offsetX - handleSize / 2,
-                        node.y + offsetY - handleSize / 2,
-                        handleSize,
-                        handleSize
-                    );
-                });
-            }
-        }
-
-        if (!this.locked) {
-            this.ctx.fillStyle = selectionColor;
-            const h2 = this.handleSize / 2;
-            const handlePositions = [
-                { x: -halfW, y: -halfH }, { x: 0, y: -halfH }, { x: halfW, y: -halfH },
-                { x: -halfW, y: 0 }, { x: halfW, y: 0 },
-                { x: -halfW, y: halfH }, { x: 0, y: halfH }, { x: halfW, y: halfH }
-            ];
-            handlePositions.forEach(pos => {
-                this.ctx.fillRect(pos.x - h2, pos.y - h2, this.handleSize, this.handleSize);
-            });
-
-            const rotHandlePos = this.getRotationHandlePosition();
-            const connectionY = (rotHandlePos.y > 0) ? halfH : -halfH;
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, connectionY);
-            this.ctx.lineTo(rotHandlePos.x, rotHandlePos.y);
-            this.ctx.stroke();
-            this.ctx.beginPath();
-            this.ctx.arc(rotHandlePos.x, rotHandlePos.y, this.rotationHandleRadius, 0, 2 * Math.PI);
-            this.ctx.fill();
-        }
-
-        this.ctx.restore();
-
-        if (this.locked) {
-            this.ctx.save();
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-
-            // SVG path data for Bootstrap's 'lock-fill' icon.
-            const lockPathData = "M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z";
-            const lockIconPath = new Path2D(lockPathData);
-
-            // The original icon is on a 16x16 grid. We'll scale it to 30px.
-            const iconSize = 30;
-            const scale = iconSize / 16;
-
-            // Translate to the center of the shape, then adjust for the icon's own center.
-            this.ctx.translate(center.x - (iconSize / 2), center.y - (iconSize / 2));
-            this.ctx.scale(scale, scale);
-
-            // Fill the path to draw the icon.
-            this.ctx.fill(lockIconPath);
-
-            this.ctx.restore();
-        }
-    }
-}
+    // When a modal or offcanvas starts to open, destroy all tooltips.
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        modal.addEventListener('show.bs.modal', disposeTooltips);
+    });
+    const allOffcanvases = document.querySelectorAll('.offcanvas');
+    allOffcanvases.forEach(offcanvas => {
+        offcanvas.addEventListener('show.bs.offcanvas', disposeTooltips);
+    });
+
+    // When a modal or offcanvas has finished closing, re-create all tooltips from scratch.
+    allModals.forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', initializeTooltips);
+    });
+    allOffcanvases.forEach(offcanvas => {
+        offcanvas.addEventListener('hidden.bs.offcanvas', initializeTooltips);
+    });
+
+
+    // Start the application.
+    init();
+});
