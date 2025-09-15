@@ -232,6 +232,192 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    // --- START: PIXEL ART EDITOR LOGIC ---
+    const editorModalEl = document.getElementById('pixelArtEditorModal');
+    if (editorModalEl) {
+        const gridContainer = document.getElementById('pixel-editor-grid-container');
+        const widthInput = document.getElementById('pixel-editor-width');
+        const heightInput = document.getElementById('pixel-editor-height');
+        const resizeBtn = document.getElementById('pixel-editor-resize-btn');
+        const saveBtn = document.getElementById('pixel-editor-save-btn');
+        const palette = document.getElementById('pixel-editor-palette');
+        const color1Btn = document.getElementById('pixel-editor-color1-btn');
+        const color2Btn = document.getElementById('pixel-editor-color2-btn');
+        const fillBtn = document.getElementById('pixel-editor-fill-btn');
+        const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
+        const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
+
+        let targetTextarea = null;
+        let currentPaintValue = 0.7;
+        let currentTool = 'paint'; // 'paint' or 'fill'
+        let isPainting = false;
+
+        const valueToColor = (value, color1, color2) => {
+            if (value === 1.0) return '#FFFFFF';
+            if (value === 0.3) return color1 || '#FF00FF';
+            if (value === 0.4) return color2 || '#00FFFF';
+            if (value === 0) return '#000000';
+            // For other values (0.5, 0.7 etc.), show a checkerboard to represent the main animated fill
+            return `repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px`;
+        };
+
+        const renderGrid = (data, color1, color2) => {
+            gridContainer.innerHTML = '';
+            const rows = data.length;
+            const cols = data[0].length;
+            gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('pixel-editor-cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    const value = data[r] ? (data[r][c] || 0) : 0;
+                    cell.style.backgroundColor = valueToColor(value, color1, color2);
+                    cell.dataset.value = value;
+                    gridContainer.appendChild(cell);
+                }
+            }
+        };
+
+        editorModalEl.addEventListener('show.bs.modal', (event) => {
+            currentTool = 'paint'; // Reset to paint tool on open
+            const button = event.relatedTarget;
+            const targetId = button.getAttribute('data-target-id');
+            targetTextarea = document.getElementById(targetId);
+
+            const objectId = button.closest('fieldset[data-object-id]').dataset.objectId;
+            const color1Input = form.querySelector(`[name="obj${objectId}_gradColor1"]`);
+            const color1 = color1Input ? color1Input.value : '#FF00FF';
+            color1Btn.style.backgroundColor = color1;
+
+            const color2Input = form.querySelector(`[name="obj${objectId}_gradColor2"]`);
+            const color2 = color2Input ? color2Input.value : '#00FFFF';
+            color2Btn.style.backgroundColor = color2;
+
+            try {
+                const data = JSON.parse(targetTextarea.value);
+                widthInput.value = data[0].length;
+                heightInput.value = data.length;
+                renderGrid(data, color1, color2);
+            } catch (e) {
+                renderGrid([[0]], color1, color2);
+            }
+        });
+
+        palette.addEventListener('click', (e) => {
+            currentTool = 'paint'; // Clicking a color always switches to paint tool
+            const button = e.target.closest('button');
+            if (!button) return;
+            palette.querySelector('.active').classList.remove('active');
+            button.classList.add('active');
+            currentPaintValue = parseFloat(button.dataset.value);
+        });
+
+        fillBtn.addEventListener('click', () => {
+            currentTool = 'fill';
+            showToast("Fill tool selected. Click an area to fill it with the active paint color.", "info");
+        });
+
+        const readGrid = () => {
+            const rows = parseInt(heightInput.value, 10);
+            const cols = parseInt(widthInput.value, 10);
+            const cells = gridContainer.querySelectorAll('.pixel-editor-cell');
+            const data = [];
+            for (let r = 0; r < rows; r++) {
+                const row = [];
+                for (let c = 0; c < cols; c++) {
+                    row.push(parseFloat(cells[r * cols + c].dataset.value));
+                }
+                data.push(row);
+            }
+            return data;
+        };
+
+        const floodFill = (startNode) => {
+            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
+
+            const gridData = readGrid();
+            const rows = gridData.length;
+            const cols = gridData[0].length;
+
+            const startRow = parseInt(startNode.dataset.row, 10);
+            const startCol = parseInt(startNode.dataset.col, 10);
+            const targetValue = gridData[startRow][startCol];
+
+            if (targetValue === currentPaintValue) return;
+
+            const queue = [[startRow, startCol]];
+            const visited = new Set([`${startRow},${startCol}`]);
+            gridData[startRow][startCol] = currentPaintValue;
+
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+
+                [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]].forEach(([nr, nc]) => {
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(`${nr},${nc}`) && gridData[nr][nc] === targetValue) {
+                        visited.add(`${nr},${nc}`);
+                        gridData[nr][nc] = currentPaintValue;
+                        queue.push([nr, nc]);
+                    }
+                });
+            }
+            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+        };
+
+        mirrorHBtn.addEventListener('click', () => {
+            let gridData = readGrid();
+            gridData.forEach(row => row.reverse());
+            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+        });
+
+        mirrorVBtn.addEventListener('click', () => {
+            let gridData = readGrid().reverse();
+            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+        });
+
+        resizeBtn.addEventListener('click', () => {
+            const newWidth = parseInt(widthInput.value, 10);
+            const newHeight = parseInt(heightInput.value, 10);
+            const newData = Array(newHeight).fill(0).map(() => Array(newWidth).fill(0));
+            renderGrid(newData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+        });
+
+        gridContainer.addEventListener('mousedown', (e) => {
+            if (currentTool === 'paint') {
+                isPainting = true;
+                paintCell(e.target);
+            } else if (currentTool === 'fill') {
+                floodFill(e.target);
+            }
+        });
+        gridContainer.addEventListener('mouseover', (e) => {
+            if (isPainting && currentTool === 'paint') {
+                paintCell(e.target);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            isPainting = false;
+        });
+
+        const paintCell = (cell) => {
+            if (!cell || !cell.classList.contains('pixel-editor-cell')) return;
+            cell.dataset.value = currentPaintValue;
+            cell.style.backgroundColor = valueToColor(currentPaintValue, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+        };
+
+        saveBtn.addEventListener('click', () => {
+            if (!targetTextarea) return;
+            const newData = readGrid();
+            const newDataString = JSON.stringify(newData);
+            targetTextarea.value = newDataString;
+            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            bootstrap.Modal.getInstance(editorModalEl).hide();
+        });
+    }
+    // --- END: PIXEL ART EDITOR LOGIC ---
+
     const srgbLinkBtn = document.getElementById('generate-srgb-link-btn');
 
     srgbLinkBtn.addEventListener('click', (event) => {
@@ -1228,6 +1414,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const framesContainer = document.createElement('div');
             framesContainer.className = 'd-flex flex-column gap-2'; // Use flexbox for spacing
 
+            // --- START: THIS IS THE FIX ---
+            // Extract the object ID from the property name (e.g., get "1" from "obj1_pixelArtFrames")
+            let objectId = null;
+            if (property) {
+                const match = property.match(/^obj(\d+)_/);
+                if (match) {
+                    objectId = match[1];
+                }
+            }
+            // --- END: THIS IS THE FIX ---
+
             let frames = [];
             try {
                 frames = JSON.parse(defaultValue);
@@ -1238,14 +1435,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
                 frameItem.dataset.index = index;
 
+                // Use the newly extracted objectId to create a truly unique ID
+                const textareaId = `frame-data-${objectId}-${index}`;
+                const frameDataStr = frame.data || '[[0]]';
+
                 frameItem.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong class="frame-item-header">Frame #${index + 1}</strong>
                         <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
                     </div>
                     <div>
-                        <label class="form-label-sm">Frame Data</label>
-                        <textarea class="form-control form-control-sm frame-data-input" rows="6">${frame.data || '[[0]]'}</textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
+                            <button class="btn btn-sm btn-outline-info" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#pixelArtEditorModal"
+                                    data-target-id="${textareaId}">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </button>
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
                     </div>
                     <div class="mt-2">
                          <label class="form-label-sm">Duration (seconds)</label>
@@ -3336,14 +3545,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // --- START: NEW PIXEL ART TABLE LOGIC ---
         // This block reads changes from the frame data/duration fields and updates the hidden master textarea
+        // This block reads changes from the frame data/duration fields and updates the hidden master textarea
         if (target.classList.contains('frame-data-input') || target.classList.contains('frame-duration-input')) {
+
+            // --- START: ADDED LOGIC TO UPDATE URL ---
+            // If the changed input was the data field, update its corresponding "Edit" link
+            if (target.classList.contains('frame-data-input')) {
+                const newData = target.value;
+                const encodedData = encodeURIComponent(newData);
+                const editorUrl = `https://pixelart.nolliergb.com/?data=${encodedData}`;
+
+                // Find the link element that is a sibling to the textarea's header
+                const link = target.previousElementSibling.querySelector('a');
+                if (link) {
+                    link.href = editorUrl;
+                }
+            }
+            // --- END: ADDED LOGIC TO UPDATE URL ---
+
             const container = target.closest('.pixel-art-table-container');
             if (container) {
                 const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-                // CORRECTED SELECTOR: Find the div container, not a tbody
                 const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
                 if (framesContainer) {
-                    // CORRECTED LOGIC: Iterate over the frame item divs, not table rows
                     const newFrames = Array.from(framesContainer.children).map(item => ({
                         data: item.querySelector('.frame-data-input').value,
                         duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
@@ -3421,14 +3645,26 @@ document.addEventListener('DOMContentLoaded', function () {
             const frameItem = document.createElement('div');
             frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
             frameItem.dataset.index = newIndex;
+            const defaultFrameData = '[[1]]';
+            // Generate a unique ID for the textarea to link it to the button
+            const textareaId = `frame-data-new-${Date.now()}`;
+
             frameItem.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <strong class="frame-item-header">Frame #${newIndex + 1}</strong>
                     <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
                 </div>
                 <div>
-                    <label class="form-label-sm">Frame Data</label>
-                    <textarea class="form-control form-control-sm frame-data-input" rows="6">[[1]]</textarea>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label-sm" for="${textareaId}">Frame Data</label>
+                        <button class="btn btn-sm btn-outline-info" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#pixelArtEditorModal"
+                                data-target-id="${textareaId}">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </button>
+                    </div>
+                    <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
                 </div>
                 <div class="mt-2">
                      <label class="form-label-sm">Duration (seconds)</label>

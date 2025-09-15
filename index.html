@@ -52,7 +52,7 @@
                 <div class="btn-group" role="group" aria-label="Help and settings">
                     <button class="btn btn-outline-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
                     <button class="btn btn-outline-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
-                    <a class="btn btn-outline-secondary" id="contact-btn" href="https://github.com/joseamirandavelez/EffectBuilder/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
+                    <a class="btn btn-outline-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
                         <i class="bi bi-github"></i>
                     </a>
                     <button class="btn btn-outline-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
@@ -222,214 +222,147 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title me-auto" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i>How to Use the Effect Builder</h5>
-                        <a href="#" class="text-body-secondary ms-2" id="help-modal-share-btn" title="Copy share link" data-bs-toggle="tooltip"><i class="bi bi-share-fill fs-5"></i></a>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Welcome to the SRGB Interactive Effect Builder! This guide explains the main features to help you create stunning visual effects.</p>
-
-                        <a href="engine_documentation.html" target="_blank" class="btn btn-outline-info w-100 mb-4"><i class="bi bi-book me-2"></i>View Full Engine Documentation</a>
+                        <p>Welcome to the SRGB Interactive Effect Builder! This guide explains the features to help you create stunning visual effects.</p>
 
                         <div class="ratio ratio-16x9 mb-4">
                             <iframe src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" title="SRGB Interactive Effect Builder" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                         </div>
 
-                        <h6 class="text-info">Layout Overview</h6>
-                        <p>The builder is divided into two main, resizable columns:</p>
-                        <ul>
-                            <li>The <strong>Controls Panel</strong> on the left is where you manage all the objects and global settings for your effect.</li>
-                            <li>The <strong>Canvas Panel</strong> on the right contains the visual editor where you can directly manipulate your objects. The <strong>Toolbar</strong> with alignment, property, and history tools is located just above the canvas.</li>
-                        </ul>
+                        <div class="accordion" id="help-accordion">
 
-                        <h6 class="text-info mt-4">The Controls Panel (Left)</h6>
-                        <p>This is where you manage all the objects and global settings for your effect.</p>
-                        <ul>
-                            <li><strong>General Settings:</strong> This panel contains properties for your entire effect, such as its Title, Description, and the Global Overrides.</li>
-                            <li><strong>Add New Object / Polyline:</strong> Use the buttons at the bottom to add a new shape or start drawing a new polyline on the canvas.</li>
-                            <li><strong>Object Panels:</strong> Each object gets its own collapsible panel, which contains tabbed sections for different property groups (e.g., Geometry, Fill-Animation, Stroke). You can perform several actions here:
-                                <ul>
-                                    <li><strong>Rename:</strong> Click the object's name (e.g., "Object 1") to edit it.</li>
-                                    <li><strong>Reorder:</strong> Click and drag the <i class="bi bi-grip-vertical"></i> icon to change the rendering order (layers). Objects at the top of the list are drawn last (on top).</li>
-                                    <li><strong>Lock/Unlock:</strong> Use the <i class="bi bi-unlock-fill"></i> / <i class="bi bi-lock-fill"></i> button to prevent an object from being accidentally moved or resized on the canvas.</li>
-                                    <li><strong>Duplicate/Delete:</strong> Use the menu button (<i class="bi bi-list"></i>) to access options for duplicating or deleting an object.</li>
-                                </ul>
-                            </li>
-                            <li><strong class="text-warning">Shape-Specific Settings:</strong> The real power of the builder lies in its specialized shapes. When you change an object's <strong>Shape</strong> property, different settings will appear for shapes like Text, Oscilloscope, Strimer, Tetris, Spawner, and more.</li>
-                            <li><strong>Strokes:</strong> You can add an outline to most shapes by enabling it in the <strong>Stroke</strong> tab within an object's panel. You can customize its color, thickness, and even apply its own independent animations.</li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">Using the Polyline Shape</h6>
-                        <p>The Polyline is a powerful tool for creating custom paths and advanced animations. It allows you to draw any shape you can imagine directly on the canvas.</p>
-                        <ul>
-                            <li><strong>Drawing a Polyline:</strong>
-                                <ol>
-                                    <li>Click the <strong><i class="bi bi-pen"></i> Add Polyline</strong> button to activate the drawing tool.</li>
-                                    <li>Click on the canvas to place the starting point (node).</li>
-                                    <li>Continue clicking to add more nodes and define your path.</li>
-                                    <li><strong>Double-click</strong> or press <kbd>Enter</kbd> to finish drawing.</li>
-                                </ol>
-                            </li>
-                            <li><strong>Editing Nodes:</strong> After a polyline is created, you can select it and drag its square node handles to adjust the path. <strong>Double-click</strong> on a line segment to add a new node, or <strong>Alt+Click</strong> on an existing node to delete it.</li>
-                            <li><strong>Curve Styles:</strong> In the Polyline tab, you can change the <code>Curve Style</code>:
-                                <ul>
-                                    <li><code>straight</code>: Connects nodes with sharp, straight lines.</li>
-                                    <li><code>loose-curve</code>: Creates a smooth Bézier curve that is influenced by the nodes.</li>
-                                    <li><code>tight-curve</code>: Creates a smooth spline (Catmull-Rom) that passes directly <em>through</em> every node, perfect for defining precise paths.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Path Animation:</strong> In the <strong>Object</strong> tab, you can enable an animation that travels along your polyline. You can control the animated object's shape, size, speed, and even have multiple objects follow the path with custom spacing.</li>
-                            <li><strong>Along-Path Gradients:</strong> In the <strong>Stroke</strong> tab, you can set the <code>Stroke Scroll Direction</code> to <code>along-path</code> or <code>along-path-reversed</code>. This makes the gradient color flow seamlessly along the entire length of your custom path, from start to end or vice-versa.</li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">The Canvas & Toolbar (Right Panel)</h6>
-                        <p>This is your visual workspace where you can directly manipulate objects using the mouse, keyboard, or the toolbar buttons above the canvas.</p>
-                        <ul>
-                            <li><strong>Select:</strong> Click an object to select it. Hold <kbd>Shift</kbd> or <kbd>Ctrl</kbd> while clicking to select multiple objects. Clicking on an empty area will deselect everything.</li>
-                            <li><strong>Manipulate:</strong> With an object selected, you can:
-                                <ul>
-                                    <li><strong>Drag</strong> to move it.</li>
-                                    <li>Drag the square handles on its bounding box to <strong>resize</strong> it.</li>
-                                    <li>Drag the circular handle at the top to <strong>rotate</strong> it.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Toolbar Actions:</strong>
-                                <ul>
-                                    <li><strong>History:</strong> Use the <i class="bi bi-arrow-counterclockwise"></i> Undo and <i class="bi bi-arrow-clockwise"></i> Redo buttons to step through your recent changes.</li>
-                                    <li><strong>Copy/Paste Properties:</strong> Use <i class="bi bi-clipboard-plus"></i> to copy property groups (like size, color, animation) from one object and <i class="bi bi-clipboard-check"></i> to paste them onto others.</li>
-                                    <li><strong>Alignment:</strong> Align selected objects to the screen edges or center.</li>
-                                    <li><strong>Matching:</strong> With multiple objects selected, match the width, height, or size of the others to the first one you selected.</li>
-                                    <li><strong>Fit to Canvas:</strong> Instantly resize an object to fill the entire canvas area.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Keyboard Shortcuts:</strong>
-                                <ul>
-                                    <li><kbd>Arrow Keys</kbd>: Nudge selected objects by a small amount.</li>
-                                    <li><kbd>Shift</kbd> + <kbd>Arrow Keys</kbd>: Move selected objects in larger steps.</li>
-                                    <li><kbd>Delete</kbd> / <kbd>Backspace</kbd>: Delete all selected objects.</li>
-                                    <li><kbd>Ctrl</kbd>+<kbd>Z</kbd>: Undo the last action.</li>
-                                    <li><kbd>Ctrl</kbd>+<kbd>Y</kbd>: Redo the last undone action.</li>
-                                    <li><kbd>Ctrl</kbd>+<kbd>C</kbd>: Copy properties from the selected object.</li>
-                                    <li><kbd>Ctrl</kbd>+<kbd>V</kbd>: Paste copied properties to the selected object(s).</li>
-                                    <li><kbd>Escape</kbd>: Deselect all objects.</li>
-                                </ul>
-                            </li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">Using Global Overrides</h6>
-                        <p>To quickly apply a consistent style across all objects, you can use the Global Overrides found in the <strong>General Settings</strong> panel. These are located in their own collapsible section.</p>
-                        <ul>
-                            <li>The <strong>Global Color Palette</strong> allows you to set a master <code>Color 1</code> and <code>Color 2</code>. When enabled, it overrides the individual color settings for every object.</li>
-                            <li>The <strong>Global Color Cycle</strong> forces all objects to cycle through the color spectrum. When enabled, it overrides the individual "Cycle Colors" setting on every object and uses the <code>Global Color Cycle Speed</code> slider.</li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">Using Sound Reactivity</h6>
-                        <p>You can make your effects react to audio playing in another browser tab. The shapes will respond to the volume and frequencies (bass, mids, highs) of the sound.</p>
-                        <ol>
-                            <li>Click the <strong>Start Listening</strong> button on the toolbar above the canvas.</li>
-                            <li>Your browser will open a screen sharing prompt. Select the <strong>Tab</strong> option at the top.</li>
-                            <li>Choose the browser tab that is playing music or sound.</li>
-                            <li><strong>Important:</strong> Make sure to check the <strong>"Share tab audio"</strong> checkbox at the bottom of the prompt before clicking "Share".</li>
-                        </ol>
-                        <p>Once enabled for an object, you can select a <code>Reactive Property</code>. Basic shapes can <code>Flash</code>, change <code>Size</code> or <code>Rotation</code>, or turn into a <code>Volume Meter</code>. Specialized shapes like the Spawner have their own unique reactive targets.</p>
-                        <p class="small text-body-secondary">If no audio is connected, shapes will react to a default preview animation for design purposes. <strong>Please note:</strong> This feature is a preview tool, and the audio response may differ slightly from the final effect in SignalRGB's native audio engine.</p>
-
-                        <h6 class="text-info mt-4">Using Sensor Reactivity</h6>
-                        <p>Create animations that react to real-time hardware data like CPU load or temperature. To use this, select an object, go to its <strong>Sensor</strong> tab, and enable reactivity.</p>
-                        <ul>
-                            <li><strong>Sensor Meter:</strong> Changes the object into a vertical bar that fills up based on a sensor's current value (from its minimum to maximum). You can also have it display the numeric value as text.</li>
-                            <li><strong>Time Plot:</strong> Turns the object into a real-time line graph showing the recent history of a sensor's value. You can customize the time scale and fill the area under the curve.</li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">Using the Strimer Shape</h6>
-                        <p>This shape is designed to simulate the animated lighting effects of PC cable strimers. It features multiple blocks of light moving vertically within columns.</p>
-                        <ul>
-                            <li><strong>Animation Style:</strong>
-                                <ul>
-                                    <li><code>Bounce</code> / <code>Loop</code>: Blocks move up and down, either rebounding at the edges or wrapping around.</li>
-                                    <li><code>Cascade</code>: Creates a continuous "waterfall" of light as blocks spawn sequentially.</li>
-                                    <li><code>Audio Meter</code>: Turns the columns into a real-time audio visualizer.</li>
-                                    <li><code>Snake</code>: Creates a single "snake" of light that travels in a zig-zag pattern.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Pulse Effect (Modifier):</strong>
-                                <ul>
-                                    <li><code>Pulse Speed</code>: This slider makes the blocks gently fade their brightness in and out, creating a "breathing" effect that can be layered on top of any other animation style.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Movement Controls:</strong>
-                                <ul>
-                                    <li><code>Animation Speed</code>: Controls the speed of block movement, independent of the fill/gradient animation.</li>
-                                    <li><code>Direction</code>: Set blocks to move <code>Up</code>, <code>Down</code>, or <code>Random</code>.</li>
-                                    <li><code>Easing</code>: Controls the acceleration of the blocks for more dynamic motion.</li>
-                                </ul>
-                            </li>
-                        </ul>
-
-                        <h6 class="text-info mt-4">Using the Spawner Shape</h6>
-                        <p>The Spawner is a powerful and versatile particle emitter. You can control both how particles are spawned and what they look like, allowing for effects from simple snowfall to complex digital rain.</p>
-                        <p>Its controls are organized into several tabs:</p>
-                        <ul>
-                            <li>
-                                <strong>Spawner Tab:</strong> Controls the <strong>emitter's</strong> behavior.
-                                <ul>
-                                    <li><code>Emitter Style</code>: Sets the spawning pattern, like an <code>explode</code> from the center, a falling <code>rain</code>, a rising <code>fountain</code>, or a sideways <code>flow</code>.</li>
-                                    <li><code>Initial Speed</code> & <code>Initial Speed Variance</code>: Control the starting velocity of particles. Variance adds randomness for a more natural look.</li>
-                                    <li><code>Gravity</code>: Applies a constant downward (or upward, if negative) force to particles after they spawn.</li>
-                                    <li>Other controls let you manage the number of particles, their creation rate, and how long they live.</li>
-                                </ul>
-                            </li>
-                            <li>
-                                <strong>Particle Tab:</strong> Controls the <strong>appearance and special properties</strong> of the individual particles.
-                                <ul>
-                                    <li><strong>Particle Shape:</strong> You can choose from standard shapes like <code>circle</code> or <code>star</code>, or use special types:
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="help-heading-1">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-1" aria-expanded="true" aria-controls="help-collapse-1">
+                                        <i class="bi bi-layout-split me-2"></i> Interface Overview
+                                    </button>
+                                </h2>
+                                <div id="help-collapse-1" class="accordion-collapse collapse show" aria-labelledby="help-heading-1">
+                                    <div class="accordion-body">
+                                        <p>The builder is divided into two main panels:</p>
                                         <ul>
-                                            <li><code>matrix</code>: Turns particles into falling trails of characters. You can customize the <code>Character Set</code>, the <code>Trail Length</code>, and add a <code>Glow</code> effect. The lead character's color is set by <strong>Fill Color 1</strong>, while the trail uses <strong>Fill Color 2</strong> (for solid fills) or the full gradient for other fill types.</li>
-                                            <li><code>random</code>: Each new particle will be a random shape from all other available types.</li>
-                                            <li><code>custom</code>: Allows you to use your own SVG path data for the particle shape.</li>
+                                            <li>The <strong>Controls Panel</strong> on the left is where you manage all the objects and global settings for your effect.</li>
+                                            <li>The <strong>Canvas Panel</strong> on the right contains the visual editor and the main <strong>Toolbar</strong>.</li>
                                         </ul>
-                                    </li>
-                                    <li><strong>Trail Effect (for any shape):</strong>
+                                        <hr>
+                                        <h6>Controls Panel (Left)</h6>
+                                        <p>Each object gets its own collapsible panel containing tabbed sections for its properties (e.g., Geometry, Fill-Animation, Stroke). You can perform several actions on these panels:</p>
                                         <ul>
-                                            <li>You can add a fading trail to <strong>any</strong> particle type by using the <strong>Trail</strong> settings.</li>
-                                            <li><code>Enable Trail</code>: Toggles the effect on or off.</li>
-                                            <li><code>Trail Length</code>: Controls the number of copies in the trail.</li>
-                                            <li><code>Leader Color</code>: Sets the color of the main particle, while the trail fades into the spawner's main fill color. This allows you to create effects like a trail of fading stars or circles.</li>
+                                            <li><strong>Rename:</strong> Click the object's name (e.g., "Object 1") to edit it.</li>
+                                            <li><strong>Reorder:</strong> Click and drag the <i class="bi bi-grip-vertical"></i> icon to change the rendering order (layering).</li>
+                                            <li><strong>Lock/Unlock:</strong> Use the <i class="bi bi-unlock-fill"></i> / <i class="bi bi-lock-fill"></i> button to prevent an object from being moved on the canvas.</li>
+                                            <li><strong>Duplicate/Delete:</strong> Use the menu button (<i class="bi bi-list"></i>) to access options for duplicating or deleting an object.</li>
                                         </ul>
-                                    </li>
-                                    <li><strong>Other Properties:</strong> You can also control the particle's <code>Size</code> (with randomness) and <code>Rotation Speed</code> (with variance).</li>
-                                </ul>
-                            </li>
-                        </ul>
+                                        <p>Use the <strong>Global Overrides</strong> in the "General Settings" panel to apply a master color palette or color cycle effect to all objects at once.</p>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="help-heading-2">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-2" aria-expanded="false" aria-controls="help-collapse-2">
+                                        <i class="bi bi-easel2-fill me-2"></i> The Canvas & Toolbar
+                                    </button>
+                                </h2>
+                                <div id="help-collapse-2" class="accordion-collapse collapse" aria-labelledby="help-heading-2">
+                                    <div class="accordion-body">
+                                        <h6>Canvas Interaction</h6>
+                                        <ul>
+                                            <li><strong>Select:</strong> Click an object to select it. Hold <kbd>Shift</kbd> or <kbd>Ctrl</kbd> to select multiple objects.</li>
+                                            <li><strong>Manipulate:</strong> Drag a selected object to move it, drag its square handles to resize, or drag its circular handle to rotate.</li>
+                                            <li><strong>Snapping:</strong> Objects will automatically snap to the edges and centers of other objects and the canvas for easy alignment.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Toolbar</h6>
+                                        <p>The toolbar above the canvas provides quick access to powerful tools:</p>
+                                        <ul>
+                                            <li><strong>History (<i class="bi bi-arrow-counterclockwise"></i> / <i class="bi bi-arrow-clockwise"></i>):</strong> Undo and Redo your recent changes.</li>
+                                            <li><strong>Copy/Paste Properties (<i class="bi bi-clipboard-plus"></i> / <i class="bi bi-clipboard-check"></i>):</strong> Copy property groups (like size, color, animation) from one object and paste them onto others.</li>
+                                            <li><strong>Alignment & Matching:</strong> With object(s) selected, you can align them to the screen, match their sizes, or fit them to the canvas instantly.</li>
+                                            <li><strong>Constrain to Canvas:</strong> Toggle whether objects are allowed to be moved or resized outside the canvas boundaries.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Keyboard Shortcuts</h6>
+                                        <ul>
+                                            <li><kbd>Arrow Keys</kbd>: Nudge selected objects by a small amount.</li>
+                                            <li><kbd>Shift</kbd> + <kbd>Arrow Keys</kbd>: Nudge in larger steps.</li>
+                                            <li><kbd>Delete</kbd> / <kbd>Backspace</kbd>: Delete selected objects.</li>
+                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>Z</kbd> / <kbd>Y</kbd>: Undo and Redo.</li>
+                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>C</kbd> / <kbd>V</kbd>: Copy/Paste properties.</li>
+                                            <li><kbd>Escape</kbd>: Deselect all objects.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <h6 class="text-info mt-4">Using the Tetris Shape</h6>
-                        <p>This shape creates an animation of falling and stacking blocks that fill the object's bounds.</p>
-                        <ul>
-                            <li><strong>Drop Physics (Animation Style):</strong>
-                                <ul>
-                                    <li><code>Gravity</code> / <code>Linear</code>: Blocks fall one by one with either realistic or constant speed.</li>
-                                    <li><code>Gravity-Fade</code>: Blocks fall with gravity and then fade out after settling.</li>
-                                    <li><code>Fade-in-Stack</code>: Blocks fade in sequentially from the bottom up, then fade out all at once.</li>
-                                    <li><code>Fade-in-Out</code>: Blocks fade in from the bottom, hold for a set duration, and then fade out from the bottom.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Controls:</strong>
-                                <ul>
-                                    <li><code>Drop Speed</code>: Controls the speed of falling or fading blocks.</li>
-                                    <li><code>Bounce Factor</code>: For <code>Gravity</code> physics, controls how much blocks bounce on impact.</li>
-                                    <li><code>Hold Time</code>: For the <code>Fade-in-Out</code> animation, sets how long the fully stacked blocks remain visible before starting to fade out.</li>
-                                </ul>
-                            </li>
-                        </ul>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="help-heading-3">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-3" aria-expanded="false" aria-controls="help-collapse-3">
+                                        <i class="bi bi-stars me-2"></i> Advanced Shapes & Tools
+                                    </button>
+                                </h2>
+                                <div id="help-collapse-3" class="accordion-collapse collapse" aria-labelledby="help-heading-3">
+                                    <div class="accordion-body">
+                                        <p>The real power of the builder lies in its specialized shapes and tools. When you change an object's <strong>Shape</strong> property, different settings will appear.</p>
+                                        <h6>The Polyline Tool</h6>
+                                        <ul>
+                                            <li><strong>Drawing:</strong> Click the <strong><i class="bi bi-pen"></i> Add Polyline</strong> button. Click on the canvas to place points, then <strong>Double-click</strong> or press <kbd>Enter</kbd> to finish.</li>
+                                            <li><strong>Editing Nodes:</strong> After creating a polyline, select it and drag its nodes. <strong>Double-click</strong> a line segment to add a node, or <strong>Alt+Click</strong> a node to delete it.</li>
+                                            <li><strong>Features:</strong> Use a polyline as a path for an animation or apply a gradient that flows along the length of the path.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>The Pixel Art Editor</h6>
+                                        <ul>
+                                            <li><strong>Editing:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-pencil-square"></i> Edit</kbd> button on any frame to open the built-in editor.</li>
+                                            <li><strong>Tools:</strong> Use the editor's tools to paint, <kbd><i class="bi bi-paint-bucket"></i> Fill</kbd> areas, or <kbd><i class="bi bi-arrow-left-right"></i></kbd> / <kbd><i class="bi bi-arrow-down-up"></i></kbd> flip your art.</li>
+                                            <li><strong>Special Colors:</strong> Use the editor's palette to paint with special values that are interpreted by the renderer, like forcing a pixel to be opaque White (1.0), the object's Color 1 (0.3), or Color 2 (0.4).</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Other Shapes</h6>
+                                        <p>Explore other shapes like the <strong>Spawner</strong> (particle system), <strong>Strimer</strong> (cable effects), <strong>Oscilloscope</strong>, and <strong>Tetris</strong>, each with their own unique set of properties to discover.</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <h6 class="text-info mt-4">Exporting and Installing Your Effect</h6>
-                        <p>When you click the <strong><i class="bi bi-download me-1"></i> Export</strong> button, a dialog will appear with several options. One key option is <strong>Minimize Properties for Export</strong>. Checking this box will optimize the exported file by only including essential or shape-relevant controls (like colors and speeds) in the SignalRGB UI. All other properties will be "baked in" to the effect as fixed values. This is great for sharing a clean, easy-to-use version of your effect with others.</p>
-                        <ul class="list-unstyled">
-                            <li>1. Click <strong>Download .zip File</strong>.</li>
-                            <li>2. Find the downloaded `.zip` file and extract its contents into your SignalRGB effects folder, which is typically located at:<br><code>Documents\WhirlwindFX\Effects</code></li>
-                            <li>3. For better organization, it is recommended to place the effect files inside a new subfolder for your effect (e.g., <code>Documents\WhirlwindFX\Effects\MyEffect</code>).</li>
-                            <li>4. Restart the SignalRGB application. Your new effect will now appear in the effects list.</li>
-                        </ul>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="help-heading-4">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-4" aria-expanded="false" aria-controls="help-collapse-4">
+                                        <i class="bi bi-soundwave me-2"></i> Audio & Sensor Reactivity
+                                    </button>
+                                </h2>
+                                <div id="help-collapse-4" class="accordion-collapse collapse" aria-labelledby="help-heading-4">
+                                    <div class="accordion-body">
+                                        <p>Make your effects dynamic by enabling reactivity in an object's <strong>Audio</strong> or <strong>Sensor</strong> tabs.</p>
+                                        <ul>
+                                            <li><strong>Audio Reactivity:</strong> To preview, click the <strong>Start Listening</strong> button on the toolbar and share the audio from another browser tab.</li>
+                                            <li><strong>Sensor Reactivity:</strong> Create effects that respond to real-time data like CPU load. You can turn an object into a <strong>Sensor Meter</strong> (a filling bar) or a <strong>Time Plot</strong> (a real-time graph).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="help-heading-5">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-5" aria-expanded="false" aria-controls="help-collapse-5">
+                                        <i class="bi bi-box-arrow-up-right me-2"></i> Saving, Loading & Exporting
+                                    </button>
+                                </h2>
+                                <div id="help-collapse-5" class="accordion-collapse collapse" aria-labelledby="help-heading-5">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><kbd><i class="bi bi-cloud-upload"></i> Save</kbd>: Saves your current project to your "My Projects" gallery in the cloud.</li>
+                                            <li><kbd><i class="bi bi-folder2-open"></i> Load</kbd>: Opens the gallery where you can browse "My Projects" or the "Community Gallery".</li>
+                                            <li><kbd><i class="bi bi-upload"></i> Import</kbd>: Load an effect from a `.html` file or by pasting its code.</li>
+                                            <li><kbd><i class="bi bi-download"></i> Export</kbd>: Generates a <strong>.zip file</strong> containing your effect and a thumbnail, ready to be imported into SignalRGB.</li>
+                                            <li><kbd><i class="bi bi-share-fill"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
+                                            <li><kbd><i class="bi bi-link-45deg"></i> Generate SRGB Link</kbd>: Creates a special link to apply your effect's settings to an *already installed* effect in SignalRGB.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
@@ -442,42 +375,25 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <div class="d-flex align-items-center">
-                            <h5 class="modal-title" id="aboutModalLabel"><i class="bi bi-info-circle me-2"></i>About This Tool</h5>
-                            <a href="./?show=about" class="text-body-secondary ms-2" id="about-modal-share-btn" title="Permalink" data-bs-toggle="tooltip"><i class="bi bi-share-fill fs-5"></i></a>
-                        </div>
+                        <h5 class="modal-title" id="aboutModalLabel">About Effect Builder</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <h6>SRGB Interactive Effect Builder</h6>
-                        <img src="logo.png" class="img-fluid rounded mb-3" alt="A screenshot of the Interactive Effect Builder UI, showing a complex lighting effect being designed on a canvas with control panels on the side.">
-                        <p>This tool is designed to help developers create, share, and customize complex visual effects for <a href="https://signalrgb.com/" target="_blank" rel="noopener noreferrer">SignalRGB</a>. It provides a simple graphical interface for building effects and can save them to the cloud, share them with others via a link, and export them as standalone files for use with the <a href="https://github.com/joseamirandavelez/EffectClass" target="_blank" rel="noopener">EffectClass</a> template.</p>
+                        <p><strong>SRGB Effect Builder</strong> is a web-based visual tool designed to simplify the creation of complex animated effects for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
+                        <p>Built by José Miranda, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Version:</strong> 2.0 (September 2025)
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
+                            </li>
+                        </ul>
+                        <h6 class="mt-4">Credits & Inspirations</h6>
+                        <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
 
-                        <p class="small text-body-secondary mt-4">
-                            <strong>Disclaimer:</strong> This tool is an independent project and is not affiliated with, endorsed by, or in any way officially connected with the <a href="https://signalrgb.com/" target="_blank" rel="noopener noreferrer">SignalRGB</a> software or its respective owners.
-                        </p>
-                        <div class="small text-body-secondary mt-4">
-                            <strong>Acknowledgements:</strong> This website uses the following open-source libraries:
-                            <ul>
-                                <li><a href="https://getbootstrap.com/" target="_blank" rel="noopener">Bootstrap</a></li>
-                                <li><a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener">Bootstrap Icons</a></li>
-                                <li><a href="https://github.com/SortableJS/Sortable" target="_blank" rel="noopener">SortableJS</a></li>
-                                <li><a href="https://stuk.github.io/jszip/" target="_blank" rel="noopener">JSZip</a></li>
-                                <li><a href="https://split.js.org/" target="_blank" rel="noopener">Split.js</a></li>
-                            </ul>
-                        </div>
-                        <hr>
-
-                        <p id="about-share-url-container" class="small d-none"></p>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <p class="mb-0"><strong>Developer:</strong> José Miranda</p>
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal">Terms of Usage</a>
-                        </div>
                     </div>
-                    <div class="modal-footer justify-content-between">
-                        <span class="small text-body-secondary" id="last-updated-span">
-                        </span>
+                    <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
@@ -673,6 +589,59 @@
                             <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn">Copy to Clipboard</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="pixelArtEditorModal" tabindex="-1" aria-labelledby="pixelArtEditorModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pixelArtEditorModalLabel">Pixel Art Editor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label for="pixel-editor-width" class="form-label-sm">Grid Width</label>
+                                <input type="number" class="form-control" id="pixel-editor-width" value="16" min="1" max="64">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pixel-editor-height" class="form-label-sm">Grid Height</label>
+                                <input type="number" class="form-control" id="pixel-editor-height" value="16" min="1" max="64">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-secondary w-100" id="pixel-editor-resize-btn">Apply New Size</button>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <strong class="me-3">Tools:</strong>
+                                <div class="btn-group" role="group" id="pixel-editor-tools">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-fill-btn" title="Fill Area"><i class="bi bi-paint-bucket"></i> Fill</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-mirror-h-btn" title="Flip Horizontal"><i class="bi bi-arrow-left-right"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-mirror-v-btn" title="Flip Vertical"><i class="bi bi-arrow-down-up"></i></button>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <strong class="me-3">Paint:</strong>
+                                <div class="btn-group" role="group" id="pixel-editor-palette">
+                                    <button type="button" class="btn btn-sm btn-outline-light active" data-value="0.7" style="background: repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px;" title="Use object's main fill style (value: 0.7)">Selected Fill</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="1.0" style="background-color: #FFF; color: #000;" title="White (value: 1.0)">White</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0.3" id="pixel-editor-color1-btn" title="Color 1 (value: 0.3)">Color 1</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0.4" id="pixel-editor-color2-btn" title="Color 2 (value: 0.4)">Color 2</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0" style="background-color: #000; color: #FFF;" title="Black (value: 0)">Black</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="pixel-editor-grid-container" class="bg-dark p-1" style="cursor: pointer; user-select: none;">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="pixel-editor-save-btn">Apply Changes</button>
+                    </div>
                 </div>
             </div>
         </div>
