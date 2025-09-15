@@ -91,6 +91,7 @@
                         <a class="nav-link" href="#shape-visualizer">Audio Visualizer</a>
                         <a class="nav-link" href="#shape-tetris">Tetris</a>
                         <a class="nav-link" href="#shape-pixelart">Pixel Art</a>
+                        <a class="nav-link" href="#shape-polyline">Polyline</a>
                         <a class="nav-link" href="#shape-strimer">Strimer</a>
                         <a class="nav-link" href="#shape-spawner">Spawner</a>
                     </div>
@@ -119,6 +120,8 @@
                                     <tr><td><code>enablePalette</code></td><td>Enable Global Color Palette</td><td><code>boolean</code></td><td>If true, overrides the individual <code>Color 1</code> and <code>Color 2</code> settings for all objects with the global palette colors defined below.</td></tr>
                                     <tr><td><code>paletteColor1</code></td><td>Palette Color 1</td><td><code>color</code></td><td>The global color to be used for all <code>Color 1</code> properties when the palette is enabled.</td></tr>
                                     <tr><td><code>paletteColor2</code></td><td>Palette Color 2</td><td><code>color</code></td><td>The global color to be used for all <code>Color 2</code> properties when the palette is enabled.</td></tr>
+                                    <tr><td><code>enableGlobalCycle</code></td><td>Enable Global Color Cycle</td><td><code>boolean</code></td><td>If true, forces all objects to cycle through the color spectrum, overriding their individual cycle settings.</td></tr>
+                                    <tr><td><code>globalCycleSpeed</code></td><td>Global Color Cycle Speed</td><td><code>number</code></td><td>Sets a master speed for the global color cycle effect.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -157,11 +160,10 @@
                                         <td>Determines the fill style.
                                             <ul>
                                                 <li><code>solid</code>: A single, solid color using <code>gradColor1</code>.</li>
-                                                <li><code>linear</code>: A linear gradient between <code>gradColor1</code> and <code>gradColor2</code>.</li>
-                                                <li><code>radial</code>: A circular gradient between <code>gradColor1</code> and <code>gradColor2</code>.</li>
+                                                <li><code>linear</code> / <code>radial</code> / <code>conic</code>: A gradient between <code>gradColor1</code> and <code>gradColor2</code>.</li>
                                                 <li><code>alternating</code>: For multi-part objects, alternates between <code>gradColor1</code> and <code>gradColor2</code>.</li>
                                                 <li><code>random</code>: For multi-part objects, randomly assigns either <code>gradColor1</code> or <code>gradColor2</code>.</li>
-                                                <li><code>rainbow</code> / <code>rainbow-radial</code>: An animated, cycling rainbow gradient.</li>
+                                                <li><code>rainbow</code> / <code>rainbow-radial</code> / <code>rainbow-conic</code>: An animated, cycling rainbow gradient.</li>
                                             </ul>
                                         </td>
                                     </tr>
@@ -245,6 +247,9 @@
                                     <tr><td><code>sensorTarget</code></td><td>Reactive Property</td><td><code>combobox</code></td><td>The method used to visualize the sensor data. <code>Sensor Meter</code> creates a fill bar, while <code>Time Plot</code> creates a historical line graph.</td></tr>
                                     <tr><td><code>userSensor</code></td><td>Sensor</td><td><code>sensor</code></td><td>A dropdown list of available system sensors to monitor.</td></tr>
                                     <tr><td><code>sensorValueSource</code></td><td>Sensor Value</td><td><code>combobox</code></td><td>The specific data point to use from the sensor (its current <code>value</code>, historical <code>min</code>, or historical <code>max</code>).</td></tr>
+                                    <tr><td><code>sensorColorMode</code></td><td>Color Mode</td><td><code>combobox</code></td><td>For <code>Sensor Meter</code>, controls how the fill bar is colored. <code>None</code> uses the object's main fill. <code>Thresholds</code> uses green/orange/red. <code>Value-Based Gradient</code> blends from green to red.</td></tr>
+                                    <tr><td><code>sensorMidThreshold</code></td><td>Mid Threshold</td><td><code>number</code></td><td>For <code>Thresholds</code> mode, the value at which the color changes to orange.</td></tr>
+                                    <tr><td><code>sensorMaxThreshold</code></td><td>Max Threshold</td><td><code>number</code></td><td>For <code>Thresholds</code> mode, the value at which the color changes to red.</td></tr>
                                     <tr><td><code>timePlotLineThickness</code></td><td>Line Thickness</td><td><code>number</code></td><td>For <code>Time Plot</code>, defines the thickness of the graph line.</td></tr>
                                     <tr><td><code>timePlotFillArea</code></td><td>Fill Area</td><td><code>boolean</code></td><td>For <code>Time Plot</code>, if true, fills the area beneath the graph line with the object's selected fill style.</td></tr>
                                     <tr><td><code>sensorMeterShowValue</code></td><td>Show Value</td><td><code>boolean</code></td><td>For <code>Sensor Meter</code>, displays the current sensor value as text.</td></tr>
@@ -257,9 +262,9 @@
                 </div>
 
                 <div id="shapes" class="card section-card mb-4">
-                    <div class="card-header"><h2 class="h3 mb-0">Shape Properties</h2></div>
+                    <div class="card-header"><h2 class="h3 mb-0">Shape-Specific Properties</h2></div>
                     <div class="card-body">
-                        <p class="text-body-secondary">This section provides a complete, all-in-one reference for each shape. Each table lists all applicable general properties followed by the shape's unique properties.</p>
+                        <p class="text-body-secondary">This section provides a complete, all-in-one reference for each shape. Each table lists the shape's unique properties.</p>
                         
                         <h3 id="shape-rectangle" class="mt-4">Rectangle</h3>
                         <p>A standard rectangle that can be subdivided into a grid for creating complex, phased animations.</p>
@@ -280,8 +285,8 @@
                             <table class="table table-striped table-bordered">
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
-                                    <tr><td><code>points</code></td><td>Star Points</td><td><code>number</code></td><td>The number of points on the star. Range: <code>3</code> to <code>50</code>.</td></tr>
-                                    <tr><td><code>starInnerRadius</code></td><td>Star Inner Radius %</td><td><code>number</code></td><td>Defines the radius of the inner vertices as a percentage of the outer radius, controlling how sharp the points are. Range: <code>1</code> to <code>99</code>.</td></tr>
+                                    <tr><td><code>points</code></td><td>Points</td><td><code>number</code></td><td>The number of points on the star. Range: <code>3</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>starInnerRadius</code></td><td>Inner Radius %</td><td><code>number</code></td><td>Defines the radius of the inner vertices as a percentage of the outer radius, controlling how sharp the points are. Range: <code>1</code> to <code>99</code>.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -292,7 +297,7 @@
                             <table class="table table-striped table-bordered">
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
-                                    <tr><td><code>sides</code></td><td>Polygon Sides</td><td><code>number</code></td><td>The number of equal sides for the polygon (e.g., 3 for a triangle, 8 for an octagon). Range: <code>3</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>sides</code></td><td>Sides</td><td><code>number</code></td><td>The number of equal sides for the polygon (e.g., 3 for a triangle, 8 for an octagon). Range: <code>3</code> to <code>50</code>.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -305,7 +310,7 @@
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
                                     <tr><td><code>innerDiameter</code></td><td>Inner Diameter</td><td><code>number</code></td><td>The diameter of the empty space inside the ring, creating the doughnut shape. Range: <code>1</code> to <code>width-2</code>.</td></tr>
-                                    <tr><td><code>numberOfSegments</code></td><td>Number of Segments</td><td><code>number</code></td><td>The total number of individual segments that compose the ring. Range: <code>1</code> to <code>50</code>.</td></tr>
+                                    <tr><td><code>numberOfSegments</code></td><td>Segments</td><td><code>number</code></td><td>The total number of individual segments that compose the ring. Range: <code>1</code> to <code>50</code>.</td></tr>
                                     <tr><td><code>angularWidth</code></td><td>Segment Angle</td><td><code>number</code></td><td>The arc length of each individual segment, measured in degrees. Range: <code>1</code> to <code>360</code>.</td></tr>
                                 </tbody>
                             </table>
@@ -318,15 +323,14 @@
                              <table class="table table-striped table-bordered">
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
-                                    <tr><td><code>text</code></td><td>Display Text</td><td><code>textfield</code></td><td>The string of text to be rendered.</td></tr>
+                                    <tr><td><code>text</code></td><td>Text</td><td><code>textfield</code></td><td>The string of text to be rendered.</td></tr>
                                     <tr><td><code>fontSize</code></td><td>Font Size</td><td><code>number</code></td><td>Controls the scale of the pixel font. Range: <code>2</code> to <code>100</code>.</td></tr>
-                                    <tr><td><code>pixelFont</code></td><td>Font Style</td><td><code>combobox</code></td><td>Selects between the available <code>small</code> (3x4) or <code>large</code> (5x5) pixel fonts.</td></tr>
-                                    <tr><td><code>textAlign</code></td><td>Text Align</td><td><code>combobox</code></td><td>Horizontal alignment of the text within its bounding box (<code>left</code>, <code>center</code>, <code>right</code>).</td></tr>
-                                    <tr><td><code>textAnimation</code></td><td>Text Animation</td><td><code>combobox</code></td><td>Applies an animation effect to the text (<code>marquee</code>, <code>wave</code>, <code>typewriter</code>).</td></tr>
-                                    <tr><td><code>textAnimationSpeed</code></td><td>Text Animation Speed</td><td><code>number</code></td><td>Controls the speed of the selected text animation. Range: <code>1</code> to <code>100</code>.</td></tr>
-                                    <tr><td><code>showTime</code></td><td>Show System Time</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system time.</td></tr>
-                                    <tr><td><code>showDate</code></td><td>Show System Date</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system date.</td></tr>
-                                    <tr><td><code>autoWidth</code></td><td>Auto-Width</td><td><code>boolean</code></td><td>If true, the object's <code>width</code> property is automatically adjusted to fit the text content.</td></tr>
+                                    <tr><td><code>pixelFont</code></td><td>Pixel Font Style</td><td><code>combobox</code></td><td>Selects between the available <code>small</code> (3x4) or <code>large</code> (5x5) pixel fonts.</td></tr>
+                                    <tr><td><code>textAlign</code></td><td>Justification</td><td><code>combobox</code></td><td>Horizontal alignment of the text within its bounding box (<code>left</code>, <code>center</code>, <code>right</code>).</td></tr>
+                                    <tr><td><code>textAnimation</code></td><td>Text Animation</td><td><code>combobox</code></td><td>Applies an animation effect to the text (<code>none</code>, <code>marquee</code>, <code>wave</code>, <code>typewriter</code>).</td></tr>
+                                    <tr><td><code>textAnimationSpeed</code></td><td>Text Scroll Speed</td><td><code>number</code></td><td>Controls the speed of the selected text animation. Range: <code>1</code> to <code>100</code>.</td></tr>
+                                    <tr><td><code>showTime</code></td><td>Show Current Time</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system time.</td></tr>
+                                    <tr><td><code>showDate</code></td><td>Show Current Date</td><td><code>boolean</code></td><td>If true, overrides the <code>text</code> property to display the current system date.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -345,20 +349,20 @@
 
                         <h3 id="shape-oscilloscope" class="mt-4">Oscilloscope</h3>
                         <p>Generates a continuous, animated waveform.</p>
-                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a></div>
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered">
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
                                     <tr><td><code>lineWidth</code></td><td>Line Width</td><td><code>number</code></td><td>The thickness of the drawn waveform. Range: <code>1</code> to <code>20</code>.</td></tr>
-                                    <tr><td><code>waveType</code></td><td>Wave Type</td><td><code>combobox</code></td><td>The mathematical shape of the wave (e.g., <code>sine</code>, <code>square</code>).</td></tr>
+                                    <tr><td><code>waveType</code></td><td>Wave Type</td><td><code>combobox</code></td><td>The mathematical shape of the wave (e.g., <code>sine</code>, <code>square</code>, <code>sawtooth</code>).</td></tr>
                                     <tr><td><code>frequency</code></td><td>Frequency</td><td><code>number</code></td><td>Controls the number of peaks and troughs visible within the shape's bounds. Range: <code>1</code> to <code>50</code>.</td></tr>
                                     <tr><td><code>pulseDepth</code></td><td>Pulse Depth %</td><td><code>number</code></td><td>Controls the amplitude (height) of the wave. Range: <code>0</code> to <code>100</code>.</td></tr>
                                     <tr><td><code>oscDisplayMode</code></td><td>Display Mode</td><td><code>combobox</code></td><td>The layout of the animation (<code>linear</code>, <code>radial</code>, <code>seismic</code>).</td></tr>
                                     <tr><td><code>fillShape</code></td><td>Fill Shape</td><td><code>boolean</code></td><td>If true, fills the area under/inside the wave.</td></tr>
                                     <tr><td><code>enableWaveAnimation</code></td><td>Enable Wave Animation</td><td><code>boolean</code></td><td>Toggles the movement of the wave.</td></tr>
                                     <tr><td><code>oscAnimationSpeed</code></td><td>Wave Animation Speed</td><td><code>number</code></td><td>Controls the speed of the wave's movement, independent of the fill animation speed. Range: <code>0</code> to <code>100</code>.</td></tr>
-                                    <tr><td><code>waveStyle</code></td><td>Seismic Wave Style</td><td><code>combobox</code></td><td>For <code>seismic</code> mode, the style of the expanding rings.</td></tr>
+                                    <tr><td><code>waveStyle</code></td><td>Seismic Wave Style</td><td><code>combobox</code></td><td>For <code>seismic</code> mode, the style of the expanding rings (<code>wavy</code>, <code>round</code>).</td></tr>
                                     <tr><td><code>waveCount</code></td><td>Seismic Wave Count</td><td><code>number</code></td><td>For <code>seismic</code> mode, the number of concentric rings to display. Range: <code>1</code> to <code>20</code>.</td></tr>
                                 </tbody>
                             </table>
@@ -373,17 +377,18 @@
                                 <tbody>
                                     <tr><td><code>vizLayout</code></td><td>Layout</td><td><code>combobox</code></td><td>The overall arrangement: <code>Linear</code> or <code>Circular</code>.</td></tr>
                                     <tr><td><code>vizDrawStyle</code></td><td>Draw Style</td><td><code>combobox</code></td><td>How frequencies are rendered: <code>Bars</code>, <code>Line</code>, or <code>Area</code>.</td></tr>
-                                    <tr><td><code>vizBarCount</code></td><td>Bar Count</td><td><code>number</code></td><td>The number of frequency bands to display. Range: <code>2</code> to <code>200</code>.</td></tr>
+                                    <tr><td><code>vizBarCount</code></td><td>Bar Count</td><td><code>number</code></td><td>The number of frequency bands to display. Range: <code>1</code> to <code>128</code>.</td></tr>
                                     <tr><td><code>vizBarSpacing</code></td><td>Bar Spacing</td><td><code>number</code></td><td>The space between each bar. Range: <code>0</code> to <code>20</code>.</td></tr>
                                     <tr><td><code>vizStyle</code></td><td>Bar Origin</td><td><code>combobox</code></td><td>For <code>Linear</code> layout, determines if bars grow from the <code>bottom</code>, <code>top</code>, or expand from the <code>center</code>.</td></tr>
                                     <tr><td><code>vizSmoothing</code></td><td>Smoothing</td><td><code>number</code></td><td>Applies smoothing to the bar height changes for less jittery movement. Range: <code>0</code> to <code>99</code>.</td></tr>
                                     <tr><td><code>vizInnerRadius</code></td><td>Inner Radius %</td><td><code>number</code></td><td>For <code>Circular</code> layout, defines the size of the empty central hole. Range: <code>0</code> to <code>95</code>.</td></tr>
                                     <tr><td><code>vizLineWidth</code></td><td>Line Width</td><td><code>number</code></td><td>For <code>Line</code> and <code>Area</code> styles, defines the thickness of the graph line. Range: <code>1</code> to <code>20</code>.</td></tr>
                                     <tr><td><code>vizAutoScale</code></td><td>Auto-Scale Height</td><td><code>boolean</code></td><td>If true, the loudest frequency always reaches the maximum height.</td></tr>
-                                    <tr><td><code>vizMaxBarHeight</code></td><td>Max Bar Height %</td><td><code>number</code></td><td>When <code>vizAutoScale</code> is false, this sets a hard limit on bar height. Range: <code>5</code> to <code>100</code>.</td></tr>
                                     <tr><td><code>vizUseSegments</code></td><td>Use LED Segments</td><td><code>boolean</code></td><td>If true, renders bars as discrete, stacked segments.</td></tr>
                                     <tr><td><code>vizSegmentCount</code></td><td>Segment Count</td><td><code>number</code></td><td>The number of segments to divide each bar into. Range: <code>2</code> to <code>64</code>.</td></tr>
                                     <tr><td><code>vizSegmentSpacing</code></td><td>Segment Spacing</td><td><code>number</code></td><td>The spacing between each segment in a bar. Range: <code>0</code> to <code>10</code>.</td></tr>
+                                    <tr><td><code>vizBassLevel</code></td><td>Bass Level %</td><td><code>number</code></td><td>A multiplier to boost or reduce the bass frequencies. <code>100</code> is normal.</td></tr>
+                                    <tr><td><code>vizTrebleBoost</code></td><td>Treble Boost %</td><td><code>number</code></td><td>A multiplier to boost or reduce the treble frequencies. <code>100</code> is normal.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -405,17 +410,56 @@
                         </div>
 
                         <h3 id="shape-pixelart" class="mt-5">Pixel Art</h3>
-                        <p>Renders a static image based on a 2D array of alpha values provided as a JSON string.</p>
+                        <p>Renders an animated sprite from a series of frames. Each pixel's color is determined by a numeric value.</p>
                         <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a>, <a href="#audio">Audio Reactivity</a>, <a href="#sensor">Sensor Reactivity</a></div>
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered">
                                 <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
                                 <tbody>
-                                    <tr><td><code>pixelArtData</code></td><td>Pixel Art Data</td><td><code>textarea</code></td><td>A JSON string representing a 2D array. Each number from <code>0</code> (transparent) to <code>1</code> (opaque) corresponds to a pixel's alpha value. Example: <code>[[1, 0, 1], [0, 1, 0], [1, 0, 1]]</code>.</td></tr>
+                                    <tr><td><code>pixelArtFrames</code></td><td>Pixel Art Frames</td><td><code>textfield</code></td><td>A JSON string representing an array of frame objects. Each object contains <code>"data"</code> (a 2D array of numbers) and a <code>"duration"</code> in seconds.
+                                        <ul>
+                                            <li><code>1.0</code>: Renders as opaque White.</li>
+                                            <li><code>0.3</code>: Renders as opaque Color 1.</li>
+                                            <li><code>0.4</code>: Renders as opaque Color 2.</li>
+                                            <li><code>0.0</code>: Renders as opaque Black.</li>
+                                            <li>Other values (e.g., <code>0.7</code>): Renders using the object's main fill style with that opacity.</li>
+                                        </ul>
+                                    </td></tr>
                                 </tbody>
                             </table>
                         </div>
                         
+                        <h3 id="shape-polyline" class="mt-5">Polyline</h3>
+                        <p>A powerful shape for creating custom, freeform lines and paths for other objects to follow.</p>
+                        <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#stroke">Stroke</a>, <a href="#audio">Audio Reactivity</a></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead><tr><th>Property</th><th>Label</th><th>Type</th><th>Description & Values</th></tr></thead>
+                                <tbody>
+                                    <tr class="table-group-header"><th colspan="4">Path Properties</th></tr>
+                                    <tr><td><code>polylineNodes</code></td><td>Nodes</td><td><code>nodetable</code></td><td>The raw coordinate data for the points that define the polyline. Edited visually on the canvas.</td></tr>
+                                    <tr><td><code>polylineCurveStyle</code></td><td>Curve Style</td><td><code>combobox</code></td><td>Determines how the nodes are connected: <code>straight</code>, <code>loose-curve</code> (Bézier), or <code>tight-curve</code> (Catmull-Rom spline).</td></tr>
+                                    
+                                    <tr class="table-group-header"><th colspan="4">Path Animation Properties</th></tr>
+                                    <tr><td><code>pathAnim_enable</code></td><td>Enable Animation</td><td><code>boolean</code></td><td>Toggles the path animation on or off.</td></tr>
+                                    <tr><td><code>pathAnim_shape</code></td><td>Shape</td><td><code>combobox</code></td><td>The shape of the object that travels along the path.</td></tr>
+                                    <tr><td><code>pathAnim_size</code></td><td>Size</td><td><code>number</code></td><td>The size of the traveling object.</td></tr>
+                                    <tr><td><code>pathAnim_speed</code></td><td>Speed</td><td><code>number</code></td><td>How fast the object travels along the path.</td></tr>
+                                    <tr><td><code>pathAnim_behavior</code></td><td>Behavior</td><td><code>combobox</code></td><td>How the object behaves at the end of the path: <code>Loop</code> or <code>Ping-Pong</code>.</td></tr>
+                                    <tr><td><code>pathAnim_objectCount</code></td><td>Object Count</td><td><code>number</code></td><td>The number of objects to animate along the path.</td></tr>
+                                    <tr><td><code>pathAnim_objectSpacing</code></td><td>Object Spacing</td><td><code>number</code></td><td>The distance between each object when using more than one.</td></tr>
+
+                                    <tr class="table-group-header"><th colspan="4">Path Animation Trail</th></tr>
+                                    <tr><td><code>pathAnim_trail</code></td><td>Trail</td><td><code>combobox</code></td><td>Adds a trail behind the moving object: <code>None</code>, <code>Fade</code>, or <code>Solid</code>.</td></tr>
+                                    <tr><td><code>pathAnim_trailLength</code></td><td>Trail Length</td><td><code>number</code></td><td>The length of the trail in pixels.</td></tr>
+                                    <tr><td><code>pathAnim_trailColor</code></td><td>Trail Color</td><td><code>combobox</code></td><td>The color style of the trail: <code>Inherit</code> from the object or a cycling <code>Rainbow</code>.</td></tr>
+
+                                    <tr class="table-group-header"><th colspan="4">Path Animation Fill</th></tr>
+                                    <tr><td><code>pathAnim_gradType</code></td><td>Fill Type</td><td><code>combobox</code></td><td>The fill style for the traveling object itself, with all the standard gradient and animation options.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
                         <h3 id="shape-strimer" class="mt-5">Strimer</h3>
                         <p>A specialized shape that simulates the animated lighting effects of PC cable strimers, featuring multiple columns of moving light blocks.</p>
                         <div class="alert alert-info small"><b>Applicable General Properties:</b> <a href="#core">Core</a>, <a href="#fill">Fill & Animation</a></div>
@@ -474,20 +518,17 @@
                                     <tr><td><code>spawn_rotationSpeed</code></td><td>Particle Rotation Speed</td><td><code>number</code></td><td>The average rotational speed of each individual particle.</td></tr>
                                     <tr><td><code>spawn_rotationVariance</code></td><td>Rotation Variance (±deg/s)</td><td><code>number</code></td><td>Adds randomness to each particle's rotation speed.</td></tr>
                                     <tr><td><code>spawn_initialRotation_random</code></td><td>Random Initial Rotation</td><td><code>boolean</code></td><td>If true, each particle starts at a random angle.</td></tr>
-                                    <tr><td><code>spawn_svg_path</code></td><td>Custom SVG Path</td><td><code>textarea</code></td><td>The SVG <code>d</code> attribute path data for the <code>custom</code> particle shape. The path should be centered on the (0,0) origin for proper rotation.</td></tr>
+                                    <tr><td><code>spawn_svg_path</code></td><td>Custom SVG Path</td><td><code>textfield</code></td><td>The SVG <code>d</code> attribute path data for the <code>custom</code> particle shape. The path should be centered on the (0,0) origin for proper rotation.</td></tr>
                                 
-                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Matrix Particle Properties</th></tr>
-                                    <tr><td><code>spawn_matrixCharSet</code></td><td>Matrix Character Set</td><td><code>combobox</code></td><td>The set of characters to use for the <code>matrix</code> particle type.</td></tr>
-                                    <tr><td><code>spawn_matrixTrailLength</code></td><td>Matrix Trail Length</td><td><code>number</code></td><td>The number of characters in each falling <code>matrix</code> trail.</td></tr>
-                                    <tr><td><code>spawn_matrixEnableGlow</code></td><td>Enable Character Glow</td><td><code>boolean</code></td><td>Adds a glow effect to the <code>matrix</code> characters.</td></tr>
-                                    <tr><td><code>spawn_matrixGlowSize</code></td><td>Character Glow Size</td><td><code>number</code></td><td>The size and intensity of the glow effect.</td></tr>
+                                    <tr class="table-group-header"><th colspan="4">Trail Properties (for Matrix and Generic Shapes)</th></tr>
+                                    <tr><td><code>spawn_enableTrail</code></td><td>Enable Generic Trail</td><td><code>boolean</code></td><td>Enables a fading trail behind each particle of any non-<code>matrix</code> shape.</td></tr>
+                                    <tr><td><code>spawn_trailLength</code></td><td>Trail Length</td><td><code>number</code></td><td>The number of segments or characters in a particle's trail.</td></tr>
+                                    <tr><td><code>spawn_trailSpacing</code></td><td>Trail Spacing</td><td><code>number</code></td><td>A multiplier for the distance between trail segments, based on particle size.</td></tr>
+                                    <tr><td><code>spawn_matrixCharSet</code></td><td>Matrix Character Set</td><td><code>combobox</code></td><td>For the <code>matrix</code> shape, the set of characters to use in the trail.</td></tr>
+                                    <tr><td><code>spawn_matrixEnableGlow</code></td><td>Enable Matrix Glow</td><td><code>boolean</code></td><td>Adds a glow effect to the <code>matrix</code> characters.</td></tr>
+                                    <tr><td><code>spawn_matrixGlowSize</code></td><td>Matrix Glow Size</td><td><code>number</code></td><td>The size and intensity of the glow effect.</td></tr>
 
-                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Generic Trail Properties</th></tr>
-                                    <tr><td><code>spawn_enableTrail</code></td><td>Enable Trail</td><td><code>boolean</code></td><td>Enables a fading trail behind each particle (any shape except <code>matrix</code>).</td></tr>
-                                    <tr><td><code>spawn_trailLength</code></td><td>Trail Length</td><td><code>number</code></td><td>The number of segments in each particle's trail.</td></tr>
-                                    <tr><td><code>spawn_leaderColor</code></td><td>Leader Color</td><td><code>color</code></td><td>The color of the lead particle. The trail fades to the spawner's main fill color.</td></tr>
-
-                                    <tr class="table-group-divider"><th colspan="4" class="table-group-header">Audio Reactivity</th></tr>
+                                    <tr class="table-group-header"><th colspan="4">Audio Reactivity</th></tr>
                                     <tr><td><code>spawn_audioTarget</code></td><td>Spawner: Reactive Target</td><td><code>combobox</code></td><td>Which property of the spawner will react to sound. Affects <code>Spawn Rate</code>, <code>Initial Speed</code>, <code>Particle Size</code>, etc.</td></tr>
 
                                 </tbody>
@@ -499,6 +540,6 @@
         </div>
     </div>
 
-    <script src="[https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js](https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js)"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
