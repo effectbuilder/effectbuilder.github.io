@@ -1406,13 +1406,22 @@ class Shape {
                 }
             } else if (key === 'pixelArtFrames') {
                 try {
-                    const propValue = props.pixelArtFrames;
-                    this.pixelArtFrames = (typeof propValue === 'string') ? JSON.parse(propValue) : propValue;
-                    if (this.currentFrameIndex >= this.pixelArtFrames.length) {
-                        this.currentFrameIndex = 0;
+                    // Temporarily store the old and new data as strings for easy comparison
+                    const oldFramesJSON = JSON.stringify(this.pixelArtFrames);
+                    const newFramesData = props.pixelArtFrames;
+                    const newFrames = (typeof newFramesData === 'string') ? JSON.parse(newFramesData) : newFramesData;
+                    const newFramesJSON = JSON.stringify(newFrames);
+
+                    // Only update and reset the animation if the frame data has actually changed
+                    if (oldFramesJSON !== newFramesJSON) {
+                        this.pixelArtFrames = newFrames;
+                        // Reset the frame index and timer since we have new data
+                        if (this.currentFrameIndex >= this.pixelArtFrames.length) {
+                            this.currentFrameIndex = 0;
+                        }
+                        const currentFrame = this.pixelArtFrames[this.currentFrameIndex];
+                        this.frameTimer = (currentFrame && currentFrame.duration) || 1;
                     }
-                    const currentFrame = this.pixelArtFrames[this.currentFrameIndex];
-                    this.frameTimer = (currentFrame && currentFrame.duration) || 1;
                 } catch (e) {
                     console.error("Error parsing pixelArtFrames in update:", e);
                 }
@@ -2902,21 +2911,39 @@ class Shape {
                     if (cols === 0) return;
                     const cellWidth = this.width / cols;
                     const cellHeight = this.height / rows;
-                    const isGradientFill = this.gradType === 'linear' || this.gradType === 'radial' || this.gradType.startsWith('rainbow');
-                    if (isGradientFill) { this.ctx.fillStyle = this._createLocalFillStyle(); }
                     for (let r = 0; r < rows; r++) {
                         for (let c = 0; c < cols; c++) {
                             const alphaValue = data[r] && data[r][c] ? data[r][c] : 0;
+
                             if (alphaValue > 0) {
-                                if (!isGradientFill) {
-                                    const cellIndex = r * cols + c;
-                                    this.ctx.fillStyle = this.gradType === 'random' ? this._getRandomColorForElement(cellIndex) : this._createLocalFillStyle(cellIndex);
+                                // Determine the fill style and alpha for the current pixel
+                                if (alphaValue === 1.0) {
+                                    // Rule 1: Force to opaque white
+                                    this.ctx.fillStyle = '#FFFFFF';
+                                    this.ctx.globalAlpha = 1.0;
+                                } else if (alphaValue === 0.3) {
+                                    // Rule 2: Force to opaque Color 1
+                                    this.ctx.fillStyle = this.gradient.color2 || '#00ff00';
+                                    this.ctx.globalAlpha = 1.0;
+                                } else if (alphaValue === 0.7) {
+                                    // Rule 2: Force to opaque Color 1
+                                    this.ctx.fillStyle = this.gradient.color1 || '#ff0000';
+                                    this.ctx.globalAlpha = 1.0;
+                                } else {
+                                    // Rule 3: Default behavior for all other values.
+                                    // This calculates the correct style (gradient, solid, etc.) for each pixel.
+                                    const cellIndex = r * this.numberOfColumns + c;
+                                    this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
+                                    this.ctx.globalAlpha = alphaValue;
                                 }
-                                this.ctx.globalAlpha = alphaValue;
+
+                                // Draw the pixel with the determined style
                                 this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
                             }
                         }
                     }
+                    // Reset global alpha after the loop is done to ensure it doesn't affect other shapes
+                    this.ctx.globalAlpha = 1.0;
                 } catch (e) { console.error("Failed to draw pixel art:", e); }
             } else if (this.shape === 'tetris') {
                 this.ctx.save();

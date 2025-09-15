@@ -1335,6 +1335,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 let exportValue = liveValue;
                 let exportType = conf.type;
 
+                // FIX: Force the type to be 'textfield' for SignalRGB compatibility.
+                if (propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
+                    exportType = 'textfield';
+                }
+
                 const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
                 if (conf.type === 'number' && typeof liveValue === 'number') {
                     exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
@@ -1346,8 +1351,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const objectSpecificProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
                 let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
 
-                if (propName === 'polylineNodes') {
-                    writeAsMeta = false; // Always export polylineNodes as a hard-coded variable
+                if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
+                    writeAsMeta = false; // Always export complex data as a hard-coded variable
                 }
 
                 if (writeAsMeta) {
@@ -1361,6 +1366,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (conf.min) attrs.push(`min="${conf.min}"`);
                     if (conf.max) attrs.push(`max="${conf.max}"`);
                     let finalExportValue = exportValue;
+
+                    if (typeof finalExportValue === 'object' && finalExportValue !== null) {
+                        finalExportValue = JSON.stringify(finalExportValue);
+                    }
+
                     if (typeof finalExportValue === 'string') {
                         finalExportValue = finalExportValue.replace(/"/g, '&quot;');
                     }
@@ -2873,7 +2883,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_spawn_rotationSpeed`, label: `Object ${newId}: Particle Rotation Speed`, type: 'number', default: '0', min: '-360', max: '360', description: '(Spawner) The average rotational speed of each particle in degrees per second.' },
             { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed. If base speed is 10 and variance is 5, speed will be random between 5 and 15.' },
             { property: `obj${newId}_spawn_initialRotation_random`, label: `Object ${newId}: Random Initial Rotation`, type: 'boolean', default: 'false', description: '(Spawner) If checked, each particle starts at a random angle.' },
-            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textarea', default: 'm -7.1735 47.0399 c -0.4792 -0.1767 -1.8839 -1.1913 -3.1216 -2.2546 c -1.2377 -1.0633 -2.9272 -2.2326 -3.7544 -2.5984 c -0.8272 -0.3658 -3.7682 -1.2585 -6.5357 -1.9837 c -9.9176 -2.599 -11.7218 -3.5122 -14.164 -7.1695 c -1.5926 -2.3849 -2.2275 -4.7408 -2.2275 -8.2651 c 0 -6.2533 2.5468 -11.5705 7.0838 -14.7894 c 3.2916 -2.3353 8.7752 -4.6118 12.8685 -5.3421 c 1.1812 -0.2108 4.0084 -0.359 6.9518 -0.3645 l 4.9609 -0.009 v -0.635 c 0 -0.8312 -1.7502 -9.5695 -1.9966 -9.968 c -0.2606 -0.4217 -1.4724 -0.2265 -7.5545 1.2166 c -7.2798 1.7273 -9.6611 2.0447 -14.3937 1.9184 c -4.6096 -0.123 -5.7086 -0.4664 -7.3607 -2.3004 c -1.8407 -2.0433 -2.1657 -3.1128 -2.1375 -7.0326 c 0.0238 -3.2996 0.076 -3.6119 1.2832 -7.6729 c 0.6921 -2.3283 1.3212 -4.9693 1.398 -5.8688 c 0.1281 -1.5009 0.0606 -1.7882 -0.8212 -3.492 c -1.0541 -2.0368 -1.2327 -3.4948 -0.5479 -4.4725 c 0.9177 -1.3102 3.0926 -1.7702 4.6243 -0.9781 l 0.7777 0.4021 l 1.67 -1.7032 c 1.8981 -1.9358 2.9955 -2.352 4.352 -1.6505 c 1.3396 0.6927 1.6736 2.3514 0.9746 4.8401 c -0.1087 0.3869 0.01 0.7152 0.3668 1.0187 c 1.9232 1.6337 2.403 2.2194 2.5768 3.1459 c 0.3675 1.9589 -0.5582 2.8535 -3.6119 3.4902 c -1.0738 0.2239 -2.1432 0.5798 -2.3765 0.7909 c -0.5528 0.5003 -1.7125 2.88 -2.6976 5.5355 c -1.0971 2.9575 -1.1239 4.939 -0.0869 6.438 c 1.1063 1.5991 2.1559 2.1614 4.0293 2.1587 c 2.781 -0.004 12.4578 -2.2285 16.9021 -3.8853 l 1.3229 -0.4932 l 0.1565 -4.2474 c 0.1411 -3.8282 0.2191 -4.3588 0.7909 -5.3762 c 0.7891 -1.4039 2.4436 -2.4268 3.9593 -2.4477 c 2.2352 -0.0309 3.248 1.4934 4.6276 6.9641 c 0.4807 1.9061 0.9998 3.5915 1.1537 3.7453 c 0.3499 0.3499 4.796 -0.5486 8.3011 -1.6776 c 2.8202 -0.9083 9.427 -4.1284 10.7545 -5.2416 c 1.2659 -1.0615 1.2015 -1.8925 -0.3327 -4.2905 c -1.3545 -2.1171 -1.3884 -2.6034 -0.2531 -3.6341 c 0.5926 -0.538 0.8405 -0.5893 2.092 -0.4329 c 1.0872 0.1358 1.4444 0.0929 1.5251 -0.1834 c 0.0579 -0.1984 0.2412 -0.8615 0.4072 -1.4734 c 0.4699 -1.7318 1.4456 -2.7239 2.679 -2.7239 c 1.0012 0 1.0379 0.0352 1.8649 1.7859 c 0.464 0.9823 0.891 1.8397 0.9488 1.9055 c 0.0579 0.0657 0.8814 0.1998 1.8301 0.298 c 2.072 0.2145 3.0191 0.9167 3.0191 2.2387 c 0 1.0776 -0.7527 2.0267 -2.4874 3.1364 c -1.1065 0.7078 -1.5685 1.2446 -2.3483 2.7288 c -2.304 4.3846 -6.15 8.0726 -10.917 10.4688 c -3.3572 1.6875 -4.8758 2.2252 -12.4889 4.4226 c -1.0536 0.3041 -2.2279 0.8216 -2.6097 1.1499 l -0.6941 0.597 l 0.5599 2.9266 c 0.6144 3.2115 1.1257 4.9111 1.5165 5.0414 c 0.1395 0.0465 1.4396 -0.7627 2.8889 -1.7982 c 2.9621 -2.1163 7.7385 -4.5342 11.4988 -5.8211 c 2.3746 -0.8126 2.7679 -0.8665 7.1159 -0.9742 c 2.9484 -0.0731 5.1828 -0.0008 6.2177 0.2011 c 3.6813 0.7181 8.0035 3.9741 9.7535 7.3477 c 0.8578 1.6535 1.2452 2.9272 1.6447 5.4071 c 0.2192 1.3607 -0.2753 5.0376 -1.198 8.9066 c -0.4288 1.7983 -0.7797 3.627 -0.7797 4.0638 c 0 0.4368 0.5431 2.0413 1.2068 3.5656 c 1.356 3.1141 1.3716 3.7643 0.1228 5.1011 c -0.8692 0.9305 -1.7797 1.0226 -3.8432 0.3889 c -0.7276 -0.2235 -1.6884 -0.3398 -2.1352 -0.2587 c -0.4664 0.0848 -1.9308 1.0443 -3.4396 2.2539 c -4.6511 3.7287 -6.8092 4.4998 -8.1462 2.9108 c -0.6418 -0.7627 -0.6557 -0.8491 -0.3173 -1.9734 c 0.369 -1.2261 1.1506 -2.6405 4.3881 -7.9408 c 2.4033 -3.9345 4.3309 -7.9349 4.9065 -10.182 c 0.2991 -1.1677 0.4026 -2.3933 0.3257 -3.8569 c -0.1241 -2.3648 -0.5762 -3.3923 -2.3039 -5.2362 c -3.8731 -4.1336 -11.4998 -3.4543 -18.7612 1.671 c -2.6959 1.9028 -4.8497 4.1098 -7.6193 7.8072 c -1.3066 1.7444 -2.6896 3.3478 -3.0733 3.5631 c -0.6632 0.3722 -0.8521 0.3169 -3.8245 -1.1193 c -3.9257 -1.8969 -6.3326 -2.4386 -9.8738 -2.2225 c -6.5556 0.4001 -11.7849 2.9718 -14.041 6.9051 c -1.1811 2.0592 -0.9733 5.0568 0.5623 8.1136 c 0.883 1.7575 2.0726 2.8627 4.2818 3.9779 c 3.0127 1.5208 3.4646 1.6127 8.7896 1.7875 L -5 33.5 l 0.388 1.0212 c 0.4018 1.0574 0.3032 1.7764 -0.5186 3.781 c -0.3067 0.7483 -0.2707 0.9915 0.3524 2.3813 c 0.8868 1.9776 1.293 3.8003 1.0821 4.8548 c -0.2753 1.3766 -1.9066 2.0812 -3.4774 1.5019 z m -6.841 -74.1807 c -0.3126 -0.0611 -1.0122 -0.4947 -1.5545 -0.9636 c -0.8512 -0.7358 -1.0045 -1.0439 -1.1205 -2.2516 c -0.087 -0.9059 -0.009 -1.6339 0.2219 -2.065 c 0.5026 -0.9391 2.3363 -1.9449 3.5457 -1.9449 c 0.8549 0 1.2057 0.1989 2.3259 1.3192 c 1.294 1.294 1.3167 1.3445 1.1914 2.6485 c -0.1437 1.495 -0.6427 2.1895 -2.1126 2.9397 c -0.9625 0.4913 -1.3548 0.5412 -2.4972 0.3178 z m 17.2372 -2.1886 c -2.0034 -0.8389 -2.8183 -3.8272 -1.4892 -5.4607 c 0.9736 -1.1966 2.6724 -1.5051 4.3735 -0.7944 c 1.209 0.5051 1.7459 1.3673 1.7459 2.8035 c 0 1.6255 -0.9646 3.0532 -2.3164 3.4286 c -1.1573 0.3214 -1.5909 0.3257 -2.3138 0.023 z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
+            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'm -7.1735 47.0399 c -0.4792 -0.1767 -1.8839 -1.1913 -3.1216 -2.2546 c -1.2377 -1.0633 -2.9272 -2.2326 -3.7544 -2.5984 c -0.8272 -0.3658 -3.7682 -1.2585 -6.5357 -1.9837 c -9.9176 -2.599 -11.7218 -3.5122 -14.164 -7.1695 c -1.5926 -2.3849 -2.2275 -4.7408 -2.2275 -8.2651 c 0 -6.2533 2.5468 -11.5705 7.0838 -14.7894 c 3.2916 -2.3353 8.7752 -4.6118 12.8685 -5.3421 c 1.1812 -0.2108 4.0084 -0.359 6.9518 -0.3645 l 4.9609 -0.009 v -0.635 c 0 -0.8312 -1.7502 -9.5695 -1.9966 -9.968 c -0.2606 -0.4217 -1.4724 -0.2265 -7.5545 1.2166 c -7.2798 1.7273 -9.6611 2.0447 -14.3937 1.9184 c -4.6096 -0.123 -5.7086 -0.4664 -7.3607 -2.3004 c -1.8407 -2.0433 -2.1657 -3.1128 -2.1375 -7.0326 c 0.0238 -3.2996 0.076 -3.6119 1.2832 -7.6729 c 0.6921 -2.3283 1.3212 -4.9693 1.398 -5.8688 c 0.1281 -1.5009 0.0606 -1.7882 -0.8212 -3.492 c -1.0541 -2.0368 -1.2327 -3.4948 -0.5479 -4.4725 c 0.9177 -1.3102 3.0926 -1.7702 4.6243 -0.9781 l 0.7777 0.4021 l 1.67 -1.7032 c 1.8981 -1.9358 2.9955 -2.352 4.352 -1.6505 c 1.3396 0.6927 1.6736 2.3514 0.9746 4.8401 c -0.1087 0.3869 0.01 0.7152 0.3668 1.0187 c 1.9232 1.6337 2.403 2.2194 2.5768 3.1459 c 0.3675 1.9589 -0.5582 2.8535 -3.6119 3.4902 c -1.0738 0.2239 -2.1432 0.5798 -2.3765 0.7909 c -0.5528 0.5003 -1.7125 2.88 -2.6976 5.5355 c -1.0971 2.9575 -1.1239 4.939 -0.0869 6.438 c 1.1063 1.5991 2.1559 2.1614 4.0293 2.1587 c 2.781 -0.004 12.4578 -2.2285 16.9021 -3.8853 l 1.3229 -0.4932 l 0.1565 -4.2474 c 0.1411 -3.8282 0.2191 -4.3588 0.7909 -5.3762 c 0.7891 -1.4039 2.4436 -2.4268 3.9593 -2.4477 c 2.2352 -0.0309 3.248 1.4934 4.6276 6.9641 c 0.4807 1.9061 0.9998 3.5915 1.1537 3.7453 c 0.3499 0.3499 4.796 -0.5486 8.3011 -1.6776 c 2.8202 -0.9083 9.427 -4.1284 10.7545 -5.2416 c 1.2659 -1.0615 1.2015 -1.8925 -0.3327 -4.2905 c -1.3545 -2.1171 -1.3884 -2.6034 -0.2531 -3.6341 c 0.5926 -0.538 0.8405 -0.5893 2.092 -0.4329 c 1.0872 0.1358 1.4444 0.0929 1.5251 -0.1834 c 0.0579 -0.1984 0.2412 -0.8615 0.4072 -1.4734 c 0.4699 -1.7318 1.4456 -2.7239 2.679 -2.7239 c 1.0012 0 1.0379 0.0352 1.8649 1.7859 c 0.464 0.9823 0.891 1.8397 0.9488 1.9055 c 0.0579 0.0657 0.8814 0.1998 1.8301 0.298 c 2.072 0.2145 3.0191 0.9167 3.0191 2.2387 c 0 1.0776 -0.7527 2.0267 -2.4874 3.1364 c -1.1065 0.7078 -1.5685 1.2446 -2.3483 2.7288 c -2.304 4.3846 -6.15 8.0726 -10.917 10.4688 c -3.3572 1.6875 -4.8758 2.2252 -12.4889 4.4226 c -1.0536 0.3041 -2.2279 0.8216 -2.6097 1.1499 l -0.6941 0.597 l 0.5599 2.9266 c 0.6144 3.2115 1.1257 4.9111 1.5165 5.0414 c 0.1395 0.0465 1.4396 -0.7627 2.8889 -1.7982 c 2.9621 -2.1163 7.7385 -4.5342 11.4988 -5.8211 c 2.3746 -0.8126 2.7679 -0.8665 7.1159 -0.9742 c 2.9484 -0.0731 5.1828 -0.0008 6.2177 0.2011 c 3.6813 0.7181 8.0035 3.9741 9.7535 7.3477 c 0.8578 1.6535 1.2452 2.9272 1.6447 5.4071 c 0.2192 1.3607 -0.2753 5.0376 -1.198 8.9066 c -0.4288 1.7983 -0.7797 3.627 -0.7797 4.0638 c 0 0.4368 0.5431 2.0413 1.2068 3.5656 c 1.356 3.1141 1.3716 3.7643 0.1228 5.1011 c -0.8692 0.9305 -1.7797 1.0226 -3.8432 0.3889 c -0.7276 -0.2235 -1.6884 -0.3398 -2.1352 -0.2587 c -0.4664 0.0848 -1.9308 1.0443 -3.4396 2.2539 c -4.6511 3.7287 -6.8092 4.4998 -8.1462 2.9108 c -0.6418 -0.7627 -0.6557 -0.8491 -0.3173 -1.9734 c 0.369 -1.2261 1.1506 -2.6405 4.3881 -7.9408 c 2.4033 -3.9345 4.3309 -7.9349 4.9065 -10.182 c 0.2991 -1.1677 0.4026 -2.3933 0.3257 -3.8569 c -0.1241 -2.3648 -0.5762 -3.3923 -2.3039 -5.2362 c -3.8731 -4.1336 -11.4998 -3.4543 -18.7612 1.671 c -2.6959 1.9028 -4.8497 4.1098 -7.6193 7.8072 c -1.3066 1.7444 -2.6896 3.3478 -3.0733 3.5631 c -0.6632 0.3722 -0.8521 0.3169 -3.8245 -1.1193 c -3.9257 -1.8969 -6.3326 -2.4386 -9.8738 -2.2225 c -6.5556 0.4001 -11.7849 2.9718 -14.041 6.9051 c -1.1811 2.0592 -0.9733 5.0568 0.5623 8.1136 c 0.883 1.7575 2.0726 2.8627 4.2818 3.9779 c 3.0127 1.5208 3.4646 1.6127 8.7896 1.7875 L -5 33.5 l 0.388 1.0212 c 0.4018 1.0574 0.3032 1.7764 -0.5186 3.781 c -0.3067 0.7483 -0.2707 0.9915 0.3524 2.3813 c 0.8868 1.9776 1.293 3.8003 1.0821 4.8548 c -0.2753 1.3766 -1.9066 2.0812 -3.4774 1.5019 z m -6.841 -74.1807 c -0.3126 -0.0611 -1.0122 -0.4947 -1.5545 -0.9636 c -0.8512 -0.7358 -1.0045 -1.0439 -1.1205 -2.2516 c -0.087 -0.9059 -0.009 -1.6339 0.2219 -2.065 c 0.5026 -0.9391 2.3363 -1.9449 3.5457 -1.9449 c 0.8549 0 1.2057 0.1989 2.3259 1.3192 c 1.294 1.294 1.3167 1.3445 1.1914 2.6485 c -0.1437 1.495 -0.6427 2.1895 -2.1126 2.9397 c -0.9625 0.4913 -1.3548 0.5412 -2.4972 0.3178 z m 17.2372 -2.1886 c -2.0034 -0.8389 -2.8183 -3.8272 -1.4892 -5.4607 c 0.9736 -1.1966 2.6724 -1.5051 4.3735 -0.7944 c 1.209 0.5051 1.7459 1.3673 1.7459 2.8035 c 0 1.6255 -0.9646 3.0532 -2.3164 3.4286 c -1.1573 0.3214 -1.5909 0.3257 -2.3138 0.023 z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
             { property: `obj${newId}_spawn_matrixCharSet`, label: `Object ${newId}: Matrix Character Set`, type: 'combobox', default: 'katakana', values: 'katakana,numbers,binary,ascii', description: '(Spawner) The set of characters to use for the Matrix particle type.' },
             { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail (for both generic and matrix types).' },
             { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments. 1 = one particle size.' },
@@ -3096,7 +3106,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     // FIX: This logic correctly separates color and alpha properties.
-                    if (propName === 'gradColor1' || propName === 'gradColor2') {
+                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
+                        try {
+                            config[propName] = (typeof value === 'string') ? JSON.parse(value) : value;
+                        } catch(e) {
+                            console.error(\`Failed to parse \${propName}\`, e);
+                        }
+                    } else if (propName === 'gradColor1' || propName === 'gradColor2') {
                         config.gradient[propName.replace('grad', '').toLowerCase()] = value;
                     } else if (propName === 'strokeGradColor1' || propName === 'strokeGradColor2') {
                         config.strokeGradient[propName.replace('strokeGradColor', 'color').toLowerCase()] = value;
@@ -3134,14 +3150,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Read global properties from the effect's controls at the start of the frame
+        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
+        let enableGlobalCycle = false, globalCycleSpeed = 10;
+
+        try { enablePalette = eval('enablePalette'); } catch(e) {}
+        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
+        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
+        try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
+        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
+
         const palette = {
-            enablePalette: eval('enablePalette'),
-            paletteColor1: eval('paletteColor1'),
-            paletteColor2: eval('paletteColor2')
+            enablePalette: enablePalette,
+            paletteColor1: paletteColor1,
+            paletteColor2: paletteColor2
         };
         const globalCycle = {
-            enable: eval('enableGlobalCycle'),
-            speed: eval('globalCycleSpeed')
+            enable: enableGlobalCycle,
+            speed: globalCycleSpeed
         };
 
         // Use a single loop to update and draw all objects
@@ -3179,23 +3204,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 blockCount: obj.strimerBlockCount
             };
 
-            for (const key in propsToUpdate) {
-                if (propsToUpdate[key] === undefined) continue;
-                if (key === 'gradient') {
-                    if(!obj.gradient) obj.gradient = {};
-                    if(!obj.baseGradient) obj.baseGradient = {};
-                    Object.assign(obj.gradient, propsToUpdate.gradient);
-                    Object.assign(obj.baseGradient, propsToUpdate.gradient);
-                } else if (key === 'strokeGradient') {
-                    if(!obj.strokeGradient) obj.strokeGradient = {};
-                    Object.assign(obj.strokeGradient, propsToUpdate.strokeGradient);
-                } else {
-                    obj[key] = propsToUpdate[key];
-                    if (key === 'rotation') {
-                        obj.baseRotation = propsToUpdate[key];
-                    }
-                }
-            }
+            obj.update(propsToUpdate);
             
             // --- 2. Handle state resets for shapes like Strimer if properties changed ---
             if (obj.shape === 'strimer' && (
@@ -3331,12 +3340,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const container = target.closest('.pixel-art-table-container');
             if (container) {
                 const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-                const tbody = container.querySelector('tbody');
-                const newFrames = Array.from(tbody.children).map(tr => ({
-                    data: tr.querySelector('.frame-data-input').value,
-                    duration: parseFloat(tr.querySelector('.frame-duration-input').value) || 1,
-                }));
-                hiddenTextarea.value = JSON.stringify(newFrames);
+                // CORRECTED SELECTOR: Find the div container, not a tbody
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                if (framesContainer) {
+                    // CORRECTED LOGIC: Iterate over the frame item divs, not table rows
+                    const newFrames = Array.from(framesContainer.children).map(item => ({
+                        data: item.querySelector('.frame-data-input').value,
+                        duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                    }));
+                    hiddenTextarea.value = JSON.stringify(newFrames);
+                }
             }
         }
         // --- END: NEW PIXEL ART TABLE LOGIC ---
@@ -4939,12 +4952,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlString;
-            
+
             // --- 1. PARSE ALL DATA ---
             const metaElements = Array.from(tempDiv.querySelectorAll('meta'));
             const loadedConfigs = metaElements.map(parseMetaToConfig).filter(c => c.property || c.name);
             const loadedConfigMap = new Map(loadedConfigs.map(c => [(c.property || c.name), c]));
-            
+
             const constantsMap = new Map();
             const scriptEl = tempDiv.querySelector('script');
             if (scriptEl) {
@@ -4955,59 +4968,74 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (match[1] && match[2] !== undefined) {
                         const key = match[1];
                         let value = match[2];
-                        try { value = JSON.parse(value); } catch (e) {}
+                        try { value = JSON.parse(value); } catch (e) { }
                         constantsMap.set(key, value);
                     }
                 }
             }
 
             if (loadedConfigMap.size === 0 && constantsMap.size === 0) {
-                 showToast("No valid properties were found in the file.", 'danger');
-                 isRestoring = false;
+                showToast("No valid properties were found in the file.", 'danger');
+                isRestoring = false;
                 return;
             }
 
             // --- 2. BUILD THE NEW CONFIGURATION STORE ---
             const newConfigStore = [];
-            
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            // --- NEW, MORE ROBUST GENERAL CONFIG MERGING ---
             const masterGeneralConfigs = Array.from(doc.querySelectorAll('meta'))
                 .map(parseMetaToConfig)
                 .filter(c => !(c.property || c.name).startsWith('obj'));
+            const loadedGeneralConfigs = loadedConfigs.filter(c => !(c.property || c.name).startsWith('obj'));
 
-            const mergedGeneralConfigs = masterGeneralConfigs.map(masterConf => {
-                const key = masterConf.property || masterConf.name;
-                if (loadedConfigMap.has(key)) {
-                    const savedConf = loadedConfigMap.get(key);
-                    return { ...masterConf, default: savedConf.default };
-                }
-                return masterConf;
+            const mergedGeneralConfigMap = new Map();
+
+            // First, add all master configs to the map.
+            masterGeneralConfigs.forEach(conf => {
+                mergedGeneralConfigMap.set(conf.property || conf.name, { ...conf });
             });
-            newConfigStore.push(...mergedGeneralConfigs);
+
+            // Then, iterate through loaded configs. Update existing ones or add new ones.
+            loadedGeneralConfigs.forEach(loadedConf => {
+                const key = loadedConf.property || loadedConf.name;
+                const existingConf = mergedGeneralConfigMap.get(key);
+                if (existingConf) {
+                    // If it exists in the master template, just update its default value.
+                    existingConf.default = loadedConf.default;
+                } else {
+                    // If this is a property not in the master template, add it.
+                    // This is important for forward-compatibility if new globals are added.
+                    mergedGeneralConfigMap.set(key, loadedConf);
+                }
+            });
+
+            newConfigStore.push(...Array.from(mergedGeneralConfigMap.values()));
 
             const allLoadedProps = new Set([...loadedConfigMap.keys(), ...constantsMap.keys()]);
             const objectIds = [...new Set(Array.from(allLoadedProps).map(p => (p || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
-            
+
             const objectData = {};
-             objectIds.forEach(id => {
+            objectIds.forEach(id => {
                 objectData[id] = { props: [], name: `Object ${id}` };
                 allLoadedProps.forEach(prop => {
                     if (prop && prop.startsWith(`obj${id}_`)) {
                         objectData[id].props.push(prop.substring(prop.indexOf('_') + 1));
                     }
                 });
-                
+
                 const aPropToGetNameFrom = Array.from(allLoadedProps).find(p => p && p.startsWith(`obj${id}_`) && loadedConfigMap.has(p));
                 if (aPropToGetNameFrom) {
-                     const conf = loadedConfigMap.get(aPropToGetNameFrom);
-                     if (conf && conf.label) {
-                         const nameParts = conf.label.split(':');
-                         if (nameParts.length > 1) objectData[id].name = nameParts[0].trim();
-                     }
+                    const conf = loadedConfigMap.get(aPropToGetNameFrom);
+                    if (conf && conf.label) {
+                        const nameParts = conf.label.split(':');
+                        if (nameParts.length > 1) objectData[id].name = nameParts[0].trim();
+                    }
                 }
             });
-            
+
             for (const id in objectData) {
                 const props = objectData[id].props;
                 let bestMatch = 'rectangle'; let maxScore = 0;
@@ -5018,7 +5046,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 objectData[id].shape = bestMatch;
             }
-            
+
             objectIds.forEach(id => {
                 const defaults = getDefaultObjectConfig(id);
                 const { name, shape } = objectData[id];
@@ -5036,11 +5064,11 @@ document.addEventListener('DOMContentLoaded', function () {
             configStore = newConfigStore;
             objects = [];
             const names = {};
-            for(const id in objectData) { names[id] = objectData[id].name; }
-            createInitialObjects(names); 
+            for (const id in objectData) { names[id] = objectData[id].name; }
+            createInitialObjects(names);
 
             renderForm();
-            
+
             configStore.filter(c => !(c.property || c.name).startsWith('obj')).forEach(conf => {
                 const key = conf.property || conf.name;
                 const el = form.elements[key];
@@ -5063,7 +5091,7 @@ document.addEventListener('DOMContentLoaded', function () {
             recordHistory();
 
             showToast("Effect loaded successfully!", 'success');
-            
+
             const importModalEl = document.getElementById('import-meta-modal');
             if (importModalEl) {
                 const importModal = bootstrap.Modal.getInstance(importModalEl);
