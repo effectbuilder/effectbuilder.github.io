@@ -43,8 +43,11 @@
                     <button class="btn btn-outline-warning" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
                     <button class="btn btn-outline-info" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
                     <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"><i class="bi bi-download me-1"></i> Export</button>
+                    <button class="btn btn-outline-secondary" id="upload-effect-btn" data-bs-toggle="tooltip" title="Upload an effect HTML file"><i class="bi bi-upload me-1"></i> Upload</button>
                     <button class="btn btn-outline-success" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
                 </div>
+
+                <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group" role="group" aria-label="Help and settings">
                     <button class="btn btn-outline-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>

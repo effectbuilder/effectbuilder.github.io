@@ -130,20 +130,22 @@ const appHistory = {
     maxSize: 50,
 
     push(state) {
-        if (isRestoring) return;
-        const currentState = this.stack[this.index];
-        if (currentState && JSON.stringify(state.objects) === JSON.stringify(currentState.objects)) {
-            return;
-        }
+        // When a new state is added after an undo, slice the "future" states off the stack
         if (this.index < this.stack.length - 1) {
             this.stack = this.stack.slice(0, this.index + 1);
         }
+
         this.stack.push(state);
+
+        // Trim the stack if it exceeds the maximum size
         if (this.stack.length > this.maxSize) {
             this.stack.shift();
-        } else {
-            this.index++;
         }
+
+        // The index should always point to the last item in the stack
+        this.index = this.stack.length - 1;
+
+        // This was moved here to ensure it's always called after the index is set
         updateUndoRedoButtons();
     },
 
@@ -178,30 +180,44 @@ function getCurrentState() {
     }));
     return {
         objects: plainObjects,
+        // ADDED: This line saves the form's configuration
+        configStore: JSON.parse(JSON.stringify(configStore)),
         selectedObjectIds: JSON.parse(JSON.stringify(selectedObjectIds)),
     };
 }
 
 function recordHistory() {
-    appHistory.push(getCurrentState());
+    if (isRestoring) return;
+
+    const state = {
+        // DEEP CLONE the objects array to prevent mutations
+        objects: JSON.parse(JSON.stringify(objects, (key, value) => {
+            if (key === 'ctx') return undefined; // Exclude canvas context
+            return value;
+        })),
+        // ADDED: Deep clone the configStore to save the form's state
+        configStore: JSON.parse(JSON.stringify(configStore)),
+        selectedObjectIds: [...selectedObjectIds]
+    };
+
+    appHistory.push(state);
+    updateUndoRedoButtons();
 }
 
 function restoreState(state) {
+    if (!state) return; // Add a safety check for null state
     isRestoring = true;
-    const generalValues = getControlValues();
+
+    // RESTORE the state from history first
+    configStore = state.configStore;
     objects = state.objects.map(data => new Shape({ ...data, ctx }));
     selectedObjectIds = state.selectedObjectIds;
+
+    // REBUILD the UI from the restored state
     renderForm();
-    for (const key in generalValues) {
-        const el = form.elements[key];
-        if (el && !key.startsWith('obj')) {
-            if (el.type === 'checkbox') el.checked = generalValues[key];
-            else el.value = generalValues[key];
-        }
-    }
-    updateFormValuesFromObjects();
     drawFrame();
     updateToolbarState();
     updateUndoRedoButtons();
+
     isRestoring = false;
 }
