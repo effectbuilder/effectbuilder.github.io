@@ -289,7 +289,7 @@ class Shape {
         tetrisBounce, tetrisHoldTime, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeScrollDir,
         strokeCycleColors, strokeCycleSpeed, strokeAnimationSpeed, strokeAnimationMode, strokeUseSharpGradient, strokeGradientStop, strokeRotationSpeed,
         strokePhaseOffset, fireSpread, pixelArtFrames, enableAudioReactivity, audioTarget, audioMetric, audioSensitivity, audioSmoothing = 50, beatThreshold,
-        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth,
+        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth, vizAudioSensitivity,
         enableSensorReactivity, sensorTarget, sensorValueSource, userSensor, sensorMeterFill, timePlotLineThickness, timePlotFillArea = false,
         sensorMeterShowValue = false, timePlotAxesStyle = 'None', timePlotTimeScale = 5, gradientSpeedMultiplier, shapeAnimationSpeedMultiplier,
         seismicAnimationSpeedMultiplier, wavePhaseAngle, oscAnimationSpeed, strimerColumns, strimerBlockCount, strimerBlockSize, strimerAnimation,
@@ -449,6 +449,7 @@ class Shape {
         this.vizSegmentCount = vizSegmentCount || 16;
         this.vizSegmentSpacing = vizSegmentSpacing || 1;
         this.vizLineWidth = vizLineWidth || 8;
+        this.vizAudioSensitivity = vizAudioSensitivity || 100;
         this.vizBassLevel = vizBassLevel || 50;
         this.vizTrebleBoost = vizTrebleBoost || 125;
         this.enableSensorReactivity = enableSensorReactivity || false;
@@ -2325,11 +2326,11 @@ class Shape {
                 if (barCount === 1) {
                     const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
                     const audioValue = (audioData.volume.avg || 0) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                    finalHeight = Math.min(shapeMaxHeight, audioValue * shapeMaxHeight);
                 } else {
                     const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
                     const audioValue = (targetHeight / 255) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                    finalHeight = Math.min(shapeMaxHeight, audioValue * shapeMaxHeight);
                 }
                 this.vizBarHeights[i] = smoothingFactor * this.vizBarHeights[i] + (1.0 - smoothingFactor) * finalHeight;
             }
