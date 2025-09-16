@@ -109,9 +109,20 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj3_animationSpeed" label="Visualizer: Animation Speed" type="number" min="1" max="50" default="10" />
     <meta property="obj3_vizLayout" label="Visualizer: Layout" type="combobox" default="Linear" values="Linear,Circular" />
     <meta property="obj3_vizDrawStyle" label="Visualizer: Draw Style" type="combobox" default="Line" values="Bars,Line,Area" />
+    <meta property="obj3_vizStyle" label="Visualizer: Style" type="combobox" default="bottom" values="bottom,center,top" />
+    <meta property="obj3_vizLineWidth" label="Visualizer: Line Width" type="number" default="2" min="1" max="20" />
+    <meta property="obj3_vizAutoScale" label="Visualizer: Auto-Scale Height" type="boolean" default="true" />
+    <meta property="obj3_vizMaxBarHeight" label="Visualizer: Max Bar Height" type="number" default="30" min="5" max="100" />
     <meta property="obj3_vizBarCount" label="Visualizer: Bar Count" type="number" default="64" min="2" max="128" />
     <meta property="obj3_vizBarSpacing" label="Visualizer: Bar Spacing" type="number" default="2" min="0" max="20" />
     <meta property="obj3_vizSmoothing" label="Visualizer: Smoothing" type="number" default="60" min="0" max="99" />
+    <meta property="obj3_vizUseSegments" label="Visualizer: Use LED Segments" type="boolean" default="false" />
+    <meta property="obj3_vizSegmentCount" label="Visualizer: Segment Count" type="number" default="16" min="2" max="64" />
+    <meta property="obj3_vizSegmentSpacing" label="Visualizer: Segment Spacing" type="number" default="1" min="0" max="10" />
+    <meta property="obj3_vizInnerRadius" label="Visualizer: Inner Radius" type="number" default="40" min="0" max="95" />
+    <meta property="obj3_vizBassLevel" label="Visualizer: Bass Level" type="number" default="50" min="0" max="200" />
+    <meta property="obj3_vizTrebleBoost" label="Visualizer: Treble Boost" type="number" default="125" min="0" max="200" />
+    <meta property="obj3_vizGain" label="Visualizer: Gain" type="number" default="100" min="0" max="200" />
 `;
 
 // --- State Management ---
@@ -1772,7 +1783,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
             'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
             'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
-            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'], icon: 'bi-bar-chart-line-fill' },
+            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizGain'], icon: 'bi-bar-chart-line-fill' },
             'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
             'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
             'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
@@ -2946,6 +2957,22 @@ document.addEventListener('DOMContentLoaded', function () {
             opposite = opposite.replace('right', 'left');
         }
         return opposite;
+    }
+
+    /**
+     * Generates a filtered set of default configurations for a specific shape type.
+     * @param {string} shapeType - The type of shape (e.g., 'rectangle', 'circle').
+     * @param {number} newId - The ID for the new object.
+     * @returns {object[]} An array of default configuration objects suitable for the given shape.
+     */
+    function getDefaultsForShape(shapeType, newId) {
+        const fullConfig = getDefaultObjectConfig(newId);
+        const validProps = shapePropertyMap[shapeType] || shapePropertyMap['rectangle'];
+
+        return fullConfig.filter(conf => {
+            const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+            return validProps.includes(propName);
+        });
     }
 
     /**
@@ -5538,7 +5565,7 @@ document.addEventListener('DOMContentLoaded', function () {
             configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
 
             // 3. Get a fresh, default set of configurations for the new shape type
-            const newConfigs = getDefaultObjectConfig(id);
+            const newConfigs = getDefaultsForShape(newShapeType, id);
 
             // 4. Update these new default configurations with the preserved properties
             newConfigs.forEach(conf => {
