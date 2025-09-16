@@ -109,9 +109,20 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj3_animationSpeed" label="Visualizer: Animation Speed" type="number" min="1" max="50" default="10" />
     <meta property="obj3_vizLayout" label="Visualizer: Layout" type="combobox" default="Linear" values="Linear,Circular" />
     <meta property="obj3_vizDrawStyle" label="Visualizer: Draw Style" type="combobox" default="Line" values="Bars,Line,Area" />
+    <meta property="obj3_vizStyle" label="Visualizer: Style" type="combobox" default="bottom" values="bottom,center,top" />
+    <meta property="obj3_vizLineWidth" label="Visualizer: Line Width" type="number" default="2" min="1" max="20" />
+    <meta property="obj3_vizAutoScale" label="Visualizer: Auto-Scale Height" type="boolean" default="true" />
+    <meta property="obj3_vizMaxBarHeight" label="Visualizer: Max Bar Height" type="number" default="30" min="5" max="100" />
     <meta property="obj3_vizBarCount" label="Visualizer: Bar Count" type="number" default="64" min="2" max="128" />
     <meta property="obj3_vizBarSpacing" label="Visualizer: Bar Spacing" type="number" default="2" min="0" max="20" />
     <meta property="obj3_vizSmoothing" label="Visualizer: Smoothing" type="number" default="60" min="0" max="99" />
+    <meta property="obj3_vizUseSegments" label="Visualizer: Use LED Segments" type="boolean" default="false" />
+    <meta property="obj3_vizSegmentCount" label="Visualizer: Segment Count" type="number" default="16" min="2" max="64" />
+    <meta property="obj3_vizSegmentSpacing" label="Visualizer: Segment Spacing" type="number" default="1" min="0" max="10" />
+    <meta property="obj3_vizInnerRadius" label="Visualizer: Inner Radius" type="number" default="40" min="0" max="95" />
+    <meta property="obj3_vizBassLevel" label="Visualizer: Bass Level" type="number" default="50" min="0" max="1000" />
+    <meta property="obj3_vizTrebleBoost" label="Visualizer: Treble Boost" type="number" default="125" min="0" max="1000" />
+    <meta property="obj3_vizGain" label="Visualizer: Gain" type="number" default="100" min="0" max="200" />
 `;
 
 // --- State Management ---
@@ -610,14 +621,16 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
-        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop',
+        'audio-visualizer': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop',
             'gradColor1', 'gradColor2', 'cycleColors', 'animationSpeed', 'scrollDir',
             'vizLayout', 'vizDrawStyle', 'vizStyle',
             'vizLineWidth',
-            'vizAutoScale', 'vizMaxBarHeight',
+            'vizAutoScale',
             'vizBarCount', 'vizBarSpacing', 'vizSmoothing',
             'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
-            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'
+            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizGain',
+            'vizLowCutoff', 'vizHighCutoff', 'vizDownsampleFactor'
         ],
         'strimer': [
             'shape', 'x', 'y', 'width', 'height', 'rotation',
@@ -1772,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
             'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
             'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
-            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost'], icon: 'bi-bar-chart-line-fill' },
+            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizGain', 'vizLowCutoff', 'vizHighCutoff', 'vizDownsampleFactor'], icon: 'bi-bar-chart-line-fill' },
             'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
             'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
             'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
@@ -2401,7 +2414,7 @@ document.addEventListener('DOMContentLoaded', function () {
             obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
-            
+
             obj.dirty = false;
         }
 
@@ -2806,6 +2819,46 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
+     * Directly updates the live objects with the scaled, correct values from the configStore.
+     * This bypasses the HTML form to avoid timing issues during initial load.
+     */
+    function syncObjectsWithConfigStore() {
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+
+        objects.forEach(obj => {
+            const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
+            const newProps = {};
+
+            objectConfigs.forEach(conf => {
+                const key = conf.property.substring(conf.property.indexOf('_') + 1);
+                let value = conf.default;
+
+                if (conf.type === 'number') value = parseFloat(value);
+                else if (conf.type === 'boolean') value = (String(value).toLowerCase() === 'true');
+
+                if (propsToScale.includes(key) && typeof value === 'number') {
+                    value *= 4;
+                }
+
+                if (key.startsWith('gradColor')) {
+                    if (!newProps.gradient) newProps.gradient = {};
+                    newProps.gradient[key.replace('grad', '').toLowerCase()] = value;
+                } else if (key.startsWith('strokeGradColor')) {
+                    if (!newProps.strokeGradient) newProps.strokeGradient = {};
+                    newProps.strokeGradient[key.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                } else if (key === 'scrollDir') {
+                    newProps.scrollDirection = value;
+                } else if (key === 'strokeScrollDir') {
+                    newProps.strokeScrollDir = value;
+                } else {
+                    newProps[key] = value;
+                }
+            });
+            obj.update(newProps);
+        });
+    }
+
+    /**
      * The new, centralized engine for loading any set of configurations into the workspace.
      * @param {Array} loadedConfigs - The array of config objects to load.
      * @param {Array} [savedObjects=[]] - Optional array of saved object data (for names/lock state).
@@ -2828,7 +2881,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 return masterConf;
             });
 
-            const objectIds = [...new Set(loadedConfigs.map(c => (c.property || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
+            const orderedObjectIds = [];
+            const seenIds = new Set();
+            loadedConfigs.forEach(c => {
+                const match = (c.property || '').match(/^obj(\d+)_/);
+                if (match) {
+                    const id = parseInt(match[1], 10);
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        orderedObjectIds.push(id);
+                    }
+                }
+            });
+            const objectIds = orderedObjectIds;
             const finalMergedObjectConfigs = [];
             objectIds.forEach(id => {
                 const fullDefaultConfigSet = getDefaultObjectConfig(id);
@@ -2876,7 +2941,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            updateObjectsFromForm();
+            syncObjectsWithConfigStore();
             drawFrame();
             recordHistory();
         } catch (error) {
@@ -2946,6 +3011,22 @@ document.addEventListener('DOMContentLoaded', function () {
             opposite = opposite.replace('right', 'left');
         }
         return opposite;
+    }
+
+    /**
+     * Generates a filtered set of default configurations for a specific shape type.
+     * @param {string} shapeType - The type of shape (e.g., 'rectangle', 'circle').
+     * @param {number} newId - The ID for the new object.
+     * @returns {object[]} An array of default configuration objects suitable for the given shape.
+     */
+    function getDefaultsForShape(shapeType, newId) {
+        const fullConfig = getDefaultObjectConfig(newId);
+        const validProps = shapePropertyMap[shapeType] || shapePropertyMap['rectangle'];
+
+        return fullConfig.filter(conf => {
+            const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+            return validProps.includes(propName);
+        });
     }
 
     /**
@@ -3052,8 +3133,12 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_vizUseSegments`, label: `Object ${newId}: Use LED Segments`, type: 'boolean', default: 'false', description: '(Visualizer) Renders bars as discrete segments instead of solid blocks.' },
             { property: `obj${newId}_vizSegmentCount`, label: `Object ${newId}: Segment Count`, type: 'number', default: '16', min: '2', max: '64', description: '(Visualizer) The number of vertical LED segments the bar is divided into.' },
             { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
-            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
-            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '1000', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
+            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '1000', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+            { property: `obj${newId}_vizGain`, label: `Object ${newId}: Gain`, type: 'number', default: '100', min: '0', max: '1000', description: '(Visualizer) The overall gain of the visualizer to audio. 100 is normal.' },
+            { property: `obj${newId}_vizLowCutoff`, label: `Object ${newId}: Low Frequency Cutoff (%)`, type: 'number', default: '0', min: '0', max: '100', description: '(Visualizer) Cuts off frequencies below this percentage of the spectrum.' },
+            { property: `obj${newId}_vizHighCutoff`, label: `Object ${newId}: High Frequency Cutoff (%)`, type: 'number', default: '100', min: '0', max: '100', description: '(Visualizer) Cuts off frequencies above this percentage of the spectrum.' },
+            { property: `obj${newId}_vizDownsampleFactor`, label: `Object ${newId}: Downsample Factor`, type: 'number', default: '1', min: '1', max: '16', description: '(Visualizer) Reduces frequency data resolution for performance. 1 = Off. 4 = Use every 4th data point.' },
 
             { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
             { property: `obj${newId}_sensorTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Sensor Meter', values: 'Sensor Meter,Time Plot', description: 'Selects the specific effect that the object will perform in response to sensor data.' },
@@ -4808,7 +4893,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // updateObjectsFromForm();
+        updateObjectsFromForm();
         updateToolbarState();
 
         fpsInterval = 1000 / fps;
@@ -5518,77 +5603,18 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!idMatch) return;
 
             const id = parseInt(idMatch[1], 10);
-            const oldObj = objects.find(o => o.id === id);
-            if (!oldObj) return;
-
+            const obj = objects.find(o => o.id === id);
             const newShapeType = target.value;
 
-            // 1. Preserve essential properties from the old object (using live, scaled values)
-            const preservedProps = {
-                name: oldObj.name, locked: oldObj.locked,
-                x: oldObj.x, y: oldObj.y, width: oldObj.width, height: oldObj.height, rotation: oldObj.rotation,
-                gradient: { ...oldObj.gradient }, strokeGradient: { ...oldObj.strokeGradient },
-                enableAudioReactivity: oldObj.enableAudioReactivity, audioTarget: oldObj.audioTarget,
-                audioMetric: oldObj.audioMetric, beatThreshold: oldObj.beatThreshold,
-                audioSensitivity: oldObj.audioSensitivity, audioSmoothing: oldObj.audioSmoothing
-            };
-
-            // 2. Remove the old object's configuration from the central store
-            configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
-
-            // 3. Get a fresh, default set of configurations for the new shape type
-            const newConfigs = getDefaultObjectConfig(id);
-
-            // 4. Update these new default configurations with the preserved properties
-            newConfigs.forEach(conf => {
-                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                let valueToSet;
-
-                // Explicitly handle shape type
-                if (propName === 'shape') {
-                    valueToSet = newShapeType;
-                } else if (propName.startsWith('gradColor')) {
-                    valueToSet = preservedProps.gradient[propName.replace('gradColor', 'color')];
-                } else if (propName.startsWith('strokeGradColor')) {
-                    valueToSet = preservedProps.strokeGradient[propName.replace('strokeGradColor', 'color')];
-                } else {
-                    valueToSet = preservedProps[propName];
-                }
-
-                if (valueToSet !== undefined) {
-                    // Scale live values back down to UI values for the form's 'default'
-                    const propsToScaleDown = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth'];
-                    if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
-                    else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
-                    else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') { valueToSet *= 50; }
-
-                    if (typeof valueToSet === 'boolean') { valueToSet = String(valueToSet); }
-                    conf.default = valueToSet;
-                }
-                conf.label = `${preservedProps.name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
-            });
-
-            // 5. Insert the new, correct set of configs back into the main store
-            const nextObjectConfigIndex = configStore.findIndex(c => {
-                const match = (c.property || '').match(/^obj(\d+)_/);
-                return match && parseInt(match[1], 10) > id;
-            });
-            const insertionIndex = nextObjectConfigIndex === -1 ? configStore.length : nextObjectConfigIndex;
-            configStore.splice(insertionIndex, 0, ...newConfigs);
-
-            // 6. Recreate the objects array from the now-correct configStore
-            createInitialObjects();
-
-            // 7. Re-render the UI and finalize the state
-            renderForm();
-            updateObjectsFromForm();
-            drawFrame();
-            debouncedRecordHistory();
-
-            dirtyProperties.clear();
-            dirtyProperties.add(target.name); // Re-add the shape property itself, as it was the source of the change.
-
-            return;
+            if (obj && obj.shape !== newShapeType) {
+                // Just update the shape property on the live object
+                obj.update({ shape: newShapeType });
+                // Then, re-render the entire form to get the correct controls
+                renderForm();
+                // Finally, update the objects from the newly rendered form
+                updateObjectsFromForm();
+            }
+            return; // Stop further processing for this event
         }
         // --- END: NEW, CORRECTED LOGIC FOR SHAPE CHANGES ---
 
