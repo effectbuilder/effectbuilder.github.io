@@ -289,7 +289,7 @@ class Shape {
         tetrisBounce, tetrisHoldTime, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeScrollDir,
         strokeCycleColors, strokeCycleSpeed, strokeAnimationSpeed, strokeAnimationMode, strokeUseSharpGradient, strokeGradientStop, strokeRotationSpeed,
         strokePhaseOffset, fireSpread, pixelArtFrames, enableAudioReactivity, audioTarget, audioMetric, audioSensitivity, audioSmoothing = 50, beatThreshold,
-        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth,
+        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth, vizGain, vizDynamicRange, vizDownsampleFactor, vizLowCutoff, vizHighCutoff,
         enableSensorReactivity, sensorTarget, sensorValueSource, userSensor, sensorMeterFill, timePlotLineThickness, timePlotFillArea = false,
         sensorMeterShowValue = false, timePlotAxesStyle = 'None', timePlotTimeScale = 5, gradientSpeedMultiplier, shapeAnimationSpeedMultiplier,
         seismicAnimationSpeedMultiplier, wavePhaseAngle, oscAnimationSpeed, strimerColumns, strimerBlockCount, strimerBlockSize, strimerAnimation,
@@ -449,8 +449,13 @@ class Shape {
         this.vizSegmentCount = vizSegmentCount || 16;
         this.vizSegmentSpacing = vizSegmentSpacing || 1;
         this.vizLineWidth = vizLineWidth || 8;
+        this.vizGain = vizGain || 100;
         this.vizBassLevel = vizBassLevel || 50;
         this.vizTrebleBoost = vizTrebleBoost || 125;
+        this.vizDynamicRange = vizDynamicRange || false;
+        this.vizDownsampleFactor = vizDownsampleFactor || 1;
+        this.vizLowCutoff = vizLowCutoff || 0;
+        this.vizHighCutoff = vizHighCutoff || 100;
         this.enableSensorReactivity = enableSensorReactivity || false;
         this.sensorTarget = sensorTarget || 'Sensor Meter';
         this.sensorValueSource = sensorValueSource || 'value';
@@ -2262,18 +2267,57 @@ class Shape {
                 if (this.frameTimer <= 0) {
                     this.currentFrameIndex = (this.currentFrameIndex + 1) % this.pixelArtFrames.length;
                     const newFrame = this.pixelArtFrames[this.currentFrameIndex];
-                    // Add the remaining time to the new duration to keep timing smooth
                     this.frameTimer += (newFrame && newFrame.duration) || 1;
                 }
             }
         }
 
         if (this.shape === 'audio-visualizer' && audioData && audioData.frequencyData) {
-            const fullFreqData = audioData.frequencyData;
+            let processingData = audioData.frequencyData;
+
+            const lowCutoff = (this.vizLowCutoff || 0) / 100.0;
+            const highCutoff = (this.vizHighCutoff || 100) / 100.0;
+            if (lowCutoff > 0 || highCutoff < 1.0) {
+                const originalSize = processingData.length;
+                const startIndex = Math.floor(originalSize * lowCutoff);
+                const endIndex = Math.floor(originalSize * highCutoff);
+                if (startIndex < endIndex) {
+                    processingData = processingData.slice(startIndex, endIndex);
+                }
+            }
+
+            const downsampleFactor = Math.max(1, parseInt(this.vizDownsampleFactor, 10) || 1);
+            if (downsampleFactor > 1) {
+                processingData = processingData.filter((element, index) => {
+                    return index % downsampleFactor === 0;
+                });
+            }
+
+            let fullFreqData = processingData;
             const smoothingFactor = (this.vizSmoothing || 0) / 100.0;
             const barCount = parseInt(this.vizBarCount, 10);
-            const freqDataSize = fullFreqData.length;
-            const step = Math.floor(freqDataSize / barCount);
+            let freqDataSize = fullFreqData.length;
+
+            if (this.vizDynamicRange) {
+                let lastActiveIndex = 0;
+                const silenceThreshold = 1;
+                for (let i = freqDataSize - 1; i >= 0; i--) {
+                    if (fullFreqData[i] > silenceThreshold) {
+                        lastActiveIndex = i;
+                        break;
+                    }
+                }
+                const minSize = Math.floor(freqDataSize * 0.25);
+                const activeSize = Math.max(minSize, lastActiveIndex);
+
+                if (this.smoothedFreqDataSize === undefined) {
+                    this.smoothedFreqDataSize = activeSize;
+                } else {
+                    this.smoothedFreqDataSize = this.smoothedFreqDataSize * 0.9 + activeSize * 0.1;
+                }
+                freqDataSize = Math.ceil(this.smoothedFreqDataSize);
+            }
+
 
             if (!this.vizBarHeights || this.vizBarHeights.length !== barCount) {
                 this.vizBarHeights = new Array(barCount).fill(0);
@@ -2281,21 +2325,29 @@ class Shape {
 
             const mappedData = [];
             for (let i = 0; i < barCount; i++) {
-                const startFreqIndex = i * step;
-                const endFreqIndex = Math.min((i + 1) * step, freqDataSize);
+                const startFreqIndex = Math.floor((i / barCount) * freqDataSize);
+                const endFreqIndex = Math.floor(((i + 1) / barCount) * freqDataSize);
                 let sum = 0;
                 let count = 0;
-                for (let j = startFreqIndex; j < endFreqIndex; j++) {
-                    let value = fullFreqData[j];
-                    const bassBoostFactor = (this.vizBassLevel || 50) / 100.0;
-                    const trebleBoostFactor = (this.vizTrebleBoost || 125) / 100.0;
-                    const boostFactor = bassBoostFactor + (i / barCount) * (trebleBoostFactor - bassBoostFactor);
-                    value *= boostFactor;
-                    sum += value;
-                    count++;
+
+                if (startFreqIndex >= endFreqIndex) {
+                    if (startFreqIndex < fullFreqData.length) {
+                        sum = fullFreqData[startFreqIndex] || 0;
+                        count = 1;
+                    }
+                } else {
+                    for (let j = startFreqIndex; j < endFreqIndex; j++) {
+                        sum += fullFreqData[j] || 0;
+                        count++;
+                    }
                 }
+
                 const avg = count > 0 ? sum / count : 0;
-                mappedData.push(avg);
+
+                const bassBoostFactor = (this.vizBassLevel || 50) / 100.0;
+                const trebleBoostFactor = (this.vizTrebleBoost || 125) / 100.0;
+                const boostFactor = bassBoostFactor + (i / barCount) * (trebleBoostFactor - bassBoostFactor);
+                mappedData.push(avg * boostFactor);
             }
 
             let peakValue = Math.max(...mappedData);
@@ -2323,13 +2375,13 @@ class Shape {
 
                 let finalHeight;
                 if (barCount === 1) {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
+                    const sensitivityMultiplier = (this.vizGain || 100) / 100.0;
                     const audioValue = (audioData.volume.avg || 0) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                    finalHeight = Math.min(shapeMaxHeight, audioValue * shapeMaxHeight);
                 } else {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
+                    const sensitivityMultiplier = (this.vizGain || 100) / 100.0;
                     const audioValue = (targetHeight / 255) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                    finalHeight = Math.min(shapeMaxHeight, audioValue * shapeMaxHeight);
                 }
                 this.vizBarHeights[i] = smoothingFactor * this.vizBarHeights[i] + (1.0 - smoothingFactor) * finalHeight;
             }
@@ -2814,7 +2866,160 @@ class Shape {
         };
 
         // --- SENSOR REACTIVITY OVERRIDE ---
-        if (this.enableSensorReactivity && (this.sensorTarget === 'Time Plot' || this.sensorTarget === 'Sensor Meter')) {
+        if (this.shape === 'audio-visualizer') {
+            const barCount = parseInt(this.vizBarCount, 10) || 32;
+            const fillStyle = this._createLocalFillStyle();
+            this.ctx.fillStyle = fillStyle;
+            this.ctx.strokeStyle = fillStyle;
+            if (this.vizLayout === 'Circular') {
+                const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
+                const centerX = 0;
+                const centerY = 0;
+                const outerRadius = Math.min(this.width, this.height) / 2;
+                const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
+                if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
+                    if (barCount < 2) return;
+                    this.ctx.beginPath();
+                    for (let i = 0; i <= barCount; i++) {
+                        const index = i % barCount;
+                        const barHeight = this.vizBarHeights[index] || 0;
+                        const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
+                        const radius = innerRadius + barHeight;
+                        const x = centerX + radius * Math.cos(angle);
+                        const y = centerY + radius * Math.sin(angle);
+                        if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
+                    }
+                    if (this.vizDrawStyle === 'Area') {
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                    } else {
+                        this.ctx.lineWidth = this.vizLineWidth;
+                        this.ctx.stroke();
+                    }
+                } else {
+                    if (this.vizUseSegments) {
+                        const segmentCount = this.vizSegmentCount || 16;
+                        const availableBarSpace = outerRadius - innerRadius;
+                        const totalSpacing = (segmentCount - 1) * scaledSegmentSpacing;
+                        const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
+                        if (segmentLength > 0) {
+                            const angleStep = (2 * Math.PI) / barCount;
+                            const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                            for (let i = 0; i < barCount; i++) {
+                                const barLength = this.vizBarHeights[i] || 0;
+                                if (barLength <= 0) continue;
+                                const litSegments = Math.floor((barLength + scaledSegmentSpacing) / (segmentLength + scaledSegmentSpacing));
+                                const baseAngle = this.rotation * (Math.PI / 180);
+                                const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
+                                const endAngle = startAngle + barAngularWidth;
+                                for (let j = 0; j < litSegments; j++) {
+                                    const segmentStartRadius = innerRadius + j * (segmentLength + scaledSegmentSpacing);
+                                    const segmentEndRadius = segmentStartRadius + segmentLength;
+                                    this.ctx.beginPath();
+                                    this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
+                                    this.ctx.arc(centerX, centerY, segmentStartRadius, endAngle, startAngle, true);
+                                    this.ctx.closePath();
+                                    if (this.gradType === 'alternating' || this.gradType === 'random') {
+                                        this.ctx.fillStyle = this._createLocalFillStyle(j);
+                                    }
+                                    this.ctx.fill();
+                                }
+                            }
+                        }
+                    } else {
+                        const angleStep = (2 * Math.PI) / barCount;
+                        const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                        for (let i = 0; i < barCount; i++) {
+                            const barLength = this.vizBarHeights[i] || 0;
+                            if (barLength <= 0) continue;
+                            const startRadius = innerRadius;
+                            const endRadius = innerRadius + barLength;
+                            const baseAngle = this.rotation * (Math.PI / 180);
+                            const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
+                            const endAngle = startAngle + barAngularWidth;
+                            this.ctx.beginPath();
+                            this.ctx.arc(centerX, centerY, endRadius, startAngle, endAngle);
+                            this.ctx.arc(centerX, centerY, startRadius, endAngle, startAngle, true);
+                            this.ctx.closePath();
+                            this.ctx.fill();
+                        }
+                    }
+                }
+            } else {
+                const scaledBarSpacingInput = (this.vizBarSpacing || 0) * (this.width / 200.0);
+                const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
+
+                // Calculate the maximum allowed spacing to ensure it's never larger than the bar width.
+                const maxBarSpacing = barCount > 1 ? this.width / (2 * barCount - 1) : 0;
+                const barSpacing = Math.min(scaledBarSpacingInput, maxBarSpacing);
+
+                const totalSpacing = (barCount - 1) * barSpacing;
+                const barWidth = barCount > 0 ? (this.width - totalSpacing) / barCount : 0;
+
+                if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
+                    this.ctx.beginPath();
+                    const halfW = this.width / 2;
+                    const halfH = this.height / 2;
+                    const firstBarHeight = this.vizBarHeights[0] || 0;
+                    this.ctx.moveTo(-halfW, halfH - firstBarHeight);
+                    for (let i = 0; i < barCount; i++) {
+                        const barHeight = this.vizBarHeights[i] || 0;
+                        const x = -halfW + i * (barWidth + barSpacing) + barWidth / 2;
+                        const y = halfH - barHeight;
+                        this.ctx.lineTo(x, y);
+                    }
+                    if (this.vizDrawStyle === 'Area') {
+                        this.ctx.lineTo(halfW, halfH);
+                        this.ctx.lineTo(-halfW, halfH);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                    } else {
+                        this.ctx.lineWidth = this.vizLineWidth;
+                        this.ctx.stroke();
+                    }
+                } else {
+                    for (let i = 0; i < barCount; i++) {
+                        const barHeight = this.vizBarHeights[i] || 0;
+                        if (barHeight < 1) continue;
+                        const x = -this.width / 2 + i * (barWidth + barSpacing);
+                        if (this.vizUseSegments) {
+                            const segmentCount = this.vizSegmentCount || 16;
+                            const totalSegSpacing = (segmentCount - 1) * scaledSegmentSpacing;
+                            const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
+                            if (segmentHeight > 0) {
+                                const litSegments = Math.floor((barHeight + scaledSegmentSpacing) / (segmentHeight + scaledSegmentSpacing));
+                                for (let j = 0; j < litSegments; j++) {
+                                    let y;
+                                    const segYPos = j * (segmentHeight + scaledSegmentSpacing);
+                                    if (this.gradType === 'alternating' || this.gradType === 'random') {
+                                        this.ctx.fillStyle = this._createLocalFillStyle(j);
+                                    }
+                                    switch (this.vizStyle) {
+                                        case 'top': y = -this.height / 2 + segYPos; break;
+                                        case 'center':
+                                            const totalPossibleHeight = segmentCount * (segmentHeight + scaledSegmentSpacing) - scaledSegmentSpacing;
+                                            y = -totalPossibleHeight / 2 + j * (segmentHeight + scaledSegmentSpacing);
+                                            break;
+                                        default: y = this.height / 2 - segmentHeight - segYPos; break;
+                                    }
+                                    this.ctx.fillRect(x, y, barWidth, segmentHeight);
+                                }
+                            }
+                        } else {
+                            let y;
+                            switch (this.vizStyle) {
+                                case 'top': y = -this.height / 2; break;
+                                case 'center': y = -barHeight / 2; break;
+                                default: y = this.height / 2 - barHeight; break;
+                            }
+                            this.ctx.fillRect(x, y, barWidth, barHeight);
+                        }
+                    }
+                }
+            }
+        }
+        // --- SENSOR REACTIVITY OVERRIDE ---
+        else if (this.enableSensorReactivity && (this.sensorTarget === 'Time Plot' || this.sensorTarget === 'Sensor Meter')) {
             // Create the correct shape path before clipping and drawing the sensor effect.
             this.ctx.beginPath();
             if (this.shape === 'circle') {
@@ -3167,150 +3372,6 @@ class Shape {
                 const centeredShape = { ...this, x: -this.width / 2, y: -this.height / 2, };
                 this.ctx.fillStyle = this._createLocalFillStyle();
                 drawPixelText(this.ctx, centeredShape, textToRender);
-            } else if (this.shape === 'audio-visualizer') {
-                const barCount = parseInt(this.vizBarCount, 10) || 32;
-                const fillStyle = this._createLocalFillStyle();
-                this.ctx.fillStyle = fillStyle;
-                this.ctx.strokeStyle = fillStyle;
-                if (this.vizLayout === 'Circular') {
-                    const centerX = 0;
-                    const centerY = 0;
-                    const outerRadius = Math.min(this.width, this.height) / 2;
-                    const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
-                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        if (barCount < 2) return;
-                        this.ctx.beginPath();
-                        for (let i = 0; i <= barCount; i++) {
-                            const index = i % barCount;
-                            const barHeight = this.vizBarHeights[index] || 0;
-                            const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
-                            const radius = innerRadius + barHeight;
-                            const x = centerX + radius * Math.cos(angle);
-                            const y = centerY + radius * Math.sin(angle);
-                            if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
-                        }
-                        if (this.vizDrawStyle === 'Area') {
-                            this.ctx.closePath();
-                            this.ctx.fill();
-                        } else {
-                            this.ctx.lineWidth = this.vizLineWidth;
-                            this.ctx.stroke();
-                        }
-                    } else {
-                        if (this.vizUseSegments) {
-                            const segmentCount = this.vizSegmentCount || 16;
-                            const segmentSpacing = this.vizSegmentSpacing || 1;
-                            const availableBarSpace = outerRadius - innerRadius;
-                            const totalSpacing = (segmentCount - 1) * segmentSpacing;
-                            const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
-                            if (segmentLength > 0) {
-                                const angleStep = (2 * Math.PI) / barCount;
-                                const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                                for (let i = 0; i < barCount; i++) {
-                                    const barLength = this.vizBarHeights[i] || 0;
-                                    if (barLength <= 0) continue;
-                                    const litSegments = Math.floor(barLength / (segmentLength + segmentSpacing));
-                                    const baseAngle = this.rotation * (Math.PI / 180);
-                                    const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                                    const endAngle = startAngle + barAngularWidth;
-                                    for (let j = 0; j < litSegments; j++) {
-                                        const segmentStartRadius = innerRadius + j * (segmentLength + segmentSpacing);
-                                        const segmentEndRadius = segmentStartRadius + segmentLength;
-                                        this.ctx.beginPath();
-                                        this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
-                                        this.ctx.arc(centerX, centerY, segmentStartRadius, endAngle, startAngle, true);
-                                        this.ctx.closePath();
-                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                        }
-                                        this.ctx.fill();
-                                    }
-                                }
-                            }
-                        } else {
-                            const angleStep = (2 * Math.PI) / barCount;
-                            const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                            for (let i = 0; i < barCount; i++) {
-                                const barLength = this.vizBarHeights[i] || 0;
-                                if (barLength <= 0) continue;
-                                const startRadius = innerRadius;
-                                const endRadius = innerRadius + barLength;
-                                const baseAngle = this.rotation * (Math.PI / 180);
-                                const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                                const endAngle = startAngle + barAngularWidth;
-                                this.ctx.beginPath();
-                                this.ctx.arc(centerX, centerY, endRadius, startAngle, endAngle);
-                                this.ctx.arc(centerX, centerY, startRadius, endAngle, startAngle, true);
-                                this.ctx.closePath();
-                                this.ctx.fill();
-                            }
-                        }
-                    }
-                } else {
-                    const totalSpacing = (barCount - 1) * this.vizBarSpacing;
-                    const barWidth = (this.width - totalSpacing) / barCount;
-                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        this.ctx.beginPath();
-                        const halfW = this.width / 2;
-                        const halfH = this.height / 2;
-                        const firstBarHeight = this.vizBarHeights[0] || 0;
-                        this.ctx.moveTo(-halfW, halfH - firstBarHeight);
-                        for (let i = 0; i < barCount; i++) {
-                            const barHeight = this.vizBarHeights[i] || 0;
-                            const x = -halfW + i * (barWidth + this.vizBarSpacing) + barWidth / 2;
-                            const y = halfH - barHeight;
-                            this.ctx.lineTo(x, y);
-                        }
-                        if (this.vizDrawStyle === 'Area') {
-                            this.ctx.lineTo(halfW, halfH);
-                            this.ctx.lineTo(-halfW, halfH);
-                            this.ctx.closePath();
-                            this.ctx.fill();
-                        } else {
-                            this.ctx.lineWidth = this.vizLineWidth;
-                            this.ctx.stroke();
-                        }
-                    } else {
-                        for (let i = 0; i < barCount; i++) {
-                            const barHeight = this.vizBarHeights[i] || 0;
-                            if (barHeight < 1) continue;
-                            const x = -this.width / 2 + i * (barWidth + this.vizBarSpacing);
-                            if (this.vizUseSegments) {
-                                const segmentCount = this.vizSegmentCount || 16;
-                                const segmentSpacing = this.vizSegmentSpacing || 2;
-                                const totalSegSpacing = (segmentCount - 1) * segmentSpacing;
-                                const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
-                                if (segmentHeight > 0) {
-                                    const litSegments = Math.floor(barHeight / (segmentHeight + segmentSpacing));
-                                    for (let j = 0; j < litSegments; j++) {
-                                        let y;
-                                        const segYPos = j * (segmentHeight + segmentSpacing);
-                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                        }
-                                        switch (this.vizStyle) {
-                                            case 'top': y = -this.height / 2 + segYPos; break;
-                                            case 'center':
-                                                const totalPossibleHeight = segmentCount * (segmentHeight + segmentSpacing) - segmentSpacing;
-                                                y = -totalPossibleHeight / 2 + j * (segmentHeight + segmentSpacing);
-                                                break;
-                                            default: y = this.height / 2 - segmentHeight - segYPos; break;
-                                        }
-                                        this.ctx.fillRect(x, y, barWidth, segmentHeight);
-                                    }
-                                }
-                            } else {
-                                let y;
-                                switch (this.vizStyle) {
-                                    case 'top': y = -this.height / 2; break;
-                                    case 'center': y = -barHeight / 2; break;
-                                    default: y = this.height / 2 - barHeight; break;
-                                }
-                                this.ctx.fillRect(x, y, barWidth, barHeight);
-                            }
-                        }
-                    }
-                }
             } else if (this.shape === 'oscilloscope') {
                 const activeWavePhase = this.enableWaveAnimation ? this.wavePhaseAngle : 0;
                 if (this.oscDisplayMode === 'radial') {
