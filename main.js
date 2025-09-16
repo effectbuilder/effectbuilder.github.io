@@ -4809,7 +4809,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // updateObjectsFromForm();
+        updateObjectsFromForm();
         updateToolbarState();
 
         fpsInterval = 1000 / fps;
