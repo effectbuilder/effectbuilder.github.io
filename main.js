@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'vizAutoScale', 'vizMaxBarHeight',
             'vizBarCount', 'vizBarSpacing', 'vizSmoothing',
             'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
-            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizAudioSensitivity'
+            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizGain'
         ],
         'strimer': [
             'shape', 'x', 'y', 'width', 'height', 'rotation',
@@ -3054,7 +3054,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
             { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
             { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
-            { property: `obj${newId}_vizAudioSensitivity`, label: `Object ${newId}: Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Visualizer) The overall sensitivity of the visualizer to audio. 100 is normal.' },
+            { property: `obj${newId}_vizGain`, label: `Object ${newId}: Gain`, type: 'number', default: '100', min: '0', max: '200', description: '(Visualizer) The overall gain of the visualizer to audio. 100 is normal.' },
 
             { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
             { property: `obj${newId}_sensorTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Sensor Meter', values: 'Sensor Meter,Time Plot', description: 'Selects the specific effect that the object will perform in response to sensor data.' },
