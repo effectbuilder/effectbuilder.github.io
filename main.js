@@ -1544,7 +1544,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 let exportValue = liveValue;
                 let exportType = conf.type;
 
-                // FIX: Force the type to be 'textfield' for SignalRGB compatibility.
                 if (propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
                     exportType = 'textfield';
                 }
@@ -1561,7 +1560,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
 
                 if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                    writeAsMeta = false; // Always export complex data as a hard-coded variable
+                    writeAsMeta = false;
                 }
 
                 if (writeAsMeta) {
@@ -1585,15 +1584,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
                 } else {
-                    if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
-                        // Manually scale down the node coordinates for export.
-                        const scaledNodes = exportValue.map(node => ({
-                            x: Math.round(node.x / 4),
-                            y: Math.round(node.y / 4)
-                        }));
-                        jsVars += `const ${conf.property} = ${JSON.stringify(scaledNodes)};\n`;
-                    } else {
-                        jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
+                    // FIX: This block is now more restrictive. It only writes a JS variable if the property
+                    // is essential (not minimized) OR is one of the specifically hardcoded types.
+                    // Inapplicable properties are now correctly dropped.
+                    if (!minimize || objectSpecificProps.includes(propName) || propName === 'polylineNodes' || propName === 'pixelArtFrames') {
+                        if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
+                            const scaledNodes = exportValue.map(node => ({
+                                x: Math.round(node.x / 4),
+                                y: Math.round(node.y / 4)
+                            }));
+                            jsVars += `const ${conf.property} = ${JSON.stringify(scaledNodes)};\n`;
+                        } else {
+                            jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
+                        }
                     }
                 }
             });
@@ -2401,7 +2404,7 @@ document.addEventListener('DOMContentLoaded', function () {
             obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
-            
+
             obj.dirty = false;
         }
 
@@ -5533,8 +5536,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 audioSensitivity: oldObj.audioSensitivity, audioSmoothing: oldObj.audioSmoothing
             };
 
-            // 2. Remove the old object's configuration from the central store
-            configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
+            // 2. Find the start index and count of the old configuration block
+            const startIndex = configStore.findIndex(c => c.property && c.property.startsWith(`obj${id}_`));
+            if (startIndex === -1) { return; } // Should not happen
+
+            let count = 0;
+            for (let i = startIndex; i < configStore.length; i++) {
+                if (configStore[i].property && configStore[i].property.startsWith(`obj${id}_`)) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
 
             // 3. Get a fresh, default set of configurations for the new shape type
             const newConfigs = getDefaultObjectConfig(id);
@@ -5544,7 +5557,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const propName = conf.property.substring(conf.property.indexOf('_') + 1);
                 let valueToSet;
 
-                // Explicitly handle shape type
                 if (propName === 'shape') {
                     valueToSet = newShapeType;
                 } else if (propName.startsWith('gradColor')) {
@@ -5556,7 +5568,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (valueToSet !== undefined) {
-                    // Scale live values back down to UI values for the form's 'default'
                     const propsToScaleDown = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth'];
                     if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
                     else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
@@ -5568,13 +5579,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 conf.label = `${preservedProps.name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
             });
 
-            // 5. Insert the new, correct set of configs back into the main store
-            const nextObjectConfigIndex = configStore.findIndex(c => {
-                const match = (c.property || '').match(/^obj(\d+)_/);
-                return match && parseInt(match[1], 10) > id;
-            });
-            const insertionIndex = nextObjectConfigIndex === -1 ? configStore.length : nextObjectConfigIndex;
-            configStore.splice(insertionIndex, 0, ...newConfigs);
+            // 5. Replace the old config block with the new one in-place
+            configStore.splice(startIndex, count, ...newConfigs);
 
             // 6. Recreate the objects array from the now-correct configStore
             createInitialObjects();
@@ -5586,7 +5592,7 @@ document.addEventListener('DOMContentLoaded', function () {
             debouncedRecordHistory();
 
             dirtyProperties.clear();
-            dirtyProperties.add(target.name); // Re-add the shape property itself, as it was the source of the change.
+            dirtyProperties.add(target.name);
 
             return;
         }
