@@ -1723,7 +1723,7 @@ class Shape {
             const segments = 360;
             for (let i = 0; i < segments; i++) {
                 const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
+                const endAngle = ((i + 2.0) / segments) * 2 * Math.PI + rotationOffset;
                 let segmentColor;
                 if (gradType === 'rainbow-conic') {
                     segmentColor = `hsl(${(i + this.strokeHue1) % 360}, 100%, 50%)`;
@@ -1857,7 +1857,7 @@ class Shape {
                 const segments = 360;
                 for (let i = 0; i < segments; i++) {
                     const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                    const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
+                    const endAngle = ((i + 2.0) / segments) * 2 * Math.PI + rotationOffset;
                     let segmentColor;
                     if (this.gradType === 'rainbow-conic') {
                         const hue = ((i / segments) * 360 + this.hue1) % 360;
