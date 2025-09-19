@@ -1774,14 +1774,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else if (propName === 'cycleSpeed') {
                         liveValue *= 50;
                     }
-
-                    // FIX: Ensure complex properties are stringified before being saved to the config store.
-                    const complexProps = ['pixelArtFrames', 'polylineNodes', 'spawn_svg_path'];
-                    if (complexProps.includes(propName) && typeof liveValue === 'object') {
-                        newConf.default = JSON.stringify(liveValue);
-                    } else {
-                        newConf.default = liveValue;
-                    }
+                    newConf.default = liveValue;
                     return newConf;
                 });
                 configStore.push(...newConfigs);
@@ -5630,6 +5623,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const debouncedRecordHistory = debounce(recordHistory, 500);
 
 
+    // This handles committed changes from text boxes, dropdowns, color pickers, and checkboxes.
     form.addEventListener('change', (e) => {
         const target = e.target;
 
@@ -5651,101 +5645,88 @@ document.addEventListener('DOMContentLoaded', function () {
             dirtyProperties.add(target.name);
         }
 
-        // START OF THE FIX: This block handles shape changes by rebuilding the object's configuration.
         if (target.name && /^obj\d+_shape$/.test(target.name)) {
-            isRestoring = true; // Prevent other listeners from interfering during this complex operation
+            isRestoring = true; // Prevent race conditions from other event listeners.
 
             try {
                 const idMatch = target.name.match(/^obj(\d+)_/);
                 if (!idMatch) return;
 
                 const id = parseInt(idMatch[1], 10);
-                const obj = objects.find(o => o.id === id);
+                const oldObj = objects.find(o => o.id === id);
                 const newShapeType = target.value;
 
-                if (obj && obj.shape !== newShapeType) {
-                    // 1. Get ALL current values from the form for this object.
-                    const currentObjectFormValues = {};
-                    const prefix = `obj${id}_`;
-                    const configsForObject = configStore.filter(c => c.property && c.property.startsWith(prefix));
-                    configsForObject.forEach(conf => {
-                        const el = form.elements[conf.property];
-                        if (el) {
-                            const key = conf.property.replace(prefix, '');
-                            if (el.type === 'checkbox') {
-                                currentObjectFormValues[key] = el.checked;
-                            } else if (el.type === 'number') {
-                                currentObjectFormValues[key] = el.value === '' ? 0 : parseFloat(el.value);
-                            } else {
-                                currentObjectFormValues[key] = el.value;
-                            }
-                        }
-                    });
-                    const fieldset = target.closest('fieldset[data-object-id]');
-                    const objectName = fieldset ? fieldset.querySelector('.object-name').textContent : `Object ${id}`;
+                if (oldObj && oldObj.shape !== newShapeType) {
+                    // Preserve essential, non-shape-specific properties.
+                    const preservedState = {
+                        id: oldObj.id,
+                        name: oldObj.name,
+                        x: oldObj.x,
+                        y: oldObj.y,
+                        width: oldObj.width,
+                        height: oldObj.height,
+                        rotation: oldObj.rotation,
+                        locked: oldObj.locked,
+                        shape: newShapeType,
+                        ctx: ctx,
+                        canvasWidth: canvas.width,
+                        // Also preserve gradient and stroke properties which are objects.
+                        gradient: { ...oldObj.gradient },
+                        strokeGradient: { ...oldObj.strokeGradient }
+                    };
 
-                    // 2. Find the index where this object's properties start.
-                    const insertIndex = configStore.findIndex(c => c.property && c.property.startsWith(`obj${id}_`));
+                    // Create a new Shape object.
+                    const newShape = new Shape(preservedState);
 
-                    // 3. Atomically remove all old configs for this object ID.
-                    if (insertIndex > -1) {
-                        configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
+                    // Replace the old object in the main array.
+                    const objectIndex = objects.findIndex(o => o.id === id);
+                    if (objectIndex !== -1) {
+                        objects[objectIndex] = newShape;
                     }
 
-                    // 4. Get a fresh, clean set of configs for the NEW shape type.
+                    // Rebuild the configStore for this object.
+                    const configInsertIndex = configStore.findIndex(c => c.property && c.property.startsWith(`obj${id}_`));
+                    configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
                     const newConfigs = getDefaultsForShape(newShapeType, id);
 
-                    // 5. Intelligently merge the preserved form values into the new configs.
+                    // Re-apply the preserved state to the new default configurations.
                     newConfigs.forEach(conf => {
                         const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                        conf.label = `${objectName}: ${conf.label.split(':').slice(1).join(' ').trim()}`;
-
-                        if (currentObjectFormValues.hasOwnProperty(propName)) {
-                            let valueToSet = currentObjectFormValues[propName];
-
-                            // FIX: If the value is a complex object (like from a live Shape instance),
-                            // ensure it's stringified before being set as a 'default' in the configStore.
-                            const complexProps = ['pixelArtFrames', 'polylineNodes', 'spawn_svg_path'];
-                            if (complexProps.includes(propName) && typeof valueToSet === 'object' && valueToSet !== null) {
-                                try {
-                                    valueToSet = JSON.stringify(valueToSet);
-                                } catch (e) {
-                                    console.error(`Could not stringify complex property ${propName}`, e);
-                                    valueToSet = '[]'; // Fallback to a safe default
-                                }
-                            }
-                            conf.default = valueToSet;
-                        }
-
-                        if (propName === 'shape') {
-                            conf.default = newShapeType;
+                        conf.label = `${preservedState.name}: ${conf.label.split(':').slice(1).join(' ').trim()}`;
+                        const propsToScaleDown = ['x', 'y', 'width', 'height'];
+                        
+                        if (propsToScaleDown.includes(propName) && preservedState[propName] !== undefined) {
+                            conf.default = Math.round(preservedState[propName] / 4);
+                        } else if (propName === 'gradColor1' && preservedState.gradient) {
+                            conf.default = preservedState.gradient.color1;
+                        } else if (propName === 'gradColor2' && preservedState.gradient) {
+                            conf.default = preservedState.gradient.color2;
+                        } else if (propName === 'strokeGradColor1' && preservedState.strokeGradient) {
+                            conf.default = preservedState.strokeGradient.color1;
+                        } else if (propName === 'strokeGradColor2' && preservedState.strokeGradient) {
+                            conf.default = preservedState.strokeGradient.color2;
+                        } else if (preservedState.hasOwnProperty(propName)) {
+                            conf.default = preservedState[propName];
                         }
                     });
 
-
-                    // 6. Splice the new, correct configs back into the store.
-                    if (insertIndex > -1) {
-                        configStore.splice(insertIndex, 0, ...newConfigs);
+                    // Insert the new configurations back into the store.
+                    if (configInsertIndex !== -1) {
+                        configStore.splice(configInsertIndex, 0, ...newConfigs);
                     } else {
                         configStore.push(...newConfigs);
                     }
 
-                    // 7. Directly update the live object's shape property.
-                    obj.shape = newShapeType;
-
-                    // 8. Re-render the form from the updated configStore.
+                    // Re-render the form. `renderForm` will call `updateFormValuesFromObjects` internally.
                     renderForm();
-
-                    // 9. Sync all objects with the authoritative configStore.
-                    syncObjectsWithConfigStore();
+                    drawFrame();
+                    debouncedRecordHistory();
                 }
             } finally {
-                isRestoring = false; // Always ensure the flag is reset
-                debouncedRecordHistory();
+                isRestoring = false; // Release the lock.
             }
-            return;
+            return; // Exit the event handler.
         }
-        // END OF THE FIX
 
         if (target.name && (
             target.name.includes('_vizDrawStyle') ||
