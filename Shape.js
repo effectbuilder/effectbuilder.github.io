@@ -1728,7 +1728,7 @@ class Shape {
             const segments = 360;
             for (let i = 0; i < segments; i++) {
                 const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
+                const endAngle = ((i + 1) / segments) * 2 * Math.PI + rotationOffset;
                 let segmentColor;
                 if (gradType === 'rainbow-conic') {
                     segmentColor = `hsl(${(i + this.strokeHue1) % 360}, 100%, 50%)`;
@@ -1841,52 +1841,37 @@ class Shape {
                 return this._getRandomColorForElement(phase);
             case 'conic':
             case 'rainbow-conic': {
-                if (this._conicPatternCache) {
-                    return this._conicPatternCache;
-                }
-                const size = Math.ceil(Math.sqrt(this.width * this.width + this.height * this.height));
-                if (size <= 0) return 'black';
-
                 let animProgress = p;
                 if (this.animationMode.includes('bounce')) {
                     animProgress = (p < 0.5) ? (p * 2) : ((1 - p) * 2);
                 }
+                // The start angle is rotated by the animation progress
                 const rotationOffset = animProgress * 2 * Math.PI;
 
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = size;
-                tempCanvas.height = size;
-                const tempCtx = tempCanvas.getContext('2d');
-                const centerX = size / 2;
-                const centerY = size / 2;
-                const segments = 360;
-                for (let i = 0; i < segments; i++) {
-                    const startAngle = (i / segments) * 2 * Math.PI + rotationOffset;
-                    const endAngle = ((i + 1.1) / segments) * 2 * Math.PI + rotationOffset;
-                    let segmentColor;
-                    if (this.gradType === 'rainbow-conic') {
-                        const hue = ((i / segments) * 360 + this.hue1) % 360;
-                        segmentColor = `hsl(${hue}, 100%, 50%)`;
-                    } else {
-                        const progress = i / segments;
-                        if (this.useSharpGradient) {
-                            const stopPoint = this.gradientStop / 100.0;
-                            segmentColor = progress < stopPoint ? c1 : c2;
-                        } else {
-                            segmentColor = lerpColor(c1, c2, progress);
-                        }
+                // Create the native conic gradient object
+                const grad = this.ctx.createConicGradient(rotationOffset, 0, 0);
+
+                if (this.gradType === 'rainbow-conic') {
+                    const stops = 12; // Create a smooth rainbow with 12 stops
+                    for (let i = 0; i <= stops; i++) {
+                        const hue = (this.hue1 + (i / stops) * 360) % 360;
+                        grad.addColorStop(i / stops, `hsl(${hue}, 100%, 50%)`);
                     }
-                    tempCtx.beginPath();
-                    tempCtx.moveTo(centerX, centerY);
-                    tempCtx.arc(centerX, centerY, size / 2, startAngle, endAngle);
-                    tempCtx.closePath();
-                    tempCtx.fillStyle = segmentColor;
-                    tempCtx.fill();
+                } else { // Regular 'conic'
+                    if (this.useSharpGradient) {
+                        const stopPoint = this.gradientStop / 100.0;
+                        grad.addColorStop(0, c1);
+                        grad.addColorStop(stopPoint, c1);
+                        // Add a tiny transition point to ensure a hard edge
+                        grad.addColorStop(Math.min(1, stopPoint + 0.001), c2);
+                        grad.addColorStop(1, c2);
+                    } else {
+                        // A smooth gradient just needs two stops
+                        grad.addColorStop(0, c1);
+                        grad.addColorStop(1, c2);
+                    }
                 }
-                const pattern = this.ctx.createPattern(tempCanvas, 'no-repeat');
-                pattern.setTransform(new DOMMatrix().translateSelf(-centerX, -centerY));
-                this._conicPatternCache = pattern;
-                return pattern;
+                return grad;
             }
             default: // solid
                 return c1 || 'black';
@@ -2827,6 +2812,8 @@ class Shape {
         }
     }
 
+    // In Shape.js, replace the entire function with this corrected version:
+
     draw(isSelected, audioData = {}, palette = {}) {
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
@@ -2840,9 +2827,6 @@ class Shape {
         if (this.internalScale && this.internalScale !== 1.0) {
             this.ctx.scale(this.internalScale, this.internalScale);
         }
-
-        // Flash opacity is now applied on a case-by-case basis within each shape's drawing logic
-        // to avoid affecting UI elements like the polyline placeholder.
 
         const applyStrokeInside = () => {
             if (this.enableStroke && this.strokeWidth > 0) {
@@ -2865,162 +2849,15 @@ class Shape {
             }
         };
 
-        // --- SENSOR REACTIVITY OVERRIDE ---
-        if (this.shape === 'audio-visualizer') {
-            const barCount = parseInt(this.vizBarCount, 10) || 32;
-            const fillStyle = this._createLocalFillStyle();
-            this.ctx.fillStyle = fillStyle;
-            this.ctx.strokeStyle = fillStyle;
-            if (this.vizLayout === 'Circular') {
-                const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
-                const centerX = 0;
-                const centerY = 0;
-                const outerRadius = Math.min(this.width, this.height) / 2;
-                const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
-                if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                    if (barCount < 2) return;
-                    this.ctx.beginPath();
-                    for (let i = 0; i <= barCount; i++) {
-                        const index = i % barCount;
-                        const barHeight = this.vizBarHeights[index] || 0;
-                        const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
-                        const radius = innerRadius + barHeight;
-                        const x = centerX + radius * Math.cos(angle);
-                        const y = centerY + radius * Math.sin(angle);
-                        if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
-                    }
-                    if (this.vizDrawStyle === 'Area') {
-                        this.ctx.closePath();
-                        this.ctx.fill();
-                    } else {
-                        this.ctx.lineWidth = this.vizLineWidth;
-                        this.ctx.stroke();
-                    }
-                } else {
-                    if (this.vizUseSegments) {
-                        const segmentCount = this.vizSegmentCount || 16;
-                        const availableBarSpace = outerRadius - innerRadius;
-                        const totalSpacing = (segmentCount - 1) * scaledSegmentSpacing;
-                        const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
-                        if (segmentLength > 0) {
-                            const angleStep = (2 * Math.PI) / barCount;
-                            const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                            for (let i = 0; i < barCount; i++) {
-                                const barLength = this.vizBarHeights[i] || 0;
-                                if (barLength <= 0) continue;
-                                const litSegments = Math.floor((barLength + scaledSegmentSpacing) / (segmentLength + scaledSegmentSpacing));
-                                const baseAngle = this.rotation * (Math.PI / 180);
-                                const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                                const endAngle = startAngle + barAngularWidth;
-                                for (let j = 0; j < litSegments; j++) {
-                                    const segmentStartRadius = innerRadius + j * (segmentLength + scaledSegmentSpacing);
-                                    const segmentEndRadius = segmentStartRadius + segmentLength;
-                                    this.ctx.beginPath();
-                                    this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
-                                    this.ctx.arc(centerX, centerY, segmentStartRadius, endAngle, startAngle, true);
-                                    this.ctx.closePath();
-                                    if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                        this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                    }
-                                    this.ctx.fill();
-                                }
-                            }
-                        }
-                    } else {
-                        const angleStep = (2 * Math.PI) / barCount;
-                        const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
-                        for (let i = 0; i < barCount; i++) {
-                            const barLength = this.vizBarHeights[i] || 0;
-                            if (barLength <= 0) continue;
-                            const startRadius = innerRadius;
-                            const endRadius = innerRadius + barLength;
-                            const baseAngle = this.rotation * (Math.PI / 180);
-                            const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
-                            const endAngle = startAngle + barAngularWidth;
-                            this.ctx.beginPath();
-                            this.ctx.arc(centerX, centerY, endRadius, startAngle, endAngle);
-                            this.ctx.arc(centerX, centerY, startRadius, endAngle, startAngle, true);
-                            this.ctx.closePath();
-                            this.ctx.fill();
-                        }
-                    }
-                }
-            } else {
-                const scaledBarSpacingInput = (this.vizBarSpacing || 0) * (this.width / 200.0);
-                const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
+        // START OF THE FIX
+        // This array defines which shapes are compatible with the Sensor Meter/Plot effects.
+        const supportedSensorShapes = ['rectangle', 'circle', 'ring', 'polygon', 'star'];
+        const isSensorMeterOrPlot = this.enableSensorReactivity && (this.sensorTarget === 'Time Plot' || this.sensorTarget === 'Sensor Meter');
 
-                // Calculate the maximum allowed spacing to ensure it's never larger than the bar width.
-                const maxBarSpacing = barCount > 1 ? this.width / (2 * barCount - 1) : 0;
-                const barSpacing = Math.min(scaledBarSpacingInput, maxBarSpacing);
-
-                const totalSpacing = (barCount - 1) * barSpacing;
-                const barWidth = barCount > 0 ? (this.width - totalSpacing) / barCount : 0;
-
-                if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                    this.ctx.beginPath();
-                    const halfW = this.width / 2;
-                    const halfH = this.height / 2;
-                    const firstBarHeight = this.vizBarHeights[0] || 0;
-                    this.ctx.moveTo(-halfW, halfH - firstBarHeight);
-                    for (let i = 0; i < barCount; i++) {
-                        const barHeight = this.vizBarHeights[i] || 0;
-                        const x = -halfW + i * (barWidth + barSpacing) + barWidth / 2;
-                        const y = halfH - barHeight;
-                        this.ctx.lineTo(x, y);
-                    }
-                    if (this.vizDrawStyle === 'Area') {
-                        this.ctx.lineTo(halfW, halfH);
-                        this.ctx.lineTo(-halfW, halfH);
-                        this.ctx.closePath();
-                        this.ctx.fill();
-                    } else {
-                        this.ctx.lineWidth = this.vizLineWidth;
-                        this.ctx.stroke();
-                    }
-                } else {
-                    for (let i = 0; i < barCount; i++) {
-                        const barHeight = this.vizBarHeights[i] || 0;
-                        if (barHeight < 1) continue;
-                        const x = -this.width / 2 + i * (barWidth + barSpacing);
-                        if (this.vizUseSegments) {
-                            const segmentCount = this.vizSegmentCount || 16;
-                            const totalSegSpacing = (segmentCount - 1) * scaledSegmentSpacing;
-                            const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
-                            if (segmentHeight > 0) {
-                                const litSegments = Math.floor((barHeight + scaledSegmentSpacing) / (segmentHeight + scaledSegmentSpacing));
-                                for (let j = 0; j < litSegments; j++) {
-                                    let y;
-                                    const segYPos = j * (segmentHeight + scaledSegmentSpacing);
-                                    if (this.gradType === 'alternating' || this.gradType === 'random') {
-                                        this.ctx.fillStyle = this._createLocalFillStyle(j);
-                                    }
-                                    switch (this.vizStyle) {
-                                        case 'top': y = -this.height / 2 + segYPos; break;
-                                        case 'center':
-                                            const totalPossibleHeight = segmentCount * (segmentHeight + scaledSegmentSpacing) - scaledSegmentSpacing;
-                                            y = -totalPossibleHeight / 2 + j * (segmentHeight + scaledSegmentSpacing);
-                                            break;
-                                        default: y = this.height / 2 - segmentHeight - segYPos; break;
-                                    }
-                                    this.ctx.fillRect(x, y, barWidth, segmentHeight);
-                                }
-                            }
-                        } else {
-                            let y;
-                            switch (this.vizStyle) {
-                                case 'top': y = -this.height / 2; break;
-                                case 'center': y = -barHeight / 2; break;
-                                default: y = this.height / 2 - barHeight; break;
-                            }
-                            this.ctx.fillRect(x, y, barWidth, barHeight);
-                        }
-                    }
-                }
-            }
-        }
-        // --- SENSOR REACTIVITY OVERRIDE ---
-        else if (this.enableSensorReactivity && (this.sensorTarget === 'Time Plot' || this.sensorTarget === 'Sensor Meter')) {
-            // Create the correct shape path before clipping and drawing the sensor effect.
+        // This primary 'if' condition now checks if the shape is compatible before taking over the rendering.
+        if (isSensorMeterOrPlot && supportedSensorShapes.includes(this.shape)) {
+            // --- SENSOR REACTIVITY DRAWING LOGIC ---
+            // Create the correct shape path for clipping.
             this.ctx.beginPath();
             if (this.shape === 'circle') {
                 this.ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, 2 * Math.PI);
@@ -3046,23 +2883,181 @@ class Shape {
                     this.ctx[i === 0 ? 'moveTo' : 'lineTo'](rX * Math.cos(a), rY * Math.sin(a));
                 }
                 this.ctx.closePath();
-            } else { // Default to rectangle for sensor effects on complex/unsupported shapes
+            } else if (this.shape === 'ring') {
+                const oR = this.width / 2;
+                const iR = this.innerDiameter / 2;
+                this.ctx.arc(0, 0, oR, 0, 2 * Math.PI, false);
+                this.ctx.arc(0, 0, iR, 2 * Math.PI, 0, true);
+                this.ctx.closePath();
+            } else { // This now correctly handles the 'rectangle' case
                 this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
             }
 
+            // Now, draw the sensor effect inside the clipped path.
             if (this.sensorTarget === 'Time Plot') {
-                this.ctx.save(); // Save state before clipping
+                this.ctx.save();
                 this.ctx.clip();
                 this._drawTimePlot();
-                this.ctx.restore(); // Restore state to remove clipping
+                this.ctx.restore();
             } else { // Sensor Meter
-                // _drawFill handles its own clipping and state saving/restoring
                 this._drawFill();
             }
-
         } else {
-            // --- ALL REGULAR SHAPE DRAWING LOGIC IS NOW INSIDE THIS ELSE BLOCK ---
-            if (this.shape === 'fire' || this.shape === 'fire-radial') {
+            // --- ALL OTHER DRAWING LOGIC IS HERE ---
+            // This 'else' block will now correctly execute for shapes like Text or Tetris, even if sensor reactivity is enabled.
+            if (this.shape === 'audio-visualizer') {
+                // ... (audio-visualizer drawing logic remains unchanged) ...
+                const barCount = parseInt(this.vizBarCount, 10) || 32;
+                const fillStyle = this._createLocalFillStyle();
+                this.ctx.fillStyle = fillStyle;
+                this.ctx.strokeStyle = fillStyle;
+                if (this.vizLayout === 'Circular') {
+                    const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
+                    const centerX = 0;
+                    const centerY = 0;
+                    const outerRadius = Math.min(this.width, this.height) / 2;
+                    const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
+                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
+                        if (barCount < 2) return;
+                        this.ctx.beginPath();
+                        for (let i = 0; i <= barCount; i++) {
+                            const index = i % barCount;
+                            const barHeight = this.vizBarHeights[index] || 0;
+                            const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
+                            const radius = innerRadius + barHeight;
+                            const x = centerX + radius * Math.cos(angle);
+                            const y = centerY + radius * Math.sin(angle);
+                            if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
+                        }
+                        if (this.vizDrawStyle === 'Area') {
+                            this.ctx.closePath();
+                            this.ctx.fill();
+                        } else {
+                            this.ctx.lineWidth = this.vizLineWidth;
+                            this.ctx.stroke();
+                        }
+                    } else {
+                        if (this.vizUseSegments) {
+                            const segmentCount = this.vizSegmentCount || 16;
+                            const availableBarSpace = outerRadius - innerRadius;
+                            const totalSpacing = (segmentCount - 1) * scaledSegmentSpacing;
+                            const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
+                            if (segmentLength > 0) {
+                                const angleStep = (2 * Math.PI) / barCount;
+                                const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                                for (let i = 0; i < barCount; i++) {
+                                    const barLength = this.vizBarHeights[i] || 0;
+                                    if (barLength <= 0) continue;
+                                    const litSegments = Math.floor((barLength + scaledSegmentSpacing) / (segmentLength + scaledSegmentSpacing));
+                                    const baseAngle = this.rotation * (Math.PI / 180);
+                                    const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
+                                    const endAngle = startAngle + barAngularWidth;
+                                    for (let j = 0; j < litSegments; j++) {
+                                        const segmentStartRadius = innerRadius + j * (segmentLength + scaledSegmentSpacing);
+                                        const segmentEndRadius = segmentStartRadius + segmentLength;
+                                        this.ctx.beginPath();
+                                        this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
+                                        this.ctx.arc(centerX, centerY, segmentStartRadius, endAngle, startAngle, true);
+                                        this.ctx.closePath();
+                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
+                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
+                                        }
+                                        this.ctx.fill();
+                                    }
+                                }
+                            }
+                        } else {
+                            const angleStep = (2 * Math.PI) / barCount;
+                            const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                            for (let i = 0; i < barCount; i++) {
+                                const barLength = this.vizBarHeights[i] || 0;
+                                if (barLength <= 0) continue;
+                                const startRadius = innerRadius;
+                                const endRadius = innerRadius + barLength;
+                                const baseAngle = this.rotation * (Math.PI / 180);
+                                const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
+                                const endAngle = startAngle + barAngularWidth;
+                                this.ctx.beginPath();
+                                this.ctx.arc(centerX, centerY, endRadius, startAngle, endAngle);
+                                this.ctx.arc(centerX, centerY, startRadius, endAngle, startAngle, true);
+                                this.ctx.closePath();
+                                this.ctx.fill();
+                            }
+                        }
+                    }
+                } else {
+                    const scaledBarSpacingInput = (this.vizBarSpacing || 0) * (this.width / 200.0);
+                    const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
+
+                    // Calculate the maximum allowed spacing to ensure it's never larger than the bar width.
+                    const maxBarSpacing = barCount > 1 ? this.width / (2 * barCount - 1) : 0;
+                    const barSpacing = Math.min(scaledBarSpacingInput, maxBarSpacing);
+
+                    const totalSpacing = (barCount - 1) * barSpacing;
+                    const barWidth = barCount > 0 ? (this.width - totalSpacing) / barCount : 0;
+
+                    if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
+                        this.ctx.beginPath();
+                        const halfW = this.width / 2;
+                        const halfH = this.height / 2;
+                        const firstBarHeight = this.vizBarHeights[0] || 0;
+                        this.ctx.moveTo(-halfW, halfH - firstBarHeight);
+                        for (let i = 0; i < barCount; i++) {
+                            const barHeight = this.vizBarHeights[i] || 0;
+                            const x = -halfW + i * (barWidth + barSpacing) + barWidth / 2;
+                            const y = halfH - barHeight;
+                            this.ctx.lineTo(x, y);
+                        }
+                        if (this.vizDrawStyle === 'Area') {
+                            this.ctx.lineTo(halfW, halfH);
+                            this.ctx.lineTo(-halfW, halfH);
+                            this.ctx.closePath();
+                            this.ctx.fill();
+                        } else {
+                            this.ctx.lineWidth = this.vizLineWidth;
+                            this.ctx.stroke();
+                        }
+                    } else {
+                        for (let i = 0; i < barCount; i++) {
+                            const barHeight = this.vizBarHeights[i] || 0;
+                            if (barHeight < 1) continue;
+                            const x = -this.width / 2 + i * (barWidth + barSpacing);
+                            if (this.vizUseSegments) {
+                                const segmentCount = this.vizSegmentCount || 16;
+                                const totalSegSpacing = (segmentCount - 1) * scaledSegmentSpacing;
+                                const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
+                                if (segmentHeight > 0) {
+                                    const litSegments = Math.floor((barHeight + scaledSegmentSpacing) / (segmentHeight + scaledSegmentSpacing));
+                                    for (let j = 0; j < litSegments; j++) {
+                                        let y;
+                                        const segYPos = j * (segmentHeight + scaledSegmentSpacing);
+                                        if (this.gradType === 'alternating' || this.gradType === 'random') {
+                                            this.ctx.fillStyle = this._createLocalFillStyle(j);
+                                        }
+                                        switch (this.vizStyle) {
+                                            case 'top': y = -this.height / 2 + segYPos; break;
+                                            case 'center':
+                                                const totalPossibleHeight = segmentCount * (segmentHeight + scaledSegmentSpacing) - scaledSegmentSpacing;
+                                                y = -totalPossibleHeight / 2 + j * (segmentHeight + scaledSegmentSpacing);
+                                                break;
+                                            default: y = this.height / 2 - segmentHeight - segYPos; break;
+                                        }
+                                        this.ctx.fillRect(x, y, barWidth, segmentHeight);
+                                    }
+                                }
+                            } else {
+                                let y;
+                                switch (this.vizStyle) {
+                                    case 'top': y = -this.height / 2; break;
+                                    case 'center': y = -barHeight / 2; break;
+                                    default: y = this.height / 2 - barHeight; break;
+                                }
+                                this.ctx.fillRect(x, y, barWidth, barHeight);
+                            }
+                        }
+                    }
+                }
+            } else if (this.shape === 'fire' || this.shape === 'fire-radial') {
                 this.ctx.save();
                 this.ctx.beginPath();
                 this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
@@ -3088,7 +3083,7 @@ class Shape {
             } else if (this.shape === 'pixel-art') {
                 try {
                     const currentFrame = this.pixelArtFrames[this.currentFrameIndex];
-                    if (!currentFrame || !currentFrame.data) return; // Safety check
+                    if (!currentFrame || !currentFrame.data) return;
 
                     const data = (typeof currentFrame.data === 'string') ? JSON.parse(currentFrame.data) : currentFrame.data;
 
@@ -3103,32 +3098,24 @@ class Shape {
                             const alphaValue = data[r] && data[r][c] ? data[r][c] : 0;
 
                             if (alphaValue > 0) {
-                                // Determine the fill style and alpha for the current pixel
                                 if (alphaValue === 1.0) {
-                                    // Rule 1: Force to opaque white
                                     this.ctx.fillStyle = '#FFFFFF';
                                     this.ctx.globalAlpha = 1.0;
                                 } else if (alphaValue === 0.3) {
-                                    // Rule 2: Force to opaque Color 1
                                     this.ctx.fillStyle = this.gradient.color1 || '#ff0000';
                                     this.ctx.globalAlpha = 1.0;
                                 } else if (alphaValue === 0.4) {
-                                    // ADDED: Rule for Color 2
                                     this.ctx.fillStyle = this.gradient.color2 || '#00FF00';
                                     this.ctx.globalAlpha = 1.0;
                                 } else {
-                                    // Default behavior for all other values (e.g., 0.5, 0.7)
                                     const cellIndex = r * this.numberOfColumns + c;
                                     this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
                                     this.ctx.globalAlpha = alphaValue;
                                 }
-
-                                // Draw the pixel with the determined style
                                 this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
                             }
                         }
                     }
-                    // Reset global alpha after the loop is done to ensure it doesn't affect other shapes
                     this.ctx.globalAlpha = 1.0;
                 } catch (e) { console.error("Failed to draw pixel art:", e); }
             } else if (this.shape === 'tetris') {
@@ -3179,21 +3166,15 @@ class Shape {
                         progress = segmentPos - index;
 
                         if (this.strimerSnakeDirection === 'Horizontal') {
-                            // Horizontal zig-zag across rows
-                            if (index % 2 === 1) {
-                                progress = 1 - progress;
-                            }
+                            if (index % 2 === 1) { progress = 1 - progress; }
                             const easedProgress = this._applyEasing(progress);
                             xPos = easedProgress * this.width;
                             yPos = index * rowHeight;
-                            const blockWidth = this.strimerBlockSize; // Use height as width for horizontal blocks
+                            const blockWidth = this.strimerBlockSize;
                             const blockHeight = rowHeight;
                             this.ctx.fillRect(xPos, yPos, blockWidth, blockHeight);
                         } else {
-                            // Vertical zig-zag across columns
-                            if (index % 2 === 1) {
-                                progress = 1 - progress;
-                            }
+                            if (index % 2 === 1) { progress = 1 - progress; }
                             const easedProgress = this._applyEasing(progress);
                             xPos = index * colWidth;
                             yPos = easedProgress * this.height;
@@ -3204,9 +3185,7 @@ class Shape {
 
                         const alpha = 1.0 - (i / this.strimerBlockCount) * 0.5;
                         this.ctx.globalAlpha = alpha;
-
                         this.ctx.fillStyle = this._createLocalFillStyle(i % 2);
-
                         this.ctx.globalAlpha = 1.0;
                     }
 
@@ -3214,11 +3193,9 @@ class Shape {
                 } else {
                     this.strimerBlocks.forEach((block, index) => {
                         if (block.isGlitched) return;
-
                         let yPos, blockHeight = this.strimerBlockSize;
                         let alpha = 1.0;
 
-                        // Apply pulse as a modifier if enabled
                         if (this.strimerPulseSpeed > 0) {
                             const phaseOffset = this.strimerPulseSync ? 0 : block.col * (2 * Math.PI / this.strimerColumns);
                             alpha = (Math.sin(this.pulseProgress + phaseOffset) + 1) / 2;
@@ -3229,7 +3206,7 @@ class Shape {
                             const totalBlockHeight = this.strimerBlockCount * blockHeight;
                             const totalTravel = this.height + totalSpacing + totalBlockHeight;
                             yPos = -this.height / 2 - totalBlockHeight + block.progress * totalTravel;
-                        } else { // Bounce or Loop
+                        } else {
                             const easedProgress = this._applyEasing(block.progress);
                             yPos = -this.height / 2 - blockHeight + easedProgress * (this.height + blockHeight);
                         }
@@ -3248,34 +3225,23 @@ class Shape {
                 this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
                 this.ctx.clip();
 
-                // Ensure the custom particle path is created if needed
                 if (this.spawn_shapeType === 'custom' || this.spawn_shapeType === 'random') {
                     if (!this.customParticlePath && this.spawn_svg_path) {
-                        console.log('[DRAW] customParticlePath is null, attempting to create new Path2D.');
-                        try {
-                            this.customParticlePath = new Path2D(this.spawn_svg_path);
-                        } catch (e) {
-                            console.error("Invalid custom particle SVG path:", e);
-                            this.customParticlePath = null;
-                        }
+                        try { this.customParticlePath = new Path2D(this.spawn_svg_path); } catch (e) { console.error("Invalid custom particle SVG path:", e); this.customParticlePath = null; }
                     }
                 }
 
                 this.particles.forEach(p => {
                     let overallAlpha = Math.sin((p.life / p.maxLife) * Math.PI);
                     const isFlashActive = this.enableAudioReactivity && this.audioTarget === 'Flash' && this.flashOpacity > 0;
-
-                    if (isFlashActive) {
-                        overallAlpha *= this.flashOpacity;
-                    }
-
+                    if (isFlashActive) { overallAlpha *= this.flashOpacity; }
                     if (overallAlpha <= 0) return;
 
-                    // --- Draw the Trail (Matrix or Generic) ---
                     const isMatrixTrail = p.actualShape === 'matrix' && p.matrixChars && p.trail && p.trail.length > 0;
                     const isGenericTrail = this.spawn_enableTrail && p.actualShape !== 'matrix' && p.trail && p.trail.length > 0;
 
                     if (isMatrixTrail || isGenericTrail) {
+                        // ... (trail drawing logic remains unchanged) ...
                         const spacing = (this.spawn_trailSpacing || 1) * p.size;
                         const trailLength = Number(this.spawn_trailLength) || 15;
                         const history = p.trail;
@@ -3287,12 +3253,8 @@ class Shape {
 
                             for (let i = 1; i < history.length; i++) {
                                 if (drawnCharIndex >= trailLength) break;
-
-                                const p1 = history[i - 1];
-                                const p2 = history[i];
+                                const p1 = history[i - 1]; const p2 = history[i];
                                 const segmentDist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-
-                                // Prevent division by zero if particle hasn't moved
                                 if (segmentDist < 0.001) continue;
 
                                 while (distanceTraveledAlongPath + segmentDist >= distanceNeededForNextChar) {
@@ -3311,27 +3273,16 @@ class Shape {
                                     if (isMatrixTrail) {
                                         this.ctx.fillStyle = isFlashActive ? '#FFFFFF' : ((this.gradType === 'solid') ? this.gradient.color2 : this._createLocalFillStyle(p.id + drawnCharIndex));
                                         this._drawParticleShape({ ...p, size: p.size, matrixChars: [p.matrixChars[drawnCharIndex + 1]] });
-                                    } else { // isGenericTrail
-                                        // Set fill for the trail based on the "split-color" logic
-                                        if (isFlashActive) {
-                                            this.ctx.fillStyle = '#FFFFFF';
-                                        } else if (this.gradType === 'solid') {
-                                            this.ctx.fillStyle = this.gradient.color2; // Trail uses Color 2 for solid fills
-                                        } else {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex); // Trail uses full effect for gradients
-                                        }
-
+                                    } else {
+                                        if (isFlashActive) { this.ctx.fillStyle = '#FFFFFF'; }
+                                        else if (this.gradType === 'solid') { this.ctx.fillStyle = this.gradient.color2; }
+                                        else { this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex); }
                                         if (this.enableStroke) this.ctx.strokeStyle = this.ctx.fillStyle;
-
-                                        // Calculate shrinking size for the trail segment
                                         const sizeRatio = Math.max(0, 1.0 - (drawnCharIndex / trailLength));
                                         const trailSize = p.size * sizeRatio;
-
                                         this._drawParticleShape({ ...p, size: trailSize });
                                     }
-
                                     this.ctx.restore();
-
                                     drawnCharIndex++;
                                     distanceNeededForNextChar += spacing;
                                     if (drawnCharIndex >= trailLength) break;
@@ -3341,28 +3292,14 @@ class Shape {
                         }
                     }
 
-                    // --- Draw the Leader Particle ---
                     this.ctx.save();
                     this.ctx.translate(p.x - this.width / 2, p.y - this.height / 2);
                     this.ctx.rotate(p.rotation);
                     this.ctx.globalAlpha = overallAlpha;
-
-                    // Set leader particle color based on "split-color" logic
-                    if (isFlashActive) {
-                        this.ctx.fillStyle = '#FFFFFF';
-                    } else if (p.actualShape === 'matrix' || this.spawn_enableTrail) {
-                        // Matrix leaders and generic leaders (when trail is on) use Color 1
-                        this.ctx.fillStyle = this.gradient.color1;
-                    } else {
-                        // No trail, so the single particle uses the full fill effect
-                        this.ctx.fillStyle = this._createLocalFillStyle(p.id);
-                    }
-
-
-                    if (this.enableStroke) {
-                        this.ctx.strokeStyle = this.ctx.fillStyle;
-                    }
-
+                    if (isFlashActive) { this.ctx.fillStyle = '#FFFFFF'; }
+                    else if (p.actualShape === 'matrix' || this.spawn_enableTrail) { this.ctx.fillStyle = this.gradient.color1; }
+                    else { this.ctx.fillStyle = this._createLocalFillStyle(p.id); }
+                    if (this.enableStroke) { this.ctx.strokeStyle = this.ctx.fillStyle; }
                     this._drawParticleShape(p);
                     this.ctx.restore();
                 });
@@ -3373,6 +3310,7 @@ class Shape {
                 this.ctx.fillStyle = this._createLocalFillStyle();
                 drawPixelText(this.ctx, centeredShape, textToRender);
             } else if (this.shape === 'oscilloscope') {
+                // ... (oscilloscope drawing logic remains unchanged) ...
                 const activeWavePhase = this.enableWaveAnimation ? this.wavePhaseAngle : 0;
                 if (this.oscDisplayMode === 'radial') {
                     this.ctx.lineWidth = this.vizLineWidth;
@@ -3509,11 +3447,8 @@ class Shape {
                         applyStrokeInside();
                     }
                 }
-                // In Shape.js, inside the draw method, replace the entire polyline block.
-
-                // In Shape.js, inside the draw method, replace the entire polyline block.
-
             } else if (this.shape === 'polyline') {
+                // ... (polyline drawing logic remains unchanged) ...
                 let nodes;
                 try {
                     nodes = (typeof this.polylineNodes === 'string') ? JSON.parse(this.polylineNodes) : this.polylineNodes;
@@ -3531,39 +3466,28 @@ class Shape {
 
                         if (this.strokeScrollDir === 'along-path' || this.strokeScrollDir === 'along-path-reversed') {
                             const { segments, totalLength } = this._calculatePathSegments();
-
                             if (totalLength > 0) {
                                 for (const seg of segments) {
                                     const startFraction = seg.startLength / totalLength;
                                     const endFraction = (seg.startLength + seg.length) / totalLength;
                                     let grad;
-
-                                    if (seg.type === 'line') {
-                                        grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y);
-                                    } else if (seg.type === 'tight-curve') {
-                                        grad = this.ctx.createLinearGradient(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
-                                    } else { // quadratic 'curve'
-                                        grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p2.x, seg.p2.y);
-                                    }
-
+                                    if (seg.type === 'line') { grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p1.x, seg.p1.y); }
+                                    else if (seg.type === 'tight-curve') { grad = this.ctx.createLinearGradient(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y); }
+                                    else { grad = this.ctx.createLinearGradient(seg.p0.x, seg.p0.y, seg.p2.x, seg.p2.y); }
                                     const animOffset = (this.strokeScrollOffset % 1.0 + 1.0) % 1.0;
 
                                     if (this.strokeGradType === 'rainbow') {
-                                        // The static gradient is no longer reversed, only the animation.
                                         const startHue = (startFraction * 360 + animOffset * 360) % 360;
                                         const endHue = (endFraction * 360 + animOffset * 360) % 360;
                                         grad.addColorStop(0, `hsl(${startHue}, 100%, 50%)`);
                                         grad.addColorStop(1, `hsl(${endHue}, 100%, 50%)`);
                                     } else {
-                                        // The static gradient is no longer reversed, only the animation.
-                                        const c1 = this.strokeGradient.color1;
-                                        const c2 = this.strokeGradient.color2;
+                                        const c1 = this.strokeGradient.color1; const c2 = this.strokeGradient.color2;
                                         const startColor = lerpColor(c1, c2, (startFraction + animOffset) % 1.0);
                                         const endColor = lerpColor(c1, c2, (endFraction + animOffset) % 1.0);
                                         grad.addColorStop(0, startColor);
                                         grad.addColorStop(1, endColor);
                                     }
-
                                     this.ctx.strokeStyle = grad;
                                     this.ctx.beginPath();
 
@@ -3578,7 +3502,7 @@ class Shape {
                                             const point = this._getPointOnCatmullRomSpline(seg.p0, seg.p1, seg.p2, seg.p3, t);
                                             this.ctx.lineTo(point.x, point.y);
                                         }
-                                    } else { // quadratic 'curve'
+                                    } else {
                                         this.ctx.moveTo(seg.p0.x, seg.p0.y);
                                         this.ctx.quadraticCurveTo(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
                                     }
@@ -3586,7 +3510,6 @@ class Shape {
                                 }
                             }
                         } else {
-                            // General stroking logic for non-'along-path' styles
                             this.ctx.beginPath();
                             this.ctx.moveTo(nodes[0].x - this.width / 2, nodes[0].y - this.height / 2);
                             if (this.polylineCurveStyle === 'loose-curve' && nodes.length > 2) {
@@ -3609,7 +3532,7 @@ class Shape {
                                         this.ctx.lineTo(point.x - this.width / 2, point.y - this.height / 2);
                                     }
                                 }
-                            } else { // Straight
+                            } else {
                                 for (let i = 1; i < nodes.length; i++) {
                                     this.ctx.lineTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2);
                                 }
@@ -3618,7 +3541,6 @@ class Shape {
                             this.ctx.stroke();
                         }
                     } else if (typeof engine == 'undefined') {
-                        // Dotted line placeholder logic
                         this.ctx.save();
                         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                         this.ctx.lineWidth = 2;
@@ -3635,17 +3557,15 @@ class Shape {
                         } else if (this.polylineCurveStyle === 'tight-curve') {
                             const curveDetail = 30;
                             for (let i = 0; i < nodes.length - 1; i++) {
-                                const p0 = nodes[i === 0 ? i : i - 1];
-                                const p1 = nodes[i];
-                                const p2 = nodes[i + 1];
-                                const p3 = nodes[i === nodes.length - 2 ? i + 1 : i + 2];
+                                const p0 = nodes[i === 0 ? i : i - 1]; const p1 = nodes[i];
+                                const p2 = nodes[i + 1]; const p3 = nodes[i === nodes.length - 2 ? i + 1 : i + 2];
                                 for (let j = 1; j <= curveDetail; j++) {
                                     const t = j / curveDetail;
                                     const point = this._getPointOnCatmullRomSpline(p0, p1, p2, p3, t);
                                     this.ctx.lineTo(point.x - this.width / 2, point.y - this.height / 2);
                                 }
                             }
-                        } else { // Straight
+                        } else {
                             for (let i = 1; i < nodes.length; i++) {
                                 this.ctx.lineTo(nodes[i].x - this.width / 2, nodes[i].y - this.height / 2);
                             }
@@ -3656,9 +3576,9 @@ class Shape {
                 }
 
                 if (this.pathAnim_enable) {
+                    // ... (path animation logic remains unchanged) ...
                     const { totalLength } = this._calculatePathSegments();
                     if (totalLength <= 0) return;
-
                     const baseSize = this.pathAnim_size || 40;
                     const objectCount = Math.max(1, this.pathAnim_objectCount || 1);
                     const spacing = this.pathAnim_objectSpacing || 100;
@@ -3666,19 +3586,12 @@ class Shape {
 
                     for (let i = 0; i < objectCount; i++) {
                         const objectDistance = this.pathAnim_distance - (i * spacing);
-
-                        // Draw trail
                         if (this.pathAnim_trail !== 'None' && trailLength > 0) {
                             const trailSegmentCount = 30;
                             for (let j = 1; j <= trailSegmentCount; j++) {
                                 const progress = j / trailSegmentCount;
                                 const trailDist = objectDistance - (progress * trailLength * this.pathAnim_direction);
-
-                                // Skip drawing if segment is outside the path's bounds
-                                if (trailDist < 0 || trailDist > totalLength) {
-                                    continue;
-                                }
-
+                                if (trailDist < 0 || trailDist > totalLength) { continue; }
                                 const { x, y, angle } = this._getPointAndAngleAtDistance(trailDist);
                                 const trailSize = baseSize * (1 - progress);
                                 if (trailSize < 1) continue;
@@ -3687,24 +3600,15 @@ class Shape {
                                 this.ctx.translate(x, y);
                                 this.ctx.rotate(angle);
                                 let trailFillStyle;
-                                if (this.pathAnim_colorOverride) {
-                                    trailFillStyle = this.pathAnim_colorOverride;
-                                } else if (this.pathAnim_trailColor === 'Rainbow') {
-                                    const hue = (progress * 360) % 360;
-                                    trailFillStyle = `hsl(${hue}, 100%, 50%)`;
-                                } else {
-                                    trailFillStyle = this._createFillStyleForSubObject(trailSize);
-                                }
+                                if (this.pathAnim_colorOverride) { trailFillStyle = this.pathAnim_colorOverride; }
+                                else if (this.pathAnim_trailColor === 'Rainbow') { const hue = (progress * 360) % 360; trailFillStyle = `hsl(${hue}, 100%, 50%)`; }
+                                else { trailFillStyle = this._createFillStyleForSubObject(trailSize); }
                                 this.ctx.fillStyle = trailFillStyle;
-                                if (this.pathAnim_trail === 'Fade') {
-                                    this.ctx.globalAlpha = (1 - progress) * 0.7;
-                                }
+                                if (this.pathAnim_trail === 'Fade') { this.ctx.globalAlpha = (1 - progress) * 0.7; }
                                 this._drawSubObject(this.pathAnim_shape, trailSize);
                                 this.ctx.restore();
                             }
                         }
-
-                        // Draw main object
                         if (objectDistance >= 0 && objectDistance <= totalLength) {
                             const { x, y, angle } = this._getPointAndAngleAtDistance(objectDistance);
                             this.ctx.save();

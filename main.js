@@ -1571,10 +1571,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const isApplicable = validPropsForShape.includes(propName);
                 const objectSpecificProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
-                let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
+                let writeAsMeta;
 
-                if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                    writeAsMeta = false; // Always export complex data as a hard-coded variable
+                if (!minimize) {
+                    // If not minimizing, any applicable property is editable.
+                    writeAsMeta = isApplicable;
+                } else {
+                    // When minimizing, logic is more restrictive.
+
+                    // START OF THE FIX
+                    // This comprehensive array defines all core structural properties that MUST be hard-coded.
+                    const coreShapeParams = [
+                        // Grid
+                        'numberOfRows', 'numberOfColumns',
+                        // Polygon/Star
+                        'sides', 'points', 'starInnerRadius',
+                        // Ring
+                        'innerDiameter', 'angularWidth', 'numberOfSegments',
+                        // Oscilloscope
+                        'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'waveStyle', 'waveCount',
+                        // --- ADDED FOR TETRIS ---
+                        'tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+                        // --- ADDED FOR TEXT ---
+                        'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate',
+                        // Fire
+                        'fireSpread',
+                        // Visualizer
+                        'vizLayout', 'vizDrawStyle', 'vizStyle', 'vizBarCount', 'vizBarSpacing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius',
+                        // Strimer
+                        'strimerColumns', 'strimerBlockCount', 'strimerAnimation', 'strimerRows', 'strimerBlockSize', 'strimerDirection', 'strimerEasing', 'strimerSnakeDirection',
+                        // Spawner
+                        'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_lifetime', 'spawn_speed', 'spawn_gravity', 'spawn_spread',
+                        // Polyline
+                        'polylineCurveStyle', 'pathAnim_shape', 'pathAnim_behavior', 'pathAnim_objectCount'
+                    ];
+
+                    // Now, check against both the transform properties AND the new core shape properties.
+                    if (objectSpecificProps.includes(propName) || coreShapeParams.includes(propName)) {
+                        writeAsMeta = false; // Always hard-code these fundamental properties.
+                        // END OF THE FIX
+                    } else {
+                        // For other properties, only make them editable if their parent feature is enabled.
+                        let featureIsEnabled = true; // Default for properties without a specific enable flag.
+
+                        if (propName.startsWith('sensor') && propName !== 'enableSensorReactivity') {
+                            featureIsEnabled = obj.enableSensorReactivity === true;
+                        } else if (propName.startsWith('audio') && propName !== 'enableAudioReactivity') {
+                            featureIsEnabled = obj.enableAudioReactivity === true;
+                        } else if (propName.startsWith('stroke') && propName !== 'enableStroke') {
+                            featureIsEnabled = obj.enableStroke === true;
+                        } else if (propName.startsWith('pathAnim_') && propName !== 'pathAnim_enable') {
+                            featureIsEnabled = obj.pathAnim_enable === true;
+                        }
+
+                        writeAsMeta = isApplicable && featureIsEnabled;
+                    }
+                }
+
+                // Always hard-code complex data types regardless of the minimize setting.
+                if (propName === 'polylineNodes' || propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
+                    writeAsMeta = false;
                 }
 
                 if (writeAsMeta) {
