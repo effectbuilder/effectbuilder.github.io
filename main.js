@@ -548,11 +548,6 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
-        polyline: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
-        ],
         circle: [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
             'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
@@ -664,9 +659,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const galleryOffcanvasEl = document.getElementById('gallery-offcanvas');
     const galleryList = document.getElementById('gallery-project-list');
     const galleryBody = galleryOffcanvasEl.querySelector('.offcanvas-body');
-
-
-
 
     async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
         buttonEl.disabled = true;
@@ -5541,7 +5533,7 @@ document.addEventListener('DOMContentLoaded', function () {
         currentProjectDocId = null;
         updateShareButtonState();
         const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
-        const newConfigs = getDefaultObjectConfig(newId);
+        const newConfigs = getDefaultsForShape('rectangle', newId);
 
         // Find the insertion point (after general settings, before existing object settings).
         const firstObjectConfigIndex = configStore.findIndex(c => (c.property || c.name || '').startsWith('obj'));
@@ -5650,10 +5642,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (target.name) {
-            dirtyProperties.add(target.name); // <-- Add this line
+            dirtyProperties.add(target.name);
         }
 
-        // --- START: NEW, CORRECTED LOGIC FOR SHAPE CHANGES ---
+        // START OF THE FIX: This block handles shape changes by rebuilding the object's configuration.
         if (target.name && /^obj\d+_shape$/.test(target.name)) {
             const idMatch = target.name.match(/^obj(\d+)_/);
             if (!idMatch) return;
@@ -5663,20 +5655,72 @@ document.addEventListener('DOMContentLoaded', function () {
             const newShapeType = target.value;
 
             if (obj && obj.shape !== newShapeType) {
-                // Just update the shape property on the live object
-                obj.update({ shape: newShapeType });
-                // Then, re-render the entire form to get the correct controls
-                renderForm();
-                // Finally, update the objects from the newly rendered form
-                updateObjectsFromForm();
-            }
-            return; // Stop further processing for this event
-        }
-        // --- END: NEW, CORRECTED LOGIC FOR SHAPE CHANGES ---
+                // 1. Save essential properties from the live object to re-apply them later.
+                const preservedProps = {
+                    name: obj.name, locked: obj.locked,
+                    x: obj.x, y: obj.y, width: obj.width, height: obj.height, rotation: obj.rotation,
+                    gradient: { ...obj.gradient }, strokeGradient: { ...obj.strokeGradient }
+                };
 
-        // Handle UI re-rendering for other controls with dependencies
+                // 2. Find the index where this object's properties start to preserve its order in the UI.
+                const insertIndex = configStore.findIndex(c => c.property && c.property.startsWith(`obj${id}_`));
+
+                // 3. Atomically remove all old configs for this object ID using filter, which is safer.
+                if (insertIndex > -1) {
+                    configStore = configStore.filter(c => !(c.property && c.property.startsWith(`obj${id}_`)));
+                }
+
+                // 4. Get a fresh, clean set of configs for the NEW shape type.
+                const newConfigs = getDefaultsForShape(newShapeType, id);
+
+                // 5. Modify the fresh configs with our preserved values.
+                newConfigs.forEach(conf => {
+                    const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                    conf.label = `${preservedProps.name}: ${conf.label.split(':').slice(1).join(' ').trim()}`;
+                    const propsToScaleDown = ['x', 'y', 'width', 'height'];
+
+                    if (propsToScaleDown.includes(propName) && preservedProps[propName] !== undefined) {
+                        conf.default = Math.round(preservedProps[propName] / 4);
+                    } else if (propName === 'rotation' && preservedProps.rotation !== undefined) {
+                        conf.default = preservedProps.rotation;
+                    } else if (propName === 'gradColor1') {
+                        conf.default = preservedProps.gradient.color1 || '#000000';
+                    } else if (propName === 'gradColor2') {
+                        conf.default = preservedProps.gradient.color2 || '#000000';
+                    } else if (propName === 'strokeGradColor1') {
+                        conf.default = preservedProps.strokeGradient.color1 || '#FFFFFF';
+                    } else if (propName === 'strokeGradColor2') {
+                        conf.default = preservedProps.strokeGradient.color2 || '#000000';
+                    } else if (propName === 'shape') {
+                        conf.default = newShapeType;
+                    }
+                });
+
+                // 6. Splice the new, correct configs back into the store at the original position.
+                if (insertIndex > -1) {
+                    configStore.splice(insertIndex, 0, ...newConfigs);
+                } else {
+                    const firstObjectConfigIndex = configStore.findIndex(c => c.property && c.property.startsWith('obj'));
+                    if (firstObjectConfigIndex > -1) {
+                        configStore.splice(firstObjectConfigIndex, 0, ...newConfigs);
+                    } else {
+                        configStore.push(...newConfigs);
+                    }
+                }
+
+                // 7. Update the live object instance with ALL its new properties.
+                const newPropsForObject = getFormValuesForObject(id);
+                obj.update(newPropsForObject);
+
+                // 8. Re-render the form from the corrected configuration.
+                renderForm();
+            }
+            debouncedRecordHistory();
+            return;
+        }
+        // END OF THE FIX
+
         if (target.name && (
-            target.name.includes('_shape') ||
             target.name.includes('_vizDrawStyle') ||
             target.name.includes('_numberOfRows') ||
             target.name.includes('_numberOfColumns') ||

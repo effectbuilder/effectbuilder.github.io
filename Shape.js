@@ -3109,7 +3109,7 @@ class Shape {
                                     this.ctx.globalAlpha = 1.0;
                                 } else {
                                     const cellIndex = r * this.numberOfColumns + c;
-                                    this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
+                                    this.ctx.fillStyle = this._createLocalFillStyle(this.gradType.includes('conic') ? 0 : cellIndex);
                                     this.ctx.globalAlpha = alphaValue;
                                 }
                                 this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
