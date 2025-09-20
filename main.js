@@ -1493,10 +1493,10 @@ document.addEventListener('DOMContentLoaded', function () {
             addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
 
-            const pasteButton = document.createElement('button');
-            pasteButton.type = 'button';
-            pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
-            pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
+            // const pasteButton = document.createElement('button');
+            // pasteButton.type = 'button';
+            // pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
+            // pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
 
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
@@ -1506,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', function () {
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
 
             buttonGroup.appendChild(addButton);
-            buttonGroup.appendChild(pasteButton);
+            // buttonGroup.appendChild(pasteButton);
             buttonGroup.appendChild(browseButton);
 
             container.appendChild(hiddenTextarea);
