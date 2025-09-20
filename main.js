@@ -156,6 +156,11 @@ let audioContext;
 let analyser;
 let frequencyData;
 let isAudioSetup = false;
+let isPixelArtGalleryLoaded = false;
+let pixelArtCache = [];
+let pixelArtSearchTerm = '';
+let pixelArtCurrentPage = 1;
+const PIXEL_ART_ITEMS_PER_PAGE = 9;
 
 function handleURLParameters() {
     const params = new URLSearchParams(window.location.search);
@@ -417,6 +422,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     // --- END: PIXEL ART EDITOR LOGIC ---
+
+    const pixelArtGalleryModalEl = document.getElementById('pixel-art-gallery-modal');
+    if (pixelArtGalleryModalEl) {
+        pixelArtGalleryModalEl.addEventListener('show.bs.modal', () => {
+            if (!isPixelArtGalleryLoaded) {
+                fetchAndRenderPixelArtGallery();
+            }
+        });
+
+        const searchInput = document.getElementById('pixel-art-search-input');
+        searchInput.addEventListener('input', (e) => {
+            pixelArtSearchTerm = e.target.value.toLowerCase();
+            pixelArtCurrentPage = 1;
+            renderPixelArtGallery();
+        });
+    }
 
     const srgbLinkBtn = document.getElementById('generate-srgb-link-btn');
 
@@ -1464,14 +1485,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 framesContainer.appendChild(frameItem);
             });
 
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'd-flex gap-2 mt-2';
+
             const addButton = document.createElement('button');
             addButton.type = 'button';
-            addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-frame';
+            addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
+
+            const pasteButton = document.createElement('button');
+            pasteButton.type = 'button';
+            pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
+            pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
+
+            const browseButton = document.createElement('button');
+            browseButton.type = 'button';
+            browseButton.className = 'btn btn-sm btn-outline-info';
+            browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
+            browseButton.dataset.bsToggle = 'modal';
+            browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
+
+            buttonGroup.appendChild(addButton);
+            buttonGroup.appendChild(pasteButton);
+            buttonGroup.appendChild(browseButton);
 
             container.appendChild(hiddenTextarea);
             container.appendChild(framesContainer);
-            container.appendChild(addButton);
+            container.appendChild(buttonGroup);
             formGroup.appendChild(container);
             // --- END: REVISED PIXEL ART TABLE LOGIC ---
         }
@@ -2514,7 +2554,7 @@ document.addEventListener('DOMContentLoaded', function () {
             enable: generalValues.enableGlobalCycle,
             speed: generalValues.globalCycleSpeed
         };
-    
+
         drawFrame(audioData, sensorData, isAnimating ? deltaTime : 0, paletteProps, globalCycleProps);
     }
 
@@ -6108,6 +6148,258 @@ document.addEventListener('DOMContentLoaded', function () {
     allOffcanvases.forEach(offcanvas => {
         offcanvas.addEventListener('hidden.bs.offcanvas', initializeTooltips);
     });
+
+    function fetchAndRenderPixelArtGallery() {
+        const container = document.getElementById('modal-pixel-art-container');
+        if (!container) return;
+        isPixelArtGalleryLoaded = true; // Prevents re-loading
+        container.innerHTML = `<div class="col text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+
+        (async () => {
+            try {
+                const projectsRef = window.collection(window.db, "projects");
+                const q = window.query(projectsRef, window.where("isPublic", "==", true), window.orderBy("createdAt", "desc"));
+                const querySnapshot = await window.getDocs(q);
+
+                pixelArtCache = [];
+
+                querySnapshot.forEach(doc => {
+                    const project = doc.data();
+                    if (project.configs && Array.isArray(project.configs)) {
+                        const pixelArtConfigs = project.configs.filter(conf =>
+                            conf.property && conf.property.endsWith("_shape") && conf.default === 'pixel-art'
+                        );
+
+                        pixelArtConfigs.forEach(shapeConf => {
+                            const objectIdMatch = shapeConf.property.match(/^obj(\d+)_/);
+                            if (objectIdMatch) {
+                                const objectId = objectIdMatch[1];
+                                const framesConf = project.configs.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+                                const objectNameConf = project.configs.find(c => c.property === `obj${objectId}_shape`);
+                                if (framesConf && framesConf.default) {
+                                    pixelArtCache.push({
+                                        framesData: framesConf.default,
+                                        projectName: project.name,
+                                        creatorName: project.creatorName || 'Anonymous',
+                                        objectName: objectNameConf?.label.split(':')[0] || 'Pixel Art'
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+
+                renderPixelArtGallery();
+
+            } catch (error) {
+                console.error("Error fetching pixel art:", error);
+                container.innerHTML = `<div class="col"><p class="text-danger">Could not load pixel art gallery.</p></div>`;
+            }
+        })();
+    }
+
+    function renderPixelArtGallery() {
+        const container = document.getElementById('modal-pixel-art-container');
+        const paginationContainer = document.getElementById('pixel-art-pagination-container');
+        if (!container || !paginationContainer) return;
+
+        const filteredArt = pixelArtSearchTerm
+            ? pixelArtCache.filter(art =>
+                art.projectName.toLowerCase().includes(pixelArtSearchTerm) ||
+                art.creatorName.toLowerCase().includes(pixelArtSearchTerm) ||
+                art.objectName.toLowerCase().includes(pixelArtSearchTerm)
+            )
+            : pixelArtCache;
+
+        const totalPages = Math.ceil(filteredArt.length / PIXEL_ART_ITEMS_PER_PAGE);
+        pixelArtCurrentPage = Math.max(1, Math.min(pixelArtCurrentPage, totalPages));
+
+        const startIndex = (pixelArtCurrentPage - 1) * PIXEL_ART_ITEMS_PER_PAGE;
+        const itemsForPage = filteredArt.slice(startIndex, startIndex + PIXEL_ART_ITEMS_PER_PAGE);
+
+        container.innerHTML = '';
+        if (itemsForPage.length === 0) {
+            container.innerHTML = `<div class="col"><p class="text-body-secondary">No matching pixel art found.</p></div>`;
+        }
+
+        itemsForPage.forEach((art) => {
+            const col = document.createElement('div');
+            col.className = 'col';
+            const card = document.createElement('div');
+            card.className = 'card h-100';
+            const cardBody = document.createElement('div');
+            cardBody.className = 'pixel-art-card-body p-3';
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pixel-art-canvas';
+            canvas.width = 120;
+            canvas.height = 120;
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'flex-grow-1';
+
+            const title = document.createElement('h6');
+            title.className = 'card-title';
+            title.textContent = art.objectName;
+
+            const subtitle = document.createElement('p');
+            subtitle.className = 'card-text text-body-secondary mb-2';
+            subtitle.innerHTML = `From: <em>${art.projectName}</em><br>By: ${art.creatorName}`;
+
+            const insertBtn = document.createElement('button');
+            insertBtn.className = 'btn btn-sm btn-outline-success';
+            insertBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> Insert`;
+            insertBtn.addEventListener('click', () => handlePixelArtInsert(art.framesData));
+
+            infoDiv.appendChild(title);
+            infoDiv.appendChild(subtitle);
+            infoDiv.appendChild(insertBtn);
+            cardBody.appendChild(canvas);
+            cardBody.appendChild(infoDiv);
+            card.appendChild(cardBody);
+            col.appendChild(card);
+            container.appendChild(col);
+
+            try {
+                const frames = JSON.parse(art.framesData);
+                let currentFrameIndex = 0;
+                let frameTimer = frames[currentFrameIndex]?.duration || 1;
+                let lastTime = 0;
+                const animate = (time) => {
+                    if (!lastTime) lastTime = time;
+                    const deltaTime = (time - lastTime) / 1000;
+                    lastTime = time;
+                    if (frames.length > 1) {
+                        frameTimer -= deltaTime;
+                        if (frameTimer <= 0) {
+                            currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+                            frameTimer += frames[currentFrameIndex]?.duration || 1;
+                        }
+                    }
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const frame = frames[currentFrameIndex];
+                    if (frame && frame.data) {
+                        const data = (typeof frame.data === 'string') ? JSON.parse(frame.data) : frame.data;
+                        if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) return;
+                        const rows = data.length;
+                        const cols = data[0].length;
+                        const cellWidth = canvas.width / cols;
+                        const cellHeight = canvas.height / rows;
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const val = data[r]?.[c] || 0;
+                                if (val > 0) {
+                                    if (val === 1.0) ctx.fillStyle = '#FFFFFF';
+                                    else if (val === 0.3) ctx.fillStyle = '#FF00FF';
+                                    else if (val === 0.4) ctx.fillStyle = '#00FFFF';
+                                    else ctx.fillStyle = `rgba(255, 0, 255, ${val})`;
+                                    ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
+                                }
+                            }
+                        }
+                    }
+                    requestAnimationFrame(animate);
+                };
+                requestAnimationFrame(animate);
+            } catch (e) { console.error("Could not animate pixel art:", art, e); }
+        });
+
+        // Render Pagination
+        paginationContainer.innerHTML = '';
+        if (totalPages > 1) {
+            const createPageItem = (text, page, isDisabled = false, isActive = false) => {
+                const li = document.createElement('li');
+                li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
+                const a = document.createElement('a');
+                a.className = 'page-link';
+                a.href = '#';
+                a.innerHTML = text;
+                if (!isDisabled) {
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        pixelArtCurrentPage = page;
+                        renderPixelArtGallery();
+                    });
+                }
+                li.appendChild(a);
+                return li;
+            };
+
+            paginationContainer.appendChild(createPageItem('&laquo;', pixelArtCurrentPage - 1, pixelArtCurrentPage === 1));
+            for (let i = 1; i <= totalPages; i++) {
+                paginationContainer.appendChild(createPageItem(i, i, false, i === pixelArtCurrentPage));
+            }
+            paginationContainer.appendChild(createPageItem('&raquo;', pixelArtCurrentPage + 1, pixelArtCurrentPage === totalPages));
+        }
+    }
+
+    function handlePixelArtInsert(framesDataString) {
+        if (selectedObjectIds.length !== 1) {
+            showToast("Please select exactly one pixel art object to insert frames into.", "warning");
+            return;
+        }
+        const targetObject = objects.find(o => o.id === selectedObjectIds[0]);
+        if (!targetObject || targetObject.shape !== 'pixel-art') {
+            showToast("The selected object is not a pixel art object.", "warning");
+            return;
+        }
+
+        try {
+            const newFrames = JSON.parse(framesDataString);
+            if (!Array.isArray(newFrames)) throw new Error("Data is not an array.");
+
+            const fieldset = form.querySelector(`fieldset[data-object-id="${targetObject.id}"]`);
+            const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+
+            const existingFrames = JSON.parse(hiddenTextarea.value);
+            const combinedFrames = [...existingFrames, ...newFrames];
+
+            hiddenTextarea.value = JSON.stringify(combinedFrames);
+            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+            framesContainer.innerHTML = '';
+            combinedFrames.forEach((frame, index) => {
+                const frameItem = document.createElement('div');
+                frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
+                frameItem.dataset.index = index;
+                const textareaId = `frame-data-${targetObject.id}-${index}`;
+                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+
+                frameItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="frame-item-header">Frame #${index + 1}</strong>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label-sm" for="${textareaId}">Frame Data</label>
+                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#pixelArtEditorModal"
+                                data-target-id="${textareaId}">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </button>
+                    </div>
+                    <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label-sm">Duration (seconds)</label>
+                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
+                </div>
+            `;
+                framesContainer.appendChild(frameItem);
+            });
+
+            recordHistory();
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('pixel-art-gallery-modal'));
+            modalInstance.hide();
+            showToast(`${newFrames.length} frame(s) inserted successfully!`, 'success');
+
+        } catch (error) {
+            console.error("Insert error:", error);
+            showToast("Could not insert frames. Data might be invalid.", "danger");
+        }
+    }
 
 
     // Start the application.

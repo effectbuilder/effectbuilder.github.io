@@ -646,6 +646,39 @@
             </div>
         </div>
 
+        <!-- START: Pixel Art Gallery Modal -->
+        <div class="modal fade" id="pixel-art-gallery-modal" tabindex="-1" aria-labelledby="pixelArtGalleryModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pixelArtGalleryModalLabel"><i class="bi bi-substack me-2"></i>Community Pixel Art</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="pixel-art-search-input" class="form-control" placeholder="Search by effect name or creator...">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="modal-pixel-art-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            <!-- Content will be injected by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center">
+                        <nav aria-label="Pixel Art Gallery Pagination">
+                            <ul class="pagination mb-0" id="pixel-art-pagination-container">
+                                <!-- Pagination will be injected by JavaScript -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- END: Pixel Art Gallery Modal -->
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
         <script src="Shape.js"></script>
