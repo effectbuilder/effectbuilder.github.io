@@ -2432,7 +2432,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // MODIFIED - A new, time-based animation loop using delta time
     function animate(timestamp) {
         requestAnimationFrame(animate);
 
@@ -2448,50 +2447,62 @@ document.addEventListener('DOMContentLoaded', function () {
         const soundEnabled = generalValues.enableSound !== false;
         const isAnimating = generalValues.enableAnimation !== false;
 
-        let audioData = {};
-        let sensorData = {};
+        // Start with a default "silent" audio object
+        let audioData = {
+            bass: { avg: 0, peak: 0 },
+            mids: { avg: 0, peak: 0 },
+            highs: { avg: 0, peak: 0 },
+            volume: { avg: 0, peak: 0 },
+            frequencyData: new Uint8Array(128).fill(0)
+        };
 
-        if (isAudioSetup && soundEnabled) {
-            // Case 1: Real audio is connected and enabled. Use it.
-            audioData = getAudioMetrics();
-        } else {
-            // Case 2: In all other situations (no real audio, or sound is disabled), generate the mock preview data.
-            const time = now / 1000;
-            const randomRate = (Math.sin(time * 0.1) + 1.2); // Slower rate of change
-            const mockVol = (Math.sin(time * 0.8 * randomRate) * 0.5 + Math.sin(time * 0.5 * randomRate) * 0.5) / 2 + 0.5;
-            const mockBass = (Math.sin(time * 1.0 * randomRate) * 0.6 + Math.sin(time * 2.1 * randomRate) * 0.4) / 2 + 0.5;
-            const mockMids = (Math.sin(time * 0.7 * randomRate) * 0.5 + Math.sin(time * 1.2 * randomRate) * 0.5) / 2 + 0.5;
-            const mockHighs = (Math.sin(time * 1.5 * randomRate) * 0.7 + Math.sin(time * 3.0 * randomRate) * 0.3) / 2 + 0.5;
+        // Only generate real or mock audio data if sound is globally enabled
+        if (soundEnabled) {
+            if (isAudioSetup) {
+                // Case 1: Real audio is connected and enabled. Use it.
+                audioData = getAudioMetrics();
+            } else {
+                // Case 2: No real audio, so generate mock preview data.
+                const time = now / 1000;
+                const randomRate = (Math.sin(time * 0.1) + 1.2);
+                const mockVol = (Math.sin(time * 0.8 * randomRate) * 0.5 + Math.sin(time * 0.5 * randomRate) * 0.5) / 2 + 0.5;
+                const mockBass = (Math.sin(time * 1.0 * randomRate) * 0.6 + Math.sin(time * 2.1 * randomRate) * 0.4) / 2 + 0.5;
+                const mockMids = (Math.sin(time * 0.7 * randomRate) * 0.5 + Math.sin(time * 1.2 * randomRate) * 0.5) / 2 + 0.5;
+                const mockHighs = (Math.sin(time * 1.5 * randomRate) * 0.7 + Math.sin(time * 3.0 * randomRate) * 0.3) / 2 + 0.5;
 
-            const mockFreqData = new Uint8Array(128);
-            for (let i = 0; i < mockFreqData.length; i++) {
-                const progress = i / mockFreqData.length;
-                const bassEffect = Math.pow(1 - progress, 2) * mockBass;
-                const midEffect = (1 - Math.abs(progress - 0.5) * 2) * mockMids;
-                const highEffect = Math.pow(Math.pow(progress, 2), 0.5) * mockHighs;
-                mockFreqData[i] = ((bassEffect + midEffect + highEffect) / 3) * 255 * (Math.sin(i * 0.2 + time * 2) * 0.1 + 0.9);
+                const mockFreqData = new Uint8Array(128);
+                for (let i = 0; i < mockFreqData.length; i++) {
+                    const progress = i / mockFreqData.length;
+                    const bassEffect = Math.pow(1 - progress, 2) * mockBass;
+                    const midEffect = (1 - Math.abs(progress - 0.5) * 2) * mockMids;
+                    const highEffect = Math.pow(Math.pow(progress, 2), 0.5) * mockHighs;
+                    mockFreqData[i] = ((bassEffect + midEffect + highEffect) / 3) * 255 * (Math.sin(i * 0.2 + time * 2) * 0.1 + 0.9);
+                }
+
+                audioData = {
+                    bass: { avg: mockBass, peak: mockBass },
+                    mids: { avg: mockMids, peak: mockMids },
+                    highs: { avg: mockHighs, peak: mockHighs },
+                    volume: { avg: mockVol, peak: mockVol },
+                    frequencyData: mockFreqData
+                };
             }
-
-            audioData = {
-                bass: { avg: mockBass, peak: mockBass },
-                mids: { avg: mockMids, peak: mockMids },
-                highs: { avg: mockHighs, peak: mockHighs },
-                volume: { avg: mockVol, peak: mockVol },
-                frequencyData: mockFreqData
-            };
         }
 
         const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+        const sensorData = {}; // Start with an empty object
 
-        neededSensors.forEach((sensorName, index) => {
-            // By adding the sensor's index to the sine function, each wave gets a unique phase offset.
-            const mockValue = Math.sin(now / 2000 + index) * 50 + 50;
-            sensorData[sensorName] = {
-                value: mockValue,
-                min: 0,
-                max: 100
-            };
-        });
+        // Only generate mock sensor data if the master animation switch is on
+        if (isAnimating) {
+            neededSensors.forEach((sensorName, index) => {
+                const mockValue = Math.sin(now / 2000 + index) * 50 + 50;
+                sensorData[sensorName] = {
+                    value: mockValue,
+                    min: 0,
+                    max: 100
+                };
+            });
+        }
 
         const paletteProps = {
             enablePalette: generalValues.enablePalette,
@@ -2503,7 +2514,7 @@ document.addEventListener('DOMContentLoaded', function () {
             enable: generalValues.enableGlobalCycle,
             speed: generalValues.globalCycleSpeed
         };
-
+    
         drawFrame(audioData, sensorData, isAnimating ? deltaTime : 0, paletteProps, globalCycleProps);
     }
 
@@ -3072,7 +3083,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_sensorMeterShowValue`, label: `Object ${newId}: Show Value`, type: 'boolean', default: 'false', description: '(Sensor Meter) Displays the current sensor value as text on the meter.' },
             { property: `obj${newId}_timePlotAxesStyle`, label: `Object ${newId}: Axes Style`, type: 'combobox', default: 'None', values: 'None,Lines Only,Lines and Values', description: '(Time Plot) Sets the style for the X and Y axes.' },
             { property: `obj${newId}_timePlotTimeScale`, label: `Object ${newId}: Time Scale (Seconds)`, type: 'number', default: '5', min: '1', max: '30', description: '(Time Plot) The total duration in seconds displayed across the width of the chart.' },
-            
+
             // Strimer
             { property: `obj${newId}_strimerRows`, label: `Object ${newId}: Rows`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of horizontal rows.' },
             { property: `obj${newId}_strimerColumns`, label: `Object ${newId}: Columns`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of vertical columns.' },
