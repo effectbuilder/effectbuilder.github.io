@@ -289,12 +289,12 @@ class Shape {
         tetrisBounce, tetrisHoldTime, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeScrollDir,
         strokeCycleColors, strokeCycleSpeed, strokeAnimationSpeed, strokeAnimationMode, strokeUseSharpGradient, strokeGradientStop, strokeRotationSpeed,
         strokePhaseOffset, fireSpread, pixelArtFrames, enableAudioReactivity, audioTarget, audioMetric, audioSensitivity, audioSmoothing = 50, beatThreshold,
-        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth,
+        vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth, vizBarWidth,
         enableSensorReactivity, sensorTarget, sensorValueSource, userSensor, sensorMeterFill, timePlotLineThickness, timePlotFillArea = false,
         sensorMeterShowValue = false, timePlotAxesStyle = 'None', timePlotTimeScale = 5, gradientSpeedMultiplier, shapeAnimationSpeedMultiplier,
         seismicAnimationSpeedMultiplier, wavePhaseAngle, oscAnimationSpeed, strimerColumns, strimerBlockCount, strimerBlockSize, strimerAnimation,
         strimerDirection, strimerEasing, strimerBlockSpacing, strimerGlitchFrequency, strimerPulseSync, strimerAudioSensitivity, strimerBassLevel,
-        strimerTrebleBoost, strimerAudioSmoothing, strimerPulseSpeed, vizBassLevel, vizTrebleBoost, strimerSnakeIndex, strimerAnimationSpeed,
+        strimerTrebleBoost, strimerAudioSmoothing, strimerPulseSpeed, vizBassLevel, vizTrebleBoost, vizAutoScale, vizMaxBarHeight, vizInnerRadius, vizDynamicRange, strimerSnakeIndex, strimerAnimationSpeed,
         strimerSnakeProgress, sensorColorMode, sensorMidThreshold, sensorMaxThreshold, spawn_shapeType, spawn_animation, spawn_count, spawn_spawnRate, spawn_lifetime, spawn_speed,
         spawn_size, spawn_gravity, spawn_spread, spawn_rotationSpeed, spawn_size_randomness, spawn_initialRotation_random, spawn_svg_path,
         spawn_rotationVariance, spawn_speedVariance, spawn_matrixCharSet, spawn_matrixEnableGlow, spawn_glowSize, spawn_matrixGlowSize, spawn_enableTrail,
@@ -438,10 +438,10 @@ class Shape {
         this.audioSmoothing = audioSmoothing;
         this.smoothedAudioValue = 0;
         this.volumeMeterFill = 0;
-        this.vizBarCount = vizBarCount || 32;
         this.vizBarSpacing = vizBarSpacing || 2;
         this.vizSmoothing = vizSmoothing || 60;
         this.vizStyle = vizStyle || 'bottom';
+        this.vizBarCount = vizBarCount || 32;
         this.vizBarHeights = new Array(parseInt(this.vizBarCount, 10)).fill(0);
         this.vizLayout = vizLayout || 'Linear';
         this.vizDrawStyle = vizDrawStyle || 'Bars';
@@ -449,8 +449,14 @@ class Shape {
         this.vizSegmentCount = vizSegmentCount || 16;
         this.vizSegmentSpacing = vizSegmentSpacing || 1;
         this.vizLineWidth = vizLineWidth || 8;
+        this.vizBarWidth = vizBarWidth || 10;
         this.vizBassLevel = vizBassLevel || 50;
         this.vizTrebleBoost = vizTrebleBoost || 125;
+        this.vizAutoScale = vizAutoScale !== undefined ? vizAutoScale : true;
+        this.vizMaxBarHeight = vizMaxBarHeight || 100;
+        this.vizInnerRadius = vizInnerRadius || 40;
+        this.vizDynamicRange = vizDynamicRange || false;
+        this.smoothedFreqDataSize = undefined; // Initialize for dynamic range
         this.enableSensorReactivity = enableSensorReactivity || false;
         this.sensorTarget = sensorTarget || 'Sensor Meter';
         this.sensorValueSource = sensorValueSource || 'value';
@@ -1392,6 +1398,9 @@ class Shape {
             this.scrollOffsetX = 0;
             this.waveAngle = 0;
         }
+        if (props.vizBarCount !== undefined && props.vizBarCount !== this.vizBarCount) {
+            this.vizBarHeights = new Array(parseInt(props.vizBarCount, 10)).fill(0);
+        }
 
         for (const key in props) {
             if (props[key] === undefined) continue;
@@ -2269,24 +2278,61 @@ class Shape {
         }
 
         if (this.shape === 'audio-visualizer' && audioData && audioData.frequencyData) {
-            const fullFreqData = audioData.frequencyData;
+            let processingData = audioData.frequencyData;
+
+            const lowCutoff = (this.vizLowCutoff || 0) / 100.0;
+            const highCutoff = (this.vizHighCutoff || 100) / 100.0;
+            if (lowCutoff > 0 || highCutoff < 1.0) {
+                const originalSize = processingData.length;
+                const startIndex = Math.floor(originalSize * lowCutoff);
+                const endIndex = Math.floor(originalSize * highCutoff);
+                if (startIndex < endIndex) {
+                    processingData = processingData.slice(startIndex, endIndex);
+                }
+            }
+
+            const downsampleFactor = Math.max(1, parseInt(this.vizDownsampleFactor, 10) || 1);
+            if (downsampleFactor > 1) {
+                processingData = processingData.filter((element, index) => {
+                    return index % downsampleFactor === 0;
+                });
+            }
+
+            let fullFreqData = processingData;
             const smoothingFactor = (this.vizSmoothing || 0) / 100.0;
             const barCount = parseInt(this.vizBarCount, 10);
-            const freqDataSize = fullFreqData.length;
-            const step = Math.floor(freqDataSize / barCount);
+            let freqDataSize = fullFreqData.length;
 
-            if (!this.vizBarHeights || this.vizBarHeights.length !== barCount) {
-                this.vizBarHeights = new Array(barCount).fill(0);
+            // --- THIS IS THE MISSING LOGIC ---
+            if (this.vizDynamicRange) {
+                let lastActiveIndex = 0;
+                const silenceThreshold = 1;
+                for (let i = freqDataSize - 1; i >= 0; i--) {
+                    if (fullFreqData[i] > silenceThreshold) {
+                        lastActiveIndex = i;
+                        break;
+                    }
+                }
+                const minSize = Math.floor(fullFreqData.length * 0.25);
+                const activeSize = Math.max(minSize, lastActiveIndex);
+
+                if (this.smoothedFreqDataSize === undefined) {
+                    this.smoothedFreqDataSize = activeSize;
+                } else {
+                    this.smoothedFreqDataSize = this.smoothedFreqDataSize * 0.9 + activeSize * 0.1;
+                }
+                freqDataSize = Math.ceil(this.smoothedFreqDataSize);
             }
+            // --- END OF MISSING LOGIC ---
 
             const mappedData = [];
             for (let i = 0; i < barCount; i++) {
-                const startFreqIndex = i * step;
-                const endFreqIndex = Math.min((i + 1) * step, freqDataSize);
+                const startFreqIndex = Math.floor((i / barCount) * freqDataSize);
+                const endFreqIndex = Math.floor(((i + 1) / barCount) * freqDataSize);
                 let sum = 0;
                 let count = 0;
                 for (let j = startFreqIndex; j < endFreqIndex; j++) {
-                    let value = fullFreqData[j];
+                    let value = fullFreqData[j] || 0;
                     const bassBoostFactor = (this.vizBassLevel || 50) / 100.0;
                     const trebleBoostFactor = (this.vizTrebleBoost || 125) / 100.0;
                     const boostFactor = bassBoostFactor + (i / barCount) * (trebleBoostFactor - bassBoostFactor);
@@ -2312,24 +2358,29 @@ class Shape {
                     targetHeight = normalizedValue;
                 }
 
-                let shapeMaxHeight;
-                if (this.vizLayout === 'Circular') {
-                    const outerRadius = Math.min(this.width, this.height) / 2;
-                    const innerRadiusRatio = (this.vizInnerRadius || 0) / 100.0;
-                    shapeMaxHeight = outerRadius * (1.0 - innerRadiusRatio);
+                const shapeMaxHeight = (this.vizLayout === 'Circular' || this.vizLayout === 'Circular Polyline')
+                    ? (Math.min(this.width, this.height) / 2)
+                    : this.height;
+
+
+                const sensitivityMultiplier = (this.vizGain || 100) / 100.0;
+                const maxAllowedHeight = (this.vizMaxBarHeight || 100) / 100.0;
+                let audioValue;
+
+                if (barCount === 1) {
+                    audioValue = (audioData.volume.avg || 0) * sensitivityMultiplier;
                 } else {
-                    shapeMaxHeight = this.height;
+                    audioValue = (targetHeight / 255) * sensitivityMultiplier;
                 }
 
                 let finalHeight;
-                if (barCount === 1) {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
-                    const audioValue = (audioData.volume.avg || 0) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                if (this.vizAutoScale) {
+                    // When auto-scaling, allow bars to reach full height
+                    finalHeight = Math.min(1.0, audioValue) * shapeMaxHeight;
                 } else {
-                    const sensitivityMultiplier = (this.vizAudioSensitivity || 100) / 100.0;
-                    const audioValue = (targetHeight / 255) * sensitivityMultiplier;
-                    finalHeight = Math.min(1, audioValue) * shapeMaxHeight;
+                    // When not auto-scaling, respect the Max Bar Height setting
+                    const maxAllowedHeight = (this.vizMaxBarHeight || 100) / 100.0;
+                    finalHeight = Math.min(maxAllowedHeight, audioValue) * shapeMaxHeight;
                 }
                 this.vizBarHeights[i] = smoothingFactor * this.vizBarHeights[i] + (1.0 - smoothingFactor) * finalHeight;
             }
@@ -3172,49 +3223,70 @@ class Shape {
                 const fillStyle = this._createLocalFillStyle();
                 this.ctx.fillStyle = fillStyle;
                 this.ctx.strokeStyle = fillStyle;
-                if (this.vizLayout === 'Circular') {
+
+                if (this.vizLayout === 'Circular' || this.vizLayout === 'Circular Polyline') {
+                    const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
                     const centerX = 0;
                     const centerY = 0;
                     const outerRadius = Math.min(this.width, this.height) / 2;
                     const innerRadius = outerRadius * ((this.vizInnerRadius || 0) / 100.0);
+
                     if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        if (barCount < 2) return;
-                        this.ctx.beginPath();
-                        for (let i = 0; i <= barCount; i++) {
-                            const index = i % barCount;
-                            const barHeight = this.vizBarHeights[index] || 0;
+                        const points = [];
+                        for (let i = 0; i < barCount; i++) {
+                            const barHeight = this.vizBarHeights[i] || 0;
                             const angle = (i / barCount) * 2 * Math.PI - (Math.PI / 2);
                             const radius = innerRadius + barHeight;
-                            const x = centerX + radius * Math.cos(angle);
-                            const y = centerY + radius * Math.sin(angle);
-                            if (i === 0) { this.ctx.moveTo(x, y); } else { this.ctx.lineTo(x, y); }
+                            points.push({ x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) });
                         }
+                        if (points.length < 2) return;
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(points[0].x, points[0].y);
+
+                        if (this.vizLayout === 'Circular Polyline') {
+                            // Use Catmull-Rom spline for a closed loop
+                            const allPoints = [points[points.length - 1], ...points, points[0], points[1]];
+                            for (let i = 0; i < points.length; i++) {
+                                const p0 = allPoints[i];
+                                const p1 = allPoints[i + 1];
+                                const p2 = allPoints[i + 2];
+                                const p3 = allPoints[i + 3];
+                                for (let t_step = 1; t_step <= 10; t_step++) {
+                                    const t = t_step / 10;
+                                    const point = this._getPointOnCatmullRomSpline(p0, p1, p2, p3, t);
+                                    this.ctx.lineTo(point.x, point.y);
+                                }
+                            }
+                        } else { // 'Circular' layout uses straight lines
+                            for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
+                        }
+                        this.ctx.closePath();
+
                         if (this.vizDrawStyle === 'Area') {
-                            this.ctx.closePath();
                             this.ctx.fill();
                         } else {
                             this.ctx.lineWidth = this.vizLineWidth;
                             this.ctx.stroke();
                         }
-                    } else {
+                    } else { // Bars
                         if (this.vizUseSegments) {
                             const segmentCount = this.vizSegmentCount || 16;
-                            const segmentSpacing = this.vizSegmentSpacing || 1;
                             const availableBarSpace = outerRadius - innerRadius;
-                            const totalSpacing = (segmentCount - 1) * segmentSpacing;
+                            const totalSpacing = (segmentCount - 1) * scaledSegmentSpacing;
                             const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
                             if (segmentLength > 0) {
                                 const angleStep = (2 * Math.PI) / barCount;
-                                const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                                const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
                                 for (let i = 0; i < barCount; i++) {
                                     const barLength = this.vizBarHeights[i] || 0;
                                     if (barLength <= 0) continue;
-                                    const litSegments = Math.floor(barLength / (segmentLength + segmentSpacing));
+                                    const litSegments = Math.floor((barLength + scaledSegmentSpacing) / (segmentLength + scaledSegmentSpacing));
                                     const baseAngle = this.rotation * (Math.PI / 180);
                                     const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
                                     const endAngle = startAngle + barAngularWidth;
                                     for (let j = 0; j < litSegments; j++) {
-                                        const segmentStartRadius = innerRadius + j * (segmentLength + segmentSpacing);
+                                        const segmentStartRadius = innerRadius + j * (segmentLength + scaledSegmentSpacing);
                                         const segmentEndRadius = segmentStartRadius + segmentLength;
                                         this.ctx.beginPath();
                                         this.ctx.arc(centerX, centerY, segmentEndRadius, startAngle, endAngle);
@@ -3229,12 +3301,11 @@ class Shape {
                             }
                         } else {
                             const angleStep = (2 * Math.PI) / barCount;
-                            const barAngularWidth = angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
+                            const barAngularWidth = barCount === 1 ? angleStep : angleStep * (1 - ((this.vizBarSpacing || 0) / 100.0));
                             for (let i = 0; i < barCount; i++) {
                                 const barLength = this.vizBarHeights[i] || 0;
                                 if (barLength <= 0) continue;
-                                const startRadius = innerRadius;
-                                const endRadius = innerRadius + barLength;
+                                const startRadius = innerRadius; const endRadius = innerRadius + barLength;
                                 const baseAngle = this.rotation * (Math.PI / 180);
                                 const startAngle = baseAngle + (i * angleStep) - (Math.PI / 2);
                                 const endAngle = startAngle + barAngularWidth;
@@ -3246,53 +3317,82 @@ class Shape {
                             }
                         }
                     }
-                } else {
-                    const totalSpacing = (barCount - 1) * this.vizBarSpacing;
-                    const barWidth = (this.width - totalSpacing) / barCount;
+                } else { // Linear or Polyline Layout
+                    const scaledBarSpacingInput = (this.vizBarSpacing || 0) * (this.width / 200.0);
+                    const maxBarSpacing = barCount > 1 ? this.width / (2 * barCount - 1) : 0;
+                    const barSpacing = Math.min(scaledBarSpacingInput, maxBarSpacing);
+                    const totalSpacing = (barCount - 1) * barSpacing;
+                    const barWidth = barCount > 0 ? (this.width - totalSpacing) / barCount : 0;
+
                     if (this.vizDrawStyle === 'Line' || this.vizDrawStyle === 'Area') {
-                        this.ctx.beginPath();
                         const halfW = this.width / 2;
                         const halfH = this.height / 2;
-                        const firstBarHeight = this.vizBarHeights[0] || 0;
-                        this.ctx.moveTo(-halfW, halfH - firstBarHeight);
+                        const points = [];
+                        
                         for (let i = 0; i < barCount; i++) {
                             const barHeight = this.vizBarHeights[i] || 0;
-                            const x = -halfW + i * (barWidth + this.vizBarSpacing) + barWidth / 2;
+                            const x = -halfW + i * (barWidth + barSpacing) + barWidth / 2;
                             const y = halfH - barHeight;
-                            this.ctx.lineTo(x, y);
+                            points.push({ x, y });
                         }
+                        if (points.length < 2) return;
+
+                        this.ctx.beginPath();
+                        if (this.vizDrawStyle === 'Area') {
+                            this.ctx.moveTo(-halfW, halfH);
+                            this.ctx.lineTo(points[0].x, points[0].y);
+                        } else {
+                            this.ctx.moveTo(points[0].x, points[0].y);
+                        }
+
+                        if (this.vizLayout === 'Polyline') {
+                            // Use Catmull-Rom spline for an open path
+                            const allPoints = [points[0], ...points, points[points.length - 1]];
+                            for (let i = 0; i < points.length - 1; i++) {
+                                const p0 = allPoints[i];
+                                const p1 = allPoints[i + 1];
+                                const p2 = allPoints[i + 2];
+                                const p3 = allPoints[i + 3];
+                                for (let t_step = 1; t_step <= 10; t_step++) {
+                                    const t = t_step / 10;
+                                    const point = this._getPointOnCatmullRomSpline(p0, p1, p2, p3, t);
+                                    this.ctx.lineTo(point.x, point.y);
+                                }
+                            }
+                        } else { // 'Linear' layout uses straight lines
+                            for (let i = 1; i < points.length; i++) this.ctx.lineTo(points[i].x, points[i].y);
+                        }
+
                         if (this.vizDrawStyle === 'Area') {
                             this.ctx.lineTo(halfW, halfH);
-                            this.ctx.lineTo(-halfW, halfH);
                             this.ctx.closePath();
                             this.ctx.fill();
                         } else {
                             this.ctx.lineWidth = this.vizLineWidth;
                             this.ctx.stroke();
                         }
-                    } else {
+                    } else { // Bars
                         for (let i = 0; i < barCount; i++) {
                             const barHeight = this.vizBarHeights[i] || 0;
                             if (barHeight < 1) continue;
-                            const x = -this.width / 2 + i * (barWidth + this.vizBarSpacing);
+                            const x = -this.width / 2 + i * (barWidth + barSpacing);
                             if (this.vizUseSegments) {
                                 const segmentCount = this.vizSegmentCount || 16;
-                                const segmentSpacing = this.vizSegmentSpacing || 2;
-                                const totalSegSpacing = (segmentCount - 1) * segmentSpacing;
+                                const totalSegSpacing = (segmentCount - 1) * scaledSegmentSpacing;
                                 const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
                                 if (segmentHeight > 0) {
-                                    const litSegments = Math.floor(barHeight / (segmentHeight + segmentSpacing));
+                                    const litSegments = Math.floor((barHeight + scaledSegmentSpacing) / (segmentHeight + scaledSegmentSpacing));
                                     for (let j = 0; j < litSegments; j++) {
                                         let y;
-                                        const segYPos = j * (segmentHeight + segmentSpacing);
+                                        const segYPos = j * (segmentHeight + scaledSegmentSpacing);
                                         if (this.gradType === 'alternating' || this.gradType === 'random') {
                                             this.ctx.fillStyle = this._createLocalFillStyle(j);
                                         }
                                         switch (this.vizStyle) {
                                             case 'top': y = -this.height / 2 + segYPos; break;
                                             case 'center':
-                                                const totalPossibleHeight = segmentCount * (segmentHeight + segmentSpacing) - segmentSpacing;
-                                                y = -totalPossibleHeight / 2 + j * (segmentHeight + segmentSpacing);
+                                                const totalPossibleHeight = segmentCount * (segmentHeight + scaledSegmentSpacing) - scaledSegmentSpacing;
+                                                y = -totalPossibleHeight / 2 + j * (segmentHeight + scaledSegmentSpacing);
                                                 break;
                                             default: y = this.height / 2 - segmentHeight - segYPos; break;
                                         }
