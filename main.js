@@ -3484,10 +3484,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (value === "true") value = true;
                     if (value === "false") value = false;
 
-                    if (propsToScale.includes(propName) && typeof value === 'number') {
-                        value *= 4;
-                    }
-
                     // FIX: This logic correctly separates color and alpha properties.
                     if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
                         try {
