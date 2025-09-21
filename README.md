@@ -20,7 +20,7 @@ A web-based, WYSIWYG tool designed to create and share complex animated effects 
 
 ## 🚀 Live Demo
 
-You can use the live version of the Effect Builder here: **[https://joseamirandavelez.github.io/EffectBuilder/](https://joseamirandavelez.github.io/EffectBuilder/)**
+You can use the live version of the Effect Builder here: **[https://effectbuilder.github.io/](https://effectbuilder.github.io/)**
 
 ---
 
