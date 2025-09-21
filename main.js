@@ -3470,7 +3470,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return isNaN(id) ? null : String(id);
         }).filter(id => id !== null))];
 
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize'];
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
         
         objects = uniqueIds.map(id => {
             const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
