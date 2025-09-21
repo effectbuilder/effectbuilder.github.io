@@ -2420,11 +2420,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const originalStrokeGradient = { ...obj.strokeGradient };
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
+            const originalStrokeCycleColors = obj.strokeCycleColors;
+            const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
+
 
             // 2. Apply ALL global overrides directly to the object's state
             if (globalCycle.enable) {
+                const speed = (globalCycle.speed || 0) / 50.0;
                 obj.cycleColors = true;
-                obj.cycleSpeed = (globalCycle.speed || 0) / 50.0;
+                obj.cycleSpeed = speed;
+                obj.strokeCycleColors = true;
+                obj.strokeCycleSpeed = speed;
             }
             if (palette.enablePalette) {
                 const pColor1 = palette.paletteColor1;
@@ -2444,6 +2450,9 @@ document.addEventListener('DOMContentLoaded', function () {
             obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
+            obj.strokeCycleColors = originalStrokeCycleColors;
+            obj.strokeCycleSpeed = originalStrokeCycleSpeed;
+
 
             obj.dirty = false;
         }
@@ -3407,72 +3416,78 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function drawFrame(deltaTime = 0) {
         if (!ctx) return;
-
-        // Safely read all global properties with fallbacks first.
-        let shouldAnimate = false;
-        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
-        let enableGlobalCycle = false, globalCycleSpeed = 10;
-
-        try {
-            const animVal = eval('enableAnimation');
-            shouldAnimate = animVal === true || animVal === 'true';
-        } catch(e) {}
-        try {
-            const paletteVal = eval('enablePalette');
-            enablePalette = paletteVal === true || paletteVal === 'true';
-        } catch(e) {}
-        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
-        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
-        try {
-            const cycleVal = eval('enableGlobalCycle');
-            enableGlobalCycle = cycleVal === true || cycleVal === 'true';
-        } catch(e) {}
-        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const audioData = getSignalRGBAudioMetrics();
+
+        let shouldAnimate = true;
+        let soundEnabled = false;
+        try { shouldAnimate = !!eval('enableAnimation'); } catch(e) {}
+        try { soundEnabled = !!eval('enableSound'); } catch(e) {}
+
+        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
         const sensorData = {};
         const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
         neededSensors.forEach(sensorName => {
             sensorData[sensorName] = getSensorValue(sensorName);
         });
 
+        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
+        let enableGlobalCycle = false, globalCycleSpeed = 10;
+        try { enablePalette = !!eval('enablePalette'); } catch(e) {}
+        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
+        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
+        try { enableGlobalCycle = !!eval('enableGlobalCycle'); } catch(e) {}
+        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
+
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
             
-            // 1. Update object with its individual properties from the UI
             const prefix = 'obj' + obj.id + '_';
             const propsToUpdate = {};
             allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
                 const propName = key.substring(prefix.length);
                 try {
-                    propsToUpdate[propName] = eval(key);
+                    let value = eval(key);
+                    if (value === "true") value = true;
+                    if (value === "false") value = false;
+                    propsToUpdate[propName] = value;
                 } catch (e) {}
             });
             obj.update(propsToUpdate);
 
-            // 2. Apply global overrides
+            const originalGradient = { ...obj.gradient };
+            const originalStrokeGradient = { ...obj.strokeGradient };
+            const originalCycleColors = obj.cycleColors;
+            const originalCycleSpeed = obj.cycleSpeed;
+            const originalStrokeCycleColors = obj.strokeCycleColors;
+            const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
+
+            if (enableGlobalCycle) {
+                const speed = (globalCycleSpeed || 0) / 50.0;
+                obj.cycleColors = true;
+                obj.cycleSpeed = speed;
+                obj.strokeCycleColors = true;
+                obj.strokeCycleSpeed = speed;
+            }
             if (enablePalette) {
                 obj.gradient.color1 = paletteColor1;
                 obj.gradient.color2 = paletteColor2;
                 obj.strokeGradient.color1 = paletteColor1;
                 obj.strokeGradient.color2 = paletteColor2;
-                obj.cycleColors = false; // Palette overrides individual cycling
             }
 
-            if (enableGlobalCycle) {
-                obj.cycleColors = true; // Global cycle overrides palette's static colors
-                obj.cycleSpeed = (globalCycleSpeed || 0) / 50.0;
-            }
-
-            // 3. Animate and Draw the object using the final state
             if (shouldAnimate) {
                 obj.updateAnimationState(audioData, sensorData, deltaTime);
             }
             obj.draw(false, audioData, {});
+
+            obj.gradient = originalGradient;
+            obj.strokeGradient = originalStrokeGradient;
+            obj.cycleColors = originalCycleColors;
+            obj.cycleSpeed = originalCycleSpeed;
+            obj.strokeCycleColors = originalStrokeCycleColors;
+            obj.strokeCycleSpeed = originalStrokeCycleSpeed;
         }
     }
 
@@ -5911,13 +5926,7 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function getSignalRGBAudioMetrics() {
         try {
-            let soundEnabled = false;
-            try {
-                const val = eval('enableSound');
-                soundEnabled = val === true || val === 'true';
-            } catch(e) {}
-
-            if (soundEnabled) {
+            if (enableSound) {
                 const freqArray = engine.audio.freq || new Array(200).fill(0);
                 const level = engine.audio.level || -100;
 
