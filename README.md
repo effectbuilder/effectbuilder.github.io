@@ -1,51 +1,68 @@
-**Adding a New Object**
+# SRGB Interactive Effect Builder
 
-Adding a new object to the effect builder is a multi-step process that involves updating several key functions to ensure the application correctly handles the new object's creation, rendering, and export.
+A web-based, WYSIWYG tool designed to create and share complex animated effects for the SignalRGB platform without writing code from scratch.
 
-1. The addObjectBtn Function
-The addObjectBtn event listener is the entry point for creating a new object. It's responsible for generating a unique ID for the new object and creating its default configuration.
-    * Generate a new ID: The function calculates a new, unique ID for the object based on the existing objects in the scene.
-    * Get default configs: It calls getDefaultObjectConfig() to retrieve a full set of default properties for the new object.
-    * Create a new Shape object: It instantiates a new Shape object using the default configurations and the canvas context.
-    * Add to the scene: The new Shape object is added to the objects array, and its configuration is added to the configStore.
+## ✨ Features
 
-2. The getDefaultObjectConfig Function
-This function is the single source of truth for defining the properties of a new object. It returns an array of property-value pairs for a new object, which includes all of its settings.
-    * Define properties: It returns an array of objects, where each object represents a single property (e.g., shape, x, y).
-    * Set default values: Each property object includes a default value, which is used to initialize the new object's state.
+* **Visual Editor**: A What-You-See-Is-What-You-Get interface for real-time feedback on your effects.
+* **Diverse Shapes**: Includes standard shapes like rectangles, circles, and stars, plus advanced tools for creating freeform polylines.
+* **Advanced Objects**: Create complex visuals with built-in objects like:
+    * Particle Spawners
+    * Audio Visualizers
+    * Strimers (PC Cable Effects)
+    * Pixel Art Sprites with a built-in frame editor
+* **Dynamic Reactivity**: Make your effects come alive with reactivity to system audio and hardware sensor data (e.g., CPU load).
+* **Community & Sharing**:
+    * Save projects to the cloud with a Google account.
+    * Share effects with other creators via a direct link.
+    * Browse and load effects from the Community Gallery.
+* **Easy Export**: Download your creation as a complete `.zip` file, ready to be imported directly into SignalRGB.
 
-3. The Shape Class
-The Shape class is the blueprint for all objects in the scene. It's responsible for managing an object's properties, updating its state, and drawing it on the canvas.
-    * Constructor: The Shape constructor accepts an object of properties and assigns them to the new object. This allows the application to create a new Shape object with all the properties defined in getDefaultObjectConfig().
-    * draw method: The draw method uses the object's properties to render it on the canvas.
+## 🚀 Live Demo
 
-4. The renderForm Function
-The renderForm function is responsible for creating the UI controls for each object in the scene.
-    * Iterate through objects: It iterates through the objects array and creates a new panel for each object.
-    * Create controls: For each object, it dynamically creates form controls (e.g., text boxes, sliders, dropdowns) based on the object's configuration in the configStore.
+You can use the live version of the Effect Builder here: **[https://joseamirandavelez.github.io/EffectBuilder/](https://joseamirandavelez.github.io/EffectBuilder/)**
 
-5. The exportFile Function
-The exportFile function is responsible for generating the final HTML file. It includes all the object data and the necessary JavaScript code to run the effect.
-    * generateOutputScript: This function builds the HTML meta tags and JavaScript variables for the exported file.
-    * exportedScript: The exportedScript template includes all the JavaScript logic, such as the Shape class, the drawFrame function, and the animate function, that is necessary for the effect to run outside of the editor.
+---
 
+## 🛠️ For Developers & Contributors
 
-**Adding a new property**
+This project is open-source. The following guide provides a high-level overview of how to extend the builder with new functionality.
 
-1. Update Shape.js - The Core Object
-    * Constructor: Add the new property to the list of properties the Shape class can accept. Give it a default value so that existing effects don't break.
-    * Update method: The update method is called to apply changes from the UI. This ensures your new property responds to user input.
-    * Implement the visual logic: Add code to the draw method or other relevant rendering functions (like _drawFill) to use your new property to modify the shape's appearance.
+### Extending the Builder
 
+The application is designed to be modular, but adding new functionality requires updating several core components to handle configuration, UI, rendering, and exporting.
 
-2. Update main.js - Configuration and UI
-    * getDefaultObjectConfig: Add a new entry for your property in this function. This serves as the single source of truth for all new objects and includes details like the control's label, type, and default value.
-    * shapePropertyMap: This map controls which properties appear for which shape. Add the name of your new property to the list for every shape that should have access to it.
-    * controlGroupMap: This tells the application which tab to place the new control in. Choose an existing group or create a new one.
-    * getFormValuesForObject: This function reads the value from the form and scales it for internal use. If your property needs scaling (e.g., for position, size, or speed), apply it here.
-    * updateFormValuesFromObjects: This function is crucial for keeping the form in sync with the live state of the shape. Add a line to read the property from the Shape object and update the form control.
+#### Adding a New Shape Property
 
+To add a new customizable property (e.g., a "glow" effect) to existing shapes, you'll need to modify the following areas:
 
-3. Update the exportFile function - The Final Output
-    * generateOutputScript: This function builds the <meta> tags and JavaScript variables for the exported file. You'll need to add logic to export your new property correctly.
-    * Update the exported script: Add any new functions or classes that the property relies on to the exportedScript template. This ensures that the generated file contains all the necessary code to run the effect.
+1.  **`Shape.js` (The Core Object)**
+    * **Constructor**: Add the new property and a default value.
+    * **Update Method**: Ensure the property can be updated from the UI.
+    * **`draw` method**: Implement the rendering logic that uses the new property.
+
+2.  **`main.js` (Configuration and UI)**
+    * **`getDefaultObjectConfig`**: Add a new configuration object that defines the property's UI label, control type (e.g., `number`, `boolean`), and default value for newly created shapes.
+    * **`shapePropertyMap`**: Add the property's name to the array for each shape that should have access to it.
+    * **`controlGroupMap`**: Assign the property to a UI tab in the controls panel.
+    * **`getFormValuesForObject` & `updateFormValuesFromObjects`**: Add logic to sync the property's state between the live `Shape` object and the form controls.
+
+3.  **`main.js` (The Final Output)**
+    * **`generateOutputScript` in `exportFile`**: Ensure the new property is correctly written to the `<meta>` tags or JavaScript variables in the exported HTML file.
+    * **`exportedScript`**: If your new property relies on helper functions, they must be included in the exported script template.
+
+#### Adding a New Shape Type
+
+Adding a completely new shape (e.g., a "Waveform" object) follows a similar but more extensive process:
+
+1.  **`getDefaultObjectConfig` in `main.js`**: Define all the default properties for your new shape type. This is the first and most critical step.
+2.  **`addObjectBtn` logic in `main.js`**: This function handles the creation of a new object instance when a user clicks the "Add Object" button. It uses `getDefaultObjectConfig` to get the initial state.
+3.  **The `Shape` Class in `Shape.js`**:
+    * **Constructor**: Ensure it can accept and store the unique properties of your new shape.
+    * **`draw` method**: Add a new `else if (this.shape === 'yourNewShape')` block with the specific Canvas API logic required to render your shape.
+4.  **`renderForm` in `main.js`**: This function builds the UI. Your new shape's properties will automatically appear based on their definitions in `getDefaultObjectConfig` and the various map objects (`shapePropertyMap`, `controlGroupMap`).
+5.  **`exportFile` in `main.js`**: Ensure the export process correctly handles your new shape type and its unique properties.
+
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0**. For the full license text, please see the [official GNU GPLv3 page](https://www.gnu.org/licenses/gpl-3.0.html).
