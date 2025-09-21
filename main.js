@@ -640,6 +640,13 @@ document.addEventListener('DOMContentLoaded', function () {
             'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
             'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
         ],
+        'pixel-art': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
+            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+        ],
         'strimer': [
             'shape', 'x', 'y', 'width', 'height', 'rotation',
             'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
@@ -1470,6 +1477,98 @@ document.addEventListener('DOMContentLoaded', function () {
                             <label class="form-label-sm" for="${textareaId}">Frame Data</label>
                             <button type="button" class="btn btn-sm btn-outline-info" 
                                     data-bs-toggle="modal" 
+                                    data-bs-target="#pixelArtEditorModal"
+                                    data-target-id="${textareaId}">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </button>
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
+                    </div>
+                    <div class="mt-2">
+                         <label class="form-label-sm">Duration (seconds)</label>
+                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
+                    </div>
+                `;
+                framesContainer.appendChild(frameItem);
+            });
+
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'd-flex gap-2 mt-2';
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
+            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
+
+            // const pasteButton = document.createElement('button');
+            // pasteButton.type = 'button';
+            // pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
+            // pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
+
+            const browseButton = document.createElement('button');
+            browseButton.type = 'button';
+            browseButton.className = 'btn btn-sm btn-outline-info';
+            browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
+            browseButton.dataset.bsToggle = 'modal';
+            browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
+
+            buttonGroup.appendChild(addButton);
+            // buttonGroup.appendChild(pasteButton);
+            buttonGroup.appendChild(browseButton);
+
+            container.appendChild(hiddenTextarea);
+            container.appendChild(framesContainer);
+            container.appendChild(buttonGroup);
+            formGroup.appendChild(container);
+            // --- END: REVISED PIXEL ART TABLE LOGIC ---
+        } else if (type === 'pixelarttable') {
+            const container = document.createElement('div');
+            container.className = 'pixel-art-table-container';
+
+            const hiddenTextarea = document.createElement('textarea');
+            hiddenTextarea.id = controlId;
+            hiddenTextarea.name = controlId;
+            hiddenTextarea.style.display = 'none';
+            hiddenTextarea.textContent = defaultValue;
+
+            const framesContainer = document.createElement('div');
+            framesContainer.className = 'd-flex flex-column gap-2'; // Use flexbox for spacing
+
+            // --- START: THIS IS THE FIX ---
+            // Extract the object ID from the property name (e.g., get "1" from "obj1_pixelArtFrames")
+            let objectId = null;
+            if (property) {
+                const match = property.match(/^obj(\d+)_/);
+                if (match) {
+                    objectId = match[1];
+                }
+            }
+            // --- END: THIS IS THE FIX ---
+
+            let frames = [];
+            try {
+                frames = JSON.parse(defaultValue);
+            } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
+
+            frames.forEach((frame, index) => {
+                const frameItem = document.createElement('div');
+                frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
+                frameItem.dataset.index = index;
+
+                // Use the newly extracted objectId to create a truly unique ID
+                const textareaId = `frame-data-${objectId}-${index}`;
+                const frameDataStr = frame.data || '[[0]]';
+
+                frameItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="frame-item-header">Frame #${index + 1}</strong>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
+                            <button type="button" class="btn btn-sm btn-outline-info"
+                                    data-bs-toggle="modal"
                                     data-bs-target="#pixelArtEditorModal"
                                     data-target-id="${textareaId}">
                                 <i class="bi bi-pencil-square"></i> Edit
@@ -3420,10 +3519,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        let shouldAnimate = true;
-        let soundEnabled = false;
-        try { shouldAnimate = !!eval('enableAnimation'); } catch(e) {}
-        try { soundEnabled = !!eval('enableSound'); } catch(e) {}
+        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
+        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
 
         const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
         const sensorData = {};
@@ -3432,13 +3529,11 @@ document.addEventListener('DOMContentLoaded', function () {
             sensorData[sensorName] = getSensorValue(sensorName);
         });
 
-        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
-        let enableGlobalCycle = false, globalCycleSpeed = 10;
-        try { enablePalette = !!eval('enablePalette'); } catch(e) {}
-        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
-        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
-        try { enableGlobalCycle = !!eval('enableGlobalCycle'); } catch(e) {}
-        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
+        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
+        const pColor1 = typeof paletteColor1 !== 'undefined' ? paletteColor1 : '#FF8F00';
+        const pColor2 = typeof paletteColor2 !== 'undefined' ? paletteColor2 : '#00BFFF';
+        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
+        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
 
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
@@ -3447,12 +3542,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const propsToUpdate = {};
             allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
                 const propName = key.substring(prefix.length);
-                try {
-                    let value = eval(key);
+                if (typeof window[key] !== 'undefined') {
+                    let value = window[key];
                     if (value === "true") value = true;
                     if (value === "false") value = false;
                     propsToUpdate[propName] = value;
-                } catch (e) {}
+                }
             });
             obj.update(propsToUpdate);
 
@@ -3463,18 +3558,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const originalStrokeCycleColors = obj.strokeCycleColors;
             const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
 
-            if (enableGlobalCycle) {
-                const speed = (globalCycleSpeed || 0) / 50.0;
+            if (useGlobalCycle) {
+                const speed = (gCycleSpeed || 0) / 50.0;
                 obj.cycleColors = true;
                 obj.cycleSpeed = speed;
                 obj.strokeCycleColors = true;
                 obj.strokeCycleSpeed = speed;
             }
-            if (enablePalette) {
-                obj.gradient.color1 = paletteColor1;
-                obj.gradient.color2 = paletteColor2;
-                obj.strokeGradient.color1 = paletteColor1;
-                obj.strokeGradient.color2 = paletteColor2;
+            if (useGlobalPalette) {
+                obj.gradient.color1 = pColor1;
+                obj.gradient.color2 = pColor2;
+                obj.strokeGradient.color1 = pColor1;
+                obj.strokeGradient.color2 = pColor2;
             }
 
             if (shouldAnimate) {
