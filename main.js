@@ -3407,12 +3407,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function drawFrame(deltaTime = 0) {
         if (!ctx) return;
+
+        // Safely read all global properties with fallbacks first.
+        let shouldAnimate = false;
+        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
+        let enableGlobalCycle = false, globalCycleSpeed = 10;
+        try { shouldAnimate = eval('enableAnimation'); } catch(e) {}
+        try { enablePalette = eval('enablePalette'); } catch(e) {}
+        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
+        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
+        try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
+        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        let shouldAnimate = false;
-        try { shouldAnimate = eval('enableAnimation'); } catch(e) {}
         
         const audioData = getSignalRGBAudioMetrics();
         const sensorData = {};
@@ -3420,15 +3429,6 @@ document.addEventListener('DOMContentLoaded', function () {
         neededSensors.forEach(sensorName => {
             sensorData[sensorName] = getSensorValue(sensorName);
         });
-
-        // Safely read all global properties with fallbacks
-        let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
-        let enableGlobalCycle = false, globalCycleSpeed = 10;
-        try { enablePalette = eval('enablePalette'); } catch(e) {}
-        try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
-        try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
-        try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
-        try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
 
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
@@ -5911,7 +5911,10 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function getSignalRGBAudioMetrics() {
         try {
-            if (enableSound) {
+            let soundEnabled = false;
+            try { soundEnabled = eval('enableSound'); } catch(e) {}
+
+            if (soundEnabled) {
                 const freqArray = engine.audio.freq || new Array(200).fill(0);
                 const level = engine.audio.level || -100;
 
