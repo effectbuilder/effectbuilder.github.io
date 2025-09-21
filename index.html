@@ -379,6 +379,44 @@
             </div>
         </div>
 
+        <div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="aboutModalLabel">About Effect Builder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>SRGB Effect Builder</strong> is a web-based visual tool designed to simplify the creation of complex animated effects for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
+                        <p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Version:</strong> 2.0 (September 2025)
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Terms & Privacy:</strong> 
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> | 
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>
+                            </li>
+                        </ul>
+                        <h6 class="mt-4">Credits & Inspirations</h6>
+                        <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
+                        
+                        <h6 class="mt-4">For Developers & Contributors</h6>
+                        <p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p>
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="text-muted small me-auto">© 2025 José A. Miranda Vélez. All Rights Reserved.</div>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="terms-modal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
@@ -419,42 +457,39 @@
             </div>
         </div>
 
-        <div class="modal fade" id="terms-modal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal fade" id="privacy-policy-modal" tabindex="-1" aria-labelledby="privacyPolicyModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="termsModalLabel"><i class="bi bi-file-text me-2"></i>Terms of Usage</h5>
+                        <h5 class="modal-title" id="privacyPolicyModalLabel">Privacy Policy</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>By using this Interactive Effect Builder (the "Tool"), you agree to the following terms:</p>
+                        <p><em>Last Updated: September 21, 2025</em></p>
+                        <p>This Privacy Policy describes how we handle information in the SRGB Interactive Effect Builder (the "Tool").</p>
 
-                        <h6 class="mt-4">1. No Warranty</h6>
-                        <p>This Tool is provided "as-is", without any warranties of any kind, express or implied. The
-                            developer makes no guarantees regarding its functionality, reliability, or suitability for any
-                            particular purpose.</p>
+                        <h6 class="mt-4">Information We Collect</h6>
+                        <ul>
+                            <li><strong>Account Information:</strong> If you choose to sign in with Google, we collect your public profile information, including your name, photo, and unique user ID.</li>
+                            <li><strong>User-Generated Content:</strong> We collect the effects you save to the cloud, which includes all configuration data, names, and descriptions you provide.</li>
+                            <li><strong>Browser Storage:</strong> The Tool uses your browser's `localStorage` to remember that you have accepted the Terms of Usage, so you are not prompted on every visit.</li>
+                        </ul>
 
-                        <h6 class="mt-4">2. Limitation of Liability</h6>
-                        <p>In no event shall the developer be liable for any claim, damages, or other liability arising from
-                            the use of, or inability to use, the Tool.</p>
+                        <h6 class="mt-4">How We Use Information</h6>
+                        <ul>
+                            <li>To associate your saved effects with your user profile.</li>
+                            <li>To display your public display name and profile photo next to your creations in the Community Gallery.</li>
+                            <li>To operate and maintain the Tool and its features, such as the cloud-saving and sharing functionalities.</li>
+                        </ul>
 
-                        <h6 class="mt-4">3. User Responsibility</h6>
-                        <p>You are solely responsible for the effects you create and their use. It is your responsibility to
-                            ensure they comply with the terms of service of any platform or application they are used with,
-                            including SignalRGB.</p>
+                        <h6 class="mt-4">Information Sharing</h6>
+                        <p>Your saved effects and your public display name are visible to other users when they browse the Community Gallery. We do not share or sell your personal information with third parties.</p>
 
-                        <h6 class="mt-4">4. Content Disclaimer</h6>
-                        <p>The developer is not responsible for any content, including effects, created or shared by users of this Tool. Some user-generated effects may be inappropriate or unsuitable for certain audiences. Use caution when sharing or loading effects from others.</p>
-
-                        <h6 class="mt-4">5. License</h6>
-                        <p>This Tool is free to use, modify, and distribute. Attribution is appreciated but not required.
-                        </p>
-
-                        <h6 class="mt-4">6. Public Content and Licensing</h6>
-                        <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
+                        <h6 class="mt-4">Your Rights</h6>
+                        <p>You have the right to delete your saved effects. This can be done from the "My Projects" section of the gallery when you are signed in.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -549,10 +584,10 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i>Terms of Usage</h5>
+                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i>Terms & Privacy</h5>
                     </div>
                     <div class="modal-body">
-                        <p>By using this tool, you agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a>.</p>
+                        <p>By using this tool, you agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> and acknowledge our <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>.</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal">I Accept</button>
