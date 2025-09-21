@@ -320,6 +320,13 @@
                                             <li><strong>Special Colors:</strong> Use the editor's palette to paint with special values that are interpreted by the renderer, like forcing a pixel to be opaque White (1.0), the object's Color 1 (0.3), or Color 2 (0.4).</li>
                                         </ul>
                                         <hr>
+                                        <h6>The Pixel Art Gallery</h6>
+                                        <ul>
+                                            <li><strong>Access:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-images"></i> Browse Gallery</kbd> button in the "Pixel Art" tab to open the community gallery.</li>
+                                            <li><strong>Functionality:</strong> Browse and search for pixel art from public community effects.</li>
+                                            <li><strong>Usage:</strong> Clicking <kbd><i class="bi bi-plus-lg me-1"></i> Insert</kbd> on an item will append its animation frames to your currently selected `pixel-art` object.</li>
+                                        </ul>
+                                        <hr>
                                         <h6>Other Shapes</h6>
                                         <p>Explore other shapes like the <strong>Spawner</strong> (particle system), <strong>Strimer</strong> (cable effects), <strong>Oscilloscope</strong>, and <strong>Tetris</strong>, each with their own unique set of properties to discover.</p>
                                     </div>
@@ -352,12 +359,13 @@
                                 <div id="help-collapse-5" class="accordion-collapse collapse" aria-labelledby="help-heading-5">
                                     <div class="accordion-body">
                                         <ul>
-                                            <li><kbd><i class="bi bi-cloud-upload"></i> Save</kbd>: Saves your current project to your "My Projects" gallery in the cloud.</li>
-                                            <li><kbd><i class="bi bi-folder2-open"></i> Load</kbd>: Opens the gallery where you can browse "My Projects" or the "Community Gallery".</li>
-                                            <li><kbd><i class="bi bi-upload"></i> Import</kbd>: Load an effect from a `.html` file or by pasting its code.</li>
+                                            <li><kbd><i class="bi bi-cloud-arrow-up"></i> Save</kbd>: Saves your current project to your "My Projects" gallery in the cloud. You must be signed in.</li>
+                                            <li><kbd><i class="bi bi-folder2-open"></i> Open</kbd>: Opens the gallery panel to load one of your saved projects.</li>
+                                            <li><kbd><i class="bi bi-view-list"></i> Community Gallery</kbd>: Opens the gallery panel to browse public effects from all users.</li>
+                                            <li><kbd><i class="bi bi-upload"></i> Upload</kbd>: Load an effect from a `.html` file from your computer.</li>
                                             <li><kbd><i class="bi bi-download"></i> Export</kbd>: Generates a <strong>.zip file</strong> containing your effect and a thumbnail, ready to be imported into SignalRGB.</li>
-                                            <li><kbd><i class="bi bi-share-fill"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
-                                            <li><kbd><i class="bi bi-link-45deg"></i> Generate SRGB Link</kbd>: Creates a special link to apply your effect's settings to an *already installed* effect in SignalRGB.</li>
+                                            <li><kbd><i class="bi bi-share"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
+                                            <li><kbd><i class="bi bi-link-45deg"></i> Import to SignalRGB</kbd>: Creates a special link to apply your effect's settings to an *already installed* effect in SignalRGB.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -371,30 +379,41 @@
             </div>
         </div>
 
-        <div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        <div class="modal fade" id="terms-modal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="aboutModalLabel">About Effect Builder</h5>
+                        <h5 class="modal-title" id="termsModalLabel">Terms of Usage</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p><strong>SRGB Effect Builder</strong> is a web-based visual tool designed to simplify the creation of complex animated effects for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
-                        <p>Built by José Miranda, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p>
-                        <ul class="list-group">
-                            <li class="list-group-item">
-                                <strong>Version:</strong> 2.0 (September 2025)
-                            </li>
-                            <li class="list-group-item">
-                                <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
-                            </li>
-                        </ul>
-                        <h6 class="mt-4">Credits & Inspirations</h6>
-                        <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
+                        <p>By using this Interactive Effect Builder (the "Tool"), you agree to the following terms:</p>
 
+                        <h6 class="mt-4">1. No Warranty</h6>
+                        <p>This Tool is provided "as-is", without any warranties of any kind, express or implied. The
+                            developer makes no guarantees regarding its functionality, reliability, or suitability for any
+                            particular purpose.</p>
+
+                        <h6 class="mt-4">2. Limitation of Liability</h6>
+                        <p>In no event shall the developer be liable for any claim, damages, or other liability arising from
+                            the use of, or inability to use, the Tool.</p>
+
+                        <h6 class="mt-4">3. User Responsibility</h6>
+                        <p>You are solely responsible for the effects you create and their use. It is your responsibility to
+                            ensure they comply with the terms of service of any platform or application they are used with,
+                            including SignalRGB.</p>
+
+                        <h6 class="mt-4">4. Content Disclaimer</h6>
+                        <p>The developer is not responsible for any content, including effects, created or shared by users of this Tool. Some user-generated effects may be inappropriate or unsuitable for certain audiences. Use caution when sharing or loading effects from others.</p>
+
+                        <h6 class="mt-4">5. License</h6>
+                        <p>This project is licensed under the GNU General Public License v3.0. You may copy, distribute and modify the software as long as you track changes/dates in source files and keep modifications under the same license. The software is provided "as is", without warranty of any kind. For the full license text, please see the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">official GNU GPLv3 page</a>.</p>
+
+                        <h6 class="mt-4">6. Public Content and Licensing</h6>
+                        <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
                     </div>
                 </div>
             </div>
@@ -430,6 +449,9 @@
                         <h6 class="mt-4">5. License</h6>
                         <p>This Tool is free to use, modify, and distribute. Attribution is appreciated but not required.
                         </p>
+
+                        <h6 class="mt-4">6. Public Content and Licensing</h6>
+                        <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
@@ -646,7 +668,6 @@
             </div>
         </div>
 
-        <!-- START: Pixel Art Gallery Modal -->
         <div class="modal fade" id="pixel-art-gallery-modal" tabindex="-1" aria-labelledby="pixelArtGalleryModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
@@ -664,21 +685,17 @@
                             </div>
                         </div>
                         <div id="modal-pixel-art-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                            <!-- Content will be injected by JavaScript -->
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-center">
                         <nav aria-label="Pixel Art Gallery Pagination">
                             <ul class="pagination mb-0" id="pixel-art-pagination-container">
-                                <!-- Pagination will be injected by JavaScript -->
                             </ul>
                         </nav>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- END: Pixel Art Gallery Modal -->
-
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
         <script src="Shape.js"></script>
