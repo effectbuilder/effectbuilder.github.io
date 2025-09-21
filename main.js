@@ -3412,11 +3412,21 @@ document.addEventListener('DOMContentLoaded', function () {
         let shouldAnimate = false;
         let enablePalette = false, paletteColor1 = '#FF8F00', paletteColor2 = '#00BFFF';
         let enableGlobalCycle = false, globalCycleSpeed = 10;
-        try { shouldAnimate = eval('enableAnimation'); } catch(e) {}
-        try { enablePalette = eval('enablePalette'); } catch(e) {}
+
+        try {
+            const animVal = eval('enableAnimation');
+            shouldAnimate = animVal === true || animVal === 'true';
+        } catch(e) {}
+        try {
+            const paletteVal = eval('enablePalette');
+            enablePalette = paletteVal === true || paletteVal === 'true';
+        } catch(e) {}
         try { paletteColor1 = eval('paletteColor1'); } catch(e) {}
         try { paletteColor2 = eval('paletteColor2'); } catch(e) {}
-        try { enableGlobalCycle = eval('enableGlobalCycle'); } catch(e) {}
+        try {
+            const cycleVal = eval('enableGlobalCycle');
+            enableGlobalCycle = cycleVal === true || cycleVal === 'true';
+        } catch(e) {}
         try { globalCycleSpeed = eval('globalCycleSpeed'); } catch(e) {}
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -5912,7 +5922,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function getSignalRGBAudioMetrics() {
         try {
             let soundEnabled = false;
-            try { soundEnabled = eval('enableSound'); } catch(e) {}
+            try {
+                const val = eval('enableSound');
+                soundEnabled = val === true || val === 'true';
+            } catch(e) {}
 
             if (soundEnabled) {
                 const freqArray = engine.audio.freq || new Array(200).fill(0);
