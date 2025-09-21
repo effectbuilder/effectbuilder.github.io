@@ -3454,35 +3454,25 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             obj.update(propsToUpdate);
 
-            // 2. Save the object's original state before applying global overrides
-            const originalGradient = { ...obj.gradient };
-            const originalStrokeGradient = { ...obj.strokeGradient };
-            const originalCycleColors = obj.cycleColors;
-            const originalCycleSpeed = obj.cycleSpeed;
-
-            // 3. Apply the global overrides directly to the object's state
-            if (enableGlobalCycle) {
-                obj.cycleColors = true;
-                obj.cycleSpeed = (globalCycleSpeed || 0) / 50.0;
-            }
+            // 2. Apply global overrides
             if (enablePalette) {
                 obj.gradient.color1 = paletteColor1;
                 obj.gradient.color2 = paletteColor2;
                 obj.strokeGradient.color1 = paletteColor1;
                 obj.strokeGradient.color2 = paletteColor2;
+                obj.cycleColors = false; // Palette overrides individual cycling
             }
 
-            // 4. Animate and Draw the object using the (potentially overridden) state
+            if (enableGlobalCycle) {
+                obj.cycleColors = true; // Global cycle overrides palette's static colors
+                obj.cycleSpeed = (globalCycleSpeed || 0) / 50.0;
+            }
+
+            // 3. Animate and Draw the object using the final state
             if (shouldAnimate) {
                 obj.updateAnimationState(audioData, sensorData, deltaTime);
             }
-            obj.draw(false, audioData, {}); // Pass an empty palette
-
-            // 5. Restore the object's original state for the next frame
-            obj.gradient = originalGradient;
-            obj.strokeGradient = originalStrokeGradient;
-            obj.cycleColors = originalCycleColors;
-            obj.cycleSpeed = originalCycleSpeed;
+            obj.draw(false, audioData, {});
         }
     }
 
