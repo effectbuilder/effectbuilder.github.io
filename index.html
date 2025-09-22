@@ -697,6 +697,19 @@
                         </div>
                         <div id="pixel-editor-grid-container" class="bg-dark p-1" style="cursor: pointer; user-select: none;">
                         </div>
+                        <hr>
+                        <p>
+                            <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#collapseRawData" role="button" aria-expanded="false" aria-controls="collapseRawData">
+                                <i class="bi bi-code-slash"></i> View Raw Data
+                            </a>
+                        </p>
+                        <div class="collapse" id="collapseRawData">
+                            <div class="card card-body bg-dark">
+                                <label for="pixel-editor-raw-data" class="form-label-sm">JSON Data (Advanced)</label>
+                                <textarea id="pixel-editor-raw-data" class="form-control font-monospace" rows="5"></textarea>
+                                <div class="form-text">Changes here will override the visual editor if the JSON is valid.</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

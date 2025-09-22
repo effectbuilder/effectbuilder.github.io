@@ -162,6 +162,55 @@ let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
 
+function formatPixelData(data) {
+    if (!Array.isArray(data)) return JSON.stringify(data);
+
+    let result = "[\n";
+    result += data.map(row => JSON.stringify(row)).join(",\n");
+    result += "\n]";
+
+    return result;
+}
+
+function renderPixelArtPreview(canvas, frameDataString) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#212529'; // A dark background for the preview
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    try {
+        const data = JSON.parse(frameDataString);
+        if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) return;
+
+        const rows = data.length;
+        const cols = data[0].length;
+        const cellWidth = canvas.width / cols;
+        const cellHeight = canvas.height / rows;
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const val = data[r]?.[c] || 0;
+                if (val > 0) {
+                    // Use a simplified color mapping for the preview
+                    if (val === 1.0) ctx.fillStyle = '#FFFFFF';
+                    else if (val === 0.3) ctx.fillStyle = '#FF00FF';
+                    else if (val === 0.4) ctx.fillStyle = '#00FFFF';
+                    else ctx.fillStyle = `rgba(144, 144, 144, ${val})`;
+                    ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
+                }
+            }
+        }
+    } catch (e) {
+        // If data is invalid, draw an error icon
+        ctx.fillStyle = 'red';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', canvas.width / 2, canvas.height / 2);
+    }
+}
+
 function colorDistance(rgb1, rgb2) {
     const rDiff = rgb1.r - rgb2.r;
     const gDiff = rgb1.g - rgb2.g;
@@ -259,6 +308,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
         const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
         const pasteBtn = document.getElementById('pixel-editor-paste-btn');
+        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
 
         let targetTextarea = null;
         let currentPaintValue = 0.7;
@@ -445,29 +495,36 @@ document.addEventListener('DOMContentLoaded', function () {
                         const textareaId = `frame-data-${objectId}-${index}`;
                         const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
 
+                        frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center'; // Also update the class name
                         frameItem.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="frame-item-header">Frame #${index + 1}</strong>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                            <button type="button" class="btn btn-sm btn-outline-info" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#pixelArtEditorModal"
-                                    data-target-id="${textareaId}">
-                                <i class="bi bi-pencil-square"></i> Edit
-                            </button>
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                    <div class="mt-2">
-                         <label class="form-label-sm">Duration (seconds)</label>
-                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration}" min="0.1" step="0.1">
-                    </div>
-                `;
+                            <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#pixelArtEditorModal"
+                                                data-target-id="${textareaId}" title="Edit Frame">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" title="Duration (seconds)">
+                                        <i class="bi bi-clock"></i>
+                                    </span>
+                                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
+                                </div>
+                                <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
+                            </div>
+                        `;
                         framesContainer.appendChild(frameItem);
+                        const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                        renderPixelArtPreview(previewCanvas, frameDataStr);
                     });
 
                     hiddenTextarea.value = JSON.stringify(combinedFrames);
@@ -592,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         };
 
-        editorModalEl.addEventListener('show.bs.modal', (event) => {
+        editorModalEl.addEventListener('shown.bs.modal', (event) => {
             currentTool = 'paint'; // Reset to paint tool on open
             const button = event.relatedTarget;
             const targetId = button.getAttribute('data-target-id');
@@ -607,14 +664,27 @@ document.addEventListener('DOMContentLoaded', function () {
             const color2 = color2Input ? color2Input.value : '#00FFFF';
             color2Btn.style.backgroundColor = color2;
 
+            // --- START OF FIX ---
+            // First, get the data from the textarea
+            let data;
             try {
-                const data = JSON.parse(targetTextarea.value);
-                widthInput.value = data[0].length;
-                heightInput.value = data.length;
-                renderGrid(data, color1, color2);
+                data = JSON.parse(targetTextarea.value);
             } catch (e) {
-                renderGrid([[0]], color1, color2);
+                data = [[0]]; // Use default data if parsing fails
             }
+
+            // Next, update all the UI elements with this data
+            widthInput.value = data[0]?.length || 1;
+            heightInput.value = data.length || 1;
+            renderGrid(data, color1, color2);
+            rawDataTextarea.value = formatPixelData(data);
+
+            // Finally, ALWAYS ensure the raw data section is collapsed
+            const collapseEl = document.getElementById('collapseRawData');
+            if (collapseEl) {
+                collapseEl.classList.remove('show');
+            }
+            // --- END OF FIX ---
         });
 
         palette.addEventListener('click', (e) => {
@@ -720,17 +790,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
         saveBtn.addEventListener('click', () => {
             if (!targetTextarea) return;
-            const allFramesDataString = targetTextarea.value;
 
-            // The hidden master textarea for the object needs the final, full value.
-            const masterTextarea = document.getElementById(targetTextarea.id.replace('-new-', '-'));
-            if (masterTextarea) {
-                masterTextarea.value = allFramesDataString;
-                // Dispatch the final event to ensure the main application state is updated.
-                masterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            let newDataString;
+
+            // Try to parse the raw data textarea first.
+            try {
+                // This will throw an error if the JSON is invalid.
+                const rawData = JSON.parse(rawDataTextarea.value);
+                // If it's valid, use it. Re-stringify to ensure it's compact.
+                newDataString = JSON.stringify(rawData);
+            } catch (e) {
+                // If parsing fails, fall back to the visual grid and warn the user.
+                const gridData = readGrid();
+                newDataString = JSON.stringify(gridData);
+                showToast("Invalid JSON in raw data field. Saving changes from visual editor instead.", "warning");
             }
 
+            targetTextarea.value = newDataString;
+            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             bootstrap.Modal.getInstance(editorModalEl).hide();
+        });
+
+        rawDataTextarea.addEventListener('input', () => {
+            try {
+                const newData = JSON.parse(rawDataTextarea.value);
+                if (Array.isArray(newData) && newData.length > 0 && Array.isArray(newData[0])) {
+                    heightInput.value = newData.length;
+                    widthInput.value = newData[0].length;
+                }
+                renderGrid(newData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+            } catch (e) {
+                // If JSON is invalid during typing, do nothing. The save button will handle the final validation.
+            }
         });
 
     }
@@ -1780,29 +1871,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 const textareaId = `frame-data-${objectId}-${index}`;
                 const frameDataStr = frame.data || '[[0]]';
 
+                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center'; // Also update the class name
                 frameItem.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="frame-item-header">Frame #${index + 1}</strong>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                            <button type="button" class="btn btn-sm btn-outline-info" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#pixelArtEditorModal"
-                                    data-target-id="${textareaId}">
-                                <i class="bi bi-pencil-square"></i> Edit
-                            </button>
+                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#pixelArtEditorModal"
+                                        data-target-id="${textareaId}" title="Edit Frame">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                    <div class="mt-2">
-                         <label class="form-label-sm">Duration (seconds)</label>
-                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" title="Duration (seconds)">
+                                <i class="bi bi-clock"></i>
+                            </span>
+                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
                     </div>
                 `;
                 framesContainer.appendChild(frameItem);
+                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                renderPixelArtPreview(previewCanvas, frameDataStr);
             });
 
             const buttonGroup = document.createElement('div');
@@ -3908,6 +4006,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     hiddenTextarea.value = JSON.stringify(newFrames);
                 }
             }
+
+            if (target.classList.contains('frame-data-input')) {
+                const frameItem = target.closest('.pixel-art-frame-item');
+                if (frameItem) {
+                    const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                    renderPixelArtPreview(previewCanvas, target.value);
+                }
+            }
         }
         // --- END: NEW PIXEL ART TABLE LOGIC ---
 
@@ -3982,29 +4088,36 @@ document.addEventListener('DOMContentLoaded', function () {
             // Generate a unique ID for the textarea to link it to the button
             const textareaId = `frame-data-new-${Date.now()}`;
 
+            frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center'; // Also update the class name
             frameItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong class="frame-item-header">Frame #${newIndex + 1}</strong>
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
-                </div>
-                <div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#pixelArtEditorModal"
-                                data-target-id="${textareaId}">
-                            <i class="bi bi-pencil-square"></i> Edit
-                        </button>
+                <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#pixelArtEditorModal"
+                                    data-target-id="${textareaId}" title="Edit Frame">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
-                    <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-                </div>
-                <div class="mt-2">
-                     <label class="form-label-sm">Duration (seconds)</label>
-                    <input type="number" class="form-control form-control-sm frame-duration-input" value="1" min="0.1" step="0.1">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text" title="Duration (seconds)">
+                            <i class="bi bi-clock"></i>
+                        </span>
+                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
+                    </div>
+                    <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
                 </div>
             `;
             framesContainer.appendChild(frameItem);
+            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+            renderPixelArtPreview(previewCanvas, frameDataStr);
 
             const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
             const newFrames = Array.from(framesContainer.children).map(item => ({
@@ -4022,6 +4135,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const container = deleteFrameBtn.closest('.pixel-art-table-container');
             const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
             if (framesContainer.children.length > 1) {
+                const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
+                if (tooltip) {
+                    // Destroy the tooltip before removing the button
+                    tooltip.dispose();
+                }
                 deleteFrameBtn.closest('.pixel-art-frame-item').remove();
                 Array.from(framesContainer.children).forEach((item, index) => {
                     item.dataset.index = index;
@@ -6670,29 +6788,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 const textareaId = `frame-data-${targetObject.id}-${index}`;
                 const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
 
+                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center'; // Also update the class name
                 frameItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong class="frame-item-header">Frame #${index + 1}</strong>
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
-                </div>
-                <div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#pixelArtEditorModal"
-                                data-target-id="${textareaId}">
-                            <i class="bi bi-pencil-square"></i> Edit
-                        </button>
+                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#pixelArtEditorModal"
+                                        data-target-id="${textareaId}" title="Edit Frame">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" title="Duration (seconds)">
+                                <i class="bi bi-clock"></i>
+                            </span>
+                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
                     </div>
-                    <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                </div>
-                <div class="mt-2">
-                    <label class="form-label-sm">Duration (seconds)</label>
-                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
-                </div>
-            `;
+                `;
                 framesContainer.appendChild(frameItem);
+                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                renderPixelArtPreview(previewCanvas, frameDataStr);
             });
 
             recordHistory();
