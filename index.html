@@ -397,14 +397,14 @@
                                 <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
                             </li>
                             <li class="list-group-item">
-                                <strong>Terms & Privacy:</strong> 
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> | 
+                                <strong>Terms & Privacy:</strong>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> |
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>
                             </li>
                         </ul>
                         <h6 class="mt-4">Credits & Inspirations</h6>
                         <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
-                        
+
                         <h6 class="mt-4">For Developers & Contributors</h6>
                         <p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p>
 
@@ -692,12 +692,48 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-text text-center mt-2">
+                            Or, simply click the grid and press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste an image.
+                        </div>
                         <div id="pixel-editor-grid-container" class="bg-dark p-1" style="cursor: pointer; user-select: none;">
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="pixel-editor-save-btn">Apply Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="paste-sprite-modal" tabindex="-1" aria-labelledby="pasteSpriteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pasteSpriteModalLabel"><i class="bi bi-clipboard-image me-2"></i>Paste Sprite Sheet</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
+                        <p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p>
+                        <div class="row">
+                            <div class="col">
+                                <label for="sprite-frame-width" class="form-label-sm">Single Frame Width</label>
+                                <input type="number" class="form-control" id="sprite-frame-width" value="16" min="1" max="128">
+                            </div>
+                            <div class="col">
+                                <label for="sprite-frame-height" class="form-label-sm">Single Frame Height</label>
+                                <input type="number" class="form-control" id="sprite-frame-height" value="16" min="1" max="128">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="sprite-paste-append">
+                            <label class="form-check-label" for="sprite-paste-append">Append to existing frames (instead of replacing)</label>
+                        </div>
+                        <hr>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Paste from Clipboard</button>
+                        </div>
                     </div>
                 </div>
             </div>

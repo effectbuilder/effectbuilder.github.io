@@ -162,6 +162,13 @@ let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
 
+function colorDistance(rgb1, rgb2) {
+    const rDiff = rgb1.r - rgb2.r;
+    const gDiff = rgb1.g - rgb2.g;
+    const bDiff = rgb1.b - rgb2.b;
+    return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+}
+
 function handleURLParameters() {
     const params = new URLSearchParams(window.location.search);
     const modalToShow = params.get('show');
@@ -251,11 +258,310 @@ document.addEventListener('DOMContentLoaded', function () {
         const fillBtn = document.getElementById('pixel-editor-fill-btn');
         const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
         const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
+        const pasteBtn = document.getElementById('pixel-editor-paste-btn');
 
         let targetTextarea = null;
         let currentPaintValue = 0.7;
         let currentTool = 'paint'; // 'paint' or 'fill'
         let isPainting = false;
+
+        const processPastedImage = (image, targetWidth, targetHeight, color1, color2) => {
+            // 1. Define the target palette the image will be mapped to.
+            const targetPalette = [
+                { value: 1.0, name: 'White', rgb: { r: 255, g: 255, b: 255 } },
+                { value: 0.3, name: 'Color 1', rgb: parseColorToRgba(color1) },
+                { value: 0.4, name: 'Color 2', rgb: parseColorToRgba(color2) },
+                { value: 0.0, name: 'Black', rgb: { r: 0, g: 0, b: 0 } },
+                { value: 0.7, name: 'Fill Style', rgb: { r: 144, g: 144, b: 144 } }
+            ];
+
+            // 2. Downsample the image to get a representative set of pixels.
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = targetWidth;
+            tempCanvas.height = targetHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+            const imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight).data;
+
+            // 3. Find the most common (dominant) colors in the downsampled image.
+            const colorCounts = new Map();
+            const sourcePixels = []; // We'll need this later to remap the image.
+            for (let i = 0; i < imageData.length; i += 4) {
+                // Ignore transparent pixels
+                if (imageData[i + 3] < 128) {
+                    sourcePixels.push(null);
+                    continue;
+                }
+                const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2];
+                const key = `${r},${g},${b}`;
+                colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
+                sourcePixels.push({ r, g, b });
+            }
+
+            const dominantSourceColors = [...colorCounts.entries()]
+                .sort(([, countA], [, countB]) => countB - countA)
+                .slice(0, 5) // Take up to the 5 most common colors
+                .map(([key]) => {
+                    const [r, g, b] = key.split(',').map(Number);
+                    return { r, g, b };
+                });
+
+            // 4. Create an exclusive mapping from the dominant image colors to the target palette.
+            const colorMap = new Map();
+            const availablePaletteColors = [...targetPalette];
+
+            dominantSourceColors.forEach(sourceRgb => {
+                let bestMatch = null;
+                let minDistance = Infinity;
+                let bestMatchIndex = -1;
+
+                availablePaletteColors.forEach((paletteColor, index) => {
+                    const distance = colorDistance(sourceRgb, paletteColor.rgb);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        bestMatch = paletteColor;
+                        bestMatchIndex = index;
+                    }
+                });
+
+                if (bestMatch) {
+                    const sourceKey = JSON.stringify(sourceRgb);
+                    colorMap.set(sourceKey, bestMatch);
+                    // Remove the matched palette color so it can't be used again.
+                    availablePaletteColors.splice(bestMatchIndex, 1);
+                }
+            });
+
+            // 5. Remap every pixel in the image using the exclusive map.
+            const newData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(0));
+            let pixelIndex = 0;
+            for (let r = 0; r < targetHeight; r++) {
+                for (let c = 0; c < targetWidth; c++) {
+                    const pixelRgb = sourcePixels[pixelIndex++];
+                    if (pixelRgb === null) { // This was a transparent pixel
+                        newData[r][c] = 0.0; // Map to black
+                        continue;
+                    }
+
+                    // Find which dominant color this pixel is closest to.
+                    let closestDominantKey = null;
+                    let minPixelDistance = Infinity;
+                    dominantSourceColors.forEach(dominantRgb => {
+                        const distance = colorDistance(pixelRgb, dominantRgb);
+                        if (distance < minPixelDistance) {
+                            minPixelDistance = distance;
+                            closestDominantKey = JSON.stringify(dominantRgb);
+                        }
+                    });
+
+                    // Use the map to get the final palette color.
+                    const finalColor = colorMap.get(closestDominantKey);
+                    if (finalColor) {
+                        newData[r][c] = finalColor.value;
+                    } else {
+                        newData[r][c] = 0.0; // Fallback to black if no match found
+                    }
+                }
+            }
+
+            return newData;
+        };
+
+        const handleSpritePaste = async () => {
+            if (selectedObjectIds.length !== 1) {
+                showToast("Please select a single pixel art object to paste into.", "warning");
+                return;
+            }
+            const objectId = selectedObjectIds[0];
+
+            try {
+                const clipboardItems = await navigator.clipboard.read();
+                const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
+                if (!imageItem) {
+                    showToast("No image found on the clipboard.", "info");
+                    return;
+                }
+
+                const imageType = imageItem.types.find(type => type.startsWith('image/'));
+                const blob = await imageItem.getType(imageType);
+                const imageUrl = URL.createObjectURL(blob);
+                const image = new Image();
+
+                image.onload = () => {
+                    const frameWidthInput = document.getElementById('sprite-frame-width');
+                    const frameHeightInput = document.getElementById('sprite-frame-height');
+                    const shouldAppend = document.getElementById('sprite-paste-append').checked;
+
+                    const frameWidth = parseInt(frameWidthInput.value, 10);
+                    const frameHeight = parseInt(frameHeightInput.value, 10);
+
+                    if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
+                        showToast("Frame dimensions must be positive numbers.", "danger");
+                        return;
+                    }
+
+                    // Automatic dimension detection
+                    const spriteCols = Math.round(image.width / frameWidth);
+                    const spriteRows = Math.round(image.height / frameHeight);
+
+                    if (image.width % frameWidth !== 0 || image.height % frameHeight !== 0) {
+                        showToast(`Warning: Image dimensions (${image.width}x${image.height}) are not a perfect multiple of frame size (${frameWidth}x${frameHeight}).`, "warning");
+                    }
+
+                    const form = document.getElementById('controls-form');
+                    const color1Input = form.querySelector(`[name="obj${objectId}_gradColor1"]`);
+                    const color2Input = form.querySelector(`[name="obj${objectId}_gradColor2"]`);
+                    const color1 = color1Input ? color1Input.value : '#FF00FF';
+                    const color2 = color2Input ? color2Input.value : '#00FFFF';
+
+                    const newFrames = [];
+                    for (let row = 0; row < spriteRows; row++) {
+                        for (let col = 0; col < spriteCols; col++) {
+                            const frameCanvas = document.createElement('canvas');
+                            frameCanvas.width = frameWidth;
+                            frameCanvas.height = frameHeight;
+                            const frameCtx = frameCanvas.getContext('2d');
+                            frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+
+                            // Use the existing processing function, but now it only needs to process a single frame canvas
+                            const pixelData = processPastedImage(frameCanvas, frameWidth, frameHeight, color1, color2);
+                            newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                        }
+                    }
+
+                    const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
+                    const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                    const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+
+                    const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
+                    const combinedFrames = [...existingFrames, ...newFrames];
+
+                    // Rebuild the entire UI for the frames
+                    framesContainer.innerHTML = '';
+                    combinedFrames.forEach((frame, index) => {
+                        const frameItem = document.createElement('div');
+                        frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
+                        frameItem.dataset.index = index;
+                        const textareaId = `frame-data-${objectId}-${index}`;
+                        const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+
+                        frameItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="frame-item-header">Frame #${index + 1}</strong>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#pixelArtEditorModal"
+                                    data-target-id="${textareaId}">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </button>
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
+                    </div>
+                    <div class="mt-2">
+                         <label class="form-label-sm">Duration (seconds)</label>
+                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration}" min="0.1" step="0.1">
+                    </div>
+                `;
+                        framesContainer.appendChild(frameItem);
+                    });
+
+                    hiddenTextarea.value = JSON.stringify(combinedFrames);
+                    hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    showToast(`${newFrames.length} frame(s) processed!`, "success");
+                    URL.revokeObjectURL(imageUrl);
+
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
+                    modal.hide();
+                    recordHistory();
+                };
+                image.src = imageUrl;
+            } catch (err) {
+                console.error(err);
+                showToast("Could not paste sprite: " + err.message, "danger");
+            }
+        };
+
+        const pasteSingleImageFrame = (blob) => {
+            const frameWidthInput = document.getElementById('pixel-editor-width');
+            const frameHeightInput = document.getElementById('pixel-editor-height');
+
+            // Set the sprite sheet modal inputs to match the editor's grid
+            document.getElementById('sprite-frame-width').value = frameWidthInput.value;
+            document.getElementById('sprite-frame-height').value = frameHeightInput.value;
+            document.getElementById('sprite-paste-append').checked = true; // Always append for single paste
+
+            // Now, call the main sprite paste handler
+            handleSpritePaste();
+        };
+
+        const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
+        if (confirmSpritePasteBtn) {
+            confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
+        }
+
+        // This function will handle the clipboard reading
+        const handlePaste = async () => {
+            // This is for the "Paste" button inside the editor. It should only ever paste one frame.
+            try {
+                const clipboardItems = await navigator.clipboard.read();
+                const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
+                if (imageItem) {
+                    const imageType = imageItem.types.find(type => type.startsWith('image/'));
+                    const blob = await imageItem.getType(imageType);
+
+                    // Re-use the sprite paste logic, but force it to a 1x1 grid to process a single image.
+                    pasteSingleImageFrame(blob);
+                } else {
+                    showToast("No image found on the clipboard.", "info");
+                }
+            } catch (err) {
+                console.error('Failed to read clipboard contents: ', err);
+            }
+        };
+
+        const handleDocumentPaste = (e) => {
+            const editorModalEl = document.getElementById('pixelArtEditorModal');
+            if (editorModalEl && editorModalEl.classList.contains('show')) {
+                e.preventDefault();
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+                        // Re-use the sprite paste logic for a single image here as well.
+                        pasteSingleImageFrame(blob);
+                        return;
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('paste', handleDocumentPaste);
+
+        if (pasteBtn) {
+            pasteBtn.addEventListener('click', async () => {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
+                    if (imageItem) {
+                        const imageType = imageItem.types.find(type => type.startsWith('image/'));
+                        const blob = await imageItem.getType(imageType);
+
+                        // Use the helper function to paste a single frame
+                        pasteSingleImageFrame(blob);
+                    } else {
+                        showToast("No image found on the clipboard.", "info");
+                    }
+                } catch (err) {
+                    console.error('Failed to read clipboard contents: ', err);
+                }
+            });
+        }
 
         const valueToColor = (value, color1, color2) => {
             if (value === 1.0) return '#FFFFFF';
@@ -414,12 +720,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         saveBtn.addEventListener('click', () => {
             if (!targetTextarea) return;
-            const newData = readGrid();
-            const newDataString = JSON.stringify(newData);
-            targetTextarea.value = newDataString;
-            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            const allFramesDataString = targetTextarea.value;
+
+            // The hidden master textarea for the object needs the final, full value.
+            const masterTextarea = document.getElementById(targetTextarea.id.replace('-new-', '-'));
+            if (masterTextarea) {
+                masterTextarea.value = allFramesDataString;
+                // Dispatch the final event to ensure the main application state is updated.
+                masterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
             bootstrap.Modal.getInstance(editorModalEl).hide();
         });
+
     }
     // --- END: PIXEL ART EDITOR LOGIC ---
 
@@ -1500,10 +1813,12 @@ document.addEventListener('DOMContentLoaded', function () {
             addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
 
-            // const pasteButton = document.createElement('button');
-            // pasteButton.type = 'button';
-            // pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
-            // pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
+            const pasteSpriteButton = document.createElement('button');
+            pasteSpriteButton.type = 'button';
+            pasteSpriteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-sprite';
+            pasteSpriteButton.innerHTML = '<i class="bi bi-clipboard-image"></i> Paste Sprite';
+            pasteSpriteButton.dataset.bsToggle = 'modal';
+            pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
 
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
@@ -1513,99 +1828,7 @@ document.addEventListener('DOMContentLoaded', function () {
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
 
             buttonGroup.appendChild(addButton);
-            // buttonGroup.appendChild(pasteButton);
-            buttonGroup.appendChild(browseButton);
-
-            container.appendChild(hiddenTextarea);
-            container.appendChild(framesContainer);
-            container.appendChild(buttonGroup);
-            formGroup.appendChild(container);
-            // --- END: REVISED PIXEL ART TABLE LOGIC ---
-        } else if (type === 'pixelarttable') {
-            const container = document.createElement('div');
-            container.className = 'pixel-art-table-container';
-
-            const hiddenTextarea = document.createElement('textarea');
-            hiddenTextarea.id = controlId;
-            hiddenTextarea.name = controlId;
-            hiddenTextarea.style.display = 'none';
-            hiddenTextarea.textContent = defaultValue;
-
-            const framesContainer = document.createElement('div');
-            framesContainer.className = 'd-flex flex-column gap-2'; // Use flexbox for spacing
-
-            // --- START: THIS IS THE FIX ---
-            // Extract the object ID from the property name (e.g., get "1" from "obj1_pixelArtFrames")
-            let objectId = null;
-            if (property) {
-                const match = property.match(/^obj(\d+)_/);
-                if (match) {
-                    objectId = match[1];
-                }
-            }
-            // --- END: THIS IS THE FIX ---
-
-            let frames = [];
-            try {
-                frames = JSON.parse(defaultValue);
-            } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
-
-            frames.forEach((frame, index) => {
-                const frameItem = document.createElement('div');
-                frameItem.className = 'pixel-art-frame-item border rounded p-2 bg-body';
-                frameItem.dataset.index = index;
-
-                // Use the newly extracted objectId to create a truly unique ID
-                const textareaId = `frame-data-${objectId}-${index}`;
-                const frameDataStr = frame.data || '[[0]]';
-
-                frameItem.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="frame-item-header">Frame #${index + 1}</strong>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-frame" title="Delete Frame"><i class="bi bi-trash"></i></button>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label-sm" for="${textareaId}">Frame Data</label>
-                            <button type="button" class="btn btn-sm btn-outline-info"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#pixelArtEditorModal"
-                                    data-target-id="${textareaId}">
-                                <i class="bi bi-pencil-square"></i> Edit
-                            </button>
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                    <div class="mt-2">
-                         <label class="form-label-sm">Duration (seconds)</label>
-                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.1" step="0.1">
-                    </div>
-                `;
-                framesContainer.appendChild(frameItem);
-            });
-
-            const buttonGroup = document.createElement('div');
-            buttonGroup.className = 'd-flex gap-2 mt-2';
-
-            const addButton = document.createElement('button');
-            addButton.type = 'button';
-            addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
-            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
-
-            // const pasteButton = document.createElement('button');
-            // pasteButton.type = 'button';
-            // pasteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-frames';
-            // pasteButton.innerHTML = '<i class="bi bi-clipboard-plus"></i> Paste Frames';
-
-            const browseButton = document.createElement('button');
-            browseButton.type = 'button';
-            browseButton.className = 'btn btn-sm btn-outline-info';
-            browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
-            browseButton.dataset.bsToggle = 'modal';
-            browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
-
-            buttonGroup.appendChild(addButton);
-            // buttonGroup.appendChild(pasteButton);
+            buttonGroup.appendChild(pasteSpriteButton);
             buttonGroup.appendChild(browseButton);
 
             container.appendChild(hiddenTextarea);
@@ -3360,32 +3583,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
         }
 
-        if (colorStr.startsWith('hsl')) {
-            const [h, s, l] = colorStr.match(/(\d+(\.\d+)?)/g).map(Number);
-            const s_norm = s / 100;
-            const l_norm = l / 100;
-            if (s_norm === 0) return { r: l_norm * 255, g: l_norm * 255, b: l_norm * 255, a: 1 };
-
-            const c = (1 - Math.abs(2 * l_norm - 1)) * s_norm;
-            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-            const m = l_norm - c / 2;
-            let r_temp, g_temp, b_temp;
-
-            if (h >= 0 && h < 60) { [r_temp, g_temp, b_temp] = [c, x, 0]; }
-            else if (h >= 60 && h < 120) { [r_temp, g_temp, b_temp] = [x, c, 0]; }
-            else if (h >= 120 && h < 180) { [r_temp, g_temp, b_temp] = [0, c, x]; }
-            else if (h >= 180 && h < 240) { [r_temp, g_temp, b_temp] = [0, x, c]; }
-            else if (h >= 240 && h < 300) { [r_temp, g_temp, b_temp] = [x, 0, c]; }
-            else { [r_temp, g_temp, b_temp] = [c, 0, x]; }
-
-            return {
-                r: Math.round((r_temp + m) * 255),
-                g: Math.round((g_temp + m) * 255),
-                b: Math.round((b_temp + m) * 255),
-                a: 1
-            };
-        }
-        return { r: 0, g: 0, b: 0, a: 1 }; // Fallback
+        // Fallback for other formats
+        return { r: 0, g: 0, b: 0, a: 1 };
     }
 
     async function incrementDownloadCount() {
