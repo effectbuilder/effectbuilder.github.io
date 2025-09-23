@@ -815,8 +815,134 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // --- START: PIXEL ART EDITOR LOGIC ---
+    // State variables for the editor modal
+    let targetTextarea = null;
+    let currentEditorObjectId = null;
+    let currentEditorFrameIndex = -1;
+    let totalFramesInEditor = 0;
+
+    /**
+     * Updates the "Frame X / Y" counter in the modal header.
+     */
+    const updateEditorFrameCounter = () => {
+        const counterEl = document.getElementById('pixel-editor-frame-counter');
+        if (counterEl) {
+            counterEl.textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
+        }
+    };
+
+    /**
+     * Saves the current visual state of the editor back to the hidden textareas in the main form.
+     */
+    const saveCurrentFrameInEditor = () => {
+        if (!targetTextarea) {
+            console.error("Save failed: targetTextarea is not set.");
+            return;
+        }
+
+        // --- START DEBUGGING ---
+        console.clear();
+        console.log("--- saveCurrentFrameInEditor called ---");
+
+        const gridData = readGrid();
+        // This log will show us the exact data array that was read from the visual grid.
+        console.log("1. Data read from visual grid:", JSON.parse(JSON.stringify(gridData)));
+
+        const newDataString = JSON.stringify(gridData);
+        console.log("2. Data converted to string:", newDataString);
+        // --- END DEBUGGING ---
+
+        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
+        rawDataTextarea.value = formatPixelData(gridData);
+
+        targetTextarea.value = newDataString;
+        console.log(`3. Updated hidden textarea #${targetTextarea.id}.`);
+
+        const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+        if (fieldset) {
+            const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+            if (hiddenMasterTextarea && framesContainer) {
+                const allFrames = Array.from(framesContainer.children).map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                }));
+                hiddenMasterTextarea.value = JSON.stringify(allFrames);
+                console.log("4. Rebuilt and updated the master _pixelArtFrames textarea.");
+
+                hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                updateObjectsFromForm();
+                drawFrame();
+                console.log("5. Updated objects and redrew main canvas.");
+            }
+        }
+
+        const frameItem = document.getElementById(targetTextarea.id)?.closest('.pixel-art-frame-item');
+        if (frameItem) {
+            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+            const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+            if (previewCanvas && targetObject) {
+                renderPixelArtPreview(previewCanvas, newDataString, targetObject.gradient.color1, targetObject.gradient.color2);
+                console.log("6. Updated thumbnail preview in main UI.");
+            }
+        }
+        console.log("--- Save complete ---");
+    };
+
+    /**
+     * Loads a specific frame's data into the editor grid.
+     * @param {number} index - The index of the frame to load.
+     */
+    const loadFrameIntoEditor = (index) => {
+        const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
+        targetTextarea = document.getElementById(newTargetId);
+        if (!targetTextarea) {
+            console.error(`Could not find textarea for frame index ${index}`);
+            return;
+        }
+
+        currentEditorFrameIndex = index;
+        updateEditorFrameCounter();
+
+        const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+        const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
+        const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
+        const color1Btn = document.getElementById('pixel-editor-color1-btn');
+        const color2Btn = document.getElementById('pixel-editor-color2-btn');
+        color1Btn.style.background = color1;
+        color2Btn.style.background = color2;
+
+        let data;
+        try {
+            data = JSON.parse(targetTextarea.value);
+        } catch (e) {
+            data = [[0]]; // Default if data is invalid
+        }
+
+        const widthInput = document.getElementById('pixel-editor-width');
+        const heightInput = document.getElementById('pixel-editor-height');
+        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
+
+        widthInput.value = data[0]?.length || 1;
+        heightInput.value = data.length || 1;
+        renderGrid(data, color1, color2);
+        rawDataTextarea.value = formatPixelData(data);
+    };
+
     const editorModalEl = document.getElementById('pixelArtEditorModal');
+
+    // --- START: PIXEL ART EDITOR LOGIC ---
     if (editorModalEl) {
+        // State variables for the editor modal
+        let targetTextarea = null;
+        let currentEditorObjectId = null;
+        let currentEditorFrameIndex = -1;
+        let totalFramesInEditor = 0;
+        let currentPaintValue = 0.7;
+        let currentTool = 'paint';
+        let isPainting = false;
+
+        // --- Get all DOM element references once ---
         const gridContainer = document.getElementById('pixel-editor-grid-container');
         const widthInput = document.getElementById('pixel-editor-width');
         const heightInput = document.getElementById('pixel-editor-height');
@@ -828,76 +954,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const fillBtn = document.getElementById('pixel-editor-fill-btn');
         const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
         const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
-        const pasteBtn = document.getElementById('pixel-editor-paste-btn');
         const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
-
-        let targetTextarea = null;
-        let currentPaintValue = 0.7;
-        let currentTool = 'paint'; // 'paint' or 'fill'
-        let isPainting = false;
-
+        const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
+        const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
+        const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
         const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
-        if (confirmSpritePasteBtn) {
-            confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
-        }
 
-        // This function will handle the clipboard reading
-        const handlePaste = async () => {
-            // This is for the "Paste" button inside the editor. It should only ever paste one frame.
-            try {
-                const clipboardItems = await navigator.clipboard.read();
-                const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
-                if (imageItem) {
-                    const imageType = imageItem.types.find(type => type.startsWith('image/'));
-                    const blob = await imageItem.getType(imageType);
-
-                    // Re-use the sprite paste logic, but force it to a 1x1 grid to process a single image.
-                    pasteSingleImageFrame(blob);
-                } else {
-                    showToast("No image found on the clipboard.", "info");
-                }
-            } catch (err) {
-                console.error('Failed to read clipboard contents: ', err);
-            }
-        };
-
-        const handleDocumentPaste = (e) => {
-            const editorModalEl = document.getElementById('pixelArtEditorModal');
-            if (editorModalEl && editorModalEl.classList.contains('show')) {
-                e.preventDefault();
-                const items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const blob = items[i].getAsFile();
-                        // Re-use the sprite paste logic for a single image here as well.
-                        pasteSingleImageFrame(blob);
-                        return;
-                    }
-                }
-            }
-        };
-
-        document.addEventListener('paste', handleDocumentPaste);
-
-        if (pasteBtn) {
-            pasteBtn.addEventListener('click', async () => {
-                try {
-                    const clipboardItems = await navigator.clipboard.read();
-                    const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
-                    if (imageItem) {
-                        const imageType = imageItem.types.find(type => type.startsWith('image/'));
-                        const blob = await imageItem.getType(imageType);
-
-                        // Use the helper function to paste a single frame
-                        pasteSingleImageFrame(blob);
-                    } else {
-                        showToast("No image found on the clipboard.", "info");
-                    }
-                } catch (err) {
-                    console.error('Failed to read clipboard contents: ', err);
-                }
-            });
-        }
+        // --- Core Helper Functions ---
 
         const valueToColor = (value, color1, color2) => {
             if (value === 1.0) return '#FFFFFF';
@@ -905,8 +968,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (value === 0.4) return color2 || '#00FFFF';
             if (value === 0) return '#000000';
             if (value === 0.7) {
-                // FIX: Changed the green checkerboard to a blue one.
-                return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`; // Royalblue/Cornflowerblue checkerboard
+                return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`;
             }
             return `repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px`;
         };
@@ -916,7 +978,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const rows = data.length;
             const cols = data[0].length;
             gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const cell = document.createElement('div');
@@ -924,63 +985,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     cell.dataset.row = r;
                     cell.dataset.col = c;
                     const value = data[r] ? (data[r][c] || 0) : 0;
-                    // FIX: Use the more general 'background' property for gradients
                     cell.style.background = valueToColor(value, color1, color2);
                     cell.dataset.value = value;
                     gridContainer.appendChild(cell);
                 }
             }
         };
-
-        editorModalEl.addEventListener('shown.bs.modal', (event) => {
-            currentTool = 'paint'; // Reset to paint tool on open
-            const button = event.relatedTarget;
-            const targetId = button.getAttribute('data-target-id');
-            targetTextarea = document.getElementById(targetId);
-
-            const objectId = button.closest('fieldset[data-object-id]').dataset.objectId;
-            const color1Input = form.querySelector(`[name="obj${objectId}_gradColor1"]`);
-            const color1 = color1Input ? color1Input.value : '#FF00FF';
-            color1Btn.style.backgroundColor = color1;
-
-            const color2Input = form.querySelector(`[name="obj${objectId}_gradColor2"]`);
-            const color2 = color2Input ? color2Input.value : '#00FFFF';
-            color2Btn.style.backgroundColor = color2;
-
-            // First, get the data from the textarea
-            let data;
-            try {
-                data = JSON.parse(targetTextarea.value);
-            } catch (e) {
-                data = [[0]]; // Use default data if parsing fails
-            }
-
-            // Next, update all the UI elements with this data
-            widthInput.value = data[0]?.length || 1;
-            heightInput.value = data.length || 1;
-            renderGrid(data, color1, color2);
-            rawDataTextarea.value = formatPixelData(data);
-
-            // Finally, ALWAYS ensure the raw data section is collapsed
-            const collapseEl = document.getElementById('collapseRawData');
-            if (collapseEl) {
-                collapseEl.classList.remove('show');
-            }
-        });
-
-        palette.addEventListener('click', (e) => {
-            currentTool = 'paint'; // Clicking a color always switches to paint tool
-            const button = e.target.closest('button');
-            if (!button) return;
-            palette.querySelector('.active').classList.remove('active');
-            button.classList.add('active');
-            currentPaintValue = parseFloat(button.dataset.value);
-        });
-
-        fillBtn.addEventListener('click', () => {
-            currentTool = 'fill';
-            showToast("Fill tool selected. Click an area to fill it with the active paint color.", "info");
-        });
 
         const readGrid = () => {
             const rows = parseInt(heightInput.value, 10);
@@ -990,33 +1000,203 @@ document.addEventListener('DOMContentLoaded', function () {
             for (let r = 0; r < rows; r++) {
                 const row = [];
                 for (let c = 0; c < cols; c++) {
-                    row.push(parseFloat(cells[r * cols + c].dataset.value));
+                    const cell = cells[r * cols + c];
+                    row.push(cell ? parseFloat(cell.dataset.value) : 0);
                 }
                 data.push(row);
             }
             return data;
         };
 
-        const floodFill = (startNode) => {
-            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
+        const paintCell = (cell) => {
+            if (!cell || !cell.classList.contains('pixel-editor-cell')) return;
+            cell.dataset.value = currentPaintValue;
+            cell.style.background = valueToColor(currentPaintValue, color1Btn.style.background, color2Btn.style.background);
+        };
+
+        const updateEditorFrameCounter = () => {
+            const counterEl = document.getElementById('pixel-editor-frame-counter');
+            if (counterEl) {
+                counterEl.textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
+            }
+        };
+
+        const saveCurrentFrameInEditor = () => {
+            if (!targetTextarea) return;
 
             const gridData = readGrid();
-            const rows = gridData.length;
-            const cols = gridData[0].length;
+            const newDataString = JSON.stringify(gridData);
 
-            const startRow = parseInt(startNode.dataset.row, 10);
-            const startCol = parseInt(startNode.dataset.col, 10);
+            rawDataTextarea.value = formatPixelData(gridData);
+            targetTextarea.value = newDataString;
+
+            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            if (fieldset) {
+                const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+                if (hiddenMasterTextarea && framesContainer) {
+                    const allFrames = Array.from(framesContainer.children).map(item => ({
+                        data: item.querySelector('.frame-data-input').value,
+                        duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                    }));
+                    hiddenMasterTextarea.value = JSON.stringify(allFrames);
+                    hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    updateObjectsFromForm();
+                    drawFrame();
+                }
+            }
+
+            const frameItem = document.getElementById(targetTextarea.id)?.closest('.pixel-art-frame-item');
+            if (frameItem) {
+                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                if (previewCanvas && targetObject) {
+                    renderPixelArtPreview(previewCanvas, newDataString, targetObject.gradient.color1, targetObject.gradient.color2);
+                }
+            }
+        };
+
+        const loadFrameIntoEditor = (index) => {
+            const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
+            targetTextarea = document.getElementById(newTargetId);
+            if (!targetTextarea) return;
+
+            currentEditorFrameIndex = index;
+            updateEditorFrameCounter();
+
+            const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+            const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
+            const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
+            color1Btn.style.background = color1;
+            color2Btn.style.background = color2;
+
+            let data;
+            try {
+                data = JSON.parse(targetTextarea.value);
+            } catch (e) { data = [[0]]; }
+
+            widthInput.value = data[0]?.length || 1;
+            heightInput.value = data.length || 1;
+            renderGrid(data, color1, color2);
+            rawDataTextarea.value = formatPixelData(data);
+        };
+
+        // --- Event Listeners ---
+
+        editorModalEl.addEventListener('shown.bs.modal', (event) => {
+            currentTool = 'paint';
+            const button = event.relatedTarget;
+            const targetId = button.getAttribute('data-target-id');
+            targetTextarea = document.getElementById(targetId);
+
+            const idMatch = targetId.match(/frame-data-(\d+)-(\d+)/);
+            if (idMatch) {
+                currentEditorObjectId = idMatch[1];
+                currentEditorFrameIndex = parseInt(idMatch[2], 10);
+            } else {
+                const fieldset = button.closest('fieldset[data-object-id]');
+                currentEditorObjectId = fieldset.dataset.objectId;
+                const frameItem = button.closest('.pixel-art-frame-item');
+                currentEditorFrameIndex = frameItem ? parseInt(frameItem.dataset.index, 10) : 0;
+            }
+
+            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+            totalFramesInEditor = framesContainer.children.length;
+
+            loadFrameIntoEditor(currentEditorFrameIndex);
+
+            document.getElementById('collapseRawData')?.classList.remove('show');
+        });
+
+        if (confirmSpritePasteBtn) {
+            confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
+        }
+
+        document.addEventListener('paste', (e) => {
+            if (editorModalEl.classList.contains('show')) {
+                e.preventDefault();
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+                        pasteSingleImageFrame(blob);
+                        return;
+                    }
+                }
+            }
+        });
+
+        prevFrameBtn.addEventListener('click', () => {
+            if (totalFramesInEditor <= 1) return;
+            saveCurrentFrameInEditor();
+            let newIndex = currentEditorFrameIndex - 1;
+            if (newIndex < 0) {
+                newIndex = totalFramesInEditor - 1;
+            }
+            loadFrameIntoEditor(newIndex);
+        });
+
+        nextFrameBtn.addEventListener('click', () => {
+            if (totalFramesInEditor <= 1) return;
+            saveCurrentFrameInEditor();
+            const newIndex = (currentEditorFrameIndex + 1) % totalFramesInEditor;
+            loadFrameIntoEditor(newIndex);
+        });
+
+        duplicateFrameBtn.addEventListener('click', () => {
+            // FIX: Manually hide the tooltip before destroying the button.
+            const tooltip = bootstrap.Tooltip.getInstance(duplicateFrameBtn);
+            if (tooltip) {
+                tooltip.hide();
+            }
+
+            saveCurrentFrameInEditor();
+
+            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+
+            let allFrames = JSON.parse(hiddenMasterTextarea.value);
+            const frameToCopy = { ...allFrames[currentEditorFrameIndex] };
+
+            allFrames.splice(currentEditorFrameIndex + 1, 0, frameToCopy);
+
+            hiddenMasterTextarea.value = JSON.stringify(allFrames);
+            hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+            renderForm();
+
+            totalFramesInEditor = allFrames.length;
+            loadFrameIntoEditor(currentEditorFrameIndex + 1);
+            showToast("Frame duplicated!", "success");
+        });
+
+        palette.addEventListener('click', (e) => {
+            currentTool = 'paint';
+            const button = e.target.closest('button');
+            if (!button) return;
+            palette.querySelector('.active').classList.remove('active');
+            button.classList.add('active');
+            currentPaintValue = parseFloat(button.dataset.value);
+        });
+
+        fillBtn.addEventListener('click', () => {
+            currentTool = 'fill';
+            showToast("Fill tool selected. Click an area to fill it.", "info");
+        });
+
+        const floodFill = (startNode) => {
+            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
+            const gridData = readGrid();
+            const [rows, cols] = [gridData.length, gridData[0].length];
+            const [startRow, startCol] = [parseInt(startNode.dataset.row, 10), parseInt(startNode.dataset.col, 10)];
             const targetValue = gridData[startRow][startCol];
-
             if (targetValue === currentPaintValue) return;
-
             const queue = [[startRow, startCol]];
             const visited = new Set([`${startRow},${startCol}`]);
             gridData[startRow][startCol] = currentPaintValue;
-
             while (queue.length > 0) {
                 const [r, c] = queue.shift();
-
                 [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]].forEach(([nr, nc]) => {
                     if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(`${nr},${nc}`) && gridData[nr][nc] === targetValue) {
                         visited.add(`${nr},${nc}`);
@@ -1025,25 +1205,25 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
             }
-            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
         };
 
         mirrorHBtn.addEventListener('click', () => {
             let gridData = readGrid();
             gridData.forEach(row => row.reverse());
-            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
         });
 
         mirrorVBtn.addEventListener('click', () => {
             let gridData = readGrid().reverse();
-            renderGrid(gridData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
         });
 
         resizeBtn.addEventListener('click', () => {
             const newWidth = parseInt(widthInput.value, 10);
             const newHeight = parseInt(heightInput.value, 10);
             const newData = Array(newHeight).fill(0).map(() => Array(newWidth).fill(0));
-            renderGrid(newData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
+            renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
         });
 
         gridContainer.addEventListener('mousedown', (e) => {
@@ -1059,37 +1239,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 paintCell(e.target);
             }
         });
-        document.addEventListener('mouseup', () => {
-            isPainting = false;
-        });
-
-        const paintCell = (cell) => {
-            if (!cell || !cell.classList.contains('pixel-editor-cell')) return;
-            cell.dataset.value = currentPaintValue;
-            // FIX: Use the more general 'background' property for gradients
-            cell.style.background = valueToColor(currentPaintValue, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
-        };
+        document.addEventListener('mouseup', () => { isPainting = false; });
 
         saveBtn.addEventListener('click', () => {
-            if (!targetTextarea) return;
-
-            let newDataString;
-
-            // Try to parse the raw data textarea first.
-            try {
-                // This will throw an error if the JSON is invalid.
-                const rawData = JSON.parse(rawDataTextarea.value);
-                // If it's valid, use it. Re-stringify to ensure it's compact.
-                newDataString = JSON.stringify(rawData);
-            } catch (e) {
-                // If parsing fails, fall back to the visual grid and warn the user.
-                const gridData = readGrid();
-                newDataString = JSON.stringify(gridData);
-                showToast("Invalid JSON in raw data field. Saving changes from visual editor instead.", "warning");
-            }
-
-            targetTextarea.value = newDataString;
-            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            saveCurrentFrameInEditor();
+            saveBtn.blur();
             bootstrap.Modal.getInstance(editorModalEl).hide();
         });
 
@@ -1100,12 +1254,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     heightInput.value = newData.length;
                     widthInput.value = newData[0].length;
                 }
-                renderGrid(newData, color1Btn.style.backgroundColor, color2Btn.style.backgroundColor);
-            } catch (e) {
-                // If JSON is invalid during typing, do nothing. The save button will handle the final validation.
-            }
+                renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
+            } catch (e) { /* Do nothing on invalid input */ }
         });
-
     }
     // --- END: PIXEL ART EDITOR LOGIC ---
 
@@ -6059,14 +6210,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const handleConfirm = async () => {
             if (typeof onConfirm === 'function') {
-                await onConfirm(); // Wait for the async action (like saving) to complete
+                await onConfirm();
             }
-            confirmModalInstance.hide(); // Hide the modal after the action is done
+            // FIX: Remove focus from the button before closing the modal.
+            confirmBtn.blur();
+            confirmModalInstance.hide();
         };
 
         confirmBtn.addEventListener('click', handleConfirm, { once: true });
 
-        // This listener cleans up in case the user closes the modal without confirming
         const handleModalHide = () => {
             confirmBtn.removeEventListener('click', handleConfirm);
         };
