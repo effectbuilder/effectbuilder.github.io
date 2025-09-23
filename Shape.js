@@ -3357,6 +3357,7 @@ class Shape {
                             this.ctx.lineWidth = this.vizLineWidth;
                             this.ctx.stroke();
                         }
+                        
                     } else { // Bars
                         for (let i = 0; i < barCount; i++) {
                             const barHeight = this.vizBarHeights[i] || 0;
