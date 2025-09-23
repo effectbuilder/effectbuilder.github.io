@@ -310,7 +310,7 @@
                                         <ul>
                                             <li><strong>Drawing:</strong> Click the <strong><i class="bi bi-pen"></i> Add Polyline</strong> button. Click on the canvas to place points, then <strong>Double-click</strong> or press <kbd>Enter</kbd> to finish.</li>
                                             <li><strong>Editing Nodes:</strong> After creating a polyline, select it and drag its nodes. <strong>Double-click</strong> a line segment to add a node, or <strong>Alt+Click</strong> a node to delete it.</li>
-                                            <li><strong>Features:</strong> Use a polyline as a path for an animation or apply a gradient that flows along the length of the path.</li>
+                                            <li><strong>Path Animation:</strong> Animate a sub-object (particle) that travels along the path. You can customize its shape, speed, trail, and how it behaves when it reaches the end.</li>
                                         </ul>
                                         <hr>
                                         <h6>The Pixel Art Editor</h6>
@@ -318,6 +318,13 @@
                                             <li><strong>Editing:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-pencil-square"></i> Edit</kbd> button on any frame to open the built-in editor.</li>
                                             <li><strong>Tools:</strong> Use the editor's tools to paint, <kbd><i class="bi bi-paint-bucket"></i> Fill</kbd> areas, or <kbd><i class="bi bi-arrow-left-right"></i></kbd> / <kbd><i class="bi bi-arrow-down-up"></i></kbd> flip your art.</li>
                                             <li><strong>Special Colors:</strong> Use the editor's palette to paint with special values that are interpreted by the renderer, like forcing a pixel to be opaque White (1.0), the object's Color 1 (0.3), or Color 2 (0.4).</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Importing Spritesheets & GIFs</h6>
+                                        <ul>
+                                            <li><strong>Paste from Clipboard:</strong> You can quickly paste an image or GIF from your clipboard directly into a `pixel-art` object. Press <kbd>Ctrl</kbd>+<kbd>V</kbd> when a pixel art object is selected to open the paste menu.</li>
+                                            <li><strong>Sprite Sheets:</strong> A sprite sheet is a single image file containing a sequence of animation frames. The tool will automatically split the image into individual frames based on the frame dimensions you provide.</li>
+                                            <li><strong>GIF Upload:</strong> Click the <kbd><i class="bi bi-film"></i> Upload GIF</kbd> button in the object's settings to process an animated GIF file into a series of frames.</li>
                                         </ul>
                                         <hr>
                                         <h6>The Pixel Art Gallery</h6>
@@ -328,7 +335,12 @@
                                         </ul>
                                         <hr>
                                         <h6>Other Shapes</h6>
-                                        <p>Explore other shapes like the <strong>Spawner</strong> (particle system), <strong>Strimer</strong> (cable effects), <strong>Oscilloscope</strong>, and <strong>Tetris</strong>, each with their own unique set of properties to discover.</p>
+                                        <p>Explore other shapes like the <strong>Spawner</strong>, <strong>Strimer</strong>, and <strong>Audio Visualizer</strong>, each with their own unique set of properties to discover.</p>
+                                        <ul>
+                                            <li><strong>Spawner:</strong> A particle system that generates shapes and text with customizable physics like gravity, speed, rotation, and trails. You can even use a custom SVG path for the particle shape.</li>
+                                            <li><strong>Strimer:</strong> Creates a dynamic effect of blocks moving in columns, designed to simulate animated cables or other vertical elements. Features include various animations like 'Bounce' or a 'Snake' effect.</li>
+                                            <li><strong>Audio Visualizer:</strong> Renders audio data as bars or a line. You can choose from linear, circular, or polyline layouts and customize the number of bars, spacing, and smoothing.</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -397,14 +409,14 @@
                                 <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
                             </li>
                             <li class="list-group-item">
-                                <strong>Terms & Privacy:</strong> 
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> | 
+                                <strong>Terms & Privacy:</strong>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> |
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>
                             </li>
                         </ul>
                         <h6 class="mt-4">Credits & Inspirations</h6>
                         <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
-                        
+
                         <h6 class="mt-4">For Developers & Contributors</h6>
                         <p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p>
 
@@ -692,12 +704,65 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-text text-center mt-2">
+                            Or, simply click the grid and press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste an image.
+                        </div>
                         <div id="pixel-editor-grid-container" class="bg-dark p-1" style="cursor: pointer; user-select: none;">
+                        </div>
+                        <hr>
+                        <p>
+                            <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#collapseRawData" role="button" aria-expanded="false" aria-controls="collapseRawData">
+                                <i class="bi bi-code-slash"></i> View Raw Data
+                            </a>
+                        </p>
+                        <div class="collapse" id="collapseRawData">
+                            <div class="card card-body bg-dark">
+                                <label for="pixel-editor-raw-data" class="form-label-sm">JSON Data (Advanced)</label>
+                                <textarea id="pixel-editor-raw-data" class="form-control font-monospace" rows="5"></textarea>
+                                <div class="form-text">Changes here will override the visual editor if the JSON is valid.</div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="pixel-editor-save-btn">Apply Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="paste-sprite-modal" tabindex="-1" aria-labelledby="pasteSpriteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pasteSpriteModalLabel"><i class="bi bi-clipboard-image me-2"></i>Paste Sprite Sheet</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
+                        <p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p>
+                        <div class="row">
+                            <div class="col">
+                                <label for="sprite-frame-width" class="form-label-sm">Single Frame Width</label>
+                                <input type="number" class="form-control" id="sprite-frame-width" value="16" min="1" max="128">
+                            </div>
+                            <div class="col">
+                                <label for="sprite-frame-height" class="form-label-sm">Single Frame Height</label>
+                                <input type="number" class="form-control" id="sprite-frame-height" value="16" min="1" max="128">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="sprite-downsample">
+                            <label class="form-check-label" for="sprite-downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
+                        </div>
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="sprite-paste-append">
+                            <label class="form-check-label" for="sprite-paste-append">Append to existing frames (instead of replacing)</label>
+                        </div>
+                        <hr>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Paste from Clipboard</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -731,8 +796,75 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="upload-gif-modal" tabindex="-1" aria-labelledby="uploadGifModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="uploadGifModalLabel"><i class="bi bi-film me-2"></i>Upload GIF Options</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Specify the target pixel art dimensions for your animation.</p>
+                        <div class="row">
+                            <div class="col">
+                                <label for="gif-target-width" class="form-label-sm">Target Width</label>
+                                <input type="number" class="form-control" id="gif-target-width" value="16" min="1" max="128">
+                            </div>
+                            <div class="col">
+                                <label for="gif-target-height" class="form-label-sm">Target Height</label>
+                                <input type="number" class="form-control" id="gif-target-height" value="16" min="1" max="128">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="gif-append-frames" checked>
+                            <label class="form-check-label" for="gif-append-frames">Append to existing frames (instead of replacing)</label>
+                        </div>
+                        <hr>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary" id="confirm-gif-upload-btn"><i class="bi bi-upload me-2"></i>Choose File and Process</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="color-mapper-modal" tabindex="-1" aria-labelledby="colorMapperModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="colorMapperModalLabel"><i class="bi bi-palette-fill me-2"></i>Map GIF Colors</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Assign the most common colors from the GIF's first frame to the available slots in your object's palette.</p>
+                        <div class="row">
+                            <div class="col-md-5">
+                                <h6 class="text-center">First Frame Preview</h6>
+                                <canvas id="color-mapper-preview" class="w-100 border rounded" style="image-rendering: pixelated;"></canvas>
+                            </div>
+                            <div class="col-md-7">
+                                <h6 class="text-center">Color Assignments</h6>
+                                <div id="color-mapper-assignments" class="d-grid gap-2">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-color-map-btn">Process GIF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+        <script type="module">
+            import { parseGIF, decompressFrames } from 'https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm';
+            window.parseGIF = parseGIF;
+            window.decompressFrames = decompressFrames;
+        </script>
         <script src="Shape.js"></script>
         <script src="util.js"></script>
         <script src="main.js"></script>
