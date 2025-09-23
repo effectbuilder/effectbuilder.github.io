@@ -3749,7 +3749,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 return masterConf;
             });
 
-            const objectIds = [...new Set(loadedConfigs.map(c => (c.property || '').match(/^obj(\d+)_/)).filter(Boolean).map(match => parseInt(match[1], 10)))].sort((a, b) => a - b);
+            const orderedIds = [];
+            const seenIds = new Set();
+            loadedConfigs.forEach(c => {
+                const match = (c.property || '').match(/^obj(\d+)_/);
+                if (match) {
+                    const id = parseInt(match[1], 10);
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        orderedIds.push(id);
+                    }
+                }
+            });
+            const objectIds = orderedIds;
             const finalMergedObjectConfigs = [];
             objectIds.forEach(id => {
                 const fullDefaultConfigSet = getDefaultObjectConfig(id);
