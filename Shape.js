@@ -3257,6 +3257,7 @@ class Shape {
                     } else { // Bars
                         if (this.vizUseSegments) {
                             const segmentCount = this.vizSegmentCount || 16;
+                            const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
                             const availableBarSpace = outerRadius - innerRadius;
                             const totalSpacing = (segmentCount - 1) * scaledSegmentSpacing;
                             const segmentLength = (availableBarSpace - totalSpacing) / segmentCount;
@@ -3363,6 +3364,7 @@ class Shape {
                             const x = -this.width / 2 + i * (barWidth + barSpacing);
                             if (this.vizUseSegments) {
                                 const segmentCount = this.vizSegmentCount || 16;
+                                const scaledSegmentSpacing = (this.vizSegmentSpacing || 0) * (this.height / 152.0);
                                 const totalSegSpacing = (segmentCount - 1) * scaledSegmentSpacing;
                                 const segmentHeight = (this.height - totalSegSpacing) / segmentCount;
                                 if (segmentHeight > 0) {
