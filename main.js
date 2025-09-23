@@ -3010,11 +3010,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const selected = selectedObjectIds.map(id => objects.find(o => o.id === id)).filter(o => o);
             const textObjects = selected.filter(obj => obj.shape === 'text');
             const gridObjects = selected.filter(obj => obj.shape === 'rectangle' && (obj.numberOfRows > 1 || obj.numberOfColumns > 1));
+            const pixelArtObjects = selected.filter(obj => obj.shape === 'pixel-art');
 
             const canMatchTextToGrid = textObjects.length >= 1 && gridObjects.length >= 1;
-            const canMatchTextToText = textObjects.length >= 2 && gridObjects.length === 0;
+            const canMatchTextToPixelArt = textObjects.length >= 1 && pixelArtObjects.length >= 1;
+            const canMatchTextToText = textObjects.length >= 2 && gridObjects.length === 0 && pixelArtObjects.length === 0;
 
-            matchTextSizeBtn.disabled = !(canMatchTextToGrid || canMatchTextToText);
+            matchTextSizeBtn.disabled = !(canMatchTextToGrid || canMatchTextToPixelArt || canMatchTextToText);
         }
     }
 
@@ -4906,6 +4908,8 @@ document.addEventListener('DOMContentLoaded', function () {
             case 'match-text-size':
                 const textObjects = selectedObjects.filter(obj => obj.shape === 'text');
                 const gridObjects = selectedObjects.filter(obj => obj.shape === 'rectangle' && (obj.numberOfRows > 1 || obj.numberOfColumns > 1));
+                const pixelArtObjects = selectedObjects.filter(obj => obj.shape === 'pixel-art');
+
                 if (textObjects.length >= 1 && gridObjects.length >= 1) {
                     const sourceGrid = gridObjects[0];
                     const cellHeight = sourceGrid.height / sourceGrid.numberOfRows;
@@ -4913,6 +4917,22 @@ document.addEventListener('DOMContentLoaded', function () {
                         textObject.fontSize = cellHeight * 10;
                         textObject._updateTextMetrics();
                     });
+                } else if (textObjects.length >= 1 && pixelArtObjects.length >= 1) {
+                    const sourcePixelArt = pixelArtObjects[0];
+                    const firstFrame = sourcePixelArt.pixelArtFrames[0];
+                    if (firstFrame && firstFrame.data) {
+                        try {
+                            const frameData = JSON.parse(firstFrame.data);
+                            const pixelHeight = sourcePixelArt.height / frameData.length;
+                            textObjects.forEach(textObject => {
+                                textObject.fontSize = pixelHeight * 10;
+                                textObject._updateTextMetrics();
+                            });
+                        } catch (e) {
+                            console.error("Failed to parse pixel art frame data:", e);
+                            showToast("Could not match size: invalid pixel art frame data.", "danger");
+                        }
+                    }
                 } else if (textObjects.length >= 2 && gridObjects.length === 0) {
                     const sourceText = textObjects[0];
                     const sourceFontSize = sourceText.fontSize;
@@ -7024,7 +7044,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     if (val === 1.0) ctx.fillStyle = '#FFFFFF';
                                     else if (val === 0.3) ctx.fillStyle = '#FF00FF';
                                     else if (val === 0.4) ctx.fillStyle = '#00FFFF';
-                                    else if (val === 0.7) ctx.fillStyle = `rgba(0, 0, 0, 0)`;
+                                    else if (val === 0.7) ctx.fillStyle = `rgba(33, 37, 41, 0)`;
                                     else ctx.fillStyle = `rgba(255, 0, 255, ${val})`;
                                     ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
                                 }
