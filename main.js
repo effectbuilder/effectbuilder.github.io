@@ -832,64 +832,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     /**
-     * Saves the current visual state of the editor back to the hidden textareas in the main form.
-     */
-    const saveCurrentFrameInEditor = () => {
-        if (!targetTextarea) {
-            console.error("Save failed: targetTextarea is not set.");
-            return;
-        }
-
-        // --- START DEBUGGING ---
-        console.clear();
-        console.log("--- saveCurrentFrameInEditor called ---");
-
-        const gridData = readGrid();
-        // This log will show us the exact data array that was read from the visual grid.
-        console.log("1. Data read from visual grid:", JSON.parse(JSON.stringify(gridData)));
-
-        const newDataString = JSON.stringify(gridData);
-        console.log("2. Data converted to string:", newDataString);
-        // --- END DEBUGGING ---
-
-        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
-        rawDataTextarea.value = formatPixelData(gridData);
-
-        targetTextarea.value = newDataString;
-        console.log(`3. Updated hidden textarea #${targetTextarea.id}.`);
-
-        const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-        if (fieldset) {
-            const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            if (hiddenMasterTextarea && framesContainer) {
-                const allFrames = Array.from(framesContainer.children).map(item => ({
-                    data: item.querySelector('.frame-data-input').value,
-                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-                }));
-                hiddenMasterTextarea.value = JSON.stringify(allFrames);
-                console.log("4. Rebuilt and updated the master _pixelArtFrames textarea.");
-
-                hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                updateObjectsFromForm();
-                drawFrame();
-                console.log("5. Updated objects and redrew main canvas.");
-            }
-        }
-
-        const frameItem = document.getElementById(targetTextarea.id)?.closest('.pixel-art-frame-item');
-        if (frameItem) {
-            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-            const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-            if (previewCanvas && targetObject) {
-                renderPixelArtPreview(previewCanvas, newDataString, targetObject.gradient.color1, targetObject.gradient.color2);
-                console.log("6. Updated thumbnail preview in main UI.");
-            }
-        }
-        console.log("--- Save complete ---");
-    };
-
-    /**
      * Loads a specific frame's data into the editor grid.
      * @param {number} index - The index of the frame to load.
      */
@@ -3746,7 +3688,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 return masterConf;
             });
-            
+
             const orderedIds = [];
             const seenIds = new Set();
             loadedConfigs.forEach(c => {
