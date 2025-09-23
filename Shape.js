@@ -944,15 +944,16 @@ class Shape {
     }
 
     _drawFill(phase = 0) {
+        if (this.gradType === 'none') return;
+
+        // --- START: SENSOR METER LOGIC ---
         if (this.enableSensorReactivity && this.sensorTarget === 'Sensor Meter' && this.sensorMeterFill >= 0) {
             this.ctx.save();
             this.ctx.clip();
 
-            // Draw the empty part of the meter
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
             this.ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
 
-            // Calculate and draw the filled part of the meter
             if (this.sensorMeterFill > 0) {
                 const fillHeight = this.height * this.sensorMeterFill;
                 const fillY = this.height / 2 - fillHeight;
@@ -961,11 +962,11 @@ class Shape {
                     const mid = this.sensorMidThreshold;
                     const max = this.sensorMaxThreshold;
                     if (this.sensorRawValue >= max) {
-                        this.ctx.fillStyle = "#ff0000"; // "Red"
+                        this.ctx.fillStyle = "#ff0000";
                     } else if (this.sensorRawValue >= mid) {
-                        this.ctx.fillStyle = "#ffa500"; // "Orange"
+                        this.ctx.fillStyle = "#ffa500";
                     } else {
-                        this.ctx.fillStyle = '#00ff00'; // Green
+                        this.ctx.fillStyle = '#00ff00';
                     }
                 } else if (this.sensorColorMode === 'Value-Based Gradient') {
                     let color;
@@ -982,55 +983,34 @@ class Shape {
                 this.ctx.fillRect(-this.width / 2, fillY, this.width, fillHeight);
             }
 
-            // NEW: Draw the sensor value text if enabled
             if (this.sensorMeterShowValue) {
                 const fontSize = Math.max(10, Math.round(this.width / 3));
                 this.ctx.font = `bold ${fontSize}px Arial`;
                 this.ctx.fillStyle = this.sensorColorMode === 'Thresholds' ? '#FFFFFF' : (this.gradient.color2 || '#FFFFFF');
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(this.sensorRawValue.toFixed(1), 0, 0); // Display value with one decimal
-
+                this.ctx.fillText(this.sensorRawValue.toFixed(1), 0, 0);
                 this.ctx.font = `bold ${fontSize / 3}px Arial`;
-                this.ctx.fillStyle = this.sensorColorMode === 'Thresholds' ? '#FFFFFF' : (this.gradient.color2 || '#FFFFFF');
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(this.userSensor, 0, -fontSize / 1.5); // Display value with one decimal
+                this.ctx.fillText(this.userSensor, 0, -fontSize / 1.5);
             }
 
             this.ctx.restore();
-
-        } else if (this.enableAudioReactivity && this.audioTarget === 'Volume Meter' && this.volumeMeterFill > 0) {
-            this.ctx.save();
-            this.ctx.clip();
-
-            // Draw the "empty" part of the meter
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            this.ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-
-            // Calculate the filled part's height and position
-            const fillHeight = this.height * Math.min(1, this.volumeMeterFill);
-            const fillY = this.height / 2 - fillHeight;
-
-            // Draw the filled part
-            this.ctx.fillStyle = this._createLocalFillStyle(phase);
-            this.ctx.fillRect(-this.width / 2, fillY, this.width, fillHeight);
-
-            this.ctx.restore();
-
-        } else {
-            // If not a meter, use the original fill logic
-            const fillStyle = this._createLocalFillStyle(phase);
-            this.ctx.fillStyle = fillStyle;
-            if (fillStyle instanceof CanvasPattern && fillStyle.offsetX) {
-                this.ctx.save();
-                this.ctx.translate(fillStyle.offsetX, fillStyle.offsetY);
-                this.ctx.fill();
-                this.ctx.restore();
-            } else {
-                this.ctx.fill();
-            }
+            return; // Exit the function after drawing the meter
         }
+        // --- END: SENSOR METER LOGIC ---
+
+        // --- START: ORIGINAL CORRECT FILL LOGIC ---
+        const fillStyle = this._createLocalFillStyle(phase);
+        this.ctx.fillStyle = fillStyle;
+        if (fillStyle instanceof CanvasPattern && (fillStyle.offsetX || fillStyle.offsetY)) {
+            this.ctx.save();
+            this.ctx.translate(fillStyle.offsetX || 0, fillStyle.offsetY || 0);
+            this.ctx.fill();
+            this.ctx.restore();
+        } else {
+            this.ctx.fill();
+        }
+        // --- END: ORIGINAL CORRECT FILL LOGIC ---
     }
 
     getDisplayText() {
@@ -2944,36 +2924,41 @@ class Shape {
                     if (cols === 0) return;
                     const cellWidth = this.width / cols;
                     const cellHeight = this.height / rows;
+                    // Only run the drawing loop if the fill type is NOT "None"
                     for (let r = 0; r < rows; r++) {
                         for (let c = 0; c < cols; c++) {
-                            const alphaValue = data[r] && data[r][c] ? data[r][c] : 0;
-
+                            const alphaValue = data[r]?.[c] || 0;
                             if (alphaValue > 0) {
-                                // Determine the fill style and alpha for the current pixel
+                                let shouldDraw = true;
                                 if (alphaValue === 1.0) {
-                                    // Rule 1: Force to opaque white
                                     this.ctx.fillStyle = '#FFFFFF';
                                     this.ctx.globalAlpha = 1.0;
                                 } else if (alphaValue === 0.3) {
-                                    // Rule 2: Force to opaque Color 1
                                     this.ctx.fillStyle = this.gradient.color1 || '#ff0000';
                                     this.ctx.globalAlpha = 1.0;
                                 } else if (alphaValue === 0.4) {
-                                    // ADDED: Rule for Color 2
                                     this.ctx.fillStyle = this.gradient.color2 || '#00FF00';
                                     this.ctx.globalAlpha = 1.0;
                                 } else {
-                                    // Default behavior for all other values (e.g., 0.5, 0.7)
-                                    const cellIndex = r * this.numberOfColumns + c;
-                                    this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
-                                    this.ctx.globalAlpha = alphaValue;
+                                    // --- THIS IS THE KEY ---
+                                    // Only process the main fill style if the gradType is NOT "None"
+                                    if (this.gradType === 'none') {
+                                        shouldDraw = false;
+                                    } else {
+                                        const cellIndex = r * this.numberOfColumns + c;
+                                        this.ctx.fillStyle = this._createLocalFillStyle(cellIndex);
+                                        this.ctx.globalAlpha = alphaValue;
+                                    }
                                 }
 
-                                // Draw the pixel with the determined style
-                                this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
+                                if (shouldDraw) {
+                                    this.ctx.fillRect(-this.width / 2 + c * cellWidth, -this.height / 2 + r * cellHeight, cellWidth, cellHeight);
+                                }
                             }
                         }
                     }
+
+
                     // Reset global alpha after the loop is done to ensure it doesn't affect other shapes
                     this.ctx.globalAlpha = 1.0;
                 } catch (e) { console.error("Failed to draw pixel art:", e); }
@@ -3328,7 +3313,7 @@ class Shape {
                         const halfW = this.width / 2;
                         const halfH = this.height / 2;
                         const points = [];
-                        
+
                         for (let i = 0; i < barCount; i++) {
                             const barHeight = this.vizBarHeights[i] || 0;
                             const x = -halfW + i * (barWidth + barSpacing) + barWidth / 2;
