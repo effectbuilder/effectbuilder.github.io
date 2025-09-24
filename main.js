@@ -687,6 +687,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Defer to the dedicated GIF handler if a GIF is pasted
             const gifType = imageItem.types.find(type => type === 'image/gif');
             if (gifType) {
                 const blob = await imageItem.getType(gifType);
@@ -694,107 +695,224 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // --- START: REVISED LOGIC FOR SPRITESHEETS ---
             const imageType = imageItem.types.find(type => type.startsWith('image/'));
             const blob = await imageItem.getType(imageType);
             const imageUrl = URL.createObjectURL(blob);
             const image = new Image();
 
             image.onload = () => {
-                const frameWidthInput = document.getElementById('sprite-frame-width');
-                const frameHeightInput = document.getElementById('sprite-frame-height');
-                const shouldAppend = document.getElementById('sprite-paste-append').checked;
+                // Hide the initial sprite modal, as we are moving to the color mapping step
+                const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
+                if (spritePasteModal) spritePasteModal.hide();
 
-                const frameWidth = parseInt(frameWidthInput.value, 10);
-                const frameHeight = parseInt(frameHeightInput.value, 10);
+                // Step 1: Analyze colors from the pasted image, just like with GIFs.
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = image.width;
+                tempCanvas.height = image.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(image, 0, 0);
 
-                if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
-                    showToast("Frame dimensions must be positive numbers.", "danger");
-                    return;
-                }
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
+                const colorCounts = new Map();
+                let transparentCount = 0;
 
-                const spriteCols = Math.round(image.width / frameWidth);
-                const spriteRows = Math.round(image.height / frameHeight);
-
-                if (image.width % frameWidth !== 0 || image.height % frameHeight !== 0) {
-                    showToast(`Warning: Image dimensions (${image.width}x${image.height}) are not a perfect multiple of frame size (${frameWidth}x${frameHeight}).`, "warning");
-                }
-
-                const form = document.getElementById('controls-form');
-                const color1Input = form.querySelector(`[name="obj${objectId}_gradColor1"]`);
-                const color2Input = form.querySelector(`[name="obj${objectId}_gradColor2"]`);
-                const color1 = color1Input ? color1Input.value : '#FF00FF';
-                const color2 = color2Input ? color2Input.value : '#00FFFF';
-
-                const newFrames = [];
-                for (let row = 0; row < spriteRows; row++) {
-                    for (let col = 0; col < spriteCols; col++) {
-                        const frameCanvas = document.createElement('canvas');
-                        frameCanvas.width = frameWidth;
-                        frameCanvas.height = frameHeight;
-                        const frameCtx = frameCanvas.getContext('2d');
-                        frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
-
-                        const pixelData = processPastedImage(frameCanvas, frameWidth, frameHeight, color1, color2);
-                        newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                for (let i = 0; i < imageData.length; i += 4) {
+                    if (imageData[i + 3] < 128) {
+                        transparentCount++;
+                        continue;
                     }
+                    // Quantize colors to group similar shades
+                    const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
+                    const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
+                    const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
+                    const key = `rgb(${r},${g},${b})`;
+                    colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
+                }
+                const dominantColors = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]);
+
+                // Step 2: Populate and show the color mapper modal.
+                const previewCanvas = document.getElementById('color-mapper-preview');
+                const assignmentsContainer = document.getElementById('color-mapper-assignments');
+                const aspectRatio = image.height / image.width;
+                previewCanvas.width = 300;
+                previewCanvas.height = 300 * aspectRatio;
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.fillStyle = '#121212';
+                previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.imageSmoothingEnabled = false;
+                previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+                assignmentsContainer.innerHTML = '';
+                const availableSlots = [
+                    { name: "Fill Style", value: 0.7 }, { name: "Color 1", value: 0.3 },
+                    { name: "Color 2", value: 0.4 }, { name: "White", value: 1.0 },
+                    { name: "Black", value: 0.0 },
+                ];
+                const rowIdToRgbMap = new Map();
+                let rowIndex = 0;
+
+                if (transparentCount > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'input-group input-group-sm';
+                    const rowId = `color-map-row-${rowIndex++}`;
+                    row.id = rowId;
+                    rowIdToRgbMap.set(rowId, 'transparent');
+                    row.innerHTML = `
+                        <span class="input-group-text" style="width: 120px; background-color: #444;">Transparent</span>
+                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
+                        <select class="form-select">
+                            ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === 0.7 ? 'selected' : ''}>${slot.name}</option>`).join('')}
+                        </select>`;
+                    assignmentsContainer.appendChild(row);
                 }
 
-                const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-                const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-                const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
-                const combinedFrames = [...existingFrames, ...newFrames];
-
-                framesContainer.innerHTML = '';
-                combinedFrames.forEach((frame, index) => {
-                    const frameItem = document.createElement('div');
-                    frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-                    frameItem.dataset.index = index;
-                    const textareaId = `frame-data-${objectId}-${index}`;
-                    const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
-
-                    frameItem.innerHTML = `
-                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                            <div>
-                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#pixelArtEditorModal"
-                                        data-target-id="${textareaId}" title="Edit Frame">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text" title="Duration (seconds)">
-                                <i class="bi bi-clock"></i>
-                            </span>
-                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                `;
-                    framesContainer.appendChild(frameItem);
-                    const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                    renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
+                dominantColors.forEach(([color]) => {
+                    const row = document.createElement('div');
+                    row.className = 'input-group input-group-sm';
+                    const rowId = `color-map-row-${rowIndex++}`;
+                    row.id = rowId;
+                    rowIdToRgbMap.set(rowId, color);
+                    row.innerHTML = `
+                        <span class="input-group-text" style="width: 120px; background-color: ${color};"></span>
+                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
+                        <select class="form-select">
+                            ${availableSlots.map(slot => `<option value="${slot.value}">${slot.name}</option>`).join('')}
+                        </select>`;
+                    assignmentsContainer.appendChild(row);
                 });
 
-                hiddenTextarea.value = JSON.stringify(combinedFrames);
-                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                const colorMapperModal = new bootstrap.Modal(document.getElementById('color-mapper-modal'));
+                colorMapperModal.show();
 
-                showToast(`${newFrames.length} frame(s) processed!`, "success");
-                URL.revokeObjectURL(imageUrl);
+                // Step 3: Define the confirmation logic, which runs after the user maps colors.
+                document.getElementById('confirm-color-map-btn').onclick = () => {
+                    const userColorMap = new Map();
+                    assignmentsContainer.querySelectorAll('.input-group').forEach(row => {
+                        const rgbColor = rowIdToRgbMap.get(row.id);
+                        const selectedValue = parseFloat(row.querySelector('select').value);
+                        userColorMap.set(rgbColor, selectedValue);
 
-                const modal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
-                modal.hide();
-                recordHistory();
+                        // If the user maps a color to slot 0.3 (Color 1) or 0.4 (Color 2),
+                        // update the main color pickers for the selected object.
+                        if ((selectedValue === 0.3 || selectedValue === 0.4) && rgbColor !== 'transparent') {
+                            const hexColor = rgbToHex(rgbColor);
+                            const colorProp = selectedValue === 0.3 ? 'gradColor1' : 'gradColor2';
+
+                            const colorInput = form.querySelector(`[name="obj${objectId}_${colorProp}"]`);
+                            const hexInput = form.querySelector(`[name="obj${objectId}_${colorProp}_hex"]`);
+
+                            if (colorInput && hexInput) {
+                                colorInput.value = hexColor;
+                                hexInput.value = hexColor;
+                                // Dispatch an 'input' event to ensure the application state updates
+                                colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    });
+
+                    const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
+                    const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
+
+                    if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
+                        showToast("Frame dimensions must be positive numbers.", "danger");
+                        return;
+                    }
+
+                    const spriteCols = Math.floor(image.width / frameWidth);
+                    const spriteRows = Math.floor(image.height / frameHeight);
+                    const newFrames = [];
+
+                    for (let row = 0; row < spriteRows; row++) {
+                        for (let col = 0; col < spriteCols; col++) {
+                            const frameCanvas = document.createElement('canvas');
+                            frameCanvas.width = frameWidth;
+                            frameCanvas.height = frameHeight;
+                            const frameCtx = frameCanvas.getContext('2d');
+                            frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+
+                            const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
+                            const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
+
+                            for (let i = 0; i < frameImgData.length; i += 4) {
+                                const r_idx = Math.floor(i / (frameWidth * 4));
+                                const c_idx = (i / 4) % frameWidth;
+                                let colorKey;
+
+                                if (frameImgData[i + 3] < 128) {
+                                    colorKey = 'transparent';
+                                } else {
+                                    const r = Math.min(255, Math.round(frameImgData[i] / 32) * 32);
+                                    const g = Math.min(255, Math.round(frameImgData[i + 1] / 32) * 32);
+                                    const b = Math.min(255, Math.round(frameImgData[i + 2] / 32) * 32);
+                                    colorKey = `rgb(${r},${g},${b})`;
+                                }
+                                pixelData[r_idx][c_idx] = userColorMap.get(colorKey) || 0.0; // Default to black
+                            }
+                            newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                        }
+                    }
+
+                    // Step 4: Update the form and UI with the processed frames.
+                    const shouldAppend = document.getElementById('sprite-paste-append').checked;
+                    const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
+                    const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                    const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
+                    const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
+                    const combinedFrames = [...existingFrames, ...newFrames];
+                    const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                    const color1 = targetObject.gradient.color1;
+                    const color2 = targetObject.gradient.color2;
+
+                    framesContainer.innerHTML = '';
+                    combinedFrames.forEach((frame, index) => {
+                        const frameItem = document.createElement('div');
+                        frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-1 align-items-center';
+                        frameItem.dataset.index = index;
+                        const textareaId = `frame-data-${objectId}-${index}`;
+                        const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+
+                        frameItem.innerHTML = `
+                            <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
+                            <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                                data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
+                                                data-target-id="${textareaId}" title="Edit Frame">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
+                                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
+                                </div>
+                                <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
+                            </div>
+                        `;
+                        framesContainer.appendChild(frameItem);
+                        renderPixelArtPreview(frameItem.querySelector('.pixel-art-preview-canvas'), frameDataStr, color1, color2);
+                    });
+
+                    hiddenTextarea.value = JSON.stringify(combinedFrames);
+                    hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    showToast(`${newFrames.length} frame(s) processed!`, "success");
+                    URL.revokeObjectURL(imageUrl);
+
+                    colorMapperModal.hide();
+                    recordHistory();
+                };
             };
             image.src = imageUrl;
+            // --- END: REVISED LOGIC ---
+
         } catch (err) {
             console.error(err);
             showToast("Could not paste sprite: " + err.message, "danger");
@@ -2279,14 +2397,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const pasteSpriteButton = document.createElement('button');
             pasteSpriteButton.type = 'button';
             pasteSpriteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-sprite';
-            pasteSpriteButton.innerHTML = '<i class="bi bi-clipboard-image"></i> Paste Sprite';
+            pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
             pasteSpriteButton.dataset.bsToggle = 'modal';
             pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
 
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
             uploadGifButton.className = 'btn btn-sm btn-outline-warning';
-            uploadGifButton.innerHTML = '<i class="bi bi-film"></i> Upload GIF';
+            uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> Upload GIF';
             uploadGifButton.dataset.bsToggle = 'modal';
             uploadGifButton.dataset.bsTarget = '#upload-gif-modal';
 
@@ -2856,7 +2974,7 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
-        
+
         initializeFrameSorters();
     }
 
