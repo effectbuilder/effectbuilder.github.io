@@ -2211,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', function () {
             hiddenTextarea.textContent = defaultValue;
 
             const framesContainer = document.createElement('div');
-            framesContainer.className = 'd-flex flex-column gap-2';
+            framesContainer.className = 'd-flex flex-column gap-2 pixel-art-frames-container';
 
             let objectId = null;
             if (property) {
@@ -2240,28 +2240,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 const frameDataStr = frame.data || '[[0]]';
 
                 frameItem.innerHTML = `
-            <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                data-target-id="${textareaId}" title="Edit Frame">
-                            <i class="bi bi-pencil-square"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                    <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
+                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
+                                        data-target-id="${textareaId}" title="Edit Frame">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
+                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01">
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
                     </div>
-                </div>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01">
-                </div>
-                <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-            </div>
-        `;
+                `;
                 framesContainer.appendChild(frameItem);
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
                 renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
@@ -2855,6 +2856,8 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
+        
+        initializeFrameSorters();
     }
 
     function updateSensorControlVisibility(fieldset) {
@@ -2868,6 +2871,62 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (midControl) midControl.closest('.mb-3').style.display = isThresholds ? '' : 'none';
         if (maxControl) maxControl.closest('.mb-3').style.display = isThresholds ? '' : 'none';
+    }
+
+    /**
+ * Initializes the Sortable.js library for all pixel art frame containers
+ * to allow drag-and-drop reordering of frames within an object.
+ */
+    function initializeFrameSorters() {
+        const frameContainers = document.querySelectorAll('.pixel-art-frames-container');
+        frameContainers.forEach(container => {
+            // Prevent re-initialization by destroying the old instance if it exists
+            if (container.sortableInstance) {
+                container.sortableInstance.destroy();
+            }
+
+            container.sortableInstance = new Sortable(container, {
+                animation: 150,
+                handle: '.frame-drag-handle', // Use the new drag handle class
+                onEnd: function (evt) {
+                    if (evt.oldIndex === evt.newIndex) return;
+
+                    const container = evt.from;
+                    const fieldset = container.closest('fieldset[data-object-id]');
+                    if (!fieldset) return;
+
+                    const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                    const frameItems = Array.from(container.children);
+                    const newFramesArray = [];
+
+                    frameItems.forEach((item, index) => {
+                        // Update the frame number text in the UI
+                        const header = item.querySelector('.frame-item-header');
+                        if (header) {
+                            header.textContent = `Frame #${index + 1}`;
+                        }
+                        item.dataset.index = index; // Update the data-index attribute
+
+                        // Read the data from the DOM elements in their new order
+                        const dataTextarea = item.querySelector('.frame-data-input');
+                        const durationInput = item.querySelector('.frame-duration-input');
+                        if (dataTextarea && durationInput) {
+                            newFramesArray.push({
+                                data: dataTextarea.value,
+                                duration: parseFloat(durationInput.value) || 1
+                            });
+                        }
+                    });
+
+                    // Update the hidden textarea, which is the ultimate source of truth
+                    hiddenTextarea.value = JSON.stringify(newFramesArray);
+                    // Trigger an input event to notify the rest of the application about the change
+                    hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    recordHistory();
+                }
+            });
+        });
     }
 
     /**
