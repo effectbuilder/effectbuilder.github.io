@@ -115,6 +115,8 @@ const INITIAL_CONFIG_TEMPLATE = `
 `;
 
 // --- State Management ---
+let unreadNotificationCount = 0;
+let userNotificationRef = null; // Reference to the user's notification check document
 let baselineStateForURL = {};
 let loadedStateSnapshot = null;
 let dirtyProperties = new Set();
@@ -161,6 +163,82 @@ let pixelArtCache = [];
 let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
+
+function renderNotificationDropdown(unreadProjects) {
+    const listContainer = document.getElementById('notification-list-container');
+    const markAllBtn = document.getElementById('mark-all-read-btn');
+    const toggleBtn = document.getElementById('notification-dropdown-toggle');
+    const user = window.auth.currentUser;
+
+    if (!listContainer) return;
+
+    // We rely on setupNotificationListener to ensure user is logged in before rendering.
+    if (!user) {
+        // This should ideally never be hit if setupNotificationListener is called correctly, 
+        // but serves as a failsafe.
+        listContainer.innerHTML = `
+            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+            </li>
+        `;
+        markAllBtn.style.display = 'none';
+        return;
+    }
+
+    markAllBtn.style.display = unreadProjects.length > 0 ? 'inline' : 'none';
+
+    if (unreadProjects.length === 0) {
+        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
+        return;
+    }
+
+    listContainer.innerHTML = '';
+
+    unreadProjects.forEach(notification => { // Renamed 'project' to 'notification' for clarity
+        const item = document.createElement('li');
+
+        // Construct the notification message
+        const notificationText = (notification.eventType === 'like')
+            ? `Your effect <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`
+            : `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+
+        // The outer <li> will hold the click handler
+        item.className = 'notification-item-container';
+
+        const timestamp = notification.timestamp && notification.timestamp.toDate
+            ? notification.timestamp.toDate()
+            : new Date(); // Fallback to current time if timestamp is invalid
+
+        item.innerHTML = `
+            <li class="dropdown-item d-flex align-items-start gap-2 p-3">
+                <i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>
+                <div class="flex-grow-1">
+                    <p class="mb-0 small">
+                        ${notificationText}
+                    </p>
+                    <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
+                </div>
+            </li>
+        `;
+        listContainer.appendChild(item);
+    });
+
+    toggleBtn.disabled = false;
+}
+
+function getLikedProjectsFromLocalStorage() {
+    const user = window.auth.currentUser;
+    if (!user) return [];
+
+    // Use the user's UID to make the storage key unique
+    const storageKey = `likedProjects_${user.uid}`;
+    try {
+        return JSON.parse(localStorage.getItem(storageKey) || '[]');
+    } catch (e) {
+        console.error("Error reading localStorage for likes:", e);
+        return [];
+    }
+}
 
 function rgbToHex(rgbString) {
     const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -300,6 +378,64 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            const user = window.auth.currentUser;
+            if (!user) return;
+
+            // 1. Query for all unread notifications belonging to the user
+            const notificationsRef = window.collection(window.db, "notifications");
+            const q = window.query(
+                notificationsRef,
+                window.where("recipientId", "==", user.uid),
+                window.where("read", "==", false)
+            );
+
+            try {
+                const snapshot = await window.getDocs(q);
+                if (snapshot.size === 0) {
+                    showToast("No new notifications to mark as read.", 'info');
+                    return;
+                }
+
+                // 2. Perform a batch update to mark them all as read
+                const batch = window.writeBatch(window.db); // Assuming window.writeBatch is exposed in firebase.js
+                snapshot.docs.forEach(doc => {
+                    batch.update(doc.ref, { read: true });
+                });
+                await batch.commit();
+
+                showToast(`${snapshot.size} notifications marked as read.`, 'info');
+                // The listener will automatically update the badge shortly after batch commit.
+
+            } catch (err) {
+                console.error("Failed to mark notifications as read:", err);
+                showToast("Failed to mark notifications as read.", 'danger');
+            }
+        });
+    }
+
+    const notificationDropdown = document.getElementById('notification-dropdown-toggle')?.closest('.btn-group');
+
+    if (notificationDropdown) {
+        notificationDropdown.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-mark-as-read="true"]');
+
+            if (link) {
+                e.preventDefault(); // Prevent default link behavior
+                const projectId = link.getAttribute('data-doc-id');
+                const notificationId = link.getAttribute('data-notif-id');
+
+                if (projectId && notificationId) {
+                    handleNotificationClick(projectId, notificationId);
+                }
+            }
+        });
+    }
+
     const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
     if (confirmGifUploadBtn) {
         confirmGifUploadBtn.addEventListener('click', () => {
@@ -1577,9 +1713,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const galleryList = document.getElementById('gallery-project-list');
     const galleryBody = galleryOffcanvasEl.querySelector('.offcanvas-body');
 
-
-
-
     async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
         buttonEl.disabled = true;
         buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
@@ -1639,6 +1772,357 @@ document.addEventListener('DOMContentLoaded', function () {
             buttonEl.disabled = false;
         }
     }
+
+    async function showLikersModal(docId, projectName) {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be signed in to view likers.", 'danger');
+            return;
+        }
+
+        try {
+            const docRef = window.doc(window.db, "projects", docId);
+            const projectDoc = await window.getDoc(docRef);
+
+            if (!projectDoc.exists()) {
+                showToast("Project not found.", 'danger');
+                return;
+            }
+
+            const data = projectDoc.data();
+            const likedBy = data.likedBy || {};
+            const likerUids = Object.keys(likedBy);
+
+            if (likerUids.length === 0) {
+                showToast(`No users have liked "${projectName}" yet.`, 'info');
+                return;
+            }
+
+            // --- TEMPORARY DISPLAY LOGIC (User ID is not friendly) ---
+            // In a real application, you would query a 'users' collection 
+            // to get display names from these UIDs.
+            // For now, we display the UIDs, which is what the database holds.
+
+            let content = likerUids.map(uid => `<li class="list-group-item small">${uid}</li>`).join('');
+
+            // Use the existing confirm modal as a simple display container
+            showConfirmModal(
+                `Users Who Liked: ${projectName} (${likerUids.length})`,
+                `<p>Note: Display names are not available in this tool. These are User IDs.</p>
+             <ul class="list-group list-group-flush">${content}</ul>`,
+                'Close',
+                () => { /* Do nothing on close */ }
+            );
+
+            // The last argument of showConfirmModal is the onConfirm callback.
+            // Since we are using it for display, the 'Close' button needs a dummy function.
+            // You'd need a separate display modal for a perfect UI.
+
+        } catch (error) {
+            console.error("Error fetching likers:", error);
+            showToast("Failed to retrieve the list of likers.", 'danger');
+        }
+    }
+
+    /**
+     * Fetches display names for a given array of UIDs.
+     * @param {string[]} uids - Array of user UIDs.
+     * @returns {Promise<Map<string, string>>} A map of UID to Display Name.
+     */
+    async function fetchDisplayNames(uids) {
+        if (uids.length === 0) return new Map();
+
+        const namesMap = new Map();
+        const usersRef = window.collection(window.db, "users");
+
+        // Split UIDs into batches of 10 for the 'in' query limit
+        const batches = [];
+        for (let i = 0; i < uids.length; i += 10) {
+            batches.push(uids.slice(i, i + 10));
+        }
+
+        // Fetch user documents in parallel batches
+        const promises = batches.map(batch => {
+            const q = window.query(usersRef, window.where(window.documentId, 'in', batch));
+
+            return window.getDocs(q).then(snapshot => {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    namesMap.set(doc.id, data.displayName || 'Anonymous User');
+                });
+            });
+        });
+
+        await Promise.all(promises);
+        return namesMap;
+    }
+
+    /**
+ * Handles the click event on a notification item: loads the effect and marks the notification as read.
+ * @param {string} projectId - The ID of the project/effect to load.
+ * @param {string} notificationId - The ID of the notification document to mark as read.
+ */
+    async function handleNotificationClick(projectId, notificationId) {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("Please sign in to load effects.", "warning");
+            return;
+        }
+
+        // 1. Load the Effect from the database
+        try {
+            const projectDocRef = window.doc(window.db, "projects", projectId);
+            const projectDoc = await window.getDoc(projectDocRef);
+
+            if (!projectDoc.exists()) {
+                showToast("The associated effect was not found.", "danger");
+                return;
+            }
+
+            // Prepare the workspace object
+            const workspace = { docId: projectDoc.id, ...projectDoc.data() };
+            if (workspace.createdAt && workspace.createdAt.toDate) {
+                workspace.createdAt = workspace.createdAt.toDate();
+            }
+
+            // Load the effect into the builder
+            loadWorkspace(workspace);
+
+            // Optionally close the offcanvas if it's open
+            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('gallery-offcanvas'));
+            if (offcanvas) offcanvas.hide();
+
+        } catch (error) {
+            console.error("Error loading effect from notification:", error);
+            showToast("Failed to load the effect.", "danger");
+            // We still proceed to mark as read even if the load failed.
+        }
+
+        // 2. Mark the specific notification as read
+        try {
+            const notifDocRef = window.doc(window.db, "notifications", notificationId);
+            await window.updateDoc(notifDocRef, { read: true });
+            // The real-time listener will automatically update the badge/dropdown UI.
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+        }
+    }
+
+    /**
+     * Fetches the display names for a given array of Project IDs.
+     * @param {string[]} projectIds - Array of project IDs.
+     * @returns {Promise<Map<string, string>>} A map of Project ID to Project Name.
+     */
+    async function fetchProjectNames(projectIds) {
+        if (projectIds.length === 0) return new Map();
+
+        const namesMap = new Map();
+        const projectsRef = window.collection(window.db, "projects");
+
+        // Split IDs into batches of 10 for the 'in' query limit
+        const batches = [];
+        for (let i = 0; i < projectIds.length; i += 10) {
+            batches.push(projectIds.slice(i, i + 10));
+        }
+
+        // Fetch project documents in parallel batches
+        const promises = batches.map(batch => {
+            const q = window.query(projectsRef, window.where(window.documentId, 'in', batch));
+            return window.getDocs(q).then(snapshot => {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Store the project name
+                    namesMap.set(doc.id, data.name || 'Undefined Project');
+                });
+            });
+        });
+
+        await Promise.all(promises);
+        return namesMap;
+    }
+
+    async function likeEffect(docId) {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to like or unlike an effect.", 'danger');
+            return;
+        }
+
+        const docRef = window.doc(window.db, "projects", docId);
+        let action = '';
+        let newLikesCount = 0;
+        let projectOwnerId = ''; // To capture the recipient UID
+
+        // References to UI elements (must be defined outside the transaction)
+        const likeBtn = document.getElementById(`like-btn-${docId}`);
+        const likeCountSpan = document.getElementById(`like-count-value-${docId}`);
+
+        try {
+            await window.runTransaction(window.db, async (transaction) => {
+                const projectDoc = await transaction.get(docRef);
+                if (!projectDoc.exists()) {
+                    throw new Error("Project does not exist!");
+                }
+
+                const data = projectDoc.data();
+                const likedBy = data.likedBy || {};
+                const isCurrentlyLiked = likedBy.hasOwnProperty(user.uid);
+
+                projectOwnerId = data.userId; // Get the owner's ID
+                newLikesCount = data.likes || 0;
+
+                if (isCurrentlyLiked) {
+                    // UNLIKE ACTION
+                    newLikesCount = Math.max(0, newLikesCount - 1);
+                    delete likedBy[user.uid];
+                    action = 'unliked';
+                } else {
+                    // LIKE ACTION
+                    newLikesCount += 1;
+                    likedBy[user.uid] = true;
+                    action = 'liked';
+                }
+
+                // Commit the transaction: We remove lastLikeTime as it's now tracked by the 'notifications' collection.
+                transaction.update(docRef, {
+                    likes: newLikesCount,
+                    likedBy: likedBy,
+                    // lastLikeTime is NO LONGER needed here, rely on the notification document timestamp.
+                });
+            });
+
+            // --- NEW: Create Notification Document AFTER successful transaction commit ---
+            // We only create a notification on a LIKE action, and only if the liker is not the owner.
+            if (action === 'liked' && projectOwnerId !== user.uid) {
+            //if (action === 'liked') {
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    recipientId: projectOwnerId,
+                    senderId: user.uid,
+                    projectId: docId,
+                    eventType: 'like',
+                    timestamp: window.serverTimestamp(),
+                    read: false
+                });
+            }
+            // --- END NEW ---
+
+            // --- UI Update Logic (Runs AFTER successful transaction commit) ---
+            if (likeCountSpan) {
+                // Update the count based on the committed action
+                const currentCount = parseInt(likeCountSpan.textContent.trim()) || 0;
+                const finalCount = Math.max(0, currentCount + (action === 'liked' ? 1 : -1));
+                likeCountSpan.textContent = finalCount;
+            }
+
+            if (likeBtn) {
+                if (action === 'liked') {
+                    likeBtn.classList.remove('btn-outline-danger');
+                    likeBtn.classList.add('btn-danger');
+                    likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
+                    likeBtn.title = "Unlike this effect";
+                } else {
+                    likeBtn.classList.remove('btn-danger');
+                    likeBtn.classList.add('btn-outline-danger');
+                    likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
+                    likeBtn.title = "Like this effect";
+                }
+            }
+            // --- END UI Update Logic ---
+
+            showToast(`Effect ${action}!`, 'success');
+
+        } catch (error) {
+            console.error("Error liking/unliking effect:", error);
+            showToast("Could not process like/unlike action. Check permissions/log.", 'danger');
+        }
+    }
+
+    let notificationListenerCleanup = null;
+
+    function setupNotificationListener(user) {
+        // 1. Clean up previous listener
+        if (notificationListenerCleanup) {
+            notificationListenerCleanup();
+            notificationListenerCleanup = null;
+        }
+
+        const toggleBtn = document.getElementById('notification-dropdown-toggle');
+        const notificationBadge = document.getElementById('notification-badge');
+        const listContainer = document.getElementById('notification-list-container');
+        const markAllBtn = document.getElementById('mark-all-read-btn');
+
+        if (!user) {
+            // Render logged-out state and disable button
+            if (listContainer) {
+                listContainer.innerHTML = `
+                <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                    <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                </li>
+            `;
+            }
+            toggleBtn.disabled = true;
+            notificationBadge.classList.add('d-none');
+            return;
+        }
+
+        // If signed in, enable the button and set up listener
+        toggleBtn.disabled = false;
+
+        const notificationsRef = window.collection(window.db, "notifications");
+
+        // 2. Query for unread notifications addressed to the current user
+        const q = window.query(
+            notificationsRef,
+            window.where("recipientId", "==", user.uid),
+            window.where("read", "==", false),
+            window.orderBy("timestamp", "desc")
+        );
+
+        notificationListenerCleanup = window.onSnapshot(q, async (snapshot) => {
+            const unreadNotifications = [];
+            const senderUids = new Set();
+            const projectIds = new Set(); // <-- NEW: Set to collect unique project IDs
+
+            // 4. Collect Notification Data
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                unreadNotifications.push({ ...data, docId: doc.id });
+                senderUids.add(data.senderId);
+                projectIds.add(data.projectId); // <-- NEW: Collect project IDs
+            });
+
+            // 5. Fetch Display Names for the senders and Project Names
+            const namesMap = await fetchDisplayNames(Array.from(senderUids));
+
+            // <-- NEW: Fetch Project Names (Batched Query) -->
+            const projectNamesMap = await fetchProjectNames(Array.from(projectIds));
+            // <-- END NEW -->
+
+            // 6. Finalize notification list with names and project names
+            const finalNotifications = unreadNotifications.map(notification => ({
+                ...notification,
+                senderName: namesMap.get(notification.senderId) || 'A User',
+                // <-- NEW: Inject the project name -->
+                projectName: projectNamesMap.get(notification.projectId) || 'Undefined Effect'
+            }));
+
+            // 7. Update the UI
+            const newUnreadCount = finalNotifications.length;
+            notificationBadge.textContent = newUnreadCount;
+            if (newUnreadCount > 0) {
+                notificationBadge.classList.remove('d-none');
+            } else {
+                notificationBadge.classList.add('d-none');
+            }
+
+            // Render the dropdown
+            renderNotificationDropdown(finalNotifications);
+
+        }, (err) => {
+            console.error("Error setting up notification listener:", err);
+        });
+    }
+    window.setupNotificationListener = setupNotificationListener; // Expose globally
 
     function drawSnapLines(snapLines) {
         ctx.save();
@@ -1786,13 +2270,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const viewCount = project.viewCount || 0;
             const downloadCount = project.downloadCount || 0;
+            const likeCount = project.likes || 0;
 
             statsEl.innerHTML = `
                 <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
-                <span title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
+                <span class="me-3" title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
+                <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;"> 
+                    <i class="bi bi-heart-fill me-1"></i>
+                    <span id="like-count-value-${project.docId}">${likeCount}</span>
+                </span>
             `;
 
             infoDiv.appendChild(statsEl);
+
+            setTimeout(() => {
+                const likesSpan = document.getElementById(`like-count-span-${project.docId}`);
+                if (likesSpan) {
+                    likesSpan.addEventListener('click', () => {
+                        showLikersModal(project.docId, project.name);
+                    });
+                }
+            }, 0);
+
             contentDiv.appendChild(infoDiv);
             li.appendChild(contentDiv);
 
@@ -1806,7 +2305,6 @@ document.addEventListener('DOMContentLoaded', function () {
             loadBtn.onclick = () => {
                 const viewCountContainer = li.querySelector('span[title="Views"]');
                 if (viewCountContainer) {
-                    // The textContent of the span is just the number
                     const currentCount = parseInt(viewCountContainer.textContent.trim()) || 0;
                     viewCountContainer.innerHTML = `<i class="bi bi-eye-fill me-1"></i>${currentCount + 1}`;
                 }
@@ -1817,6 +2315,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 showToast(`Effect "${project.name}" loaded!`, 'success');
             };
             controlsDiv.appendChild(loadBtn);
+
+            // --- Like Button Logic ---
+            const likedByMap = project.likedBy || {};
+            let isInitiallyLiked = false;
+
+            // Check the database likedBy map to set the initial button state
+            if (currentUser && currentUser.uid) {
+                isInitiallyLiked = likedByMap.hasOwnProperty(currentUser.uid);
+            }
+
+            const likeBtn = document.createElement('button');
+            likeBtn.id = `like-btn-${project.docId}`;
+
+            if (isInitiallyLiked) {
+                likeBtn.className = 'btn btn-sm btn-danger';
+                likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
+                likeBtn.title = "Unlike this effect";
+            } else {
+                likeBtn.className = 'btn btn-sm btn-outline-danger';
+                likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
+                likeBtn.title = "Like this effect";
+            }
+
+            likeBtn.onclick = () => {
+                likeEffect(project.docId);
+            };
+            controlsDiv.appendChild(likeBtn);
+            // --- End Like Button Logic ---
 
             if (currentUser && currentUser.uid === project.userId) {
                 const deleteBtn = document.createElement('button');
@@ -7560,6 +8086,29 @@ document.addEventListener('DOMContentLoaded', function () {
             showToast("Could not insert frames. Data might be invalid.", "danger");
         }
     }
+
+    function loadUserSpecificGalleryData() {
+        // This function will re-render the gallery list if it's visible, 
+        // ensuring the like buttons reflect the current user's state.
+        const galleryOffcanvas = document.getElementById('gallery-offcanvas');
+        if (galleryOffcanvas && galleryOffcanvas.classList.contains('show')) {
+            // Find the active gallery type (My Projects or Community) and re-load it.
+            const galleryLabel = document.getElementById('galleryOffcanvasLabel').textContent;
+            // Check if the current user is logged in
+            const isLoggedIn = !!window.auth.currentUser;
+
+            if (galleryLabel === 'My Effects' && isLoggedIn) {
+                // Re-run the 'My Effects' logic
+                document.getElementById('load-ws-btn').click();
+            } else if (galleryLabel.includes('Gallery') || !isLoggedIn) {
+                // Re-run the 'Community Gallery' logic
+                document.getElementById('browse-btn').click();
+            }
+            // Note: We don't need to re-run 'My Effects' if the user logs out 
+            // because the 'Community Gallery' logic will show (or the list will be empty).
+        }
+    }
+    window.loadUserSpecificGalleryData = loadUserSpecificGalleryData; // Expose globally
 
 
     // Start the application.
