@@ -1,3 +1,5 @@
+// gallery.js - COMPLETE FILE
+
 document.addEventListener('DOMContentLoaded', function () {
     const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
     const loginBtn = document.getElementById('login-btn');
@@ -64,6 +66,96 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }, 500);
 
+
+    // --- LIKE ACTION HANDLER ---
+    async function handleLikeAction(docId) {
+        const user = window.auth.currentUser;
+        if (!user) {
+            alert("You must be logged in to like or unlike an effect.");
+            return;
+        }
+
+        const likeBtn = document.getElementById(`gallery-like-btn-${docId}`);
+        const likeCountSpan = document.getElementById(`gallery-like-count-${docId}`);
+        
+        // Determine action based on button class
+        const isCurrentlyLiked = likeBtn && likeBtn.classList.contains('btn-danger');
+
+        try {
+            const docRef = window.doc(window.db, "projects", docId);
+            let action = isCurrentlyLiked ? 'unliked' : 'liked';
+            let projectOwnerId = '';
+            
+            await window.runTransaction(window.db, async (transaction) => {
+                const projectDoc = await transaction.get(docRef);
+                if (!projectDoc.exists()) throw new Error("Project not found.");
+
+                const data = projectDoc.data();
+                const likedBy = data.likedBy || {};
+                let newLikesCount = data.likes || 0;
+                projectOwnerId = data.userId;
+
+                if (action === 'liked') {
+                    newLikesCount = newLikesCount + 1;
+                    likedBy[user.uid] = true;
+                } else {
+                    newLikesCount = Math.max(0, newLikesCount - 1);
+                    delete likedBy[user.uid];
+                }
+                
+                // Update the project document
+                transaction.update(docRef, { 
+                    likes: newLikesCount,
+                    likedBy: likedBy,
+                    updatedAt: new Date()
+                });
+
+                // Create notification only on LIKE action and if sender is not owner
+                if (action === 'liked' && projectOwnerId !== user.uid) {
+                    // Create notification document outside the transaction
+                    // We handle the notification creation optimistically below
+                }
+            });
+
+            // --- Notification Creation (Outside Transaction) ---
+            if (action === 'liked' && projectOwnerId !== user.uid) {
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    recipientId: projectOwnerId,
+                    senderId: user.uid,
+                    projectId: docId,
+                    eventType: 'like',
+                    timestamp: window.serverTimestamp(),
+                    read: false
+                });
+            }
+            
+            // --- Optimistic UI Update ---
+            const countChange = action === 'liked' ? 1 : -1;
+            const newCount = likeCountSpan ? (parseInt(likeCountSpan.textContent) || 0) + countChange : 0;
+            
+            if (likeBtn) {
+                if (action === 'liked') {
+                    likeBtn.classList.remove('btn-outline-danger');
+                    likeBtn.classList.add('btn-danger');
+                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                    likeBtn.title = "Unlike";
+                } else {
+                    likeBtn.classList.remove('btn-danger');
+                    likeBtn.classList.add('btn-outline-danger');
+                    likeBtn.innerHTML = '<i class="bi bi-heart"></i>';
+                    likeBtn.title = "Like";
+                }
+            }
+            if (likeCountSpan) {
+                likeCountSpan.textContent = Math.max(0, newCount);
+            }
+
+        } catch (error) {
+            console.error("Error processing like action:", error);
+            alert("Failed to process like/unlike action. Please check your network or sign-in status.");
+            loadPublicGallery(); 
+        }
+    }
 
     // --- Admin & Edit Functions ---
     async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
@@ -182,6 +274,10 @@ document.addEventListener('DOMContentLoaded', function () {
             contentDiv.style.minWidth = '0';
             const viewCount = project.viewCount || 0;
             const downloadCount = project.downloadCount || 0;
+            const likeCount = project.likes || 0;
+            
+            // Check if current user has liked this project (based on database data)
+            const userHasLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
 
             contentDiv.innerHTML = `
                 ${project.thumbnail ? `<a href="./?effectId=${project.docId}"><img src="${project.thumbnail}" style="width: 160px; height: 100px; object-fit: cover;" class="rounded border me-4"></a>` : ''}
@@ -191,9 +287,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p class="mb-0 mt-1 small text-body-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${description}">
                         ${description}
                     </p>
-                    <div class="mt-2 small text-body-secondary">
+                    <div class="mt-2 small text-body-secondary d-flex align-items-center">
                         <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
-                        <span title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
+                        <span class="me-3" title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
+                        
+                        <span title="Likes"><i class="bi bi-heart-fill me-1"></i><span id="gallery-like-count-${project.docId}">${likeCount}</span></span>
                     </div>
                 </div>
             `;
@@ -208,6 +306,20 @@ document.addEventListener('DOMContentLoaded', function () {
             loadBtn.title = "Load Effect in Editor";
             loadBtn.href = `./?effectId=${project.docId}`;
             controlsDiv.appendChild(loadBtn);
+
+            // --- LIKE BUTTON ---
+            const likeBtn = document.createElement('button');
+            likeBtn.id = `gallery-like-btn-${project.docId}`;
+            likeBtn.dataset.docId = project.docId;
+            likeBtn.className = `btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'}`;
+            likeBtn.innerHTML = userHasLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
+            likeBtn.title = userHasLiked ? "Unlike" : "Like";
+            likeBtn.disabled = !currentUser; // Disable if not logged in
+            
+            likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
+            controlsDiv.appendChild(likeBtn);
+            // --- END LIKE BUTTON ---
+
 
             const buttonsSubDiv = document.createElement('div');
             buttonsSubDiv.className = 'd-flex flex-column gap-1';
