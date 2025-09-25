@@ -27,7 +27,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_scrollDir" label="Small Clock: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj1_gradType" label="Small Clock: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj1_useSharpGradient" label="Small Clock: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj1_gradientStop" label="Small Clock: Gradient Stop %" type="number" min="0" max="100" default="72" />
     <meta property="obj1_gradColor1" label="Small Clock: Color 1" type="color" default="#00ff00" />
     <meta property="obj1_gradColor2" label="Small Clock: Color 2" type="color" default="#d400ff" />
     <meta property="obj1_cycleColors" label="Small Clock: Cycle Colors" type="boolean" default="false" />
@@ -73,7 +72,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj2_scrollDir" label="Large Text: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj2_gradType" label="Large Text: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj2_useSharpGradient" label="Large Text: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj2_gradientStop" label="Large Text: Gradient Stop %" type="number" min="0" max="100" default="72" />
     <meta property="obj2_gradColor1" label="Large Text: Color 1" type="color" default="#00ff00" />
     <meta property="obj2_gradColor2" label="Large Text: Color 2" type="color" default="#d400ff" />
     <meta property="obj2_cycleColors" label="Large Text: Cycle Colors" type="boolean" default="false" />
@@ -253,29 +251,45 @@ function updateColorControls() {
     const pColor1 = values.paletteColor1;
     const pColor2 = values.paletteColor2;
 
-    const colorControlNames = ['gradColor1', 'gradColor2', 'strokeGradColor1', 'strokeGradColor2'];
+    const gradientControlNames = ['gradientStops', 'strokeGradientStops'];
 
     objects.forEach(obj => {
-        colorControlNames.forEach(name => {
-            const input = form.querySelector(`[name="obj${obj.id}_${name}"]`);
-            if (input) {
-                const hexInput = form.querySelector(`[name="obj${obj.id}_${name}_hex"]`);
-                const isColor1 = name.endsWith('1');
+        gradientControlNames.forEach(name => {
+            const pickerContainer = form.querySelector(`[name="obj${obj.id}_${name}"]`)?.closest('.gradient-picker-container');
+            if (!pickerContainer) return;
 
-                input.disabled = paletteEnabled;
-                if (hexInput) hexInput.disabled = paletteEnabled;
+            const stopRows = pickerContainer.querySelectorAll('.gradient-stop-row');
+            const colorInputs = pickerContainer.querySelectorAll('.gradient-color-input');
 
-                if (paletteEnabled) {
-                    const paletteColor = isColor1 ? pColor1 : pColor2;
-                    input.value = paletteColor;
-                    if (hexInput) hexInput.value = paletteColor;
-                } else {
-                    // Restore the object's actual color
-                    const originalColor = isColor1
-                        ? (name.startsWith('stroke') ? obj.strokeGradient.color1 : obj.gradient.color1)
-                        : (name.startsWith('stroke') ? obj.strokeGradient.color2 : obj.gradient.color2);
-                    input.value = originalColor;
-                    if (hexInput) hexInput.value = originalColor;
+            colorInputs.forEach(input => input.disabled = paletteEnabled);
+
+            if (paletteEnabled) {
+                if (stopRows.length > 0) {
+                    const firstColorInput = stopRows[0].querySelector('.gradient-color-input');
+                    if (firstColorInput) firstColorInput.value = pColor1;
+                }
+                if (stopRows.length > 1) {
+                    const lastColorInput = stopRows[stopRows.length - 1].querySelector('.gradient-color-input');
+                    if (lastColorInput) lastColorInput.value = pColor2;
+                }
+                // Trigger an update on one of the inputs to refresh the preview and hidden value
+                if (stopRows.length > 0) {
+                    stopRows[0].querySelector('.gradient-color-input').dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } else {
+                // Restore the object's actual gradient
+                const sourceGradient = name === 'gradientStops' ? obj.gradient : obj.strokeGradient;
+                if (sourceGradient && sourceGradient.stops) {
+                    stopRows.forEach((row, index) => {
+                        const colorInput = row.querySelector('.gradient-color-input');
+                        if (colorInput && sourceGradient.stops[index]) {
+                            colorInput.value = sourceGradient.stops[index].color;
+                        }
+                    });
+                    // Trigger an update
+                    if (stopRows.length > 0) {
+                        stopRows[0].querySelector('.gradient-color-input').dispatchEvent(new Event('input', { bubbles: true }));
+                    }
                 }
             }
         });
@@ -1448,88 +1462,92 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update this for a new property
     const shapePropertyMap = {
         rectangle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polyline: [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
+            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
+            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
+            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         circle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         ring: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'innerDiameter', 'numberOfSegments', 'angularWidth',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polygon: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         star: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         text: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
             'textAnimationSpeed', 'showTime', 'showDate',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         oscilloscope: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
             'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
             'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
             'tetrisAnimation', 'tetrisBlockCount', 'tetrisDropDelay', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         fire: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'fire-radial': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
-        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationSpeed', 'scrollDir',
+        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationSpeed', 'scrollDir',
             'vizLayout', 'vizDrawStyle', 'vizStyle',
             'vizLineWidth',
             'vizAutoScale', 'vizMaxBarHeight',
@@ -1537,39 +1555,23 @@ document.addEventListener('DOMContentLoaded', function () {
             'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
             'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
         ],
-        'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
         'strimer': [
             'shape', 'x', 'y', 'width', 'height', 'rotation',
-            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
             'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
             'strimerDirection', 'strimerEasing',
             'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
         ],
         'spawner': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
             'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
             'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor',
             'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
             'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
-        ],
-        polyline: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
-            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
-            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
-            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
     };
 
@@ -2141,7 +2143,7 @@ document.addEventListener('DOMContentLoaded', function () {
             input.value = defaultValue;
             if (min) input.min = min;
             if (max) input.max = max;
-            input.step = config.step || '1'; // This line was updated
+            input.step = config.step || '1';
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.className = 'form-range flex-grow-1 ms-2';
@@ -2149,7 +2151,7 @@ document.addEventListener('DOMContentLoaded', function () {
             slider.name = `${controlId}_slider`;
             if (min) slider.min = min;
             if (max) slider.max = max;
-            slider.step = config.step || '1'; // This line was added
+            slider.step = config.step || '1';
             slider.value = defaultValue;
             inputGroup.appendChild(input);
             inputGroup.appendChild(slider);
@@ -2164,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formGroup.appendChild(input);
         } else if (type === 'combobox') {
             const vals = values.split(',');
-            vals.sort(); // Sort the options alphabetically
+            vals.sort();
             const select = document.createElement('select');
             select.id = controlId;
             select.className = 'form-select';
@@ -2201,7 +2203,7 @@ document.addEventListener('DOMContentLoaded', function () {
             textarea.id = controlId;
             textarea.className = 'form-control';
             textarea.name = controlId;
-            textarea.rows = (type === 'textarea') ? 10 : 3; // Give more rows for pixel art data
+            textarea.rows = (type === 'textarea') ? 10 : 3;
             textarea.textContent = defaultValue.replace(/\\n/g, '\n');
             formGroup.appendChild(textarea);
             if (controlId.endsWith('_pixelArtData')) {
@@ -2240,6 +2242,154 @@ document.addEventListener('DOMContentLoaded', function () {
             colorGroup.appendChild(input);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
+        } else if (type === 'gradientpicker') {
+            const container = document.createElement('div');
+            container.className = 'gradient-picker-container';
+
+            const preview = document.createElement('div');
+            preview.className = 'gradient-preview border rounded mb-2';
+            preview.style.height = '25px';
+
+            const stopsContainer = document.createElement('div');
+            stopsContainer.className = 'gradient-stops-list d-grid gap-2';
+
+            const hiddenInput = document.createElement('textarea');
+            hiddenInput.id = controlId;
+            hiddenInput.name = controlId;
+            hiddenInput.className = 'd-none';
+            hiddenInput.value = defaultValue;
+
+            const updateGradient = () => {
+                const stops = [];
+                const stopRows = stopsContainer.querySelectorAll('.gradient-stop-row');
+                stopRows.forEach(row => {
+                    stops.push({
+                        color: row.querySelector('.gradient-color-input').value,
+                        position: parseFloat(row.querySelector('.gradient-position-input').value)
+                    });
+                });
+
+                stops.sort((a, b) => a.position - b.position);
+                hiddenInput.value = JSON.stringify(stops);
+
+                const gradientString = stops.length > 1
+                    ? `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`
+                    : (stops.length === 1 ? stops[0].color : '#000');
+
+                preview.style.background = gradientString;
+
+                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
+                if (fieldset && !isRestoring) {
+                    const objectId = parseInt(fieldset.dataset.objectId, 10);
+                    const targetObject = objects.find(o => o.id === objectId);
+                    if (targetObject) {
+                        const propName = hiddenInput.name.includes('stroke') ? 'strokeGradient' : 'gradient';
+                        const newGradientState = { stops: JSON.parse(hiddenInput.value) };
+                        const updatePayload = {};
+                        updatePayload[propName] = newGradientState;
+
+                        targetObject.update(updatePayload);
+                        drawFrame();
+                        debouncedRecordHistory();
+                    }
+                }
+            };
+
+            const createStopRow = (color, position) => {
+                const row = document.createElement('div');
+                row.className = 'gradient-stop-row d-flex align-items-center gap-2';
+
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'form-control form-control-color gradient-color-input';
+                colorInput.value = color;
+
+                const positionInput = document.createElement('input');
+                positionInput.type = 'range';
+                positionInput.className = 'form-range gradient-position-input';
+                positionInput.min = 0;
+                positionInput.max = 1;
+                positionInput.step = 0.01;
+                positionInput.value = position;
+
+                const positionValueInput = document.createElement('input');
+                positionValueInput.type = 'number';
+                positionValueInput.className = 'form-control form-control-sm text-center';
+                positionValueInput.style.width = '65px';
+                positionValueInput.min = 0;
+                positionValueInput.max = 1;
+                positionValueInput.step = 0.01;
+                positionValueInput.value = position;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'btn btn-sm btn-outline-danger';
+                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                deleteBtn.addEventListener('click', () => {
+                    if (stopsContainer.children.length > 2) {
+                        row.remove();
+                        updateGradient();
+                    } else {
+                        showToast("A gradient must have at least 2 colors.", "warning");
+                    }
+                });
+
+                positionInput.addEventListener('input', () => {
+                    positionValueInput.value = positionInput.value;
+                });
+                positionValueInput.addEventListener('input', () => {
+                    positionInput.value = positionValueInput.value;
+                });
+
+                [colorInput, positionInput, positionValueInput].forEach(input => {
+                    input.addEventListener('input', updateGradient);
+                });
+
+                row.appendChild(colorInput);
+                row.appendChild(positionInput);
+                row.appendChild(positionValueInput);
+                row.appendChild(deleteBtn);
+                return row;
+            };
+
+            try {
+                const initialStops = JSON.parse(defaultValue);
+                initialStops.forEach(stop => {
+                    stopsContainer.appendChild(createStopRow(stop.color, stop.position));
+                });
+            } catch (e) {
+                console.error("Could not parse gradient stops:", defaultValue, e);
+                stopsContainer.appendChild(createStopRow('#000000', 0));
+                stopsContainer.appendChild(createStopRow('#FFFFFF', 1));
+            }
+            updateGradient();
+
+            hiddenInput.addEventListener('rebuild', (e) => {
+                const newStops = e.detail.stops || [];
+                stopsContainer.innerHTML = '';
+                newStops.forEach(stop => {
+                    stopsContainer.appendChild(createStopRow(stop.color, stop.position));
+                });
+                updateGradient();
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+            addBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Add Color Stop';
+            addBtn.addEventListener('click', () => {
+                const lastRow = stopsContainer.lastElementChild;
+                const lastPos = lastRow ? parseFloat(lastRow.querySelector('.gradient-position-input').value) : 0.9;
+                const newPos = Math.min(1.0, lastPos + 0.1);
+                stopsContainer.appendChild(createStopRow('#ffffff', newPos));
+                updateGradient();
+            });
+
+            container.appendChild(preview);
+            container.appendChild(stopsContainer);
+            container.appendChild(addBtn);
+            container.appendChild(hiddenInput);
+            formGroup.appendChild(container);
         } else if (type === 'sensor') {
             const select = document.createElement('select');
             select.id = controlId;
@@ -2482,10 +2632,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const propName = conf.property.substring(conf.property.indexOf('_') + 1);
                 let liveValue = obj[propName];
 
-                if (propName.startsWith('gradColor')) {
-                    liveValue = obj.gradient[propName.replace('gradColor', 'color')];
-                } else if (propName.startsWith('strokeGradColor')) {
-                    liveValue = obj.strokeGradient[propName.replace('strokeGradColor', 'color')];
+                if (propName === 'gradientStops') {
+                    liveValue = JSON.stringify(obj.gradient.stops);
+                } else if (propName === 'strokeGradientStops') {
+                    liveValue = JSON.stringify(obj.strokeGradient.stops);
+                } else if (propName.startsWith('gradColor') || propName.startsWith('strokeGradColor')) {
+                    return; // Skip obsolete properties
                 } else if (propName === 'scrollDir') {
                     liveValue = obj.scrollDirection;
                 } else if (propName === 'strokeScrollDir') {
@@ -2723,10 +2875,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const controlGroupMap = {
             'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
             'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
-            'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
+            'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
             'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
-            'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
-            'Fill-Animation': { props: ['gradType', 'gradColor1', 'gradColor2', 'cycleColors', 'useSharpGradient', 'gradientStop', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
+            'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
+            'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
             'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
             'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
             'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
@@ -3237,7 +3389,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // List all controls that depend on the fill being enabled
         const dependentControls = [
-            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'gradType', 'useSharpGradient', 'gradColor1', 'gradColor2',
             'cycleColors', 'animationMode', 'animationSpeed', 'cycleSpeed', 'scrollDir'
         ];
 
@@ -3333,7 +3485,6 @@ document.addEventListener('DOMContentLoaded', function () {
             updateField('numberOfSegments', obj.numberOfSegments);
             updateField('rotationSpeed', obj.rotationSpeed);
             updateField('useSharpGradient', obj.useSharpGradient);
-            updateField('gradientStop', obj.gradientStop);
             updateField('numberOfRows', obj.numberOfRows);
             updateField('numberOfColumns', obj.numberOfColumns);
             updateField('phaseOffset', obj.phaseOffset);
@@ -3719,12 +3870,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         const tr = document.createElement('tr');
                         tr.dataset.index = index;
                         tr.innerHTML = `
-                        <td class="align-middle">${index + 1}</td>
-                        <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
-                        <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
-                        <td class="align-middle">
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
-                        </td>`;
+                    <td class="align-middle">${index + 1}</td>
+                    <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
+                    <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
+                    <td class="align-middle">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
+                    </td>`;
                         tbody.appendChild(tr);
                     });
 
@@ -3732,12 +3883,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 // --- END OF MODIFIED PART ---
                 else if (propsToScale.includes(key)) {
                     updateField(key, Math.round(obj[key] / 4));
-                } else if (key === 'gradient') {
-                    updateField('gradColor1', obj.gradient.color1);
-                    updateField('gradColor2', obj.gradient.color2);
-                } else if (key === 'strokeGradient') {
-                    updateField('strokeGradColor1', obj.strokeGradient.color1);
-                    updateField('strokeGradColor2', obj.strokeGradient.color2);
+                } else if (key === 'gradient' || key === 'strokeGradient') {
+                    const propName = key === 'gradient' ? 'gradientStops' : 'strokeGradientStops';
+                    const control = fieldset.querySelector(`[name="obj${obj.id}_${propName}"]`);
+                    if (control) {
+                        const newStops = key === 'gradient' ? obj.gradient.stops : obj.strokeGradient.stops;
+                        control.value = JSON.stringify(newStops);
+                        // Trigger a custom event to tell the control to rebuild itself
+                        control.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+                    }
                 } else if (key === 'scrollDirection') {
                     updateField('scrollDir', obj.scrollDirection);
                 } else if (key === 'strokeScrollDir') {
@@ -3820,10 +3974,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     value *= 4;
                 }
 
-                if (key.startsWith('gradColor')) {
-                    configForThisObject.gradient[key.replace('grad', '').toLowerCase()] = value;
-                } else if (key.startsWith('strokeGradColor')) {
-                    configForThisObject.strokeGradient[key.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                // MODIFIED: Correctly handle new gradientStops properties
+                if (key === 'gradientStops') {
+                    configForThisObject.gradientStops = value;
+                } else if (key === 'strokeGradientStops') {
+                    configForThisObject.strokeGradientStops = value;
+                } else if (key.startsWith('gradColor') || key.startsWith('strokeGradColor')) {
+                    // Ignore obsolete properties
                 } else if (key === 'scrollDir') {
                     configForThisObject.scrollDirection = value;
                 } else if (key === 'strokeScrollDir') {
@@ -4007,7 +4164,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function getDefaultObjectConfig(newId) {
         return [
             // Geometry & Transform
-            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' }, // MODIFIED: Added 'spawner'
+            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' },
             { property: `obj${newId}_x`, label: `Object ${newId}: X Position`, type: 'number', default: '10', min: '0', max: '320', description: 'The horizontal position of the object on the canvas.' },
             { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
             { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
@@ -4017,10 +4174,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
             { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
+            { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#00ff00","position":0},{"color":"#d400ff","position":1}]', description: 'The colors and positions of the gradient.' },
             { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
-            { property: `obj${newId}_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp gradients, this is the percentage width of the primary color band.' },
-            { property: `obj${newId}_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#00ff00', description: 'The starting color for gradients and solid fills.' },
-            { property: `obj${newId}_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#d400ff', description: 'The ending color for gradients.' },
             { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
             { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Master speed for gradient scroll, random color flicker, and oscilloscope movement.' },
             { property: `obj${newId}_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false', description: 'Animates the colors by cycling through the color spectrum.' },
@@ -4066,10 +4221,8 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_enableStroke`, label: `Object ${newId}: Enable Stroke`, type: 'boolean', default: 'false', description: 'Enables a stroke (outline) for the shape.' },
             { property: `obj${newId}_strokeWidth`, label: `Object ${newId}: Stroke Width`, type: 'number', default: '2', min: '1', max: '50', description: 'The thickness of the shape\'s stroke.' },
             { property: `obj${newId}_strokeGradType`, label: `Object ${newId}: Stroke Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use for the stroke.' },
+            { property: `obj${newId}_strokeGradientStops`, label: `Object ${newId}: Stroke Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFFFFF","position":0},{"color":"#000000","position":1}]', description: 'The colors and positions of the stroke gradient.' },
             { property: `obj${newId}_strokeUseSharpGradient`, label: `Object ${newId}: Stroke Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.' },
-            { property: `obj${newId}_strokeGradientStop`, label: `Object ${newId}: Stroke Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp stroke gradients, this is the percentage width of the primary color band.' },
-            { property: `obj${newId}_strokeGradColor1`, label: `Object ${newId}: Stroke Color 1`, type: 'color', default: '#FFFFFF', description: 'The starting color for the stroke gradient.' },
-            { property: `obj${newId}_strokeGradColor2`, label: `Object ${newId}: Stroke Color 2`, type: 'color', default: '#000000', description: 'The ending color for the stroke gradient.' },
             { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
             { property: `obj${newId}_strokeAnimationSpeed`, label: `Object ${newId}: Stroke Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Controls the scroll speed of the stroke gradient animation.' },
             { property: `obj${newId}_strokeCycleColors`, label: `Object ${newId}: Cycle Stroke Colors`, type: 'boolean', default: 'false', description: 'Animates the stroke colors by cycling through the color spectrum.' },
@@ -4171,7 +4324,6 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_pathAnim_speed`, label: `Object ${newId}: Speed`, type: 'number', default: '50', min: '0', max: '1000', description: 'How fast the object travels along the path (pixels per second).' },
             { property: `obj${newId}_pathAnim_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic' },
             { property: `obj${newId}_pathAnim_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false' },
-            { property: `obj${newId}_pathAnim_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100' },
             { property: `obj${newId}_pathAnim_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#FFFFFF' },
             { property: `obj${newId}_pathAnim_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#00BFFF' },
             { property: `obj${newId}_pathAnim_animationMode`, label: `Object ${newId}: Fill Animation`, type: 'combobox', values: 'loop,bounce', default: 'loop' },
@@ -4201,7 +4353,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const isStrokeEnabled = enableStrokeToggle.checked;
 
         const dependentControls = [
-            'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop',
+            'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient',
             'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed',
             'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode',
             'strokePhaseOffset', 'strokeScrollDir'
@@ -5394,9 +5546,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 objects.unshift(newShape);
 
-                const newObjectConfigs = getDefaultObjectConfig(newId).filter(
-                    conf => (shapePropertyMap['polyline'] || []).includes(conf.property.substring(conf.property.indexOf('_') + 1))
-                );
+                const newObjectConfigs = getDefaultObjectConfig(newId).filter(conf => {
+                    const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                    // Explicitly include strokeGradientStops as it's essential for new polylines
+                    if (propName === 'strokeGradientStops') return true;
+                    return (shapePropertyMap['polyline'] || []).includes(propName);
+                });
 
                 // Manually override the defaults for the new configs to match the instantiated shape
                 const enableStrokeConf = newObjectConfigs.find(c => c.property === `obj${newId}_enableStroke`);
@@ -6452,6 +6607,28 @@ document.addEventListener('DOMContentLoaded', function () {
             objectIds.forEach(id => {
                 const defaults = getDefaultObjectConfig(id);
                 const { name, shape } = objectData[id];
+
+                // --- NEW: Backward Compatibility Logic ---
+                const gradColor1 = loadedConfigMap.get(`obj${id}_gradColor1`)?.default;
+                const gradColor2 = loadedConfigMap.get(`obj${id}_gradColor2`)?.default;
+                if ((gradColor1 || gradColor2) && !loadedConfigMap.has(`obj${id}_gradientStops`)) {
+                    const stops = [
+                        { color: gradColor1 || '#00ff00', position: 0 },
+                        { color: gradColor2 || '#d400ff', position: 1 }
+                    ];
+                    constantsMap.set(`obj${id}_gradientStops`, JSON.stringify(stops));
+                }
+                const strokeColor1 = loadedConfigMap.get(`obj${id}_strokeGradColor1`)?.default;
+                const strokeColor2 = loadedConfigMap.get(`obj${id}_strokeGradColor2`)?.default;
+                if ((strokeColor1 || strokeColor2) && !loadedConfigMap.has(`obj${id}_strokeGradientStops`)) {
+                    const stops = [
+                        { color: strokeColor1 || '#FFFFFF', position: 0 },
+                        { color: strokeColor2 || '#000000', position: 1 }
+                    ];
+                    constantsMap.set(`obj${id}_strokeGradientStops`, JSON.stringify(stops));
+                }
+                // --- END ---
+
                 defaults.forEach(conf => {
                     const key = conf.property;
                     conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
@@ -6873,7 +7050,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (copyPropsForm.elements['copy-position'].checked) copyProps(['x', 'y']);
             if (copyPropsForm.elements['copy-size'].checked) copyProps(['width', 'height']);
             if (copyPropsForm.elements['copy-rotation'].checked) copyProps(['rotation', 'rotationSpeed']);
-            if (copyPropsForm.elements['copy-fill-style'].checked) Object.assign(propsToCopy, { gradType: sourceObject.gradType, useSharpGradient: sourceObject.useSharpGradient, gradientStop: sourceObject.gradientStop, gradient: { ...sourceObject.gradient } });
+            if (copyPropsForm.elements['copy-fill-style'].checked) Object.assign(propsToCopy, { gradType: sourceObject.gradType, useSharpGradient: sourceObject.useSharpGradient, gradient: { stops: JSON.parse(JSON.stringify(sourceObject.gradient.stops)) } });
             if (copyPropsForm.elements['copy-animation'].checked) copyProps(['animationMode', 'animationSpeed', 'scrollDirection', 'phaseOffset']);
             if (copyPropsForm.elements['copy-color-animation'].checked) copyProps(['cycleColors', 'cycleSpeed']);
             if (copyPropsForm.elements['copy-shape-type'].checked) copyProps(['shape']);
