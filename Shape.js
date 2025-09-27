@@ -1217,7 +1217,6 @@ class Shape {
             return `hsl(${hue}, 100%, 50%)`;
         }
 
-        // Ensure stops exist and are not empty
         if (this.gradType !== 'random' || !this.gradient.stops || this.gradient.stops.length === 0) {
             return this.gradient.stops?.[0]?.color || '#000000';
         }
@@ -1237,14 +1236,15 @@ class Shape {
         const state = this.randomElementState[elementIndex];
 
         if (this.lastDeltaTime > 0) {
-            const flickerSpeed = (this.animationSpeed || 0) * this.lastDeltaTime * 60;
+            // This is the corrected line: The flicker speed is now proportional to animation speed and deltaTime.
+            const flickerSpeed = (this.animationSpeed || 0) * this.lastDeltaTime;
             state.timer -= flickerSpeed;
         }
 
         if (state.timer <= 0) {
             const randomIndex = Math.floor(Math.random() * this.gradient.stops.length);
             state.color = this.gradient.stops[randomIndex].color;
-            state.timer = Math.random() * 5 + 5;
+            state.timer = Math.random() * 5 + 5; // Reset timer
         }
 
         return state.color;
@@ -1764,6 +1764,7 @@ class Shape {
 
         const sortedStops = [...stops].sort((a, b) => a.position - b.position);
 
+        // Static (non-animated) gradients don't need caching
         if (!isAnimated) {
             const gradCoords = { up: [0, height / 2, 0, -height / 2], down: [0, -height / 2, 0, height / 2], left: [width / 2, 0, -width / 2, 0], right: [-width / 2, 0, width / 2, 0] };
             const grad = this.ctx.createLinearGradient(...(gradCoords[scrollDirection] || gradCoords.right));
@@ -1779,51 +1780,58 @@ class Shape {
             return grad;
         }
 
+        // --- START: CACHING LOGIC FOR ANIMATED GRADIENTS ---
+        const isVertical = scrollDirection === 'up' || scrollDirection === 'down';
+        const sourceHash = JSON.stringify(sortedStops) + useSharpGradient.toString() + isVertical.toString();
+
+        // Check if we have a valid cache. If not, create the pattern and cache it.
+        if (!this._linearPatternCache || this._linearPatternCache.sourceHash !== sourceHash) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            const patternSize = 256;
+            tempCanvas.width = isVertical ? 1 : patternSize;
+            tempCanvas.height = isVertical ? patternSize : 1;
+            const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
+
+            // This is the corrected part: Create the gradient using only the user-defined stops.
+            if (useSharpGradient) {
+                tempGrad.addColorStop(0, sortedStops[0].color);
+                for (let i = 1; i < sortedStops.length; i++) {
+                    tempGrad.addColorStop(sortedStops[i].position - 0.0001, sortedStops[i - 1].color);
+                    tempGrad.addColorStop(sortedStops[i].position, sortedStops[i].color);
+                }
+            } else {
+                sortedStops.forEach(stop => tempGrad.addColorStop(stop.position, stop.color));
+            }
+
+            tempCtx.fillStyle = tempGrad;
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            this._linearPatternCache = {
+                pattern: this.ctx.createPattern(tempCanvas, 'repeat'),
+                sourceHash: sourceHash
+            };
+        }
+
+        // Use the cached pattern and just update its transform each frame
+        const { pattern } = this._linearPatternCache;
+
         let effectiveProgress = progress;
         if (animationMode.includes('bounce')) {
             const normalizedProgress = (progress % 1.0 + 1.0) % 1.0;
             effectiveProgress = (1 - Math.cos(normalizedProgress * 2 * Math.PI)) / 2;
         }
 
-        const isVertical = scrollDirection === 'up' || scrollDirection === 'down';
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        const patternSize = 256;
-        tempCanvas.width = isVertical ? 1 : patternSize;
-        tempCanvas.height = isVertical ? patternSize : 1;
-
-        const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
-
-        const patternStops = [...sortedStops, { color: sortedStops[0].color, position: 1.0 }];
-
-        if (useSharpGradient) {
-            tempGrad.addColorStop(0, patternStops[0].color);
-            for (let i = 1; i < patternStops.length; i++) {
-                tempGrad.addColorStop(patternStops[i].position - 0.0001, patternStops[i - 1].color);
-                tempGrad.addColorStop(patternStops[i].position, patternStops[i].color);
-            }
-        } else {
-            patternStops.forEach(stop => tempGrad.addColorStop(stop.position, stop.color));
-        }
-
-        tempCtx.fillStyle = tempGrad;
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        const pattern = this.ctx.createPattern(tempCanvas, 'repeat');
-
         const matrix = new DOMMatrix();
         const halfW = width / 2;
         const halfH = height / 2;
         const scrollDistance = isVertical ? height : width;
-
-        // For bounce, use the 0-1-0 value. For loop, use the raw signed progress.
         const scrollAmount = animationMode.includes('bounce') ? effectiveProgress * scrollDistance : progress * scrollDistance;
 
         matrix.translateSelf(-halfW, -halfH);
         if (isVertical) {
-            // A positive offset moves the pattern UP, making the texture appear to scroll DOWN.
             matrix.translateSelf(0, scrollAmount);
         } else {
-            // A positive offset moves the pattern RIGHT, making the texture appear to scroll LEFT.
             matrix.translateSelf(scrollAmount, 0);
         }
 
@@ -1932,7 +1940,6 @@ class Shape {
         let stopsToRender = this.gradient.stops || [{ color: '#ff00ff', position: 0 }];
 
         if (this.gradType.startsWith('rainbow')) {
-            // If the type is any kind of rainbow, generate rainbow stops and ignore user colors/cycling.
             const numStops = 12;
             stopsToRender = [];
             for (let i = 0; i < numStops; i++) {
@@ -1943,7 +1950,6 @@ class Shape {
                 });
             }
         } else if (this.cycleColors) {
-            // Apply color cycling only for non-rainbow gradient types.
             const cycleOffset = (this.hue1 + phase * this.phaseOffset);
             stopsToRender = this.gradient.stops.map(stop => {
                 const originalHsl = hexToHsl(stop.color);
@@ -1953,20 +1959,30 @@ class Shape {
         }
 
         const phaseIndex = this._getPhaseIndex(phase);
-        const p = this._getAnimationProgress(phaseIndex);
+
+        // --- START: CORRECTED LOGIC ---
+        // For linear and conic gradients, we need the raw, continuous progress value to avoid a jump.
+        // For other types (like radial bounce), we need the normalized (0-1) value from the helper function.
+        let progress;
+        if (this.gradType === 'linear' || this.gradType === 'rainbow' || this.gradType === 'conic' || this.gradType === 'rainbow-conic') {
+            progress = this.scrollOffset + phaseIndex * this.phaseOffset / 100.0;
+        } else {
+            progress = this._getAnimationProgress(phaseIndex);
+        }
+        // --- END: CORRECTED LOGIC ---
 
         switch (this.gradType) {
             case 'linear':
             case 'rainbow':
-                return this._createLinearGradient(p, { stops: stopsToRender });
+                return this._createLinearGradient(progress, { stops: stopsToRender });
 
             case 'radial':
             case 'rainbow-radial':
-                return this._createRadialGradient(p, { stops: stopsToRender });
+                return this._createRadialGradient(progress, { stops: stopsToRender });
 
             case 'conic':
             case 'rainbow-conic':
-                return this._createConicGradient(p, { stops: stopsToRender, type: 'fill' });
+                return this._createConicGradient(progress, { stops: stopsToRender, type: 'fill' });
 
             default: // solid, alternating, random
                 return this._getStaticColor(phase, { type: this.gradType, stops: stopsToRender });
@@ -2274,10 +2290,8 @@ class Shape {
         return sortedStops[sortedStops.length - 1].color;
     }
 
+    // In Shape.js, replace the entire function
     updateAnimationState(audioData, sensorData, deltaTime = 0) {
-        this._conicPatternCache = null;
-        this._strokeConicPatternCache = null;
-        this._linearPatternCache = null;
         this._applyAudioReactivity(audioData);
         this._applySensorReactivity(sensorData);
 
@@ -2465,7 +2479,6 @@ class Shape {
             const barCount = parseInt(this.vizBarCount, 10);
             let freqDataSize = fullFreqData.length;
 
-            // --- THIS IS THE MISSING LOGIC ---
             if (this.vizDynamicRange) {
                 let lastActiveIndex = 0;
                 const silenceThreshold = 1;
@@ -2485,7 +2498,6 @@ class Shape {
                 }
                 freqDataSize = Math.ceil(this.smoothedFreqDataSize);
             }
-            // --- END OF MISSING LOGIC ---
 
             const mappedData = [];
             for (let i = 0; i < barCount; i++) {
@@ -2524,7 +2536,6 @@ class Shape {
                     ? (Math.min(this.width, this.height) / 2)
                     : this.height;
 
-
                 const sensitivityMultiplier = (this.vizGain || 100) / 100.0;
                 const maxAllowedHeight = (this.vizMaxBarHeight || 100) / 100.0;
                 let audioValue;
@@ -2537,10 +2548,8 @@ class Shape {
 
                 let finalHeight;
                 if (this.vizAutoScale) {
-                    // When auto-scaling, allow bars to reach full height
                     finalHeight = Math.min(1.0, audioValue) * shapeMaxHeight;
                 } else {
-                    // When not auto-scaling, respect the Max Bar Height setting
                     const maxAllowedHeight = (this.vizMaxBarHeight || 100) / 100.0;
                     finalHeight = Math.min(maxAllowedHeight, audioValue) * shapeMaxHeight;
                 }
@@ -2906,10 +2915,33 @@ class Shape {
             this.wavePhaseAngle += shapeIncrement;
         }
 
+        // --- START: NEW, CORRECTED FIRE LOGIC ---
         if (this.shape === 'fire' || this.shape === 'fire-radial') {
             this.particleSpawnCounter += animSpeed * 0.25;
             const particlesToSpawn = Math.floor(this.particleSpawnCounter);
             this.particleSpawnCounter -= particlesToSpawn;
+
+            // Determine the correct set of color stops for this frame first.
+            let stopsToRender = this.gradient.stops || [];
+            if (this.gradType.startsWith('rainbow')) {
+                const numStops = 12;
+                stopsToRender = [];
+                for (let i = 0; i < numStops; i++) {
+                    const hue = (i / (numStops - 1)) * 360;
+                    stopsToRender.push({
+                        color: hslToHex(hue, 100, 50),
+                        position: i / (numStops - 1)
+                    });
+                }
+            } else if (this.cycleColors) {
+                stopsToRender = this.gradient.stops.map(stop => {
+                    const originalHsl = hexToHsl(stop.color);
+                    const newHue = (originalHsl[0] + this.hue1) % 360;
+                    return { ...stop, color: hslToHex(newHue, originalHsl[1], originalHsl[2]) };
+                });
+            }
+
+            // Now, update and spawn particles for the correct shape type.
             if (this.shape === 'fire') {
                 this.fireParticles.forEach(p => { p.y -= p.speed; p.age += deltaTime * 60; });
                 this.fireParticles = this.fireParticles.filter(p => p.age < p.maxAge);
@@ -2921,28 +2953,21 @@ class Shape {
                         const startSize = (Math.random() * 0.5 + 0.5) * (this.width / 7);
                         const spreadMultiplier = this.fireSpread / 100.0;
                         const newParticle = { id: this.nextParticleId++, x: (Math.random() - 0.5) * this.width * spreadMultiplier, y: halfH, sizeX: startSize, sizeY: startSize * (Math.random() * 1.5 + 0.5), age: 0, maxAge: maxAge, speed: particleSpeed };
+
                         let baseColor;
                         const gradProgress = (newParticle.x + (this.width / 2)) / this.width;
-                        if (this.cycleColors) {
-                            const hue = (this.hue1 + newParticle.id * this.phaseOffset) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'rainbow' || this.gradType === 'rainbow-radial') {
-                            const hue = (gradProgress * 360 + this.hue1) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'random') {
-                            baseColor = Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2;
+                        if (this.gradType === 'random') {
+                            baseColor = stopsToRender[Math.floor(Math.random() * stopsToRender.length)].color;
                         } else if (this.gradType === 'alternating') {
-                            baseColor = newParticle.id % 2 === 0 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'linear') {
-                            baseColor = lerpColor(this.gradient.color1, this.gradient.color2, gradProgress);
+                            baseColor = stopsToRender[newParticle.id % stopsToRender.length].color;
                         } else {
-                            baseColor = this.gradient.color1;
+                            baseColor = this._getGradientColorAt(gradProgress, stopsToRender, this.useSharpGradient);
                         }
                         newParticle.color = baseColor;
                         this.fireParticles.push(newParticle);
                     }
                 }
-            } else {
+            } else { // fire-radial
                 this.fireParticles.forEach(p => {
                     const speed = p.speed * 60 * deltaTime;
                     p.x += Math.cos(p.angle) * speed;
@@ -2959,22 +2984,15 @@ class Shape {
                         const startSize = (Math.random() * 0.5 + 0.5) * (Math.min(this.width, this.height) / 8);
                         if (maxAge < 1) continue;
                         const newParticle = { id: this.nextParticleId++, x: 0, y: 0, sizeX: startSize, sizeY: startSize, age: 0, maxAge: maxAge, speed: particleSpeed, angle: Math.random() * 2 * Math.PI };
+
                         let baseColor;
                         const gradProgress = newParticle.angle / (2 * Math.PI);
-                        if (this.cycleColors) {
-                            const hue = (this.hue1 + newParticle.id * this.phaseOffset) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'rainbow' || this.gradType === 'rainbow-radial') {
-                            const hue = (gradProgress * 360 + this.hue1) % 360;
-                            baseColor = `hsl(${hue}, 100%, 50%)`;
-                        } else if (this.gradType === 'random') {
-                            baseColor = Math.random() < 0.5 ? this.gradient.color1 : this.gradient.color2;
+                        if (this.gradType === 'random') {
+                            baseColor = stopsToRender[Math.floor(Math.random() * stopsToRender.length)].color;
                         } else if (this.gradType === 'alternating') {
-                            baseColor = newParticle.id % 2 === 0 ? this.gradient.color1 : this.gradient.color2;
-                        } else if (this.gradType === 'radial' || this.gradType === 'linear') {
-                            baseColor = lerpColor(this.gradient.color1, this.gradient.color2, gradProgress);
+                            baseColor = stopsToRender[newParticle.id % stopsToRender.length].color;
                         } else {
-                            baseColor = this.gradient.color1;
+                            baseColor = this._getGradientColorAt(gradProgress, stopsToRender, this.useSharpGradient);
                         }
                         newParticle.color = baseColor;
                         this.fireParticles.push(newParticle);
@@ -2986,6 +3004,9 @@ class Shape {
                 this.fireParticles = [];
             }
         }
+        // --- END: NEW, CORRECTED FIRE LOGIC ---
+
+        this.lastDeltaTime = deltaTime;
     }
 
     draw(isSelected, audioData = {}, palette = {}) {
@@ -3274,16 +3295,12 @@ class Shape {
                 this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
                 this.ctx.clip();
 
-                // Ensure the custom particle path is created if needed
-                if (this.spawn_shapeType === 'custom' || this.spawn_shapeType === 'random') {
-                    if (!this.customParticlePath && this.spawn_svg_path) {
-                        console.log('[DRAW] customParticlePath is null, attempting to create new Path2D.');
-                        try {
-                            this.customParticlePath = new Path2D(this.spawn_svg_path);
-                        } catch (e) {
-                            console.error("Invalid custom particle SVG path:", e);
-                            this.customParticlePath = null;
-                        }
+                if (!this.customParticlePath && (this.spawn_shapeType === 'custom' || this.spawn_shapeType === 'random') && this.spawn_svg_path) {
+                    try {
+                        this.customParticlePath = new Path2D(this.spawn_svg_path);
+                    } catch (e) {
+                        console.error("Invalid custom particle SVG path:", e);
+                        this.customParticlePath = null;
                     }
                 }
 
@@ -3297,7 +3314,6 @@ class Shape {
 
                     if (overallAlpha <= 0) return;
 
-                    // --- Draw the Trail (Matrix or Generic) ---
                     const isMatrixTrail = p.actualShape === 'matrix' && p.matrixChars && p.trail && p.trail.length > 0;
                     const isGenericTrail = this.spawn_enableTrail && p.actualShape !== 'matrix' && p.trail && p.trail.length > 0;
 
@@ -3313,12 +3329,9 @@ class Shape {
 
                             for (let i = 1; i < history.length; i++) {
                                 if (drawnCharIndex >= trailLength) break;
-
                                 const p1 = history[i - 1];
                                 const p2 = history[i];
                                 const segmentDist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
-
-                                // Prevent division by zero if particle hasn't moved
                                 if (segmentDist < 0.001) continue;
 
                                 while (distanceTraveledAlongPath + segmentDist >= distanceNeededForNextChar) {
@@ -3330,34 +3343,31 @@ class Shape {
                                     this.ctx.save();
                                     this.ctx.translate(charX - this.width / 2, charY - this.height / 2);
                                     this.ctx.rotate(p1.rotation);
-
                                     const trailOpacity = Math.max(0.1, 1.0 - (drawnCharIndex / trailLength));
                                     this.ctx.globalAlpha = overallAlpha * trailOpacity;
 
                                     if (isMatrixTrail) {
-                                        this.ctx.fillStyle = isFlashActive ? '#FFFFFF' : ((this.gradType === 'solid') ? this.gradient.color2 : this._createLocalFillStyle(p.id + drawnCharIndex));
-                                        this._drawParticleShape({ ...p, size: p.size, matrixChars: [p.matrixChars[drawnCharIndex + 1]] });
-                                    } else { // isGenericTrail
-                                        // Set fill for the trail based on the "split-color" logic
                                         if (isFlashActive) {
                                             this.ctx.fillStyle = '#FFFFFF';
                                         } else if (this.gradType === 'solid') {
-                                            this.ctx.fillStyle = this.gradient.color2; // Trail uses Color 2 for solid fills
+                                            this.ctx.fillStyle = this.gradient.stops[this.gradient.stops.length - 1]?.color || '#FFFFFF';
                                         } else {
-                                            this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex); // Trail uses full effect for gradients
+                                            this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex);
                                         }
-
+                                        this._drawParticleShape({ ...p, size: p.size, matrixChars: [p.matrixChars[drawnCharIndex + 1]] });
+                                    } else { // isGenericTrail
+                                        if (isFlashActive) {
+                                            this.ctx.fillStyle = '#FFFFFF';
+                                        } else if (this.gradType === 'solid') {
+                                            this.ctx.fillStyle = this.gradient.stops[this.gradient.stops.length - 1]?.color || '#FFFFFF';
+                                        } else {
+                                            this.ctx.fillStyle = this._createLocalFillStyle(p.id + drawnCharIndex);
+                                        }
                                         if (this.enableStroke) this.ctx.strokeStyle = this.ctx.fillStyle;
-
-                                        // Calculate shrinking size for the trail segment
                                         const sizeRatio = Math.max(0, 1.0 - (drawnCharIndex / trailLength));
-                                        const trailSize = p.size * sizeRatio;
-
-                                        this._drawParticleShape({ ...p, size: trailSize });
+                                        this._drawParticleShape({ ...p, size: p.size * sizeRatio });
                                     }
-
                                     this.ctx.restore();
-
                                     drawnCharIndex++;
                                     distanceNeededForNextChar += spacing;
                                     if (drawnCharIndex >= trailLength) break;
@@ -3373,17 +3383,15 @@ class Shape {
                     this.ctx.rotate(p.rotation);
                     this.ctx.globalAlpha = overallAlpha;
 
-                    // Set leader particle color based on "split-color" logic
                     if (isFlashActive) {
                         this.ctx.fillStyle = '#FFFFFF';
-                    } else if (p.actualShape === 'matrix' || this.spawn_enableTrail) {
-                        // Matrix leaders and generic leaders (when trail is on) use Color 1
-                        this.ctx.fillStyle = this.gradient.color1;
+                    } else if (p.actualShape === 'matrix' || (this.spawn_enableTrail && this.gradType === 'solid')) {
+                        // Matrix leaders and generic leaders (when trail is on) use the FIRST color for solid fills
+                        this.ctx.fillStyle = this.gradient.stops[0]?.color || '#FFFFFF';
                     } else {
-                        // No trail, so the single particle uses the full fill effect
+                        // For gradients or non-trailed particles, use the full animated style
                         this.ctx.fillStyle = this._createLocalFillStyle(p.id);
                     }
-
 
                     if (this.enableStroke) {
                         this.ctx.strokeStyle = this.ctx.fillStyle;
@@ -3727,7 +3735,16 @@ class Shape {
                         const cellIndex = row * this.numberOfColumns + col;
                         this.ctx.beginPath();
                         this.ctx.rect(-this.width / 2 + col * cellW, -this.height / 2 + row * cellH, cellW, cellH);
-                        this._drawFill(cellIndex);
+
+                        if (this.gradType === 'random') {
+                            // For 'random' type, get a specific color for this cell and fill.
+                            this.ctx.fillStyle = this._getRandomColorForElement(cellIndex);
+                            this.ctx.fill('evenodd');
+                        } else {
+                            // For all other gradient types, use the existing phased drawing logic.
+                            this._drawFill(cellIndex);
+                        }
+
                         applyStrokeInside();
                     }
                 }
