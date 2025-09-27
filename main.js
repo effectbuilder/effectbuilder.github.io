@@ -31,8 +31,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_scrollDir" label="Small Clock: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj1_gradType" label="Small Clock: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj1_useSharpGradient" label="Small Clock: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj1_gradColor1" label="Small Clock: Color 1" type="color" default="#00ff00" />
-    <meta property="obj1_gradColor2" label="Small Clock: Color 2" type="color" default="#d400ff" />
     <meta property="obj1_cycleColors" label="Small Clock: Cycle Colors" type="boolean" default="false" />
     <meta property="obj1_cycleSpeed" label="Small Clock: Color Cycle Speed" type="number" min="1" max="10" default="10" />
     <meta property="obj1_numberOfRows" label="Small Clock: Number of Rows" type="number" min="1" max="100" default="2" />
@@ -69,8 +67,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj2_scrollDir" label="Large Text: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj2_gradType" label="Large Text: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj2_useSharpGradient" label="Large Text: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj2_gradColor1" label="Large Text: Color 1" type="color" default="#00ff00" />
-    <meta property="obj2_gradColor2" label="Large Text: Color 2" type="color" default="#d400ff" />
     <meta property="obj2_cycleColors" label="Large Text: Cycle Colors" type="boolean" default="false" />
     <meta property="obj2_cycleSpeed" label="Large Text: Color Cycle Speed" type="number" min="1" max="10" default="10" />
     <meta property="obj2_numberOfRows" label="Large Text: Number of Rows" type="number" min="1" max="100" default="2" />
@@ -99,8 +95,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj3_height" label="Visualizer: Height" type="number" min="2" max="200" default="100" />
     <meta property="obj3_rotation" label="Visualizer: Rotation" type="number" min="-360" max="360" default="0" />
     <meta property="obj3_gradType" label="Visualizer: Fill Type" type="combobox" values="solid,linear,radial,alternating,random,rainbow" default="rainbow" />
-    <meta property="obj3_gradColor1" label="Visualizer: Color 1" type="color" default="#00ff00" />
-    <meta property="obj3_gradColor2" label="Visualizer: Color 2" type="color" default="#d400ff" />
     <meta property="obj3_animationSpeed" label="Visualizer: Animation Speed" type="number" min="1" max="50" default="10" />
     <meta property="obj3_vizLayout" label="Visualizer: Layout" type="combobox" default="Linear" values="Linear,Circular" />
     <meta property="obj3_vizDrawStyle" label="Visualizer: Draw Style" type="combobox" default="Line" values="Bars,Line,Area" />
@@ -761,43 +755,41 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadFrameIntoEditor = (index) => {
         const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
         targetTextarea = document.getElementById(newTargetId);
-        if (!targetTextarea) {
-            console.error(`Could not find textarea for frame index ${index}`);
-            return;
-        }
-
+        if (!targetTextarea) return;
         currentEditorFrameIndex = index;
         updateEditorFrameCounter();
-
         const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-        const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
-        const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
-        const color1Btn = document.getElementById('pixel-editor-color1-btn');
-        const color2Btn = document.getElementById('pixel-editor-color2-btn');
-        color1Btn.style.background = color1;
-        color2Btn.style.background = color2;
+        currentGradientStops = targetObject ? targetObject.gradient.stops : [];
+
+        paletteContainer.querySelectorAll('.dynamic-color').forEach(btn => btn.remove());
+
+        // The dynamic buttons will now be added after the "Selected Fill" button
+        currentGradientStops.forEach((stop, idx) => {
+            const value = idx + 2;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+            btn.dataset.value = value;
+            btn.style.backgroundColor = stop.color;
+            btn.title = `Gradient Color #${idx + 1} (Index: ${value})`;
+            const hsl = hexToHsl(stop.color);
+            if (hsl[2] < 40) btn.style.color = '#FFF';
+            btn.textContent = idx + 1;
+            paletteContainer.appendChild(btn); // Use appendChild to add to the end
+        });
 
         let data;
-        try {
-            data = JSON.parse(targetTextarea.value);
-        } catch (e) {
-            data = [[0]]; // Default if data is invalid
-        }
-
-        const widthInput = document.getElementById('pixel-editor-width');
-        const heightInput = document.getElementById('pixel-editor-height');
-        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
-
+        try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
         widthInput.value = data[0]?.length || 1;
         heightInput.value = data.length || 1;
-        renderGrid(data, color1, color2);
+        renderGrid(data, currentGradientStops);
         rawDataTextarea.value = formatPixelData(data);
     };
 
     const editorModalEl = document.getElementById('pixelArtEditorModal');
 
     if (editorModalEl) {
-        // --- START: Upgraded Pixel Art Editor Logic ---
+        // State variables for the editor modal
         let targetTextarea = null;
         let currentEditorObjectId = null;
         let currentEditorFrameIndex = -1;
@@ -807,6 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let currentTool = 'paint'; // Tool state: 'paint' or 'fill'
         let currentGradientStops = [];
 
+        // Get references to all the editor's UI elements
         const gridContainer = document.getElementById('pixel-editor-grid-container');
         const widthInput = document.getElementById('pixel-editor-width');
         const heightInput = document.getElementById('pixel-editor-height');
@@ -818,6 +811,29 @@ document.addEventListener('DOMContentLoaded', function () {
         const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
         const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
         const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
+        const paintBtn = document.getElementById('pixel-editor-paint-btn');
+        const fillBtn = document.getElementById('pixel-editor-fill-btn');
+        const toolsContainer = document.getElementById('pixel-editor-tools');
+
+        /**
+         * Sets the active tool and updates the UI buttons.
+         * @param {string} toolName - The name of the tool to activate ('paint' or 'fill').
+         */
+        const setActiveTool = (toolName) => {
+            currentTool = toolName;
+            // Deactivate all tool buttons first
+            toolsContainer.querySelectorAll('button[id$="-btn"]').forEach(btn => {
+                if (btn.id === 'pixel-editor-paint-btn' || btn.id === 'pixel-editor-fill-btn') {
+                    btn.classList.remove('active');
+                }
+            });
+            // Activate the correct button
+            if (toolName === 'paint' && paintBtn) {
+                paintBtn.classList.add('active');
+            } else if (toolName === 'fill' && fillBtn) {
+                fillBtn.classList.add('active');
+            }
+        };
 
         const valueToColor = (value, stops) => {
             if (value === 1.0) return '#FFFFFF';
@@ -876,7 +892,6 @@ document.addEventListener('DOMContentLoaded', function () {
             cell.style.background = valueToColor(currentPaintValue, currentGradientStops);
         };
 
-        // FIX: Re-implement the correct flood fill algorithm
         const floodFill = (startNode) => {
             if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
             const gridData = readGrid();
@@ -885,10 +900,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const startCol = parseInt(startNode.dataset.col, 10);
             const targetValue = gridData[startRow][startCol];
             if (targetValue === currentPaintValue) return;
-
             const queue = [[startRow, startCol]];
             const visited = new Set([`${startRow},${startCol}`]);
-
             while (queue.length > 0) {
                 const [r, c] = queue.shift();
                 gridData[r][c] = currentPaintValue;
@@ -940,8 +953,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.textContent = idx + 1;
                 paletteContainer.insertBefore(btn, blackBtn);
             });
-            document.getElementById('pixel-editor-color1-btn').style.background = currentGradientStops[0]?.color || '#FF00FF';
-            document.getElementById('pixel-editor-color2-btn').style.background = currentGradientStops[1]?.color || '#00FFFF';
             let data;
             try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
             widthInput.value = data[0]?.length || 1;
@@ -950,6 +961,7 @@ document.addEventListener('DOMContentLoaded', function () {
             rawDataTextarea.value = formatPixelData(data);
         };
 
+        // Add event listeners
         editorModalEl.addEventListener('shown.bs.modal', (event) => {
             const button = event.relatedTarget;
             const targetId = button.getAttribute('data-target-id');
@@ -960,9 +972,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
             totalFramesInEditor = fieldset.querySelector('.pixel-art-frames-container').children.length;
             loadFrameIntoEditor(currentEditorFrameIndex);
+            setActiveTool('paint'); // Default to paint tool when modal opens
             document.getElementById('collapseRawData')?.classList.remove('show');
         });
 
+        if (paintBtn) {
+            paintBtn.addEventListener('click', () => setActiveTool('paint'));
+        }
+        if (fillBtn) {
+            fillBtn.addEventListener('click', () => setActiveTool('fill'));
+        }
         if (confirmSpritePasteBtn) {
             confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
         }
@@ -999,16 +1018,10 @@ document.addEventListener('DOMContentLoaded', function () {
         paletteContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-            currentTool = 'paint';
+            setActiveTool('paint');
             paletteContainer.querySelector('.active')?.classList.remove('active');
             button.classList.add('active');
             currentPaintValue = parseFloat(button.dataset.value);
-        });
-
-        // FIX: Fill button now only selects the tool
-        document.getElementById('pixel-editor-fill-btn').addEventListener('click', () => {
-            currentTool = 'fill';
-            showToast("Fill tool selected. Click an area on the grid to fill.", "info");
         });
 
         document.getElementById('pixel-editor-mirror-h-btn').addEventListener('click', () => {
@@ -1029,14 +1042,12 @@ document.addEventListener('DOMContentLoaded', function () {
             renderGrid(newData, currentGradientStops);
         });
 
-        // FIX: Grid listener now handles both paint and fill tools
         gridContainer.addEventListener('mousedown', (e) => {
             if (currentTool === 'paint') {
                 isPainting = true;
                 paintCell(e.target);
             } else if (currentTool === 'fill') {
                 floodFill(e.target);
-                currentTool = 'paint'; // Switch back to paint tool after filling
             }
         });
 
@@ -1935,7 +1946,7 @@ document.addEventListener('DOMContentLoaded', function () {
             textarea.className = 'form-control';
             textarea.name = controlId;
             textarea.rows = (type === 'textarea') ? 10 : 3;
-            textarea.textContent = String(defaultValue).replace(/\\n/g, '\n');
+            textarea.textContent = String(defaultValue).replace(/\n/g, '\n');
             formGroup.appendChild(textarea);
             if (controlId.endsWith('_pixelArtData')) {
                 const toolLink = document.createElement('a');
@@ -2011,13 +2022,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 stops.sort((a, b) => a.position - b.position);
 
                 const newGradientJson = JSON.stringify(stops);
-                hiddenInput.value = newGradientJson; // Update the form element
+                hiddenInput.value = newGradientJson;
 
                 const gradientString = stops.length > 1
                     ? `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`
                     : (stops.length === 1 ? stops[0].color : '#000');
                 preview.style.background = gradientString;
 
+                // This block manually updates the application state, which is the crucial part.
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset && !isRestoring) {
                     const objectId = parseInt(fieldset.dataset.objectId, 10);
@@ -2025,18 +2037,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     const propName = hiddenInput.name.includes('stroke') ? 'strokeGradient' : 'gradient';
                     const configPropName = hiddenInput.name;
 
-                    // 1. Update the live Shape object
                     if (targetObject) {
                         targetObject.update({ [propName]: { stops: stops } });
                     }
 
-                    // 2. FIX: Explicitly update the central configStore with the new value
                     const configToUpdate = configStore.find(c => c.property === configPropName);
                     if (configToUpdate) {
                         configToUpdate.default = newGradientJson;
                     }
 
-                    // 3. Redraw and save history
                     drawFrame();
                     debouncedRecordHistory();
                 }
@@ -2270,128 +2279,116 @@ document.addEventListener('DOMContentLoaded', function () {
      * This is where the "Minimize Properties" logic is applied.
      */
     function generateOutputScript() {
-        let scriptHTML = '';
+        let metaTags = '';
         let jsVars = '';
         let allKeys = [];
-        const objectMetaPropMap = {};
-
         const minimize = document.getElementById('minimize-props-export')?.checked || false;
         const generalValues = getControlValues();
 
+        // Process General (non-object) properties
         configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
             const key = conf.property || conf.name;
+            if (key === 'globalGradientStops') return; // Manually handled below
             if (generalValues[key] !== undefined) {
                 allKeys.push(key);
                 let exportValue = generalValues[key];
+                if (typeof exportValue === 'string') exportValue = exportValue.replace(/"/g, '&quot;');
+
                 if (conf.name && !conf.property) {
-                    scriptHTML += `<meta ${key}="${exportValue}" />\n`;
+                    metaTags += `<meta ${key}="${exportValue}">\n`;
                 } else {
-                    let finalExportValue = exportValue;
-                    if (typeof finalExportValue === 'string') {
-                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
-                    }
                     const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
-                    if (conf.values) {
-                        const sortedValues = conf.values.split(',').sort().join(',');
-                        attrs.push(`values="${sortedValues}"`);
-                    }
+                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
                     if (conf.min) attrs.push(`min="${conf.min}"`);
                     if (conf.max) attrs.push(`max="${conf.max}"`);
-                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
+                    metaTags += `<meta ${attrs.join(' ')} default="${exportValue}">\n`;
                 }
             }
         });
 
+        // Deconstruct the global gradient into individual color/position meta tags
+        try {
+            const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
+            globalStops.forEach((stop, i) => {
+                const index = i + 1;
+                const colorKey = `globalColor_${index}`;
+                const posKey = `globalPosition_${index}`;
+                allKeys.push(colorKey, posKey);
+                metaTags += `<meta property="${colorKey}" label="Global Color ${index}" type="color" default="${stop.color}">\n`;
+                metaTags += `<meta property="${posKey}" label="Global Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+            });
+        } catch (e) { console.error("Could not process global gradient for export.", e); }
+
+        // Process each object's properties
         objects.forEach(obj => {
             const name = obj.name || `Object ${obj.id}`;
-            objectMetaPropMap[obj.id] = [];
             const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
-            const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
+            const validPropsForShape = shapePropertyMap[obj.shape] || [];
 
+            // Deconstruct the object's gradients into individual meta tags first
+            if (obj.gradient && obj.gradient.stops) {
+                obj.gradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_gradColor_${index}`;
+                    const posKey = `obj${obj.id}_gradPosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
+            if (obj.strokeGradient && obj.strokeGradient.stops) {
+                obj.strokeGradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_strokeColor_${index}`;
+                    const posKey = `obj${obj.id}_strokePosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Stroke Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Stroke Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
+
+            // Process all other properties, EXPLICITLY skipping the old gradient properties
             objectConfigs.forEach(conf => {
                 const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                let liveValue = obj[propName];
-
-                if (propName === 'gradientStops') {
-                    liveValue = JSON.stringify(obj.gradient.stops);
-                } else if (propName === 'strokeGradientStops') {
-                    liveValue = JSON.stringify(obj.strokeGradient.stops);
-                } else if (propName.startsWith('gradColor') || propName.startsWith('strokeGradColor')) {
-                    return; // Skip obsolete properties
-                } else if (propName === 'scrollDir') {
-                    liveValue = obj.scrollDirection;
-                } else if (propName === 'strokeScrollDir') {
-                    liveValue = obj.strokeScrollDir;
+                if (!validPropsForShape.includes(propName) || propName === 'gradientStops' || propName === 'strokeGradientStops') {
+                    return;
                 }
 
-                if (liveValue === undefined) {
-                    liveValue = conf.default;
-                    if (conf.type === 'boolean') liveValue = (liveValue === 'true');
-                }
+                let liveValue = (propName === 'scrollDir') ? obj.scrollDirection : (propName === 'strokeScrollDir') ? obj.strokeScrollDir : obj[propName];
+                if (liveValue === undefined) liveValue = conf.default;
 
                 allKeys.push(conf.property);
                 let exportValue = liveValue;
-                let exportType = conf.type;
+                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
-                if (propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
-                    exportType = 'textfield';
-                }
-
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size'];
                 if (conf.type === 'number' && typeof liveValue === 'number') {
                     exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
                 } else if (typeof liveValue === 'boolean') {
                     exportValue = String(liveValue);
                 }
 
-                const isApplicable = validPropsForShape.includes(propName);
-                const objectSpecificProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
-                let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
-
-                if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                    writeAsMeta = false;
-                }
-
-                if (writeAsMeta) {
-                    objectMetaPropMap[obj.id].push(propName);
-                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
-                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${exportType}"`];
-                    if (conf.values) {
-                        const sortedValues = conf.values.split(',').sort().join(',');
-                        attrs.push(`values="${sortedValues}"`);
+                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation', 'polylineNodes', 'pixelArtFrames'];
+                if (!minimize || essentialProps.includes(propName)) {
+                    if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
+                        const scaledNodes = exportValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
+                        jsVars += `const ${conf.property} = ${JSON.stringify(JSON.stringify(scaledNodes))};\n`;
+                    } else {
+                        jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
                     }
+                } else {
+                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
+                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
+                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
                     if (conf.min) attrs.push(`min="${conf.min}"`);
                     if (conf.max) attrs.push(`max="${conf.max}"`);
                     let finalExportValue = exportValue;
-
-                    if (typeof finalExportValue === 'object' && finalExportValue !== null) {
-                        finalExportValue = JSON.stringify(finalExportValue);
-                    }
-
-                    if (typeof finalExportValue === 'string') {
-                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
-                    }
-                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
-                } else {
-                    // FIX: This block is now more restrictive. It only writes a JS variable if the property
-                    // is essential (not minimized) OR is one of the specifically hardcoded types.
-                    // Inapplicable properties are now correctly dropped.
-                    if (!minimize || objectSpecificProps.includes(propName) || propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                        if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
-                            const scaledNodes = exportValue.map(node => ({
-                                x: Math.round(node.x / 4),
-                                y: Math.round(node.y / 4)
-                            }));
-                            jsVars += `const ${conf.property} = ${JSON.stringify(scaledNodes)};\n`;
-                        } else {
-                            jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
-                        }
-                    }
+                    if (typeof finalExportValue === 'string') finalExportValue = finalExportValue.replace(/"/g, '&quot;');
+                    metaTags += `<meta ${attrs.join(' ')} default="${finalExportValue}">\n`;
                 }
             });
         });
 
-        return { metaTags: scriptHTML.trim(), jsVars: jsVars.trim(), allKeys: allKeys, objectMetaPropMap };
+        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys };
     }
 
     function createObjectPanel(obj, objectConfigs, activeCollapseStates, activeTabStates) {
@@ -3431,7 +3428,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const prefix = `obj${id}_`;
         const configs = configStore.filter(c => c.property && c.property.startsWith(prefix));
 
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size'];
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
         configs.forEach(conf => {
             const key = conf.property.replace(prefix, '');
@@ -3528,7 +3525,7 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function updateFormValuesFromObjects() {
         // This list now includes the missing polyline animation properties.
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
         objects.forEach(obj => {
             const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
@@ -3663,10 +3660,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (conf.type === 'boolean') {
                     value = (String(value).toLowerCase() === 'true' || value === 1);
                 } else if (conf.type === 'textfield' || conf.type === 'textarea') {
-                    value = String(value).replace(/\\n/g, '\n');
+                    value = String(value).replace(/\n/g, '\n');
                 }
 
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
                 if (propsToScale.includes(key) && typeof value === 'number') {
                     value *= 4;
                 }
@@ -3871,10 +3868,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
             { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
-            { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#00ff00","position":0},{"color":"#d400ff","position":1}]', description: 'The colors and positions of the gradient.' },
+            { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]', description: 'The colors and positions of the gradient. The default is a fiery gradient.' },
             { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
             { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
-            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Master speed for gradient scroll, random color flicker, and oscilloscope movement.' },
+            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '50', min: '0', max: '100', description: 'Master speed for particle systems, gradient scroll, and other animations.' },
             { property: `obj${newId}_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false', description: 'Animates the colors by cycling through the color spectrum.' },
             { property: `obj${newId}_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which colors cycle when "Cycle Colors" is enabled.' },
             { property: `obj${newId}_rotationSpeed`, label: `Object ${newId}: Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the object. Overrides static rotation.' },
@@ -3908,19 +3905,20 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
             { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
             { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall. Gravity-fade removes blocks as they settle.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
-            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact. 0 is no bounce.' },
-            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' }, // <-- Add this new object
-            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(fire-radial) Controls how far the flames spread from the center.' },
+            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
+            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
+            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
+            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
 
             // Stroke Fill
             { property: `obj${newId}_enableStroke`, label: `Object ${newId}: Enable Stroke`, type: 'boolean', default: 'false', description: 'Enables a stroke (outline) for the shape.' },
             { property: `obj${newId}_strokeWidth`, label: `Object ${newId}: Stroke Width`, type: 'number', default: '2', min: '1', max: '50', description: 'The thickness of the shape\'s stroke.' },
             { property: `obj${newId}_strokeGradType`, label: `Object ${newId}: Stroke Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use for the stroke.' },
-            { property: `obj${newId}_strokeGradientStops`, label: `Object ${newId}: Stroke Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFFFFF","position":0},{"color":"#000000","position":1}]', description: 'The colors and positions of the stroke gradient.' },
+            { property: `obj${newId}_strokeGradientStops`, label: `Object ${newId}: Stroke Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFFFFF","position":0}]', description: 'The colors and positions of the stroke gradient.' },
             { property: `obj${newId}_strokeUseSharpGradient`, label: `Object ${newId}: Stroke Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.' },
-            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
+            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
             { property: `obj${newId}_strokeAnimationSpeed`, label: `Object ${newId}: Stroke Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Controls the scroll speed of the stroke gradient animation.' },
             { property: `obj${newId}_strokeCycleColors`, label: `Object ${newId}: Cycle Stroke Colors`, type: 'boolean', default: 'false', description: 'Animates the stroke colors by cycling through the color spectrum.' },
             { property: `obj${newId}_strokeCycleSpeed`, label: `Object ${newId}: Stroke Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which stroke colors cycle when "Cycle Stroke Colors" is enabled.' },
@@ -3928,33 +3926,31 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_strokeScrollDir`, label: `Object ${newId}: Stroke Scroll Direction`, type: 'combobox', default: 'right', values: 'right,left,up,down,along-path,along-path-reversed', description: 'The direction the stroke gradient animation moves. "Along Path" is for Polylines only.' },
             { property: `obj${newId}_strokePhaseOffset`, label: `Object ${newId}: Stroke Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the stroke gradient animation for each item in a grid, creating a cascading effect.' },
 
-            //Audiop
+            // Audio Reactivity
             { property: `obj${newId}_enableAudioReactivity`, label: `Object ${newId}: Enable Sound Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sound.' },
-            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Volume Meter,Path Speed', description: 'Which property of the object will be affected by the sound.' },
+            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Path Speed', description: 'Which property of the object will be affected by the sound.' },
             { property: `obj${newId}_audioMetric`, label: `Object ${newId}: Audio Metric`, type: 'combobox', default: 'volume', values: 'volume,bass,mids,highs', description: 'Which part of the audio spectrum to react to.' },
-            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive. Default is 30.' },
+            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive.' },
             { property: `obj${newId}_audioSensitivity`, label: `Object ${newId}: Sensitivity`, type: 'number', default: '50', min: '0', max: '200', description: 'How strongly the object reacts to the audio metric.' },
             { property: `obj${newId}_audioSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '50', min: '0', max: '99', description: 'Smooths out the reaction to prevent flickering. Higher values are smoother.' },
-            { property: `obj${newId}_autoWidth`, label: `Object ${newId}: Auto-Width`, type: 'boolean', default: 'false', description: 'For text objects, automatically sets the object\'s width to the width of the text.' },
-            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1,0,0,1],[0,1,1,0],[0,1,1,0],[1,0,0,1]]","duration":1}]', description: '(Pixel Art) Manage animation frames. Each frame has data and a duration in seconds.' },
 
-            // Audio visualizer specific
+            // Audio Visualizer
             { property: `obj${newId}_vizDynamicRange`, label: `Object ${newId}: Dynamic Range`, type: 'boolean', default: 'false', description: '(Visualizer) Automatically adjusts the frequency range to focus on active audio, ignoring silent higher frequencies.' },
             { property: `obj${newId}_vizSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Visualizer) How smoothly the bars react to audio changes. Higher is smoother.' },
-            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered (as bars or a continuous line).' },
+            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered.' },
             { property: `obj${newId}_vizLayout`, label: `Object ${newId}: Layout`, type: 'combobox', default: 'Linear', values: 'Linear,Circular,Polyline,Circular Polyline', description: '(Visualizer) The overall layout of the visualizer.' },
             { property: `obj${newId}_vizStyle`, label: `Object ${newId}: Style`, type: 'combobox', default: 'bottom', values: 'bottom,center,top', description: '(Visualizer) The alignment of the visualizer bars.' },
-            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle, as a percentage of the total size.' },
+            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius %`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle.' },
             { property: `obj${newId}_vizLineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '2', min: '1', max: '20', description: '(Visualizer) The thickness of the line for the Line/Area draw styles.' },
             { property: `obj${newId}_vizAutoScale`, label: `Object ${newId}: Auto-Scale Height`, type: 'boolean', default: 'true', description: '(Visualizer) If checked, the tallest bar will always reach the top of the shape.' },
-            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '12', min: '2', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
+            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '32', min: '2', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
             { property: `obj${newId}_vizBarSpacing`, label: `Object ${newId}: Bar Spacing`, type: 'number', default: '2', min: '0', max: '20', description: '(Visualizer) The space between each bar in pixels.' },
-            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height`, type: 'number', default: '30', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar, as a percentage of the available space.' },
+            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height %`, type: 'number', default: '100', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar.' },
             { property: `obj${newId}_vizUseSegments`, label: `Object ${newId}: Use LED Segments`, type: 'boolean', default: 'false', description: '(Visualizer) Renders bars as discrete segments instead of solid blocks.' },
             { property: `obj${newId}_vizSegmentCount`, label: `Object ${newId}: Segment Count`, type: 'number', default: '16', min: '2', max: '64', description: '(Visualizer) The number of vertical LED segments the bar is divided into.' },
             { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
-            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
-            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars.' },
+            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
 
             // Sensor Reactivity
             { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
@@ -3979,18 +3975,18 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_strimerDirection`, label: `Object ${newId}: Direction`, type: 'combobox', default: 'Random', values: 'Up,Down,Random', description: '(Strimer) The initial direction of the blocks.' },
             { property: `obj${newId}_strimerEasing`, label: `Object ${newId}: Easing`, type: 'combobox', default: 'Linear', values: 'Linear,Ease-In,Ease-Out,Ease-In-Out', description: '(Strimer) The acceleration curve of the block movement.' },
             { property: `obj${newId}_strimerAnimationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '20', min: '0', max: '100', description: '(Strimer) The speed of the block movement, independent of the fill animation.' },
-            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake. Vertical (along the colum), Horizontal (across the columns).' },
+            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake.' },
             { property: `obj${newId}_strimerBlockSpacing`, label: `Object ${newId}: Block Spacing`, type: 'number', default: '5', min: '0', max: '50', description: '(Cascade) The vertical spacing between blocks in a cascade.' },
             { property: `obj${newId}_strimerGlitchFrequency`, label: `Object ${newId}: Glitch Frequency`, type: 'number', default: '0', min: '0', max: '100', description: '(Glitch) How often blocks stutter or disappear. 0 is off.' },
-            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together. If unchecked, they pulse sequentially.' },
-            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars. 100 is normal.' },
-            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s). 100 is normal.' },
-            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
-            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement. Higher is smoother.' },
-            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. Applied on top of other animations. 0 is off.' },
+            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together.' },
+            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars.' },
+            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s).' },
+            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
+            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement.' },
+            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. 0 is off.' },
 
-            //Spawner
-            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles. "Random" will pick a shape for each particle individually.' },
+            // Spawner
+            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles.' },
             { property: `obj${newId}_spawn_animation`, label: `Object ${newId}: Emitter Style`, type: 'combobox', values: 'explode,fountain,rain,flow', default: 'explode', description: '(Spawner) The behavior and direction of particle emission.' },
             { property: `obj${newId}_spawn_count`, label: `Object ${newId}: Max Particles`, type: 'number', default: '100', min: '1', max: '500', description: '(Spawner) The maximum number of particles on screen at once.' },
             { property: `obj${newId}_spawn_spawnRate`, label: `Object ${newId}: Spawn Rate`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) How many new particles are created per second.' },
@@ -3998,17 +3994,17 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_spawn_speed`, label: `Object ${newId}: Initial Speed`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) The average starting speed of newly created particles.' },
             { property: `obj${newId}_spawn_speedVariance`, label: `Object ${newId}: Initial Speed Variance (±)`, type: 'number', default: '0', min: '0', max: '500', description: '(Spawner) Adds randomness to the initial speed of each particle.' },
             { property: `obj${newId}_spawn_size`, label: `Object ${newId}: Particle Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Spawner) The size of each particle in pixels.' },
-            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size. 0% is uniform, 100% is highly varied.' },
+            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size.' },
             { property: `obj${newId}_spawn_gravity`, label: `Object ${newId}: Gravity`, type: 'number', default: '0', min: '-200', max: '200', description: '(Spawner) A constant downward (or upward) force applied to particles.' },
             { property: `obj${newId}_spawn_spread`, label: `Object ${newId}: Spread Angle`, type: 'number', default: '360', min: '0', max: '360', description: '(Spawner) The angle (in degrees) for Explode or Fountain emitters.' },
             { property: `obj${newId}_spawn_rotationSpeed`, label: `Object ${newId}: Particle Rotation Speed`, type: 'number', default: '0', min: '-360', max: '360', description: '(Spawner) The average rotational speed of each particle in degrees per second.' },
-            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed. If base speed is 10 and variance is 5, speed will be random between 5 and 15.' },
+            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed.' },
             { property: `obj${newId}_spawn_initialRotation_random`, label: `Object ${newId}: Random Initial Rotation`, type: 'boolean', default: 'false', description: '(Spawner) If checked, each particle starts at a random angle.' },
-            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'm -7.1735 47.0399 c -0.4792 -0.1767 -1.8839 -1.1913 -3.1216 -2.2546 c -1.2377 -1.0633 -2.9272 -2.2326 -3.7544 -2.5984 c -0.8272 -0.3658 -3.7682 -1.2585 -6.5357 -1.9837 c -9.9176 -2.599 -11.7218 -3.5122 -14.164 -7.1695 c -1.5926 -2.3849 -2.2275 -4.7408 -2.2275 -8.2651 c 0 -6.2533 2.5468 -11.5705 7.0838 -14.7894 c 3.2916 -2.3353 8.7752 -4.6118 12.8685 -5.3421 c 1.1812 -0.2108 4.0084 -0.359 6.9518 -0.3645 l 4.9609 -0.009 v -0.635 c 0 -0.8312 -1.7502 -9.5695 -1.9966 -9.968 c -0.2606 -0.4217 -1.4724 -0.2265 -7.5545 1.2166 c -7.2798 1.7273 -9.6611 2.0447 -14.3937 1.9184 c -4.6096 -0.123 -5.7086 -0.4664 -7.3607 -2.3004 c -1.8407 -2.0433 -2.1657 -3.1128 -2.1375 -7.0326 c 0.0238 -3.2996 0.076 -3.6119 1.2832 -7.6729 c 0.6921 -2.3283 1.3212 -4.9693 1.398 -5.8688 c 0.1281 -1.5009 0.0606 -1.7882 -0.8212 -3.492 c -1.0541 -2.0368 -1.2327 -3.4948 -0.5479 -4.4725 c 0.9177 -1.3102 3.0926 -1.7702 4.6243 -0.9781 l 0.7777 0.4021 l 1.67 -1.7032 c 1.8981 -1.9358 2.9955 -2.352 4.352 -1.6505 c 1.3396 0.6927 1.6736 2.3514 0.9746 4.8401 c -0.1087 0.3869 0.01 0.7152 0.3668 1.0187 c 1.9232 1.6337 2.403 2.2194 2.5768 3.1459 c 0.3675 1.9589 -0.5582 2.8535 -3.6119 3.4902 c -1.0738 0.2239 -2.1432 0.5798 -2.3765 0.7909 c -0.5528 0.5003 -1.7125 2.88 -2.6976 5.5355 c -1.0971 2.9575 -1.1239 4.939 -0.0869 6.438 c 1.1063 1.5991 2.1559 2.1614 4.0293 2.1587 c 2.781 -0.004 12.4578 -2.2285 16.9021 -3.8853 l 1.3229 -0.4932 l 0.1565 -4.2474 c 0.1411 -3.8282 0.2191 -4.3588 0.7909 -5.3762 c 0.7891 -1.4039 2.4436 -2.4268 3.9593 -2.4477 c 2.2352 -0.0309 3.248 1.4934 4.6276 6.9641 c 0.4807 1.9061 0.9998 3.5915 1.1537 3.7453 c 0.3499 0.3499 4.796 -0.5486 8.3011 -1.6776 c 2.8202 -0.9083 9.427 -4.1284 10.7545 -5.2416 c 1.2659 -1.0615 1.2015 -1.8925 -0.3327 -4.2905 c -1.3545 -2.1171 -1.3884 -2.6034 -0.2531 -3.6341 c 0.5926 -0.538 0.8405 -0.5893 2.092 -0.4329 c 1.0872 0.1358 1.4444 0.0929 1.5251 -0.1834 c 0.0579 -0.1984 0.2412 -0.8615 0.4072 -1.4734 c 0.4699 -1.7318 1.4456 -2.7239 2.679 -2.7239 c 1.0012 0 1.0379 0.0352 1.8649 1.7859 c 0.464 0.9823 0.891 1.8397 0.9488 1.9055 c 0.0579 0.0657 0.8814 0.1998 1.8301 0.298 c 2.072 0.2145 3.0191 0.9167 3.0191 2.2387 c 0 1.0776 -0.7527 2.0267 -2.4874 3.1364 c -1.1065 0.7078 -1.5685 1.2446 -2.3483 2.7288 c -2.304 4.3846 -6.15 8.0726 -10.917 10.4688 c -3.3572 1.6875 -4.8758 2.2252 -12.4889 4.4226 c -1.0536 0.3041 -2.2279 0.8216 -2.6097 1.1499 l -0.6941 0.597 l 0.5599 2.9266 c 0.6144 3.2115 1.1257 4.9111 1.5165 5.0414 c 0.1395 0.0465 1.4396 -0.7627 2.8889 -1.7982 c 2.9621 -2.1163 7.7385 -4.5342 11.4988 -5.8211 c 2.3746 -0.8126 2.7679 -0.8665 7.1159 -0.9742 c 2.9484 -0.0731 5.1828 -0.0008 6.2177 0.2011 c 3.6813 0.7181 8.0035 3.9741 9.7535 7.3477 c 0.8578 1.6535 1.2452 2.9272 1.6447 5.4071 c 0.2192 1.3607 -0.2753 5.0376 -1.198 8.9066 c -0.4288 1.7983 -0.7797 3.627 -0.7797 4.0638 c 0 0.4368 0.5431 2.0413 1.2068 3.5656 c 1.356 3.1141 1.3716 3.7643 0.1228 5.1011 c -0.8692 0.9305 -1.7797 1.0226 -3.8432 0.3889 c -0.7276 -0.2235 -1.6884 -0.3398 -2.1352 -0.2587 c -0.4664 0.0848 -1.9308 1.0443 -3.4396 2.2539 c -4.6511 3.7287 -6.8092 4.4998 -8.1462 2.9108 c -0.6418 -0.7627 -0.6557 -0.8491 -0.3173 -1.9734 c 0.369 -1.2261 1.1506 -2.6405 4.3881 -7.9408 c 2.4033 -3.9345 4.3309 -7.9349 4.9065 -10.182 c 0.2991 -1.1677 0.4026 -2.3933 0.3257 -3.8569 c -0.1241 -2.3648 -0.5762 -3.3923 -2.3039 -5.2362 c -3.8731 -4.1336 -11.4998 -3.4543 -18.7612 1.671 c -2.6959 1.9028 -4.8497 4.1098 -7.6193 7.8072 c -1.3066 1.7444 -2.6896 3.3478 -3.0733 3.5631 c -0.6632 0.3722 -0.8521 0.3169 -3.8245 -1.1193 c -3.9257 -1.8969 -6.3326 -2.4386 -9.8738 -2.2225 c -6.5556 0.4001 -11.7849 2.9718 -14.041 6.9051 c -1.1811 2.0592 -0.9733 5.0568 0.5623 8.1136 c 0.883 1.7575 2.0726 2.8627 4.2818 3.9779 c 3.0127 1.5208 3.4646 1.6127 8.7896 1.7875 L -5 33.5 l 0.388 1.0212 c 0.4018 1.0574 0.3032 1.7764 -0.5186 3.781 c -0.3067 0.7483 -0.2707 0.9915 0.3524 2.3813 c 0.8868 1.9776 1.293 3.8003 1.0821 4.8548 c -0.2753 1.3766 -1.9066 2.0812 -3.4774 1.5019 z m -6.841 -74.1807 c -0.3126 -0.0611 -1.0122 -0.4947 -1.5545 -0.9636 c -0.8512 -0.7358 -1.0045 -1.0439 -1.1205 -2.2516 c -0.087 -0.9059 -0.009 -1.6339 0.2219 -2.065 c 0.5026 -0.9391 2.3363 -1.9449 3.5457 -1.9449 c 0.8549 0 1.2057 0.1989 2.3259 1.3192 c 1.294 1.294 1.3167 1.3445 1.1914 2.6485 c -0.1437 1.495 -0.6427 2.1895 -2.1126 2.9397 c -0.9625 0.4913 -1.3548 0.5412 -2.4972 0.3178 z m 17.2372 -2.1886 c -2.0034 -0.8389 -2.8183 -3.8272 -1.4892 -5.4607 c 0.9736 -1.1966 2.6724 -1.5051 4.3735 -0.7944 c 1.209 0.5051 1.7459 1.3673 1.7459 2.8035 c 0 1.6255 -0.9646 3.0532 -2.3164 3.4286 c -1.1573 0.3214 -1.5909 0.3257 -2.3138 0.023 z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
+            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'M -20 -20 L 20 -20 L 20 20 L -20 20 Z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
             { property: `obj${newId}_spawn_matrixCharSet`, label: `Object ${newId}: Matrix Character Set`, type: 'combobox', default: 'katakana', values: 'katakana,numbers,binary,ascii', description: '(Spawner) The set of characters to use for the Matrix particle type.' },
-            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail (for both generic and matrix types).' },
-            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments. 1 = one particle size.' },
             { property: `obj${newId}_spawn_enableTrail`, label: `Object ${newId}: Enable Trail`, type: 'boolean', default: 'false', description: '(Spawner/Trail) Enables a fading trail behind each particle.' },
+            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail.' },
+            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments.' },
             { property: `obj${newId}_spawn_matrixEnableGlow`, label: `Object ${newId}: Enable Character Glow`, type: 'boolean', default: 'false', description: '(Spawner/Matrix) Adds a glow effect to the matrix characters.' },
             { property: `obj${newId}_spawn_matrixGlowSize`, label: `Object ${newId}: Character Glow Size`, type: 'number', default: '10', min: '0', max: '50', description: '(Spawner/Matrix) The size and intensity of the glow effect.' },
 
@@ -4035,7 +4031,6 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_pathAnim_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '20', min: '1', max: '200', description: 'The length of the trail.' },
             { property: `obj${newId}_pathAnim_trailColor`, label: `Object ${newId}: Trail Color`, type: 'combobox', values: 'Inherit,Rainbow', default: 'Inherit', description: 'The color style of the trail.' },
         ];
-
     }
 
     /**
@@ -4115,7 +4110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function exportFile() {
-        const exportButton = document.getElementById('export-btn');
+        const exportButton = document.getElementById('export-download-btn');
         exportButton.disabled = true;
         exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Preparing...';
 
@@ -4126,11 +4121,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
             const safeFilename = effectTitle.replace(/[\s\/\\?%*:|"<>]/g, '_');
 
-            const styleContent =
-                '        canvas { width: 100%; height: 100%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #000000; }\n' +
-                '        body { background-color: #000000; overflow: hidden; margin: 0; }\n';
+            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; }';
             const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
-            const shapeClasses = [`${Shape.toString()}`].join('\n\n');
+
+            const allHelperFunctions = [
+                hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
+                drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
+            ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
+
+            const shapeClassString = Shape.toString();
             const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
 
             const exportedScript = `
@@ -4138,76 +4137,60 @@ document.addEventListener('DOMContentLoaded', function () {
     const canvas = document.getElementById('signalCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 320;
-    canvas.height = 200;
+    canvas.width = 1280;
+    canvas.height = 800;
     let objects = [];
     
     ${jsVars}
 
-    window.gradientSpeedMultiplier = ${window.gradientSpeedMultiplier};
-    window.shapeSpeedMultiplier = ${window.shapeSpeedMultiplier};
-    window.seismicSpeedMultiplier = ${window.seismicSpeedMultiplier};
-    window.tetrisGravityMultiplier = ${window.tetrisGravityMultiplier};
-    window.textSpeedMultiplier = ${window.textSpeedMultiplier};
-
-    const getSensorValue = (sensorName) => {
-        try {
-            return engine.getSensorValue(sensorName);
-        } catch (e) {
-            return { value: 0, min: 0, max: 100 };
-        }
-    };
-    
     const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
     const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
-    const parseColorToRgba = ${parseColorToRgba.toString()};
-    const lerpColor = ${lerpColor.toString()};
-    const getPatternColor = ${getPatternColor.toString()};
-    const drawPixelText = ${drawPixelText.toString()};
-    const getSignalRGBAudioMetrics = ${getSignalRGBAudioMetrics.toString()};
+    ${allHelperFunctions}
     
-    const Shape = ${Shape.toString()};
+    const Shape = ${shapeClassString};
 
     let then;
     const allPropKeys = ${formattedKeys};
 
     function createInitialObjects() {
         if (allPropKeys.length === 0) return;
+        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\\d+)_/) || [])[1]).filter(Boolean))];
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
-        const uniqueIds = [...new Set(allPropKeys.map(p => {
-            if (!p.startsWith('obj')) return null;
-            const end = p.indexOf('_');
-            if (end <= 3) return null;
-            const idString = p.substring(3, end);
-            const id = parseInt(idString, 10);
-            return isNaN(id) ? null : String(id);
-        }).filter(id => id !== null))];
-
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
-        
         objects = uniqueIds.map(id => {
             const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
             const prefix = 'obj' + id + '_';
+            
+            const fillStops = [];
+            const strokeStops = [];
+            for (let i = 1; i <= 10; i++) { // Check for up to 10 stops
+                const fcKey = prefix + 'gradColor_' + i;
+                const fpKey = prefix + 'gradPosition_' + i;
+                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
+                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+                }
+                const scKey = prefix + 'strokeColor_' + i;
+                const spKey = prefix + 'strokePosition_' + i;
+                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
+                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+                }
+            }
+            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
+            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
 
             allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
                 const propName = key.substring(prefix.length);
-                try {
-                    let value = eval(key);
+                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
 
+                if (typeof window[key] !== 'undefined') {
+                    let value = window[key];
                     if (value === "true") value = true;
                     if (value === "false") value = false;
-
-                    // FIX: This logic correctly separates color and alpha properties.
+                    if (propsToScale.includes(propName) && !isNaN(parseFloat(value))) {
+                        value *= 4;
+                    }
                     if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
-                        try {
-                            config[propName] = (typeof value === 'string') ? JSON.parse(value) : value;
-                        } catch(e) {
-                            console.error(\`Failed to parse \${propName}\`, e);
-                        }
-                    } else if (propName === 'gradColor1' || propName === 'gradColor2') {
-                        config.gradient[propName.replace('grad', '').toLowerCase()] = value;
-                    } else if (propName === 'strokeGradColor1' || propName === 'strokeGradColor2') {
-                        config.strokeGradient[propName.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
                     } else if (propName === 'scrollDir') {
                         config.scrollDirection = value;
                     } else if (propName === 'strokeScrollDir') {
@@ -4215,9 +4198,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         config[propName] = value;
                     }
-                } catch (e) {}
+                }
             });
-
             return new Shape(config);
         });
     }
@@ -4227,41 +4209,31 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
         const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
-
         const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
         const sensorData = {};
         const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-        neededSensors.forEach(sensorName => {
-            sensorData[sensorName] = getSensorValue(sensorName);
-        });
-
+        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
+        
         const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
-        const pColor1 = typeof paletteColor1 !== 'undefined' ? paletteColor1 : '#FF8F00';
-        const pColor2 = typeof paletteColor2 !== 'undefined' ? paletteColor2 : '#00BFFF';
         const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
         const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
+        
+        let gStops = [];
+        if (useGlobalPalette) {
+            for (let i = 1; i <= 10; i++) {
+                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
+                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
+                }
+            }
+            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
+        }
 
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
-            
-            const prefix = 'obj' + obj.id + '_';
-            const propsToUpdate = {};
-            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
-                const propName = key.substring(prefix.length);
-                if (typeof window[key] !== 'undefined') {
-                    let value = window[key];
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-                    propsToUpdate[propName] = value;
-                }
-            });
-            obj.update(propsToUpdate);
-
-            const originalGradient = { ...obj.gradient };
-            const originalStrokeGradient = { ...obj.strokeGradient };
+            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
             const originalStrokeCycleColors = obj.strokeCycleColors;
@@ -4269,23 +4241,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (useGlobalCycle) {
                 const speed = (gCycleSpeed || 0) / 50.0;
-                obj.cycleColors = true;
-                obj.cycleSpeed = speed;
-                obj.strokeCycleColors = true;
-                obj.strokeCycleSpeed = speed;
+                obj.cycleColors = true; obj.cycleSpeed = speed;
+                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
             }
-            if (useGlobalPalette) {
-                obj.gradient.color1 = pColor1;
-                obj.gradient.color2 = pColor2;
-                obj.strokeGradient.color1 = pColor1;
-                obj.strokeGradient.color2 = pColor2;
+            if (useGlobalPalette && gStops.length > 0) {
+                obj.gradient.stops = gStops;
+                obj.strokeGradient.stops = gStops;
             }
-
             if (shouldAnimate) {
                 obj.updateAnimationState(audioData, sensorData, deltaTime);
             }
             obj.draw(false, audioData, {});
-
             obj.gradient = originalGradient;
             obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
@@ -4299,20 +4265,15 @@ document.addEventListener('DOMContentLoaded', function () {
         requestAnimationFrame(animate);
         const now = timestamp;
         let deltaTime = (now - (then || now)) / 1000.0;
-        if (deltaTime > 0.1) {
-            deltaTime = 0.1;
-        }
+        if (deltaTime > 0.1) deltaTime = 0.1;
         then = now;
-        
         drawFrame(deltaTime);
     }
-
     function init() {
         createInitialObjects();
         then = window.performance.now();
         animate(then);
     }
-
     init();
 });`;
 
@@ -4321,7 +4282,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<html lang="en">',
                 '<head>',
                 '    <meta charset="UTF-8">',
-                '    <title>' + effectTitle + '</title>',
+                `    <title>${effectTitle}</title>`,
                 metaTags,
                 '    <style>',
                 styleContent,
