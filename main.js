@@ -11,6 +11,10 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta publisher="SRGB Interactive Effect Builder" />
     <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
     <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
+    <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
+    <meta property="globalGradientStops" label="Global Gradient" type="gradientpicker" default='[{"color":"#ff0000","position":0},{"color":"#00ff00","position":0.5},{"color":"#0000ff","position":1}]' />
+    <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
+    <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
 
     <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
     <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
@@ -49,13 +53,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_beatThreshold" label="Small Clock: Beat Threshold" min="1" max="100" type="number" default="30" />
     <meta property="obj1_audioSensitivity" label="Small Clock: Sensitivity" min="0" max="200" type="number" default="50" />
     <meta property="obj1_audioSmoothing" label="Small Clock: Smoothing" min="0" max="99" type="number" default="50" />
-    <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
-    <meta property="paletteColor1" label="Palette Color 1" type="color" default="#FF8F00" />
-    <meta property="paletteColor2" label="Palette Color 2" type="color" default="#00BFFF" />
-    <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
-    <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
-
-
 
     <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
     <meta property="obj2_x" label="Large Text: X Position" type="number" min="0" max="320" default="-3" />
@@ -177,12 +174,21 @@ function formatPixelData(data) {
     return result;
 }
 
-function renderPixelArtPreview(canvas, frameDataString, color1 = '#FF00FF', color2 = '#00FFFF') {
+function renderPixelArtPreview(canvas, frameDataString, gradientStops = []) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#212529'; // A dark background for the preview
+
+    // Use a checkerboard pattern for the background to show transparency
+    ctx.fillStyle = '#444';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#666';
+    for (let i = 0; i < canvas.width; i += 8) {
+        for (let j = 0; j < canvas.height; j += 8) {
+            if ((i / 8 + j / 8) % 2 == 0) {
+                ctx.fillRect(i, j, 8, 8);
+            }
+        }
+    }
 
     try {
         const data = JSON.parse(frameDataString);
@@ -190,24 +196,48 @@ function renderPixelArtPreview(canvas, frameDataString, color1 = '#FF00FF', colo
 
         const rows = data.length;
         const cols = data[0].length;
+        if (cols === 0) return;
         const cellWidth = canvas.width / cols;
         const cellHeight = canvas.height / rows;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                const val = data[r]?.[c] || 0;
-                if (val > 0) {
-                    // Use the object's actual colors instead of hardcoded ones
-                    if (val === 1.0) ctx.fillStyle = '#FFFFFF';
-                    else if (val === 0.3) ctx.fillStyle = color1;
-                    else if (val === 0.4) ctx.fillStyle = color2;
-                    else ctx.fillStyle = `rgba(144, 144, 144, ${val})`;
-                    ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
+                const value = data[r]?.[c] || 0;
+                if (value === 0) continue; // Skip transparent/empty pixels
+
+                let fillColor = '#FF00FF'; // Default error color
+
+                // This logic now mirrors the main renderer in Shape.js
+                switch (value) {
+                    case 0.7: // "Fill Style" - render as a semi-transparent gray
+                        fillColor = 'rgba(180, 180, 180, 0.7)';
+                        break;
+                    case 1.0: // White
+                        fillColor = '#FFFFFF';
+                        break;
+                    case 0.3: // "Color 1" from the editor palette
+                        fillColor = gradientStops[0]?.color || '#FF00FF';
+                        break;
+                    case 0.4: // "Color 2" from the editor palette
+                        fillColor = gradientStops[1]?.color || '#00FFFF';
+                        break;
+                    default:
+                        // Handle integer index values from imported GIFs
+                        if (value >= 2) {
+                            const index = Math.round(value) - 2;
+                            if (gradientStops && gradientStops[index]) {
+                                fillColor = gradientStops[index].color;
+                            }
+                        }
+                        break;
                 }
+
+                ctx.fillStyle = fillColor;
+                // Use floor/ceil to avoid sub-pixel rendering gaps
+                ctx.fillRect(Math.floor(c * cellWidth), Math.floor(r * cellHeight), Math.ceil(cellWidth), Math.ceil(cellHeight));
             }
         }
     } catch (e) {
-        // If data is invalid, draw an error icon
         ctx.fillStyle = 'red';
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
@@ -221,6 +251,29 @@ function colorDistance(rgb1, rgb2) {
     const gDiff = rgb1.g - rgb2.g;
     const bDiff = rgb1.b - rgb2.b;
     return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+}
+
+function findClosestColor(rgb, colorPalette) {
+    let minDistanceSq = Infinity;
+    let closestColorHex = null;
+
+    for (const paletteColor of colorPalette) {
+        // Using squared distance is faster as it avoids the square root calculation.
+        const distSq = Math.pow(rgb.r - paletteColor.r, 2) +
+            Math.pow(rgb.g - paletteColor.g, 2) +
+            Math.pow(rgb.b - paletteColor.b, 2);
+
+        if (distSq < minDistanceSq) {
+            minDistanceSq = distSq;
+            closestColorHex = paletteColor.hex;
+        }
+
+        // If a perfect match is found, we can stop searching.
+        if (minDistanceSq === 0) {
+            break;
+        }
+    }
+    return closestColorHex;
 }
 
 function handleURLParameters() {
@@ -246,50 +299,31 @@ function handleURLParameters() {
 }
 
 function updateColorControls() {
-    const values = getControlValues();
-    const paletteEnabled = values.enablePalette;
-    const pColor1 = values.paletteColor1;
-    const pColor2 = values.paletteColor2;
+    const paletteEnabled = document.getElementById('enablePalette')?.checked;
 
-    const gradientControlNames = ['gradientStops', 'strokeGradientStops'];
+    // A list of all control types that should be disabled when the global palette is on
+    const controlsToToggle = [
+        'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors', 'cycleSpeed',
+        'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed'
+    ];
 
     objects.forEach(obj => {
-        gradientControlNames.forEach(name => {
-            const pickerContainer = form.querySelector(`[name="obj${obj.id}_${name}"]`)?.closest('.gradient-picker-container');
-            if (!pickerContainer) return;
+        const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
+        if (!fieldset) return;
 
-            const stopRows = pickerContainer.querySelectorAll('.gradient-stop-row');
-            const colorInputs = pickerContainer.querySelectorAll('.gradient-color-input');
-
-            colorInputs.forEach(input => input.disabled = paletteEnabled);
-
-            if (paletteEnabled) {
-                if (stopRows.length > 0) {
-                    const firstColorInput = stopRows[0].querySelector('.gradient-color-input');
-                    if (firstColorInput) firstColorInput.value = pColor1;
-                }
-                if (stopRows.length > 1) {
-                    const lastColorInput = stopRows[stopRows.length - 1].querySelector('.gradient-color-input');
-                    if (lastColorInput) lastColorInput.value = pColor2;
-                }
-                // Trigger an update on one of the inputs to refresh the preview and hidden value
-                if (stopRows.length > 0) {
-                    stopRows[0].querySelector('.gradient-color-input').dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            } else {
-                // Restore the object's actual gradient
-                const sourceGradient = name === 'gradientStops' ? obj.gradient : obj.strokeGradient;
-                if (sourceGradient && sourceGradient.stops) {
-                    stopRows.forEach((row, index) => {
-                        const colorInput = row.querySelector('.gradient-color-input');
-                        if (colorInput && sourceGradient.stops[index]) {
-                            colorInput.value = sourceGradient.stops[index].color;
+        controlsToToggle.forEach(controlName => {
+            const control = fieldset.querySelector(`[name$="_${controlName}"]`);
+            if (control) {
+                // Find the parent form group to disable everything inside it (labels, inputs, etc.)
+                const formGroup = control.closest('.mb-3, .card-body');
+                if (formGroup) {
+                    const inputs = formGroup.querySelectorAll('input, select, button, textarea');
+                    inputs.forEach(input => {
+                        // The 'enableStroke' checkbox should remain active
+                        if (!input.name.endsWith('_enableStroke')) {
+                            input.disabled = paletteEnabled;
                         }
                     });
-                    // Trigger an update
-                    if (stopRows.length > 0) {
-                        stopRows[0].querySelector('.gradient-color-input').dispatchEvent(new Event('input', { bubbles: true }));
-                    }
                 }
             }
         });
@@ -410,183 +444,97 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const firstFrame = frames[0];
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = firstFrame.dims.width;
-            tempCanvas.height = firstFrame.dims.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            const frameImageData = tempCtx.createImageData(firstFrame.dims.width, firstFrame.dims.height);
-            frameImageData.data.set(firstFrame.patch);
-            tempCtx.putImageData(frameImageData, 0, 0);
-
-            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
-
-            const colorCounts = new Map();
-            let transparentCount = 0;
-
-            for (let i = 0; i < imageData.length; i += 4) {
-                if (imageData[i + 3] < 128) {
-                    transparentCount++;
-                    continue;
-                }
-
-                // FIX #1: Clamp the color values to a maximum of 255 during initial analysis.
-                const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-
-                const key = `rgb(${r},${g},${b})`;
-                colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
-            }
-
-            const dominantColors = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]);
-
-            const previewCanvas = document.getElementById('color-mapper-preview');
-            const assignmentsContainer = document.getElementById('color-mapper-assignments');
-            previewCanvas.width = gif.lsd.width * 10;
-            previewCanvas.height = gif.lsd.height * 10;
-            const previewCtx = previewCanvas.getContext('2d');
-            previewCtx.fillStyle = '#121212';
-            previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-            previewCtx.imageSmoothingEnabled = false;
-            previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
-            assignmentsContainer.innerHTML = '';
-            const availableSlots = [
-                { name: "Fill Style", value: 0.7 }, { name: "Color 1", value: 0.3 },
-                { name: "Color 2", value: 0.4 }, { name: "White", value: 1.0 },
-                { name: "Black", value: 0.0 },
-            ];
-
-            const assignedValues = new Set();
-            const colorToValueMap = new Map();
-            const rowIdToRgbMap = new Map();
-            let rowIndex = 0;
-
-            const isColor = (rgbStr, r, g, b, threshold = 32) => {
-                const match = rgbStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (!match) return false;
-                return Math.abs(match[1] - r) < threshold && Math.abs(match[2] - g) < threshold && Math.abs(match[3] - b) < threshold;
-            };
-
-            dominantColors.forEach(([color]) => {
-                if (isColor(color, 0, 0, 0) && !assignedValues.has(0.0)) {
-                    colorToValueMap.set(color, 0.0);
-                    assignedValues.add(0.0);
-                } else if (isColor(color, 255, 255, 255) && !assignedValues.has(1.0)) {
-                    colorToValueMap.set(color, 1.0);
-                    assignedValues.add(1.0);
-                }
-            });
-
-            const remainingSlots = availableSlots.filter(s => !assignedValues.has(s.value));
-            dominantColors.forEach(([color]) => {
-                if (!colorToValueMap.has(color) && remainingSlots.length > 0) {
-                    const nextSlot = remainingSlots.shift();
-                    colorToValueMap.set(color, nextSlot.value);
-                }
-            });
-
-            if (transparentCount > 0) {
-                const row = document.createElement('div');
-                row.className = 'input-group input-group-sm';
-                const rowId = `color-map-row-${rowIndex++}`;
-                row.id = rowId;
-                rowIdToRgbMap.set(rowId, 'transparent');
-
-                row.innerHTML = `
-                <span class="input-group-text" style="width: 120px; background-color: #444;">Transparent</span>
-                <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                <select class="form-select">
-                    ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === 0.7 ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                </select>
-            `;
-                assignmentsContainer.appendChild(row);
-            }
-
-            dominantColors.forEach(([color]) => {
-                const preselectedValue = colorToValueMap.get(color);
-                const row = document.createElement('div');
-                row.className = 'input-group input-group-sm';
-                const rowId = `color-map-row-${rowIndex++}`;
-                row.id = rowId;
-                rowIdToRgbMap.set(rowId, color);
-
-                row.innerHTML = `
-                <span class="input-group-text" style="width: 120px; background-color: ${color};"></span>
-                <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                <select class="form-select">
-                    ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === preselectedValue ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                </select>
-            `;
-                assignmentsContainer.appendChild(row);
-            });
-
-            assignmentsContainer.addEventListener('change', (e) => { });
-
-            const colorMapperModal = new bootstrap.Modal(document.getElementById('color-mapper-modal'));
-            colorMapperModal.show();
-
-            document.getElementById('confirm-color-map-btn').onclick = () => {
-                const userColorMap = new Map();
-
-                assignmentsContainer.querySelectorAll('.input-group').forEach(row => {
-                    const rgbColor = rowIdToRgbMap.get(row.id);
-                    const selectedValue = parseFloat(row.querySelector('select').value);
-                    userColorMap.set(rgbColor, selectedValue);
-
-                    if ((selectedValue === 0.3 || selectedValue === 0.4) && rgbColor !== 'transparent') {
-                        const hexColor = rgbToHex(rgbColor);
-                        const colorProp = selectedValue === 0.3 ? 'gradColor1' : 'gradColor2';
-
-                        const colorInput = form.querySelector(`[name="obj${objectId}_${colorProp}"]`);
-                        const hexInput = form.querySelector(`[name="obj${objectId}_${colorProp}_hex"]`);
-
-                        if (colorInput && hexInput) {
-                            colorInput.value = hexColor;
-                            hexInput.value = hexColor;
-                            colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+            const allColors = new Set();
+            const addColorsFromTable = (table) => {
+                if (table) {
+                    for (const color of table) {
+                        if ((Array.isArray(color) || color instanceof Uint8Array) && color.length === 3) {
+                            allColors.add(JSON.stringify(Array.from(color)));
                         }
                     }
-                });
-
-                colorMapperModal.hide();
-                processGifWithMap(gifBlob, objectId, userColorMap);
+                }
             };
 
-        } catch (err) {
-            console.error("Error preparing GIF for mapping: " + err.message);
-            showToast("Could not read GIF file.", "danger");
-        }
-    };
+            addColorsFromTable(gif.gct);
+            frames.forEach(frame => addColorsFromTable(frame.lct));
 
-    const processGifWithMap = async (gifBlob, objectId, userColorMap) => {
-        const uploadModal = bootstrap.Modal.getInstance(document.getElementById('upload-gif-modal'));
-        try {
-            const buffer = await gifBlob.arrayBuffer();
-            const gif = await parseGIF(buffer);
-            const frames = await decompressFrames(gif, true);
+            if (allColors.size === 0) {
+                showToast("Could not find a valid color palette in this GIF.", "danger");
+                return;
+            }
+
+            const uniqueColors = new Map();
+            allColors.forEach(colorStr => {
+                const [r, g, b] = JSON.parse(colorStr);
+                const hex = rgbToHex(`rgb(${r},${g},${b})`);
+                if (!uniqueColors.has(hex)) {
+                    const hsl = hexToHsl(hex);
+                    uniqueColors.set(hex, { hex, r, g, b, h: hsl[0], s: hsl[1], l: hsl[2] });
+                }
+            });
+
+            const sortedColors = [...uniqueColors.values()].sort((a, b) => {
+                if (a.h < b.h) return -1; if (a.h > b.h) return 1;
+                if (a.s < b.s) return -1; if (a.s > b.s) return 1;
+                return a.l - b.l;
+            });
+
+            const newGradientStops = sortedColors.map((color, index) => ({
+                color: color.hex,
+                position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
+            }));
+
+            // FIX: Map colors to their integer index (plus an offset) instead of a decimal position.
+            const colorToIndexMap = new Map(sortedColors.map((color, index) => [color.hex, index + 2]));
 
             const targetWidth = parseInt(document.getElementById('gif-target-width').value, 10) || 32;
             const targetHeight = parseInt(document.getElementById('gif-target-height').value, 10) || 32;
-            const shouldAppend = document.getElementById('gif-append-frames').checked;
-
-            const newFrames = [];
+            const newFramesData = [];
             const masterCanvas = document.createElement('canvas');
             masterCanvas.width = gif.lsd.width;
             masterCanvas.height = gif.lsd.height;
             const masterCtx = masterCanvas.getContext('2d');
+            let savedCanvasState = null;
 
-            for (const frame of frames) {
-                let previousCanvasData = null;
-                if (frame.disposalType === 3) {
-                    previousCanvasData = masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height);
+            for (let i = 0; i < frames.length; i++) {
+                const frame = frames[i];
+                const prevFrame = i > 0 ? frames[i - 1] : null;
+
+                if (prevFrame) {
+                    if (prevFrame.disposalType === 2) {
+                        const bgColorIndex = gif.lsd.backgroundColorIndex;
+                        if (gif.gct && gif.gct[bgColorIndex]) {
+                            const [r, g, b] = gif.gct[bgColorIndex];
+                            masterCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            masterCtx.fillRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                        } else {
+                            masterCtx.clearRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                        }
+                    } else if (prevFrame.disposalType === 3 && savedCanvasState) {
+                        masterCtx.putImageData(savedCanvasState, 0, 0);
+                    }
                 }
+                savedCanvasState = (frame.disposalType === 3) ? masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height) : null;
 
-                if (frame.patch) {
-                    const frameImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
-                    frameImageData.data.set(frame.patch);
-                    masterCtx.putImageData(frameImageData, frame.dims.left, frame.dims.top);
+                if (frame.pixels && frame.pixels.length > 0) {
+                    const patchImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
+                    const patchData = patchImageData.data;
+                    const colorTable = frame.lct || gif.gct;
+
+                    if (colorTable) {
+                        for (let j = 0; j < frame.pixels.length; j++) {
+                            const colorIndex = frame.pixels[j];
+                            if (colorIndex !== frame.transparentIndex && colorTable[colorIndex]) {
+                                const color = colorTable[colorIndex];
+                                const offset = j * 4;
+                                patchData[offset] = color[0];
+                                patchData[offset + 1] = color[1];
+                                patchData[offset + 2] = color[2];
+                                patchData[offset + 3] = 255;
+                            }
+                        }
+                        masterCtx.putImageData(patchImageData, frame.dims.left, frame.dims.top);
+                    }
                 }
 
                 const downsampleCanvas = document.createElement('canvas');
@@ -598,90 +546,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const imageData = downsampleCtx.getImageData(0, 0, targetWidth, targetHeight).data;
                 const pixelData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(0));
-
-                for (let i = 0; i < imageData.length; i += 4) {
-                    const r_index = Math.floor(i / (targetWidth * 4));
-                    const c_index = (i / 4) % targetWidth;
-                    let colorKey;
-
-                    if (imageData[i + 3] < 128) {
-                        colorKey = 'transparent';
+                for (let j = 0; j < imageData.length; j += 4) {
+                    const r_idx = Math.floor(j / (targetWidth * 4));
+                    const c_idx = (j / 4) % targetWidth;
+                    if (imageData[j + 3] < 128) {
+                        pixelData[r_idx][c_idx] = 0; // Transparent is 0
                     } else {
-                        const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                        const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                        const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-                        colorKey = `rgb(${r},${g},${b})`;
+                        const currentPixelRgb = { r: imageData[j], g: imageData[j + 1], b: imageData[j + 2] };
+                        const closestHex = findClosestColor(currentPixelRgb, sortedColors);
+                        // FIX: Store the integer index from the new map.
+                        pixelData[r_idx][c_idx] = colorToIndexMap.get(closestHex) || 0;
                     }
-
-                    pixelData[r_index][c_index] = userColorMap.get(colorKey) || 0.0;
                 }
-
-                const durationInSeconds = (frame.delay || 100) / 1000;
-                newFrames.push({ data: JSON.stringify(pixelData), duration: durationInSeconds });
-
-                if (frame.disposalType === 2) {
-                    masterCtx.clearRect(frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
-                } else if (frame.disposalType === 3 && previousCanvasData) {
-                    masterCtx.putImageData(previousCanvasData, 0, 0);
-                }
+                newFramesData.push({ data: JSON.stringify(pixelData), duration: (frame.delay || 100) / 1000 });
             }
 
-            const form = document.getElementById('controls-form');
-            const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-            const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
-            const combinedFrames = [...existingFrames, ...newFrames];
-
+            // --- 4. Update UI ---
+            const shouldAppend = document.getElementById('gif-append-frames').checked;
             const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-            const color1 = targetObject.gradient.color1;
-            const color2 = targetObject.gradient.color2;
+            if (!targetObject) return;
 
-            framesContainer.innerHTML = '';
-            combinedFrames.forEach((frame, index) => {
-                const frameItem = document.createElement('div');
-                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-                frameItem.dataset.index = index;
-                const textareaId = `frame-data-${objectId}-${index}`;
-                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+            const existingFrames = shouldAppend ? targetObject.pixelArtFrames : [];
+            const combinedFrames = [...existingFrames, ...newFramesData];
 
-                frameItem.innerHTML = `
-                <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                    data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                    data-target-id="${textareaId}" title="Edit Frame">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.01" step="0.01">
-                    </div>
-                    <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                </div>`;
-                framesContainer.appendChild(frameItem);
-                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
-            });
+            // FIX: Update the central configStore BEFORE re-rendering the form.
+            const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+            if (framesConf) {
+                framesConf.default = JSON.stringify(combinedFrames);
+            }
+            const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+            if (gradientConf) {
+                gradientConf.default = JSON.stringify(newGradientStops);
+            }
 
-            hiddenTextarea.value = JSON.stringify(combinedFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            showToast(`${newFrames.length} GIF frame(s) processed!`, "success");
+            // Now, update the live object and re-render everything
+            targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
+            renderForm();
+            updateFormValuesFromObjects();
+            drawFrame();
             recordHistory();
 
-        } catch (err) {
-            console.error("Error processing GIF with map:", err);
-            showToast("Could not process GIF.", "danger");
-        } finally {
+            const uploadModal = bootstrap.Modal.getInstance(document.getElementById('upload-gif-modal'));
             if (uploadModal) uploadModal.hide();
+            showToast(`${newFramesData.length} GIF frames processed with ${sortedColors.length} colors!`, "success");
+
+        } catch (err) {
+            console.error("Error processing GIF: " + err.message, err);
+            showToast("Could not process GIF file.", "danger");
         }
     };
 
@@ -701,7 +612,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Defer to the dedicated GIF handler if a GIF is pasted
             const gifType = imageItem.types.find(type => type === 'image/gif');
             if (gifType) {
                 const blob = await imageItem.getType(gifType);
@@ -709,223 +619,104 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // --- START: REVISED LOGIC FOR SPRITESHEETS ---
             const imageType = imageItem.types.find(type => type.startsWith('image/'));
             const blob = await imageItem.getType(imageType);
             const imageUrl = URL.createObjectURL(blob);
             const image = new Image();
 
             image.onload = () => {
-                // Hide the initial sprite modal, as we are moving to the color mapping step
-                const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
-                if (spritePasteModal) spritePasteModal.hide();
+                // --- START: New Automatic Spritesheet Processing ---
+                const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
+                const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
 
-                // Step 1: Analyze colors from the pasted image, just like with GIFs.
+                if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
+                    showToast("Frame dimensions must be positive numbers.", "danger");
+                    return;
+                }
+
+                // 1. Analyze colors from the entire image to build a consistent palette.
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = image.width;
                 tempCanvas.height = image.height;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(image, 0, 0);
-
                 const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
-                const colorCounts = new Map();
-                let transparentCount = 0;
 
+                const uniqueColors = new Map();
                 for (let i = 0; i < imageData.length; i += 4) {
-                    if (imageData[i + 3] < 128) {
-                        transparentCount++;
-                        continue;
-                    }
-                    // Quantize colors to group similar shades
-                    const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                    const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                    const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-                    const key = `rgb(${r},${g},${b})`;
-                    colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
-                }
-                const dominantColors = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]);
-
-                // Step 2: Populate and show the color mapper modal.
-                const previewCanvas = document.getElementById('color-mapper-preview');
-                const assignmentsContainer = document.getElementById('color-mapper-assignments');
-                const aspectRatio = image.height / image.width;
-                previewCanvas.width = 300;
-                previewCanvas.height = 300 * aspectRatio;
-                const previewCtx = previewCanvas.getContext('2d');
-                previewCtx.fillStyle = '#121212';
-                previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-                previewCtx.imageSmoothingEnabled = false;
-                previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
-                assignmentsContainer.innerHTML = '';
-                const availableSlots = [
-                    { name: "Fill Style", value: 0.7 }, { name: "Color 1", value: 0.3 },
-                    { name: "Color 2", value: 0.4 }, { name: "White", value: 1.0 },
-                    { name: "Black", value: 0.0 },
-                ];
-                const rowIdToRgbMap = new Map();
-                let rowIndex = 0;
-
-                if (transparentCount > 0) {
-                    const row = document.createElement('div');
-                    row.className = 'input-group input-group-sm';
-                    const rowId = `color-map-row-${rowIndex++}`;
-                    row.id = rowId;
-                    rowIdToRgbMap.set(rowId, 'transparent');
-                    row.innerHTML = `
-                        <span class="input-group-text" style="width: 120px; background-color: #444;">Transparent</span>
-                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                        <select class="form-select">
-                            ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === 0.7 ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                        </select>`;
-                    assignmentsContainer.appendChild(row);
-                }
-
-                dominantColors.forEach(([color]) => {
-                    const row = document.createElement('div');
-                    row.className = 'input-group input-group-sm';
-                    const rowId = `color-map-row-${rowIndex++}`;
-                    row.id = rowId;
-                    rowIdToRgbMap.set(rowId, color);
-                    row.innerHTML = `
-                        <span class="input-group-text" style="width: 120px; background-color: ${color};"></span>
-                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                        <select class="form-select">
-                            ${availableSlots.map(slot => `<option value="${slot.value}">${slot.name}</option>`).join('')}
-                        </select>`;
-                    assignmentsContainer.appendChild(row);
-                });
-
-                const colorMapperModal = new bootstrap.Modal(document.getElementById('color-mapper-modal'));
-                colorMapperModal.show();
-
-                // Step 3: Define the confirmation logic, which runs after the user maps colors.
-                document.getElementById('confirm-color-map-btn').onclick = () => {
-                    const userColorMap = new Map();
-                    assignmentsContainer.querySelectorAll('.input-group').forEach(row => {
-                        const rgbColor = rowIdToRgbMap.get(row.id);
-                        const selectedValue = parseFloat(row.querySelector('select').value);
-                        userColorMap.set(rgbColor, selectedValue);
-
-                        // If the user maps a color to slot 0.3 (Color 1) or 0.4 (Color 2),
-                        // update the main color pickers for the selected object.
-                        if ((selectedValue === 0.3 || selectedValue === 0.4) && rgbColor !== 'transparent') {
-                            const hexColor = rgbToHex(rgbColor);
-                            const colorProp = selectedValue === 0.3 ? 'gradColor1' : 'gradColor2';
-
-                            const colorInput = form.querySelector(`[name="obj${objectId}_${colorProp}"]`);
-                            const hexInput = form.querySelector(`[name="obj${objectId}_${colorProp}_hex"]`);
-
-                            if (colorInput && hexInput) {
-                                colorInput.value = hexColor;
-                                hexInput.value = hexColor;
-                                // Dispatch an 'input' event to ensure the application state updates
-                                colorInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            }
-                        }
-                    });
-
-                    const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
-                    const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
-
-                    if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
-                        showToast("Frame dimensions must be positive numbers.", "danger");
-                        return;
-                    }
-
-                    const spriteCols = Math.floor(image.width / frameWidth);
-                    const spriteRows = Math.floor(image.height / frameHeight);
-                    const newFrames = [];
-
-                    for (let row = 0; row < spriteRows; row++) {
-                        for (let col = 0; col < spriteCols; col++) {
-                            const frameCanvas = document.createElement('canvas');
-                            frameCanvas.width = frameWidth;
-                            frameCanvas.height = frameHeight;
-                            const frameCtx = frameCanvas.getContext('2d');
-                            frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
-
-                            const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
-                            const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
-
-                            for (let i = 0; i < frameImgData.length; i += 4) {
-                                const r_idx = Math.floor(i / (frameWidth * 4));
-                                const c_idx = (i / 4) % frameWidth;
-                                let colorKey;
-
-                                if (frameImgData[i + 3] < 128) {
-                                    colorKey = 'transparent';
-                                } else {
-                                    const r = Math.min(255, Math.round(frameImgData[i] / 32) * 32);
-                                    const g = Math.min(255, Math.round(frameImgData[i + 1] / 32) * 32);
-                                    const b = Math.min(255, Math.round(frameImgData[i + 2] / 32) * 32);
-                                    colorKey = `rgb(${r},${g},${b})`;
-                                }
-                                pixelData[r_idx][c_idx] = userColorMap.get(colorKey) || 0.0; // Default to black
-                            }
-                            newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                    if (imageData[i + 3] > 128) {
+                        const hex = rgbToHex(`rgb(${imageData[i]},${imageData[i + 1]},${imageData[i + 2]})`);
+                        if (!uniqueColors.has(hex)) {
+                            uniqueColors.set(hex, {
+                                hex: hex,
+                                luminance: 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2]
+                            });
                         }
                     }
+                }
 
-                    // Step 4: Update the form and UI with the processed frames.
-                    const shouldAppend = document.getElementById('sprite-paste-append').checked;
-                    const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-                    const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                    const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-                    const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
-                    const combinedFrames = [...existingFrames, ...newFrames];
-                    const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                    const color1 = targetObject.gradient.color1;
-                    const color2 = targetObject.gradient.color2;
+                // 2. Create the new gradient, sorted by brightness.
+                const sortedColors = [...uniqueColors.values()].sort((a, b) => a.luminance - b.luminance);
+                const newGradientStops = sortedColors.map((color, index) => ({
+                    color: color.hex,
+                    position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
+                }));
+                const colorToPositionMap = new Map(newGradientStops.map(stop => [stop.color, stop.position]));
 
-                    framesContainer.innerHTML = '';
-                    combinedFrames.forEach((frame, index) => {
-                        const frameItem = document.createElement('div');
-                        frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-1 align-items-center';
-                        frameItem.dataset.index = index;
-                        const textareaId = `frame-data-${objectId}-${index}`;
-                        const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+                // 3. Process the spritesheet into frames with the new indexed pixel data.
+                const spriteCols = Math.floor(image.width / frameWidth);
+                const spriteRows = Math.floor(image.height / frameHeight);
+                const newFrames = [];
 
-                        frameItem.innerHTML = `
-                            <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
-                            <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                                data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                                data-target-id="${textareaId}" title="Edit Frame">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
-                                </div>
-                                <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                            </div>
-                        `;
-                        framesContainer.appendChild(frameItem);
-                        renderPixelArtPreview(frameItem.querySelector('.pixel-art-preview-canvas'), frameDataStr, color1, color2);
-                    });
+                for (let row = 0; row < spriteRows; row++) {
+                    for (let col = 0; col < spriteCols; col++) {
+                        const frameCanvas = document.createElement('canvas');
+                        frameCanvas.width = frameWidth;
+                        frameCanvas.height = frameHeight;
+                        const frameCtx = frameCanvas.getContext('2d');
+                        frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
 
-                    hiddenTextarea.value = JSON.stringify(combinedFrames);
-                    hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
+                        const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
 
-                    showToast(`${newFrames.length} frame(s) processed!`, "success");
-                    URL.revokeObjectURL(imageUrl);
+                        for (let i = 0; i < frameImgData.length; i += 4) {
+                            const r_idx = Math.floor(i / (frameWidth * 4));
+                            const c_idx = (i / 4) % frameWidth;
 
-                    colorMapperModal.hide();
+                            if (frameImgData[i + 3] < 128) {
+                                pixelData[r_idx][c_idx] = 0.0;
+                            } else {
+                                const hex = rgbToHex(`rgb(${frameImgData[i]},${frameImgData[i + 1]},${frameImgData[i + 2]})`);
+                                pixelData[r_idx][c_idx] = colorToPositionMap.get(hex) || 0.0;
+                            }
+                        }
+                        newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                    }
+                }
+
+                // 4. Apply changes and update UI.
+                const shouldAppend = document.getElementById('sprite-paste-append').checked;
+                const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
+                const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                const existingFrames = shouldAppend && hiddenTextarea.value ? JSON.parse(hiddenTextarea.value) : [];
+                const combinedFrames = [...existingFrames, ...newFrames];
+
+                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                if (targetObject) {
+                    targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
+                    renderForm();
+                    updateFormValuesFromObjects();
+                    drawFrame();
                     recordHistory();
-                };
+                }
+
+                URL.revokeObjectURL(imageUrl);
+                const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
+                if (spritePasteModal) spritePasteModal.hide();
+                showToast(`${newFrames.length} frame(s) processed with ${sortedColors.length} colors!`, "success");
+                // --- END: New Automatic Spritesheet Processing ---
             };
             image.src = imageUrl;
-            // --- END: REVISED LOGIC ---
 
         } catch (err) {
             console.error(err);
@@ -1005,61 +796,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const editorModalEl = document.getElementById('pixelArtEditorModal');
 
-    // --- START: PIXEL ART EDITOR LOGIC ---
     if (editorModalEl) {
-        // State variables for the editor modal
+        // --- START: Upgraded Pixel Art Editor Logic ---
         let targetTextarea = null;
         let currentEditorObjectId = null;
         let currentEditorFrameIndex = -1;
         let totalFramesInEditor = 0;
         let currentPaintValue = 0.7;
-        let currentTool = 'paint';
         let isPainting = false;
+        let currentTool = 'paint'; // Tool state: 'paint' or 'fill'
+        let currentGradientStops = [];
 
-        // --- Get all DOM element references once ---
         const gridContainer = document.getElementById('pixel-editor-grid-container');
         const widthInput = document.getElementById('pixel-editor-width');
         const heightInput = document.getElementById('pixel-editor-height');
         const resizeBtn = document.getElementById('pixel-editor-resize-btn');
         const saveBtn = document.getElementById('pixel-editor-save-btn');
-        const palette = document.getElementById('pixel-editor-palette');
-        const color1Btn = document.getElementById('pixel-editor-color1-btn');
-        const color2Btn = document.getElementById('pixel-editor-color2-btn');
-        const fillBtn = document.getElementById('pixel-editor-fill-btn');
-        const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
-        const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
+        const paletteContainer = document.getElementById('pixel-editor-palette');
         const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
         const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
         const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
         const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
         const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
 
-        // --- Core Helper Functions ---
-
-        const valueToColor = (value, color1, color2) => {
+        const valueToColor = (value, stops) => {
             if (value === 1.0) return '#FFFFFF';
-            if (value === 0.3) return color1 || '#FF00FF';
-            if (value === 0.4) return color2 || '#00FFFF';
-            if (value === 0) return '#000000';
-            if (value === 0.7) {
-                return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`;
+            if (value === 0) return 'transparent';
+            if (value === 0.7) return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`;
+            if (value === 0.3) return stops[0]?.color || '#FF00FF';
+            if (value === 0.4) return stops[1]?.color || '#00FFFF';
+            if (value >= 2) {
+                const index = Math.round(value) - 2;
+                if (stops && stops[index]) {
+                    return stops[index].color;
+                }
             }
             return `repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px`;
         };
 
-        const renderGrid = (data, color1, color2) => {
+        const renderGrid = (data, stops) => {
             gridContainer.innerHTML = '';
+            if (!data || !data.length || !data[0]) return;
             const rows = data.length;
             const cols = data[0].length;
             gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const cell = document.createElement('div');
-                    cell.classList.add('pixel-editor-cell');
+                    cell.className = 'pixel-editor-cell';
                     cell.dataset.row = r;
                     cell.dataset.col = c;
                     const value = data[r] ? (data[r][c] || 0) : 0;
-                    cell.style.background = valueToColor(value, color1, color2);
+                    cell.style.background = valueToColor(value, stops);
                     cell.dataset.value = value;
                     gridContainer.appendChild(cell);
                 }
@@ -1085,101 +873,93 @@ document.addEventListener('DOMContentLoaded', function () {
         const paintCell = (cell) => {
             if (!cell || !cell.classList.contains('pixel-editor-cell')) return;
             cell.dataset.value = currentPaintValue;
-            cell.style.background = valueToColor(currentPaintValue, color1Btn.style.background, color2Btn.style.background);
+            cell.style.background = valueToColor(currentPaintValue, currentGradientStops);
+        };
+
+        // FIX: Re-implement the correct flood fill algorithm
+        const floodFill = (startNode) => {
+            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
+            const gridData = readGrid();
+            const [rows, cols] = [gridData.length, gridData[0].length];
+            const startRow = parseInt(startNode.dataset.row, 10);
+            const startCol = parseInt(startNode.dataset.col, 10);
+            const targetValue = gridData[startRow][startCol];
+            if (targetValue === currentPaintValue) return;
+
+            const queue = [[startRow, startCol]];
+            const visited = new Set([`${startRow},${startCol}`]);
+
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+                gridData[r][c] = currentPaintValue;
+                const neighbors = [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]];
+                for (const [nr, nc] of neighbors) {
+                    const key = `${nr},${nc}`;
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(key) && gridData[nr][nc] === targetValue) {
+                        visited.add(key);
+                        queue.push([nr, nc]);
+                    }
+                }
+            }
+            renderGrid(gridData, currentGradientStops);
         };
 
         const updateEditorFrameCounter = () => {
-            const counterEl = document.getElementById('pixel-editor-frame-counter');
-            if (counterEl) {
-                counterEl.textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
-            }
+            document.getElementById('pixel-editor-frame-counter').textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
         };
 
         const saveCurrentFrameInEditor = () => {
             if (!targetTextarea) return;
-
             const gridData = readGrid();
             const newDataString = JSON.stringify(gridData);
-
             rawDataTextarea.value = formatPixelData(gridData);
             targetTextarea.value = newDataString;
-
-            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            if (fieldset) {
-                const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-                if (hiddenMasterTextarea && framesContainer) {
-                    const allFrames = Array.from(framesContainer.children).map(item => ({
-                        data: item.querySelector('.frame-data-input').value,
-                        duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-                    }));
-                    hiddenMasterTextarea.value = JSON.stringify(allFrames);
-                    hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    updateObjectsFromForm();
-                    drawFrame();
-                }
-            }
-
-            const frameItem = document.getElementById(targetTextarea.id)?.closest('.pixel-art-frame-item');
-            if (frameItem) {
-                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-                if (previewCanvas && targetObject) {
-                    renderPixelArtPreview(previewCanvas, newDataString, targetObject.gradient.color1, targetObject.gradient.color2);
-                }
-            }
+            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         };
 
         const loadFrameIntoEditor = (index) => {
             const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
             targetTextarea = document.getElementById(newTargetId);
             if (!targetTextarea) return;
-
             currentEditorFrameIndex = index;
             updateEditorFrameCounter();
-
             const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-            const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
-            const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
-            color1Btn.style.background = color1;
-            color2Btn.style.background = color2;
-
+            currentGradientStops = targetObject ? targetObject.gradient.stops : [];
+            paletteContainer.querySelectorAll('.dynamic-color').forEach(btn => btn.remove());
+            const blackBtn = paletteContainer.querySelector('[data-value="0"]');
+            currentGradientStops.forEach((stop, idx) => {
+                const value = idx + 2;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+                btn.dataset.value = value;
+                btn.style.backgroundColor = stop.color;
+                btn.title = `Gradient Color #${idx + 1} (Index: ${value})`;
+                const hsl = hexToHsl(stop.color);
+                if (hsl[2] < 40) btn.style.color = '#FFF';
+                btn.textContent = idx + 1;
+                paletteContainer.insertBefore(btn, blackBtn);
+            });
+            document.getElementById('pixel-editor-color1-btn').style.background = currentGradientStops[0]?.color || '#FF00FF';
+            document.getElementById('pixel-editor-color2-btn').style.background = currentGradientStops[1]?.color || '#00FFFF';
             let data;
-            try {
-                data = JSON.parse(targetTextarea.value);
-            } catch (e) { data = [[0]]; }
-
+            try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
             widthInput.value = data[0]?.length || 1;
             heightInput.value = data.length || 1;
-            renderGrid(data, color1, color2);
+            renderGrid(data, currentGradientStops);
             rawDataTextarea.value = formatPixelData(data);
         };
 
-        // --- Event Listeners ---
-
         editorModalEl.addEventListener('shown.bs.modal', (event) => {
-            currentTool = 'paint';
             const button = event.relatedTarget;
             const targetId = button.getAttribute('data-target-id');
             targetTextarea = document.getElementById(targetId);
-
             const idMatch = targetId.match(/frame-data-(\d+)-(\d+)/);
-            if (idMatch) {
-                currentEditorObjectId = idMatch[1];
-                currentEditorFrameIndex = parseInt(idMatch[2], 10);
-            } else {
-                const fieldset = button.closest('fieldset[data-object-id]');
-                currentEditorObjectId = fieldset.dataset.objectId;
-                const frameItem = button.closest('.pixel-art-frame-item');
-                currentEditorFrameIndex = frameItem ? parseInt(frameItem.dataset.index, 10) : 0;
-            }
-
+            currentEditorObjectId = idMatch[1];
+            currentEditorFrameIndex = parseInt(idMatch[2], 10);
             const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            totalFramesInEditor = framesContainer.children.length;
-
+            totalFramesInEditor = fieldset.querySelector('.pixel-art-frames-container').children.length;
             loadFrameIntoEditor(currentEditorFrameIndex);
-
             document.getElementById('collapseRawData')?.classList.remove('show');
         });
 
@@ -1187,133 +967,82 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
         }
 
-        document.addEventListener('paste', (e) => {
-            if (editorModalEl.classList.contains('show')) {
-                e.preventDefault();
-                const items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const blob = items[i].getAsFile();
-                        pasteSingleImageFrame(blob);
-                        return;
-                    }
-                }
-            }
-        });
-
         prevFrameBtn.addEventListener('click', () => {
             if (totalFramesInEditor <= 1) return;
             saveCurrentFrameInEditor();
-            let newIndex = currentEditorFrameIndex - 1;
-            if (newIndex < 0) {
-                newIndex = totalFramesInEditor - 1;
-            }
-            loadFrameIntoEditor(newIndex);
+            loadFrameIntoEditor((currentEditorFrameIndex - 1 + totalFramesInEditor) % totalFramesInEditor);
         });
 
         nextFrameBtn.addEventListener('click', () => {
             if (totalFramesInEditor <= 1) return;
             saveCurrentFrameInEditor();
-            const newIndex = (currentEditorFrameIndex + 1) % totalFramesInEditor;
-            loadFrameIntoEditor(newIndex);
+            loadFrameIntoEditor((currentEditorFrameIndex + 1) % totalFramesInEditor);
         });
 
         duplicateFrameBtn.addEventListener('click', () => {
-            // FIX: Manually hide the tooltip before destroying the button.
             const tooltip = bootstrap.Tooltip.getInstance(duplicateFrameBtn);
-            if (tooltip) {
-                tooltip.hide();
-            }
-
+            if (tooltip) tooltip.hide();
             saveCurrentFrameInEditor();
-
             const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
             const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-
             let allFrames = JSON.parse(hiddenMasterTextarea.value);
             const frameToCopy = { ...allFrames[currentEditorFrameIndex] };
-
             allFrames.splice(currentEditorFrameIndex + 1, 0, frameToCopy);
-
             hiddenMasterTextarea.value = JSON.stringify(allFrames);
             hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-
             renderForm();
-
             totalFramesInEditor = allFrames.length;
             loadFrameIntoEditor(currentEditorFrameIndex + 1);
             showToast("Frame duplicated!", "success");
         });
 
-        palette.addEventListener('click', (e) => {
-            currentTool = 'paint';
+        paletteContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-            palette.querySelector('.active').classList.remove('active');
+            currentTool = 'paint';
+            paletteContainer.querySelector('.active')?.classList.remove('active');
             button.classList.add('active');
             currentPaintValue = parseFloat(button.dataset.value);
         });
 
-        fillBtn.addEventListener('click', () => {
+        // FIX: Fill button now only selects the tool
+        document.getElementById('pixel-editor-fill-btn').addEventListener('click', () => {
             currentTool = 'fill';
-            showToast("Fill tool selected. Click an area to fill it.", "info");
+            showToast("Fill tool selected. Click an area on the grid to fill.", "info");
         });
 
-        const floodFill = (startNode) => {
-            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
-            const gridData = readGrid();
-            const [rows, cols] = [gridData.length, gridData[0].length];
-            const [startRow, startCol] = [parseInt(startNode.dataset.row, 10), parseInt(startNode.dataset.col, 10)];
-            const targetValue = gridData[startRow][startCol];
-            if (targetValue === currentPaintValue) return;
-            const queue = [[startRow, startCol]];
-            const visited = new Set([`${startRow},${startCol}`]);
-            gridData[startRow][startCol] = currentPaintValue;
-            while (queue.length > 0) {
-                const [r, c] = queue.shift();
-                [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]].forEach(([nr, nc]) => {
-                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(`${nr},${nc}`) && gridData[nr][nc] === targetValue) {
-                        visited.add(`${nr},${nc}`);
-                        gridData[nr][nc] = currentPaintValue;
-                        queue.push([nr, nc]);
-                    }
-                });
-            }
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
-        };
-
-        mirrorHBtn.addEventListener('click', () => {
+        document.getElementById('pixel-editor-mirror-h-btn').addEventListener('click', () => {
             let gridData = readGrid();
             gridData.forEach(row => row.reverse());
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
+            renderGrid(gridData, currentGradientStops);
         });
 
-        mirrorVBtn.addEventListener('click', () => {
+        document.getElementById('pixel-editor-mirror-v-btn').addEventListener('click', () => {
             let gridData = readGrid().reverse();
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
+            renderGrid(gridData, currentGradientStops);
         });
 
         resizeBtn.addEventListener('click', () => {
             const newWidth = parseInt(widthInput.value, 10);
             const newHeight = parseInt(heightInput.value, 10);
             const newData = Array(newHeight).fill(0).map(() => Array(newWidth).fill(0));
-            renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
+            renderGrid(newData, currentGradientStops);
         });
 
+        // FIX: Grid listener now handles both paint and fill tools
         gridContainer.addEventListener('mousedown', (e) => {
             if (currentTool === 'paint') {
                 isPainting = true;
                 paintCell(e.target);
             } else if (currentTool === 'fill') {
                 floodFill(e.target);
+                currentTool = 'paint'; // Switch back to paint tool after filling
             }
         });
-        gridContainer.addEventListener('mouseover', (e) => {
-            if (isPainting && currentTool === 'paint') {
-                paintCell(e.target);
-            }
-        });
+
+        gridContainer.addEventListener('mouseover', (e) => { if (isPainting) paintCell(e.target); });
         document.addEventListener('mouseup', () => { isPainting = false; });
+        gridContainer.addEventListener('mouseleave', () => { isPainting = false; });
 
         saveBtn.addEventListener('click', () => {
             saveCurrentFrameInEditor();
@@ -1328,11 +1057,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     heightInput.value = newData.length;
                     widthInput.value = newData[0].length;
                 }
-                renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
+                renderGrid(newData, currentGradientStops);
             } catch (e) { /* Do nothing on invalid input */ }
         });
     }
-    // --- END: PIXEL ART EDITOR LOGIC ---
+    // --- END: Upgraded Pixel Art Editor Logic ---
 
     const pixelArtGalleryModalEl = document.getElementById('pixel-art-gallery-modal');
     if (pixelArtGalleryModalEl) {
@@ -2117,6 +1846,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const controlId = property || name;
         const formGroup = document.createElement('div');
         formGroup.className = 'mb-3';
+
         const labelEl = document.createElement('label');
         labelEl.htmlFor = controlId;
         labelEl.className = 'form-label';
@@ -2131,6 +1861,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         labelEl.dataset.bsToggle = 'tooltip';
         formGroup.appendChild(labelEl);
+
         if (type === 'number') {
             const inputGroup = document.createElement('div');
             inputGroup.className = 'd-flex align-items-center';
@@ -2174,7 +1905,7 @@ document.addEventListener('DOMContentLoaded', function () {
             vals.forEach(val => {
                 const option = document.createElement('option');
                 option.value = val;
-                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace('-', ' ');
+                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
                 if (val === defaultValue) option.selected = true;
                 select.appendChild(option);
             });
@@ -2204,7 +1935,7 @@ document.addEventListener('DOMContentLoaded', function () {
             textarea.className = 'form-control';
             textarea.name = controlId;
             textarea.rows = (type === 'textarea') ? 10 : 3;
-            textarea.textContent = defaultValue.replace(/\\n/g, '\n');
+            textarea.textContent = String(defaultValue).replace(/\\n/g, '\n');
             formGroup.appendChild(textarea);
             if (controlId.endsWith('_pixelArtData')) {
                 const toolLink = document.createElement('a');
@@ -2239,6 +1970,15 @@ document.addEventListener('DOMContentLoaded', function () {
             hexInput.value = defaultValue;
             hexInput.id = `${controlId}_hex`;
             hexInput.name = `${controlId}_hex`;
+            input.addEventListener('input', () => {
+                hexInput.value = input.value;
+            });
+            hexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
+                    input.value = hexInput.value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
             colorGroup.appendChild(input);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
@@ -2268,30 +2008,37 @@ document.addEventListener('DOMContentLoaded', function () {
                         position: parseFloat(row.querySelector('.gradient-position-input').value)
                     });
                 });
-
                 stops.sort((a, b) => a.position - b.position);
-                hiddenInput.value = JSON.stringify(stops);
+
+                const newGradientJson = JSON.stringify(stops);
+                hiddenInput.value = newGradientJson; // Update the form element
 
                 const gradientString = stops.length > 1
                     ? `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`
                     : (stops.length === 1 ? stops[0].color : '#000');
-
                 preview.style.background = gradientString;
 
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset && !isRestoring) {
                     const objectId = parseInt(fieldset.dataset.objectId, 10);
                     const targetObject = objects.find(o => o.id === objectId);
-                    if (targetObject) {
-                        const propName = hiddenInput.name.includes('stroke') ? 'strokeGradient' : 'gradient';
-                        const newGradientState = { stops: JSON.parse(hiddenInput.value) };
-                        const updatePayload = {};
-                        updatePayload[propName] = newGradientState;
+                    const propName = hiddenInput.name.includes('stroke') ? 'strokeGradient' : 'gradient';
+                    const configPropName = hiddenInput.name;
 
-                        targetObject.update(updatePayload);
-                        drawFrame();
-                        debouncedRecordHistory();
+                    // 1. Update the live Shape object
+                    if (targetObject) {
+                        targetObject.update({ [propName]: { stops: stops } });
                     }
+
+                    // 2. FIX: Explicitly update the central configStore with the new value
+                    const configToUpdate = configStore.find(c => c.property === configPropName);
+                    if (configToUpdate) {
+                        configToUpdate.default = newGradientJson;
+                    }
+
+                    // 3. Redraw and save history
+                    drawFrame();
+                    debouncedRecordHistory();
                 }
             };
 
@@ -2304,21 +2051,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 colorInput.className = 'form-control form-control-color gradient-color-input';
                 colorInput.value = color;
 
+                const hexInput = document.createElement('input');
+                hexInput.type = 'text';
+                hexInput.className = 'form-control form-control-sm';
+                hexInput.style.width = '80px';
+                hexInput.value = color;
+
+                colorInput.addEventListener('input', () => { hexInput.value = colorInput.value; });
+                hexInput.addEventListener('input', () => {
+                    if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
+                        colorInput.value = hexInput.value;
+                        colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+
                 const positionInput = document.createElement('input');
                 positionInput.type = 'range';
                 positionInput.className = 'form-range gradient-position-input';
-                positionInput.min = 0;
-                positionInput.max = 1;
-                positionInput.step = 0.01;
+                positionInput.min = 0; positionInput.max = 1; positionInput.step = 0.01;
                 positionInput.value = position;
 
                 const positionValueInput = document.createElement('input');
                 positionValueInput.type = 'number';
                 positionValueInput.className = 'form-control form-control-sm text-center';
                 positionValueInput.style.width = '65px';
-                positionValueInput.min = 0;
-                positionValueInput.max = 1;
-                positionValueInput.step = 0.01;
+                positionValueInput.min = 0; positionValueInput.max = 1; positionValueInput.step = 0.01;
                 positionValueInput.value = position;
 
                 const deleteBtn = document.createElement('button');
@@ -2334,18 +2091,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                positionInput.addEventListener('input', () => {
-                    positionValueInput.value = positionInput.value;
-                });
-                positionValueInput.addEventListener('input', () => {
-                    positionInput.value = positionValueInput.value;
-                });
+                positionInput.addEventListener('input', () => positionValueInput.value = positionInput.value);
+                positionValueInput.addEventListener('input', () => positionInput.value = positionValueInput.value);
 
+                // All inputs now trigger the single, reliable update function
                 [colorInput, positionInput, positionValueInput].forEach(input => {
                     input.addEventListener('input', updateGradient);
                 });
 
                 row.appendChild(colorInput);
+                row.appendChild(hexInput);
                 row.appendChild(positionInput);
                 row.appendChild(positionValueInput);
                 row.appendChild(deleteBtn);
@@ -2395,19 +2150,9 @@ document.addEventListener('DOMContentLoaded', function () {
             select.id = controlId;
             select.className = 'form-select';
             select.name = controlId;
-            const cpuSensors = [
-                'CPU Load', 'Memory Load', 'CPU Temperature', 'CPU Package Temp',
-                ...Array.from({ length: 32 }, (_, i) => `CPU Core #${i + 1}`)
-            ];
-            const gpuSensors = [
-                'GPU Core Voltage', 'GPU Hot Spot Temperature', 'GPU Memory Junction Temp',
-                'GPU Core Temperature', 'GPU Memory Clock', 'GPU Core Clock',
-                'GPU Load', 'GPU VRAM Usage'
-            ];
-            const fanSensors = [
-                ...Array.from({ length: 4 }, (_, i) => `Fan Speed #${i + 1}`),
-                ...Array.from({ length: 7 }, (_, i) => `Fan Load #${i + 1}`)
-            ];
+            const cpuSensors = ['CPU Load', 'Memory Load', 'CPU Temperature', 'CPU Package Temp', ...Array.from({ length: 32 }, (_, i) => `CPU Core #${i + 1}`)];
+            const gpuSensors = ['GPU Core Voltage', 'GPU Hot Spot Temperature', 'GPU Memory Junction Temp', 'GPU Core Temperature', 'GPU Memory Clock', 'GPU Core Clock', 'GPU Load', 'GPU VRAM Usage'];
+            const fanSensors = [...Array.from({ length: 4 }, (_, i) => `Fan Speed #${i + 1}`), ...Array.from({ length: 7 }, (_, i) => `Fan Load #${i + 1}`)];
             const sensorValues = [...cpuSensors, ...gpuSensors, ...fanSensors];
             sensorValues.forEach(val => {
                 const option = document.createElement('option');
@@ -2420,50 +2165,27 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'nodetable') {
             const container = document.createElement('div');
             container.className = 'node-table-container';
-
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
             hiddenTextarea.textContent = defaultValue;
-
             const table = document.createElement('table');
             table.className = 'table table-dark table-sm node-table';
-            table.innerHTML = `
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">X</th>
-                <th scope="col">Y</th>
-                <th scope="col" style="width: 80px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody></tbody>`;
-
+            table.innerHTML = `<thead><tr><th scope="col">#</th><th scope="col">X</th><th scope="col">Y</th><th scope="col" style="width: 80px;">Actions</th></tr></thead><tbody></tbody>`;
             const tbody = table.querySelector('tbody');
             let nodes = [];
-            try {
-                nodes = JSON.parse(defaultValue);
-            } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
-
+            try { nodes = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
             nodes.forEach((node, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.index = index;
-                tr.innerHTML = `
-            <td class="align-middle">${index + 1}</td>
-            <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
-            <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
-            <td class="align-middle">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
-            </td>`;
+                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
-
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-node';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Node';
-
             container.appendChild(hiddenTextarea);
             container.appendChild(table);
             container.appendChild(addButton);
@@ -2471,111 +2193,69 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'pixelarttable') {
             const container = document.createElement('div');
             container.className = 'pixel-art-table-container';
-
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
             hiddenTextarea.textContent = defaultValue;
-
             const framesContainer = document.createElement('div');
             framesContainer.className = 'd-flex flex-column gap-2 pixel-art-frames-container';
-
             let objectId = null;
             if (property) {
                 const match = property.match(/^obj(\d+)_/);
-                if (match) {
-                    objectId = match[1];
-                }
+                if (match) { objectId = match[1]; }
             }
-
-            // Get colors from the central configStore before rendering frames
-            const color1Conf = configStore.find(c => c.property === `obj${objectId}_gradColor1`);
-            const color2Conf = configStore.find(c => c.property === `obj${objectId}_gradColor2`);
-            const color1 = color1Conf ? color1Conf.default : '#FF00FF';
-            const color2 = color2Conf ? color2Conf.default : '#00FFFF';
-
+            const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+            let gradientStops = [];
+            if (gradientConf && gradientConf.default) {
+                try { gradientStops = JSON.parse(gradientConf.default); } catch (e) { console.error("Could not parse gradient stops for thumbnail rendering."); }
+            }
             let frames = [];
-            try {
-                frames = JSON.parse(defaultValue);
-            } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
-
+            try { frames = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
             frames.forEach((frame, index) => {
                 const frameItem = document.createElement('div');
                 frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
                 frameItem.dataset.index = index;
                 const textareaId = `frame-data-${objectId}-${index}`;
-                const frameDataStr = frame.data || '[[0]]';
-
-                frameItem.innerHTML = `
-                    <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
-                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                            <div>
-                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                        data-target-id="${textareaId}" title="Edit Frame">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01">
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                `;
+                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">Frame #${index + 1}</strong><div><button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
                 framesContainer.appendChild(frameItem);
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
+                renderPixelArtPreview(previewCanvas, frameDataStr, gradientStops);
             });
-
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'd-flex flex-wrap gap-2 mt-2';
-
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
-
             const pasteSpriteButton = document.createElement('button');
             pasteSpriteButton.type = 'button';
             pasteSpriteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-sprite';
             pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
             pasteSpriteButton.dataset.bsToggle = 'modal';
             pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
-
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
             uploadGifButton.className = 'btn btn-sm btn-outline-warning';
             uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> Upload GIF';
             uploadGifButton.dataset.bsToggle = 'modal';
             uploadGifButton.dataset.bsTarget = '#upload-gif-modal';
-
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
             browseButton.className = 'btn btn-sm btn-outline-info';
             browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
             browseButton.dataset.bsToggle = 'modal';
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
-
             buttonGroup.appendChild(addButton);
             buttonGroup.appendChild(pasteSpriteButton);
             buttonGroup.appendChild(uploadGifButton);
             buttonGroup.appendChild(browseButton);
-
             const gifInput = document.createElement('input');
             gifInput.type = 'file';
             gifInput.className = 'gif-upload-input d-none';
             gifInput.id = `gif-upload-input-${objectId}`;
             gifInput.accept = 'image/gif';
-
             container.appendChild(hiddenTextarea);
             container.appendChild(framesContainer);
             container.appendChild(buttonGroup);
@@ -2657,7 +2337,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     exportType = 'textfield';
                 }
 
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size'];
                 if (conf.type === 'number' && typeof liveValue === 'number') {
                     exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
                 } else if (typeof liveValue === 'boolean') {
@@ -3063,7 +2743,7 @@ document.addEventListener('DOMContentLoaded', function () {
         generalCollapseWrapper.innerHTML = '<hr class="mt-2 mb-3">';
 
         // --- NEW LOGIC: Separate standard controls from override controls ---
-        const overrideControlKeys = ['enablePalette', 'paletteColor1', 'paletteColor2', 'enableGlobalCycle', 'globalCycleSpeed'];
+        const overrideControlKeys = ['enablePalette', 'globalGradientStops', 'enableGlobalCycle', 'globalCycleSpeed'];
         const standardGeneralConfigs = grouped.general.filter(conf => !overrideControlKeys.includes(conf.property || conf.name));
         const overrideGeneralConfigs = grouped.general.filter(conf => overrideControlKeys.includes(conf.property || conf.name));
 
@@ -3461,6 +3141,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     const slider = fieldset.querySelector(`[name="obj${obj.id}_${prop}_slider"]`);
                     if (slider) slider.value = value;
+
+                    // This line was added
                     const hexInput = fieldset.querySelector(`[name="obj${obj.id}_${prop}_hex"]`);
                     if (hexInput) hexInput.value = value;
                 }
@@ -3542,15 +3224,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const obj = objects[i];
 
             // 1. Save the object's original state before applying any overrides
-            const originalGradient = { ...obj.gradient };
-            const originalStrokeGradient = { ...obj.strokeGradient };
+            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
+            const originalGradType = obj.gradType;
+            const originalStrokeGradType = obj.strokeGradType;
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
             const originalStrokeCycleColors = obj.strokeCycleColors;
             const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
 
-
-            // 2. Apply ALL global overrides directly to the object's state
+            // 2. Apply global overrides by temporarily changing the object's properties
             if (globalCycle.enable) {
                 const speed = (globalCycle.speed || 0) / 50.0;
                 obj.cycleColors = true;
@@ -3558,27 +3241,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 obj.strokeCycleColors = true;
                 obj.strokeCycleSpeed = speed;
             }
-            if (palette.enablePalette) {
-                const pColor1 = palette.paletteColor1;
-                const pColor2 = palette.paletteColor2;
-                obj.gradient.color1 = pColor1;
-                obj.gradient.color2 = pColor2;
-                obj.strokeGradient.color1 = pColor1;
-                obj.strokeGradient.color2 = pColor2;
+
+            if (palette.enablePalette && palette.stops) {
+                try {
+                    // The stops are passed as a JSON string from the form, so we parse them
+                    const globalGradientStops = (typeof palette.stops === 'string')
+                        ? JSON.parse(palette.stops)
+                        : palette.stops;
+
+                    // Ensure we have a valid array before applying it
+                    if (Array.isArray(globalGradientStops) && globalGradientStops.length > 0) {
+                        obj.gradient.stops = globalGradientStops;
+                        obj.strokeGradient.stops = globalGradientStops;
+                    }
+                } catch (e) {
+                    // This prevents a crash if the gradient data is temporarily invalid
+                    console.error("Could not parse globalGradientStops:", e);
+                }
             }
 
             // 3. Animate and Draw the object using the (potentially overridden) state
             obj.updateAnimationState(audioData, sensorData, deltaTime);
-            obj.draw(selectedObjectIds.includes(obj.id), audioData, {}); // Pass an empty palette now
+            obj.draw(selectedObjectIds.includes(obj.id), audioData, {});
 
-            // 4. Restore the object's original state for the next frame
+            // 4. Restore the object's original state so the UI controls remain correct
             obj.gradient = originalGradient;
             obj.strokeGradient = originalStrokeGradient;
+            obj.gradType = originalGradType;
+            obj.strokeGradType = originalStrokeGradType;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
             obj.strokeCycleColors = originalStrokeCycleColors;
             obj.strokeCycleSpeed = originalStrokeCycleSpeed;
-
 
             obj.dirty = false;
         }
@@ -3595,7 +3289,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (previewLine.active) {
             ctx.save();
-            ctx.resetTransform(); // Draw in screen space, not subject to object transforms
+            ctx.resetTransform();
             ctx.beginPath();
             ctx.moveTo(previewLine.startX, previewLine.startY);
             ctx.lineTo(previewLine.endX, previewLine.endY);
@@ -3681,8 +3375,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const paletteProps = {
             enablePalette: generalValues.enablePalette,
-            paletteColor1: generalValues.paletteColor1,
-            paletteColor2: generalValues.paletteColor2
+            stops: generalValues.globalGradientStops
         };
 
         const globalCycleProps = {
@@ -3738,12 +3431,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const prefix = `obj${id}_`;
         const configs = configStore.filter(c => c.property && c.property.startsWith(prefix));
 
-        // This list now includes the missing polyline animation properties.
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
+        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size'];
 
         configs.forEach(conf => {
             const key = conf.property.replace(prefix, '');
             const el = form.elements[conf.property];
+
             if (el) {
                 let value;
                 if (el.type === 'checkbox') {
@@ -3751,14 +3444,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (el.type === 'number') {
                     value = el.value === '' ? 0 : parseFloat(el.value);
                 } else {
-                    value = el.value;
+                    value = el.value; // For textareas, textfields, etc.
                 }
 
                 if (propsToScale.includes(key)) {
                     value *= 4;
                 }
 
-                if (key.startsWith('gradColor')) {
+                // --- START: CORRECTED LOGIC ---
+                if (key === 'gradientStops') {
+                    if (!values.gradient) values.gradient = {};
+                    try {
+                        values.gradient.stops = JSON.parse(value);
+                    } catch (e) {
+                        console.error("Could not parse gradient stops for update", e);
+                    }
+                } else if (key === 'strokeGradientStops') {
+                    if (!values.strokeGradient) values.strokeGradient = {};
+                    try {
+                        values.strokeGradient.stops = JSON.parse(value);
+                    } catch (e) {
+                        console.error("Could not parse stroke gradient stops for update", e);
+                    }
+                } else if (key.startsWith('gradColor')) {
+                    // This block handles legacy color properties if they exist
                     if (!values.gradient) values.gradient = {};
                     values.gradient[key.replace('grad', '').toLowerCase()] = value;
                 } else if (key.startsWith('strokeGradColor')) {
@@ -3771,6 +3480,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     values[key] = value;
                 }
+                // --- END: CORRECTED LOGIC ---
             }
         });
 
@@ -3807,19 +3517,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         hiddenTextarea.value = JSON.stringify(obj.polylineNodes);
                     }
                 }
-            }
-        });
-
-        configStore.forEach(conf => {
-            const key = conf.property || conf.name;
-            if (formValues.hasOwnProperty(key)) {
-                let valueToSave = formValues[key];
-                if (conf.type === 'number') {
-                    valueToSave = Number(valueToSave);
-                } else if (typeof valueToSave === 'boolean') {
-                    valueToSave = String(valueToSave);
-                }
-                conf.default = valueToSave;
             }
         });
 
@@ -4706,22 +4403,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
+            // FIX: This block now correctly redraws thumbnails with the full gradient palette.
             if (target.classList.contains('frame-data-input')) {
                 const frameItem = target.closest('.pixel-art-frame-item');
                 if (frameItem) {
                     const fieldset = frameItem.closest('fieldset[data-object-id]');
                     const objectId = fieldset.dataset.objectId;
                     const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                    const color1 = targetObject.gradient.color1;
-                    const color2 = targetObject.gradient.color2;
+
+                    const gradientStops = targetObject ? targetObject.gradient.stops : [];
 
                     const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                    renderPixelArtPreview(previewCanvas, target.value, color1, color2);
+                    renderPixelArtPreview(previewCanvas, target.value, gradientStops);
                 }
             }
         }
 
         updateObjectsFromForm();
+        syncConfigStoreWithForm();
         drawFrame();
     });
 
@@ -4733,130 +4432,137 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (addNodeBtn) {
             const container = addNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            const newIndex = tbody.children.length;
-            const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
-            const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
-            const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
-            const tr = document.createElement('tr');
-            tr.dataset.index = newIndex;
-            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
-            tbody.appendChild(tr);
+            if (container) { // Check if the container was found
+                const tbody = container.querySelector('tbody');
+                const newIndex = tbody.children.length;
+                const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
+                const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
+                const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
+                const tr = document.createElement('tr');
+                tr.dataset.index = newIndex;
+                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tbody.appendChild(tr);
 
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const hiddenTextarea = container.querySelector('textarea');
+                const newNodes = Array.from(tbody.children).map(tr => ({
+                    x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                    y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+                }));
+                hiddenTextarea.value = JSON.stringify(newNodes);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
         if (deleteNodeBtn) {
             const container = deleteNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            if (tbody.children.length > 2) {
-                deleteNodeBtn.closest('tr').remove();
-                Array.from(tbody.children).forEach((tr, index) => {
-                    tr.dataset.index = index;
-                    tr.firstElementChild.textContent = index + 1;
-                });
-            } else {
-                showToast("A polyline must have at least 2 nodes.", "danger");
+            if (container) { // Check if the container was found
+                const tbody = container.querySelector('tbody');
+                if (tbody.children.length > 2) {
+                    deleteNodeBtn.closest('tr').remove();
+                    Array.from(tbody.children).forEach((tr, index) => {
+                        tr.dataset.index = index;
+                        tr.firstElementChild.textContent = index + 1;
+                    });
+                } else {
+                    showToast("A polyline must have at least 2 nodes.", "danger");
+                }
+                const hiddenTextarea = container.querySelector('textarea');
+                const newNodes = Array.from(tbody.children).map(tr => ({
+                    x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                    y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+                }));
+                hiddenTextarea.value = JSON.stringify(newNodes);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
             }
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
             return;
         }
 
         if (addFrameBtn) {
             const container = addFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            const newIndex = framesContainer.children.length;
-            const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
-            const frameItem = document.createElement('div');
-            frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-            frameItem.dataset.index = newIndex;
-            const defaultFrameData = '[[0.7]]';
-            const textareaId = `frame-data-new-${Date.now()}`;
-            frameItem.innerHTML = `
-        <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
-                <div>
-                    <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                            data-bs-toggle="modal"
-                            data-bs-target="#pixelArtEditorModal"
-                            data-target-id="${textareaId}" title="Edit Frame">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text" title="Duration (seconds)">
-                    <i class="bi bi-clock"></i>
-                </span>
-                <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.1" step="0.1">
-            </div>
-            <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-        </div>
-    `;
-            framesContainer.appendChild(frameItem);
+            if (container) { // Check if the container was found
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                const newIndex = framesContainer.children.length;
+                const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
+                const frameItem = document.createElement('div');
+                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
+                frameItem.dataset.index = newIndex;
+                const defaultFrameData = '[[0.7]]';
+                const textareaId = `frame-data-${objectId}-${newIndex}`;
 
-            const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-            const color1 = targetObject.gradient.color1;
-            const color2 = targetObject.gradient.color2;
-            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-            renderPixelArtPreview(previewCanvas, defaultFrameData, color1, color2);
+                frameItem.innerHTML = `
+                    <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
+                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
+                                        data-target-id="${textareaId}" title="Edit Frame">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
+                            <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.01" step="0.01">
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
+                    </div>
+                `;
+                framesContainer.appendChild(frameItem);
 
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                const color1 = targetObject.gradient.stops?.[0]?.color;
+                const color2 = targetObject.gradient.stops?.[1]?.color;
+                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                renderPixelArtPreview(previewCanvas, defaultFrameData, color1, color2);
+
+                const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+                const newFrames = Array.from(framesContainer.children).map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                }));
+                hiddenTextarea.value = JSON.stringify(newFrames);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
         if (deleteFrameBtn) {
             const container = deleteFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            if (framesContainer.children.length > 1) {
-                const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
-                if (tooltip) {
-                    tooltip.dispose();
+            if (container) { // Check if the container was found
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                if (framesContainer.children.length > 1) {
+                    const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
+                    if (tooltip) {
+                        tooltip.dispose();
+                    }
+                    deleteFrameBtn.closest('.pixel-art-frame-item').remove();
+                    Array.from(framesContainer.children).forEach((item, index) => {
+                        item.dataset.index = index;
+                        item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
+                    });
+                } else {
+                    showToast("Pixel Art object must have at least one frame.", "warning");
                 }
-                deleteFrameBtn.closest('.pixel-art-frame-item').remove();
-                Array.from(framesContainer.children).forEach((item, index) => {
-                    item.dataset.index = index;
-                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
-                });
-            } else {
-                showToast("Pixel Art object must have at least one frame.", "warning");
-            }
 
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+                const newFrames = Array.from(framesContainer.children).map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                }));
+                hiddenTextarea.value = JSON.stringify(newFrames);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
@@ -5261,24 +4967,18 @@ document.addEventListener('DOMContentLoaded', function () {
      * Updates the global configStore with the current state of all form controls.
      * This makes the form the single source of truth at the moment of saving.
      */
-    function syncConfigStoreWithState() {
+    function syncConfigStoreWithForm() {
         const formValues = getControlValues();
 
         configStore.forEach(conf => {
             const key = conf.property || conf.name;
-
-            // Ensure we only update properties that exist in the form
             if (formValues.hasOwnProperty(key)) {
                 let valueToSave = formValues[key];
-
-                // The form holds UI-scaled values, which is what we need to save.
-                // We just need to ensure the data types are correct for saving.
                 if (conf.type === 'number') {
-                    valueToSave = Math.round(Number(valueToSave));
+                    valueToSave = Number(valueToSave);
                 } else if (typeof valueToSave === 'boolean') {
                     valueToSave = String(valueToSave);
                 }
-
                 conf.default = valueToSave;
             }
         });
@@ -5294,7 +4994,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        syncConfigStoreWithState();
+        syncConfigStoreWithForm();
 
         const name = getControlValues()['title'] || 'Untitled Effect';
         const trimmedName = name.trim();
