@@ -12,6 +12,28 @@ const propsToScale = [
     'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'
 ];
 
+// Update this for a new property
+//Tabs
+const controlGroupMap = {
+    'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
+    'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
+    'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
+    'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
+    'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
+    'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
+    'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
+    'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
+    'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
+    'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
+    'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
+    'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
+    'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
+    'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
+    'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
+    'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
+};
+
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
@@ -349,6 +371,531 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    const exportOptionsModalEl = document.getElementById('export-options-modal');
+
+    if (exportOptionsModalEl) {
+        // Use event delegation for better performance
+        exportOptionsModalEl.addEventListener('change', (e) => {
+            const target = e.target;
+
+            // Part 1: Logic for when a GROUP master checkbox is clicked
+            if (target.classList.contains('group-master-check')) {
+                const groupId = target.dataset.groupId;
+                const childCheckboxes = exportOptionsModalEl.querySelectorAll(`.property-check.${groupId}`);
+
+                // Set all child checkboxes to match the master's state
+                childCheckboxes.forEach(child => {
+                    child.checked = target.checked;
+                });
+            }
+            // Part 2: Logic for when an INDIVIDUAL property checkbox is clicked
+            else if (target.classList.contains('property-check')) {
+                // Find the master checkbox for this group
+                const groupId = Array.from(target.classList).find(c => c.startsWith('export-group-'));
+                if (!groupId) return;
+
+                const masterCheckbox = exportOptionsModalEl.querySelector(`[data-group-id="${groupId}"]`);
+                const childCheckboxes = Array.from(exportOptionsModalEl.querySelectorAll(`.property-check.${groupId}`));
+
+                const total = childCheckboxes.length;
+                const checkedCount = childCheckboxes.filter(child => child.checked).length;
+
+                // Update the master checkbox state based on how many children are checked
+                if (checkedCount === 0) {
+                    masterCheckbox.checked = false;
+                    masterCheckbox.indeterminate = false; // Not checked
+                } else if (checkedCount === total) {
+                    masterCheckbox.checked = true;
+                    masterCheckbox.indeterminate = false; // Fully checked
+                } else {
+                    masterCheckbox.checked = false;
+                    masterCheckbox.indeterminate = true;  // Partially checked
+                }
+            }
+        });
+
+        exportOptionsModalEl.addEventListener('click', (e) => {
+            const presetButton = e.target.closest('button[data-preset]');
+            if (!presetButton) return;
+
+            const preset = presetButton.dataset.preset;
+            const allCheckboxes = exportOptionsModalEl.querySelectorAll('input.property-check');
+
+            // Define which properties belong to which preset
+            const presetMap = {
+                animation: ['Fill-Animation', 'Color-Animation', 'Oscilloscope', 'Tetris', 'Fire', 'Strimer', 'Spawner', 'Object Fill', 'Object'],
+                colors: ['Fill-Animation', 'Stroke', 'Object Fill', 'Particle'],
+                geometry: ['Geometry', 'Polyline', 'Text']
+            };
+
+            // Define the specific properties for our new presets
+            const minimalProps = ['gradientStops', 'animationSpeed'];
+            const staticPropsToDisable = [
+                'animationSpeed', 'rotationSpeed', 'cycleColors', 'cycleSpeed', 'textAnimation', 'textAnimationSpeed',
+                'pathAnim_speed', 'pathAnim_animationSpeed', 'pathAnim_cycleSpeed', 'spawn_speed', 'spawn_rotationSpeed',
+                'strimerAnimationSpeed', 'strimerPulseSpeed', 'oscAnimationSpeed', 'strokeAnimationSpeed', 'strokeCycleSpeed', 'strokeRotationSpeed'
+            ];
+
+            const gradientProps = [
+                'gradientStops',
+                'strokeGradientStops',
+                'pathAnim_gradColor1',
+                'pathAnim_gradColor2'
+            ];
+
+            // Set the state of all checkboxes based on the chosen preset
+            allCheckboxes.forEach(cb => {
+                const propName = cb.name.substring(cb.name.indexOf('_') + 1);
+
+                if (preset === 'minimal') {
+                    cb.checked = minimalProps.includes(propName);
+                } else if (preset === 'static') {
+                    cb.checked = !staticPropsToDisable.includes(propName);
+                } else if (preset === 'gradients') {
+                    cb.checked = gradientProps.includes(propName);
+                } else {
+                    const groupsForPreset = presetMap[preset] || [];
+                    let isInGroup = false;
+                    for (const groupName of groupsForPreset) {
+                        if (controlGroupMap[groupName] && controlGroupMap[groupName].props.includes(propName)) {
+                            isInGroup = true;
+                            break;
+                        }
+                    }
+                    cb.checked = isInGroup;
+                }
+            });
+
+            // Manually trigger a 'change' event on the first checkbox to update all master checkboxes' indeterminate states
+            const firstCheckbox = exportOptionsModalEl.querySelector('input.property-check');
+            if (firstCheckbox) {
+                firstCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+
+        exportOptionsModalEl.addEventListener('show.bs.modal', () => {
+            const accordionContainer = document.getElementById('export-options-accordion');
+            const modalBody = document.getElementById('export-options-body');
+
+            // Clear previous content but keep the new elements we're about to add
+            accordionContainer.innerHTML = '';
+
+            // Remove old global buttons if they exist, to prevent duplication
+            modalBody.querySelector('#export-global-controls')?.remove();
+            modalBody.querySelector('#export-preset-controls')?.remove(); // <-- ADD THIS LINE
+
+            // --- Add Global Shortcut Buttons ---
+            const globalControls = document.createElement('div');
+            globalControls.id = 'export-global-controls';
+            globalControls.className = 'd-flex gap-2 border-bottom pb-3 mb-3';
+            globalControls.innerHTML = `
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
+    `;
+            // Add the controls right after the introductory paragraph
+            modalBody.querySelector('p').insertAdjacentElement('afterend', globalControls);
+
+            const presetControls = document.createElement('div');
+            presetControls.id = 'export-preset-controls';
+            presetControls.className = 'd-flex flex-wrap gap-2 border-bottom pb-3 mb-3';
+            presetControls.innerHTML = `
+    <span class="text-body-secondary small me-2 align-self-center">Presets:</span>
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-info" data-preset="animation">Animation</button>
+        <button type="button" class="btn btn-outline-info" data-preset="colors">Colors</button>
+        <button type="button" class="btn btn-outline-info" data-preset="geometry">Geometry</button>
+        <button type="button" class="btn btn-outline-info" data-preset="gradients">Gradients</button> </div>
+    <div class="vr mx-2"></div>
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-success" data-preset="minimal">Minimal (User-Friendly)</button>
+        <button type="button" class="btn btn-outline-success" data-preset="static">Static (No Animation)</button>
+    </div>
+`;
+            globalControls.insertAdjacentElement('afterend', presetControls);
+
+            globalControls.querySelector('button:first-child').addEventListener('click', () => {
+                exportOptionsModalEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.checked = true;
+                    cb.indeterminate = false;
+                });
+            });
+            globalControls.querySelector('button:last-child').addEventListener('click', () => {
+                exportOptionsModalEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                    cb.indeterminate = false;
+                });
+            });
+            // --- End Global Shortcut Buttons ---
+
+            const forceHardcode = ['pixelArtFrames', 'polylineNodes'];
+
+            objects.forEach((obj, index) => {
+                const validPropsForShape = shapePropertyMap[obj.shape] || [];
+                const accordionId = `export-accordion-${obj.id}`;
+
+                const item = document.createElement('div');
+                item.className = 'accordion-item';
+                item.innerHTML = `
+            <h2 class="accordion-header">
+                <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${accordionId}" aria-expanded="${index === 0}">
+                    ${obj.name || `Object ${obj.id}`}
+                </button>
+            </h2>
+            <div id="collapse-${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#export-options-accordion">
+                <div class="accordion-body"></div>
+            </div>
+        `;
+
+                const body = item.querySelector('.accordion-body');
+
+                for (const groupName in controlGroupMap) {
+                    const groupProps = controlGroupMap[groupName].props;
+                    const relevantConfigs = configStore.filter(conf => {
+                        if (!conf.property || !conf.property.startsWith(`obj${obj.id}_`)) return false;
+                        const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                        return !forceHardcode.includes(propName) && groupProps.includes(propName) && validPropsForShape.includes(propName);
+                    });
+
+                    if (relevantConfigs.length > 0) {
+                        const groupId = `export-group-${obj.id}-${groupName.replace(/\\s/g, '-')}`;
+                        const groupContainer = document.createElement('div');
+                        groupContainer.className = 'mb-3';
+
+                        // --- Add Group Master Checkbox ---
+                        groupContainer.innerHTML = `
+                    <div class="form-check bg-body-tertiary rounded p-2 mb-2">
+                        <input class="form-check-input group-master-check" type="checkbox" id="${groupId}-master" data-group-id="${groupId}" checked>
+                        <label class="form-check-label fw-bold" for="${groupId}-master">
+                            ${groupName}
+                        </label>
+                    </div>
+                `;
+
+                        relevantConfigs.forEach(conf => {
+                            const label = conf.label.split(':').slice(1).join(':').trim();
+                            const checkWrapper = document.createElement('div');
+                            checkWrapper.className = 'form-check ms-3';
+                            // --- Add class to link to master checkbox ---
+                            checkWrapper.innerHTML = `
+                        <input class="form-check-input property-check ${groupId}" type="checkbox" id="${conf.property}-export-check" name="${conf.property}" checked>
+                        <label class="form-check-label" for="${conf.property}-export-check">
+                            ${label}
+                        </label>
+                    `;
+                            groupContainer.appendChild(checkWrapper);
+                        });
+                        body.appendChild(groupContainer);
+                    }
+                }
+                accordionContainer.appendChild(item);
+            });
+        });
+
+        // This handles the final export confirmation
+        document.getElementById('export-copy-code-btn').addEventListener('click', async () => {
+            const checkboxes = exportOptionsModalEl.querySelectorAll('input[type="checkbox"]');
+            const exposedProperties = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.name);
+
+            const payload = buildExportPayload(exposedProperties);
+
+            if (payload.finalHtml) {
+                navigator.clipboard.writeText(payload.finalHtml).then(() => {
+                    showToast("HTML code copied to clipboard!", 'success');
+                    const exportModal = bootstrap.Modal.getInstance(exportOptionsModalEl);
+                    if (exportModal) exportModal.hide();
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showToast("Could not copy code. See console for details.", 'danger');
+                });
+            }
+        });
+
+        // Listener for the new "Generate .zip File" button
+        document.getElementById('confirm-export-zip-btn').addEventListener('click', async () => {
+            const checkboxes = exportOptionsModalEl.querySelectorAll('input[type="checkbox"]');
+            const exposedProperties = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.name);
+
+            const exportModal = bootstrap.Modal.getInstance(exportOptionsModalEl);
+            if (exportModal) exportModal.hide();
+
+            // Call your existing generateAndDownloadZip function, but pass it the payload
+            await generateAndDownloadZip(exposedProperties);
+        });
+
+        function buildExportPayload(exposedProperties = []) {
+            // 1. Ensure the live objects are in sync with the form controls
+            updateObjectsFromForm();
+
+            // 2. Generate the meta tags and JS variables based on the user's selections
+            const { metaTags, jsVars, allKeys, jsVarKeys } = generateOutputScript(exposedProperties);
+
+            // 3. Get the title and generate a thumbnail for the export package
+            const effectTitle = getControlValues()['title'] || 'MyEffect';
+            const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
+            const safeFilename = effectTitle.replace(/[\\s/\\?%*:|"<>]/g, '_');
+
+            // 4. Define the static parts of the exported file
+            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; }';
+            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
+
+            // 5. Bundle all required helper functions and the Shape class into strings
+            // FIX: This converts single-line comments to multi-line to prevent truncation
+            const safeShapeClassString = Shape.toString().replace(/\/\/(.*)/g, '/*$1*/');
+            const allHelperFunctions = [
+                hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
+                drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
+            ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
+
+            const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
+
+            // 6. Assemble the final, self-contained runtime script
+            const exportedScript = `
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signalCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = 320;
+    canvas.height = 200;
+    let objects = [];
+    
+    ${jsVars}
+
+    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
+    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
+    ${allHelperFunctions}
+    
+    const Shape = ${safeShapeClassString};
+
+    let then;
+    const allPropKeys = ${formattedKeys};
+    const jsProperties = ${JSON.stringify(jsVarKeys)};
+
+    function updateObjectFromWindow(obj) {
+        const id = obj.id;
+        const newProps = {};
+        const fillStops = [];
+        for (let i = 1; i <= 10; i++) {
+            const fcKey = \`obj\${id}_gradColor_\${i}\`;
+            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
+            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
+                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+            }
+        }
+        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
+        
+        const strokeStops = [];
+        for (let i = 1; i <= 10; i++) {
+             const scKey = \`obj\${id}_strokeColor_\${i}\`;
+             const spKey = \`obj\${id}_strokePosition_\${i}\`;
+             if (window[scKey] !== undefined && window[spKey] !== undefined) {
+                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+            }
+        }
+        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
+
+        allPropKeys.forEach(key => {
+            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
+                const propName = key.substring(key.indexOf('_') + 1);
+                if (propName.includes('Color_') || propName.includes('Position_')) return;
+                let value = window[key];
+                if (value === "true") value = true;
+                if (value === "false") value = false;
+                if (propName === 'scrollDir') newProps.scrollDirection = value;
+                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
+                else newProps[propName] = value;
+            }
+        });
+        obj.update(newProps);
+    }
+
+    function createInitialObjects() {
+        if (allPropKeys.length === 0) return;
+        
+        const uniqueIds = [...new Set(allPropKeys.map(p => {
+            if (!p || !p.startsWith('obj')) return null;
+            const end = p.indexOf('_');
+            if (end <= 3) return null;
+            const idString = p.substring(3, end);
+            const id = parseInt(idString, 10);
+            return isNaN(id) ? null : String(id);
+        }).filter(id => id !== null))];
+
+        objects = uniqueIds.map(id => {
+            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
+            const prefix = 'obj' + id + '_';
+            
+            const fillStops = [];
+            for (let i = 1; i <= 10; i++) {
+                const fcKey = prefix + 'gradColor_' + i;
+                const fpKey = prefix + 'gradPosition_' + i;
+                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
+                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+                }
+            }
+            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
+            
+            const strokeStops = [];
+            for (let i = 1; i <= 10; i++) {
+                const scKey = prefix + 'strokeColor_' + i;
+                const spKey = prefix + 'strokePosition_' + i;
+                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
+                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+                }
+            }
+            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
+
+            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
+                const propName = key.substring(prefix.length);
+                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
+                let value;
+                try {
+                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
+                } catch (e) {
+                    if (typeof window[key] !== 'undefined') { value = window[key]; }
+                }
+                if (typeof value !== 'undefined') {
+                    if (value === "true") value = true;
+                    if (value === "false") value = false;
+                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
+                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
+                    } else if (propName === 'scrollDir') {
+                        config.scrollDirection = value;
+                    } else if (propName === 'strokeScrollDir') {
+                        config.strokeScrollDir = value;
+                    } else {
+                        config[propName] = value;
+                    }
+                }
+            });
+            return new Shape(config);
+        });
+    }
+
+    function drawFrame(deltaTime = 0) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
+        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
+        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
+        const sensorData = {};
+        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
+        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
+        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
+        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
+        let gStops = [];
+        if (useGlobalPalette) {
+            for (let i = 1; i <= 10; i++) {
+                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
+                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
+                }
+            }
+            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
+        }
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            updateObjectFromWindow(obj);
+            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
+            const originalCycleColors = obj.cycleColors;
+            const originalCycleSpeed = obj.cycleSpeed;
+            if (useGlobalCycle) {
+                const speed = (gCycleSpeed || 0) / 50.0;
+                obj.cycleColors = true; obj.cycleSpeed = speed;
+                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
+            }
+            if (useGlobalPalette && gStops.length > 0) {
+                if (obj.shape !== 'pixel-art') {
+                    obj.gradient.stops = gStops;
+                    obj.strokeGradient.stops = gStops;
+                }
+            }
+            const dt = shouldAnimate ? deltaTime : 0;
+            obj.updateAnimationState(audioData, sensorData, dt);
+            obj.draw(false, audioData, {});
+            obj.gradient = originalGradient;
+            obj.strokeGradient = originalStrokeGradient;
+            obj.cycleColors = originalCycleColors;
+            obj.cycleSpeed = originalCycleSpeed;
+        }
+    }
+    function animate(timestamp) {
+        requestAnimationFrame(animate);
+        const now = timestamp;
+        let deltaTime = (now - (then || now)) / 1000.0;
+        if (deltaTime > 0.1) deltaTime = 0.1;
+        then = now;
+        drawFrame(deltaTime);
+    }
+    function init() {
+        createInitialObjects();
+        then = window.performance.now();
+        animate(then);
+    }
+    init();
+});
+`;
+
+            // 7. Assemble the full HTML string with REAL newlines
+            const finalHtml = [
+                '<!DOCTYPE html>', '<html lang="en">', '<head>', '<meta charset="UTF-8">',
+                `<title>${effectTitle}</title>`, metaTags, '<style>', styleContent, '</style>',
+                '</head>', bodyContent, '<script>', exportedScript, '</script>', '</html>'
+            ].join('\n'); // <-- This now uses a single backslash for a real newline
+
+            return {
+                safeFilename,
+                finalHtml,
+                thumbnailDataUrl,
+                imageExtension: 'png',
+                exportDate: new Date()
+            };
+        }
+
+        // This is a new function that replaces the old exportFile logic
+        async function generateAndDownloadZip(exposedProperties = []) {
+            const exportButton = document.getElementById('export-btn');
+            exportButton.disabled = true;
+            exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Exporting...';
+
+            try {
+                const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = buildExportPayload(exposedProperties);
+
+                if (!finalHtml) {
+                    throw new Error("Failed to generate HTML content.");
+                };
+
+                const zip = new JSZip();
+                zip.file(`${safeFilename}.html`, finalHtml, { date: exportDate });
+
+                const imageResponse = await fetch(thumbnailDataUrl);
+                const imageBlob = await imageResponse.blob();
+                zip.file(`${safeFilename}.${imageExtension}`, imageBlob, { date: exportDate });
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(zipBlob);
+                link.download = `${safeFilename}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+
+                showToast("Zip file download started.", 'info');
+                await incrementDownloadCount();
+
+            } catch (error) {
+                console.error('Export failed:', error);
+                showToast('Failed to export file: ' + error.message, 'danger');
+            } finally {
+                exportButton.disabled = false;
+                exportButton.innerHTML = '<i class="bi bi-download me-1"></i> Export';
+            }
+        }
+    }
+
     const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
     if (confirmGifUploadBtn) {
         confirmGifUploadBtn.addEventListener('click', () => {
@@ -2285,15 +2832,13 @@ document.addEventListener('DOMContentLoaded', function () {
      * Generates the meta tags and JavaScript variables for the final exported HTML file.
      * This is where the "Minimize Properties" logic is applied.
      */
-    function generateOutputScript() {
+    function generateOutputScript(exposedProperties = []) {
         let metaTags = '';
         let jsVars = '';
         let allKeys = [];
         const jsVarKeys = [];
-        const minimize = document.getElementById('minimize-props-export')?.checked || false;
         const generalValues = getControlValues();
 
-        // Process General (non-object) properties
         configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
             const key = conf.property || conf.name;
             if (key === 'globalGradientStops') return;
@@ -2312,7 +2857,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
-
         try {
             const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
             globalStops.forEach((stop, i) => {
@@ -2325,7 +2869,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         } catch (e) { console.error("Could not process global gradient for export.", e); }
 
-        // Process each object's properties
         objects.forEach(obj => {
             const name = obj.name || `Object ${obj.id}`;
             const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
@@ -2362,7 +2905,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (liveValue === undefined) liveValue = conf.default;
                 allKeys.push(conf.property);
 
-                // Create the final value for export by scaling down where necessary
                 let valueForExport = liveValue;
                 if (typeof valueForExport === 'number' && propsToScale.includes(propName)) {
                     valueForExport = Math.round(valueForExport / 4);
@@ -2371,7 +2913,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const forceJsVarProps = ['pixelArtFrames', 'polylineNodes'];
-                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
 
                 const createMetaTag = (config, value) => {
                     config.label = `${name}: ${config.label.split(':').slice(1).join(':').trim()}`;
@@ -2384,136 +2925,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     return `<meta ${attrs.join(' ')} default="${finalValue}">\n`;
                 };
 
-                if (forceJsVarProps.includes(propName)) {
-                    // For special large data, we use the original live value for JS vars, but need to scale some parts.
+                if (forceJsVarProps.includes(propName) || !exposedProperties.includes(conf.property)) {
                     let finalJsValue = liveValue;
                     if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
                         const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
                         finalJsValue = JSON.stringify(scaledNodes);
                     }
-                    jsVars += `window.${conf.property} = ${JSON.stringify(finalJsValue)};\n`;
-                    jsVarKeys.push(conf.property);
-                } else if (minimize && essentialProps.includes(propName)) {
-                    jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
-                    jsVarKeys.push(conf.property);
-                } else {
-                    metaTags += createMetaTag(conf, valueForExport);
-                }
-            });
-        });
-
-        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys, jsVarKeys };
-    }
-
-    function generateOutputScript() {
-        let metaTags = '';
-        let jsVars = '';
-        let allKeys = [];
-        const jsVarKeys = [];
-        const minimize = document.getElementById('minimize-props-export')?.checked || false;
-        const generalValues = getControlValues();
-
-        // Process General (non-object) properties
-        configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
-            const key = conf.property || conf.name;
-            if (key === 'globalGradientStops') return;
-            if (generalValues[key] !== undefined) {
-                allKeys.push(key);
-                let exportValue = generalValues[key];
-                if (typeof exportValue === 'string') exportValue = exportValue.replace(/"/g, '&quot;');
-                if (conf.name && !conf.property) {
-                    metaTags += `<meta ${key}="${exportValue}">\n`;
-                } else {
-                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
-                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
-                    if (conf.min) attrs.push(`min="${conf.min}"`);
-                    if (conf.max) attrs.push(`max="${conf.max}"`);
-                    metaTags += `<meta ${attrs.join(' ')} default="${exportValue}">\n`;
-                }
-            }
-        });
-
-        try {
-            const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
-            globalStops.forEach((stop, i) => {
-                const index = i + 1;
-                const colorKey = `globalColor_${index}`;
-                const posKey = `globalPosition_${index}`;
-                allKeys.push(colorKey, posKey);
-                metaTags += `<meta property="${colorKey}" label="Global Color ${index}" type="color" default="${stop.color}">\n`;
-                metaTags += `<meta property="${posKey}" label="Global Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
-            });
-        } catch (e) { console.error("Could not process global gradient for export.", e); }
-
-        // Process each object's properties
-        objects.forEach(obj => {
-            const name = obj.name || `Object ${obj.id}`;
-            const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
-            const validPropsForShape = shapePropertyMap[obj.shape] || [];
-
-            if (obj.gradient && obj.gradient.stops) {
-                obj.gradient.stops.forEach((stop, i) => {
-                    const index = i + 1;
-                    const colorKey = `obj${obj.id}_gradColor_${index}`;
-                    const posKey = `obj${obj.id}_gradPosition_${index}`;
-                    allKeys.push(colorKey, posKey);
-                    metaTags += `<meta property="${colorKey}" label="${name}: Color ${index}" type="color" default="${stop.color}">\n`;
-                    metaTags += `<meta property="${posKey}" label="${name}: Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
-                });
-            }
-            if (obj.strokeGradient && obj.strokeGradient.stops) {
-                obj.strokeGradient.stops.forEach((stop, i) => {
-                    const index = i + 1;
-                    const colorKey = `obj${obj.id}_strokeColor_${index}`;
-                    const posKey = `obj${obj.id}_strokePosition_${index}`;
-                    allKeys.push(colorKey, posKey);
-                    metaTags += `<meta property="${colorKey}" label="${name}: Stroke Color ${index}" type="color" default="${stop.color}">\n`;
-                    metaTags += `<meta property="${posKey}" label="${name}: Stroke Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
-                });
-            }
-
-            objectConfigs.forEach(conf => {
-                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                if (!validPropsForShape.includes(propName) || propName === 'gradientStops' || propName === 'strokeGradientStops') {
-                    return;
-                }
-
-                let liveValue = (propName === 'scrollDir') ? obj.scrollDirection : (propName === 'strokeScrollDir') ? obj.strokeScrollDir : obj[propName];
-                if (liveValue === undefined) liveValue = conf.default;
-                allKeys.push(conf.property);
-
-                // Create the final value for export by scaling down where necessary
-                let valueForExport = liveValue;
-                if (typeof valueForExport === 'number' && propsToScale.includes(propName)) {
-                    valueForExport = Math.round(valueForExport / 4);
-                } else if (typeof valueForExport === 'boolean') {
-                    valueForExport = String(valueForExport);
-                }
-
-                const forceJsVarProps = ['pixelArtFrames', 'polylineNodes'];
-                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
-
-                const createMetaTag = (config, value) => {
-                    config.label = `${name}: ${config.label.split(':').slice(1).join(':').trim()}`;
-                    const attrs = [`property="${config.property}"`, `label="${config.label}"`, `type="${config.type}"`];
-                    if (config.values) attrs.push(`values="${config.values.split(',').sort().join(',')}"`);
-                    if (config.min) attrs.push(`min="${config.min}"`);
-                    if (config.max) attrs.push(`max="${config.max}"`);
-                    let finalValue = value;
-                    if (typeof finalValue === 'string') finalValue = finalValue.replace(/"/g, '&quot;');
-                    return `<meta ${attrs.join(' ')} default="${finalValue}">\n`;
-                };
-
-                if (forceJsVarProps.includes(propName)) {
-                    // For special large data, we use the original live value for JS vars, but need to scale some parts.
-                    let finalJsValue = liveValue;
-                    if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
-                        const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
-                        finalJsValue = JSON.stringify(scaledNodes);
-                    }
-                    jsVars += `window.${conf.property} = ${JSON.stringify(finalJsValue)};\n`;
-                    jsVarKeys.push(conf.property);
-                } else if (minimize && essentialProps.includes(propName)) {
                     jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
                     jsVarKeys.push(conf.property);
                 } else {
@@ -2681,27 +3098,6 @@ document.addEventListener('DOMContentLoaded', function () {
         tabContent.className = 'tab-content';
         tabContent.id = `object-tab-content-${id}`;
 
-        // Update this for a new property
-        //Tabs
-        const controlGroupMap = {
-            'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
-            'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
-            'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
-            'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
-            'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
-            'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
-            'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
-            'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-            'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
-            'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
-            'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
-            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
-            'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
-            'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
-            'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
-            'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
-            'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
-        };
         const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
         let isFirstTab = true;
         let firstTabId = null;
@@ -2955,9 +3351,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Initializes the Sortable.js library for all pixel art frame containers
- * to allow drag-and-drop reordering of frames within an object.
- */
+    * Initializes the Sortable.js library for all pixel art frame containers
+    * to allow drag-and-drop reordering of frames within an object.
+    */
     function initializeFrameSorters() {
         const frameContainers = document.querySelectorAll('.pixel-art-frames-container');
         frameContainers.forEach(container => {
@@ -4239,245 +4635,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function exportFile() {
-        const exportButton = document.getElementById('export-download-btn');
-        exportButton.disabled = true;
-        exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Preparing...';
-
-        try {
-            updateObjectsFromForm();
-            const { metaTags, jsVars, allKeys, jsVarKeys } = generateOutputScript();
-            const effectTitle = getControlValues()['title'] || 'MyEffect';
-            const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
-            const safeFilename = effectTitle.replace(/[\s\/\\?%*:|"<>]/g, '_');
-
-            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; }';
-            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
-
-            const allHelperFunctions = [
-                hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
-                drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
-            ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
-
-            const shapeClassString = Shape.toString();
-            const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
-
-            const exportedScript = `
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('signalCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = 320;
-    canvas.height = 200;
-    let objects = [];
-    
-    ${jsVars}
-
-    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
-    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
-    ${allHelperFunctions}
-    
-    const Shape = ${shapeClassString};
-
-    let then;
-    const allPropKeys = ${formattedKeys};
-    const jsProperties = ${JSON.stringify(jsVarKeys)};
-
-    function updateObjectFromWindow(obj) {
-        const id = obj.id;
-        const newProps = {};
-        
-        const fillStops = [];
-        for (let i = 1; i <= 10; i++) {
-            const fcKey = \`obj\${id}_gradColor_\${i}\`;
-            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
-            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
-                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
-            }
-        }
-        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
-        
-        const strokeStops = [];
-        for (let i = 1; i <= 10; i++) {
-             const scKey = \`obj\${id}_strokeColor_\${i}\`;
-             const spKey = \`obj\${id}_strokePosition_\${i}\`;
-             if (window[scKey] !== undefined && window[spKey] !== undefined) {
-                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
-            }
-        }
-        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
-
-        allPropKeys.forEach(key => {
-            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
-                const propName = key.substring(key.indexOf('_') + 1);
-                if (propName.includes('Color_') || propName.includes('Position_')) return;
-                
-                let value = window[key];
-                if (value === "true") value = true;
-                if (value === "false") value = false;
-                
-                if (propName === 'scrollDir') newProps.scrollDirection = value;
-                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
-                else newProps[propName] = value;
-            }
-        });
-        obj.update(newProps);
-    }
-
-    function createInitialObjects() {
-        if (allPropKeys.length === 0) return;
-        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\\d+)_/) || [])[1]).filter(Boolean))];
-
-        objects = uniqueIds.map(id => {
-            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
-            const prefix = 'obj' + id + '_';
-            
-            const fillStops = [];
-            for (let i = 1; i <= 10; i++) {
-                const fcKey = prefix + 'gradColor_' + i;
-                const fpKey = prefix + 'gradPosition_' + i;
-                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
-                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
-                }
-            }
-            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
-            
-            const strokeStops = [];
-            for (let i = 1; i <= 10; i++) {
-                const scKey = prefix + 'strokeColor_' + i;
-                const spKey = prefix + 'strokePosition_' + i;
-                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
-                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
-                }
-            }
-            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
-
-            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
-                const propName = key.substring(prefix.length);
-                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
-
-                let value;
-                try {
-                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
-                } catch (e) {
-                    if (typeof window[key] !== 'undefined') { value = window[key]; }
-                }
-
-                if (typeof value !== 'undefined') {
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-
-                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
-                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
-                    } else if (propName === 'scrollDir') {
-                        config.scrollDirection = value;
-                    } else if (propName === 'strokeScrollDir') {
-                        config.strokeScrollDir = value;
-                    } else {
-                        config[propName] = value;
-                    }
-                }
-            });
-            return new Shape(config);
-        });
-    }
-
-    function drawFrame(deltaTime = 0) {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
-        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
-        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
-        const sensorData = {};
-        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
-        
-        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
-        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
-        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
-        
-        let gStops = [];
-        if (useGlobalPalette) {
-            for (let i = 1; i <= 10; i++) {
-                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
-                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
-                }
-            }
-            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
-        }
-
-        for (let i = objects.length - 1; i >= 0; i--) {
-            const obj = objects[i];
-            updateObjectFromWindow(obj);
-            
-            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
-            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
-            const originalCycleColors = obj.cycleColors;
-            const originalCycleSpeed = obj.cycleSpeed;
-
-            if (useGlobalCycle) {
-                const speed = (gCycleSpeed || 0) / 50.0;
-                obj.cycleColors = true; obj.cycleSpeed = speed;
-                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
-            }
-            if (useGlobalPalette && gStops.length > 0) {
-                // Only apply global palette if the object is NOT pixel art
-                if (obj.shape !== 'pixel-art') {
-                    obj.gradient.stops = gStops;
-                    obj.strokeGradient.stops = gStops;
-                }
-            }
-            
-            const dt = shouldAnimate ? deltaTime : 0;
-            obj.updateAnimationState(audioData, sensorData, dt);
-            obj.draw(false, audioData, {});
-            
-            obj.gradient = originalGradient;
-            obj.strokeGradient = originalStrokeGradient;
-            obj.cycleColors = originalCycleColors;
-            obj.cycleSpeed = originalCycleSpeed;
-        }
-    }
-
-    function animate(timestamp) {
-        requestAnimationFrame(animate);
-        const now = timestamp;
-        let deltaTime = (now - (then || now)) / 1000.0;
-        if (deltaTime > 0.1) deltaTime = 0.1;
-        then = now;
-        drawFrame(deltaTime);
-    }
-    function init() {
-        createInitialObjects();
-        then = window.performance.now();
-        animate(then);
-    }
-    init();
-});`;
-
-            exportPayload = {
-                safeFilename,
-                finalHtml: [
-                    '<!DOCTYPE html>', '<html lang="en">', '<head>', '<meta charset="UTF-8">',
-                    `<title>${effectTitle}</title>`, metaTags, '<style>', styleContent, '</style>',
-                    '</head>', bodyContent, '<script>', exportedScript, '</script>', '</html>'
-                ].join('\n'),
-                thumbnailDataUrl,
-                imageExtension: 'png',
-                exportDate: new Date()
-            };
-
-        } catch (error) {
-            console.error('Export preparation failed:', error);
-            showToast('Failed to prepare export: ' + error.message, 'danger');
-        } finally {
-            exportButton.disabled = false;
-            exportButton.innerHTML = '<i class="bi bi-file-earmark-zip-fill me-2"></i>Download .zip File';
-        }
-    }
-
     form.addEventListener('input', (e) => {
         const target = e.target;
         if (target.name) {
@@ -5037,56 +5194,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if ((e.key === 'Delete') && selectedObjectIds.length > 0) {
             e.preventDefault();
             deleteObjects([...selectedObjectIds]);
-        }
-    });
-
-    document.getElementById('export-copy-btn').addEventListener('click', async () => {
-        // Run the export process now, with the latest checkbox value
-        await exportFile();
-        await incrementDownloadCount();
-
-        if (exportPayload.finalHtml) {
-            navigator.clipboard.writeText(exportPayload.finalHtml).then(() => {
-                showToast("HTML code copied to clipboard!", 'success');
-                const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
-                if (exportModal) exportModal.hide();
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                showToast("Could not copy code. See console for details.", 'danger');
-            });
-        }
-    });
-
-    document.getElementById('export-download-btn').addEventListener('click', async () => {
-        // Run the export process now, with the latest checkbox value
-        await exportFile();
-
-        await incrementDownloadCount();
-
-        const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = exportPayload;
-        if (!finalHtml) return;
-
-        try {
-            const zip = new JSZip();
-            zip.file(`${safeFilename}.html`, finalHtml, { date: exportDate });
-            const imageResponse = await fetch(thumbnailDataUrl);
-            const imageBlob = await imageResponse.blob();
-            zip.file(`${safeFilename}.${imageExtension}`, imageBlob, { date: exportDate });
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(zipBlob);
-            link.download = `${safeFilename}.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-
-            const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
-            if (exportModal) exportModal.hide();
-            showToast("Zip file download started.", 'info');
-        } catch (error) {
-            console.error('Zip creation failed:', error);
-            showToast('Failed to create .zip file.', 'danger');
         }
     });
 
@@ -5947,8 +6054,6 @@ document.addEventListener('DOMContentLoaded', function () {
             canvasContainer.style.cursor = cursor;
         }
     });
-
-    exportBtn.addEventListener('click', exportFile);
 
     /**
      * The main initialization function for the application.
@@ -7001,8 +7106,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Sets up the Web Audio API to listen to a specific browser tab's audio.
- */
+    * Sets up the Web Audio API to listen to a specific browser tab's audio.
+    */
     async function setupAudio() {
         if (isAudioSetup) return;
 
@@ -7191,9 +7296,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Loads the featured project from the database if no shared effect is specified.
- * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
- */
+    * Loads the featured project from the database if no shared effect is specified.
+    * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
+    */
     async function loadFeaturedEffect() {
         try {
             const projectsRef = window.collection(window.db, "projects");

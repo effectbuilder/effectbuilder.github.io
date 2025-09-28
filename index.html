@@ -42,7 +42,7 @@
                     <button class="btn btn-outline-secondary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-outline-warning" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
                     <button class="btn btn-outline-info" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
-                    <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"><i class="bi bi-download me-1"></i> Export</button>
+                    <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
                     <button class="btn btn-outline-secondary" id="upload-effect-btn" data-bs-toggle="tooltip" title="Upload an effect HTML file"><i class="bi bi-upload me-1"></i> Upload</button>
                     <button class="btn btn-outline-success" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
                 </div>
@@ -560,33 +560,21 @@
         </div>
 
         <div class="modal fade" id="export-options-modal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-box-arrow-down me-2"></i>Export Options</h5>
+                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-sliders me-2"></i>Export Properties</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <p>Your effect is ready. How would you like to export it?</p>
-                        <hr>
-                        <div class="form-check form-switch my-3">
-                            <input class="form-check-input" type="checkbox" id="minimize-props-export">
-                            <label class="form-check-label" for="minimize-props-export">Minimize Properties for Export</label>
-                            <div class="form-text mt-1">Reduces editable properties to only the essentials, improving load times.</div>
+                    <div class="modal-body" id="export-options-body">
+                        <p class="text-body-secondary">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
+                        <div class="accordion" id="export-options-accordion">
                         </div>
                     </div>
-                    <div class="modal-footer justify-content-center">
-                        <button type="button" class="btn btn-success" id="export-download-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Download .zip File</button>
-                        <button type="button" class="btn btn-primary" id="export-copy-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Copy HTML Code</button>
-                    </div>
-                    <div class="modal-body border-top">
-                        <h6 class="text-body-secondary">How to Install in SignalRGB</h6>
-                        <ol>
-                            <li>Click the <strong>Download .zip File</strong> button.</li>
-                            <li>Extract the contents of the '.zip' file into your SignalRGB effects folder, typically found at:<br><code>Documents\WhirlwindFX\Effects</code></li>
-                            <li>It is recommended to place the files in a new subfolder for organization.</li>
-                            <li>Restart the SignalRGB application. Your new effect will now appear in the effects list.</li>
-                        </ol>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-primary" id="export-copy-code-btn"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
+                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Generate .zip File</button>
                     </div>
                 </div>
             </div>
