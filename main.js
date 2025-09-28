@@ -2373,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const scaledNodes = exportValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
                         jsVars += `const ${conf.property} = ${JSON.stringify(JSON.stringify(scaledNodes))};\n`;
                     } else {
-                        jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
+                        jsVars += `window.${conf.property} = ${JSON.stringify(exportValue)};\n`;
                     }
                 } else {
                     conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
@@ -4154,7 +4154,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createInitialObjects() {
         if (allPropKeys.length === 0) return;
-        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\\d+)_/) || [])[1]).filter(Boolean))];
+        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\d+)_/) || [])[1]).filter(Boolean))];
         const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
         objects = uniqueIds.map(id => {
@@ -4182,13 +4182,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 const propName = key.substring(prefix.length);
                 if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
 
-                if (typeof window[key] !== 'undefined') {
-                    let value = window[key];
+                let value;
+                // Check for a local const variable first, then fall back to the window object for meta tags.
+                try {
+                    if (typeof eval(key) !== 'undefined') {
+                        value = eval(key);
+                    }
+                } catch (e) {
+                    if (typeof window[key] !== 'undefined') {
+                        value = window[key];
+                    }
+                }
+
+                if (typeof value !== 'undefined') {
                     if (value === "true") value = true;
                     if (value === "false") value = false;
-                    if (propsToScale.includes(propName) && !isNaN(parseFloat(value))) {
+
+                    // This scaling logic should NOT apply to essential props defined as constants,
+                    // as they are already at their final scale. It only applies to meta tags.
+                    if (typeof window[key] !== 'undefined' && propsToScale.includes(propName) && !isNaN(parseFloat(value))) {
                         value *= 4;
                     }
+
                     if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
                         try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
                     } else if (propName === 'scrollDir') {
