@@ -5,6 +5,13 @@ window.seismicSpeedMultiplier = 1;
 window.tetrisGravityMultiplier = 4;
 window.textSpeedMultiplier = 1;
 
+const propsToScale = [
+    'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
+    'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
+    'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength',
+    'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'
+];
+
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
@@ -2282,18 +2289,18 @@ document.addEventListener('DOMContentLoaded', function () {
         let metaTags = '';
         let jsVars = '';
         let allKeys = [];
+        const jsVarKeys = [];
         const minimize = document.getElementById('minimize-props-export')?.checked || false;
         const generalValues = getControlValues();
 
         // Process General (non-object) properties
         configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
             const key = conf.property || conf.name;
-            if (key === 'globalGradientStops') return; // Manually handled below
+            if (key === 'globalGradientStops') return;
             if (generalValues[key] !== undefined) {
                 allKeys.push(key);
                 let exportValue = generalValues[key];
                 if (typeof exportValue === 'string') exportValue = exportValue.replace(/"/g, '&quot;');
-
                 if (conf.name && !conf.property) {
                     metaTags += `<meta ${key}="${exportValue}">\n`;
                 } else {
@@ -2306,7 +2313,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // Deconstruct the global gradient into individual color/position meta tags
         try {
             const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
             globalStops.forEach((stop, i) => {
@@ -2325,7 +2331,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
             const validPropsForShape = shapePropertyMap[obj.shape] || [];
 
-            // Deconstruct the object's gradients into individual meta tags first
             if (obj.gradient && obj.gradient.stops) {
                 obj.gradient.stops.forEach((stop, i) => {
                     const index = i + 1;
@@ -2347,7 +2352,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
 
-            // Process all other properties, EXPLICITLY skipping the old gradient properties
             objectConfigs.forEach(conf => {
                 const propName = conf.property.substring(conf.property.indexOf('_') + 1);
                 if (!validPropsForShape.includes(propName) || propName === 'gradientStops' || propName === 'strokeGradientStops') {
@@ -2356,39 +2360,169 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 let liveValue = (propName === 'scrollDir') ? obj.scrollDirection : (propName === 'strokeScrollDir') ? obj.strokeScrollDir : obj[propName];
                 if (liveValue === undefined) liveValue = conf.default;
-
                 allKeys.push(conf.property);
-                let exportValue = liveValue;
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
-                if (conf.type === 'number' && typeof liveValue === 'number') {
-                    exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
-                } else if (typeof liveValue === 'boolean') {
-                    exportValue = String(liveValue);
+                // Create the final value for export by scaling down where necessary
+                let valueForExport = liveValue;
+                if (typeof valueForExport === 'number' && propsToScale.includes(propName)) {
+                    valueForExport = Math.round(valueForExport / 4);
+                } else if (typeof valueForExport === 'boolean') {
+                    valueForExport = String(valueForExport);
                 }
 
-                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation', 'polylineNodes', 'pixelArtFrames'];
-                if (!minimize || essentialProps.includes(propName)) {
-                    if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
-                        const scaledNodes = exportValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
-                        jsVars += `const ${conf.property} = ${JSON.stringify(JSON.stringify(scaledNodes))};\n`;
-                    } else {
-                        jsVars += `window.${conf.property} = ${JSON.stringify(exportValue)};\n`;
+                const forceJsVarProps = ['pixelArtFrames', 'polylineNodes'];
+                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
+
+                const createMetaTag = (config, value) => {
+                    config.label = `${name}: ${config.label.split(':').slice(1).join(':').trim()}`;
+                    const attrs = [`property="${config.property}"`, `label="${config.label}"`, `type="${config.type}"`];
+                    if (config.values) attrs.push(`values="${config.values.split(',').sort().join(',')}"`);
+                    if (config.min) attrs.push(`min="${config.min}"`);
+                    if (config.max) attrs.push(`max="${config.max}"`);
+                    let finalValue = value;
+                    if (typeof finalValue === 'string') finalValue = finalValue.replace(/"/g, '&quot;');
+                    return `<meta ${attrs.join(' ')} default="${finalValue}">\n`;
+                };
+
+                if (forceJsVarProps.includes(propName)) {
+                    // For special large data, we use the original live value for JS vars, but need to scale some parts.
+                    let finalJsValue = liveValue;
+                    if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
+                        const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
+                        finalJsValue = JSON.stringify(scaledNodes);
                     }
+                    jsVars += `window.${conf.property} = ${JSON.stringify(finalJsValue)};\n`;
+                    jsVarKeys.push(conf.property);
+                } else if (minimize && essentialProps.includes(propName)) {
+                    jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
+                    jsVarKeys.push(conf.property);
                 } else {
-                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
-                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
-                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
-                    if (conf.min) attrs.push(`min="${conf.min}"`);
-                    if (conf.max) attrs.push(`max="${conf.max}"`);
-                    let finalExportValue = exportValue;
-                    if (typeof finalExportValue === 'string') finalExportValue = finalExportValue.replace(/"/g, '&quot;');
-                    metaTags += `<meta ${attrs.join(' ')} default="${finalExportValue}">\n`;
+                    metaTags += createMetaTag(conf, valueForExport);
                 }
             });
         });
 
-        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys };
+        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys, jsVarKeys };
+    }
+
+    function generateOutputScript() {
+        let metaTags = '';
+        let jsVars = '';
+        let allKeys = [];
+        const jsVarKeys = [];
+        const minimize = document.getElementById('minimize-props-export')?.checked || false;
+        const generalValues = getControlValues();
+
+        // Process General (non-object) properties
+        configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
+            const key = conf.property || conf.name;
+            if (key === 'globalGradientStops') return;
+            if (generalValues[key] !== undefined) {
+                allKeys.push(key);
+                let exportValue = generalValues[key];
+                if (typeof exportValue === 'string') exportValue = exportValue.replace(/"/g, '&quot;');
+                if (conf.name && !conf.property) {
+                    metaTags += `<meta ${key}="${exportValue}">\n`;
+                } else {
+                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
+                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
+                    if (conf.min) attrs.push(`min="${conf.min}"`);
+                    if (conf.max) attrs.push(`max="${conf.max}"`);
+                    metaTags += `<meta ${attrs.join(' ')} default="${exportValue}">\n`;
+                }
+            }
+        });
+
+        try {
+            const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
+            globalStops.forEach((stop, i) => {
+                const index = i + 1;
+                const colorKey = `globalColor_${index}`;
+                const posKey = `globalPosition_${index}`;
+                allKeys.push(colorKey, posKey);
+                metaTags += `<meta property="${colorKey}" label="Global Color ${index}" type="color" default="${stop.color}">\n`;
+                metaTags += `<meta property="${posKey}" label="Global Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+            });
+        } catch (e) { console.error("Could not process global gradient for export.", e); }
+
+        // Process each object's properties
+        objects.forEach(obj => {
+            const name = obj.name || `Object ${obj.id}`;
+            const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
+            const validPropsForShape = shapePropertyMap[obj.shape] || [];
+
+            if (obj.gradient && obj.gradient.stops) {
+                obj.gradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_gradColor_${index}`;
+                    const posKey = `obj${obj.id}_gradPosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
+            if (obj.strokeGradient && obj.strokeGradient.stops) {
+                obj.strokeGradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_strokeColor_${index}`;
+                    const posKey = `obj${obj.id}_strokePosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Stroke Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Stroke Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
+
+            objectConfigs.forEach(conf => {
+                const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                if (!validPropsForShape.includes(propName) || propName === 'gradientStops' || propName === 'strokeGradientStops') {
+                    return;
+                }
+
+                let liveValue = (propName === 'scrollDir') ? obj.scrollDirection : (propName === 'strokeScrollDir') ? obj.strokeScrollDir : obj[propName];
+                if (liveValue === undefined) liveValue = conf.default;
+                allKeys.push(conf.property);
+
+                // Create the final value for export by scaling down where necessary
+                let valueForExport = liveValue;
+                if (typeof valueForExport === 'number' && propsToScale.includes(propName)) {
+                    valueForExport = Math.round(valueForExport / 4);
+                } else if (typeof valueForExport === 'boolean') {
+                    valueForExport = String(valueForExport);
+                }
+
+                const forceJsVarProps = ['pixelArtFrames', 'polylineNodes'];
+                const essentialProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
+
+                const createMetaTag = (config, value) => {
+                    config.label = `${name}: ${config.label.split(':').slice(1).join(':').trim()}`;
+                    const attrs = [`property="${config.property}"`, `label="${config.label}"`, `type="${config.type}"`];
+                    if (config.values) attrs.push(`values="${config.values.split(',').sort().join(',')}"`);
+                    if (config.min) attrs.push(`min="${config.min}"`);
+                    if (config.max) attrs.push(`max="${config.max}"`);
+                    let finalValue = value;
+                    if (typeof finalValue === 'string') finalValue = finalValue.replace(/"/g, '&quot;');
+                    return `<meta ${attrs.join(' ')} default="${finalValue}">\n`;
+                };
+
+                if (forceJsVarProps.includes(propName)) {
+                    // For special large data, we use the original live value for JS vars, but need to scale some parts.
+                    let finalJsValue = liveValue;
+                    if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
+                        const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
+                        finalJsValue = JSON.stringify(scaledNodes);
+                    }
+                    jsVars += `window.${conf.property} = ${JSON.stringify(finalJsValue)};\n`;
+                    jsVarKeys.push(conf.property);
+                } else if (minimize && essentialProps.includes(propName)) {
+                    jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
+                    jsVarKeys.push(conf.property);
+                } else {
+                    metaTags += createMetaTag(conf, valueForExport);
+                }
+            });
+        });
+
+        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys, jsVarKeys };
     }
 
     function createObjectPanel(obj, objectConfigs, activeCollapseStates, activeTabStates) {
@@ -3240,20 +3374,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (palette.enablePalette && palette.stops) {
-                try {
-                    // The stops are passed as a JSON string from the form, so we parse them
-                    const globalGradientStops = (typeof palette.stops === 'string')
-                        ? JSON.parse(palette.stops)
-                        : palette.stops;
+                // Only apply global palette if the object is NOT pixel art
+                if (obj.shape !== 'pixel-art') {
+                    try {
+                        const globalGradientStops = (typeof palette.stops === 'string')
+                            ? JSON.parse(palette.stops)
+                            : palette.stops;
 
-                    // Ensure we have a valid array before applying it
-                    if (Array.isArray(globalGradientStops) && globalGradientStops.length > 0) {
-                        obj.gradient.stops = globalGradientStops;
-                        obj.strokeGradient.stops = globalGradientStops;
+                        if (Array.isArray(globalGradientStops) && globalGradientStops.length > 0) {
+                            obj.gradient.stops = globalGradientStops;
+                            obj.strokeGradient.stops = globalGradientStops;
+                        }
+                    } catch (e) {
+                        console.error("Could not parse globalGradientStops:", e);
                     }
-                } catch (e) {
-                    // This prevents a crash if the gradient data is temporarily invalid
-                    console.error("Could not parse globalGradientStops:", e);
                 }
             }
 
@@ -3428,8 +3562,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const prefix = `obj${id}_`;
         const configs = configStore.filter(c => c.property && c.property.startsWith(prefix));
 
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
-
         configs.forEach(conf => {
             const key = conf.property.replace(prefix, '');
             const el = form.elements[conf.property];
@@ -3525,7 +3657,6 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function updateFormValuesFromObjects() {
         // This list now includes the missing polyline animation properties.
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
 
         objects.forEach(obj => {
             const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
@@ -3663,7 +3794,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     value = String(value).replace(/\n/g, '\n');
                 }
 
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
                 if (propsToScale.includes(key) && typeof value === 'number') {
                     value *= 4;
                 }
@@ -4116,7 +4246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             updateObjectsFromForm();
-            const { metaTags, jsVars, allKeys } = generateOutputScript();
+            const { metaTags, jsVars, allKeys, jsVarKeys } = generateOutputScript();
             const effectTitle = getControlValues()['title'] || 'MyEffect';
             const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
             const safeFilename = effectTitle.replace(/[\s\/\\?%*:|"<>]/g, '_');
@@ -4137,8 +4267,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const canvas = document.getElementById('signalCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 1280;
-    canvas.height = 800;
+    canvas.width = 320;
+    canvas.height = 200;
     let objects = [];
     
     ${jsVars}
@@ -4151,31 +4281,75 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let then;
     const allPropKeys = ${formattedKeys};
+    const jsProperties = ${JSON.stringify(jsVarKeys)};
+
+    function updateObjectFromWindow(obj) {
+        const id = obj.id;
+        const newProps = {};
+        
+        const fillStops = [];
+        for (let i = 1; i <= 10; i++) {
+            const fcKey = \`obj\${id}_gradColor_\${i}\`;
+            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
+            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
+                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+            }
+        }
+        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
+        
+        const strokeStops = [];
+        for (let i = 1; i <= 10; i++) {
+             const scKey = \`obj\${id}_strokeColor_\${i}\`;
+             const spKey = \`obj\${id}_strokePosition_\${i}\`;
+             if (window[scKey] !== undefined && window[spKey] !== undefined) {
+                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+            }
+        }
+        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
+
+        allPropKeys.forEach(key => {
+            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
+                const propName = key.substring(key.indexOf('_') + 1);
+                if (propName.includes('Color_') || propName.includes('Position_')) return;
+                
+                let value = window[key];
+                if (value === "true") value = true;
+                if (value === "false") value = false;
+                
+                if (propName === 'scrollDir') newProps.scrollDirection = value;
+                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
+                else newProps[propName] = value;
+            }
+        });
+        obj.update(newProps);
+    }
 
     function createInitialObjects() {
         if (allPropKeys.length === 0) return;
-        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\d+)_/) || [])[1]).filter(Boolean))];
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
+        const uniqueIds = [...new Set(allPropKeys.map(p => (p.match(/^obj(\\\d+)_/) || [])[1]).filter(Boolean))];
 
         objects = uniqueIds.map(id => {
             const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
             const prefix = 'obj' + id + '_';
             
             const fillStops = [];
-            const strokeStops = [];
-            for (let i = 1; i <= 10; i++) { // Check for up to 10 stops
+            for (let i = 1; i <= 10; i++) {
                 const fcKey = prefix + 'gradColor_' + i;
                 const fpKey = prefix + 'gradPosition_' + i;
                 if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
                     fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
                 }
+            }
+            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
+            
+            const strokeStops = [];
+            for (let i = 1; i <= 10; i++) {
                 const scKey = prefix + 'strokeColor_' + i;
                 const spKey = prefix + 'strokePosition_' + i;
                 if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
                     strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
                 }
             }
-            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
             if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
 
             allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
@@ -4183,26 +4357,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
 
                 let value;
-                // Check for a local const variable first, then fall back to the window object for meta tags.
                 try {
-                    if (typeof eval(key) !== 'undefined') {
-                        value = eval(key);
-                    }
+                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
                 } catch (e) {
-                    if (typeof window[key] !== 'undefined') {
-                        value = window[key];
-                    }
+                    if (typeof window[key] !== 'undefined') { value = window[key]; }
                 }
 
                 if (typeof value !== 'undefined') {
                     if (value === "true") value = true;
                     if (value === "false") value = false;
-
-                    // This scaling logic should NOT apply to essential props defined as constants,
-                    // as they are already at their final scale. It only applies to meta tags.
-                    if (typeof window[key] !== 'undefined' && propsToScale.includes(propName) && !isNaN(parseFloat(value))) {
-                        value *= 4;
-                    }
 
                     if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
                         try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
@@ -4247,12 +4410,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         for (let i = objects.length - 1; i >= 0; i--) {
             const obj = objects[i];
+            updateObjectFromWindow(obj);
+            
             const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
             const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
-            const originalStrokeCycleColors = obj.strokeCycleColors;
-            const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
 
             if (useGlobalCycle) {
                 const speed = (gCycleSpeed || 0) / 50.0;
@@ -4260,19 +4423,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
             }
             if (useGlobalPalette && gStops.length > 0) {
-                obj.gradient.stops = gStops;
-                obj.strokeGradient.stops = gStops;
+                // Only apply global palette if the object is NOT pixel art
+                if (obj.shape !== 'pixel-art') {
+                    obj.gradient.stops = gStops;
+                    obj.strokeGradient.stops = gStops;
+                }
             }
-            if (shouldAnimate) {
-                obj.updateAnimationState(audioData, sensorData, deltaTime);
-            }
+            
+            const dt = shouldAnimate ? deltaTime : 0;
+            obj.updateAnimationState(audioData, sensorData, dt);
             obj.draw(false, audioData, {});
+            
             obj.gradient = originalGradient;
             obj.strokeGradient = originalStrokeGradient;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
-            obj.strokeCycleColors = originalStrokeCycleColors;
-            obj.strokeCycleSpeed = originalStrokeCycleSpeed;
         }
     }
 
@@ -4292,27 +4457,13 @@ document.addEventListener('DOMContentLoaded', function () {
     init();
 });`;
 
-            const finalHtml = [
-                '<!DOCTYPE html>',
-                '<html lang="en">',
-                '<head>',
-                '    <meta charset="UTF-8">',
-                `    <title>${effectTitle}</title>`,
-                metaTags,
-                '    <style>',
-                styleContent,
-                '    </style>',
-                '</head>',
-                bodyContent,
-                '<script>',
-                exportedScript,
-                '</script>',
-                '</html>'
-            ].join('\n');
-
             exportPayload = {
                 safeFilename,
-                finalHtml,
+                finalHtml: [
+                    '<!DOCTYPE html>', '<html lang="en">', '<head>', '<meta charset="UTF-8">',
+                    `<title>${effectTitle}</title>`, metaTags, '<style>', styleContent, '</style>',
+                    '</head>', bodyContent, '<script>', exportedScript, '</script>', '</html>'
+                ].join('\n'),
                 thumbnailDataUrl,
                 imageExtension: 'png',
                 exportDate: new Date()
@@ -4323,7 +4474,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showToast('Failed to prepare export: ' + error.message, 'danger');
         } finally {
             exportButton.disabled = false;
-            exportButton.innerHTML = '<i class="bi bi-download"></i> Export';
+            exportButton.innerHTML = '<i class="bi bi-file-earmark-zip-fill me-2"></i>Download .zip File';
         }
     }
 
@@ -6486,11 +6637,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        const propsToScale = [
-            'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
-            'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
-            'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'
-        ];
         propsToScale.forEach(prop => {
             if (state[prop] !== undefined) {
                 state[prop] *= 4;
@@ -6613,7 +6759,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (valueToSet !== undefined) {
-                    const propsToScaleDown = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth'];
                     if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
                     else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
                     else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') { valueToSet *= 50; }

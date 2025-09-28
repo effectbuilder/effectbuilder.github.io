@@ -2292,6 +2292,7 @@ class Shape {
 
     // In Shape.js, replace the entire function
     updateAnimationState(audioData, sensorData, deltaTime = 0) {
+        this.lastDeltaTime = deltaTime;
         this._applyAudioReactivity(audioData);
         this._applySensorReactivity(sensorData);
 
@@ -3005,8 +3006,6 @@ class Shape {
             }
         }
         // --- END: NEW, CORRECTED FIRE LOGIC ---
-
-        this.lastDeltaTime = deltaTime;
     }
 
     draw(isSelected, audioData = {}, palette = {}) {
