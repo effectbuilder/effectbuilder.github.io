@@ -271,11 +271,16 @@ function lerpColor(a, b, amount) {
     const amt = (typeof amount === 'number' && isFinite(amount)) ? Math.max(0, Math.min(1, amount)) : 0;
     const c1 = parseColorToRgba(a);
     const c2 = parseColorToRgba(b);
+
+    // Calculate the new RGB values
     const r = Math.round(c1.r + amt * (c2.r - c1.r));
     const g = Math.round(c1.g + amt * (c2.g - c1.g));
     const b_val = Math.round(c1.b + amt * (c2.b - c1.b));
-    const alpha = c1.a + amt * (c2.a - c1.a);
-    return `rgba(${r}, ${g}, ${b_val}, ${alpha})`;
+
+    // Convert the calculated RGB values to a hex string
+    const toHex = c => ('0' + Math.max(0, Math.min(255, c)).toString(16)).slice(-2);
+
+    return `#${toHex(r)}${toHex(g)}${toHex(b_val)}`;
 }
 
 /**

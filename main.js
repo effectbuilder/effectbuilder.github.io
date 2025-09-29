@@ -186,6 +186,39 @@ let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
 
+/**
+ * Calculates the interpolated color at a specific progress point within a set of color stops.
+ * @param {number} progress - The position to find the color for (0.0 to 1.0).
+ * @param {Array} stops - An array of color stop objects ({color, position}).
+ * @returns {string} The interpolated color string.
+ */
+function getGradientColorAt(progress, stops) {
+    const t = (progress % 1.0 + 1.0) % 1.0;
+    if (!stops || stops.length === 0) return '#ff00ff';
+
+    // Ensure stops are sorted by position
+    const sortedStops = [...stops].sort((a, b) => a.position - b.position);
+
+    // If before the first stop, return the first color
+    if (t <= sortedStops[0].position) return sortedStops[0].color;
+
+    // Find the two stops the progress is between
+    for (let i = 0; i < sortedStops.length - 1; i++) {
+        const s1 = sortedStops[i];
+        const s2 = sortedStops[i + 1];
+        if (t >= s1.position && t <= s2.position) {
+            const range = s2.position - s1.position;
+            if (range === 0) return s1.color; // Avoid division by zero
+            const amount = (t - s1.position) / range;
+            // lerpColor is a global function available from Shape.js
+            return lerpColor(s1.color, s2.color, amount);
+        }
+    }
+
+    // If after the last stop, return the last color
+    return sortedStops[sortedStops.length - 1].color;
+}
+
 function renderNotificationDropdown(unreadProjects) {
     const listContainer = document.getElementById('notification-list-container');
     const markAllBtn = document.getElementById('mark-all-read-btn');
@@ -1407,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.className = 'btn btn-sm btn-outline-light dynamic-color';
             btn.dataset.value = value;
             btn.style.backgroundColor = stop.color;
-            btn.title = `Gradient Color #${idx + 1} (Index: ${value})`;
+            btn.title = `Right-click to delete | Gradient Color #${idx + 1} (Index: ${value})`;
             const hsl = hexToHsl(stop.color);
             if (hsl[2] < 40) btn.style.color = '#FFF';
             btn.textContent = idx + 1;
@@ -1422,20 +1455,14 @@ document.addEventListener('DOMContentLoaded', function () {
         rawDataTextarea.value = formatPixelData(data);
     };
 
+    // --- START: Upgraded Pixel Art Editor Logic ---
     const editorModalEl = document.getElementById('pixelArtEditorModal');
-
     if (editorModalEl) {
-        // State variables for the editor modal
-        let targetTextarea = null;
-        let currentEditorObjectId = null;
-        let currentEditorFrameIndex = -1;
-        let totalFramesInEditor = 0;
-        let currentPaintValue = 0.7;
-        let isPainting = false;
-        let currentTool = 'paint'; // Tool state: 'paint' or 'fill'
-        let currentGradientStops = [];
+        // State variables
+        let targetTextarea = null, currentEditorObjectId = null, currentEditorFrameIndex = -1, totalFramesInEditor = 0;
+        let currentPaintValue = 0.7, isPainting = false, currentTool = 'paint', currentGradientStops = [];
 
-        // Get references to all the editor's UI elements
+        // Main Editor elements
         const gridContainer = document.getElementById('pixel-editor-grid-container');
         const widthInput = document.getElementById('pixel-editor-width');
         const heightInput = document.getElementById('pixel-editor-height');
@@ -1446,42 +1473,145 @@ document.addEventListener('DOMContentLoaded', function () {
         const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
         const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
         const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
-        const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
         const paintBtn = document.getElementById('pixel-editor-paint-btn');
         const fillBtn = document.getElementById('pixel-editor-fill-btn');
         const toolsContainer = document.getElementById('pixel-editor-tools');
 
-        /**
-         * Sets the active tool and updates the UI buttons.
-         * @param {string} toolName - The name of the tool to activate ('paint' or 'fill').
-         */
-        const setActiveTool = (toolName) => {
-            currentTool = toolName;
-            // Deactivate all tool buttons first
-            toolsContainer.querySelectorAll('button[id$="-btn"]').forEach(btn => {
-                if (btn.id === 'pixel-editor-paint-btn' || btn.id === 'pixel-editor-fill-btn') {
-                    btn.classList.remove('active');
+        // Color Picker Modal elements & iro.js instance
+        const colorPickerModalEl = document.getElementById('pixel-art-color-picker-modal');
+        const pickerContainer = document.getElementById('modal-picker-container');
+        const colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
+        let iroColorPicker = null;
+
+        const debouncedRecordHistory = debounce(recordHistory, 500);
+
+        const updateActiveColor = (newColor, indexToUpdate) => {
+            if (currentGradientStops[indexToUpdate]) {
+                currentGradientStops[indexToUpdate].color = newColor;
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                targetObject.update({ gradient: { stops: currentGradientStops } });
+                const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+                if (gradientControl) {
+                    gradientControl.value = JSON.stringify(currentGradientStops);
+                    gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: currentGradientStops } }));
                 }
-            });
-            // Activate the correct button
-            if (toolName === 'paint' && paintBtn) {
-                paintBtn.classList.add('active');
-            } else if (toolName === 'fill' && fillBtn) {
-                fillBtn.classList.add('active');
+                renderEditorPalette();
+                const gridData = readGrid();
+                renderGrid(gridData, currentGradientStops);
+                debouncedRecordHistory();
             }
         };
+
+        if (pickerContainer) {
+            iroColorPicker = new iro.ColorPicker(pickerContainer, {
+                width: 240,
+                color: "#fff",
+                borderWidth: 1,
+                borderColor: "#fff",
+                layout: [
+                    { component: iro.ui.Wheel },
+                    { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                    { component: iro.ui.Slider, options: { sliderType: 'hue' } },
+                    { component: iro.ui.Input, options: { inputType: 'hex' } } // This adds the hex input
+                ]
+            });
+
+            iroColorPicker.on('color:change', (color) => {
+                const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
+                if (activeBtn) {
+                    const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
+                    updateActiveColor(color.hexString, indexToUpdate);
+                }
+            });
+        }
+
+        const renderEditorPalette = () => {
+            const dynamicButtons = paletteContainer.querySelectorAll('.dynamic-color, .btn-add-color');
+            dynamicButtons.forEach(btn => btn.remove());
+            currentGradientStops.forEach((stop, idx) => {
+                const value = idx + 2;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+                btn.dataset.value = value;
+                btn.style.backgroundColor = stop.color;
+                btn.title = `Click to edit, Right-click to delete | Color #${idx + 1}`;
+                const hsl = hexToHsl(stop.color);
+                if (hsl[2] < 40) btn.style.color = '#FFF';
+                btn.textContent = idx + 1;
+
+                // FIX: Re-apply active class during re-render
+                if (currentPaintValue === value) {
+                    btn.classList.add('active');
+                }
+
+                btn.addEventListener('click', (e) => {
+                    paletteContainer.querySelector('.active')?.classList.remove('active');
+                    btn.classList.add('active');
+                    currentPaintValue = parseFloat(btn.dataset.value);
+                    if (iroColorPicker) {
+                        iroColorPicker.color.hexString = stop.color;
+                    }
+                    if (colorPickerModal) {
+                        colorPickerModal.show();
+                    }
+                });
+                paletteContainer.appendChild(btn);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.id = 'pixel-editor-add-color-btn';
+            addBtn.className = 'btn btn-sm btn-outline-secondary btn-add-color';
+            addBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
+            addBtn.title = 'Add a new color to the palette';
+
+            addBtn.addEventListener('click', () => {
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                if (!targetObject) return;
+                let newStops = [...currentGradientStops, { color: '#FFFFFF', position: 1.0 }];
+                if (newStops.length > 1) {
+                    newStops.forEach((stop, index) => { stop.position = index / (newStops.length - 1); });
+                }
+                targetObject.update({ gradient: { stops: newStops } });
+                currentGradientStops = newStops;
+                const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+                if (gradientControl) {
+                    gradientControl.value = JSON.stringify(newStops);
+                    gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+                }
+                renderEditorPalette();
+                recordHistory();
+            });
+
+            paletteContainer.appendChild(addBtn);
+        };
+
+        const setActiveTool = (toolName) => {
+            currentTool = toolName;
+            toolsContainer.querySelectorAll('button[id$="-btn"]').forEach(btn => {
+                if (btn.id.includes('-paint-') || btn.id.includes('-fill-')) btn.classList.remove('active');
+            });
+            const btnToActivate = document.getElementById(`pixel-editor-${toolName}-btn`);
+            if (btnToActivate) btnToActivate.classList.add('active');
+        };
+
+        if (paintBtn) {
+            paintBtn.addEventListener('click', () => setActiveTool('paint'));
+        }
+        if (fillBtn) {
+            fillBtn.addEventListener('click', () => setActiveTool('fill'));
+        }
 
         const valueToColor = (value, stops) => {
             if (value === 1.0) return '#FFFFFF';
             if (value === 0) return 'transparent';
-            if (value === 0.7) return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`;
-            if (value === 0.3) return stops[0]?.color || '#FF00FF';
-            if (value === 0.4) return stops[1]?.color || '#00FFFF';
+            if (value === 0.7) return `repeating-conic-gradient(#444 0% 25%, #555 0% 50%) 50% / 10px 10px`;
             if (value >= 2) {
                 const index = Math.round(value) - 2;
-                if (stops && stops[index]) {
-                    return stops[index].color;
-                }
+                if (stops && stops[index]) return stops[index].color;
             }
             return `repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px`;
         };
@@ -1489,33 +1619,27 @@ document.addEventListener('DOMContentLoaded', function () {
         const renderGrid = (data, stops) => {
             gridContainer.innerHTML = '';
             if (!data || !data.length || !data[0]) return;
-            const rows = data.length;
-            const cols = data[0].length;
+            const rows = data.length; const cols = data[0].length;
             gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'pixel-editor-cell';
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    const value = data[r] ? (data[r][c] || 0) : 0;
-                    cell.style.background = valueToColor(value, stops);
-                    cell.dataset.value = value;
-                    gridContainer.appendChild(cell);
-                }
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'pixel-editor-cell';
+                cell.dataset.row = r; cell.dataset.col = c;
+                const value = data[r]?.[c] || 0;
+                cell.style.background = valueToColor(value, stops);
+                cell.dataset.value = value;
+                gridContainer.appendChild(cell);
             }
         };
 
         const readGrid = () => {
-            const rows = parseInt(heightInput.value, 10);
-            const cols = parseInt(widthInput.value, 10);
+            const rows = parseInt(heightInput.value, 10); const cols = parseInt(widthInput.value, 10);
             const cells = gridContainer.querySelectorAll('.pixel-editor-cell');
             const data = [];
             for (let r = 0; r < rows; r++) {
                 const row = [];
                 for (let c = 0; c < cols; c++) {
-                    const cell = cells[r * cols + c];
-                    row.push(cell ? parseFloat(cell.dataset.value) : 0);
+                    row.push(cells[r * cols + c] ? parseFloat(cells[r * cols + c].dataset.value) : 0);
                 }
                 data.push(row);
             }
@@ -1529,33 +1653,29 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         const floodFill = (startNode) => {
-            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
+            if (!startNode) return;
             const gridData = readGrid();
             const [rows, cols] = [gridData.length, gridData[0].length];
-            const startRow = parseInt(startNode.dataset.row, 10);
-            const startCol = parseInt(startNode.dataset.col, 10);
+            const startRow = parseInt(startNode.dataset.row, 10); const startCol = parseInt(startNode.dataset.col, 10);
             const targetValue = gridData[startRow][startCol];
             if (targetValue === currentPaintValue) return;
             const queue = [[startRow, startCol]];
-            const visited = new Set([`${startRow},${startCol}`]);
+            gridData[startRow][startCol] = -1;
             while (queue.length > 0) {
                 const [r, c] = queue.shift();
-                gridData[r][c] = currentPaintValue;
                 const neighbors = [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]];
                 for (const [nr, nc] of neighbors) {
-                    const key = `${nr},${nc}`;
-                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(key) && gridData[nr][nc] === targetValue) {
-                        visited.add(key);
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && gridData[nr][nc] === targetValue) {
+                        gridData[nr][nc] = -1;
                         queue.push([nr, nc]);
                     }
                 }
             }
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (gridData[r][c] === -1) gridData[r][c] = currentPaintValue;
             renderGrid(gridData, currentGradientStops);
         };
 
-        const updateEditorFrameCounter = () => {
-            document.getElementById('pixel-editor-frame-counter').textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
-        };
+        const updateEditorFrameCounter = () => { document.getElementById('pixel-editor-frame-counter').textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`; };
 
         const saveCurrentFrameInEditor = () => {
             if (!targetTextarea) return;
@@ -1574,21 +1694,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateEditorFrameCounter();
             const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
             currentGradientStops = targetObject ? targetObject.gradient.stops : [];
-            paletteContainer.querySelectorAll('.dynamic-color').forEach(btn => btn.remove());
-            const blackBtn = paletteContainer.querySelector('[data-value="0"]');
-            currentGradientStops.forEach((stop, idx) => {
-                const value = idx + 2;
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'btn btn-sm btn-outline-light dynamic-color';
-                btn.dataset.value = value;
-                btn.style.backgroundColor = stop.color;
-                btn.title = `Gradient Color #${idx + 1} (Index: ${value})`;
-                const hsl = hexToHsl(stop.color);
-                if (hsl[2] < 40) btn.style.color = '#FFF';
-                btn.textContent = idx + 1;
-                paletteContainer.insertBefore(btn, blackBtn);
-            });
+            renderEditorPalette();
             let data;
             try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
             widthInput.value = data[0]?.length || 1;
@@ -1597,7 +1703,6 @@ document.addEventListener('DOMContentLoaded', function () {
             rawDataTextarea.value = formatPixelData(data);
         };
 
-        // Add event listeners
         editorModalEl.addEventListener('shown.bs.modal', (event) => {
             const button = event.relatedTarget;
             const targetId = button.getAttribute('data-target-id');
@@ -1608,105 +1713,66 @@ document.addEventListener('DOMContentLoaded', function () {
             const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
             totalFramesInEditor = fieldset.querySelector('.pixel-art-frames-container').children.length;
             loadFrameIntoEditor(currentEditorFrameIndex);
-            setActiveTool('paint'); // Default to paint tool when modal opens
+            setActiveTool('paint');
             document.getElementById('collapseRawData')?.classList.remove('show');
         });
 
-        if (paintBtn) {
-            paintBtn.addEventListener('click', () => setActiveTool('paint'));
-        }
-        if (fillBtn) {
-            fillBtn.addEventListener('click', () => setActiveTool('fill'));
-        }
-        if (confirmSpritePasteBtn) {
-            confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
-        }
-
-        prevFrameBtn.addEventListener('click', () => {
-            if (totalFramesInEditor <= 1) return;
-            saveCurrentFrameInEditor();
-            loadFrameIntoEditor((currentEditorFrameIndex - 1 + totalFramesInEditor) % totalFramesInEditor);
-        });
-
-        nextFrameBtn.addEventListener('click', () => {
-            if (totalFramesInEditor <= 1) return;
-            saveCurrentFrameInEditor();
-            loadFrameIntoEditor((currentEditorFrameIndex + 1) % totalFramesInEditor);
-        });
-
-        duplicateFrameBtn.addEventListener('click', () => {
-            const tooltip = bootstrap.Tooltip.getInstance(duplicateFrameBtn);
-            if (tooltip) tooltip.hide();
-            saveCurrentFrameInEditor();
-            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-            let allFrames = JSON.parse(hiddenMasterTextarea.value);
-            const frameToCopy = { ...allFrames[currentEditorFrameIndex] };
-            allFrames.splice(currentEditorFrameIndex + 1, 0, frameToCopy);
-            hiddenMasterTextarea.value = JSON.stringify(allFrames);
-            hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            renderForm();
-            totalFramesInEditor = allFrames.length;
-            loadFrameIntoEditor(currentEditorFrameIndex + 1);
-            showToast("Frame duplicated!", "success");
-        });
-
+        // Simplified click listener for static buttons (e.g. "Selected Fill")
         paletteContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
-            if (!button) return;
+            if (!button || button.classList.contains('dynamic-color') || button.id === 'pixel-editor-add-color-btn') return;
+
             setActiveTool('paint');
             paletteContainer.querySelector('.active')?.classList.remove('active');
             button.classList.add('active');
             currentPaintValue = parseFloat(button.dataset.value);
         });
 
-        document.getElementById('pixel-editor-mirror-h-btn').addEventListener('click', () => {
-            let gridData = readGrid();
-            gridData.forEach(row => row.reverse());
-            renderGrid(gridData, currentGradientStops);
-        });
-
-        document.getElementById('pixel-editor-mirror-v-btn').addEventListener('click', () => {
-            let gridData = readGrid().reverse();
-            renderGrid(gridData, currentGradientStops);
-        });
-
-        resizeBtn.addEventListener('click', () => {
-            const newWidth = parseInt(widthInput.value, 10);
-            const newHeight = parseInt(heightInput.value, 10);
-            const newData = Array(newHeight).fill(0).map(() => Array(newWidth).fill(0));
-            renderGrid(newData, currentGradientStops);
-        });
-
-        gridContainer.addEventListener('mousedown', (e) => {
-            if (currentTool === 'paint') {
-                isPainting = true;
-                paintCell(e.target);
-            } else if (currentTool === 'fill') {
-                floodFill(e.target);
+        paletteContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const button = e.target.closest('button.dynamic-color');
+            if (!button || currentGradientStops.length <= 2) {
+                if (currentGradientStops.length <= 2) showToast("A gradient must have at least 2 colors.", "warning");
+                return;
             }
+            const valueToDelete = parseFloat(button.dataset.value);
+            const isColorUsed = readGrid().flat().some(pixelValue => pixelValue === valueToDelete);
+            if (isColorUsed) {
+                showToast("Cannot delete a color that is currently in use on the canvas.", "danger");
+                return;
+            }
+            const indexToDelete = valueToDelete - 2;
+            const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+            if (!targetObject) return;
+            let newStops = [...currentGradientStops];
+            newStops.splice(indexToDelete, 1);
+            if (newStops.length > 1) {
+                newStops.forEach((stop, index) => { stop.position = index / (newStops.length - 1); });
+            }
+            targetObject.update({ gradient: { stops: newStops } });
+            currentGradientStops = newStops;
+            const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+            if (gradientControl) {
+                gradientControl.value = JSON.stringify(newStops);
+                gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+            }
+            renderEditorPalette();
+            const firstPaintButton = paletteContainer.querySelector('[data-value]');
+            if (firstPaintButton) firstPaintButton.click();
+            recordHistory();
         });
 
+        // Event listeners for editor tools
+        document.getElementById('pixel-editor-mirror-h-btn').addEventListener('click', () => { let d = readGrid(); d.forEach(r => r.reverse()); renderGrid(d, currentGradientStops); });
+        document.getElementById('pixel-editor-mirror-v-btn').addEventListener('click', () => { let d = readGrid().reverse(); renderGrid(d, currentGradientStops); });
+        resizeBtn.addEventListener('click', () => { renderGrid(Array(parseInt(heightInput.value, 10)).fill(0).map(() => Array(parseInt(widthInput.value, 10)).fill(0)), currentGradientStops); });
+        gridContainer.addEventListener('mousedown', (e) => { if (currentTool === 'paint') { isPainting = true; paintCell(e.target); } else if (currentTool === 'fill') { floodFill(e.target); } });
         gridContainer.addEventListener('mouseover', (e) => { if (isPainting) paintCell(e.target); });
         document.addEventListener('mouseup', () => { isPainting = false; });
         gridContainer.addEventListener('mouseleave', () => { isPainting = false; });
-
-        saveBtn.addEventListener('click', () => {
-            saveCurrentFrameInEditor();
-            saveBtn.blur();
-            bootstrap.Modal.getInstance(editorModalEl).hide();
-        });
-
-        rawDataTextarea.addEventListener('input', () => {
-            try {
-                const newData = JSON.parse(rawDataTextarea.value);
-                if (Array.isArray(newData) && newData.length > 0 && Array.isArray(newData[0])) {
-                    heightInput.value = newData.length;
-                    widthInput.value = newData[0].length;
-                }
-                renderGrid(newData, currentGradientStops);
-            } catch (e) { /* Do nothing on invalid input */ }
-        });
+        saveBtn.addEventListener('click', () => { saveCurrentFrameInEditor(); saveBtn.blur(); bootstrap.Modal.getInstance(editorModalEl).hide(); });
+        rawDataTextarea.addEventListener('input', () => { try { const d = JSON.parse(rawDataTextarea.value); if (d && d.length > 0 && d[0]) { heightInput.value = d.length; widthInput.value = d[0].length; } renderGrid(d, currentGradientStops); } catch (e) { /* ignore */ } });
     }
     // --- END: Upgraded Pixel Art Editor Logic ---
 
@@ -2973,15 +3039,30 @@ document.addEventListener('DOMContentLoaded', function () {
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
         } else if (type === 'gradientpicker') {
+            // --- START: CORRECTED PHOTOSHOP-STYLE GRADIENT PICKER ---
             const container = document.createElement('div');
             container.className = 'gradient-picker-container';
 
-            const preview = document.createElement('div');
-            preview.className = 'gradient-preview border rounded mb-2';
-            preview.style.height = '25px';
+            const previewBar = document.createElement('div');
+            previewBar.className = 'gradient-preview-bar';
+            const previewOverlay = document.createElement('div');
+            previewOverlay.className = 'gradient-preview-overlay';
+            previewBar.appendChild(previewOverlay);
 
             const stopsContainer = document.createElement('div');
-            stopsContainer.className = 'gradient-stops-list d-grid gap-2';
+            stopsContainer.className = 'gradient-stops-container';
+
+            const activeControlsContainer = document.createElement('div');
+            activeControlsContainer.className = 'gradient-active-stop-controls';
+            activeControlsContainer.style.display = 'none';
+
+            const helpText = document.createElement('div');
+            helpText.className = 'form-text text-body-secondary small mt-2';
+            helpText.innerHTML = `
+                <strong>Add:</strong> Click empty space below bar | 
+                <strong>Select/Edit:</strong> Click a marker | 
+                <strong>Delete:</strong> Drag a marker down
+            `;
 
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
@@ -2989,150 +3070,220 @@ document.addEventListener('DOMContentLoaded', function () {
             hiddenInput.className = 'd-none';
             hiddenInput.value = defaultValue;
 
+            let stops = [];
+            let activeStopId = -1; // Use a stable ID instead of an index
+            let nextStopId = 0; // Counter for unique IDs
+            let isDraggingStop = false;
+
             const updateGradient = () => {
-                const stops = [];
-                const stopRows = stopsContainer.querySelectorAll('.gradient-stop-row');
-                stopRows.forEach(row => {
-                    stops.push({
-                        color: row.querySelector('.gradient-color-input').value,
-                        position: parseFloat(row.querySelector('.gradient-position-input').value)
-                    });
-                });
                 stops.sort((a, b) => a.position - b.position);
 
-                const newGradientJson = JSON.stringify(stops);
+                // Create a clean version of stops for saving (without the temporary ID)
+                const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
+                const newGradientJson = JSON.stringify(stopsToSave);
                 hiddenInput.value = newGradientJson;
 
-                const gradientString = stops.length > 1
-                    ? `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`
-                    : (stops.length === 1 ? stops[0].color : '#000');
-                preview.style.background = gradientString;
-
-                // This block manually updates the application state, which is the crucial part.
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
+                let isSharp = false;
+                if (fieldset) {
+                    const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
+                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpGradientToggle) isSharp = sharpGradientToggle.checked;
+                }
+
+                let gradientString;
+                if (stops.length === 0) gradientString = 'transparent';
+                else if (stops.length === 1) gradientString = stops[0].color;
+                else if (isSharp) {
+                    let parts = [];
+                    parts.push(`${stops[0].color} ${stops[0].position * 100}%`);
+                    for (let i = 1; i < stops.length; i++) {
+                        const prevColor = stops[i - 1].color;
+                        const currentPosPercent = stops[i].position * 100;
+                        parts.push(`${prevColor} ${currentPosPercent}%`);
+                        parts.push(`${stops[i].color} ${currentPosPercent}%`);
+                    }
+                    gradientString = `linear-gradient(to right, ${parts.join(', ')})`;
+                } else {
+                    gradientString = `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`;
+                }
+                previewOverlay.style.background = gradientString;
+
                 if (fieldset && !isRestoring) {
-                    const objectId = parseInt(fieldset.dataset.objectId, 10);
-                    const targetObject = objects.find(o => o.id === objectId);
-                    const propName = hiddenInput.name.includes('stroke') ? 'strokeGradient' : 'gradient';
-                    const configPropName = hiddenInput.name;
-
-                    if (targetObject) {
-                        targetObject.update({ [propName]: { stops: stops } });
-                    }
-
-                    const configToUpdate = configStore.find(c => c.property === configPropName);
-                    if (configToUpdate) {
-                        configToUpdate.default = newGradientJson;
-                    }
-
-                    drawFrame();
-                    debouncedRecordHistory();
+                    hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             };
 
-            const createStopRow = (color, position) => {
-                const row = document.createElement('div');
-                row.className = 'gradient-stop-row d-flex align-items-center gap-2';
+            const renderStops = () => {
+                stopsContainer.innerHTML = '';
+                stops.forEach((stop) => {
+                    const marker = document.createElement('div');
+                    marker.className = 'gradient-stop-marker';
+                    marker.dataset.id = stop.id; // Use the unique ID
+                    marker.style.left = `${stop.position * 100}%`;
+                    marker.style.backgroundColor = stop.color;
 
-                const colorInput = document.createElement('input');
-                colorInput.type = 'color';
-                colorInput.className = 'form-control form-control-color gradient-color-input';
-                colorInput.value = color;
-
-                const hexInput = document.createElement('input');
-                hexInput.type = 'text';
-                hexInput.className = 'form-control form-control-sm';
-                hexInput.style.width = '80px';
-                hexInput.value = color;
-
-                colorInput.addEventListener('input', () => { hexInput.value = colorInput.value; });
-                hexInput.addEventListener('input', () => {
-                    if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
-                        colorInput.value = hexInput.value;
-                        colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (stop.id === activeStopId) {
+                        marker.classList.add('active');
                     }
+                    stopsContainer.appendChild(marker);
                 });
-
-                const positionInput = document.createElement('input');
-                positionInput.type = 'range';
-                positionInput.className = 'form-range gradient-position-input';
-                positionInput.min = 0; positionInput.max = 1; positionInput.step = 0.01;
-                positionInput.value = position;
-
-                const positionValueInput = document.createElement('input');
-                positionValueInput.type = 'number';
-                positionValueInput.className = 'form-control form-control-sm text-center';
-                positionValueInput.style.width = '65px';
-                positionValueInput.min = 0; positionValueInput.max = 1; positionValueInput.step = 0.01;
-                positionValueInput.value = position;
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.className = 'btn btn-sm btn-outline-danger';
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.addEventListener('click', () => {
-                    if (stopsContainer.children.length > 2) {
-                        row.remove();
-                        updateGradient();
-                    } else {
-                        showToast("A gradient must have at least 2 colors.", "warning");
-                    }
-                });
-
-                positionInput.addEventListener('input', () => positionValueInput.value = positionInput.value);
-                positionValueInput.addEventListener('input', () => positionInput.value = positionValueInput.value);
-
-                // All inputs now trigger the single, reliable update function
-                [colorInput, positionInput, positionValueInput].forEach(input => {
-                    input.addEventListener('input', updateGradient);
-                });
-
-                row.appendChild(colorInput);
-                row.appendChild(hexInput);
-                row.appendChild(positionInput);
-                row.appendChild(positionValueInput);
-                row.appendChild(deleteBtn);
-                return row;
             };
 
+            const updateActiveControls = () => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (!activeStop) {
+                    activeControlsContainer.style.display = 'none';
+                    return;
+                }
+                activeControlsContainer.style.display = '';
+                activeControlsContainer.querySelector('.active-color-input').value = activeStop.color;
+                activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
+                activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
+            };
+
+            const setActiveStop = (id) => {
+                activeStopId = id;
+                renderStops();
+                updateActiveControls();
+            };
+
+            activeControlsContainer.innerHTML = `
+                <div class="row gx-2 align-items-center">
+                    <div class="col-auto"><label class="col-form-label-sm">Color:</label></div>
+                    <div class="col-auto"><input type="color" class="form-control form-control-color form-control-sm active-color-input"></div>
+                    <div class="col-auto"><input type="text" class="form-control form-control-sm active-hex-input" style="width: 90px;"></div>
+                    <div class="col-auto ms-auto"><label class="col-form-label-sm">Position:</label></div>
+                    <div class="col-auto"><div class="input-group input-group-sm" style="width: 110px;"><input type="number" class="form-control active-position-input" min="0" max="100" step="0.1"><span class="input-group-text">%</span></div></div>
+                </div>
+            `;
+
+            const activeColorInput = activeControlsContainer.querySelector('.active-color-input');
+            const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
+            const activePosInput = activeControlsContainer.querySelector('.active-position-input');
+
+            const updateActiveStopProperty = (prop, value) => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (activeStop) {
+                    activeStop[prop] = value;
+                    renderStops();
+                    updateGradient();
+                }
+            };
+
+            activeColorInput.addEventListener('input', () => {
+                activeHexInput.value = activeColorInput.value;
+                updateActiveStopProperty('color', activeColorInput.value);
+            });
+            activeHexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) {
+                    activeColorInput.value = activeHexInput.value;
+                    updateActiveStopProperty('color', activeHexInput.value);
+                }
+            });
+            activePosInput.addEventListener('input', () => {
+                let newPos = parseFloat(activePosInput.value) / 100;
+                updateActiveStopProperty('position', Math.max(0, Math.min(1, newPos)));
+            });
+
+            stopsContainer.addEventListener('mousedown', (e) => {
+                const target = e.target;
+                if (target.classList.contains('gradient-stop-marker')) {
+                    isDraggingStop = true;
+                    const id = parseInt(target.dataset.id, 10);
+                    setActiveStop(id);
+
+                    const startX = e.clientX;
+                    const stopToDrag = stops.find(s => s.id === id);
+                    const initialPosition = stopToDrag ? stopToDrag.position : 0;
+                    const containerWidth = stopsContainer.offsetWidth;
+
+                    const onMouseMove = (moveEvent) => {
+                        if (!isDraggingStop) return;
+
+                        const dx = moveEvent.clientX - startX;
+                        const posDelta = dx / containerWidth;
+                        let newPos = initialPosition + posDelta;
+                        newPos = Math.max(0, Math.min(1, newPos));
+
+                        const currentActiveStop = stops.find(s => s.id === activeStopId);
+                        if (currentActiveStop) {
+                            currentActiveStop.position = newPos;
+                        }
+
+                        // --- START: THIS IS THE FIX ---
+                        // Re-query the DOM for the currently active marker, since the original
+                        // 'target' was destroyed and re-created when it was selected.
+                        const activeMarker = stopsContainer.querySelector('.gradient-stop-marker.active');
+                        if (activeMarker) {
+                            activeMarker.style.left = `${newPos * 100}%`;
+                        }
+                        // --- END: THIS IS THE FIX ---
+
+                        activePosInput.value = (newPos * 100).toFixed(1);
+                        updateGradient();
+
+                        if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
+                            const indexToDelete = stops.findIndex(s => s.id === activeStopId);
+                            if (indexToDelete > -1) stops.splice(indexToDelete, 1);
+                            setActiveStop(-1);
+                            onMouseUp();
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        if (isDraggingStop) {
+                            isDraggingStop = false;
+                            renderStops();
+                            updateGradient();
+                        }
+                    };
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                } else if (e.target === stopsContainer) {
+                    const rect = stopsContainer.getBoundingClientRect();
+                    const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    const newColor = getGradientColorAt(newPos, stops);
+                    const newStop = { id: nextStopId++, color: newColor, position: newPos };
+                    stops.push(newStop);
+                    setActiveStop(newStop.id);
+                    updateGradient();
+                }
+            });
+
             try {
-                const initialStops = JSON.parse(defaultValue);
-                initialStops.forEach(stop => {
-                    stopsContainer.appendChild(createStopRow(stop.color, stop.position));
-                });
+                const loadedStops = JSON.parse(defaultValue);
+                stops = loadedStops.map(s => ({ ...s, id: nextStopId++ }));
             } catch (e) {
-                console.error("Could not parse gradient stops:", defaultValue, e);
-                stopsContainer.appendChild(createStopRow('#000000', 0));
-                stopsContainer.appendChild(createStopRow('#FFFFFF', 1));
+                stops = [
+                    { color: '#000000', position: 0, id: nextStopId++ },
+                    { color: '#FFFFFF', position: 1, id: nextStopId++ }
+                ];
             }
-            updateGradient();
 
-            hiddenInput.addEventListener('rebuild', (e) => {
-                const newStops = e.detail.stops || [];
-                stopsContainer.innerHTML = '';
-                newStops.forEach(stop => {
-                    stopsContainer.appendChild(createStopRow(stop.color, stop.position));
-                });
-                updateGradient();
-            });
-
-            const addBtn = document.createElement('button');
-            addBtn.type = 'button';
-            addBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
-            addBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Add Color Stop';
-            addBtn.addEventListener('click', () => {
-                const lastRow = stopsContainer.lastElementChild;
-                const lastPos = lastRow ? parseFloat(lastRow.querySelector('.gradient-position-input').value) : 0.9;
-                const newPos = Math.min(1.0, lastPos + 0.1);
-                stopsContainer.appendChild(createStopRow('#ffffff', newPos));
-                updateGradient();
-            });
-
-            container.appendChild(preview);
+            container.appendChild(previewBar);
             container.appendChild(stopsContainer);
-            container.appendChild(addBtn);
+            container.appendChild(activeControlsContainer);
+            container.appendChild(helpText);
             container.appendChild(hiddenInput);
             formGroup.appendChild(container);
+
+            setActiveStop(stops.length > 0 ? stops[0].id : -1);
+
+            setTimeout(() => {
+                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
+                if (fieldset) {
+                    const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
+                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpGradientToggle) {
+                        sharpGradientToggle.addEventListener('input', updateGradient);
+                    }
+                    updateGradient();
+                }
+            }, 0);
         } else if (type === 'sensor') {
             const select = document.createElement('select');
             select.id = controlId;
