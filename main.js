@@ -2991,7 +2991,7 @@ document.addEventListener('DOMContentLoaded', function () {
             textarea.className = 'form-control';
             textarea.name = controlId;
             textarea.rows = (type === 'textarea') ? 10 : 3;
-            textarea.textContent = String(defaultValue).replace(/\n/g, '\n');
+            textarea.textContent = String(defaultValue).replace(/\\n/g, '\n');
             formGroup.appendChild(textarea);
             if (controlId.endsWith('_pixelArtData')) {
                 const toolLink = document.createElement('a');
@@ -3039,7 +3039,6 @@ document.addEventListener('DOMContentLoaded', function () {
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
         } else if (type === 'gradientpicker') {
-            // --- START: CORRECTED PHOTOSHOP-STYLE GRADIENT PICKER ---
             const container = document.createElement('div');
             container.className = 'gradient-picker-container';
 
@@ -3071,17 +3070,14 @@ document.addEventListener('DOMContentLoaded', function () {
             hiddenInput.value = defaultValue;
 
             let stops = [];
-            let activeStopId = -1; // Use a stable ID instead of an index
-            let nextStopId = 0; // Counter for unique IDs
+            let activeStopId = -1;
+            let nextStopId = 0;
             let isDraggingStop = false;
 
             const updateGradient = () => {
                 stops.sort((a, b) => a.position - b.position);
-
-                // Create a clean version of stops for saving (without the temporary ID)
                 const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
-                const newGradientJson = JSON.stringify(stopsToSave);
-                hiddenInput.value = newGradientJson;
+                hiddenInput.value = JSON.stringify(stopsToSave);
 
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 let isSharp = false;
@@ -3092,16 +3088,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 let gradientString;
-                if (stops.length === 0) gradientString = 'transparent';
-                else if (stops.length === 1) gradientString = stops[0].color;
-                else if (isSharp) {
+                if (stops.length < 2) {
+                    gradientString = stops.length === 1 ? stops[0].color : 'transparent';
+                } else if (isSharp) {
                     let parts = [];
                     parts.push(`${stops[0].color} ${stops[0].position * 100}%`);
                     for (let i = 1; i < stops.length; i++) {
-                        const prevColor = stops[i - 1].color;
-                        const currentPosPercent = stops[i].position * 100;
-                        parts.push(`${prevColor} ${currentPosPercent}%`);
-                        parts.push(`${stops[i].color} ${currentPosPercent}%`);
+                        parts.push(`${stops[i - 1].color} ${stops[i].position * 100}%`);
+                        parts.push(`${stops[i].color} ${stops[i].position * 100}%`);
                     }
                     gradientString = `linear-gradient(to right, ${parts.join(', ')})`;
                 } else {
@@ -3119,13 +3113,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 stops.forEach((stop) => {
                     const marker = document.createElement('div');
                     marker.className = 'gradient-stop-marker';
-                    marker.dataset.id = stop.id; // Use the unique ID
+                    marker.dataset.id = stop.id;
                     marker.style.left = `${stop.position * 100}%`;
                     marker.style.backgroundColor = stop.color;
-
-                    if (stop.id === activeStopId) {
-                        marker.classList.add('active');
-                    }
+                    if (stop.id === activeStopId) marker.classList.add('active');
                     stopsContainer.appendChild(marker);
                 });
             };
@@ -3192,7 +3183,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     isDraggingStop = true;
                     const id = parseInt(target.dataset.id, 10);
                     setActiveStop(id);
-
                     const startX = e.clientX;
                     const stopToDrag = stops.find(s => s.id === id);
                     const initialPosition = stopToDrag ? stopToDrag.position : 0;
@@ -3200,29 +3190,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const onMouseMove = (moveEvent) => {
                         if (!isDraggingStop) return;
-
                         const dx = moveEvent.clientX - startX;
                         const posDelta = dx / containerWidth;
                         let newPos = initialPosition + posDelta;
                         newPos = Math.max(0, Math.min(1, newPos));
-
                         const currentActiveStop = stops.find(s => s.id === activeStopId);
-                        if (currentActiveStop) {
-                            currentActiveStop.position = newPos;
-                        }
-
-                        // --- START: THIS IS THE FIX ---
-                        // Re-query the DOM for the currently active marker, since the original
-                        // 'target' was destroyed and re-created when it was selected.
+                        if (currentActiveStop) currentActiveStop.position = newPos;
                         const activeMarker = stopsContainer.querySelector('.gradient-stop-marker.active');
-                        if (activeMarker) {
-                            activeMarker.style.left = `${newPos * 100}%`;
-                        }
-                        // --- END: THIS IS THE FIX ---
-
+                        if (activeMarker) activeMarker.style.left = `${newPos * 100}%`;
                         activePosInput.value = (newPos * 100).toFixed(1);
                         updateGradient();
-
                         if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
                             const indexToDelete = stops.findIndex(s => s.id === activeStopId);
                             if (indexToDelete > -1) stops.splice(indexToDelete, 1);
@@ -3230,7 +3207,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             onMouseUp();
                         }
                     };
-
                     const onMouseUp = () => {
                         window.removeEventListener('mousemove', onMouseMove);
                         window.removeEventListener('mouseup', onMouseUp);
@@ -3240,7 +3216,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             updateGradient();
                         }
                     };
-
                     window.addEventListener('mousemove', onMouseMove);
                     window.addEventListener('mouseup', onMouseUp);
                 } else if (e.target === stopsContainer) {
@@ -3263,7 +3238,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     { color: '#FFFFFF', position: 1, id: nextStopId++ }
                 ];
             }
-
+            
             container.appendChild(previewBar);
             container.appendChild(stopsContainer);
             container.appendChild(activeControlsContainer);
@@ -3272,7 +3247,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formGroup.appendChild(container);
 
             setActiveStop(stops.length > 0 ? stops[0].id : -1);
-
+            
             setTimeout(() => {
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset) {
@@ -3284,6 +3259,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateGradient();
                 }
             }, 0);
+
+            hiddenInput.addEventListener('rebuild', (e) => {
+                const newStops = e.detail.stops || [];
+                stops = newStops.map(s => ({ ...s, id: nextStopId++ }));
+                const currentActiveStop = stops.find(s => s.id === activeStopId);
+                setActiveStop(currentActiveStop ? activeStopId : (stops[0]?.id || -1));
+                updateGradient();
+            });
+
         } else if (type === 'sensor') {
             const select = document.createElement('select');
             select.id = controlId;
