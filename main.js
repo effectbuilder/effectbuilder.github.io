@@ -154,12 +154,16 @@ let then;
 let galleryListener = null;
 let lastVisibleDoc = null;
 let isLoadingMore = false;
+const GALLERY_PAGE_SIZE = 10;
 let currentGalleryQuery = null;
 let currentProjectDocId = null;
 let confirmActionCallback = null;
 let exportPayload = {};
 let propertyClipboard = null;
 let sourceObjectId = null;
+let currentSortOption = 'createdAt'; // Default sort
+let currentSearchTerm = '';
+let galleryQueryUnsubscribe = null; // To manage the Firestore listener
 
 let cachedSnapTargets = null;
 let snapLines = [];
@@ -449,7 +453,6 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
-<<<<<<< HEAD
     const exportOptionsModalEl = document.getElementById('export-options-modal');
 
     if (exportOptionsModalEl) {
@@ -973,64 +976,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 exportButton.innerHTML = '<i class="bi bi-download me-1"></i> Export';
             }
         }
-=======
-    const markAllReadBtn = document.getElementById('mark-all-read-btn');
-    if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            const user = window.auth.currentUser;
-            if (!user) return;
-
-            // 1. Query for all unread notifications belonging to the user
-            const notificationsRef = window.collection(window.db, "notifications");
-            const q = window.query(
-                notificationsRef,
-                window.where("recipientId", "==", user.uid),
-                window.where("read", "==", false)
-            );
-
-            try {
-                const snapshot = await window.getDocs(q);
-                if (snapshot.size === 0) {
-                    showToast("No new notifications to mark as read.", 'info');
-                    return;
-                }
-
-                // 2. Perform a batch update to mark them all as read
-                const batch = window.writeBatch(window.db); // Assuming window.writeBatch is exposed in firebase.js
-                snapshot.docs.forEach(doc => {
-                    batch.update(doc.ref, { read: true });
-                });
-                await batch.commit();
-
-                showToast(`${snapshot.size} notifications marked as read.`, 'info');
-                // The listener will automatically update the badge shortly after batch commit.
-
-            } catch (err) {
-                console.error("Failed to mark notifications as read:", err);
-                showToast("Failed to mark notifications as read.", 'danger');
-            }
-        });
-    }
-
-    const notificationDropdown = document.getElementById('notification-dropdown-toggle')?.closest('.btn-group');
-
-    if (notificationDropdown) {
-        notificationDropdown.addEventListener('click', (e) => {
-            const link = e.target.closest('a[data-mark-as-read="true"]');
-
-            if (link) {
-                e.preventDefault(); // Prevent default link behavior
-                const projectId = link.getAttribute('data-doc-id');
-                const notificationId = link.getAttribute('data-notif-id');
-
-                if (projectId && notificationId) {
-                    handleNotificationClick(projectId, notificationId);
-                }
-            }
-        });
->>>>>>> Like-button
     }
 
     const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
@@ -2291,7 +2236,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- NEW: Create Notification Document AFTER successful transaction commit ---
             // We only create a notification on a LIKE action, and only if the liker is not the owner.
             if (action === 'liked' && projectOwnerId !== user.uid) {
-            //if (action === 'liked') {
+                //if (action === 'liked') {
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     recipientId: projectOwnerId,
                     senderId: user.uid,
@@ -2504,189 +2449,142 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * Populates the gallery panel with projects. Can append or replace content.
+     * Populates the gallery panel with projects using a card-based layout.
      * @param {Array} projects - The array of project objects to display.
-     * @param {boolean} [append=false] - If true, adds projects to the end of the list.
+     * @param {boolean} [append=false] - If true, adds projects to the list. Otherwise, replaces the list.
      */
-    function populateGallery(projects) {
+    function populateGallery(projects, append = false) {
         const galleryList = document.getElementById('gallery-project-list');
         const currentUser = window.auth.currentUser;
-        galleryList.innerHTML = '';
 
-        if (projects.length === 0) {
-            galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
+        if (!append) {
+            galleryList.innerHTML = ''; // Clear previous results only if not appending
+        }
+
+        if (projects.length === 0 && !append) {
+            galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><p>No effects found.</p></div>';
             return;
         }
 
         projects.forEach(project => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.id = `gallery-item-${project.docId}`;
+            // The card-building logic from the previous step remains the same.
+            // This function body is identical to the one in the previous response.
+            const col = document.createElement('div');
+            col.className = 'col';
+            col.id = `gallery-item-${project.docId}`;
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'd-flex align-items-center flex-grow-1 me-2';
+            const card = document.createElement('div');
+            card.className = 'card h-100 bg-body-tertiary';
 
-            if (project.thumbnail) {
-                const img = document.createElement('img');
-                img.src = project.thumbnail;
-                img.style.width = '120px';
-                img.style.height = '75px';
-                img.style.objectFit = 'cover';
-                img.className = 'rounded border me-3';
-                contentDiv.appendChild(img);
-            }
+            const img = document.createElement('img');
+            img.src = project.thumbnail || 'placeholder.png';
+            img.className = 'card-img-top';
+            img.style.height = '150px';
+            img.style.objectFit = 'cover';
+            img.style.cursor = 'pointer';
+            img.onclick = () => {
+                loadWorkspace(project);
+                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+                galleryOffcanvas.hide();
+            };
+            card.appendChild(img);
 
-            const infoDiv = document.createElement('div');
-            infoDiv.className = project.thumbnail ? 'ms-3' : '';
-            infoDiv.style.minWidth = '0';
+            const cardBody = document.createElement('div');
+            cardBody.className = 'card-body d-flex flex-column';
 
-            const nameEl = document.createElement('strong');
-            nameEl.textContent = project.name;
+            const title = document.createElement('h6');
+            title.className = 'card-title';
+            title.textContent = project.name;
 
-            const metaEl = document.createElement('small');
-            metaEl.className = 'd-block text-body-secondary';
-            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown Date';
-            metaEl.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
-
-            infoDiv.appendChild(nameEl);
-            infoDiv.appendChild(metaEl);
-
-            if (project.configs) {
-                const descriptionConf = project.configs.find(c => c.name === 'description');
-                if (descriptionConf && descriptionConf.default) {
-                    const descEl = document.createElement('p');
-                    descEl.className = 'mb-0 mt-1 small text-body-secondary';
-                    descEl.textContent = descriptionConf.default;
-                    descEl.title = descriptionConf.default;
-                    infoDiv.appendChild(descEl);
-                }
-            }
+            const subtitle = document.createElement('small');
+            subtitle.className = 'card-subtitle mb-2 text-body-secondary';
+            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString() : 'N/A';
+            subtitle.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
 
             const statsEl = document.createElement('div');
-            statsEl.className = 'mt-1 small text-body-secondary';
-
-            const viewCount = project.viewCount || 0;
-            const downloadCount = project.downloadCount || 0;
-            const likeCount = project.likes || 0;
-
+            statsEl.className = 'mt-auto d-flex justify-content-start small text-body-secondary gap-3';
             statsEl.innerHTML = `
-                <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
-                <span class="me-3" title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
-                <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;"> 
-                    <i class="bi bi-heart-fill me-1"></i>
-                    <span id="like-count-value-${project.docId}">${likeCount}</span>
-                </span>
-            `;
+            <span title="Views"><i class="bi bi-eye-fill me-1"></i>${project.viewCount || 0}</span>
+            <span title="Downloads"><i class="bi bi-download me-1"></i>${project.downloadCount || 0}</span>
+            <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;">
+                <i class="bi bi-heart-fill me-1"></i>
+                <span id="like-count-value-${project.docId}">${project.likes || 0}</span>
+            </span>
+        `;
 
-            infoDiv.appendChild(statsEl);
+            cardBody.appendChild(title);
+            cardBody.appendChild(subtitle);
+            cardBody.appendChild(statsEl);
+            card.appendChild(cardBody);
+
+            const cardFooter = document.createElement('div');
+            cardFooter.className = 'card-footer d-flex justify-content-between align-items-center';
+
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'btn-group btn-group-sm';
+            btnGroup.setAttribute('role', 'group');
+
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'btn btn-outline-primary';
+            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-1"></i> Load';
+            loadBtn.title = "Load Effect";
+            loadBtn.onclick = () => {
+                loadWorkspace(project);
+                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+                galleryOffcanvas.hide();
+            };
+            btnGroup.appendChild(loadBtn);
+
+            const isInitiallyLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
+            const likeBtn = document.createElement('button');
+            likeBtn.id = `like-btn-${project.docId}`;
+            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-outline-danger'}`;
+            likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
+            likeBtn.title = isInitiallyLiked ? "Unlike" : "Like";
+            likeBtn.onclick = () => likeEffect(project.docId);
+            btnGroup.appendChild(likeBtn);
+
+            cardFooter.appendChild(btnGroup);
+
+            const ownerControls = document.createElement('div');
+            if (currentUser && (currentUser.uid === project.userId || currentUser.uid === ADMIN_UID)) {
+                if (currentUser.uid === project.userId) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteBtn.title = "Delete Effect";
+                    deleteBtn.onclick = () => {
+                        showConfirmModal(
+                            'Delete Project', `Are you sure you want to delete "${project.name}"?`, 'Delete',
+                            async () => {
+                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
+                            }
+                        );
+                    };
+                    ownerControls.appendChild(deleteBtn);
+                }
+                if (currentUser.uid === ADMIN_UID) {
+                    const isFeatured = project.featured === true;
+                    const featureBtn = document.createElement('button');
+                    featureBtn.className = `btn btn-sm ms-2 ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                    featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
+                    featureBtn.title = isFeatured ? 'Unfeature' : 'Feature';
+                    featureBtn.dataset.docId = project.docId;
+                    featureBtn.onclick = function () { toggleFeaturedStatus(this, project.docId); };
+                    ownerControls.appendChild(featureBtn);
+                }
+            }
+            cardFooter.appendChild(ownerControls);
+            card.appendChild(cardFooter);
+            col.appendChild(card);
+            galleryList.appendChild(col);
 
             setTimeout(() => {
                 const likesSpan = document.getElementById(`like-count-span-${project.docId}`);
                 if (likesSpan) {
-                    likesSpan.addEventListener('click', () => {
-                        showLikersModal(project.docId, project.name);
-                    });
+                    likesSpan.addEventListener('click', () => showLikersModal(project.docId, project.name));
                 }
             }, 0);
-
-            contentDiv.appendChild(infoDiv);
-            li.appendChild(contentDiv);
-
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'd-flex flex-column gap-1';
-
-            const loadBtn = document.createElement('button');
-            loadBtn.className = 'btn btn-sm btn-outline-primary';
-            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down"></i>';
-            loadBtn.title = "Load Effect";
-            loadBtn.onclick = () => {
-                const viewCountContainer = li.querySelector('span[title="Views"]');
-                if (viewCountContainer) {
-                    const currentCount = parseInt(viewCountContainer.textContent.trim()) || 0;
-                    viewCountContainer.innerHTML = `<i class="bi bi-eye-fill me-1"></i>${currentCount + 1}`;
-                }
-
-                loadWorkspace(project);
-                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
-                galleryOffcanvas.hide();
-                showToast(`Effect "${project.name}" loaded!`, 'success');
-            };
-            controlsDiv.appendChild(loadBtn);
-
-            // --- Like Button Logic ---
-            const likedByMap = project.likedBy || {};
-            let isInitiallyLiked = false;
-
-            // Check the database likedBy map to set the initial button state
-            if (currentUser && currentUser.uid) {
-                isInitiallyLiked = likedByMap.hasOwnProperty(currentUser.uid);
-            }
-
-            const likeBtn = document.createElement('button');
-            likeBtn.id = `like-btn-${project.docId}`;
-
-            if (isInitiallyLiked) {
-                likeBtn.className = 'btn btn-sm btn-danger';
-                likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
-                likeBtn.title = "Unlike this effect";
-            } else {
-                likeBtn.className = 'btn btn-sm btn-outline-danger';
-                likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
-                likeBtn.title = "Like this effect";
-            }
-
-            likeBtn.onclick = () => {
-                likeEffect(project.docId);
-            };
-            controlsDiv.appendChild(likeBtn);
-            // --- End Like Button Logic ---
-
-            if (currentUser && currentUser.uid === project.userId) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-outline-danger';
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.title = "Delete Effect";
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    showConfirmModal(
-                        'Delete Project',
-                        `Are you sure you want to delete your project "${project.name}"? This cannot be undone.`,
-                        'Delete',
-                        async () => {
-                            try {
-                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
-                                showToast(`Project "${project.name}" deleted.`, 'info');
-                                li.remove();
-                                if (galleryList.children.length === 0) {
-                                    galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
-                                }
-                            } catch (error) {
-                                showToast("Error deleting project.", 'danger');
-                            }
-                        }
-                    );
-                };
-                controlsDiv.appendChild(deleteBtn);
-            }
-
-            if (currentUser && currentUser.uid === ADMIN_UID) {
-                const featureBtn = document.createElement('button');
-                const isFeatured = project.featured === true;
-
-                featureBtn.className = `btn btn-sm btn-feature ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
-                featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                featureBtn.title = isFeatured ? 'Unfeature this effect' : 'Feature this effect';
-                featureBtn.dataset.docId = project.docId;
-
-                featureBtn.onclick = function () {
-                    toggleFeaturedStatus(this, project.docId);
-                };
-
-                controlsDiv.appendChild(featureBtn);
-            }
-
-            li.appendChild(controlsDiv);
-            galleryList.appendChild(li);
         });
     }
 
@@ -8214,6 +8112,211 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     window.loadUserSpecificGalleryData = loadUserSpecificGalleryData; // Expose globally
 
+    // --- START: NEW LAZY LOADING GALLERY LOGIC ---
+    const gallerySearchInput = document.getElementById('gallery-search-input');
+    const gallerySortOptions = document.querySelectorAll('.gallery-sort-option');
+    const galleryFooter = document.getElementById('gallery-footer');
+    const galleryScrollContainer = document.getElementById('gallery-scroll-container'); // Added this
+
+    let currentBaseQuery; // To store the base query for loading more
+
+    /**
+     * Fetches projects for the gallery.
+     * - Uses pagination for 'createdAt' and 'name' sorts.
+     * - Fetches all for 'likes' and 'downloadCount' sorts to ensure correctness.
+     * - Fetches all when a search term is active.
+     */
+    async function fetchAndDisplayGallery(galleryType = 'community') {
+        const user = window.auth.currentUser;
+        if (galleryType === 'user' && !user) {
+            showToast("You must be logged in to see your projects.", 'danger');
+            const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+            if (galleryOffcanvas) galleryOffcanvas.hide();
+            return;
+        }
+
+        lastVisibleDoc = null; // Reset pagination
+        const galleryList = document.getElementById('gallery-project-list');
+        galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><div class="spinner-border spinner-border-sm"></div><p class="mt-2">Loading...</p></div>';
+        galleryFooter.style.display = 'none';
+
+        const projectsRef = window.collection(window.db, "projects");
+
+        // Set the base query based on gallery type
+        if (galleryType === 'user') {
+            document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+            currentBaseQuery = window.query(projectsRef, window.where("userId", "==", user.uid));
+        } else {
+            document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
+            currentBaseQuery = window.query(projectsRef, window.where("isPublic", "==", true));
+        }
+
+        // --- START: NEW HYBRID LOADING LOGIC ---
+        const searchTerm = gallerySearchInput.value.toLowerCase();
+        // Determine if we can use efficient pagination or need to fetch everything
+        const usePagination = (currentSortOption === 'createdAt' || currentSortOption === 'name') && !searchTerm;
+
+        if (usePagination) {
+            // BEHAVIOR 1: Efficient lazy-loading for default sorts
+            isLoadingMore = true; // Prevent scroll-loading during initial fetch
+            const sortDirection = currentSortOption === 'name' ? 'asc' : 'desc';
+            const finalQuery = window.query(
+                currentBaseQuery,
+                window.orderBy(currentSortOption, sortDirection),
+                window.limit(GALLERY_PAGE_SIZE)
+            );
+            try {
+                const documentSnapshots = await window.getDocs(finalQuery);
+                const projects = [];
+                documentSnapshots.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                    projects.push({ docId: doc.id, ...data });
+                });
+
+                populateGallery(projects, false);
+
+                lastVisibleDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+                if (documentSnapshots.docs.length < GALLERY_PAGE_SIZE) {
+                    isLoadingMore = true;
+                } else {
+                    isLoadingMore = false;
+                }
+            } catch (error) {
+                console.error("Gallery query error:", error);
+                galleryList.innerHTML = `<div class="col-12"><p class="text-danger">Could not load effects. Please ensure database indexes are configured.</p></div>`;
+            }
+
+        } else {
+            // BEHAVIOR 2: Fetch-all for searching or complex sorts ('likes', 'downloadCount')
+            isLoadingMore = true; // Disable scroll loading entirely
+            try {
+                const querySnapshot = await window.getDocs(currentBaseQuery);
+                let projects = [];
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                    projects.push({ docId: doc.id, ...data });
+                });
+
+                // Then sort the full results client-side
+                projects.sort((a, b) => {
+                    // Use || 0 to handle cases where the field doesn't exist
+                    const aVal = a[currentSortOption] || 0;
+                    const bVal = b[currentSortOption] || 0;
+                    if (currentSortOption === 'name') {
+                        return (aVal || '').localeCompare(bVal || '');
+                    } else {
+                        return bVal - aVal;
+                    }
+                });
+
+                // Finally, apply search filter if it exists
+                const filteredProjects = searchTerm
+                    ? projects.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.creatorName && p.creatorName.toLowerCase().includes(searchTerm)))
+                    : projects;
+
+                populateGallery(filteredProjects);
+                galleryFooter.style.display = 'none'; // Hide footer since all results are shown
+
+            } catch (error) {
+                console.error("Gallery search/sort error:", error);
+                galleryList.innerHTML = `<div class="col-12"><p class="text-danger">Could not perform search or sort.</p></div>`;
+            }
+        }
+        // --- END: NEW HYBRID LOADING LOGIC ---
+    }
+
+    /**
+     * Fetches the next page of projects when the user scrolls.
+     */
+    async function loadMoreProjects() {
+        if (isLoadingMore || !lastVisibleDoc || !currentBaseQuery) return;
+
+        isLoadingMore = true;
+        galleryFooter.style.display = 'block';
+
+        const sortDirection = currentSortOption === 'name' ? 'asc' : 'desc';
+        const nextQuery = window.query(
+            currentBaseQuery,
+            window.orderBy(currentSortOption, sortDirection),
+            window.startAfter(lastVisibleDoc),
+            window.limit(GALLERY_PAGE_SIZE)
+        );
+
+        try {
+            const documentSnapshots = await window.getDocs(nextQuery);
+            const newProjects = [];
+            documentSnapshots.forEach((doc) => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                newProjects.push({ docId: doc.id, ...data });
+            });
+
+            const searchTerm = gallerySearchInput.value.toLowerCase();
+            const filteredProjects = searchTerm
+                ? newProjects.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.creatorName && p.creatorName.toLowerCase().includes(searchTerm)))
+                : newProjects;
+
+            populateGallery(filteredProjects, true); // Append new content
+
+            lastVisibleDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+            // If we fetched less than a full page, there are no more projects
+            if (documentSnapshots.docs.length < GALLERY_PAGE_SIZE) {
+                galleryFooter.style.display = 'none';
+            } else {
+                isLoadingMore = false; // Re-enable loading for the next page
+            }
+        } catch (error) {
+            console.error("Error loading more projects:", error);
+            showToast("Failed to load more effects.", 'danger');
+        } finally {
+            if (documentSnapshots.docs.length > 0) {
+                galleryFooter.style.display = 'none';
+            }
+        }
+    }
+
+    // NEW: Scroll event listener for infinite loading
+    if (galleryScrollContainer) {
+        galleryScrollContainer.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = galleryScrollContainer;
+            // Trigger load when user is 100px from the bottom
+            if (scrollHeight - scrollTop - clientHeight < 100) {
+                loadMoreProjects();
+            }
+        });
+    }
+
+    // Update event listeners to call the new master function
+    gallerySearchInput.addEventListener('input', debounce(() => {
+        const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+        fetchAndDisplayGallery(galleryType);
+    }, 300));
+
+    gallerySortOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentSortOption = e.target.dataset.sort;
+            const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+            fetchAndDisplayGallery(galleryType);
+        });
+    });
+
+    document.getElementById('load-ws-btn').addEventListener('click', () => {
+        fetchAndDisplayGallery('user');
+    });
+
+    document.getElementById('browse-btn').addEventListener('click', () => {
+        fetchAndDisplayGallery('community');
+    });
+
+    galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
+        lastVisibleDoc = null;
+    });
+
+    // --- END: NEW LAZY LOADING GALLERY LOGIC ---
 
     // Start the application.
     init();
