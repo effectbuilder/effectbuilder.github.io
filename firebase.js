@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, FieldPath, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+// NOTE: FieldPath and writeBatch are imported, but the error is resolved by the export below.
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -19,10 +20,14 @@ const app = initializeApp(firebaseConfig);
 // Make Firebase services and functions globally available for other scripts
 window.auth = getAuth(app);
 window.db = getFirestore(app);
+
+// --- Expose Auth Functions ---
 window.GoogleAuthProvider = GoogleAuthProvider;
 window.signInWithPopup = signInWithPopup;
 window.signOut = signOut;
 window.onAuthStateChanged = onAuthStateChanged;
+
+// --- Expose Firestore Functions/Constants ---
 window.collection = collection;
 window.addDoc = addDoc;
 window.getDocs = getDocs;
@@ -38,6 +43,14 @@ window.orderBy = orderBy;
 window.startAfter = startAfter;
 window.updateDoc = updateDoc;
 window.increment = increment;
+window.serverTimestamp = serverTimestamp;
+window.setDoc = setDoc;
+
+// FIX: Expose the correct constant for Document ID. The string '__name__' is the underlying 
+// field name used by Firestore for the document ID in queries when FieldPath.documentId fails.
+window.documentId = '__name__';
+window.writeBatch = writeBatch; // Expose writeBatch for 'Mark All Read' feature
+
 
 // Wait for the DOM to be fully loaded before setting up UI event listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveWsBtn = document.getElementById('save-ws-btn');
         const loadWsBtn = document.getElementById('load-ws-btn');
         const isLoggedIn = !!user;
-        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZHRoPSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOHJhOCA4IDAgMTAxNiAwQTggOCAwIDAwMCA4em04LTdhNyA3IDAgMDE3IDcgNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPgo8L3N2Zz4=';
+        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOHJhOCA4IDAgMTAxNiAwQTggOCAwIDAwMCA4em04LTdhNyA3IDAgMDE3IDcgNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPgo8L3Nzdmc+';
 
         if (isLoggedIn) {
             // Show the logged-in group and hide the login button
@@ -82,14 +95,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     userPhotoEl.onerror = null;
                 };
             }
+            
+            // NEW: Set/Update user document with display name
+            if (user) {
+                const userDocRef = window.doc(window.db, "users", user.uid);
+                // Use setDoc with merge:true to create/update the document
+                window.setDoc(userDocRef, {
+                    displayName: user.displayName || 'Anonymous User',
+                    photoURL: user.photoURL || null
+                }, { merge: true }).catch(err => {
+                    console.error("Failed to save user profile to Firestore:", err);
+                });
+            }
+
+            // Setup notification listener on login
+            if (typeof window.setupNotificationListener === 'function') {
+                window.setupNotificationListener(user);
+            }
+
         } else {
             // Show the login button and hide the logged-in group
             if(loginBtn) loginBtn.classList.remove('d-none');
             if(userSessionGroup) userSessionGroup.classList.add('d-none');
+            
+            // Clear notification listener on logout
+            if (typeof window.setupNotificationListener === 'function') {
+                window.setupNotificationListener(null);
+            }
         }
 
         // Enable/disable other buttons
         if(saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
         if(loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
+        
+        // Ensure gallery updates after auth state is known
+        if (typeof window.loadUserSpecificGalleryData === 'function') {
+            window.loadUserSpecificGalleryData();
+        }
     });
 });
