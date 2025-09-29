@@ -222,6 +222,7 @@ function restoreState(state) {
     isRestoring = false;
 }
 
+<<<<<<< HEAD
 function updateObjectFromWindow(obj, allPropKeys) {
     const id = obj.id;
     const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
@@ -273,6 +274,7 @@ function updateObjectFromWindow(obj, allPropKeys) {
         }
     });
     obj.update(newProps);
+=======
 /**
  * Calculates a human-readable time difference string (e.g., "5 minutes ago").
  * @param {Date} date - The date/time to measure from.
@@ -280,6 +282,7 @@ function updateObjectFromWindow(obj, allPropKeys) {
  */
 function timeAgo(date) {
     if (!(date instanceof Date)) return "just now";
+    
     const seconds = Math.floor((new Date() - date) / 1000);
     let interval = seconds / 31536000;
 

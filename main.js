@@ -449,6 +449,7 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
+<<<<<<< HEAD
     const exportOptionsModalEl = document.getElementById('export-options-modal');
 
     if (exportOptionsModalEl) {
@@ -972,6 +973,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 exportButton.innerHTML = '<i class="bi bi-download me-1"></i> Export';
             }
         }
+=======
     const markAllReadBtn = document.getElementById('mark-all-read-btn');
     if (markAllReadBtn) {
         markAllReadBtn.addEventListener('click', async (e) => {
@@ -1028,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
+>>>>>>> Like-button
     }
 
     const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
