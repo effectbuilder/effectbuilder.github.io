@@ -222,35 +222,55 @@ function restoreState(state) {
     isRestoring = false;
 }
 
-/**
- * Calculates a human-readable time difference string (e.g., "5 minutes ago").
- * @param {Date} date - The date/time to measure from.
- * @returns {string} The time ago string.
- */
-function timeAgo(date) {
-    if (!(date instanceof Date)) return "just now";
-    
-    const seconds = Math.floor((new Date() - date) / 1000);
-    let interval = seconds / 31536000;
+function updateObjectFromWindow(obj, allPropKeys) {
+    const id = obj.id;
+    const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength', 'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'];
+    const newProps = {};
 
-    if (interval > 1) {
-        return Math.floor(interval) + " years";
+    // Reconstruct gradients from their individual meta properties, which SignalRGB updates
+    const fillStops = [];
+    for (let i = 1; i <= 10; i++) {
+        const fcKey = `obj${id}_gradColor_${i}`;
+        const fpKey = `obj${id}_gradPosition_${i}`;
+        if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
+            fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+        }
     }
-    interval = seconds / 2592000;
-    if (interval > 1) {
-        return Math.floor(interval) + " months";
+    if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a, b) => a.position - b.position) };
+
+    const strokeStops = [];
+    for (let i = 1; i <= 10; i++) {
+        const scKey = `obj${id}_strokeColor_${i}`;
+        const spKey = `obj${id}_strokePosition_${i}`;
+        if (window[scKey] !== undefined && window[spKey] !== undefined) {
+            strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+        }
     }
-    interval = seconds / 86400;
-    if (interval > 1) {
-        return Math.floor(interval) + " days";
-    }
-    interval = seconds / 3600;
-    if (interval > 1) {
-        return Math.floor(interval) + " hours";
-    }
-    interval = seconds / 60;
-    if (interval > 1) {
-        return Math.floor(interval) + " minutes";
-    }
-    return Math.floor(seconds) <= 10 ? "just now" : Math.floor(seconds) + " seconds";
+    if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a, b) => a.position - b.position) };
+
+    // Read all other properties from the window object
+    allPropKeys.forEach(key => {
+        if (key.startsWith(`obj${id}_`) && window[key] !== undefined) {
+            const propName = key.substring(key.indexOf('_') + 1);
+            // Skip properties we just handled
+            if (propName.includes('Color_') || propName.includes('Position_')) return;
+
+            let value = window[key];
+            if (value === "true") value = true;
+            if (value === "false") value = false;
+
+            if (propsToScale.includes(propName) && !isNaN(parseFloat(value))) {
+                value *= 4;
+            }
+
+            if (propName === 'scrollDir') {
+                newProps.scrollDirection = value;
+            } else if (propName === 'strokeScrollDir') {
+                newProps.strokeScrollDir = value;
+            } else {
+                newProps[propName] = value;
+            }
+        }
+    });
+    obj.update(newProps);
 }

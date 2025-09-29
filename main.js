@@ -5,12 +5,45 @@ window.seismicSpeedMultiplier = 1;
 window.tetrisGravityMultiplier = 4;
 window.textSpeedMultiplier = 1;
 
+const propsToScale = [
+    'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
+    'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
+    'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength',
+    'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'
+];
+
+// Update this for a new property
+//Tabs
+const controlGroupMap = {
+    'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
+    'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
+    'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
+    'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
+    'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
+    'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
+    'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
+    'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
+    'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
+    'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
+    'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
+    'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
+    'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
+    'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
+    'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
+    'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
+};
+
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
     <meta publisher="SRGB Interactive Effect Builder" />
     <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
     <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
+    <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
+    <meta property="globalGradientStops" label="Global Gradient" type="gradientpicker" default='[{"color":"#ff0000","position":0},{"color":"#00ff00","position":0.5},{"color":"#0000ff","position":1}]' />
+    <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
+    <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
 
     <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
     <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
@@ -27,9 +60,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_scrollDir" label="Small Clock: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj1_gradType" label="Small Clock: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj1_useSharpGradient" label="Small Clock: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj1_gradientStop" label="Small Clock: Gradient Stop %" type="number" min="0" max="100" default="72" />
-    <meta property="obj1_gradColor1" label="Small Clock: Color 1" type="color" default="#00ff00" />
-    <meta property="obj1_gradColor2" label="Small Clock: Color 2" type="color" default="#d400ff" />
     <meta property="obj1_cycleColors" label="Small Clock: Cycle Colors" type="boolean" default="false" />
     <meta property="obj1_cycleSpeed" label="Small Clock: Color Cycle Speed" type="number" min="1" max="10" default="10" />
     <meta property="obj1_numberOfRows" label="Small Clock: Number of Rows" type="number" min="1" max="100" default="2" />
@@ -50,13 +80,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_beatThreshold" label="Small Clock: Beat Threshold" min="1" max="100" type="number" default="30" />
     <meta property="obj1_audioSensitivity" label="Small Clock: Sensitivity" min="0" max="200" type="number" default="50" />
     <meta property="obj1_audioSmoothing" label="Small Clock: Smoothing" min="0" max="99" type="number" default="50" />
-    <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
-    <meta property="paletteColor1" label="Palette Color 1" type="color" default="#FF8F00" />
-    <meta property="paletteColor2" label="Palette Color 2" type="color" default="#00BFFF" />
-    <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
-    <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
-
-
 
     <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
     <meta property="obj2_x" label="Large Text: X Position" type="number" min="0" max="320" default="-3" />
@@ -73,9 +96,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj2_scrollDir" label="Large Text: Scroll Direction" type="combobox" values="right,left,up,down" default="right" />
     <meta property="obj2_gradType" label="Large Text: Fill Type" type="combobox" values="solid,linear,radial,alternating,random" default="linear" />
     <meta property="obj2_useSharpGradient" label="Large Text: Use Sharp Gradient" type="boolean" default="true" />
-    <meta property="obj2_gradientStop" label="Large Text: Gradient Stop %" type="number" min="0" max="100" default="72" />
-    <meta property="obj2_gradColor1" label="Large Text: Color 1" type="color" default="#00ff00" />
-    <meta property="obj2_gradColor2" label="Large Text: Color 2" type="color" default="#d400ff" />
     <meta property="obj2_cycleColors" label="Large Text: Cycle Colors" type="boolean" default="false" />
     <meta property="obj2_cycleSpeed" label="Large Text: Color Cycle Speed" type="number" min="1" max="10" default="10" />
     <meta property="obj2_numberOfRows" label="Large Text: Number of Rows" type="number" min="1" max="100" default="2" />
@@ -104,8 +124,6 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj3_height" label="Visualizer: Height" type="number" min="2" max="200" default="100" />
     <meta property="obj3_rotation" label="Visualizer: Rotation" type="number" min="-360" max="360" default="0" />
     <meta property="obj3_gradType" label="Visualizer: Fill Type" type="combobox" values="solid,linear,radial,alternating,random,rainbow" default="rainbow" />
-    <meta property="obj3_gradColor1" label="Visualizer: Color 1" type="color" default="#00ff00" />
-    <meta property="obj3_gradColor2" label="Visualizer: Color 2" type="color" default="#d400ff" />
     <meta property="obj3_animationSpeed" label="Visualizer: Animation Speed" type="number" min="1" max="50" default="10" />
     <meta property="obj3_vizLayout" label="Visualizer: Layout" type="combobox" default="Linear" values="Linear,Circular" />
     <meta property="obj3_vizDrawStyle" label="Visualizer: Draw Style" type="combobox" default="Line" values="Bars,Line,Area" />
@@ -136,12 +154,16 @@ let then;
 let galleryListener = null;
 let lastVisibleDoc = null;
 let isLoadingMore = false;
+const GALLERY_PAGE_SIZE = 10;
 let currentGalleryQuery = null;
 let currentProjectDocId = null;
 let confirmActionCallback = null;
 let exportPayload = {};
 let propertyClipboard = null;
 let sourceObjectId = null;
+let currentSortOption = 'createdAt'; // Default sort
+let currentSearchTerm = '';
+let galleryQueryUnsubscribe = null; // To manage the Firestore listener
 
 let cachedSnapTargets = null;
 let snapLines = [];
@@ -163,6 +185,39 @@ let pixelArtCache = [];
 let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
+
+/**
+ * Calculates the interpolated color at a specific progress point within a set of color stops.
+ * @param {number} progress - The position to find the color for (0.0 to 1.0).
+ * @param {Array} stops - An array of color stop objects ({color, position}).
+ * @returns {string} The interpolated color string.
+ */
+function getGradientColorAt(progress, stops) {
+    const t = (progress % 1.0 + 1.0) % 1.0;
+    if (!stops || stops.length === 0) return '#ff00ff';
+
+    // Ensure stops are sorted by position
+    const sortedStops = [...stops].sort((a, b) => a.position - b.position);
+
+    // If before the first stop, return the first color
+    if (t <= sortedStops[0].position) return sortedStops[0].color;
+
+    // Find the two stops the progress is between
+    for (let i = 0; i < sortedStops.length - 1; i++) {
+        const s1 = sortedStops[i];
+        const s2 = sortedStops[i + 1];
+        if (t >= s1.position && t <= s2.position) {
+            const range = s2.position - s1.position;
+            if (range === 0) return s1.color; // Avoid division by zero
+            const amount = (t - s1.position) / range;
+            // lerpColor is a global function available from Shape.js
+            return lerpColor(s1.color, s2.color, amount);
+        }
+    }
+
+    // If after the last stop, return the last color
+    return sortedStops[sortedStops.length - 1].color;
+}
 
 function renderNotificationDropdown(unreadProjects) {
     const listContainer = document.getElementById('notification-list-container');
@@ -257,12 +312,21 @@ function formatPixelData(data) {
     return result;
 }
 
-function renderPixelArtPreview(canvas, frameDataString, color1 = '#FF00FF', color2 = '#00FFFF') {
+function renderPixelArtPreview(canvas, frameDataString, gradientStops = []) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#212529'; // A dark background for the preview
+
+    // Use a checkerboard pattern for the background to show transparency
+    ctx.fillStyle = '#444';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#666';
+    for (let i = 0; i < canvas.width; i += 8) {
+        for (let j = 0; j < canvas.height; j += 8) {
+            if ((i / 8 + j / 8) % 2 == 0) {
+                ctx.fillRect(i, j, 8, 8);
+            }
+        }
+    }
 
     try {
         const data = JSON.parse(frameDataString);
@@ -270,24 +334,48 @@ function renderPixelArtPreview(canvas, frameDataString, color1 = '#FF00FF', colo
 
         const rows = data.length;
         const cols = data[0].length;
+        if (cols === 0) return;
         const cellWidth = canvas.width / cols;
         const cellHeight = canvas.height / rows;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                const val = data[r]?.[c] || 0;
-                if (val > 0) {
-                    // Use the object's actual colors instead of hardcoded ones
-                    if (val === 1.0) ctx.fillStyle = '#FFFFFF';
-                    else if (val === 0.3) ctx.fillStyle = color1;
-                    else if (val === 0.4) ctx.fillStyle = color2;
-                    else ctx.fillStyle = `rgba(144, 144, 144, ${val})`;
-                    ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
+                const value = data[r]?.[c] || 0;
+                if (value === 0) continue; // Skip transparent/empty pixels
+
+                let fillColor = '#FF00FF'; // Default error color
+
+                // This logic now mirrors the main renderer in Shape.js
+                switch (value) {
+                    case 0.7: // "Fill Style" - render as a semi-transparent gray
+                        fillColor = 'rgba(180, 180, 180, 0.7)';
+                        break;
+                    case 1.0: // White
+                        fillColor = '#FFFFFF';
+                        break;
+                    case 0.3: // "Color 1" from the editor palette
+                        fillColor = gradientStops[0]?.color || '#FF00FF';
+                        break;
+                    case 0.4: // "Color 2" from the editor palette
+                        fillColor = gradientStops[1]?.color || '#00FFFF';
+                        break;
+                    default:
+                        // Handle integer index values from imported GIFs
+                        if (value >= 2) {
+                            const index = Math.round(value) - 2;
+                            if (gradientStops && gradientStops[index]) {
+                                fillColor = gradientStops[index].color;
+                            }
+                        }
+                        break;
                 }
+
+                ctx.fillStyle = fillColor;
+                // Use floor/ceil to avoid sub-pixel rendering gaps
+                ctx.fillRect(Math.floor(c * cellWidth), Math.floor(r * cellHeight), Math.ceil(cellWidth), Math.ceil(cellHeight));
             }
         }
     } catch (e) {
-        // If data is invalid, draw an error icon
         ctx.fillStyle = 'red';
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
@@ -301,6 +389,29 @@ function colorDistance(rgb1, rgb2) {
     const gDiff = rgb1.g - rgb2.g;
     const bDiff = rgb1.b - rgb2.b;
     return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+}
+
+function findClosestColor(rgb, colorPalette) {
+    let minDistanceSq = Infinity;
+    let closestColorHex = null;
+
+    for (const paletteColor of colorPalette) {
+        // Using squared distance is faster as it avoids the square root calculation.
+        const distSq = Math.pow(rgb.r - paletteColor.r, 2) +
+            Math.pow(rgb.g - paletteColor.g, 2) +
+            Math.pow(rgb.b - paletteColor.b, 2);
+
+        if (distSq < minDistanceSq) {
+            minDistanceSq = distSq;
+            closestColorHex = paletteColor.hex;
+        }
+
+        // If a perfect match is found, we can stop searching.
+        if (minDistanceSq === 0) {
+            break;
+        }
+    }
+    return closestColorHex;
 }
 
 function handleURLParameters() {
@@ -326,34 +437,31 @@ function handleURLParameters() {
 }
 
 function updateColorControls() {
-    const values = getControlValues();
-    const paletteEnabled = values.enablePalette;
-    const pColor1 = values.paletteColor1;
-    const pColor2 = values.paletteColor2;
+    const paletteEnabled = document.getElementById('enablePalette')?.checked;
 
-    const colorControlNames = ['gradColor1', 'gradColor2', 'strokeGradColor1', 'strokeGradColor2'];
+    // A list of all control types that should be disabled when the global palette is on
+    const controlsToToggle = [
+        'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors', 'cycleSpeed',
+        'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed'
+    ];
 
     objects.forEach(obj => {
-        colorControlNames.forEach(name => {
-            const input = form.querySelector(`[name="obj${obj.id}_${name}"]`);
-            if (input) {
-                const hexInput = form.querySelector(`[name="obj${obj.id}_${name}_hex"]`);
-                const isColor1 = name.endsWith('1');
+        const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
+        if (!fieldset) return;
 
-                input.disabled = paletteEnabled;
-                if (hexInput) hexInput.disabled = paletteEnabled;
-
-                if (paletteEnabled) {
-                    const paletteColor = isColor1 ? pColor1 : pColor2;
-                    input.value = paletteColor;
-                    if (hexInput) hexInput.value = paletteColor;
-                } else {
-                    // Restore the object's actual color
-                    const originalColor = isColor1
-                        ? (name.startsWith('stroke') ? obj.strokeGradient.color1 : obj.gradient.color1)
-                        : (name.startsWith('stroke') ? obj.strokeGradient.color2 : obj.gradient.color2);
-                    input.value = originalColor;
-                    if (hexInput) hexInput.value = originalColor;
+        controlsToToggle.forEach(controlName => {
+            const control = fieldset.querySelector(`[name$="_${controlName}"]`);
+            if (control) {
+                // Find the parent form group to disable everything inside it (labels, inputs, etc.)
+                const formGroup = control.closest('.mb-3, .card-body');
+                if (formGroup) {
+                    const inputs = formGroup.querySelectorAll('input, select, button, textarea');
+                    inputs.forEach(input => {
+                        // The 'enableStroke' checkbox should remain active
+                        if (!input.name.endsWith('_enableStroke')) {
+                            input.disabled = paletteEnabled;
+                        }
+                    });
                 }
             }
         });
@@ -378,62 +486,529 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
-    const markAllReadBtn = document.getElementById('mark-all-read-btn');
-    if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
+    const exportOptionsModalEl = document.getElementById('export-options-modal');
 
-            const user = window.auth.currentUser;
-            if (!user) return;
+    if (exportOptionsModalEl) {
+        // Use event delegation for better performance
+        exportOptionsModalEl.addEventListener('change', (e) => {
+            const target = e.target;
 
-            // 1. Query for all unread notifications belonging to the user
-            const notificationsRef = window.collection(window.db, "notifications");
-            const q = window.query(
-                notificationsRef,
-                window.where("recipientId", "==", user.uid),
-                window.where("read", "==", false)
-            );
+            // Part 1: Logic for when a GROUP master checkbox is clicked
+            if (target.classList.contains('group-master-check')) {
+                const groupId = target.dataset.groupId;
+                const childCheckboxes = exportOptionsModalEl.querySelectorAll(`.property-check.${groupId}`);
 
-            try {
-                const snapshot = await window.getDocs(q);
-                if (snapshot.size === 0) {
-                    showToast("No new notifications to mark as read.", 'info');
-                    return;
-                }
-
-                // 2. Perform a batch update to mark them all as read
-                const batch = window.writeBatch(window.db); // Assuming window.writeBatch is exposed in firebase.js
-                snapshot.docs.forEach(doc => {
-                    batch.update(doc.ref, { read: true });
+                // Set all child checkboxes to match the master's state
+                childCheckboxes.forEach(child => {
+                    child.checked = target.checked;
                 });
-                await batch.commit();
-
-                showToast(`${snapshot.size} notifications marked as read.`, 'info');
-                // The listener will automatically update the badge shortly after batch commit.
-
-            } catch (err) {
-                console.error("Failed to mark notifications as read:", err);
-                showToast("Failed to mark notifications as read.", 'danger');
             }
+            // Part 2: Logic for when an INDIVIDUAL property checkbox is clicked
+            else if (target.classList.contains('property-check')) {
+                // Find the master checkbox for this group
+                const groupId = Array.from(target.classList).find(c => c.startsWith('export-group-'));
+                if (!groupId) return;
+
+                const masterCheckbox = exportOptionsModalEl.querySelector(`[data-group-id="${groupId}"]`);
+                const childCheckboxes = Array.from(exportOptionsModalEl.querySelectorAll(`.property-check.${groupId}`));
+
+                const total = childCheckboxes.length;
+                const checkedCount = childCheckboxes.filter(child => child.checked).length;
+
+                // Update the master checkbox state based on how many children are checked
+                if (checkedCount === 0) {
+                    masterCheckbox.checked = false;
+                    masterCheckbox.indeterminate = false; // Not checked
+                } else if (checkedCount === total) {
+                    masterCheckbox.checked = true;
+                    masterCheckbox.indeterminate = false; // Fully checked
+                } else {
+                    masterCheckbox.checked = false;
+                    masterCheckbox.indeterminate = true;  // Partially checked
+                }
+            }
+        });
+
+        exportOptionsModalEl.addEventListener('click', (e) => {
+            const presetButton = e.target.closest('button[data-preset]');
+            if (!presetButton) return;
+
+            const preset = presetButton.dataset.preset;
+            const allCheckboxes = exportOptionsModalEl.querySelectorAll('input.property-check');
+
+            // Define which properties belong to which preset
+            const presetMap = {
+                animation: ['Fill-Animation', 'Color-Animation', 'Oscilloscope', 'Tetris', 'Fire', 'Strimer', 'Spawner', 'Object Fill', 'Object'],
+                colors: ['Fill-Animation', 'Stroke', 'Object Fill', 'Particle'],
+                geometry: ['Geometry', 'Polyline', 'Text']
+            };
+
+            // Define the specific properties for our new presets
+            const minimalProps = ['gradientStops', 'animationSpeed'];
+            const staticPropsToDisable = [
+                'animationSpeed', 'rotationSpeed', 'cycleColors', 'cycleSpeed', 'textAnimation', 'textAnimationSpeed',
+                'pathAnim_speed', 'pathAnim_animationSpeed', 'pathAnim_cycleSpeed', 'spawn_speed', 'spawn_rotationSpeed',
+                'strimerAnimationSpeed', 'strimerPulseSpeed', 'oscAnimationSpeed', 'strokeAnimationSpeed', 'strokeCycleSpeed', 'strokeRotationSpeed'
+            ];
+
+            const gradientProps = [
+                'gradientStops',
+                'strokeGradientStops',
+                'pathAnim_gradColor1',
+                'pathAnim_gradColor2'
+            ];
+
+            // Set the state of all checkboxes based on the chosen preset
+            allCheckboxes.forEach(cb => {
+                const propName = cb.name.substring(cb.name.indexOf('_') + 1);
+
+                if (preset === 'minimal') {
+                    cb.checked = minimalProps.includes(propName);
+                } else if (preset === 'static') {
+                    cb.checked = !staticPropsToDisable.includes(propName);
+                } else if (preset === 'gradients') {
+                    cb.checked = gradientProps.includes(propName);
+                } else {
+                    const groupsForPreset = presetMap[preset] || [];
+                    let isInGroup = false;
+                    for (const groupName of groupsForPreset) {
+                        if (controlGroupMap[groupName] && controlGroupMap[groupName].props.includes(propName)) {
+                            isInGroup = true;
+                            break;
+                        }
+                    }
+                    cb.checked = isInGroup;
+                }
+            });
+
+            // Manually trigger a 'change' event on the first checkbox to update all master checkboxes' indeterminate states
+            const firstCheckbox = exportOptionsModalEl.querySelector('input.property-check');
+            if (firstCheckbox) {
+                firstCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+
+        exportOptionsModalEl.addEventListener('show.bs.modal', () => {
+            const accordionContainer = document.getElementById('export-options-accordion');
+            const modalBody = document.getElementById('export-options-body');
+
+            // Clear previous content but keep the new elements we're about to add
+            accordionContainer.innerHTML = '';
+
+            // Remove old global buttons if they exist, to prevent duplication
+            modalBody.querySelector('#export-global-controls')?.remove();
+            modalBody.querySelector('#export-preset-controls')?.remove(); // <-- ADD THIS LINE
+
+            // --- Add Global Shortcut Buttons ---
+            const globalControls = document.createElement('div');
+            globalControls.id = 'export-global-controls';
+            globalControls.className = 'd-flex gap-2 border-bottom pb-3 mb-3';
+            globalControls.innerHTML = `
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
+    `;
+            // Add the controls right after the introductory paragraph
+            modalBody.querySelector('p').insertAdjacentElement('afterend', globalControls);
+
+            const presetControls = document.createElement('div');
+            presetControls.id = 'export-preset-controls';
+            presetControls.className = 'd-flex flex-wrap gap-2 border-bottom pb-3 mb-3';
+            presetControls.innerHTML = `
+    <span class="text-body-secondary small me-2 align-self-center">Presets:</span>
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-info" data-preset="animation">Animation</button>
+        <button type="button" class="btn btn-outline-info" data-preset="colors">Colors</button>
+        <button type="button" class="btn btn-outline-info" data-preset="geometry">Geometry</button>
+        <button type="button" class="btn btn-outline-info" data-preset="gradients">Gradients</button> </div>
+    <div class="vr mx-2"></div>
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-success" data-preset="minimal">Minimal (User-Friendly)</button>
+        <button type="button" class="btn btn-outline-success" data-preset="static">Static (No Animation)</button>
+    </div>
+`;
+            globalControls.insertAdjacentElement('afterend', presetControls);
+
+            globalControls.querySelector('button:first-child').addEventListener('click', () => {
+                exportOptionsModalEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.checked = true;
+                    cb.indeterminate = false;
+                });
+            });
+            globalControls.querySelector('button:last-child').addEventListener('click', () => {
+                exportOptionsModalEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                    cb.indeterminate = false;
+                });
+            });
+            // --- End Global Shortcut Buttons ---
+
+            const forceHardcode = ['pixelArtFrames', 'polylineNodes'];
+
+            objects.forEach((obj, index) => {
+                const validPropsForShape = shapePropertyMap[obj.shape] || [];
+                const accordionId = `export-accordion-${obj.id}`;
+
+                const item = document.createElement('div');
+                item.className = 'accordion-item';
+                item.innerHTML = `
+            <h2 class="accordion-header">
+                <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${accordionId}" aria-expanded="${index === 0}">
+                    ${obj.name || `Object ${obj.id}`}
+                </button>
+            </h2>
+            <div id="collapse-${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#export-options-accordion">
+                <div class="accordion-body"></div>
+            </div>
+        `;
+
+                const body = item.querySelector('.accordion-body');
+
+                for (const groupName in controlGroupMap) {
+                    const groupProps = controlGroupMap[groupName].props;
+                    const relevantConfigs = configStore.filter(conf => {
+                        if (!conf.property || !conf.property.startsWith(`obj${obj.id}_`)) return false;
+                        const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                        return !forceHardcode.includes(propName) && groupProps.includes(propName) && validPropsForShape.includes(propName);
+                    });
+
+                    if (relevantConfigs.length > 0) {
+                        const groupId = `export-group-${obj.id}-${groupName.replace(/\\s/g, '-')}`;
+                        const groupContainer = document.createElement('div');
+                        groupContainer.className = 'mb-3';
+
+                        // --- Add Group Master Checkbox ---
+                        groupContainer.innerHTML = `
+                    <div class="form-check bg-body-tertiary rounded p-2 mb-2">
+                        <input class="form-check-input group-master-check" type="checkbox" id="${groupId}-master" data-group-id="${groupId}" checked>
+                        <label class="form-check-label fw-bold" for="${groupId}-master">
+                            ${groupName}
+                        </label>
+                    </div>
+                `;
+
+                        relevantConfigs.forEach(conf => {
+                            const label = conf.label.split(':').slice(1).join(':').trim();
+                            const checkWrapper = document.createElement('div');
+                            checkWrapper.className = 'form-check ms-3';
+                            // --- Add class to link to master checkbox ---
+                            checkWrapper.innerHTML = `
+                        <input class="form-check-input property-check ${groupId}" type="checkbox" id="${conf.property}-export-check" name="${conf.property}" checked>
+                        <label class="form-check-label" for="${conf.property}-export-check">
+                            ${label}
+                        </label>
+                    `;
+                            groupContainer.appendChild(checkWrapper);
+                        });
+                        body.appendChild(groupContainer);
+                    }
+                }
+                accordionContainer.appendChild(item);
+            });
+        });
+
+        // This handles the final export confirmation
+        document.getElementById('export-copy-code-btn').addEventListener('click', async () => {
+            const checkboxes = exportOptionsModalEl.querySelectorAll('input[type="checkbox"]');
+            const exposedProperties = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.name);
+
+            const payload = buildExportPayload(exposedProperties);
+
+            if (payload.finalHtml) {
+                navigator.clipboard.writeText(payload.finalHtml).then(() => {
+                    showToast("HTML code copied to clipboard!", 'success');
+                    const exportModal = bootstrap.Modal.getInstance(exportOptionsModalEl);
+                    if (exportModal) exportModal.hide();
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showToast("Could not copy code. See console for details.", 'danger');
+                });
+            }
+        });
+
+        // Listener for the new "Generate .zip File" button
+        document.getElementById('confirm-export-zip-btn').addEventListener('click', async () => {
+            const checkboxes = exportOptionsModalEl.querySelectorAll('input[type="checkbox"]');
+            const exposedProperties = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.name);
+
+            const exportModal = bootstrap.Modal.getInstance(exportOptionsModalEl);
+            if (exportModal) exportModal.hide();
+
+            // Call your existing generateAndDownloadZip function, but pass it the payload
+            await generateAndDownloadZip(exposedProperties);
+        });
+
+        function buildExportPayload(exposedProperties = []) {
+            // 1. Ensure the live objects are in sync with the form controls
+            updateObjectsFromForm();
+
+            // 2. Generate the meta tags and JS variables based on the user's selections
+            const { metaTags, jsVars, allKeys, jsVarKeys } = generateOutputScript(exposedProperties);
+
+            // 3. Get the title and generate a thumbnail for the export package
+            const effectTitle = getControlValues()['title'] || 'MyEffect';
+            const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
+            const safeFilename = effectTitle.replace(/[\\s/\\?%*:|"<>]/g, '_');
+
+            // 4. Define the static parts of the exported file
+            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; }';
+            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
+
+            // 5. Bundle all required helper functions and the Shape class into strings
+            // FIX: This converts single-line comments to multi-line to prevent truncation
+            const safeShapeClassString = Shape.toString().replace(/\/\/(.*)/g, '/*$1*/');
+            const allHelperFunctions = [
+                hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
+                drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
+            ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
+
+            const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
+
+            // 6. Assemble the final, self-contained runtime script
+            const exportedScript = `
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signalCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = 320;
+    canvas.height = 200;
+    let objects = [];
+    
+    ${jsVars}
+
+    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
+    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
+    ${allHelperFunctions}
+    
+    const Shape = ${safeShapeClassString};
+
+    let then;
+    const allPropKeys = ${formattedKeys};
+    const jsProperties = ${JSON.stringify(jsVarKeys)};
+
+    function updateObjectFromWindow(obj) {
+        const id = obj.id;
+        const newProps = {};
+        const fillStops = [];
+        for (let i = 1; i <= 10; i++) {
+            const fcKey = \`obj\${id}_gradColor_\${i}\`;
+            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
+            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
+                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+            }
+        }
+        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
+        
+        const strokeStops = [];
+        for (let i = 1; i <= 10; i++) {
+             const scKey = \`obj\${id}_strokeColor_\${i}\`;
+             const spKey = \`obj\${id}_strokePosition_\${i}\`;
+             if (window[scKey] !== undefined && window[spKey] !== undefined) {
+                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+            }
+        }
+        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
+
+        allPropKeys.forEach(key => {
+            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
+                const propName = key.substring(key.indexOf('_') + 1);
+                if (propName.includes('Color_') || propName.includes('Position_')) return;
+                let value = window[key];
+                if (value === "true") value = true;
+                if (value === "false") value = false;
+                if (propName === 'scrollDir') newProps.scrollDirection = value;
+                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
+                else newProps[propName] = value;
+            }
+        });
+        obj.update(newProps);
+    }
+
+    function createInitialObjects() {
+        if (allPropKeys.length === 0) return;
+        
+        const uniqueIds = [...new Set(allPropKeys.map(p => {
+            if (!p || !p.startsWith('obj')) return null;
+            const end = p.indexOf('_');
+            if (end <= 3) return null;
+            const idString = p.substring(3, end);
+            const id = parseInt(idString, 10);
+            return isNaN(id) ? null : String(id);
+        }).filter(id => id !== null))];
+
+        objects = uniqueIds.map(id => {
+            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
+            const prefix = 'obj' + id + '_';
+            
+            const fillStops = [];
+            for (let i = 1; i <= 10; i++) {
+                const fcKey = prefix + 'gradColor_' + i;
+                const fpKey = prefix + 'gradPosition_' + i;
+                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
+                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+                }
+            }
+            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
+            
+            const strokeStops = [];
+            for (let i = 1; i <= 10; i++) {
+                const scKey = prefix + 'strokeColor_' + i;
+                const spKey = prefix + 'strokePosition_' + i;
+                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
+                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+                }
+            }
+            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
+
+            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
+                const propName = key.substring(prefix.length);
+                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
+                let value;
+                try {
+                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
+                } catch (e) {
+                    if (typeof window[key] !== 'undefined') { value = window[key]; }
+                }
+                if (typeof value !== 'undefined') {
+                    if (value === "true") value = true;
+                    if (value === "false") value = false;
+                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
+                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
+                    } else if (propName === 'scrollDir') {
+                        config.scrollDirection = value;
+                    } else if (propName === 'strokeScrollDir') {
+                        config.strokeScrollDir = value;
+                    } else {
+                        config[propName] = value;
+                    }
+                }
+            });
+            return new Shape(config);
         });
     }
 
-    const notificationDropdown = document.getElementById('notification-dropdown-toggle')?.closest('.btn-group');
-
-    if (notificationDropdown) {
-        notificationDropdown.addEventListener('click', (e) => {
-            const link = e.target.closest('a[data-mark-as-read="true"]');
-
-            if (link) {
-                e.preventDefault(); // Prevent default link behavior
-                const projectId = link.getAttribute('data-doc-id');
-                const notificationId = link.getAttribute('data-notif-id');
-
-                if (projectId && notificationId) {
-                    handleNotificationClick(projectId, notificationId);
+    function drawFrame(deltaTime = 0) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
+        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
+        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
+        const sensorData = {};
+        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
+        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
+        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
+        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
+        let gStops = [];
+        if (useGlobalPalette) {
+            for (let i = 1; i <= 10; i++) {
+                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
+                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
                 }
             }
-        });
+            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
+        }
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            updateObjectFromWindow(obj);
+            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
+            const originalCycleColors = obj.cycleColors;
+            const originalCycleSpeed = obj.cycleSpeed;
+            if (useGlobalCycle) {
+                const speed = (gCycleSpeed || 0) / 50.0;
+                obj.cycleColors = true; obj.cycleSpeed = speed;
+                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
+            }
+            if (useGlobalPalette && gStops.length > 0) {
+                if (obj.shape !== 'pixel-art') {
+                    obj.gradient.stops = gStops;
+                    obj.strokeGradient.stops = gStops;
+                }
+            }
+            const dt = shouldAnimate ? deltaTime : 0;
+            obj.updateAnimationState(audioData, sensorData, dt);
+            obj.draw(false, audioData, {});
+            obj.gradient = originalGradient;
+            obj.strokeGradient = originalStrokeGradient;
+            obj.cycleColors = originalCycleColors;
+            obj.cycleSpeed = originalCycleSpeed;
+        }
+    }
+    function animate(timestamp) {
+        requestAnimationFrame(animate);
+        const now = timestamp;
+        let deltaTime = (now - (then || now)) / 1000.0;
+        if (deltaTime > 0.1) deltaTime = 0.1;
+        then = now;
+        drawFrame(deltaTime);
+    }
+    function init() {
+        createInitialObjects();
+        then = window.performance.now();
+        animate(then);
+    }
+    init();
+});
+`;
+
+            // 7. Assemble the full HTML string with REAL newlines
+            const finalHtml = [
+                '<!DOCTYPE html>', '<html lang="en">', '<head>', '<meta charset="UTF-8">',
+                `<title>${effectTitle}</title>`, metaTags, '<style>', styleContent, '</style>',
+                '</head>', bodyContent, '<script>', exportedScript, '</script>', '</html>'
+            ].join('\n'); // <-- This now uses a single backslash for a real newline
+
+            return {
+                safeFilename,
+                finalHtml,
+                thumbnailDataUrl,
+                imageExtension: 'png',
+                exportDate: new Date()
+            };
+        }
+
+        // This is a new function that replaces the old exportFile logic
+        async function generateAndDownloadZip(exposedProperties = []) {
+            const exportButton = document.getElementById('export-btn');
+            exportButton.disabled = true;
+            exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Exporting...';
+
+            try {
+                const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = buildExportPayload(exposedProperties);
+
+                if (!finalHtml) {
+                    throw new Error("Failed to generate HTML content.");
+                };
+
+                const zip = new JSZip();
+                zip.file(`${safeFilename}.html`, finalHtml, { date: exportDate });
+
+                const imageResponse = await fetch(thumbnailDataUrl);
+                const imageBlob = await imageResponse.blob();
+                zip.file(`${safeFilename}.${imageExtension}`, imageBlob, { date: exportDate });
+
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(zipBlob);
+                link.download = `${safeFilename}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+
+                showToast("Zip file download started.", 'info');
+                await incrementDownloadCount();
+
+            } catch (error) {
+                console.error('Export failed:', error);
+                showToast('Failed to export file: ' + error.message, 'danger');
+            } finally {
+                exportButton.disabled = false;
+                exportButton.innerHTML = '<i class="bi bi-download me-1"></i> Export';
+            }
+        }
     }
 
     const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
@@ -532,183 +1107,97 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const firstFrame = frames[0];
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = firstFrame.dims.width;
-            tempCanvas.height = firstFrame.dims.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            const frameImageData = tempCtx.createImageData(firstFrame.dims.width, firstFrame.dims.height);
-            frameImageData.data.set(firstFrame.patch);
-            tempCtx.putImageData(frameImageData, 0, 0);
-
-            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
-
-            const colorCounts = new Map();
-            let transparentCount = 0;
-
-            for (let i = 0; i < imageData.length; i += 4) {
-                if (imageData[i + 3] < 128) {
-                    transparentCount++;
-                    continue;
-                }
-
-                // FIX #1: Clamp the color values to a maximum of 255 during initial analysis.
-                const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-
-                const key = `rgb(${r},${g},${b})`;
-                colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
-            }
-
-            const dominantColors = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]);
-
-            const previewCanvas = document.getElementById('color-mapper-preview');
-            const assignmentsContainer = document.getElementById('color-mapper-assignments');
-            previewCanvas.width = gif.lsd.width * 10;
-            previewCanvas.height = gif.lsd.height * 10;
-            const previewCtx = previewCanvas.getContext('2d');
-            previewCtx.fillStyle = '#121212';
-            previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-            previewCtx.imageSmoothingEnabled = false;
-            previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
-            assignmentsContainer.innerHTML = '';
-            const availableSlots = [
-                { name: "Fill Style", value: 0.7 }, { name: "Color 1", value: 0.3 },
-                { name: "Color 2", value: 0.4 }, { name: "White", value: 1.0 },
-                { name: "Black", value: 0.0 },
-            ];
-
-            const assignedValues = new Set();
-            const colorToValueMap = new Map();
-            const rowIdToRgbMap = new Map();
-            let rowIndex = 0;
-
-            const isColor = (rgbStr, r, g, b, threshold = 32) => {
-                const match = rgbStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (!match) return false;
-                return Math.abs(match[1] - r) < threshold && Math.abs(match[2] - g) < threshold && Math.abs(match[3] - b) < threshold;
-            };
-
-            dominantColors.forEach(([color]) => {
-                if (isColor(color, 0, 0, 0) && !assignedValues.has(0.0)) {
-                    colorToValueMap.set(color, 0.0);
-                    assignedValues.add(0.0);
-                } else if (isColor(color, 255, 255, 255) && !assignedValues.has(1.0)) {
-                    colorToValueMap.set(color, 1.0);
-                    assignedValues.add(1.0);
-                }
-            });
-
-            const remainingSlots = availableSlots.filter(s => !assignedValues.has(s.value));
-            dominantColors.forEach(([color]) => {
-                if (!colorToValueMap.has(color) && remainingSlots.length > 0) {
-                    const nextSlot = remainingSlots.shift();
-                    colorToValueMap.set(color, nextSlot.value);
-                }
-            });
-
-            if (transparentCount > 0) {
-                const row = document.createElement('div');
-                row.className = 'input-group input-group-sm';
-                const rowId = `color-map-row-${rowIndex++}`;
-                row.id = rowId;
-                rowIdToRgbMap.set(rowId, 'transparent');
-
-                row.innerHTML = `
-                <span class="input-group-text" style="width: 120px; background-color: #444;">Transparent</span>
-                <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                <select class="form-select">
-                    ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === 0.7 ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                </select>
-            `;
-                assignmentsContainer.appendChild(row);
-            }
-
-            dominantColors.forEach(([color]) => {
-                const preselectedValue = colorToValueMap.get(color);
-                const row = document.createElement('div');
-                row.className = 'input-group input-group-sm';
-                const rowId = `color-map-row-${rowIndex++}`;
-                row.id = rowId;
-                rowIdToRgbMap.set(rowId, color);
-
-                row.innerHTML = `
-                <span class="input-group-text" style="width: 120px; background-color: ${color};"></span>
-                <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                <select class="form-select">
-                    ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === preselectedValue ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                </select>
-            `;
-                assignmentsContainer.appendChild(row);
-            });
-
-            assignmentsContainer.addEventListener('change', (e) => { });
-
-            const colorMapperModal = new bootstrap.Modal(document.getElementById('color-mapper-modal'));
-            colorMapperModal.show();
-
-            document.getElementById('confirm-color-map-btn').onclick = () => {
-                const userColorMap = new Map();
-
-                assignmentsContainer.querySelectorAll('.input-group').forEach(row => {
-                    const rgbColor = rowIdToRgbMap.get(row.id);
-                    const selectedValue = parseFloat(row.querySelector('select').value);
-                    userColorMap.set(rgbColor, selectedValue);
-
-                    if ((selectedValue === 0.3 || selectedValue === 0.4) && rgbColor !== 'transparent') {
-                        const hexColor = rgbToHex(rgbColor);
-                        const colorProp = selectedValue === 0.3 ? 'gradColor1' : 'gradColor2';
-
-                        const colorInput = form.querySelector(`[name="obj${objectId}_${colorProp}"]`);
-                        const hexInput = form.querySelector(`[name="obj${objectId}_${colorProp}_hex"]`);
-
-                        if (colorInput && hexInput) {
-                            colorInput.value = hexColor;
-                            hexInput.value = hexColor;
-                            colorInput.dispatchEvent(new Event('input', { bubbles: true }));
+            const allColors = new Set();
+            const addColorsFromTable = (table) => {
+                if (table) {
+                    for (const color of table) {
+                        if ((Array.isArray(color) || color instanceof Uint8Array) && color.length === 3) {
+                            allColors.add(JSON.stringify(Array.from(color)));
                         }
                     }
-                });
-
-                colorMapperModal.hide();
-                processGifWithMap(gifBlob, objectId, userColorMap);
+                }
             };
 
-        } catch (err) {
-            console.error("Error preparing GIF for mapping: " + err.message);
-            showToast("Could not read GIF file.", "danger");
-        }
-    };
+            addColorsFromTable(gif.gct);
+            frames.forEach(frame => addColorsFromTable(frame.lct));
 
-    const processGifWithMap = async (gifBlob, objectId, userColorMap) => {
-        const uploadModal = bootstrap.Modal.getInstance(document.getElementById('upload-gif-modal'));
-        try {
-            const buffer = await gifBlob.arrayBuffer();
-            const gif = await parseGIF(buffer);
-            const frames = await decompressFrames(gif, true);
+            if (allColors.size === 0) {
+                showToast("Could not find a valid color palette in this GIF.", "danger");
+                return;
+            }
+
+            const uniqueColors = new Map();
+            allColors.forEach(colorStr => {
+                const [r, g, b] = JSON.parse(colorStr);
+                const hex = rgbToHex(`rgb(${r},${g},${b})`);
+                if (!uniqueColors.has(hex)) {
+                    const hsl = hexToHsl(hex);
+                    uniqueColors.set(hex, { hex, r, g, b, h: hsl[0], s: hsl[1], l: hsl[2] });
+                }
+            });
+
+            const sortedColors = [...uniqueColors.values()].sort((a, b) => {
+                if (a.h < b.h) return -1; if (a.h > b.h) return 1;
+                if (a.s < b.s) return -1; if (a.s > b.s) return 1;
+                return a.l - b.l;
+            });
+
+            const newGradientStops = sortedColors.map((color, index) => ({
+                color: color.hex,
+                position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
+            }));
+
+            // FIX: Map colors to their integer index (plus an offset) instead of a decimal position.
+            const colorToIndexMap = new Map(sortedColors.map((color, index) => [color.hex, index + 2]));
 
             const targetWidth = parseInt(document.getElementById('gif-target-width').value, 10) || 32;
             const targetHeight = parseInt(document.getElementById('gif-target-height').value, 10) || 32;
-            const shouldAppend = document.getElementById('gif-append-frames').checked;
-
-            const newFrames = [];
+            const newFramesData = [];
             const masterCanvas = document.createElement('canvas');
             masterCanvas.width = gif.lsd.width;
             masterCanvas.height = gif.lsd.height;
             const masterCtx = masterCanvas.getContext('2d');
+            let savedCanvasState = null;
 
-            for (const frame of frames) {
-                let previousCanvasData = null;
-                if (frame.disposalType === 3) {
-                    previousCanvasData = masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height);
+            for (let i = 0; i < frames.length; i++) {
+                const frame = frames[i];
+                const prevFrame = i > 0 ? frames[i - 1] : null;
+
+                if (prevFrame) {
+                    if (prevFrame.disposalType === 2) {
+                        const bgColorIndex = gif.lsd.backgroundColorIndex;
+                        if (gif.gct && gif.gct[bgColorIndex]) {
+                            const [r, g, b] = gif.gct[bgColorIndex];
+                            masterCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            masterCtx.fillRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                        } else {
+                            masterCtx.clearRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                        }
+                    } else if (prevFrame.disposalType === 3 && savedCanvasState) {
+                        masterCtx.putImageData(savedCanvasState, 0, 0);
+                    }
                 }
+                savedCanvasState = (frame.disposalType === 3) ? masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height) : null;
 
-                if (frame.patch) {
-                    const frameImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
-                    frameImageData.data.set(frame.patch);
-                    masterCtx.putImageData(frameImageData, frame.dims.left, frame.dims.top);
+                if (frame.pixels && frame.pixels.length > 0) {
+                    const patchImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
+                    const patchData = patchImageData.data;
+                    const colorTable = frame.lct || gif.gct;
+
+                    if (colorTable) {
+                        for (let j = 0; j < frame.pixels.length; j++) {
+                            const colorIndex = frame.pixels[j];
+                            if (colorIndex !== frame.transparentIndex && colorTable[colorIndex]) {
+                                const color = colorTable[colorIndex];
+                                const offset = j * 4;
+                                patchData[offset] = color[0];
+                                patchData[offset + 1] = color[1];
+                                patchData[offset + 2] = color[2];
+                                patchData[offset + 3] = 255;
+                            }
+                        }
+                        masterCtx.putImageData(patchImageData, frame.dims.left, frame.dims.top);
+                    }
                 }
 
                 const downsampleCanvas = document.createElement('canvas');
@@ -720,90 +1209,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const imageData = downsampleCtx.getImageData(0, 0, targetWidth, targetHeight).data;
                 const pixelData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(0));
-
-                for (let i = 0; i < imageData.length; i += 4) {
-                    const r_index = Math.floor(i / (targetWidth * 4));
-                    const c_index = (i / 4) % targetWidth;
-                    let colorKey;
-
-                    if (imageData[i + 3] < 128) {
-                        colorKey = 'transparent';
+                for (let j = 0; j < imageData.length; j += 4) {
+                    const r_idx = Math.floor(j / (targetWidth * 4));
+                    const c_idx = (j / 4) % targetWidth;
+                    if (imageData[j + 3] < 128) {
+                        pixelData[r_idx][c_idx] = 0; // Transparent is 0
                     } else {
-                        const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                        const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                        const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-                        colorKey = `rgb(${r},${g},${b})`;
+                        const currentPixelRgb = { r: imageData[j], g: imageData[j + 1], b: imageData[j + 2] };
+                        const closestHex = findClosestColor(currentPixelRgb, sortedColors);
+                        // FIX: Store the integer index from the new map.
+                        pixelData[r_idx][c_idx] = colorToIndexMap.get(closestHex) || 0;
                     }
-
-                    pixelData[r_index][c_index] = userColorMap.get(colorKey) || 0.0;
                 }
-
-                const durationInSeconds = (frame.delay || 100) / 1000;
-                newFrames.push({ data: JSON.stringify(pixelData), duration: durationInSeconds });
-
-                if (frame.disposalType === 2) {
-                    masterCtx.clearRect(frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
-                } else if (frame.disposalType === 3 && previousCanvasData) {
-                    masterCtx.putImageData(previousCanvasData, 0, 0);
-                }
+                newFramesData.push({ data: JSON.stringify(pixelData), duration: (frame.delay || 100) / 1000 });
             }
 
-            const form = document.getElementById('controls-form');
-            const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-            const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
-            const combinedFrames = [...existingFrames, ...newFrames];
-
+            // --- 4. Update UI ---
+            const shouldAppend = document.getElementById('gif-append-frames').checked;
             const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-            const color1 = targetObject.gradient.color1;
-            const color2 = targetObject.gradient.color2;
+            if (!targetObject) return;
 
-            framesContainer.innerHTML = '';
-            combinedFrames.forEach((frame, index) => {
-                const frameItem = document.createElement('div');
-                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-                frameItem.dataset.index = index;
-                const textareaId = `frame-data-${objectId}-${index}`;
-                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+            const existingFrames = shouldAppend ? targetObject.pixelArtFrames : [];
+            const combinedFrames = [...existingFrames, ...newFramesData];
 
-                frameItem.innerHTML = `
-                <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                    data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                    data-target-id="${textareaId}" title="Edit Frame">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                        <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 1}" min="0.01" step="0.01">
-                    </div>
-                    <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                </div>`;
-                framesContainer.appendChild(frameItem);
-                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
-            });
+            // FIX: Update the central configStore BEFORE re-rendering the form.
+            const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+            if (framesConf) {
+                framesConf.default = JSON.stringify(combinedFrames);
+            }
+            const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+            if (gradientConf) {
+                gradientConf.default = JSON.stringify(newGradientStops);
+            }
 
-            hiddenTextarea.value = JSON.stringify(combinedFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            showToast(`${newFrames.length} GIF frame(s) processed!`, "success");
+            // Now, update the live object and re-render everything
+            targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
+            renderForm();
+            updateFormValuesFromObjects();
+            drawFrame();
             recordHistory();
 
-        } catch (err) {
-            console.error("Error processing GIF with map:", err);
-            showToast("Could not process GIF.", "danger");
-        } finally {
+            const uploadModal = bootstrap.Modal.getInstance(document.getElementById('upload-gif-modal'));
             if (uploadModal) uploadModal.hide();
+            showToast(`${newFramesData.length} GIF frames processed with ${sortedColors.length} colors!`, "success");
+
+        } catch (err) {
+            console.error("Error processing GIF: " + err.message, err);
+            showToast("Could not process GIF file.", "danger");
         }
     };
 
@@ -823,7 +1275,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Defer to the dedicated GIF handler if a GIF is pasted
             const gifType = imageItem.types.find(type => type === 'image/gif');
             if (gifType) {
                 const blob = await imageItem.getType(gifType);
@@ -831,223 +1282,104 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // --- START: REVISED LOGIC FOR SPRITESHEETS ---
             const imageType = imageItem.types.find(type => type.startsWith('image/'));
             const blob = await imageItem.getType(imageType);
             const imageUrl = URL.createObjectURL(blob);
             const image = new Image();
 
             image.onload = () => {
-                // Hide the initial sprite modal, as we are moving to the color mapping step
-                const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
-                if (spritePasteModal) spritePasteModal.hide();
+                // --- START: New Automatic Spritesheet Processing ---
+                const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
+                const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
 
-                // Step 1: Analyze colors from the pasted image, just like with GIFs.
+                if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
+                    showToast("Frame dimensions must be positive numbers.", "danger");
+                    return;
+                }
+
+                // 1. Analyze colors from the entire image to build a consistent palette.
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = image.width;
                 tempCanvas.height = image.height;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(image, 0, 0);
-
                 const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
-                const colorCounts = new Map();
-                let transparentCount = 0;
 
+                const uniqueColors = new Map();
                 for (let i = 0; i < imageData.length; i += 4) {
-                    if (imageData[i + 3] < 128) {
-                        transparentCount++;
-                        continue;
-                    }
-                    // Quantize colors to group similar shades
-                    const r = Math.min(255, Math.round(imageData[i] / 32) * 32);
-                    const g = Math.min(255, Math.round(imageData[i + 1] / 32) * 32);
-                    const b = Math.min(255, Math.round(imageData[i + 2] / 32) * 32);
-                    const key = `rgb(${r},${g},${b})`;
-                    colorCounts.set(key, (colorCounts.get(key) || 0) + 1);
-                }
-                const dominantColors = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]);
-
-                // Step 2: Populate and show the color mapper modal.
-                const previewCanvas = document.getElementById('color-mapper-preview');
-                const assignmentsContainer = document.getElementById('color-mapper-assignments');
-                const aspectRatio = image.height / image.width;
-                previewCanvas.width = 300;
-                previewCanvas.height = 300 * aspectRatio;
-                const previewCtx = previewCanvas.getContext('2d');
-                previewCtx.fillStyle = '#121212';
-                previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-                previewCtx.imageSmoothingEnabled = false;
-                previewCtx.drawImage(tempCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
-
-                assignmentsContainer.innerHTML = '';
-                const availableSlots = [
-                    { name: "Fill Style", value: 0.7 }, { name: "Color 1", value: 0.3 },
-                    { name: "Color 2", value: 0.4 }, { name: "White", value: 1.0 },
-                    { name: "Black", value: 0.0 },
-                ];
-                const rowIdToRgbMap = new Map();
-                let rowIndex = 0;
-
-                if (transparentCount > 0) {
-                    const row = document.createElement('div');
-                    row.className = 'input-group input-group-sm';
-                    const rowId = `color-map-row-${rowIndex++}`;
-                    row.id = rowId;
-                    rowIdToRgbMap.set(rowId, 'transparent');
-                    row.innerHTML = `
-                        <span class="input-group-text" style="width: 120px; background-color: #444;">Transparent</span>
-                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                        <select class="form-select">
-                            ${availableSlots.map(slot => `<option value="${slot.value}" ${slot.value === 0.7 ? 'selected' : ''}>${slot.name}</option>`).join('')}
-                        </select>`;
-                    assignmentsContainer.appendChild(row);
-                }
-
-                dominantColors.forEach(([color]) => {
-                    const row = document.createElement('div');
-                    row.className = 'input-group input-group-sm';
-                    const rowId = `color-map-row-${rowIndex++}`;
-                    row.id = rowId;
-                    rowIdToRgbMap.set(rowId, color);
-                    row.innerHTML = `
-                        <span class="input-group-text" style="width: 120px; background-color: ${color};"></span>
-                        <span class="input-group-text"><i class="bi bi-arrow-right"></i></span>
-                        <select class="form-select">
-                            ${availableSlots.map(slot => `<option value="${slot.value}">${slot.name}</option>`).join('')}
-                        </select>`;
-                    assignmentsContainer.appendChild(row);
-                });
-
-                const colorMapperModal = new bootstrap.Modal(document.getElementById('color-mapper-modal'));
-                colorMapperModal.show();
-
-                // Step 3: Define the confirmation logic, which runs after the user maps colors.
-                document.getElementById('confirm-color-map-btn').onclick = () => {
-                    const userColorMap = new Map();
-                    assignmentsContainer.querySelectorAll('.input-group').forEach(row => {
-                        const rgbColor = rowIdToRgbMap.get(row.id);
-                        const selectedValue = parseFloat(row.querySelector('select').value);
-                        userColorMap.set(rgbColor, selectedValue);
-
-                        // If the user maps a color to slot 0.3 (Color 1) or 0.4 (Color 2),
-                        // update the main color pickers for the selected object.
-                        if ((selectedValue === 0.3 || selectedValue === 0.4) && rgbColor !== 'transparent') {
-                            const hexColor = rgbToHex(rgbColor);
-                            const colorProp = selectedValue === 0.3 ? 'gradColor1' : 'gradColor2';
-
-                            const colorInput = form.querySelector(`[name="obj${objectId}_${colorProp}"]`);
-                            const hexInput = form.querySelector(`[name="obj${objectId}_${colorProp}_hex"]`);
-
-                            if (colorInput && hexInput) {
-                                colorInput.value = hexColor;
-                                hexInput.value = hexColor;
-                                // Dispatch an 'input' event to ensure the application state updates
-                                colorInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            }
-                        }
-                    });
-
-                    const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
-                    const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
-
-                    if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
-                        showToast("Frame dimensions must be positive numbers.", "danger");
-                        return;
-                    }
-
-                    const spriteCols = Math.floor(image.width / frameWidth);
-                    const spriteRows = Math.floor(image.height / frameHeight);
-                    const newFrames = [];
-
-                    for (let row = 0; row < spriteRows; row++) {
-                        for (let col = 0; col < spriteCols; col++) {
-                            const frameCanvas = document.createElement('canvas');
-                            frameCanvas.width = frameWidth;
-                            frameCanvas.height = frameHeight;
-                            const frameCtx = frameCanvas.getContext('2d');
-                            frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
-
-                            const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
-                            const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
-
-                            for (let i = 0; i < frameImgData.length; i += 4) {
-                                const r_idx = Math.floor(i / (frameWidth * 4));
-                                const c_idx = (i / 4) % frameWidth;
-                                let colorKey;
-
-                                if (frameImgData[i + 3] < 128) {
-                                    colorKey = 'transparent';
-                                } else {
-                                    const r = Math.min(255, Math.round(frameImgData[i] / 32) * 32);
-                                    const g = Math.min(255, Math.round(frameImgData[i + 1] / 32) * 32);
-                                    const b = Math.min(255, Math.round(frameImgData[i + 2] / 32) * 32);
-                                    colorKey = `rgb(${r},${g},${b})`;
-                                }
-                                pixelData[r_idx][c_idx] = userColorMap.get(colorKey) || 0.0; // Default to black
-                            }
-                            newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                    if (imageData[i + 3] > 128) {
+                        const hex = rgbToHex(`rgb(${imageData[i]},${imageData[i + 1]},${imageData[i + 2]})`);
+                        if (!uniqueColors.has(hex)) {
+                            uniqueColors.set(hex, {
+                                hex: hex,
+                                luminance: 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2]
+                            });
                         }
                     }
+                }
 
-                    // Step 4: Update the form and UI with the processed frames.
-                    const shouldAppend = document.getElementById('sprite-paste-append').checked;
-                    const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-                    const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                    const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-                    const existingFrames = shouldAppend ? JSON.parse(hiddenTextarea.value) : [];
-                    const combinedFrames = [...existingFrames, ...newFrames];
-                    const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                    const color1 = targetObject.gradient.color1;
-                    const color2 = targetObject.gradient.color2;
+                // 2. Create the new gradient, sorted by brightness.
+                const sortedColors = [...uniqueColors.values()].sort((a, b) => a.luminance - b.luminance);
+                const newGradientStops = sortedColors.map((color, index) => ({
+                    color: color.hex,
+                    position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
+                }));
+                const colorToPositionMap = new Map(newGradientStops.map(stop => [stop.color, stop.position]));
 
-                    framesContainer.innerHTML = '';
-                    combinedFrames.forEach((frame, index) => {
-                        const frameItem = document.createElement('div');
-                        frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-1 align-items-center';
-                        frameItem.dataset.index = index;
-                        const textareaId = `frame-data-${objectId}-${index}`;
-                        const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+                // 3. Process the spritesheet into frames with the new indexed pixel data.
+                const spriteCols = Math.floor(image.width / frameWidth);
+                const spriteRows = Math.floor(image.height / frameHeight);
+                const newFrames = [];
 
-                        frameItem.innerHTML = `
-                            <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
-                            <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                                data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                                data-target-id="${textareaId}" title="Edit Frame">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                                    <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
-                                </div>
-                                <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                            </div>
-                        `;
-                        framesContainer.appendChild(frameItem);
-                        renderPixelArtPreview(frameItem.querySelector('.pixel-art-preview-canvas'), frameDataStr, color1, color2);
-                    });
+                for (let row = 0; row < spriteRows; row++) {
+                    for (let col = 0; col < spriteCols; col++) {
+                        const frameCanvas = document.createElement('canvas');
+                        frameCanvas.width = frameWidth;
+                        frameCanvas.height = frameHeight;
+                        const frameCtx = frameCanvas.getContext('2d');
+                        frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
 
-                    hiddenTextarea.value = JSON.stringify(combinedFrames);
-                    hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
+                        const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
 
-                    showToast(`${newFrames.length} frame(s) processed!`, "success");
-                    URL.revokeObjectURL(imageUrl);
+                        for (let i = 0; i < frameImgData.length; i += 4) {
+                            const r_idx = Math.floor(i / (frameWidth * 4));
+                            const c_idx = (i / 4) % frameWidth;
 
-                    colorMapperModal.hide();
+                            if (frameImgData[i + 3] < 128) {
+                                pixelData[r_idx][c_idx] = 0.0;
+                            } else {
+                                const hex = rgbToHex(`rgb(${frameImgData[i]},${frameImgData[i + 1]},${frameImgData[i + 2]})`);
+                                pixelData[r_idx][c_idx] = colorToPositionMap.get(hex) || 0.0;
+                            }
+                        }
+                        newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
+                    }
+                }
+
+                // 4. Apply changes and update UI.
+                const shouldAppend = document.getElementById('sprite-paste-append').checked;
+                const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
+                const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                const existingFrames = shouldAppend && hiddenTextarea.value ? JSON.parse(hiddenTextarea.value) : [];
+                const combinedFrames = [...existingFrames, ...newFrames];
+
+                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                if (targetObject) {
+                    targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
+                    renderForm();
+                    updateFormValuesFromObjects();
+                    drawFrame();
                     recordHistory();
-                };
+                }
+
+                URL.revokeObjectURL(imageUrl);
+                const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
+                if (spritePasteModal) spritePasteModal.hide();
+                showToast(`${newFrames.length} frame(s) processed with ${sortedColors.length} colors!`, "success");
+                // --- END: New Automatic Spritesheet Processing ---
             };
             image.src = imageUrl;
-            // --- END: REVISED LOGIC ---
 
         } catch (err) {
             console.error(err);
@@ -1092,112 +1424,222 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadFrameIntoEditor = (index) => {
         const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
         targetTextarea = document.getElementById(newTargetId);
-        if (!targetTextarea) {
-            console.error(`Could not find textarea for frame index ${index}`);
-            return;
-        }
-
+        if (!targetTextarea) return;
         currentEditorFrameIndex = index;
         updateEditorFrameCounter();
-
         const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-        const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
-        const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
-        const color1Btn = document.getElementById('pixel-editor-color1-btn');
-        const color2Btn = document.getElementById('pixel-editor-color2-btn');
-        color1Btn.style.background = color1;
-        color2Btn.style.background = color2;
+        currentGradientStops = targetObject ? targetObject.gradient.stops : [];
+
+        paletteContainer.querySelectorAll('.dynamic-color').forEach(btn => btn.remove());
+
+        // The dynamic buttons will now be added after the "Selected Fill" button
+        currentGradientStops.forEach((stop, idx) => {
+            const value = idx + 2;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+            btn.dataset.value = value;
+            btn.style.backgroundColor = stop.color;
+            btn.title = `Right-click to delete | Gradient Color #${idx + 1} (Index: ${value})`;
+            const hsl = hexToHsl(stop.color);
+            if (hsl[2] < 40) btn.style.color = '#FFF';
+            btn.textContent = idx + 1;
+            paletteContainer.appendChild(btn); // Use appendChild to add to the end
+        });
 
         let data;
-        try {
-            data = JSON.parse(targetTextarea.value);
-        } catch (e) {
-            data = [[0]]; // Default if data is invalid
-        }
-
-        const widthInput = document.getElementById('pixel-editor-width');
-        const heightInput = document.getElementById('pixel-editor-height');
-        const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
-
+        try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
         widthInput.value = data[0]?.length || 1;
         heightInput.value = data.length || 1;
-        renderGrid(data, color1, color2);
+        renderGrid(data, currentGradientStops);
         rawDataTextarea.value = formatPixelData(data);
     };
 
+    // --- START: Upgraded Pixel Art Editor Logic ---
     const editorModalEl = document.getElementById('pixelArtEditorModal');
-
-    // --- START: PIXEL ART EDITOR LOGIC ---
     if (editorModalEl) {
-        // State variables for the editor modal
-        let targetTextarea = null;
-        let currentEditorObjectId = null;
-        let currentEditorFrameIndex = -1;
-        let totalFramesInEditor = 0;
-        let currentPaintValue = 0.7;
-        let currentTool = 'paint';
-        let isPainting = false;
+        // State variables
+        let targetTextarea = null, currentEditorObjectId = null, currentEditorFrameIndex = -1, totalFramesInEditor = 0;
+        let currentPaintValue = 0.7, isPainting = false, currentTool = 'paint', currentGradientStops = [];
 
-        // --- Get all DOM element references once ---
+        // Main Editor elements
         const gridContainer = document.getElementById('pixel-editor-grid-container');
         const widthInput = document.getElementById('pixel-editor-width');
         const heightInput = document.getElementById('pixel-editor-height');
         const resizeBtn = document.getElementById('pixel-editor-resize-btn');
         const saveBtn = document.getElementById('pixel-editor-save-btn');
-        const palette = document.getElementById('pixel-editor-palette');
-        const color1Btn = document.getElementById('pixel-editor-color1-btn');
-        const color2Btn = document.getElementById('pixel-editor-color2-btn');
-        const fillBtn = document.getElementById('pixel-editor-fill-btn');
-        const mirrorHBtn = document.getElementById('pixel-editor-mirror-h-btn');
-        const mirrorVBtn = document.getElementById('pixel-editor-mirror-v-btn');
+        const paletteContainer = document.getElementById('pixel-editor-palette');
         const rawDataTextarea = document.getElementById('pixel-editor-raw-data');
         const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
         const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
         const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
-        const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
+        const paintBtn = document.getElementById('pixel-editor-paint-btn');
+        const fillBtn = document.getElementById('pixel-editor-fill-btn');
+        const toolsContainer = document.getElementById('pixel-editor-tools');
 
-        // --- Core Helper Functions ---
+        // Color Picker Modal elements & iro.js instance
+        const colorPickerModalEl = document.getElementById('pixel-art-color-picker-modal');
+        const pickerContainer = document.getElementById('modal-picker-container');
+        const colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
+        let iroColorPicker = null;
 
-        const valueToColor = (value, color1, color2) => {
+        const debouncedRecordHistory = debounce(recordHistory, 500);
+
+        const updateActiveColor = (newColor, indexToUpdate) => {
+            if (currentGradientStops[indexToUpdate]) {
+                currentGradientStops[indexToUpdate].color = newColor;
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                targetObject.update({ gradient: { stops: currentGradientStops } });
+                const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+                if (gradientControl) {
+                    gradientControl.value = JSON.stringify(currentGradientStops);
+                    gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: currentGradientStops } }));
+                }
+                renderEditorPalette();
+                const gridData = readGrid();
+                renderGrid(gridData, currentGradientStops);
+                debouncedRecordHistory();
+            }
+        };
+
+        if (pickerContainer) {
+            iroColorPicker = new iro.ColorPicker(pickerContainer, {
+                width: 240,
+                color: "#fff",
+                borderWidth: 1,
+                borderColor: "#fff",
+                layout: [
+                    { component: iro.ui.Wheel },
+                    { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                    { component: iro.ui.Slider, options: { sliderType: 'hue' } },
+                    { component: iro.ui.Input, options: { inputType: 'hex' } } // This adds the hex input
+                ]
+            });
+
+            iroColorPicker.on('color:change', (color) => {
+                const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
+                if (activeBtn) {
+                    const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
+                    updateActiveColor(color.hexString, indexToUpdate);
+                }
+            });
+        }
+
+        const renderEditorPalette = () => {
+            const dynamicButtons = paletteContainer.querySelectorAll('.dynamic-color, .btn-add-color');
+            dynamicButtons.forEach(btn => btn.remove());
+            currentGradientStops.forEach((stop, idx) => {
+                const value = idx + 2;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+                btn.dataset.value = value;
+                btn.style.backgroundColor = stop.color;
+                btn.title = `Click to edit, Right-click to delete | Color #${idx + 1}`;
+                const hsl = hexToHsl(stop.color);
+                if (hsl[2] < 40) btn.style.color = '#FFF';
+                btn.textContent = idx + 1;
+
+                // FIX: Re-apply active class during re-render
+                if (currentPaintValue === value) {
+                    btn.classList.add('active');
+                }
+
+                btn.addEventListener('click', (e) => {
+                    paletteContainer.querySelector('.active')?.classList.remove('active');
+                    btn.classList.add('active');
+                    currentPaintValue = parseFloat(btn.dataset.value);
+                    if (iroColorPicker) {
+                        iroColorPicker.color.hexString = stop.color;
+                    }
+                    if (colorPickerModal) {
+                        colorPickerModal.show();
+                    }
+                });
+                paletteContainer.appendChild(btn);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.id = 'pixel-editor-add-color-btn';
+            addBtn.className = 'btn btn-sm btn-outline-secondary btn-add-color';
+            addBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
+            addBtn.title = 'Add a new color to the palette';
+
+            addBtn.addEventListener('click', () => {
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                if (!targetObject) return;
+                let newStops = [...currentGradientStops, { color: '#FFFFFF', position: 1.0 }];
+                if (newStops.length > 1) {
+                    newStops.forEach((stop, index) => { stop.position = index / (newStops.length - 1); });
+                }
+                targetObject.update({ gradient: { stops: newStops } });
+                currentGradientStops = newStops;
+                const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+                if (gradientControl) {
+                    gradientControl.value = JSON.stringify(newStops);
+                    gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+                }
+                renderEditorPalette();
+                recordHistory();
+            });
+
+            paletteContainer.appendChild(addBtn);
+        };
+
+        const setActiveTool = (toolName) => {
+            currentTool = toolName;
+            toolsContainer.querySelectorAll('button[id$="-btn"]').forEach(btn => {
+                if (btn.id.includes('-paint-') || btn.id.includes('-fill-')) btn.classList.remove('active');
+            });
+            const btnToActivate = document.getElementById(`pixel-editor-${toolName}-btn`);
+            if (btnToActivate) btnToActivate.classList.add('active');
+        };
+
+        if (paintBtn) {
+            paintBtn.addEventListener('click', () => setActiveTool('paint'));
+        }
+        if (fillBtn) {
+            fillBtn.addEventListener('click', () => setActiveTool('fill'));
+        }
+
+        const valueToColor = (value, stops) => {
             if (value === 1.0) return '#FFFFFF';
-            if (value === 0.3) return color1 || '#FF00FF';
-            if (value === 0.4) return color2 || '#00FFFF';
-            if (value === 0) return '#000000';
-            if (value === 0.7) {
-                return `repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px`;
+            if (value === 0) return 'transparent';
+            if (value === 0.7) return `repeating-conic-gradient(#444 0% 25%, #555 0% 50%) 50% / 10px 10px`;
+            if (value >= 2) {
+                const index = Math.round(value) - 2;
+                if (stops && stops[index]) return stops[index].color;
             }
             return `repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 50% / 10px 10px`;
         };
 
-        const renderGrid = (data, color1, color2) => {
+        const renderGrid = (data, stops) => {
             gridContainer.innerHTML = '';
-            const rows = data.length;
-            const cols = data[0].length;
+            if (!data || !data.length || !data[0]) return;
+            const rows = data.length; const cols = data[0].length;
             gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('pixel-editor-cell');
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    const value = data[r] ? (data[r][c] || 0) : 0;
-                    cell.style.background = valueToColor(value, color1, color2);
-                    cell.dataset.value = value;
-                    gridContainer.appendChild(cell);
-                }
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'pixel-editor-cell';
+                cell.dataset.row = r; cell.dataset.col = c;
+                const value = data[r]?.[c] || 0;
+                cell.style.background = valueToColor(value, stops);
+                cell.dataset.value = value;
+                gridContainer.appendChild(cell);
             }
         };
 
         const readGrid = () => {
-            const rows = parseInt(heightInput.value, 10);
-            const cols = parseInt(widthInput.value, 10);
+            const rows = parseInt(heightInput.value, 10); const cols = parseInt(widthInput.value, 10);
             const cells = gridContainer.querySelectorAll('.pixel-editor-cell');
             const data = [];
             for (let r = 0; r < rows; r++) {
                 const row = [];
                 for (let c = 0; c < cols; c++) {
-                    const cell = cells[r * cols + c];
-                    row.push(cell ? parseFloat(cell.dataset.value) : 0);
+                    row.push(cells[r * cols + c] ? parseFloat(cells[r * cols + c].dataset.value) : 0);
                 }
                 data.push(row);
             }
@@ -1207,254 +1649,132 @@ document.addEventListener('DOMContentLoaded', function () {
         const paintCell = (cell) => {
             if (!cell || !cell.classList.contains('pixel-editor-cell')) return;
             cell.dataset.value = currentPaintValue;
-            cell.style.background = valueToColor(currentPaintValue, color1Btn.style.background, color2Btn.style.background);
+            cell.style.background = valueToColor(currentPaintValue, currentGradientStops);
         };
 
-        const updateEditorFrameCounter = () => {
-            const counterEl = document.getElementById('pixel-editor-frame-counter');
-            if (counterEl) {
-                counterEl.textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`;
+        const floodFill = (startNode) => {
+            if (!startNode) return;
+            const gridData = readGrid();
+            const [rows, cols] = [gridData.length, gridData[0].length];
+            const startRow = parseInt(startNode.dataset.row, 10); const startCol = parseInt(startNode.dataset.col, 10);
+            const targetValue = gridData[startRow][startCol];
+            if (targetValue === currentPaintValue) return;
+            const queue = [[startRow, startCol]];
+            gridData[startRow][startCol] = -1;
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+                const neighbors = [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]];
+                for (const [nr, nc] of neighbors) {
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && gridData[nr][nc] === targetValue) {
+                        gridData[nr][nc] = -1;
+                        queue.push([nr, nc]);
+                    }
+                }
             }
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (gridData[r][c] === -1) gridData[r][c] = currentPaintValue;
+            renderGrid(gridData, currentGradientStops);
         };
+
+        const updateEditorFrameCounter = () => { document.getElementById('pixel-editor-frame-counter').textContent = `${currentEditorFrameIndex + 1} / ${totalFramesInEditor}`; };
 
         const saveCurrentFrameInEditor = () => {
             if (!targetTextarea) return;
-
             const gridData = readGrid();
             const newDataString = JSON.stringify(gridData);
-
             rawDataTextarea.value = formatPixelData(gridData);
             targetTextarea.value = newDataString;
-
-            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            if (fieldset) {
-                const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-                if (hiddenMasterTextarea && framesContainer) {
-                    const allFrames = Array.from(framesContainer.children).map(item => ({
-                        data: item.querySelector('.frame-data-input').value,
-                        duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-                    }));
-                    hiddenMasterTextarea.value = JSON.stringify(allFrames);
-                    hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    updateObjectsFromForm();
-                    drawFrame();
-                }
-            }
-
-            const frameItem = document.getElementById(targetTextarea.id)?.closest('.pixel-art-frame-item');
-            if (frameItem) {
-                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-                if (previewCanvas && targetObject) {
-                    renderPixelArtPreview(previewCanvas, newDataString, targetObject.gradient.color1, targetObject.gradient.color2);
-                }
-            }
+            targetTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         };
 
         const loadFrameIntoEditor = (index) => {
             const newTargetId = `frame-data-${currentEditorObjectId}-${index}`;
             targetTextarea = document.getElementById(newTargetId);
             if (!targetTextarea) return;
-
             currentEditorFrameIndex = index;
             updateEditorFrameCounter();
-
             const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
-            const color1 = targetObject ? targetObject.gradient.color1 : '#FF00FF';
-            const color2 = targetObject ? targetObject.gradient.color2 : '#00FFFF';
-            color1Btn.style.background = color1;
-            color2Btn.style.background = color2;
-
+            currentGradientStops = targetObject ? targetObject.gradient.stops : [];
+            renderEditorPalette();
             let data;
-            try {
-                data = JSON.parse(targetTextarea.value);
-            } catch (e) { data = [[0]]; }
-
+            try { data = JSON.parse(targetTextarea.value); } catch (e) { data = [[0]]; }
             widthInput.value = data[0]?.length || 1;
             heightInput.value = data.length || 1;
-            renderGrid(data, color1, color2);
+            renderGrid(data, currentGradientStops);
             rawDataTextarea.value = formatPixelData(data);
         };
 
-        // --- Event Listeners ---
-
         editorModalEl.addEventListener('shown.bs.modal', (event) => {
-            currentTool = 'paint';
             const button = event.relatedTarget;
             const targetId = button.getAttribute('data-target-id');
             targetTextarea = document.getElementById(targetId);
-
             const idMatch = targetId.match(/frame-data-(\d+)-(\d+)/);
-            if (idMatch) {
-                currentEditorObjectId = idMatch[1];
-                currentEditorFrameIndex = parseInt(idMatch[2], 10);
-            } else {
-                const fieldset = button.closest('fieldset[data-object-id]');
-                currentEditorObjectId = fieldset.dataset.objectId;
-                const frameItem = button.closest('.pixel-art-frame-item');
-                currentEditorFrameIndex = frameItem ? parseInt(frameItem.dataset.index, 10) : 0;
-            }
-
+            currentEditorObjectId = idMatch[1];
+            currentEditorFrameIndex = parseInt(idMatch[2], 10);
             const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            totalFramesInEditor = framesContainer.children.length;
-
+            totalFramesInEditor = fieldset.querySelector('.pixel-art-frames-container').children.length;
             loadFrameIntoEditor(currentEditorFrameIndex);
-
+            setActiveTool('paint');
             document.getElementById('collapseRawData')?.classList.remove('show');
         });
 
-        if (confirmSpritePasteBtn) {
-            confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
-        }
-
-        document.addEventListener('paste', (e) => {
-            if (editorModalEl.classList.contains('show')) {
-                e.preventDefault();
-                const items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const blob = items[i].getAsFile();
-                        pasteSingleImageFrame(blob);
-                        return;
-                    }
-                }
-            }
-        });
-
-        prevFrameBtn.addEventListener('click', () => {
-            if (totalFramesInEditor <= 1) return;
-            saveCurrentFrameInEditor();
-            let newIndex = currentEditorFrameIndex - 1;
-            if (newIndex < 0) {
-                newIndex = totalFramesInEditor - 1;
-            }
-            loadFrameIntoEditor(newIndex);
-        });
-
-        nextFrameBtn.addEventListener('click', () => {
-            if (totalFramesInEditor <= 1) return;
-            saveCurrentFrameInEditor();
-            const newIndex = (currentEditorFrameIndex + 1) % totalFramesInEditor;
-            loadFrameIntoEditor(newIndex);
-        });
-
-        duplicateFrameBtn.addEventListener('click', () => {
-            // FIX: Manually hide the tooltip before destroying the button.
-            const tooltip = bootstrap.Tooltip.getInstance(duplicateFrameBtn);
-            if (tooltip) {
-                tooltip.hide();
-            }
-
-            saveCurrentFrameInEditor();
-
-            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-            const hiddenMasterTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-
-            let allFrames = JSON.parse(hiddenMasterTextarea.value);
-            const frameToCopy = { ...allFrames[currentEditorFrameIndex] };
-
-            allFrames.splice(currentEditorFrameIndex + 1, 0, frameToCopy);
-
-            hiddenMasterTextarea.value = JSON.stringify(allFrames);
-            hiddenMasterTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-            renderForm();
-
-            totalFramesInEditor = allFrames.length;
-            loadFrameIntoEditor(currentEditorFrameIndex + 1);
-            showToast("Frame duplicated!", "success");
-        });
-
-        palette.addEventListener('click', (e) => {
-            currentTool = 'paint';
+        // Simplified click listener for static buttons (e.g. "Selected Fill")
+        paletteContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
-            if (!button) return;
-            palette.querySelector('.active').classList.remove('active');
+            if (!button || button.classList.contains('dynamic-color') || button.id === 'pixel-editor-add-color-btn') return;
+
+            setActiveTool('paint');
+            paletteContainer.querySelector('.active')?.classList.remove('active');
             button.classList.add('active');
             currentPaintValue = parseFloat(button.dataset.value);
         });
 
-        fillBtn.addEventListener('click', () => {
-            currentTool = 'fill';
-            showToast("Fill tool selected. Click an area to fill it.", "info");
-        });
-
-        const floodFill = (startNode) => {
-            if (!startNode || !startNode.classList.contains('pixel-editor-cell')) return;
-            const gridData = readGrid();
-            const [rows, cols] = [gridData.length, gridData[0].length];
-            const [startRow, startCol] = [parseInt(startNode.dataset.row, 10), parseInt(startNode.dataset.col, 10)];
-            const targetValue = gridData[startRow][startCol];
-            if (targetValue === currentPaintValue) return;
-            const queue = [[startRow, startCol]];
-            const visited = new Set([`${startRow},${startCol}`]);
-            gridData[startRow][startCol] = currentPaintValue;
-            while (queue.length > 0) {
-                const [r, c] = queue.shift();
-                [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]].forEach(([nr, nc]) => {
-                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited.has(`${nr},${nc}`) && gridData[nr][nc] === targetValue) {
-                        visited.add(`${nr},${nc}`);
-                        gridData[nr][nc] = currentPaintValue;
-                        queue.push([nr, nc]);
-                    }
-                });
+        paletteContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const button = e.target.closest('button.dynamic-color');
+            if (!button || currentGradientStops.length <= 2) {
+                if (currentGradientStops.length <= 2) showToast("A gradient must have at least 2 colors.", "warning");
+                return;
             }
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
-        };
-
-        mirrorHBtn.addEventListener('click', () => {
-            let gridData = readGrid();
-            gridData.forEach(row => row.reverse());
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
-        });
-
-        mirrorVBtn.addEventListener('click', () => {
-            let gridData = readGrid().reverse();
-            renderGrid(gridData, color1Btn.style.background, color2Btn.style.background);
-        });
-
-        resizeBtn.addEventListener('click', () => {
-            const newWidth = parseInt(widthInput.value, 10);
-            const newHeight = parseInt(heightInput.value, 10);
-            const newData = Array(newHeight).fill(0).map(() => Array(newWidth).fill(0));
-            renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
-        });
-
-        gridContainer.addEventListener('mousedown', (e) => {
-            if (currentTool === 'paint') {
-                isPainting = true;
-                paintCell(e.target);
-            } else if (currentTool === 'fill') {
-                floodFill(e.target);
+            const valueToDelete = parseFloat(button.dataset.value);
+            const isColorUsed = readGrid().flat().some(pixelValue => pixelValue === valueToDelete);
+            if (isColorUsed) {
+                showToast("Cannot delete a color that is currently in use on the canvas.", "danger");
+                return;
             }
-        });
-        gridContainer.addEventListener('mouseover', (e) => {
-            if (isPainting && currentTool === 'paint') {
-                paintCell(e.target);
+            const indexToDelete = valueToDelete - 2;
+            const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+            if (!targetObject) return;
+            let newStops = [...currentGradientStops];
+            newStops.splice(indexToDelete, 1);
+            if (newStops.length > 1) {
+                newStops.forEach((stop, index) => { stop.position = index / (newStops.length - 1); });
             }
+            targetObject.update({ gradient: { stops: newStops } });
+            currentGradientStops = newStops;
+            const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
+            if (gradientControl) {
+                gradientControl.value = JSON.stringify(newStops);
+                gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+            }
+            renderEditorPalette();
+            const firstPaintButton = paletteContainer.querySelector('[data-value]');
+            if (firstPaintButton) firstPaintButton.click();
+            recordHistory();
         });
+
+        // Event listeners for editor tools
+        document.getElementById('pixel-editor-mirror-h-btn').addEventListener('click', () => { let d = readGrid(); d.forEach(r => r.reverse()); renderGrid(d, currentGradientStops); });
+        document.getElementById('pixel-editor-mirror-v-btn').addEventListener('click', () => { let d = readGrid().reverse(); renderGrid(d, currentGradientStops); });
+        resizeBtn.addEventListener('click', () => { renderGrid(Array(parseInt(heightInput.value, 10)).fill(0).map(() => Array(parseInt(widthInput.value, 10)).fill(0)), currentGradientStops); });
+        gridContainer.addEventListener('mousedown', (e) => { if (currentTool === 'paint') { isPainting = true; paintCell(e.target); } else if (currentTool === 'fill') { floodFill(e.target); } });
+        gridContainer.addEventListener('mouseover', (e) => { if (isPainting) paintCell(e.target); });
         document.addEventListener('mouseup', () => { isPainting = false; });
-
-        saveBtn.addEventListener('click', () => {
-            saveCurrentFrameInEditor();
-            saveBtn.blur();
-            bootstrap.Modal.getInstance(editorModalEl).hide();
-        });
-
-        rawDataTextarea.addEventListener('input', () => {
-            try {
-                const newData = JSON.parse(rawDataTextarea.value);
-                if (Array.isArray(newData) && newData.length > 0 && Array.isArray(newData[0])) {
-                    heightInput.value = newData.length;
-                    widthInput.value = newData[0].length;
-                }
-                renderGrid(newData, color1Btn.style.background, color2Btn.style.background);
-            } catch (e) { /* Do nothing on invalid input */ }
-        });
+        gridContainer.addEventListener('mouseleave', () => { isPainting = false; });
+        saveBtn.addEventListener('click', () => { saveCurrentFrameInEditor(); saveBtn.blur(); bootstrap.Modal.getInstance(editorModalEl).hide(); });
+        rawDataTextarea.addEventListener('input', () => { try { const d = JSON.parse(rawDataTextarea.value); if (d && d.length > 0 && d[0]) { heightInput.value = d.length; widthInput.value = d[0].length; } renderGrid(d, currentGradientStops); } catch (e) { /* ignore */ } });
     }
-    // --- END: PIXEL ART EDITOR LOGIC ---
+    // --- END: Upgraded Pixel Art Editor Logic ---
 
     const pixelArtGalleryModalEl = document.getElementById('pixel-art-gallery-modal');
     if (pixelArtGalleryModalEl) {
@@ -1584,88 +1904,92 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update this for a new property
     const shapePropertyMap = {
         rectangle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polyline: [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
+            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
+            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
+            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         circle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         ring: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'innerDiameter', 'numberOfSegments', 'angularWidth',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polygon: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         star: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         text: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
             'textAnimationSpeed', 'showTime', 'showDate',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         oscilloscope: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
             'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
             'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
             'tetrisAnimation', 'tetrisBlockCount', 'tetrisDropDelay', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         fire: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'fire-radial': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
-        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationSpeed', 'scrollDir',
+        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationSpeed', 'scrollDir',
             'vizLayout', 'vizDrawStyle', 'vizStyle',
             'vizLineWidth',
             'vizAutoScale', 'vizMaxBarHeight',
@@ -1673,39 +1997,23 @@ document.addEventListener('DOMContentLoaded', function () {
             'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
             'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
         ],
-        'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
         'strimer': [
             'shape', 'x', 'y', 'width', 'height', 'rotation',
-            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
             'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
             'strimerDirection', 'strimerEasing',
             'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
         ],
         'spawner': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'useSharpGradient', 'gradientStop',
-            'gradColor1', 'gradColor2', 'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
             'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
             'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor',
             'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
             'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
-        ],
-        polyline: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
-            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
-            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
-            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
     };
 
@@ -1994,7 +2302,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- NEW: Create Notification Document AFTER successful transaction commit ---
             // We only create a notification on a LIKE action, and only if the liker is not the owner.
             if (action === 'liked' && projectOwnerId !== user.uid) {
-            //if (action === 'liked') {
+                //if (action === 'liked') {
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     recipientId: projectOwnerId,
                     senderId: user.uid,
@@ -2207,189 +2515,142 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * Populates the gallery panel with projects. Can append or replace content.
+     * Populates the gallery panel with projects using a card-based layout.
      * @param {Array} projects - The array of project objects to display.
-     * @param {boolean} [append=false] - If true, adds projects to the end of the list.
+     * @param {boolean} [append=false] - If true, adds projects to the list. Otherwise, replaces the list.
      */
-    function populateGallery(projects) {
+    function populateGallery(projects, append = false) {
         const galleryList = document.getElementById('gallery-project-list');
         const currentUser = window.auth.currentUser;
-        galleryList.innerHTML = '';
 
-        if (projects.length === 0) {
-            galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
+        if (!append) {
+            galleryList.innerHTML = ''; // Clear previous results only if not appending
+        }
+
+        if (projects.length === 0 && !append) {
+            galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><p>No effects found.</p></div>';
             return;
         }
 
         projects.forEach(project => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.id = `gallery-item-${project.docId}`;
+            // The card-building logic from the previous step remains the same.
+            // This function body is identical to the one in the previous response.
+            const col = document.createElement('div');
+            col.className = 'col';
+            col.id = `gallery-item-${project.docId}`;
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'd-flex align-items-center flex-grow-1 me-2';
+            const card = document.createElement('div');
+            card.className = 'card h-100 bg-body-tertiary';
 
-            if (project.thumbnail) {
-                const img = document.createElement('img');
-                img.src = project.thumbnail;
-                img.style.width = '120px';
-                img.style.height = '75px';
-                img.style.objectFit = 'cover';
-                img.className = 'rounded border me-3';
-                contentDiv.appendChild(img);
-            }
+            const img = document.createElement('img');
+            img.src = project.thumbnail || 'placeholder.png';
+            img.className = 'card-img-top';
+            img.style.height = '150px';
+            img.style.objectFit = 'cover';
+            img.style.cursor = 'pointer';
+            img.onclick = () => {
+                loadWorkspace(project);
+                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+                galleryOffcanvas.hide();
+            };
+            card.appendChild(img);
 
-            const infoDiv = document.createElement('div');
-            infoDiv.className = project.thumbnail ? 'ms-3' : '';
-            infoDiv.style.minWidth = '0';
+            const cardBody = document.createElement('div');
+            cardBody.className = 'card-body d-flex flex-column';
 
-            const nameEl = document.createElement('strong');
-            nameEl.textContent = project.name;
+            const title = document.createElement('h6');
+            title.className = 'card-title';
+            title.textContent = project.name;
 
-            const metaEl = document.createElement('small');
-            metaEl.className = 'd-block text-body-secondary';
-            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown Date';
-            metaEl.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
-
-            infoDiv.appendChild(nameEl);
-            infoDiv.appendChild(metaEl);
-
-            if (project.configs) {
-                const descriptionConf = project.configs.find(c => c.name === 'description');
-                if (descriptionConf && descriptionConf.default) {
-                    const descEl = document.createElement('p');
-                    descEl.className = 'mb-0 mt-1 small text-body-secondary';
-                    descEl.textContent = descriptionConf.default;
-                    descEl.title = descriptionConf.default;
-                    infoDiv.appendChild(descEl);
-                }
-            }
+            const subtitle = document.createElement('small');
+            subtitle.className = 'card-subtitle mb-2 text-body-secondary';
+            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString() : 'N/A';
+            subtitle.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
 
             const statsEl = document.createElement('div');
-            statsEl.className = 'mt-1 small text-body-secondary';
-
-            const viewCount = project.viewCount || 0;
-            const downloadCount = project.downloadCount || 0;
-            const likeCount = project.likes || 0;
-
+            statsEl.className = 'mt-auto d-flex justify-content-start small text-body-secondary gap-3';
             statsEl.innerHTML = `
-                <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
-                <span class="me-3" title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
-                <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;"> 
-                    <i class="bi bi-heart-fill me-1"></i>
-                    <span id="like-count-value-${project.docId}">${likeCount}</span>
-                </span>
-            `;
+            <span title="Views"><i class="bi bi-eye-fill me-1"></i>${project.viewCount || 0}</span>
+            <span title="Downloads"><i class="bi bi-download me-1"></i>${project.downloadCount || 0}</span>
+            <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;">
+                <i class="bi bi-heart-fill me-1"></i>
+                <span id="like-count-value-${project.docId}">${project.likes || 0}</span>
+            </span>
+        `;
 
-            infoDiv.appendChild(statsEl);
+            cardBody.appendChild(title);
+            cardBody.appendChild(subtitle);
+            cardBody.appendChild(statsEl);
+            card.appendChild(cardBody);
+
+            const cardFooter = document.createElement('div');
+            cardFooter.className = 'card-footer d-flex justify-content-between align-items-center';
+
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'btn-group btn-group-sm';
+            btnGroup.setAttribute('role', 'group');
+
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'btn btn-outline-primary';
+            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-1"></i> Load';
+            loadBtn.title = "Load Effect";
+            loadBtn.onclick = () => {
+                loadWorkspace(project);
+                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+                galleryOffcanvas.hide();
+            };
+            btnGroup.appendChild(loadBtn);
+
+            const isInitiallyLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
+            const likeBtn = document.createElement('button');
+            likeBtn.id = `like-btn-${project.docId}`;
+            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-outline-danger'}`;
+            likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
+            likeBtn.title = isInitiallyLiked ? "Unlike" : "Like";
+            likeBtn.onclick = () => likeEffect(project.docId);
+            btnGroup.appendChild(likeBtn);
+
+            cardFooter.appendChild(btnGroup);
+
+            const ownerControls = document.createElement('div');
+            if (currentUser && (currentUser.uid === project.userId || currentUser.uid === ADMIN_UID)) {
+                if (currentUser.uid === project.userId) {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteBtn.title = "Delete Effect";
+                    deleteBtn.onclick = () => {
+                        showConfirmModal(
+                            'Delete Project', `Are you sure you want to delete "${project.name}"?`, 'Delete',
+                            async () => {
+                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
+                            }
+                        );
+                    };
+                    ownerControls.appendChild(deleteBtn);
+                }
+                if (currentUser.uid === ADMIN_UID) {
+                    const isFeatured = project.featured === true;
+                    const featureBtn = document.createElement('button');
+                    featureBtn.className = `btn btn-sm ms-2 ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                    featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
+                    featureBtn.title = isFeatured ? 'Unfeature' : 'Feature';
+                    featureBtn.dataset.docId = project.docId;
+                    featureBtn.onclick = function () { toggleFeaturedStatus(this, project.docId); };
+                    ownerControls.appendChild(featureBtn);
+                }
+            }
+            cardFooter.appendChild(ownerControls);
+            card.appendChild(cardFooter);
+            col.appendChild(card);
+            galleryList.appendChild(col);
 
             setTimeout(() => {
                 const likesSpan = document.getElementById(`like-count-span-${project.docId}`);
                 if (likesSpan) {
-                    likesSpan.addEventListener('click', () => {
-                        showLikersModal(project.docId, project.name);
-                    });
+                    likesSpan.addEventListener('click', () => showLikersModal(project.docId, project.name));
                 }
             }, 0);
-
-            contentDiv.appendChild(infoDiv);
-            li.appendChild(contentDiv);
-
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'd-flex flex-column gap-1';
-
-            const loadBtn = document.createElement('button');
-            loadBtn.className = 'btn btn-sm btn-outline-primary';
-            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down"></i>';
-            loadBtn.title = "Load Effect";
-            loadBtn.onclick = () => {
-                const viewCountContainer = li.querySelector('span[title="Views"]');
-                if (viewCountContainer) {
-                    const currentCount = parseInt(viewCountContainer.textContent.trim()) || 0;
-                    viewCountContainer.innerHTML = `<i class="bi bi-eye-fill me-1"></i>${currentCount + 1}`;
-                }
-
-                loadWorkspace(project);
-                const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
-                galleryOffcanvas.hide();
-                showToast(`Effect "${project.name}" loaded!`, 'success');
-            };
-            controlsDiv.appendChild(loadBtn);
-
-            // --- Like Button Logic ---
-            const likedByMap = project.likedBy || {};
-            let isInitiallyLiked = false;
-
-            // Check the database likedBy map to set the initial button state
-            if (currentUser && currentUser.uid) {
-                isInitiallyLiked = likedByMap.hasOwnProperty(currentUser.uid);
-            }
-
-            const likeBtn = document.createElement('button');
-            likeBtn.id = `like-btn-${project.docId}`;
-
-            if (isInitiallyLiked) {
-                likeBtn.className = 'btn btn-sm btn-danger';
-                likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
-                likeBtn.title = "Unlike this effect";
-            } else {
-                likeBtn.className = 'btn btn-sm btn-outline-danger';
-                likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
-                likeBtn.title = "Like this effect";
-            }
-
-            likeBtn.onclick = () => {
-                likeEffect(project.docId);
-            };
-            controlsDiv.appendChild(likeBtn);
-            // --- End Like Button Logic ---
-
-            if (currentUser && currentUser.uid === project.userId) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-outline-danger';
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.title = "Delete Effect";
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    showConfirmModal(
-                        'Delete Project',
-                        `Are you sure you want to delete your project "${project.name}"? This cannot be undone.`,
-                        'Delete',
-                        async () => {
-                            try {
-                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
-                                showToast(`Project "${project.name}" deleted.`, 'info');
-                                li.remove();
-                                if (galleryList.children.length === 0) {
-                                    galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
-                                }
-                            } catch (error) {
-                                showToast("Error deleting project.", 'danger');
-                            }
-                        }
-                    );
-                };
-                controlsDiv.appendChild(deleteBtn);
-            }
-
-            if (currentUser && currentUser.uid === ADMIN_UID) {
-                const featureBtn = document.createElement('button');
-                const isFeatured = project.featured === true;
-
-                featureBtn.className = `btn btn-sm btn-feature ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
-                featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                featureBtn.title = isFeatured ? 'Unfeature this effect' : 'Feature this effect';
-                featureBtn.dataset.docId = project.docId;
-
-                featureBtn.onclick = function () {
-                    toggleFeaturedStatus(this, project.docId);
-                };
-
-                controlsDiv.appendChild(featureBtn);
-            }
-
-            li.appendChild(controlsDiv);
-            galleryList.appendChild(li);
         });
     }
 
@@ -2641,6 +2902,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const controlId = property || name;
         const formGroup = document.createElement('div');
         formGroup.className = 'mb-3';
+
         const labelEl = document.createElement('label');
         labelEl.htmlFor = controlId;
         labelEl.className = 'form-label';
@@ -2655,6 +2917,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         labelEl.dataset.bsToggle = 'tooltip';
         formGroup.appendChild(labelEl);
+
         if (type === 'number') {
             const inputGroup = document.createElement('div');
             inputGroup.className = 'd-flex align-items-center';
@@ -2667,7 +2930,7 @@ document.addEventListener('DOMContentLoaded', function () {
             input.value = defaultValue;
             if (min) input.min = min;
             if (max) input.max = max;
-            input.step = config.step || '1'; // This line was updated
+            input.step = config.step || '1';
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.className = 'form-range flex-grow-1 ms-2';
@@ -2675,7 +2938,7 @@ document.addEventListener('DOMContentLoaded', function () {
             slider.name = `${controlId}_slider`;
             if (min) slider.min = min;
             if (max) slider.max = max;
-            slider.step = config.step || '1'; // This line was added
+            slider.step = config.step || '1';
             slider.value = defaultValue;
             inputGroup.appendChild(input);
             inputGroup.appendChild(slider);
@@ -2690,7 +2953,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formGroup.appendChild(input);
         } else if (type === 'combobox') {
             const vals = values.split(',');
-            vals.sort(); // Sort the options alphabetically
+            vals.sort();
             const select = document.createElement('select');
             select.id = controlId;
             select.className = 'form-select';
@@ -2698,7 +2961,7 @@ document.addEventListener('DOMContentLoaded', function () {
             vals.forEach(val => {
                 const option = document.createElement('option');
                 option.value = val;
-                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace('-', ' ');
+                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
                 if (val === defaultValue) option.selected = true;
                 select.appendChild(option);
             });
@@ -2727,8 +2990,8 @@ document.addEventListener('DOMContentLoaded', function () {
             textarea.id = controlId;
             textarea.className = 'form-control';
             textarea.name = controlId;
-            textarea.rows = (type === 'textarea') ? 10 : 3; // Give more rows for pixel art data
-            textarea.textContent = defaultValue.replace(/\\n/g, '\n');
+            textarea.rows = (type === 'textarea') ? 10 : 3;
+            textarea.textContent = String(defaultValue).replace(/\n/g, '\n');
             formGroup.appendChild(textarea);
             if (controlId.endsWith('_pixelArtData')) {
                 const toolLink = document.createElement('a');
@@ -2763,27 +3026,272 @@ document.addEventListener('DOMContentLoaded', function () {
             hexInput.value = defaultValue;
             hexInput.id = `${controlId}_hex`;
             hexInput.name = `${controlId}_hex`;
+            input.addEventListener('input', () => {
+                hexInput.value = input.value;
+            });
+            hexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
+                    input.value = hexInput.value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
             colorGroup.appendChild(input);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
+        } else if (type === 'gradientpicker') {
+            // --- START: CORRECTED PHOTOSHOP-STYLE GRADIENT PICKER ---
+            const container = document.createElement('div');
+            container.className = 'gradient-picker-container';
+
+            const previewBar = document.createElement('div');
+            previewBar.className = 'gradient-preview-bar';
+            const previewOverlay = document.createElement('div');
+            previewOverlay.className = 'gradient-preview-overlay';
+            previewBar.appendChild(previewOverlay);
+
+            const stopsContainer = document.createElement('div');
+            stopsContainer.className = 'gradient-stops-container';
+
+            const activeControlsContainer = document.createElement('div');
+            activeControlsContainer.className = 'gradient-active-stop-controls';
+            activeControlsContainer.style.display = 'none';
+
+            const helpText = document.createElement('div');
+            helpText.className = 'form-text text-body-secondary small mt-2';
+            helpText.innerHTML = `
+                <strong>Add:</strong> Click empty space below bar | 
+                <strong>Select/Edit:</strong> Click a marker | 
+                <strong>Delete:</strong> Drag a marker down
+            `;
+
+            const hiddenInput = document.createElement('textarea');
+            hiddenInput.id = controlId;
+            hiddenInput.name = controlId;
+            hiddenInput.className = 'd-none';
+            hiddenInput.value = defaultValue;
+
+            let stops = [];
+            let activeStopId = -1; // Use a stable ID instead of an index
+            let nextStopId = 0; // Counter for unique IDs
+            let isDraggingStop = false;
+
+            const updateGradient = () => {
+                stops.sort((a, b) => a.position - b.position);
+
+                // Create a clean version of stops for saving (without the temporary ID)
+                const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
+                const newGradientJson = JSON.stringify(stopsToSave);
+                hiddenInput.value = newGradientJson;
+
+                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
+                let isSharp = false;
+                if (fieldset) {
+                    const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
+                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpGradientToggle) isSharp = sharpGradientToggle.checked;
+                }
+
+                let gradientString;
+                if (stops.length === 0) gradientString = 'transparent';
+                else if (stops.length === 1) gradientString = stops[0].color;
+                else if (isSharp) {
+                    let parts = [];
+                    parts.push(`${stops[0].color} ${stops[0].position * 100}%`);
+                    for (let i = 1; i < stops.length; i++) {
+                        const prevColor = stops[i - 1].color;
+                        const currentPosPercent = stops[i].position * 100;
+                        parts.push(`${prevColor} ${currentPosPercent}%`);
+                        parts.push(`${stops[i].color} ${currentPosPercent}%`);
+                    }
+                    gradientString = `linear-gradient(to right, ${parts.join(', ')})`;
+                } else {
+                    gradientString = `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`;
+                }
+                previewOverlay.style.background = gradientString;
+
+                if (fieldset && !isRestoring) {
+                    hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+
+            const renderStops = () => {
+                stopsContainer.innerHTML = '';
+                stops.forEach((stop) => {
+                    const marker = document.createElement('div');
+                    marker.className = 'gradient-stop-marker';
+                    marker.dataset.id = stop.id; // Use the unique ID
+                    marker.style.left = `${stop.position * 100}%`;
+                    marker.style.backgroundColor = stop.color;
+
+                    if (stop.id === activeStopId) {
+                        marker.classList.add('active');
+                    }
+                    stopsContainer.appendChild(marker);
+                });
+            };
+
+            const updateActiveControls = () => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (!activeStop) {
+                    activeControlsContainer.style.display = 'none';
+                    return;
+                }
+                activeControlsContainer.style.display = '';
+                activeControlsContainer.querySelector('.active-color-input').value = activeStop.color;
+                activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
+                activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
+            };
+
+            const setActiveStop = (id) => {
+                activeStopId = id;
+                renderStops();
+                updateActiveControls();
+            };
+
+            activeControlsContainer.innerHTML = `
+                <div class="row gx-2 align-items-center">
+                    <div class="col-auto"><label class="col-form-label-sm">Color:</label></div>
+                    <div class="col-auto"><input type="color" class="form-control form-control-color form-control-sm active-color-input"></div>
+                    <div class="col-auto"><input type="text" class="form-control form-control-sm active-hex-input" style="width: 90px;"></div>
+                    <div class="col-auto ms-auto"><label class="col-form-label-sm">Position:</label></div>
+                    <div class="col-auto"><div class="input-group input-group-sm" style="width: 110px;"><input type="number" class="form-control active-position-input" min="0" max="100" step="0.1"><span class="input-group-text">%</span></div></div>
+                </div>
+            `;
+
+            const activeColorInput = activeControlsContainer.querySelector('.active-color-input');
+            const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
+            const activePosInput = activeControlsContainer.querySelector('.active-position-input');
+
+            const updateActiveStopProperty = (prop, value) => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (activeStop) {
+                    activeStop[prop] = value;
+                    renderStops();
+                    updateGradient();
+                }
+            };
+
+            activeColorInput.addEventListener('input', () => {
+                activeHexInput.value = activeColorInput.value;
+                updateActiveStopProperty('color', activeColorInput.value);
+            });
+            activeHexInput.addEventListener('input', () => {
+                if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) {
+                    activeColorInput.value = activeHexInput.value;
+                    updateActiveStopProperty('color', activeHexInput.value);
+                }
+            });
+            activePosInput.addEventListener('input', () => {
+                let newPos = parseFloat(activePosInput.value) / 100;
+                updateActiveStopProperty('position', Math.max(0, Math.min(1, newPos)));
+            });
+
+            stopsContainer.addEventListener('mousedown', (e) => {
+                const target = e.target;
+                if (target.classList.contains('gradient-stop-marker')) {
+                    isDraggingStop = true;
+                    const id = parseInt(target.dataset.id, 10);
+                    setActiveStop(id);
+
+                    const startX = e.clientX;
+                    const stopToDrag = stops.find(s => s.id === id);
+                    const initialPosition = stopToDrag ? stopToDrag.position : 0;
+                    const containerWidth = stopsContainer.offsetWidth;
+
+                    const onMouseMove = (moveEvent) => {
+                        if (!isDraggingStop) return;
+
+                        const dx = moveEvent.clientX - startX;
+                        const posDelta = dx / containerWidth;
+                        let newPos = initialPosition + posDelta;
+                        newPos = Math.max(0, Math.min(1, newPos));
+
+                        const currentActiveStop = stops.find(s => s.id === activeStopId);
+                        if (currentActiveStop) {
+                            currentActiveStop.position = newPos;
+                        }
+
+                        // --- START: THIS IS THE FIX ---
+                        // Re-query the DOM for the currently active marker, since the original
+                        // 'target' was destroyed and re-created when it was selected.
+                        const activeMarker = stopsContainer.querySelector('.gradient-stop-marker.active');
+                        if (activeMarker) {
+                            activeMarker.style.left = `${newPos * 100}%`;
+                        }
+                        // --- END: THIS IS THE FIX ---
+
+                        activePosInput.value = (newPos * 100).toFixed(1);
+                        updateGradient();
+
+                        if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
+                            const indexToDelete = stops.findIndex(s => s.id === activeStopId);
+                            if (indexToDelete > -1) stops.splice(indexToDelete, 1);
+                            setActiveStop(-1);
+                            onMouseUp();
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        if (isDraggingStop) {
+                            isDraggingStop = false;
+                            renderStops();
+                            updateGradient();
+                        }
+                    };
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                } else if (e.target === stopsContainer) {
+                    const rect = stopsContainer.getBoundingClientRect();
+                    const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    const newColor = getGradientColorAt(newPos, stops);
+                    const newStop = { id: nextStopId++, color: newColor, position: newPos };
+                    stops.push(newStop);
+                    setActiveStop(newStop.id);
+                    updateGradient();
+                }
+            });
+
+            try {
+                const loadedStops = JSON.parse(defaultValue);
+                stops = loadedStops.map(s => ({ ...s, id: nextStopId++ }));
+            } catch (e) {
+                stops = [
+                    { color: '#000000', position: 0, id: nextStopId++ },
+                    { color: '#FFFFFF', position: 1, id: nextStopId++ }
+                ];
+            }
+
+            container.appendChild(previewBar);
+            container.appendChild(stopsContainer);
+            container.appendChild(activeControlsContainer);
+            container.appendChild(helpText);
+            container.appendChild(hiddenInput);
+            formGroup.appendChild(container);
+
+            setActiveStop(stops.length > 0 ? stops[0].id : -1);
+
+            setTimeout(() => {
+                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
+                if (fieldset) {
+                    const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
+                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpGradientToggle) {
+                        sharpGradientToggle.addEventListener('input', updateGradient);
+                    }
+                    updateGradient();
+                }
+            }, 0);
         } else if (type === 'sensor') {
             const select = document.createElement('select');
             select.id = controlId;
             select.className = 'form-select';
             select.name = controlId;
-            const cpuSensors = [
-                'CPU Load', 'Memory Load', 'CPU Temperature', 'CPU Package Temp',
-                ...Array.from({ length: 32 }, (_, i) => `CPU Core #${i + 1}`)
-            ];
-            const gpuSensors = [
-                'GPU Core Voltage', 'GPU Hot Spot Temperature', 'GPU Memory Junction Temp',
-                'GPU Core Temperature', 'GPU Memory Clock', 'GPU Core Clock',
-                'GPU Load', 'GPU VRAM Usage'
-            ];
-            const fanSensors = [
-                ...Array.from({ length: 4 }, (_, i) => `Fan Speed #${i + 1}`),
-                ...Array.from({ length: 7 }, (_, i) => `Fan Load #${i + 1}`)
-            ];
+            const cpuSensors = ['CPU Load', 'Memory Load', 'CPU Temperature', 'CPU Package Temp', ...Array.from({ length: 32 }, (_, i) => `CPU Core #${i + 1}`)];
+            const gpuSensors = ['GPU Core Voltage', 'GPU Hot Spot Temperature', 'GPU Memory Junction Temp', 'GPU Core Temperature', 'GPU Memory Clock', 'GPU Core Clock', 'GPU Load', 'GPU VRAM Usage'];
+            const fanSensors = [...Array.from({ length: 4 }, (_, i) => `Fan Speed #${i + 1}`), ...Array.from({ length: 7 }, (_, i) => `Fan Load #${i + 1}`)];
             const sensorValues = [...cpuSensors, ...gpuSensors, ...fanSensors];
             sensorValues.forEach(val => {
                 const option = document.createElement('option');
@@ -2796,50 +3304,27 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'nodetable') {
             const container = document.createElement('div');
             container.className = 'node-table-container';
-
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
             hiddenTextarea.textContent = defaultValue;
-
             const table = document.createElement('table');
             table.className = 'table table-dark table-sm node-table';
-            table.innerHTML = `
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">X</th>
-                <th scope="col">Y</th>
-                <th scope="col" style="width: 80px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody></tbody>`;
-
+            table.innerHTML = `<thead><tr><th scope="col">#</th><th scope="col">X</th><th scope="col">Y</th><th scope="col" style="width: 80px;">Actions</th></tr></thead><tbody></tbody>`;
             const tbody = table.querySelector('tbody');
             let nodes = [];
-            try {
-                nodes = JSON.parse(defaultValue);
-            } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
-
+            try { nodes = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
             nodes.forEach((node, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.index = index;
-                tr.innerHTML = `
-            <td class="align-middle">${index + 1}</td>
-            <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
-            <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
-            <td class="align-middle">
-                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
-            </td>`;
+                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
-
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-node';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Node';
-
             container.appendChild(hiddenTextarea);
             container.appendChild(table);
             container.appendChild(addButton);
@@ -2847,111 +3332,69 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'pixelarttable') {
             const container = document.createElement('div');
             container.className = 'pixel-art-table-container';
-
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
             hiddenTextarea.textContent = defaultValue;
-
             const framesContainer = document.createElement('div');
             framesContainer.className = 'd-flex flex-column gap-2 pixel-art-frames-container';
-
             let objectId = null;
             if (property) {
                 const match = property.match(/^obj(\d+)_/);
-                if (match) {
-                    objectId = match[1];
-                }
+                if (match) { objectId = match[1]; }
             }
-
-            // Get colors from the central configStore before rendering frames
-            const color1Conf = configStore.find(c => c.property === `obj${objectId}_gradColor1`);
-            const color2Conf = configStore.find(c => c.property === `obj${objectId}_gradColor2`);
-            const color1 = color1Conf ? color1Conf.default : '#FF00FF';
-            const color2 = color2Conf ? color2Conf.default : '#00FFFF';
-
+            const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+            let gradientStops = [];
+            if (gradientConf && gradientConf.default) {
+                try { gradientStops = JSON.parse(gradientConf.default); } catch (e) { console.error("Could not parse gradient stops for thumbnail rendering."); }
+            }
             let frames = [];
-            try {
-                frames = JSON.parse(defaultValue);
-            } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
-
+            try { frames = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
             frames.forEach((frame, index) => {
                 const frameItem = document.createElement('div');
                 frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
                 frameItem.dataset.index = index;
                 const textareaId = `frame-data-${objectId}-${index}`;
-                const frameDataStr = frame.data || '[[0]]';
-
-                frameItem.innerHTML = `
-                    <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
-                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                            <div>
-                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                        data-target-id="${textareaId}" title="Edit Frame">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
-                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01">
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                `;
+                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">Frame #${index + 1}</strong><div><button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
                 framesContainer.appendChild(frameItem);
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
+                renderPixelArtPreview(previewCanvas, frameDataStr, gradientStops);
             });
-
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'd-flex flex-wrap gap-2 mt-2';
-
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
-
             const pasteSpriteButton = document.createElement('button');
             pasteSpriteButton.type = 'button';
             pasteSpriteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-sprite';
             pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
             pasteSpriteButton.dataset.bsToggle = 'modal';
             pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
-
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
             uploadGifButton.className = 'btn btn-sm btn-outline-warning';
             uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> Upload GIF';
             uploadGifButton.dataset.bsToggle = 'modal';
             uploadGifButton.dataset.bsTarget = '#upload-gif-modal';
-
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
             browseButton.className = 'btn btn-sm btn-outline-info';
             browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
             browseButton.dataset.bsToggle = 'modal';
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
-
             buttonGroup.appendChild(addButton);
             buttonGroup.appendChild(pasteSpriteButton);
             buttonGroup.appendChild(uploadGifButton);
             buttonGroup.appendChild(browseButton);
-
             const gifInput = document.createElement('input');
             gifInput.type = 'file';
             gifInput.className = 'gif-upload-input d-none';
             gifInput.id = `gif-upload-input-${objectId}`;
             gifInput.accept = 'image/gif';
-
             container.appendChild(hiddenTextarea);
             container.appendChild(framesContainer);
             container.appendChild(buttonGroup);
@@ -2965,127 +3408,114 @@ document.addEventListener('DOMContentLoaded', function () {
      * Generates the meta tags and JavaScript variables for the final exported HTML file.
      * This is where the "Minimize Properties" logic is applied.
      */
-    function generateOutputScript() {
-        let scriptHTML = '';
+    function generateOutputScript(exposedProperties = []) {
+        let metaTags = '';
         let jsVars = '';
         let allKeys = [];
-        const objectMetaPropMap = {};
-
-        const minimize = document.getElementById('minimize-props-export')?.checked || false;
+        const jsVarKeys = [];
         const generalValues = getControlValues();
 
         configStore.filter(conf => !(conf.property || conf.name).startsWith('obj')).forEach(conf => {
             const key = conf.property || conf.name;
+            if (key === 'globalGradientStops') return;
             if (generalValues[key] !== undefined) {
                 allKeys.push(key);
                 let exportValue = generalValues[key];
+                if (typeof exportValue === 'string') exportValue = exportValue.replace(/"/g, '&quot;');
                 if (conf.name && !conf.property) {
-                    scriptHTML += `<meta ${key}="${exportValue}" />\n`;
+                    metaTags += `<meta ${key}="${exportValue}">\n`;
                 } else {
-                    let finalExportValue = exportValue;
-                    if (typeof finalExportValue === 'string') {
-                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
-                    }
                     const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${conf.type}"`];
-                    if (conf.values) {
-                        const sortedValues = conf.values.split(',').sort().join(',');
-                        attrs.push(`values="${sortedValues}"`);
-                    }
+                    if (conf.values) attrs.push(`values="${conf.values.split(',').sort().join(',')}"`);
                     if (conf.min) attrs.push(`min="${conf.min}"`);
                     if (conf.max) attrs.push(`max="${conf.max}"`);
-                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
+                    metaTags += `<meta ${attrs.join(' ')} default="${exportValue}">\n`;
                 }
             }
         });
+        try {
+            const globalStops = JSON.parse(generalValues.globalGradientStops || '[]');
+            globalStops.forEach((stop, i) => {
+                const index = i + 1;
+                const colorKey = `globalColor_${index}`;
+                const posKey = `globalPosition_${index}`;
+                allKeys.push(colorKey, posKey);
+                metaTags += `<meta property="${colorKey}" label="Global Color ${index}" type="color" default="${stop.color}">\n`;
+                metaTags += `<meta property="${posKey}" label="Global Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+            });
+        } catch (e) { console.error("Could not process global gradient for export.", e); }
 
         objects.forEach(obj => {
             const name = obj.name || `Object ${obj.id}`;
-            objectMetaPropMap[obj.id] = [];
             const objectConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${obj.id}_`));
-            const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
+            const validPropsForShape = shapePropertyMap[obj.shape] || [];
+
+            if (obj.gradient && obj.gradient.stops) {
+                obj.gradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_gradColor_${index}`;
+                    const posKey = `obj${obj.id}_gradPosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
+            if (obj.strokeGradient && obj.strokeGradient.stops) {
+                obj.strokeGradient.stops.forEach((stop, i) => {
+                    const index = i + 1;
+                    const colorKey = `obj${obj.id}_strokeColor_${index}`;
+                    const posKey = `obj${obj.id}_strokePosition_${index}`;
+                    allKeys.push(colorKey, posKey);
+                    metaTags += `<meta property="${colorKey}" label="${name}: Stroke Color ${index}" type="color" default="${stop.color}">\n`;
+                    metaTags += `<meta property="${posKey}" label="${name}: Stroke Position ${index}" type="number" default="${Math.round(stop.position * 100)}" min="0" max="100">\n`;
+                });
+            }
 
             objectConfigs.forEach(conf => {
                 const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                let liveValue = obj[propName];
-
-                if (propName.startsWith('gradColor')) {
-                    liveValue = obj.gradient[propName.replace('gradColor', 'color')];
-                } else if (propName.startsWith('strokeGradColor')) {
-                    liveValue = obj.strokeGradient[propName.replace('strokeGradColor', 'color')];
-                } else if (propName === 'scrollDir') {
-                    liveValue = obj.scrollDirection;
-                } else if (propName === 'strokeScrollDir') {
-                    liveValue = obj.strokeScrollDir;
+                if (!validPropsForShape.includes(propName) || propName === 'gradientStops' || propName === 'strokeGradientStops') {
+                    return;
                 }
 
-                if (liveValue === undefined) {
-                    liveValue = conf.default;
-                    if (conf.type === 'boolean') liveValue = (liveValue === 'true');
-                }
-
+                let liveValue = (propName === 'scrollDir') ? obj.scrollDirection : (propName === 'strokeScrollDir') ? obj.strokeScrollDir : obj[propName];
+                if (liveValue === undefined) liveValue = conf.default;
                 allKeys.push(conf.property);
-                let exportValue = liveValue;
-                let exportType = conf.type;
 
-                if (propName === 'pixelArtFrames' || propName === 'spawn_svg_path') {
-                    exportType = 'textfield';
+                let valueForExport = liveValue;
+                if (typeof valueForExport === 'number' && propsToScale.includes(propName)) {
+                    valueForExport = Math.round(valueForExport / 4);
+                } else if (typeof valueForExport === 'boolean') {
+                    valueForExport = String(valueForExport);
                 }
 
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
-                if (conf.type === 'number' && typeof liveValue === 'number') {
-                    exportValue = propsToScale.includes(propName) ? Math.round(liveValue / 4) : Math.round(liveValue);
-                } else if (typeof liveValue === 'boolean') {
-                    exportValue = String(liveValue);
-                }
+                const forceJsVarProps = ['pixelArtFrames', 'polylineNodes'];
 
-                const isApplicable = validPropsForShape.includes(propName);
-                const objectSpecificProps = ['shape', 'x', 'y', 'width', 'height', 'rotation'];
-                let writeAsMeta = !minimize || (!objectSpecificProps.includes(propName) && isApplicable);
+                const createMetaTag = (config, value) => {
+                    config.label = `${name}: ${config.label.split(':').slice(1).join(':').trim()}`;
+                    const attrs = [`property="${config.property}"`, `label="${config.label}"`, `type="${config.type}"`];
+                    if (config.values) attrs.push(`values="${config.values.split(',').sort().join(',')}"`);
+                    if (config.min) attrs.push(`min="${config.min}"`);
+                    if (config.max) attrs.push(`max="${config.max}"`);
+                    let finalValue = value;
+                    if (typeof finalValue === 'string') finalValue = finalValue.replace(/"/g, '&quot;');
+                    return `<meta ${attrs.join(' ')} default="${finalValue}">\n`;
+                };
 
-                if (propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                    writeAsMeta = false;
-                }
-
-                if (writeAsMeta) {
-                    objectMetaPropMap[obj.id].push(propName);
-                    conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
-                    const attrs = [`property="${conf.property}"`, `label="${conf.label}"`, `type="${exportType}"`];
-                    if (conf.values) {
-                        const sortedValues = conf.values.split(',').sort().join(',');
-                        attrs.push(`values="${sortedValues}"`);
+                if (forceJsVarProps.includes(propName) || !exposedProperties.includes(conf.property)) {
+                    let finalJsValue = liveValue;
+                    if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
+                        const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
+                        finalJsValue = JSON.stringify(scaledNodes);
                     }
-                    if (conf.min) attrs.push(`min="${conf.min}"`);
-                    if (conf.max) attrs.push(`max="${conf.max}"`);
-                    let finalExportValue = exportValue;
-
-                    if (typeof finalExportValue === 'object' && finalExportValue !== null) {
-                        finalExportValue = JSON.stringify(finalExportValue);
-                    }
-
-                    if (typeof finalExportValue === 'string') {
-                        finalExportValue = finalExportValue.replace(/"/g, '&quot;');
-                    }
-                    scriptHTML += `<meta ${attrs.join(' ')} default="${finalExportValue}" />\n`;
+                    jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
+                    jsVarKeys.push(conf.property);
                 } else {
-                    // FIX: This block is now more restrictive. It only writes a JS variable if the property
-                    // is essential (not minimized) OR is one of the specifically hardcoded types.
-                    // Inapplicable properties are now correctly dropped.
-                    if (!minimize || objectSpecificProps.includes(propName) || propName === 'polylineNodes' || propName === 'pixelArtFrames') {
-                        if (propName === 'polylineNodes' && Array.isArray(exportValue)) {
-                            const scaledNodes = exportValue.map(node => ({
-                                x: Math.round(node.x / 4),
-                                y: Math.round(node.y / 4)
-                            }));
-                            jsVars += `const ${conf.property} = ${JSON.stringify(scaledNodes)};\n`;
-                        } else {
-                            jsVars += `const ${conf.property} = ${JSON.stringify(exportValue)};\n`;
-                        }
-                    }
+                    metaTags += createMetaTag(conf, valueForExport);
                 }
             });
         });
 
-        return { metaTags: scriptHTML.trim(), jsVars: jsVars.trim(), allKeys: allKeys, objectMetaPropMap };
+        return { metaTags: metaTags.trim(), jsVars: jsVars.trim(), allKeys, jsVarKeys };
     }
 
     function createObjectPanel(obj, objectConfigs, activeCollapseStates, activeTabStates) {
@@ -3244,27 +3674,6 @@ document.addEventListener('DOMContentLoaded', function () {
         tabContent.className = 'tab-content';
         tabContent.id = `object-tab-content-${id}`;
 
-        // Update this for a new property
-        //Tabs
-        const controlGroupMap = {
-            'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
-            'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
-            'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop', 'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
-            'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
-            'Object Fill': { props: ['pathAnim_gradType', 'pathAnim_gradColor1', 'pathAnim_gradColor2', 'pathAnim_useSharpGradient', 'pathAnim_gradientStop', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir', 'pathAnim_cycleColors', 'pathAnim_cycleSpeed'], icon: 'bi-palette-fill' },
-            'Fill-Animation': { props: ['gradType', 'gradColor1', 'gradColor2', 'cycleColors', 'useSharpGradient', 'gradientStop', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
-            'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
-            'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-            'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
-            'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
-            'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
-            'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
-            'Audio Responsiveness': { props: ['enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'], icon: 'bi-mic-fill' },
-            'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
-            'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
-            'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
-            'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
-        };
         const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
         let isFirstTab = true;
         let firstTabId = null;
@@ -3437,7 +3846,7 @@ document.addEventListener('DOMContentLoaded', function () {
         generalCollapseWrapper.innerHTML = '<hr class="mt-2 mb-3">';
 
         // --- NEW LOGIC: Separate standard controls from override controls ---
-        const overrideControlKeys = ['enablePalette', 'paletteColor1', 'paletteColor2', 'enableGlobalCycle', 'globalCycleSpeed'];
+        const overrideControlKeys = ['enablePalette', 'globalGradientStops', 'enableGlobalCycle', 'globalCycleSpeed'];
         const standardGeneralConfigs = grouped.general.filter(conf => !overrideControlKeys.includes(conf.property || conf.name));
         const overrideGeneralConfigs = grouped.general.filter(conf => overrideControlKeys.includes(conf.property || conf.name));
 
@@ -3518,9 +3927,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Initializes the Sortable.js library for all pixel art frame containers
- * to allow drag-and-drop reordering of frames within an object.
- */
+    * Initializes the Sortable.js library for all pixel art frame containers
+    * to allow drag-and-drop reordering of frames within an object.
+    */
     function initializeFrameSorters() {
         const frameContainers = document.querySelectorAll('.pixel-art-frames-container');
         frameContainers.forEach(container => {
@@ -3763,7 +4172,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // List all controls that depend on the fill being enabled
         const dependentControls = [
-            'gradType', 'useSharpGradient', 'gradientStop', 'gradColor1', 'gradColor2',
+            'gradType', 'useSharpGradient', 'gradColor1', 'gradColor2',
             'cycleColors', 'animationMode', 'animationSpeed', 'cycleSpeed', 'scrollDir'
         ];
 
@@ -3835,6 +4244,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     const slider = fieldset.querySelector(`[name="obj${obj.id}_${prop}_slider"]`);
                     if (slider) slider.value = value;
+
+                    // This line was added
                     const hexInput = fieldset.querySelector(`[name="obj${obj.id}_${prop}_hex"]`);
                     if (hexInput) hexInput.value = value;
                 }
@@ -3859,7 +4270,6 @@ document.addEventListener('DOMContentLoaded', function () {
             updateField('numberOfSegments', obj.numberOfSegments);
             updateField('rotationSpeed', obj.rotationSpeed);
             updateField('useSharpGradient', obj.useSharpGradient);
-            updateField('gradientStop', obj.gradientStop);
             updateField('numberOfRows', obj.numberOfRows);
             updateField('numberOfColumns', obj.numberOfColumns);
             updateField('phaseOffset', obj.phaseOffset);
@@ -3917,15 +4327,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const obj = objects[i];
 
             // 1. Save the object's original state before applying any overrides
-            const originalGradient = { ...obj.gradient };
-            const originalStrokeGradient = { ...obj.strokeGradient };
+            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
+            const originalGradType = obj.gradType;
+            const originalStrokeGradType = obj.strokeGradType;
             const originalCycleColors = obj.cycleColors;
             const originalCycleSpeed = obj.cycleSpeed;
             const originalStrokeCycleColors = obj.strokeCycleColors;
             const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
 
-
-            // 2. Apply ALL global overrides directly to the object's state
+            // 2. Apply global overrides by temporarily changing the object's properties
             if (globalCycle.enable) {
                 const speed = (globalCycle.speed || 0) / 50.0;
                 obj.cycleColors = true;
@@ -3933,27 +4344,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 obj.strokeCycleColors = true;
                 obj.strokeCycleSpeed = speed;
             }
-            if (palette.enablePalette) {
-                const pColor1 = palette.paletteColor1;
-                const pColor2 = palette.paletteColor2;
-                obj.gradient.color1 = pColor1;
-                obj.gradient.color2 = pColor2;
-                obj.strokeGradient.color1 = pColor1;
-                obj.strokeGradient.color2 = pColor2;
+
+            if (palette.enablePalette && palette.stops) {
+                // Only apply global palette if the object is NOT pixel art
+                if (obj.shape !== 'pixel-art') {
+                    try {
+                        const globalGradientStops = (typeof palette.stops === 'string')
+                            ? JSON.parse(palette.stops)
+                            : palette.stops;
+
+                        if (Array.isArray(globalGradientStops) && globalGradientStops.length > 0) {
+                            obj.gradient.stops = globalGradientStops;
+                            obj.strokeGradient.stops = globalGradientStops;
+                        }
+                    } catch (e) {
+                        console.error("Could not parse globalGradientStops:", e);
+                    }
+                }
             }
 
             // 3. Animate and Draw the object using the (potentially overridden) state
             obj.updateAnimationState(audioData, sensorData, deltaTime);
-            obj.draw(selectedObjectIds.includes(obj.id), audioData, {}); // Pass an empty palette now
+            obj.draw(selectedObjectIds.includes(obj.id), audioData, {});
 
-            // 4. Restore the object's original state for the next frame
+            // 4. Restore the object's original state so the UI controls remain correct
             obj.gradient = originalGradient;
             obj.strokeGradient = originalStrokeGradient;
+            obj.gradType = originalGradType;
+            obj.strokeGradType = originalStrokeGradType;
             obj.cycleColors = originalCycleColors;
             obj.cycleSpeed = originalCycleSpeed;
             obj.strokeCycleColors = originalStrokeCycleColors;
             obj.strokeCycleSpeed = originalStrokeCycleSpeed;
-
 
             obj.dirty = false;
         }
@@ -3970,7 +4392,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (previewLine.active) {
             ctx.save();
-            ctx.resetTransform(); // Draw in screen space, not subject to object transforms
+            ctx.resetTransform();
             ctx.beginPath();
             ctx.moveTo(previewLine.startX, previewLine.startY);
             ctx.lineTo(previewLine.endX, previewLine.endY);
@@ -4056,8 +4478,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const paletteProps = {
             enablePalette: generalValues.enablePalette,
-            paletteColor1: generalValues.paletteColor1,
-            paletteColor2: generalValues.paletteColor2
+            stops: generalValues.globalGradientStops
         };
 
         const globalCycleProps = {
@@ -4113,12 +4534,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const prefix = `obj${id}_`;
         const configs = configStore.filter(c => c.property && c.property.startsWith(prefix));
 
-        // This list now includes the missing polyline animation properties.
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
-
         configs.forEach(conf => {
             const key = conf.property.replace(prefix, '');
             const el = form.elements[conf.property];
+
             if (el) {
                 let value;
                 if (el.type === 'checkbox') {
@@ -4126,14 +4545,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (el.type === 'number') {
                     value = el.value === '' ? 0 : parseFloat(el.value);
                 } else {
-                    value = el.value;
+                    value = el.value; // For textareas, textfields, etc.
                 }
 
                 if (propsToScale.includes(key)) {
                     value *= 4;
                 }
 
-                if (key.startsWith('gradColor')) {
+                // --- START: CORRECTED LOGIC ---
+                if (key === 'gradientStops') {
+                    if (!values.gradient) values.gradient = {};
+                    try {
+                        values.gradient.stops = JSON.parse(value);
+                    } catch (e) {
+                        console.error("Could not parse gradient stops for update", e);
+                    }
+                } else if (key === 'strokeGradientStops') {
+                    if (!values.strokeGradient) values.strokeGradient = {};
+                    try {
+                        values.strokeGradient.stops = JSON.parse(value);
+                    } catch (e) {
+                        console.error("Could not parse stroke gradient stops for update", e);
+                    }
+                } else if (key.startsWith('gradColor')) {
+                    // This block handles legacy color properties if they exist
                     if (!values.gradient) values.gradient = {};
                     values.gradient[key.replace('grad', '').toLowerCase()] = value;
                 } else if (key.startsWith('strokeGradColor')) {
@@ -4146,6 +4581,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     values[key] = value;
                 }
+                // --- END: CORRECTED LOGIC ---
             }
         });
 
@@ -4185,19 +4621,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        configStore.forEach(conf => {
-            const key = conf.property || conf.name;
-            if (formValues.hasOwnProperty(key)) {
-                let valueToSave = formValues[key];
-                if (conf.type === 'number') {
-                    valueToSave = Number(valueToSave);
-                } else if (typeof valueToSave === 'boolean') {
-                    valueToSave = String(valueToSave);
-                }
-                conf.default = valueToSave;
-            }
-        });
-
         generateOutputScript();
     }
 
@@ -4206,7 +4629,6 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function updateFormValuesFromObjects() {
         // This list now includes the missing polyline animation properties.
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
 
         objects.forEach(obj => {
             const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
@@ -4245,12 +4667,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         const tr = document.createElement('tr');
                         tr.dataset.index = index;
                         tr.innerHTML = `
-                        <td class="align-middle">${index + 1}</td>
-                        <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
-                        <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
-                        <td class="align-middle">
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
-                        </td>`;
+                    <td class="align-middle">${index + 1}</td>
+                    <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
+                    <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
+                    <td class="align-middle">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
+                    </td>`;
                         tbody.appendChild(tr);
                     });
 
@@ -4258,12 +4680,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 // --- END OF MODIFIED PART ---
                 else if (propsToScale.includes(key)) {
                     updateField(key, Math.round(obj[key] / 4));
-                } else if (key === 'gradient') {
-                    updateField('gradColor1', obj.gradient.color1);
-                    updateField('gradColor2', obj.gradient.color2);
-                } else if (key === 'strokeGradient') {
-                    updateField('strokeGradColor1', obj.strokeGradient.color1);
-                    updateField('strokeGradColor2', obj.strokeGradient.color2);
+                } else if (key === 'gradient' || key === 'strokeGradient') {
+                    const propName = key === 'gradient' ? 'gradientStops' : 'strokeGradientStops';
+                    const control = fieldset.querySelector(`[name="obj${obj.id}_${propName}"]`);
+                    if (control) {
+                        const newStops = key === 'gradient' ? obj.gradient.stops : obj.strokeGradient.stops;
+                        control.value = JSON.stringify(newStops);
+                        // Trigger a custom event to tell the control to rebuild itself
+                        control.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
+                    }
                 } else if (key === 'scrollDirection') {
                     updateField('scrollDir', obj.scrollDirection);
                 } else if (key === 'strokeScrollDir') {
@@ -4338,18 +4763,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (conf.type === 'boolean') {
                     value = (String(value).toLowerCase() === 'true' || value === 1);
                 } else if (conf.type === 'textfield' || conf.type === 'textarea') {
-                    value = String(value).replace(/\\n/g, '\n');
+                    value = String(value).replace(/\n/g, '\n');
                 }
 
-                const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
                 if (propsToScale.includes(key) && typeof value === 'number') {
                     value *= 4;
                 }
 
-                if (key.startsWith('gradColor')) {
-                    configForThisObject.gradient[key.replace('grad', '').toLowerCase()] = value;
-                } else if (key.startsWith('strokeGradColor')) {
-                    configForThisObject.strokeGradient[key.replace('strokeGradColor', 'color').toLowerCase()] = value;
+                // MODIFIED: Correctly handle new gradientStops properties
+                if (key === 'gradientStops') {
+                    configForThisObject.gradientStops = value;
+                } else if (key === 'strokeGradientStops') {
+                    configForThisObject.strokeGradientStops = value;
+                } else if (key.startsWith('gradColor') || key.startsWith('strokeGradColor')) {
+                    // Ignore obsolete properties
                 } else if (key === 'scrollDir') {
                     configForThisObject.scrollDirection = value;
                 } else if (key === 'strokeScrollDir') {
@@ -4533,7 +4960,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function getDefaultObjectConfig(newId) {
         return [
             // Geometry & Transform
-            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' }, // MODIFIED: Added 'spawner'
+            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' },
             { property: `obj${newId}_x`, label: `Object ${newId}: X Position`, type: 'number', default: '10', min: '0', max: '320', description: 'The horizontal position of the object on the canvas.' },
             { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
             { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
@@ -4543,12 +4970,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
             { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
+            { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]', description: 'The colors and positions of the gradient. The default is a fiery gradient.' },
             { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
-            { property: `obj${newId}_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp gradients, this is the percentage width of the primary color band.' },
-            { property: `obj${newId}_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#00ff00', description: 'The starting color for gradients and solid fills.' },
-            { property: `obj${newId}_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#d400ff', description: 'The ending color for gradients.' },
             { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
-            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Master speed for gradient scroll, random color flicker, and oscilloscope movement.' },
+            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '50', min: '0', max: '100', description: 'Master speed for particle systems, gradient scroll, and other animations.' },
             { property: `obj${newId}_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false', description: 'Animates the colors by cycling through the color spectrum.' },
             { property: `obj${newId}_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which colors cycle when "Cycle Colors" is enabled.' },
             { property: `obj${newId}_rotationSpeed`, label: `Object ${newId}: Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the object. Overrides static rotation.' },
@@ -4582,21 +5007,20 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
             { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
             { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall. Gravity-fade removes blocks as they settle.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
-            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact. 0 is no bounce.' },
-            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' }, // <-- Add this new object
-            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(fire-radial) Controls how far the flames spread from the center.' },
+            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
+            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
+            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
+            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
 
             // Stroke Fill
             { property: `obj${newId}_enableStroke`, label: `Object ${newId}: Enable Stroke`, type: 'boolean', default: 'false', description: 'Enables a stroke (outline) for the shape.' },
             { property: `obj${newId}_strokeWidth`, label: `Object ${newId}: Stroke Width`, type: 'number', default: '2', min: '1', max: '50', description: 'The thickness of the shape\'s stroke.' },
             { property: `obj${newId}_strokeGradType`, label: `Object ${newId}: Stroke Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use for the stroke.' },
+            { property: `obj${newId}_strokeGradientStops`, label: `Object ${newId}: Stroke Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFFFFF","position":0}]', description: 'The colors and positions of the stroke gradient.' },
             { property: `obj${newId}_strokeUseSharpGradient`, label: `Object ${newId}: Stroke Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.' },
-            { property: `obj${newId}_strokeGradientStop`, label: `Object ${newId}: Stroke Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100', description: 'For sharp stroke gradients, this is the percentage width of the primary color band.' },
-            { property: `obj${newId}_strokeGradColor1`, label: `Object ${newId}: Stroke Color 1`, type: 'color', default: '#FFFFFF', description: 'The starting color for the stroke gradient.' },
-            { property: `obj${newId}_strokeGradColor2`, label: `Object ${newId}: Stroke Color 2`, type: 'color', default: '#000000', description: 'The ending color for the stroke gradient.' },
-            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
+            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
             { property: `obj${newId}_strokeAnimationSpeed`, label: `Object ${newId}: Stroke Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Controls the scroll speed of the stroke gradient animation.' },
             { property: `obj${newId}_strokeCycleColors`, label: `Object ${newId}: Cycle Stroke Colors`, type: 'boolean', default: 'false', description: 'Animates the stroke colors by cycling through the color spectrum.' },
             { property: `obj${newId}_strokeCycleSpeed`, label: `Object ${newId}: Stroke Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which stroke colors cycle when "Cycle Stroke Colors" is enabled.' },
@@ -4604,33 +5028,31 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_strokeScrollDir`, label: `Object ${newId}: Stroke Scroll Direction`, type: 'combobox', default: 'right', values: 'right,left,up,down,along-path,along-path-reversed', description: 'The direction the stroke gradient animation moves. "Along Path" is for Polylines only.' },
             { property: `obj${newId}_strokePhaseOffset`, label: `Object ${newId}: Stroke Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the stroke gradient animation for each item in a grid, creating a cascading effect.' },
 
-            //Audiop
+            // Audio Reactivity
             { property: `obj${newId}_enableAudioReactivity`, label: `Object ${newId}: Enable Sound Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sound.' },
-            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Volume Meter,Path Speed', description: 'Which property of the object will be affected by the sound.' },
+            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Path Speed', description: 'Which property of the object will be affected by the sound.' },
             { property: `obj${newId}_audioMetric`, label: `Object ${newId}: Audio Metric`, type: 'combobox', default: 'volume', values: 'volume,bass,mids,highs', description: 'Which part of the audio spectrum to react to.' },
-            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive. Default is 30.' },
+            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive.' },
             { property: `obj${newId}_audioSensitivity`, label: `Object ${newId}: Sensitivity`, type: 'number', default: '50', min: '0', max: '200', description: 'How strongly the object reacts to the audio metric.' },
             { property: `obj${newId}_audioSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '50', min: '0', max: '99', description: 'Smooths out the reaction to prevent flickering. Higher values are smoother.' },
-            { property: `obj${newId}_autoWidth`, label: `Object ${newId}: Auto-Width`, type: 'boolean', default: 'false', description: 'For text objects, automatically sets the object\'s width to the width of the text.' },
-            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1,0,0,1],[0,1,1,0],[0,1,1,0],[1,0,0,1]]","duration":1}]', description: '(Pixel Art) Manage animation frames. Each frame has data and a duration in seconds.' },
 
-            // Audio visualizer specific
+            // Audio Visualizer
             { property: `obj${newId}_vizDynamicRange`, label: `Object ${newId}: Dynamic Range`, type: 'boolean', default: 'false', description: '(Visualizer) Automatically adjusts the frequency range to focus on active audio, ignoring silent higher frequencies.' },
             { property: `obj${newId}_vizSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Visualizer) How smoothly the bars react to audio changes. Higher is smoother.' },
-            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered (as bars or a continuous line).' },
+            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered.' },
             { property: `obj${newId}_vizLayout`, label: `Object ${newId}: Layout`, type: 'combobox', default: 'Linear', values: 'Linear,Circular,Polyline,Circular Polyline', description: '(Visualizer) The overall layout of the visualizer.' },
             { property: `obj${newId}_vizStyle`, label: `Object ${newId}: Style`, type: 'combobox', default: 'bottom', values: 'bottom,center,top', description: '(Visualizer) The alignment of the visualizer bars.' },
-            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle, as a percentage of the total size.' },
+            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius %`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle.' },
             { property: `obj${newId}_vizLineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '2', min: '1', max: '20', description: '(Visualizer) The thickness of the line for the Line/Area draw styles.' },
             { property: `obj${newId}_vizAutoScale`, label: `Object ${newId}: Auto-Scale Height`, type: 'boolean', default: 'true', description: '(Visualizer) If checked, the tallest bar will always reach the top of the shape.' },
-            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '12', min: '2', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
+            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '32', min: '2', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
             { property: `obj${newId}_vizBarSpacing`, label: `Object ${newId}: Bar Spacing`, type: 'number', default: '2', min: '0', max: '20', description: '(Visualizer) The space between each bar in pixels.' },
-            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height`, type: 'number', default: '30', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar, as a percentage of the available space.' },
+            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height %`, type: 'number', default: '100', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar.' },
             { property: `obj${newId}_vizUseSegments`, label: `Object ${newId}: Use LED Segments`, type: 'boolean', default: 'false', description: '(Visualizer) Renders bars as discrete segments instead of solid blocks.' },
             { property: `obj${newId}_vizSegmentCount`, label: `Object ${newId}: Segment Count`, type: 'number', default: '16', min: '2', max: '64', description: '(Visualizer) The number of vertical LED segments the bar is divided into.' },
             { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
-            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars. 100 is normal.' },
-            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars.' },
+            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
 
             // Sensor Reactivity
             { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
@@ -4655,18 +5077,18 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_strimerDirection`, label: `Object ${newId}: Direction`, type: 'combobox', default: 'Random', values: 'Up,Down,Random', description: '(Strimer) The initial direction of the blocks.' },
             { property: `obj${newId}_strimerEasing`, label: `Object ${newId}: Easing`, type: 'combobox', default: 'Linear', values: 'Linear,Ease-In,Ease-Out,Ease-In-Out', description: '(Strimer) The acceleration curve of the block movement.' },
             { property: `obj${newId}_strimerAnimationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '20', min: '0', max: '100', description: '(Strimer) The speed of the block movement, independent of the fill animation.' },
-            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake. Vertical (along the colum), Horizontal (across the columns).' },
+            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake.' },
             { property: `obj${newId}_strimerBlockSpacing`, label: `Object ${newId}: Block Spacing`, type: 'number', default: '5', min: '0', max: '50', description: '(Cascade) The vertical spacing between blocks in a cascade.' },
             { property: `obj${newId}_strimerGlitchFrequency`, label: `Object ${newId}: Glitch Frequency`, type: 'number', default: '0', min: '0', max: '100', description: '(Glitch) How often blocks stutter or disappear. 0 is off.' },
-            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together. If unchecked, they pulse sequentially.' },
-            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars. 100 is normal.' },
-            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level`, type: 'number', default: '50', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s). 100 is normal.' },
-            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
-            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement. Higher is smoother.' },
-            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. Applied on top of other animations. 0 is off.' },
+            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together.' },
+            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars.' },
+            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s).' },
+            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
+            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement.' },
+            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. 0 is off.' },
 
-            //Spawner
-            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles. "Random" will pick a shape for each particle individually.' },
+            // Spawner
+            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles.' },
             { property: `obj${newId}_spawn_animation`, label: `Object ${newId}: Emitter Style`, type: 'combobox', values: 'explode,fountain,rain,flow', default: 'explode', description: '(Spawner) The behavior and direction of particle emission.' },
             { property: `obj${newId}_spawn_count`, label: `Object ${newId}: Max Particles`, type: 'number', default: '100', min: '1', max: '500', description: '(Spawner) The maximum number of particles on screen at once.' },
             { property: `obj${newId}_spawn_spawnRate`, label: `Object ${newId}: Spawn Rate`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) How many new particles are created per second.' },
@@ -4674,17 +5096,17 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_spawn_speed`, label: `Object ${newId}: Initial Speed`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) The average starting speed of newly created particles.' },
             { property: `obj${newId}_spawn_speedVariance`, label: `Object ${newId}: Initial Speed Variance (±)`, type: 'number', default: '0', min: '0', max: '500', description: '(Spawner) Adds randomness to the initial speed of each particle.' },
             { property: `obj${newId}_spawn_size`, label: `Object ${newId}: Particle Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Spawner) The size of each particle in pixels.' },
-            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size. 0% is uniform, 100% is highly varied.' },
+            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size.' },
             { property: `obj${newId}_spawn_gravity`, label: `Object ${newId}: Gravity`, type: 'number', default: '0', min: '-200', max: '200', description: '(Spawner) A constant downward (or upward) force applied to particles.' },
             { property: `obj${newId}_spawn_spread`, label: `Object ${newId}: Spread Angle`, type: 'number', default: '360', min: '0', max: '360', description: '(Spawner) The angle (in degrees) for Explode or Fountain emitters.' },
             { property: `obj${newId}_spawn_rotationSpeed`, label: `Object ${newId}: Particle Rotation Speed`, type: 'number', default: '0', min: '-360', max: '360', description: '(Spawner) The average rotational speed of each particle in degrees per second.' },
-            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed. If base speed is 10 and variance is 5, speed will be random between 5 and 15.' },
+            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed.' },
             { property: `obj${newId}_spawn_initialRotation_random`, label: `Object ${newId}: Random Initial Rotation`, type: 'boolean', default: 'false', description: '(Spawner) If checked, each particle starts at a random angle.' },
-            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'm -7.1735 47.0399 c -0.4792 -0.1767 -1.8839 -1.1913 -3.1216 -2.2546 c -1.2377 -1.0633 -2.9272 -2.2326 -3.7544 -2.5984 c -0.8272 -0.3658 -3.7682 -1.2585 -6.5357 -1.9837 c -9.9176 -2.599 -11.7218 -3.5122 -14.164 -7.1695 c -1.5926 -2.3849 -2.2275 -4.7408 -2.2275 -8.2651 c 0 -6.2533 2.5468 -11.5705 7.0838 -14.7894 c 3.2916 -2.3353 8.7752 -4.6118 12.8685 -5.3421 c 1.1812 -0.2108 4.0084 -0.359 6.9518 -0.3645 l 4.9609 -0.009 v -0.635 c 0 -0.8312 -1.7502 -9.5695 -1.9966 -9.968 c -0.2606 -0.4217 -1.4724 -0.2265 -7.5545 1.2166 c -7.2798 1.7273 -9.6611 2.0447 -14.3937 1.9184 c -4.6096 -0.123 -5.7086 -0.4664 -7.3607 -2.3004 c -1.8407 -2.0433 -2.1657 -3.1128 -2.1375 -7.0326 c 0.0238 -3.2996 0.076 -3.6119 1.2832 -7.6729 c 0.6921 -2.3283 1.3212 -4.9693 1.398 -5.8688 c 0.1281 -1.5009 0.0606 -1.7882 -0.8212 -3.492 c -1.0541 -2.0368 -1.2327 -3.4948 -0.5479 -4.4725 c 0.9177 -1.3102 3.0926 -1.7702 4.6243 -0.9781 l 0.7777 0.4021 l 1.67 -1.7032 c 1.8981 -1.9358 2.9955 -2.352 4.352 -1.6505 c 1.3396 0.6927 1.6736 2.3514 0.9746 4.8401 c -0.1087 0.3869 0.01 0.7152 0.3668 1.0187 c 1.9232 1.6337 2.403 2.2194 2.5768 3.1459 c 0.3675 1.9589 -0.5582 2.8535 -3.6119 3.4902 c -1.0738 0.2239 -2.1432 0.5798 -2.3765 0.7909 c -0.5528 0.5003 -1.7125 2.88 -2.6976 5.5355 c -1.0971 2.9575 -1.1239 4.939 -0.0869 6.438 c 1.1063 1.5991 2.1559 2.1614 4.0293 2.1587 c 2.781 -0.004 12.4578 -2.2285 16.9021 -3.8853 l 1.3229 -0.4932 l 0.1565 -4.2474 c 0.1411 -3.8282 0.2191 -4.3588 0.7909 -5.3762 c 0.7891 -1.4039 2.4436 -2.4268 3.9593 -2.4477 c 2.2352 -0.0309 3.248 1.4934 4.6276 6.9641 c 0.4807 1.9061 0.9998 3.5915 1.1537 3.7453 c 0.3499 0.3499 4.796 -0.5486 8.3011 -1.6776 c 2.8202 -0.9083 9.427 -4.1284 10.7545 -5.2416 c 1.2659 -1.0615 1.2015 -1.8925 -0.3327 -4.2905 c -1.3545 -2.1171 -1.3884 -2.6034 -0.2531 -3.6341 c 0.5926 -0.538 0.8405 -0.5893 2.092 -0.4329 c 1.0872 0.1358 1.4444 0.0929 1.5251 -0.1834 c 0.0579 -0.1984 0.2412 -0.8615 0.4072 -1.4734 c 0.4699 -1.7318 1.4456 -2.7239 2.679 -2.7239 c 1.0012 0 1.0379 0.0352 1.8649 1.7859 c 0.464 0.9823 0.891 1.8397 0.9488 1.9055 c 0.0579 0.0657 0.8814 0.1998 1.8301 0.298 c 2.072 0.2145 3.0191 0.9167 3.0191 2.2387 c 0 1.0776 -0.7527 2.0267 -2.4874 3.1364 c -1.1065 0.7078 -1.5685 1.2446 -2.3483 2.7288 c -2.304 4.3846 -6.15 8.0726 -10.917 10.4688 c -3.3572 1.6875 -4.8758 2.2252 -12.4889 4.4226 c -1.0536 0.3041 -2.2279 0.8216 -2.6097 1.1499 l -0.6941 0.597 l 0.5599 2.9266 c 0.6144 3.2115 1.1257 4.9111 1.5165 5.0414 c 0.1395 0.0465 1.4396 -0.7627 2.8889 -1.7982 c 2.9621 -2.1163 7.7385 -4.5342 11.4988 -5.8211 c 2.3746 -0.8126 2.7679 -0.8665 7.1159 -0.9742 c 2.9484 -0.0731 5.1828 -0.0008 6.2177 0.2011 c 3.6813 0.7181 8.0035 3.9741 9.7535 7.3477 c 0.8578 1.6535 1.2452 2.9272 1.6447 5.4071 c 0.2192 1.3607 -0.2753 5.0376 -1.198 8.9066 c -0.4288 1.7983 -0.7797 3.627 -0.7797 4.0638 c 0 0.4368 0.5431 2.0413 1.2068 3.5656 c 1.356 3.1141 1.3716 3.7643 0.1228 5.1011 c -0.8692 0.9305 -1.7797 1.0226 -3.8432 0.3889 c -0.7276 -0.2235 -1.6884 -0.3398 -2.1352 -0.2587 c -0.4664 0.0848 -1.9308 1.0443 -3.4396 2.2539 c -4.6511 3.7287 -6.8092 4.4998 -8.1462 2.9108 c -0.6418 -0.7627 -0.6557 -0.8491 -0.3173 -1.9734 c 0.369 -1.2261 1.1506 -2.6405 4.3881 -7.9408 c 2.4033 -3.9345 4.3309 -7.9349 4.9065 -10.182 c 0.2991 -1.1677 0.4026 -2.3933 0.3257 -3.8569 c -0.1241 -2.3648 -0.5762 -3.3923 -2.3039 -5.2362 c -3.8731 -4.1336 -11.4998 -3.4543 -18.7612 1.671 c -2.6959 1.9028 -4.8497 4.1098 -7.6193 7.8072 c -1.3066 1.7444 -2.6896 3.3478 -3.0733 3.5631 c -0.6632 0.3722 -0.8521 0.3169 -3.8245 -1.1193 c -3.9257 -1.8969 -6.3326 -2.4386 -9.8738 -2.2225 c -6.5556 0.4001 -11.7849 2.9718 -14.041 6.9051 c -1.1811 2.0592 -0.9733 5.0568 0.5623 8.1136 c 0.883 1.7575 2.0726 2.8627 4.2818 3.9779 c 3.0127 1.5208 3.4646 1.6127 8.7896 1.7875 L -5 33.5 l 0.388 1.0212 c 0.4018 1.0574 0.3032 1.7764 -0.5186 3.781 c -0.3067 0.7483 -0.2707 0.9915 0.3524 2.3813 c 0.8868 1.9776 1.293 3.8003 1.0821 4.8548 c -0.2753 1.3766 -1.9066 2.0812 -3.4774 1.5019 z m -6.841 -74.1807 c -0.3126 -0.0611 -1.0122 -0.4947 -1.5545 -0.9636 c -0.8512 -0.7358 -1.0045 -1.0439 -1.1205 -2.2516 c -0.087 -0.9059 -0.009 -1.6339 0.2219 -2.065 c 0.5026 -0.9391 2.3363 -1.9449 3.5457 -1.9449 c 0.8549 0 1.2057 0.1989 2.3259 1.3192 c 1.294 1.294 1.3167 1.3445 1.1914 2.6485 c -0.1437 1.495 -0.6427 2.1895 -2.1126 2.9397 c -0.9625 0.4913 -1.3548 0.5412 -2.4972 0.3178 z m 17.2372 -2.1886 c -2.0034 -0.8389 -2.8183 -3.8272 -1.4892 -5.4607 c 0.9736 -1.1966 2.6724 -1.5051 4.3735 -0.7944 c 1.209 0.5051 1.7459 1.3673 1.7459 2.8035 c 0 1.6255 -0.9646 3.0532 -2.3164 3.4286 c -1.1573 0.3214 -1.5909 0.3257 -2.3138 0.023 z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
+            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'M -20 -20 L 20 -20 L 20 20 L -20 20 Z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
             { property: `obj${newId}_spawn_matrixCharSet`, label: `Object ${newId}: Matrix Character Set`, type: 'combobox', default: 'katakana', values: 'katakana,numbers,binary,ascii', description: '(Spawner) The set of characters to use for the Matrix particle type.' },
-            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail (for both generic and matrix types).' },
-            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments. 1 = one particle size.' },
             { property: `obj${newId}_spawn_enableTrail`, label: `Object ${newId}: Enable Trail`, type: 'boolean', default: 'false', description: '(Spawner/Trail) Enables a fading trail behind each particle.' },
+            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail.' },
+            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments.' },
             { property: `obj${newId}_spawn_matrixEnableGlow`, label: `Object ${newId}: Enable Character Glow`, type: 'boolean', default: 'false', description: '(Spawner/Matrix) Adds a glow effect to the matrix characters.' },
             { property: `obj${newId}_spawn_matrixGlowSize`, label: `Object ${newId}: Character Glow Size`, type: 'number', default: '10', min: '0', max: '50', description: '(Spawner/Matrix) The size and intensity of the glow effect.' },
 
@@ -4697,7 +5119,6 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_pathAnim_speed`, label: `Object ${newId}: Speed`, type: 'number', default: '50', min: '0', max: '1000', description: 'How fast the object travels along the path (pixels per second).' },
             { property: `obj${newId}_pathAnim_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic' },
             { property: `obj${newId}_pathAnim_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false' },
-            { property: `obj${newId}_pathAnim_gradientStop`, label: `Object ${newId}: Gradient Stop %`, type: 'number', default: '50', min: '0', max: '100' },
             { property: `obj${newId}_pathAnim_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#FFFFFF' },
             { property: `obj${newId}_pathAnim_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#00BFFF' },
             { property: `obj${newId}_pathAnim_animationMode`, label: `Object ${newId}: Fill Animation`, type: 'combobox', values: 'loop,bounce', default: 'loop' },
@@ -4712,7 +5133,6 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_pathAnim_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '20', min: '1', max: '200', description: 'The length of the trail.' },
             { property: `obj${newId}_pathAnim_trailColor`, label: `Object ${newId}: Trail Color`, type: 'combobox', values: 'Inherit,Rainbow', default: 'Inherit', description: 'The color style of the trail.' },
         ];
-
     }
 
     /**
@@ -4727,7 +5147,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const isStrokeEnabled = enableStrokeToggle.checked;
 
         const dependentControls = [
-            'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient', 'strokeGradientStop',
+            'strokeWidth', 'strokeGradType', 'strokeUseSharpGradient',
             'strokeGradColor1', 'strokeGradColor2', 'strokeCycleColors', 'strokeCycleSpeed',
             'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode',
             'strokePhaseOffset', 'strokeScrollDir'
@@ -4791,243 +5211,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function exportFile() {
-        const exportButton = document.getElementById('export-btn');
-        exportButton.disabled = true;
-        exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Preparing...';
-
-        try {
-            updateObjectsFromForm();
-            const { metaTags, jsVars, allKeys } = generateOutputScript();
-            const effectTitle = getControlValues()['title'] || 'MyEffect';
-            const thumbnailDataUrl = generateThumbnail(document.getElementById('signalCanvas'));
-            const safeFilename = effectTitle.replace(/[\s\/\\?%*:|"<>]/g, '_');
-
-            const styleContent =
-                '        canvas { width: 100%; height: 100%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #000000; }\n' +
-                '        body { background-color: #000000; overflow: hidden; margin: 0; }\n';
-            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
-            const shapeClasses = [`${Shape.toString()}`].join('\n\n');
-            const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
-
-            const exportedScript = `
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('signalCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = 320;
-    canvas.height = 200;
-    let objects = [];
-    
-    ${jsVars}
-
-    window.gradientSpeedMultiplier = ${window.gradientSpeedMultiplier};
-    window.shapeSpeedMultiplier = ${window.shapeSpeedMultiplier};
-    window.seismicSpeedMultiplier = ${window.seismicSpeedMultiplier};
-    window.tetrisGravityMultiplier = ${window.tetrisGravityMultiplier};
-    window.textSpeedMultiplier = ${window.textSpeedMultiplier};
-
-    const getSensorValue = (sensorName) => {
-        try {
-            return engine.getSensorValue(sensorName);
-        } catch (e) {
-            return { value: 0, min: 0, max: 100 };
-        }
-    };
-    
-    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
-    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
-    const parseColorToRgba = ${parseColorToRgba.toString()};
-    const lerpColor = ${lerpColor.toString()};
-    const getPatternColor = ${getPatternColor.toString()};
-    const drawPixelText = ${drawPixelText.toString()};
-    const getSignalRGBAudioMetrics = ${getSignalRGBAudioMetrics.toString()};
-    
-    const Shape = ${Shape.toString()};
-
-    let then;
-    const allPropKeys = ${formattedKeys};
-
-    function createInitialObjects() {
-        if (allPropKeys.length === 0) return;
-
-        const uniqueIds = [...new Set(allPropKeys.map(p => {
-            if (!p.startsWith('obj')) return null;
-            const end = p.indexOf('_');
-            if (end <= 3) return null;
-            const idString = p.substring(3, end);
-            const id = parseInt(idString, 10);
-            return isNaN(id) ? null : String(id);
-        }).filter(id => id !== null))];
-
-        const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'];
-        
-        objects = uniqueIds.map(id => {
-            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
-            const prefix = 'obj' + id + '_';
-
-            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
-                const propName = key.substring(prefix.length);
-                try {
-                    let value = eval(key);
-
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-
-                    // FIX: This logic correctly separates color and alpha properties.
-                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
-                        try {
-                            config[propName] = (typeof value === 'string') ? JSON.parse(value) : value;
-                        } catch(e) {
-                            console.error(\`Failed to parse \${propName}\`, e);
-                        }
-                    } else if (propName === 'gradColor1' || propName === 'gradColor2') {
-                        config.gradient[propName.replace('grad', '').toLowerCase()] = value;
-                    } else if (propName === 'strokeGradColor1' || propName === 'strokeGradColor2') {
-                        config.strokeGradient[propName.replace('strokeGradColor', 'color').toLowerCase()] = value;
-                    } else if (propName === 'scrollDir') {
-                        config.scrollDirection = value;
-                    } else if (propName === 'strokeScrollDir') {
-                        config.strokeScrollDir = value;
-                    } else {
-                        config[propName] = value;
-                    }
-                } catch (e) {}
-            });
-
-            return new Shape(config);
-        });
-    }
-
-    function drawFrame(deltaTime = 0) {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
-        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
-
-        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
-        const sensorData = {};
-        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-        neededSensors.forEach(sensorName => {
-            sensorData[sensorName] = getSensorValue(sensorName);
-        });
-
-        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
-        const pColor1 = typeof paletteColor1 !== 'undefined' ? paletteColor1 : '#FF8F00';
-        const pColor2 = typeof paletteColor2 !== 'undefined' ? paletteColor2 : '#00BFFF';
-        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
-        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
-
-        for (let i = objects.length - 1; i >= 0; i--) {
-            const obj = objects[i];
-            
-            const prefix = 'obj' + obj.id + '_';
-            const propsToUpdate = {};
-            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
-                const propName = key.substring(prefix.length);
-                if (typeof window[key] !== 'undefined') {
-                    let value = window[key];
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-                    propsToUpdate[propName] = value;
-                }
-            });
-            obj.update(propsToUpdate);
-
-            const originalGradient = { ...obj.gradient };
-            const originalStrokeGradient = { ...obj.strokeGradient };
-            const originalCycleColors = obj.cycleColors;
-            const originalCycleSpeed = obj.cycleSpeed;
-            const originalStrokeCycleColors = obj.strokeCycleColors;
-            const originalStrokeCycleSpeed = obj.strokeCycleSpeed;
-
-            if (useGlobalCycle) {
-                const speed = (gCycleSpeed || 0) / 50.0;
-                obj.cycleColors = true;
-                obj.cycleSpeed = speed;
-                obj.strokeCycleColors = true;
-                obj.strokeCycleSpeed = speed;
-            }
-            if (useGlobalPalette) {
-                obj.gradient.color1 = pColor1;
-                obj.gradient.color2 = pColor2;
-                obj.strokeGradient.color1 = pColor1;
-                obj.strokeGradient.color2 = pColor2;
-            }
-
-            if (shouldAnimate) {
-                obj.updateAnimationState(audioData, sensorData, deltaTime);
-            }
-            obj.draw(false, audioData, {});
-
-            obj.gradient = originalGradient;
-            obj.strokeGradient = originalStrokeGradient;
-            obj.cycleColors = originalCycleColors;
-            obj.cycleSpeed = originalCycleSpeed;
-            obj.strokeCycleColors = originalStrokeCycleColors;
-            obj.strokeCycleSpeed = originalStrokeCycleSpeed;
-        }
-    }
-
-    function animate(timestamp) {
-        requestAnimationFrame(animate);
-        const now = timestamp;
-        let deltaTime = (now - (then || now)) / 1000.0;
-        if (deltaTime > 0.1) {
-            deltaTime = 0.1;
-        }
-        then = now;
-        
-        drawFrame(deltaTime);
-    }
-
-    function init() {
-        createInitialObjects();
-        then = window.performance.now();
-        animate(then);
-    }
-
-    init();
-});`;
-
-            const finalHtml = [
-                '<!DOCTYPE html>',
-                '<html lang="en">',
-                '<head>',
-                '    <meta charset="UTF-8">',
-                '    <title>' + effectTitle + '</title>',
-                metaTags,
-                '    <style>',
-                styleContent,
-                '    </style>',
-                '</head>',
-                bodyContent,
-                '<script>',
-                exportedScript,
-                '</script>',
-                '</html>'
-            ].join('\n');
-
-            exportPayload = {
-                safeFilename,
-                finalHtml,
-                thumbnailDataUrl,
-                imageExtension: 'png',
-                exportDate: new Date()
-            };
-
-        } catch (error) {
-            console.error('Export preparation failed:', error);
-            showToast('Failed to prepare export: ' + error.message, 'danger');
-        } finally {
-            exportButton.disabled = false;
-            exportButton.innerHTML = '<i class="bi bi-download"></i> Export';
-        }
-    }
-
     form.addEventListener('input', (e) => {
         const target = e.target;
         if (target.name) {
@@ -5080,22 +5263,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
+            // FIX: This block now correctly redraws thumbnails with the full gradient palette.
             if (target.classList.contains('frame-data-input')) {
                 const frameItem = target.closest('.pixel-art-frame-item');
                 if (frameItem) {
                     const fieldset = frameItem.closest('fieldset[data-object-id]');
                     const objectId = fieldset.dataset.objectId;
                     const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                    const color1 = targetObject.gradient.color1;
-                    const color2 = targetObject.gradient.color2;
+
+                    const gradientStops = targetObject ? targetObject.gradient.stops : [];
 
                     const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                    renderPixelArtPreview(previewCanvas, target.value, color1, color2);
+                    renderPixelArtPreview(previewCanvas, target.value, gradientStops);
                 }
             }
         }
 
         updateObjectsFromForm();
+        syncConfigStoreWithForm();
         drawFrame();
     });
 
@@ -5107,130 +5292,137 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (addNodeBtn) {
             const container = addNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            const newIndex = tbody.children.length;
-            const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
-            const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
-            const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
-            const tr = document.createElement('tr');
-            tr.dataset.index = newIndex;
-            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
-            tbody.appendChild(tr);
+            if (container) { // Check if the container was found
+                const tbody = container.querySelector('tbody');
+                const newIndex = tbody.children.length;
+                const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
+                const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
+                const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
+                const tr = document.createElement('tr');
+                tr.dataset.index = newIndex;
+                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tbody.appendChild(tr);
 
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const hiddenTextarea = container.querySelector('textarea');
+                const newNodes = Array.from(tbody.children).map(tr => ({
+                    x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                    y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+                }));
+                hiddenTextarea.value = JSON.stringify(newNodes);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
         if (deleteNodeBtn) {
             const container = deleteNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            if (tbody.children.length > 2) {
-                deleteNodeBtn.closest('tr').remove();
-                Array.from(tbody.children).forEach((tr, index) => {
-                    tr.dataset.index = index;
-                    tr.firstElementChild.textContent = index + 1;
-                });
-            } else {
-                showToast("A polyline must have at least 2 nodes.", "danger");
+            if (container) { // Check if the container was found
+                const tbody = container.querySelector('tbody');
+                if (tbody.children.length > 2) {
+                    deleteNodeBtn.closest('tr').remove();
+                    Array.from(tbody.children).forEach((tr, index) => {
+                        tr.dataset.index = index;
+                        tr.firstElementChild.textContent = index + 1;
+                    });
+                } else {
+                    showToast("A polyline must have at least 2 nodes.", "danger");
+                }
+                const hiddenTextarea = container.querySelector('textarea');
+                const newNodes = Array.from(tbody.children).map(tr => ({
+                    x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
+                    y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
+                }));
+                hiddenTextarea.value = JSON.stringify(newNodes);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
             }
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
             return;
         }
 
         if (addFrameBtn) {
             const container = addFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            const newIndex = framesContainer.children.length;
-            const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
-            const frameItem = document.createElement('div');
-            frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-            frameItem.dataset.index = newIndex;
-            const defaultFrameData = '[[0.7]]';
-            const textareaId = `frame-data-new-${Date.now()}`;
-            frameItem.innerHTML = `
-        <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
-                <div>
-                    <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                            data-bs-toggle="modal"
-                            data-bs-target="#pixelArtEditorModal"
-                            data-target-id="${textareaId}" title="Edit Frame">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text" title="Duration (seconds)">
-                    <i class="bi bi-clock"></i>
-                </span>
-                <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.1" step="0.1">
-            </div>
-            <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-        </div>
-    `;
-            framesContainer.appendChild(frameItem);
+            if (container) { // Check if the container was found
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                const newIndex = framesContainer.children.length;
+                const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
+                const frameItem = document.createElement('div');
+                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
+                frameItem.dataset.index = newIndex;
+                const defaultFrameData = '[[0.7]]';
+                const textareaId = `frame-data-${objectId}-${newIndex}`;
 
-            const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-            const color1 = targetObject.gradient.color1;
-            const color2 = targetObject.gradient.color2;
-            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-            renderPixelArtPreview(previewCanvas, defaultFrameData, color1, color2);
+                frameItem.innerHTML = `
+                    <div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div>
+                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
+                                        data-target-id="${textareaId}" title="Edit Frame">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span>
+                            <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.01" step="0.01">
+                        </div>
+                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
+                    </div>
+                `;
+                framesContainer.appendChild(frameItem);
 
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                const color1 = targetObject.gradient.stops?.[0]?.color;
+                const color2 = targetObject.gradient.stops?.[1]?.color;
+                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
+                renderPixelArtPreview(previewCanvas, defaultFrameData, color1, color2);
+
+                const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+                const newFrames = Array.from(framesContainer.children).map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                }));
+                hiddenTextarea.value = JSON.stringify(newFrames);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
         if (deleteFrameBtn) {
             const container = deleteFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            if (framesContainer.children.length > 1) {
-                const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
-                if (tooltip) {
-                    tooltip.dispose();
+            if (container) { // Check if the container was found
+                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+                if (framesContainer.children.length > 1) {
+                    const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
+                    if (tooltip) {
+                        tooltip.dispose();
+                    }
+                    deleteFrameBtn.closest('.pixel-art-frame-item').remove();
+                    Array.from(framesContainer.children).forEach((item, index) => {
+                        item.dataset.index = index;
+                        item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
+                    });
+                } else {
+                    showToast("Pixel Art object must have at least one frame.", "warning");
                 }
-                deleteFrameBtn.closest('.pixel-art-frame-item').remove();
-                Array.from(framesContainer.children).forEach((item, index) => {
-                    item.dataset.index = index;
-                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
-                });
-            } else {
-                showToast("Pixel Art object must have at least one frame.", "warning");
-            }
 
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
+                const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
+                const newFrames = Array.from(framesContainer.children).map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
+                }));
+                hiddenTextarea.value = JSON.stringify(newFrames);
+                hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                recordHistory();
+            }
             return;
         }
 
@@ -5581,78 +5773,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('export-copy-btn').addEventListener('click', async () => {
-        // Run the export process now, with the latest checkbox value
-        await exportFile();
-        await incrementDownloadCount();
-
-        if (exportPayload.finalHtml) {
-            navigator.clipboard.writeText(exportPayload.finalHtml).then(() => {
-                showToast("HTML code copied to clipboard!", 'success');
-                const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
-                if (exportModal) exportModal.hide();
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                showToast("Could not copy code. See console for details.", 'danger');
-            });
-        }
-    });
-
-    document.getElementById('export-download-btn').addEventListener('click', async () => {
-        // Run the export process now, with the latest checkbox value
-        await exportFile();
-
-        await incrementDownloadCount();
-
-        const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = exportPayload;
-        if (!finalHtml) return;
-
-        try {
-            const zip = new JSZip();
-            zip.file(`${safeFilename}.html`, finalHtml, { date: exportDate });
-            const imageResponse = await fetch(thumbnailDataUrl);
-            const imageBlob = await imageResponse.blob();
-            zip.file(`${safeFilename}.${imageExtension}`, imageBlob, { date: exportDate });
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(zipBlob);
-            link.download = `${safeFilename}.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-
-            const exportModal = bootstrap.Modal.getInstance(document.getElementById('export-options-modal'));
-            if (exportModal) exportModal.hide();
-            showToast("Zip file download started.", 'info');
-        } catch (error) {
-            console.error('Zip creation failed:', error);
-            showToast('Failed to create .zip file.', 'danger');
-        }
-    });
-
     /**
      * Updates the global configStore with the current state of all form controls.
      * This makes the form the single source of truth at the moment of saving.
      */
-    function syncConfigStoreWithState() {
+    function syncConfigStoreWithForm() {
         const formValues = getControlValues();
 
         configStore.forEach(conf => {
             const key = conf.property || conf.name;
-
-            // Ensure we only update properties that exist in the form
             if (formValues.hasOwnProperty(key)) {
                 let valueToSave = formValues[key];
-
-                // The form holds UI-scaled values, which is what we need to save.
-                // We just need to ensure the data types are correct for saving.
                 if (conf.type === 'number') {
-                    valueToSave = Math.round(Number(valueToSave));
+                    valueToSave = Number(valueToSave);
                 } else if (typeof valueToSave === 'boolean') {
                     valueToSave = String(valueToSave);
                 }
-
                 conf.default = valueToSave;
             }
         });
@@ -5668,7 +5804,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        syncConfigStoreWithState();
+        syncConfigStoreWithForm();
 
         const name = getControlValues()['title'] || 'Untitled Effect';
         const trimmedName = name.trim();
@@ -5920,9 +6056,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 objects.unshift(newShape);
 
-                const newObjectConfigs = getDefaultObjectConfig(newId).filter(
-                    conf => (shapePropertyMap['polyline'] || []).includes(conf.property.substring(conf.property.indexOf('_') + 1))
-                );
+                const newObjectConfigs = getDefaultObjectConfig(newId).filter(conf => {
+                    const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                    // Explicitly include strokeGradientStops as it's essential for new polylines
+                    if (propName === 'strokeGradientStops') return true;
+                    return (shapePropertyMap['polyline'] || []).includes(propName);
+                });
 
                 // Manually override the defaults for the new configs to match the instantiated shape
                 const enableStrokeConf = newObjectConfigs.find(c => c.property === `obj${newId}_enableStroke`);
@@ -6492,8 +6631,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    exportBtn.addEventListener('click', exportFile);
-
     /**
      * The main initialization function for the application.
      * It sets up the initial configuration, creates objects, renders the form,
@@ -6978,6 +7115,28 @@ document.addEventListener('DOMContentLoaded', function () {
             objectIds.forEach(id => {
                 const defaults = getDefaultObjectConfig(id);
                 const { name, shape } = objectData[id];
+
+                // --- NEW: Backward Compatibility Logic ---
+                const gradColor1 = loadedConfigMap.get(`obj${id}_gradColor1`)?.default;
+                const gradColor2 = loadedConfigMap.get(`obj${id}_gradColor2`)?.default;
+                if ((gradColor1 || gradColor2) && !loadedConfigMap.has(`obj${id}_gradientStops`)) {
+                    const stops = [
+                        { color: gradColor1 || '#00ff00', position: 0 },
+                        { color: gradColor2 || '#d400ff', position: 1 }
+                    ];
+                    constantsMap.set(`obj${id}_gradientStops`, JSON.stringify(stops));
+                }
+                const strokeColor1 = loadedConfigMap.get(`obj${id}_strokeGradColor1`)?.default;
+                const strokeColor2 = loadedConfigMap.get(`obj${id}_strokeGradColor2`)?.default;
+                if ((strokeColor1 || strokeColor2) && !loadedConfigMap.has(`obj${id}_strokeGradientStops`)) {
+                    const stops = [
+                        { color: strokeColor1 || '#FFFFFF', position: 0 },
+                        { color: strokeColor2 || '#000000', position: 1 }
+                    ];
+                    constantsMap.set(`obj${id}_strokeGradientStops`, JSON.stringify(stops));
+                }
+                // --- END ---
+
                 defaults.forEach(conf => {
                     const key = conf.property;
                     conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
@@ -7159,11 +7318,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        const propsToScale = [
-            'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
-            'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
-            'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength'
-        ];
         propsToScale.forEach(prop => {
             if (state[prop] !== undefined) {
                 state[prop] *= 4;
@@ -7286,7 +7440,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (valueToSet !== undefined) {
-                    const propsToScaleDown = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize', 'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth'];
                     if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
                     else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
                     else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') { valueToSet *= 50; }
@@ -7399,7 +7552,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (copyPropsForm.elements['copy-position'].checked) copyProps(['x', 'y']);
             if (copyPropsForm.elements['copy-size'].checked) copyProps(['width', 'height']);
             if (copyPropsForm.elements['copy-rotation'].checked) copyProps(['rotation', 'rotationSpeed']);
-            if (copyPropsForm.elements['copy-fill-style'].checked) Object.assign(propsToCopy, { gradType: sourceObject.gradType, useSharpGradient: sourceObject.useSharpGradient, gradientStop: sourceObject.gradientStop, gradient: { ...sourceObject.gradient } });
+            if (copyPropsForm.elements['copy-fill-style'].checked) Object.assign(propsToCopy, { gradType: sourceObject.gradType, useSharpGradient: sourceObject.useSharpGradient, gradient: { stops: JSON.parse(JSON.stringify(sourceObject.gradient.stops)) } });
             if (copyPropsForm.elements['copy-animation'].checked) copyProps(['animationMode', 'animationSpeed', 'scrollDirection', 'phaseOffset']);
             if (copyPropsForm.elements['copy-color-animation'].checked) copyProps(['cycleColors', 'cycleSpeed']);
             if (copyPropsForm.elements['copy-shape-type'].checked) copyProps(['shape']);
@@ -7529,8 +7682,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Sets up the Web Audio API to listen to a specific browser tab's audio.
- */
+    * Sets up the Web Audio API to listen to a specific browser tab's audio.
+    */
     async function setupAudio() {
         if (isAudioSetup) return;
 
@@ -7719,9 +7872,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
- * Loads the featured project from the database if no shared effect is specified.
- * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
- */
+    * Loads the featured project from the database if no shared effect is specified.
+    * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
+    */
     async function loadFeaturedEffect() {
         try {
             const projectsRef = window.collection(window.db, "projects");
@@ -8110,6 +8263,211 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     window.loadUserSpecificGalleryData = loadUserSpecificGalleryData; // Expose globally
 
+    // --- START: NEW LAZY LOADING GALLERY LOGIC ---
+    const gallerySearchInput = document.getElementById('gallery-search-input');
+    const gallerySortOptions = document.querySelectorAll('.gallery-sort-option');
+    const galleryFooter = document.getElementById('gallery-footer');
+    const galleryScrollContainer = document.getElementById('gallery-scroll-container'); // Added this
+
+    let currentBaseQuery; // To store the base query for loading more
+
+    /**
+     * Fetches projects for the gallery.
+     * - Uses pagination for 'createdAt' and 'name' sorts.
+     * - Fetches all for 'likes' and 'downloadCount' sorts to ensure correctness.
+     * - Fetches all when a search term is active.
+     */
+    async function fetchAndDisplayGallery(galleryType = 'community') {
+        const user = window.auth.currentUser;
+        if (galleryType === 'user' && !user) {
+            showToast("You must be logged in to see your projects.", 'danger');
+            const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
+            if (galleryOffcanvas) galleryOffcanvas.hide();
+            return;
+        }
+
+        lastVisibleDoc = null; // Reset pagination
+        const galleryList = document.getElementById('gallery-project-list');
+        galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><div class="spinner-border spinner-border-sm"></div><p class="mt-2">Loading...</p></div>';
+        galleryFooter.style.display = 'none';
+
+        const projectsRef = window.collection(window.db, "projects");
+
+        // Set the base query based on gallery type
+        if (galleryType === 'user') {
+            document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+            currentBaseQuery = window.query(projectsRef, window.where("userId", "==", user.uid));
+        } else {
+            document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
+            currentBaseQuery = window.query(projectsRef, window.where("isPublic", "==", true));
+        }
+
+        // --- START: NEW HYBRID LOADING LOGIC ---
+        const searchTerm = gallerySearchInput.value.toLowerCase();
+        // Determine if we can use efficient pagination or need to fetch everything
+        const usePagination = (currentSortOption === 'createdAt' || currentSortOption === 'name') && !searchTerm;
+
+        if (usePagination) {
+            // BEHAVIOR 1: Efficient lazy-loading for default sorts
+            isLoadingMore = true; // Prevent scroll-loading during initial fetch
+            const sortDirection = currentSortOption === 'name' ? 'asc' : 'desc';
+            const finalQuery = window.query(
+                currentBaseQuery,
+                window.orderBy(currentSortOption, sortDirection),
+                window.limit(GALLERY_PAGE_SIZE)
+            );
+            try {
+                const documentSnapshots = await window.getDocs(finalQuery);
+                const projects = [];
+                documentSnapshots.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                    projects.push({ docId: doc.id, ...data });
+                });
+
+                populateGallery(projects, false);
+
+                lastVisibleDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+                if (documentSnapshots.docs.length < GALLERY_PAGE_SIZE) {
+                    isLoadingMore = true;
+                } else {
+                    isLoadingMore = false;
+                }
+            } catch (error) {
+                console.error("Gallery query error:", error);
+                galleryList.innerHTML = `<div class="col-12"><p class="text-danger">Could not load effects. Please ensure database indexes are configured.</p></div>`;
+            }
+
+        } else {
+            // BEHAVIOR 2: Fetch-all for searching or complex sorts ('likes', 'downloadCount')
+            isLoadingMore = true; // Disable scroll loading entirely
+            try {
+                const querySnapshot = await window.getDocs(currentBaseQuery);
+                let projects = [];
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                    projects.push({ docId: doc.id, ...data });
+                });
+
+                // Then sort the full results client-side
+                projects.sort((a, b) => {
+                    // Use || 0 to handle cases where the field doesn't exist
+                    const aVal = a[currentSortOption] || 0;
+                    const bVal = b[currentSortOption] || 0;
+                    if (currentSortOption === 'name') {
+                        return (aVal || '').localeCompare(bVal || '');
+                    } else {
+                        return bVal - aVal;
+                    }
+                });
+
+                // Finally, apply search filter if it exists
+                const filteredProjects = searchTerm
+                    ? projects.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.creatorName && p.creatorName.toLowerCase().includes(searchTerm)))
+                    : projects;
+
+                populateGallery(filteredProjects);
+                galleryFooter.style.display = 'none'; // Hide footer since all results are shown
+
+            } catch (error) {
+                console.error("Gallery search/sort error:", error);
+                galleryList.innerHTML = `<div class="col-12"><p class="text-danger">Could not perform search or sort.</p></div>`;
+            }
+        }
+        // --- END: NEW HYBRID LOADING LOGIC ---
+    }
+
+    /**
+     * Fetches the next page of projects when the user scrolls.
+     */
+    async function loadMoreProjects() {
+        if (isLoadingMore || !lastVisibleDoc || !currentBaseQuery) return;
+
+        isLoadingMore = true;
+        galleryFooter.style.display = 'block';
+
+        const sortDirection = currentSortOption === 'name' ? 'asc' : 'desc';
+        const nextQuery = window.query(
+            currentBaseQuery,
+            window.orderBy(currentSortOption, sortDirection),
+            window.startAfter(lastVisibleDoc),
+            window.limit(GALLERY_PAGE_SIZE)
+        );
+
+        try {
+            const documentSnapshots = await window.getDocs(nextQuery);
+            const newProjects = [];
+            documentSnapshots.forEach((doc) => {
+                const data = doc.data();
+                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+                newProjects.push({ docId: doc.id, ...data });
+            });
+
+            const searchTerm = gallerySearchInput.value.toLowerCase();
+            const filteredProjects = searchTerm
+                ? newProjects.filter(p => p.name.toLowerCase().includes(searchTerm) || (p.creatorName && p.creatorName.toLowerCase().includes(searchTerm)))
+                : newProjects;
+
+            populateGallery(filteredProjects, true); // Append new content
+
+            lastVisibleDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+            // If we fetched less than a full page, there are no more projects
+            if (documentSnapshots.docs.length < GALLERY_PAGE_SIZE) {
+                galleryFooter.style.display = 'none';
+            } else {
+                isLoadingMore = false; // Re-enable loading for the next page
+            }
+        } catch (error) {
+            console.error("Error loading more projects:", error);
+            showToast("Failed to load more effects.", 'danger');
+        } finally {
+            if (documentSnapshots.docs.length > 0) {
+                galleryFooter.style.display = 'none';
+            }
+        }
+    }
+
+    // NEW: Scroll event listener for infinite loading
+    if (galleryScrollContainer) {
+        galleryScrollContainer.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = galleryScrollContainer;
+            // Trigger load when user is 100px from the bottom
+            if (scrollHeight - scrollTop - clientHeight < 100) {
+                loadMoreProjects();
+            }
+        });
+    }
+
+    // Update event listeners to call the new master function
+    gallerySearchInput.addEventListener('input', debounce(() => {
+        const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+        fetchAndDisplayGallery(galleryType);
+    }, 300));
+
+    gallerySortOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentSortOption = e.target.dataset.sort;
+            const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+            fetchAndDisplayGallery(galleryType);
+        });
+    });
+
+    document.getElementById('load-ws-btn').addEventListener('click', () => {
+        fetchAndDisplayGallery('user');
+    });
+
+    document.getElementById('browse-btn').addEventListener('click', () => {
+        fetchAndDisplayGallery('community');
+    });
+
+    galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
+        lastVisibleDoc = null;
+    });
+
+    // --- END: NEW LAZY LOADING GALLERY LOGIC ---
 
     // Start the application.
     init();

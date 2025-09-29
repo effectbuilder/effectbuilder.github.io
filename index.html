@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
     <script type="module" src="firebase.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -43,7 +44,7 @@
                     <button class="btn btn-outline-secondary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-outline-warning" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
                     <button class="btn btn-outline-info" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
-                    <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"><i class="bi bi-download me-1"></i> Export</button>
+                    <button class="btn btn-outline-success" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
                     <button class="btn btn-outline-secondary" id="upload-effect-btn" data-bs-toggle="tooltip" title="Upload an effect HTML file"><i class="bi bi-upload me-1"></i> Upload</button>
                     <button class="btn btn-outline-success" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
                 </div>
@@ -408,6 +409,15 @@
                                             <li><kbd><i class="bi bi-share"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
                                             <li><kbd><i class="bi bi-link-45deg"></i> Import to SignalRGB</kbd>: Creates a special link to apply your effect's settings to an *already installed* effect in SignalRGB.</li>
                                         </ul>
+                                        <hr>
+                                        <h6>Export Presets</h6>
+                                        <p>When you click the <kbd><i class="bi bi-download"></i> Export</kbd> button, the "Export Properties" modal allows you to decide which properties a user can change in SignalRGB. Properties that are not checked will be "hardcoded" with the value you set in the builder. The preset buttons help you quickly select common configurations:</p>
+                                        <ul>
+                                            <li><strong>Expose All / Hardcode All:</strong> These buttons provide a quick way to check or uncheck every single property for all objects.</li>
+                                            <li><strong>Minimal (User-Friendly):</strong> Selects only the most common properties (like a main color gradient and master speed), hiding more complex options from the end-user.</li>
+                                            <li><strong>Static (No Animation):</strong> Selects all properties *except* for those related to speed and animation, creating a non-moving effect.</li>
+                                            <li><strong>Animation / Colors / Geometry / Gradients:</strong> These presets select logical groups of properties, allowing you to quickly expose only the controls relevant to that category.</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -561,10 +571,35 @@
                 <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Community Gallery</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body">
-                <p>Select an effect to load into your workspace. <a href="gallery.html">View full gallery page <i class="bi bi-box-arrow-up-right"></i></a></p>
-                <ul class="list-group" id="gallery-project-list">
-                </ul>
+            <div class="offcanvas-body d-flex flex-column">
+                <div class="mb-3 d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="gallery-search-input" class="form-control" placeholder="Search effects...">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-sort-down me-1"></i> Sort By
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="createdAt">Newest</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="likes">Most Liked</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="downloadCount">Most Downloaded</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="name">Alphabetical</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="gallery-scroll-container" class="flex-grow-1 overflow-auto pe-2">
+                    <div id="gallery-project-list" class="row row-cols-1 row-cols-lg-2 g-3">
+                    </div>
+
+                    <div id="gallery-footer" class="text-center py-3" style="display: none;">
+                        <div id="gallery-loading-spinner" class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -589,33 +624,21 @@
         </div>
 
         <div class="modal fade" id="export-options-modal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-box-arrow-down me-2"></i>Export Options</h5>
+                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-sliders me-2"></i>Export Properties</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <p>Your effect is ready. How would you like to export it?</p>
-                        <hr>
-                        <div class="form-check form-switch my-3">
-                            <input class="form-check-input" type="checkbox" id="minimize-props-export">
-                            <label class="form-check-label" for="minimize-props-export">Minimize Properties for Export</label>
-                            <div class="form-text mt-1">Reduces editable properties to only the essentials, improving load times.</div>
+                    <div class="modal-body" id="export-options-body">
+                        <p class="text-body-secondary">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
+                        <div class="accordion" id="export-options-accordion">
                         </div>
                     </div>
-                    <div class="modal-footer justify-content-center">
-                        <button type="button" class="btn btn-success" id="export-download-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Download .zip File</button>
-                        <button type="button" class="btn btn-primary" id="export-copy-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Copy HTML Code</button>
-                    </div>
-                    <div class="modal-body border-top">
-                        <h6 class="text-body-secondary">How to Install in SignalRGB</h6>
-                        <ol>
-                            <li>Click the <strong>Download .zip File</strong> button.</li>
-                            <li>Extract the contents of the '.zip' file into your SignalRGB effects folder, typically found at:<br><code>Documents\WhirlwindFX\Effects</code></li>
-                            <li>It is recommended to place the files in a new subfolder for organization.</li>
-                            <li>Restart the SignalRGB application. Your new effect will now appear in the effects list.</li>
-                        </ol>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-primary" id="export-copy-code-btn"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
+                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Generate .zip File</button>
                     </div>
                 </div>
             </div>
@@ -725,6 +748,7 @@
                             <div class="d-flex align-items-center">
                                 <strong class="me-3">Tools:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-tools">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary active" id="pixel-editor-paint-btn" title="Paint Tool"><i class="bi bi-pencil-fill"></i> Paint</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-fill-btn" title="Fill Area"><i class="bi bi-paint-bucket"></i> Fill</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-mirror-h-btn" title="Flip Horizontal"><i class="bi bi-arrow-left-right"></i></button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" id="pixel-editor-mirror-v-btn" title="Flip Vertical"><i class="bi bi-arrow-down-up"></i></button>
@@ -734,10 +758,6 @@
                                 <strong class="me-3">Paint:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-palette">
                                     <button type="button" class="btn btn-sm btn-outline-light active" data-value="0.7" style="background: repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px;" title="Use object's main fill style (value: 0.7)">Selected Fill</button>
-                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="1.0" style="background-color: #FFF; color: #000;" title="White (value: 1.0)">White</button>
-                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0.3" id="pixel-editor-color1-btn" title="Color 1 (value: 0.3)">Color 1</button>
-                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0.4" id="pixel-editor-color2-btn" title="Color 2 (value: 0.4)">Color 2</button>
-                                    <button type="button" class="btn btn-sm btn-outline-light" data-value="0" style="background-color: #000; color: #FFF;" title="Black (value: 0)">Black</button>
                                 </div>
                             </div>
                         </div>
@@ -890,6 +910,23 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="confirm-color-map-btn">Process Image</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="pixel-art-color-picker-modal" tabindex="-1" aria-labelledby="pixelArtColorPickerModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="width: 280px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pixelArtColorPickerModalLabel">Edit Color</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body d-flex justify-content-center">
+                        <div id="modal-picker-container"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
                     </div>
                 </div>
             </div>
