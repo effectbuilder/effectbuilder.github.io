@@ -17,7 +17,8 @@ body {
 #canvas-container {
     position: relative;
     cursor: default;
-    flex-shrink: 0; /* Prevent the container from being squished */
+    flex-shrink: 0;
+    /* Prevent the container from being squished */
 }
 
 #signalCanvas {
@@ -154,7 +155,20 @@ body {
 
 .pixel-editor-cell {
     width: 100%;
-    padding-bottom: 100%; /* Creates a square aspect ratio */
+    padding-bottom: 100%;
+    /* Creates a square aspect ratio */
     background-color: rgba(0, 0, 0, 0.5);
     position: relative;
+}
+
+.notification-read {
+    opacity: 0.6;
+    /* Dim the entire item */
+    background-color: #343a40;
+    /* Slightly darker background for read items (for dark theme) */
+}
+
+/* Ensure the icon remains visible */
+.notification-read .text-danger {
+    opacity: 0.7;
 }

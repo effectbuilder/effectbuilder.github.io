@@ -34,6 +34,7 @@
                 <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
                 SRGB Interactive Effect Builder
             </a>
+
             <div class="ms-auto d-flex align-items-center">
 
                 <div class="btn-group me-3" role="group" aria-label="Project management actions">
@@ -49,18 +50,45 @@
 
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
-                <div class="btn-group" role="group" aria-label="Help and settings">
+                <div class="btn-group me-3" role="group" aria-label="Help and settings">
                     <button class="btn btn-outline-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
                     <button class="btn btn-outline-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
                     <a class="btn btn-outline-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
                         <i class="bi bi-github"></i>
                     </a>
+                    <button class="btn btn-outline-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-bell"></i>
+                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                            0
+                            <span class="visually-hidden">new notifications</span>
+                        </span>
+                    </button>
+                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                        0
+                        <span class="visually-hidden">new notifications</span>
+                    </span>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
+                        <li class="dropdown-header d-flex justify-content-between align-items-center">
+                            <strong>Notifications</strong>
+                            <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <div id="notification-list-container">
+                            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                                Sign in to view notifications.
+                            </li>
+                        </div>
+                    </ul>
                     <button class="btn btn-outline-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
                         <i class="bi" id="theme-icon"></i>
                     </button>
                 </div>
 
-                <div class="ms-3">
+                <div class="btn-group" role="group" aria-label="Authentication">
                     <button class="btn btn-outline-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
 
                     <div class="btn-group d-none" id="user-session-group" role="group">
@@ -71,6 +99,7 @@
                         <button class="btn btn-outline-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
                     </div>
                 </div>
+
             </div>
         </div>
     </nav>
