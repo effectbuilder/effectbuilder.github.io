@@ -570,10 +570,35 @@
                 <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Community Gallery</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body">
-                <p>Select an effect to load into your workspace. <a href="gallery.html">View full gallery page <i class="bi bi-box-arrow-up-right"></i></a></p>
-                <ul class="list-group" id="gallery-project-list">
-                </ul>
+            <div class="offcanvas-body d-flex flex-column">
+                <div class="mb-3 d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="gallery-search-input" class="form-control" placeholder="Search effects...">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-sort-down me-1"></i> Sort By
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="createdAt">Newest</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="likes">Most Liked</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="downloadCount">Most Downloaded</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="name">Alphabetical</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="gallery-scroll-container" class="flex-grow-1 overflow-auto pe-2">
+                    <div id="gallery-project-list" class="row row-cols-1 row-cols-lg-2 g-3">
+                    </div>
+
+                    <div id="gallery-footer" class="text-center py-3" style="display: none;">
+                        <div id="gallery-loading-spinner" class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
