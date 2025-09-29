@@ -172,3 +172,67 @@ body {
 .notification-read .text-danger {
     opacity: 0.7;
 }
+
+/* --- New Gradient Picker Styles --- */
+.gradient-picker-container {
+    position: relative;
+    user-select: none;
+    touch-action: none;
+}
+
+.gradient-preview-bar {
+    width: 100%;
+    height: 30px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-image:
+        linear-gradient(45deg, #444 25%, transparent 25%),
+        linear-gradient(-45deg, #444 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #444 75%),
+        linear-gradient(-45deg, transparent 75%, #444 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    position: relative;
+}
+
+.gradient-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 4px;
+}
+
+.gradient-stops-container {
+    position: relative;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.gradient-stop-marker {
+    position: absolute;
+    top: 0;
+    width: 25px;
+    height: 25px;
+    border: 2px solid #000;
+    border-radius: 50%; /* This makes it a circle */
+    transform: translateX(-50%);
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    transition: transform 0.1s ease-out, border-color 0.1s ease-out;
+}
+
+.gradient-stop-marker.active {
+    border-color: #ffffff;
+    transform: translateX(-50%) scale(1.0);
+    z-index: 10;
+}
+
+.gradient-active-stop-controls {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 6px;
+}
