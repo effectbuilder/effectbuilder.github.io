@@ -2630,7 +2630,7 @@ document.addEventListener('DOMContentLoaded', function () {
         appHistory.index = -1;
 
         // Get the current user and set new default values
-        const user = window.auth.currentUser;
+        const user = window.auth ? window.auth.currentUser : null;
         const newTitle = "Untitled Effect";
         const newPublisher = (user && user.displayName) ? user.displayName : "Anonymous";
         const newDescription = "";
@@ -4183,7 +4183,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 configStore = [...generalConfigs, ...reorderedObjectConfigs];
 
                 // --- 4. Update the application state ---
-                updateObjectsFromForm();
                 drawFrame();
                 recordHistory();
             }
