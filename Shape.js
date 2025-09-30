@@ -349,7 +349,9 @@ class Shape {
         this.gradType = gradType || 'solid';
 
         // Handle backward compatibility and new format for fill gradient
-        if (gradient && (gradient.color1 || gradient.color2)) {
+        if (gradient && Array.isArray(gradient.stops)) {
+            this.gradient = gradient;
+        } else if (gradient && (gradient.color1 || gradient.color2)) {
             this.gradient = { stops: [{ color: gradient.color1 || '#00ff00', position: 0.0 }, { color: gradient.color2 || '#d400ff', position: 1.0 }] };
         } else if (gradientStops) {
             this.gradient = { stops: (typeof gradientStops === 'string') ? JSON.parse(gradientStops) : gradientStops };
@@ -358,7 +360,9 @@ class Shape {
         }
 
         // Handle backward compatibility and new format for stroke gradient
-        if (strokeGradient && (strokeGradient.color1 || strokeGradient.color2)) {
+        if (strokeGradient && Array.isArray(strokeGradient.stops)) {
+            this.strokeGradient = strokeGradient;
+        } else if (strokeGradient && (strokeGradient.color1 || strokeGradient.color2)) {
             this.strokeGradient = { stops: [{ color: strokeGradient.color1 || '#FFFFFF', position: 0.0 }, { color: strokeGradient.color2 || '#000000', position: 1.0 }] };
         } else if (strokeGradientStops) {
             this.strokeGradient = { stops: (typeof strokeGradientStops === 'string') ? JSON.parse(strokeGradientStops) : strokeGradientStops };
@@ -3147,37 +3151,38 @@ class Shape {
                     for (let r = 0; r < rows; r++) {
                         for (let c = 0; c < cols; c++) {
                             const value = data[r]?.[c] || 0;
-                            if (value === 0) continue;
+                            let fillColor = null; // Use null to indicate "do not draw"
 
-                            let fillColor;
-
-                            switch (value) {
-                                case 1.0: // White
-                                    fillColor = '#FFFFFF';
-                                    break;
-                                case 0.7: // Use the object's full, animated fill style
+                            if (value === 0) {
+                                fillColor = '#000000'; // Black color
+                            } else if (value === 0.7) {
+                                // Only get a fill style if gradType is not 'none'
+                                if (this.gradType !== 'none') {
                                     fillColor = this._createLocalFillStyle();
-                                    break;
-                                default:
-                                    // FIX: Use the value as a direct integer index into the gradient stops array.
-                                    // We subtract 2 because indices start at 2 (0 and 1 are reserved).
-                                    const index = Math.round(value) - 2;
-                                    if (this.gradient.stops && this.gradient.stops[index]) {
-                                        fillColor = this.gradient.stops[index].color;
-                                    } else {
-                                        fillColor = '#FF00FF'; // Use a bright magenta to indicate an error/invalid index
-                                    }
-                                    break;
+                                }
+                            } else if (value === 1.0) {
+                                fillColor = '#FFFFFF'; // White color
+                            } else if (value >= 2) {
+                                // Indexed color
+                                const index = Math.round(value) - 2;
+                                if (this.gradient.stops && this.gradient.stops[index]) {
+                                    fillColor = this.gradient.stops[index].color;
+                                } else {
+                                    fillColor = '#FF00FF'; // Error color
+                                }
                             }
 
-                            this.ctx.fillStyle = fillColor;
-                            this.ctx.globalAlpha = 1.0; // Imported art is always fully opaque
-                            this.ctx.fillRect(
-                                -this.width / 2 + c * cellWidth,
-                                -this.height / 2 + r * cellHeight,
-                                cellWidth,
-                                cellHeight
-                            );
+                            // Only draw the rectangle if a color was assigned
+                            if (fillColor) {
+                                this.ctx.fillStyle = fillColor;
+                                this.ctx.globalAlpha = 1.0;
+                                this.ctx.fillRect(
+                                    -this.width / 2 + c * cellWidth,
+                                    -this.height / 2 + r * cellHeight,
+                                    cellWidth,
+                                    cellHeight
+                                );
+                            }
                         }
                     }
                     this.ctx.globalAlpha = 1.0;

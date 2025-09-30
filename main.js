@@ -316,7 +316,7 @@ function renderPixelArtPreview(canvas, frameDataString, gradientStops = []) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    // Use a checkerboard pattern for the background to show transparency
+    // Draw checkerboard background first
     ctx.fillStyle = '#444';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#666';
@@ -341,38 +341,28 @@ function renderPixelArtPreview(canvas, frameDataString, gradientStops = []) {
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 const value = data[r]?.[c] || 0;
-                if (value === 0) continue; // Skip transparent/empty pixels
+                let fillColor = null; // Use null to indicate "do not draw"
 
-                let fillColor = '#FF00FF'; // Default error color
-
-                // This logic now mirrors the main renderer in Shape.js
-                switch (value) {
-                    case 0.7: // "Fill Style" - render as a semi-transparent gray
-                        fillColor = 'rgba(180, 180, 180, 0.7)';
-                        break;
-                    case 1.0: // White
-                        fillColor = '#FFFFFF';
-                        break;
-                    case 0.3: // "Color 1" from the editor palette
-                        fillColor = gradientStops[0]?.color || '#FF00FF';
-                        break;
-                    case 0.4: // "Color 2" from the editor palette
-                        fillColor = gradientStops[1]?.color || '#00FFFF';
-                        break;
-                    default:
-                        // Handle integer index values from imported GIFs
-                        if (value >= 2) {
-                            const index = Math.round(value) - 2;
-                            if (gradientStops && gradientStops[index]) {
-                                fillColor = gradientStops[index].color;
-                            }
-                        }
-                        break;
+                if (value === 0) {
+                    fillColor = '#000000'; // Black
+                } else if (value === 0.7) {
+                    // For previews, we leave this transparent to represent an unfilled area.
+                    // fillColor remains null.
+                } else if (value >= 2) { // Modern indexed color
+                    const index = Math.round(value) - 2;
+                    if (gradientStops && gradientStops[index]) {
+                        fillColor = gradientStops[index].color;
+                    } else {
+                        fillColor = '#FF00FF'; // Error color
+                    }
+                } else { // Legacy positional color
+                    fillColor = getGradientColorAt(value, gradientStops);
                 }
 
-                ctx.fillStyle = fillColor;
-                // Use floor/ceil to avoid sub-pixel rendering gaps
-                ctx.fillRect(Math.floor(c * cellWidth), Math.floor(r * cellHeight), Math.ceil(cellWidth), Math.ceil(cellHeight));
+                if (fillColor) {
+                    ctx.fillStyle = fillColor;
+                    ctx.fillRect(Math.floor(c * cellWidth), Math.floor(r * cellHeight), Math.ceil(cellWidth), Math.ceil(cellHeight));
+                }
             }
         }
     } catch (e) {
@@ -1507,6 +1497,137 @@ document.addEventListener('DOMContentLoaded', function () {
         const fillBtn = document.getElementById('pixel-editor-fill-btn');
         const toolsContainer = document.getElementById('pixel-editor-tools');
 
+        const shiftGrid = (gridData, direction) => {
+            if (!gridData || gridData.length === 0 || gridData[0].length === 0) {
+                return gridData;
+            }
+            const rows = gridData.length;
+            const cols = gridData[0].length;
+            const newGrid = Array(rows).fill(0).map(() => Array(cols).fill(0));
+
+            switch (direction) {
+                case 'up':
+                    for (let r = 0; r < rows; r++) {
+                        newGrid[r] = gridData[(r + 1) % rows];
+                    }
+                    break;
+                case 'down':
+                    for (let r = 0; r < rows; r++) {
+                        newGrid[r] = gridData[(r - 1 + rows) % rows];
+                    }
+                    break;
+                case 'left':
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            newGrid[r][c] = gridData[r][(c + 1) % cols];
+                        }
+                    }
+                    break;
+                case 'right':
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            newGrid[r][c] = gridData[r][(c - 1 + cols) % cols];
+                        }
+                    }
+                    break;
+            }
+            return newGrid;
+        };
+
+        document.addEventListener('keydown', (e) => {
+            // First, check if the pixel art editor is currently visible.
+            if (!editorModalEl.classList.contains('show')) {
+                return;
+            }
+
+            // Next, check if the user is typing in an input field. If so, do nothing.
+            const isTyping = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+            if (isTyping) {
+                return;
+            }
+
+            let direction = null;
+            if (e.key === 'ArrowUp') direction = 'up';
+            if (e.key === 'ArrowDown') direction = 'down';
+            if (e.key === 'ArrowLeft') direction = 'left';
+            if (e.key === 'ArrowRight') direction = 'right';
+
+            // 1. Handle Frame Navigation (No modifier keys)
+            if (!e.ctrlKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                if (e.key === 'ArrowLeft') prevFrameBtn.click();
+                if (e.key === 'ArrowRight') nextFrameBtn.click();
+                return;
+            }
+
+            // 2. Handle Pixel Shifting (Ctrl or Shift key must be pressed)
+            if ((e.ctrlKey || e.shiftKey) && direction) {
+                e.preventDefault();
+
+                if (e.ctrlKey) {
+                    // --- SHIFT CURRENT FRAME ---
+                    const currentGrid = readGrid();
+                    const newGrid = shiftGrid(currentGrid, direction);
+                    renderGrid(newGrid, currentGradientStops);
+
+                } else if (e.shiftKey) {
+                    // --- SHIFT ALL FRAMES ---
+                    const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                    if (!fieldset) return;
+
+                    const mainTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                    const allFrameItems = Array.from(fieldset.querySelectorAll('.pixel-art-frame-item'));
+                    const newFramesArray = [];
+
+                    allFrameItems.forEach((item, index) => {
+                        const dataTextarea = item.querySelector('.frame-data-input');
+                        const durationInput = item.querySelector('.frame-duration-input');
+
+                        const gridData = JSON.parse(dataTextarea.value);
+                        const newGrid = shiftGrid(gridData, direction);
+                        dataTextarea.value = JSON.stringify(newGrid);
+
+                        // If this is the currently viewed frame, update the visible grid
+                        if (index === currentEditorFrameIndex) {
+                            renderGrid(newGrid, currentGradientStops);
+                        }
+
+                        newFramesArray.push({
+                            data: dataTextarea.value,
+                            duration: parseFloat(durationInput.value) || 0.1
+                        });
+                    });
+
+                    // Update the main hidden textarea that stores all frames
+                    mainTextarea.value = JSON.stringify(newFramesArray);
+                    mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    recordHistory();
+                    showToast(`Shifted pixels in all ${allFrameItems.length} frames!`, 'info');
+                }
+            }
+        });
+
+        if (prevFrameBtn) {
+            prevFrameBtn.addEventListener('click', () => {
+                saveCurrentFrameInEditor(); // Save changes to the current frame
+                // Calculate the previous frame index, wrapping around if necessary
+                let newIndex = currentEditorFrameIndex - 1;
+                if (newIndex < 0) {
+                    newIndex = totalFramesInEditor - 1; // Go to the last frame
+                }
+                loadFrameIntoEditor(newIndex); // Load the new frame
+            });
+        }
+
+        if (nextFrameBtn) {
+            nextFrameBtn.addEventListener('click', () => {
+                saveCurrentFrameInEditor(); // Save changes to the current frame
+                // Calculate the next frame index, wrapping around if necessary
+                const newIndex = (currentEditorFrameIndex + 1) % totalFramesInEditor;
+                loadFrameIntoEditor(newIndex); // Load the new frame
+            });
+        }
+
         // Color Picker Modal elements & iro.js instance
         const colorPickerModalEl = document.getElementById('pixel-art-color-picker-modal');
         const pickerContainer = document.getElementById('modal-picker-container');
@@ -1577,6 +1698,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 btn.addEventListener('click', (e) => {
+                    paletteContainer.querySelector('.active')?.classList.remove('active');
+                    btn.classList.add('active');
+                    currentPaintValue = parseFloat(btn.dataset.value);
+                    if (iroColorPicker) {
+                        iroColorPicker.color.hexString = stop.color;
+                    }
+                });
+
+                btn.addEventListener('dblclick', (e) => {
                     paletteContainer.querySelector('.active')?.classList.remove('active');
                     btn.classList.add('active');
                     currentPaintValue = parseFloat(btn.dataset.value);
@@ -2501,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Get the current user and set new default values
         const user = window.auth.currentUser;
-        const newTitle = (user && user.displayName) ? user.displayName : "SRGB Interactive Effect Builder";
+        const newTitle = "Untitled Effect";
         const newPublisher = (user && user.displayName) ? user.displayName : "Anonymous";
         const newDescription = "";
 
@@ -5680,16 +5810,18 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjectIds.length > 0) {
+            e.preventDefault(); // Prevents the browser's default action (like going back a page)
+            deleteObjects([...selectedObjectIds]);
+        }
+
         if (isDrawingPolyline && (e.key === 'Enter' || e.key === 'Escape')) {
             e.preventDefault();
             finalizePolyline();
             return;
         }
 
-        const target = e.target;
-        const isInputFocused = target.tagName === 'INPUT' ||
-            target.tagName === 'TEXTAREA' ||
-            target.isContentEditable;
+        const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
 
         if (e.ctrlKey || e.metaKey) {
             if (e.key.toLowerCase() === 'z') {
@@ -5731,7 +5863,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Handle Escape key to deselect all objects.
-        if (e.key === 'Escape' && selectedObjectIds.length > 0) {
+        if (e.key === 'Escape' && selectedObjectIds.length > 0 && !document.body.classList.contains('modal-open')) {
             e.preventDefault();
             selectedObjectIds = [];
             updateToolbarState();
@@ -7377,7 +7509,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (valueToSet !== undefined) {
-                    if (propsToScaleDown.includes(propName)) { valueToSet /= 4; }
+                    if (propsToScale.includes(propName)) { valueToSet /= 4; }
                     else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') { valueToSet *= 10; }
                     else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') { valueToSet *= 50; }
 
@@ -7942,10 +8074,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (objectIdMatch) {
                                 const objectId = objectIdMatch[1];
                                 const framesConf = project.configs.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+                                const gradientConf = project.configs.find(c => c.property === `obj${objectId}_gradientStops`);
                                 const objectNameConf = project.configs.find(c => c.property === `obj${objectId}_shape`);
+
                                 if (framesConf && framesConf.default) {
                                     pixelArtCache.push({
                                         framesData: framesConf.default,
+                                        gradientData: gradientConf ? gradientConf.default : '[]',
                                         projectName: project.name,
                                         creatorName: project.creatorName || 'Anonymous',
                                         objectName: objectNameConf?.label.split(':')[0] || 'Pixel Art'
@@ -8014,7 +8149,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const insertBtn = document.createElement('button');
             insertBtn.className = 'btn btn-sm btn-outline-success';
             insertBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> Insert`;
-            insertBtn.addEventListener('click', () => handlePixelArtInsert(art.framesData));
+            insertBtn.addEventListener('click', () => handlePixelArtInsert(art.framesData, art.gradientData));
 
             infoDiv.appendChild(title);
             infoDiv.appendChild(subtitle);
@@ -8027,13 +8162,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             try {
                 const frames = JSON.parse(art.framesData);
+                const gradientStops = JSON.parse(art.gradientData);
                 let currentFrameIndex = 0;
                 let frameTimer = frames[currentFrameIndex]?.duration || 1;
                 let lastTime = 0;
+
+                // This animation loop now correctly calls the main preview renderer
                 const animate = (time) => {
                     if (!lastTime) lastTime = time;
                     const deltaTime = (time - lastTime) / 1000;
                     lastTime = time;
+
                     if (frames.length > 1) {
                         frameTimer -= deltaTime;
                         if (frameTimer <= 0) {
@@ -8041,37 +8180,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             frameTimer += frames[currentFrameIndex]?.duration || 1;
                         }
                     }
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
                     const frame = frames[currentFrameIndex];
                     if (frame && frame.data) {
-                        const data = (typeof frame.data === 'string') ? JSON.parse(frame.data) : frame.data;
-                        if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) return;
-                        const rows = data.length;
-                        const cols = data[0].length;
-                        const cellWidth = canvas.width / cols;
-                        const cellHeight = canvas.height / rows;
-                        for (let r = 0; r < rows; r++) {
-                            for (let c = 0; c < cols; c++) {
-                                const val = data[r]?.[c] || 0;
-                                if (val > 0) {
-                                    if (val === 1.0) ctx.fillStyle = '#FFFFFF';
-                                    else if (val === 0.3) ctx.fillStyle = '#FF00FF';
-                                    else if (val === 0.4) ctx.fillStyle = '#00FFFF';
-                                    else if (val === 0.7) ctx.fillStyle = `rgba(0, 0, 0, 0)`;
-                                    else ctx.fillStyle = `rgba(255, 0, 255, ${val})`;
-                                    ctx.fillRect(c * cellWidth, r * cellHeight, cellWidth, cellHeight);
-                                }
-                            }
-                        }
+                        const frameDataString = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
+                        renderPixelArtPreview(canvas, frameDataString, gradientStops);
                     }
+
                     requestAnimationFrame(animate);
                 };
                 requestAnimationFrame(animate);
             } catch (e) { console.error("Could not animate pixel art:", art, e); }
         });
 
-        // Render Pagination
+        // Render Pagination (this part is unchanged)
         paginationContainer.innerHTML = '';
         if (totalPages > 1) {
             const createPageItem = (text, page, isDisabled = false, isActive = false) => {
@@ -8100,7 +8222,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function handlePixelArtInsert(framesDataString) {
+    function handlePixelArtInsert(framesDataString, gradientDataString) {
         if (selectedObjectIds.length !== 1) {
             showToast("Please select exactly one pixel art object to insert frames into.", "warning");
             return;
@@ -8113,63 +8235,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const newFrames = JSON.parse(framesDataString);
-            if (!Array.isArray(newFrames)) throw new Error("Data is not an array.");
+            const newGradientStops = gradientDataString ? JSON.parse(gradientDataString) : [];
 
-            const fieldset = form.querySelector(`fieldset[data-object-id="${targetObject.id}"]`);
-            const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+            if (!Array.isArray(newFrames)) throw new Error("Frame data is not an array.");
 
-            const existingFrames = JSON.parse(hiddenTextarea.value);
-            const combinedFrames = [...existingFrames, ...newFrames];
+            const objectId = targetObject.id;
 
-            const color1 = targetObject.gradient.color1;
-            const color2 = targetObject.gradient.color2;
+            // Update the central configuration store
+            const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+            if (framesConf) {
+                framesConf.default = JSON.stringify(newFrames);
+            }
+            const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+            if (gradientConf && newGradientStops.length > 0) {
+                gradientConf.default = JSON.stringify(newGradientStops);
+            }
 
-            hiddenTextarea.value = JSON.stringify(combinedFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-            const framesContainer = fieldset.querySelector('.d-flex.flex-column.gap-2');
-            framesContainer.innerHTML = '';
-            combinedFrames.forEach((frame, index) => {
-                const frameItem = document.createElement('div');
-                const textareaId = `frame-data-${targetObject.id}-${index}`;
-                const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
-
-                frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-                frameItem.innerHTML = `
-                    <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="frame-item-header small">Frame #${index + 1}</strong>
-                            <div>
-                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#pixelArtEditorModal"
-                                        data-target-id="${textareaId}" title="Edit Frame">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text" title="Duration (seconds)">
-                                <i class="bi bi-clock"></i>
-                            </span>
-                            <input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.1" step="0.1">
-                        </div>
-                        <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea>
-                    </div>
-                `;
-                framesContainer.appendChild(frameItem);
-                const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, frameDataStr, color1, color2);
+            // Update the live object in the scene
+            targetObject.update({
+                pixelArtFrames: newFrames,
+                gradient: { stops: newGradientStops }
             });
 
+            // Re-render the entire UI to reflect the changes
+            renderForm();
+            updateFormValuesFromObjects();
+            drawFrame();
             recordHistory();
+
+            // Close the modal and show a success message
             const modalInstance = bootstrap.Modal.getInstance(document.getElementById('pixel-art-gallery-modal'));
             modalInstance.hide();
-            showToast(`${newFrames.length} frame(s) inserted successfully!`, 'success');
+            showToast(`Replaced frames and colors successfully!`, 'success');
 
         } catch (error) {
             console.error("Insert error:", error);
@@ -8332,8 +8429,9 @@ document.addEventListener('DOMContentLoaded', function () {
             window.limit(GALLERY_PAGE_SIZE)
         );
 
+        let documentSnapshots; // <-- Variable is declared here
         try {
-            const documentSnapshots = await window.getDocs(nextQuery);
+            documentSnapshots = await window.getDocs(nextQuery); // <-- Variable is assigned here
             const newProjects = [];
             documentSnapshots.forEach((doc) => {
                 const data = doc.data();
@@ -8360,7 +8458,8 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error("Error loading more projects:", error);
             showToast("Failed to load more effects.", 'danger');
         } finally {
-            if (documentSnapshots.docs.length > 0) {
+            // This check now works safely because documentSnapshots is always defined
+            if (documentSnapshots && documentSnapshots.docs.length > 0) {
                 galleryFooter.style.display = 'none';
             }
         }
