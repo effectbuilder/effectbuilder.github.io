@@ -70,32 +70,6 @@ body {
     box-shadow: 0 0 0 2px var(--bs-primary);
 }
 
-.gutter {
-    background-color: var(--bs-tertiary-bg);
-    transition: background-color 0.2s ease-in-out;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.gutter:hover {
-    background-color: var(--bs-primary);
-}
-
-.gutter i {
-    color: var(--bs-secondary-color);
-    font-size: 1.25rem;
-    transition: color 0.2s ease-in-out;
-}
-
-.gutter:hover i {
-    color: var(--bs-light);
-}
-
-.gutter.gutter-horizontal {
-    cursor: ew-resize;
-}
-
 #main-split {
     display: flex;
     flex-direction: row;
@@ -235,4 +209,54 @@ body {
     padding: 10px;
     background-color: rgba(0,0,0,0.2);
     border-radius: 6px;
+}
+
+.color-picker-swatch {
+    width: 100%; height: 2.375rem; border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius); cursor: pointer;
+}
+
+#modal-picker-container {
+    width: 240px; height: 240px;
+}
+
+.gradient-active-stop-controls > .d-flex > .d-flex {
+    align-items: center !important;
+}
+
+/* DELETE THESE UNUSED RULES */
+.custom-input-group {
+    display: flex;
+    align-items: center;
+    width: 110px;
+}
+
+.custom-input-group input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.custom-input-group span {
+    padding: 0.25rem 0.5rem;
+    font-size: .875rem;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-left: 0;
+    border-radius: var(--bs-border-radius);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+#left-panel {
+    width: 650px;
+    flex-shrink: 0; /* Prevents the panel from shrinking */
+}
+
+#right-panel {
+    flex-grow: 1; /* Allows the panel to take up remaining space */
+    min-width: 0; /* Important for flexbox shrinking behavior */
+}
+
+.gradient-stop-marker.is-dragging {
+    transition: none !important;
 }

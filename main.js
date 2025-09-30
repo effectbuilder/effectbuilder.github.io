@@ -486,8 +486,38 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
-    const exportOptionsModalEl = document.getElementById('export-options-modal');
+    // --- START: NEW GENERIC COLOR PICKER LOGIC ---
+    const generalColorPickerModalEl = document.getElementById('general-color-picker-modal');
+    const generalPickerContainer = document.getElementById('general-picker-container');
+    let generalColorPickerModal = null;
+    let iroColorPicker = null;
+    let onColorChangeCallback = null;
 
+    if (generalColorPickerModalEl && generalPickerContainer) {
+        generalColorPickerModal = new bootstrap.Modal(generalColorPickerModalEl);
+
+        iroColorPicker = new iro.ColorPicker(generalPickerContainer, {
+            width: 240,
+            color: "#fff",
+            borderWidth: 1,
+            borderColor: "#fff",
+            layout: [
+                { component: iro.ui.Wheel },
+                { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                { component: iro.ui.Slider, options: { sliderType: 'hue' } },
+                { component: iro.ui.Input, options: { inputType: 'hex' } }
+            ]
+        });
+
+        iroColorPicker.on('color:change', (color) => {
+            if (typeof onColorChangeCallback === 'function') {
+                onColorChangeCallback(color.hexString);
+            }
+        });
+    }
+    // --- END: NEW GENERIC COLOR PICKER LOGIC ---
+
+    const exportOptionsModalEl = document.getElementById('export-options-modal');
     if (exportOptionsModalEl) {
         // Use event delegation for better performance
         exportOptionsModalEl.addEventListener('change', (e) => {
@@ -2895,28 +2925,23 @@ document.addEventListener('DOMContentLoaded', function () {
      * @returns {HTMLDivElement} The generated form group element.
      */
     function createFormControl(config) {
-        const {
-            property, name, label, type, default: defaultValue,
-            values, min, max, description
-        } = config;
+        const { property, name, label, type, default: defaultValue, values, min, max, description } = config;
         const controlId = property || name;
         const formGroup = document.createElement('div');
         formGroup.className = 'mb-3';
 
-        const labelEl = document.createElement('label');
-        labelEl.htmlFor = controlId;
-        labelEl.className = 'form-label';
-        if (label) {
-            const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
-            labelEl.textContent = cleanLabel;
-            if (description) {
-                labelEl.title = description;
-            } else {
-                labelEl.title = `Controls the ${cleanLabel.toLowerCase()}`;
+        if (type !== 'boolean') {
+            const labelEl = document.createElement('label');
+            labelEl.htmlFor = controlId;
+            labelEl.className = 'form-label';
+            if (label) {
+                const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
+                labelEl.textContent = cleanLabel;
+                labelEl.title = description || `Controls the ${cleanLabel.toLowerCase()}`;
             }
+            labelEl.dataset.bsToggle = 'tooltip';
+            formGroup.appendChild(labelEl);
         }
-        labelEl.dataset.bsToggle = 'tooltip';
-        formGroup.appendChild(labelEl);
 
         if (type === 'number') {
             const inputGroup = document.createElement('div');
@@ -3012,97 +3037,94 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } else if (type === 'color') {
             const colorGroup = document.createElement('div');
-            colorGroup.className = 'd-flex align-items-center';
-            const input = document.createElement('input');
-            input.id = controlId;
-            input.className = 'form-control form-control-color';
-            input.name = controlId;
-            input.type = 'color';
-            input.value = defaultValue;
+            colorGroup.className = 'd-flex align-items-center gap-2';
+            const swatch = document.createElement('div');
+            swatch.className = 'color-picker-swatch';
+            swatch.style.backgroundColor = defaultValue;
             const hexInput = document.createElement('input');
             hexInput.type = 'text';
-            hexInput.className = 'form-control ms-2';
-            hexInput.style.width = '100px';
+            hexInput.className = 'form-control';
+            hexInput.style.fontFamily = 'monospace';
             hexInput.value = defaultValue;
-            hexInput.id = `${controlId}_hex`;
-            hexInput.name = `${controlId}_hex`;
-            input.addEventListener('input', () => {
-                hexInput.value = input.value;
-            });
+            hexInput.id = controlId;
+            hexInput.name = controlId;
+
+            const openPicker = () => {
+                if (!iroColorPicker || !generalColorPickerModal) return;
+                onColorChangeCallback = (newColor) => {
+                    swatch.style.backgroundColor = newColor;
+                    hexInput.value = newColor;
+                    hexInput.dispatchEvent(new Event('input', { bubbles: true }));
+                };
+                iroColorPicker.color.hexString = hexInput.value;
+                generalColorPickerModal.show();
+            };
+
+            swatch.addEventListener('click', openPicker);
             hexInput.addEventListener('input', () => {
                 if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
-                    input.value = hexInput.value;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    swatch.style.backgroundColor = hexInput.value;
                 }
             });
-            colorGroup.appendChild(input);
+
+            colorGroup.appendChild(swatch);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
         } else if (type === 'gradientpicker') {
             const container = document.createElement('div');
             container.className = 'gradient-picker-container';
-
             const previewBar = document.createElement('div');
             previewBar.className = 'gradient-preview-bar';
             const previewOverlay = document.createElement('div');
             previewOverlay.className = 'gradient-preview-overlay';
             previewBar.appendChild(previewOverlay);
-
             const stopsContainer = document.createElement('div');
             stopsContainer.className = 'gradient-stops-container';
-
             const activeControlsContainer = document.createElement('div');
             activeControlsContainer.className = 'gradient-active-stop-controls';
             activeControlsContainer.style.display = 'none';
-
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `
-                <strong>Add:</strong> Click empty space below bar | 
-                <strong>Select/Edit:</strong> Click a marker | 
-                <strong>Delete:</strong> Drag a marker down
-            `;
-
+            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Select/Edit:</strong> Click a marker | <strong>Delete:</strong> Drag marker down | <strong>Quick Edit:</strong> Double-click a marker`;
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
             hiddenInput.className = 'd-none';
             hiddenInput.value = defaultValue;
+            let stops = []; let activeStopId = -1; let nextStopId = 0;
+            let lastMarkerClick = { id: null, time: 0 };
 
-            let stops = [];
-            let activeStopId = -1;
-            let nextStopId = 0;
-            let isDraggingStop = false;
-
-            const updateGradient = () => {
+            // NEW: Lightweight function for real-time preview updates
+            const updatePreviewOnly = () => {
                 stops.sort((a, b) => a.position - b.position);
-                const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
-                hiddenInput.value = JSON.stringify(stopsToSave);
-
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 let isSharp = false;
                 if (fieldset) {
                     const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
-                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
-                    if (sharpGradientToggle) isSharp = sharpGradientToggle.checked;
+                    const sharpToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpToggle) isSharp = sharpToggle.checked;
                 }
-
                 let gradientString;
                 if (stops.length < 2) {
                     gradientString = stops.length === 1 ? stops[0].color : 'transparent';
                 } else if (isSharp) {
-                    let parts = [];
-                    parts.push(`${stops[0].color} ${stops[0].position * 100}%`);
+                    let parts = [`${stops[0].color} ${stops[0].position * 100}%`];
                     for (let i = 1; i < stops.length; i++) {
-                        parts.push(`${stops[i - 1].color} ${stops[i].position * 100}%`);
-                        parts.push(`${stops[i].color} ${stops[i].position * 100}%`);
+                        parts.push(`${stops[i - 1].color} ${stops[i].position * 100}%`, `${stops[i].color} ${stops[i].position * 100}%`);
                     }
                     gradientString = `linear-gradient(to right, ${parts.join(', ')})`;
                 } else {
                     gradientString = `linear-gradient(to right, ${stops.map(s => `${s.color} ${s.position * 100}%`).join(', ')})`;
                 }
                 previewOverlay.style.background = gradientString;
+            };
 
+            // MODIFIED: This function now calls the lightweight preview and then handles the heavy update
+            const updateGradient = () => {
+                updatePreviewOnly();
+                const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
+                hiddenInput.value = JSON.stringify(stopsToSave);
+                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset && !isRestoring) {
                     hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -3120,7 +3142,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     stopsContainer.appendChild(marker);
                 });
             };
-
             const updateActiveControls = () => {
                 const activeStop = stops.find(s => s.id === activeStopId);
                 if (!activeStop) {
@@ -3128,11 +3149,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 activeControlsContainer.style.display = '';
-                activeControlsContainer.querySelector('.active-color-input').value = activeStop.color;
                 activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
                 activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
             };
-
             const setActiveStop = (id) => {
                 activeStopId = id;
                 renderStops();
@@ -3140,16 +3159,23 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             activeControlsContainer.innerHTML = `
-                <div class="row gx-2 align-items-center">
-                    <div class="col-auto"><label class="col-form-label-sm">Color:</label></div>
-                    <div class="col-auto"><input type="color" class="form-control form-control-color form-control-sm active-color-input"></div>
-                    <div class="col-auto"><input type="text" class="form-control form-control-sm active-hex-input" style="width: 90px;"></div>
-                    <div class="col-auto ms-auto"><label class="col-form-label-sm">Position:</label></div>
-                    <div class="col-auto"><div class="input-group input-group-sm" style="width: 110px;"><input type="number" class="form-control active-position-input" min="0" max="100" step="0.1"><span class="input-group-text">%</span></div></div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="col-form-label-sm flex-shrink-0">Color:</label>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <input type="text" class="form-control active-hex-input">
+                    </div>
                 </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="col-form-label-sm flex-shrink-0">Position:</label>
+                    <div class="input-group input-group-sm" style="width: 110px;">
+                        <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+            </div>
             `;
 
-            const activeColorInput = activeControlsContainer.querySelector('.active-color-input');
             const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
             const activePosInput = activeControlsContainer.querySelector('.active-position-input');
 
@@ -3162,27 +3188,48 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
 
-            activeColorInput.addEventListener('input', () => {
-                activeHexInput.value = activeColorInput.value;
-                updateActiveStopProperty('color', activeColorInput.value);
-            });
             activeHexInput.addEventListener('input', () => {
                 if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) {
-                    activeColorInput.value = activeHexInput.value;
                     updateActiveStopProperty('color', activeHexInput.value);
                 }
             });
-            activePosInput.addEventListener('input', () => {
-                let newPos = parseFloat(activePosInput.value) / 100;
-                updateActiveStopProperty('position', Math.max(0, Math.min(1, newPos)));
-            });
+            activePosInput.addEventListener('input', () => { updateActiveStopProperty('position', Math.max(0, Math.min(1, parseFloat(activePosInput.value) / 100))); });
 
             stopsContainer.addEventListener('mousedown', (e) => {
                 const target = e.target;
                 if (target.classList.contains('gradient-stop-marker')) {
-                    isDraggingStop = true;
+                    e.preventDefault();
                     const id = parseInt(target.dataset.id, 10);
+                    const now = new Date().getTime();
+                    const DOUBLE_CLICK_THRESHOLD = 300;
+
+                    // This call rebuilds the markers, which was the source of the problem.
                     setActiveStop(id);
+
+                    // --- START OF THE FIX ---
+                    // After setActiveStop runs, we must get a NEW reference to the active marker.
+                    const markerToDrag = stopsContainer.querySelector('.gradient-stop-marker.active');
+                    if (!markerToDrag) return; // Exit if no marker is found.
+                    // --- END OF THE FIX ---
+
+                    if (now - lastMarkerClick.time < DOUBLE_CLICK_THRESHOLD && lastMarkerClick.id === id) {
+                        lastMarkerClick = { id: null, time: 0 };
+                        const stopToEdit = stops.find(s => s.id === id);
+                        if (stopToEdit && iroColorPicker) {
+                            onColorChangeCallback = (newColor) => {
+                                activeHexInput.value = newColor;
+                                updateActiveStopProperty('color', newColor);
+                            };
+                            iroColorPicker.color.hexString = stopToEdit.color;
+                            generalColorPickerModal.show();
+                        }
+                        return;
+                    }
+                    lastMarkerClick = { id: id, time: now };
+
+                    markerToDrag.classList.add('is-dragging');
+
+                    let isDraggingStop = true;
                     const startX = e.clientX;
                     const stopToDrag = stops.find(s => s.id === id);
                     const initialPosition = stopToDrag ? stopToDrag.position : 0;
@@ -3192,32 +3239,36 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (!isDraggingStop) return;
                         const dx = moveEvent.clientX - startX;
                         const posDelta = dx / containerWidth;
-                        let newPos = initialPosition + posDelta;
-                        newPos = Math.max(0, Math.min(1, newPos));
-                        const currentActiveStop = stops.find(s => s.id === activeStopId);
-                        if (currentActiveStop) currentActiveStop.position = newPos;
-                        const activeMarker = stopsContainer.querySelector('.gradient-stop-marker.active');
-                        if (activeMarker) activeMarker.style.left = `${newPos * 100}%`;
+                        let newPos = Math.max(0, Math.min(1, initialPosition + posDelta));
+                        stopToDrag.position = newPos;
+
+                        // Use our new, correct reference to the marker
+                        markerToDrag.style.left = `${newPos * 100}%`;
+
                         activePosInput.value = (newPos * 100).toFixed(1);
                         updateGradient();
+
                         if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
                             const indexToDelete = stops.findIndex(s => s.id === activeStopId);
                             if (indexToDelete > -1) stops.splice(indexToDelete, 1);
                             setActiveStop(-1);
-                            onMouseUp();
+                            // onMouseUp(); // This line was correctly removed previously
                         }
                     };
+
                     const onMouseUp = () => {
                         window.removeEventListener('mousemove', onMouseMove);
-                        window.removeEventListener('mouseup', onMouseUp);
+                        markerToDrag.classList.remove('is-dragging');
+
                         if (isDraggingStop) {
                             isDraggingStop = false;
-                            renderStops();
-                            updateGradient();
+                            updateGradient(); // No need to call renderStops() here, updateGradient handles it.
                         }
                     };
+
                     window.addEventListener('mousemove', onMouseMove);
-                    window.addEventListener('mouseup', onMouseUp);
+                    window.addEventListener('mouseup', onMouseUp, { once: true });
+
                 } else if (e.target === stopsContainer) {
                     const rect = stopsContainer.getBoundingClientRect();
                     const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -3233,33 +3284,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 const loadedStops = JSON.parse(defaultValue);
                 stops = loadedStops.map(s => ({ ...s, id: nextStopId++ }));
             } catch (e) {
-                stops = [
-                    { color: '#000000', position: 0, id: nextStopId++ },
-                    { color: '#FFFFFF', position: 1, id: nextStopId++ }
-                ];
+                stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }];
             }
-            
             container.appendChild(previewBar);
             container.appendChild(stopsContainer);
             container.appendChild(activeControlsContainer);
             container.appendChild(helpText);
             container.appendChild(hiddenInput);
             formGroup.appendChild(container);
-
             setActiveStop(stops.length > 0 ? stops[0].id : -1);
-            
             setTimeout(() => {
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset) {
                     const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
-                    const sharpGradientToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
-                    if (sharpGradientToggle) {
-                        sharpGradientToggle.addEventListener('input', updateGradient);
-                    }
+                    const sharpToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
+                    if (sharpToggle) sharpToggle.addEventListener('input', updateGradient);
                     updateGradient();
                 }
             }, 0);
-
             hiddenInput.addEventListener('rebuild', (e) => {
                 const newStops = e.detail.stops || [];
                 stops = newStops.map(s => ({ ...s, id: nextStopId++ }));
@@ -3267,7 +3309,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 setActiveStop(currentActiveStop ? activeStopId : (stops[0]?.id || -1));
                 updateGradient();
             });
-
         } else if (type === 'sensor') {
             const select = document.createElement('select');
             select.id = controlId;
@@ -6042,12 +6083,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const newObjectConfigs = getDefaultObjectConfig(newId).filter(conf => {
                     const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                    // Explicitly include strokeGradientStops as it's essential for new polylines
                     if (propName === 'strokeGradientStops') return true;
                     return (shapePropertyMap['polyline'] || []).includes(propName);
                 });
 
-                // Manually override the defaults for the new configs to match the instantiated shape
                 const enableStrokeConf = newObjectConfigs.find(c => c.property === `obj${newId}_enableStroke`);
                 if (enableStrokeConf) {
                     enableStrokeConf.default = 'true';
@@ -6065,7 +6104,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 renderForm();
                 updateFormValuesFromObjects();
 
-                // Correctly start the preview line FROM and TO the first click location
                 previewLine.startX = x;
                 previewLine.startY = y;
                 previewLine.endX = x;
@@ -6089,7 +6127,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 updateFormValuesFromObjects();
 
-                // Update the preview line's start to this new point
                 previewLine.startX = x;
                 previewLine.startY = y;
             }
@@ -6110,7 +6147,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (activeObject && !activeObject.locked) {
             const handle = activeObject.getHandleAtPoint(x, y);
             if (handle) {
-                // NEW: Handle Alt+Click to delete a node
                 if (e.altKey && handle.type === 'node') {
                     const nodeDeleted = activeObject.deleteNode(handle.index);
                     if (nodeDeleted) {
@@ -6118,7 +6154,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         recordHistory();
                         drawFrame();
                     }
-                    return; // Stop further processing
+                    return;
                 }
 
                 if (handle.type === 'rotation') {
@@ -6174,23 +6210,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 syncPanelsWithSelection();
                 drawFrame();
 
-                // If a single object was newly selected, scroll its panel into view.
                 if (isNewlySelected && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                     const fieldset = form.querySelector(`fieldset[data-object-id="${hitObject.id}"]`);
                     if (fieldset) {
-                        // A short delay allows the collapse animation to start before scrolling.
                         setTimeout(() => {
                             fieldset.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }, 200);
                     }
-                }
-
-                if (!hitObject.locked) {
-                    isDragging = true;
-                    initialDragState = selectedObjectIds.map(id => {
-                        const obj = objects.find(o => o.id === id);
-                        return { id, x: obj.x, y: obj.y };
-                    });
                 }
             } else {
                 selectedObjectIds = [];
@@ -6201,8 +6227,53 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const handleMouseMove = (moveEvent) => {
-            moveEvent.preventDefault();
             const { x, y } = getCanvasCoordinates(moveEvent);
+
+            if (!isDragging && !isResizing && !isRotating && !isDraggingNode && moveEvent.buttons === 1) {
+                const dx = x - dragStartX;
+                const dy = y - dragStartY;
+                if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                    const hitObject = [...objects].reverse().find(obj => obj.isPointInside(dragStartX, dragStartY));
+                    if (hitObject && !selectedObjectIds.includes(hitObject.id)) {
+                        if (!moveEvent.shiftKey && !moveEvent.ctrlKey && !moveEvent.metaKey) {
+                            selectedObjectIds = [hitObject.id];
+                            updateToolbarState();
+                            syncPanelsWithSelection();
+                        }
+                    }
+                    if (hitObject && !hitObject.locked) {
+                        isDragging = true;
+                        initialDragState = selectedObjectIds.map(id => {
+                            const obj = objects.find(o => o.id === id);
+                            return { id, x: obj.x, y: obj.y };
+                        });
+                    }
+                }
+            }
+
+            if (isDraggingNode) {
+                const { id, nodeIndex } = activeNodeDragState;
+                const shape = objects.find(o => o.id === id);
+                if (!shape) return;
+
+                const center = shape.getCenter();
+                const staticAngle = -shape.getRenderAngle();
+                const s = Math.sin(staticAngle);
+                const c = Math.cos(staticAngle);
+                const dx = x - center.x;
+                const dy = y - center.y;
+                const localX = dx * c - dy * s;
+                const localY = dx * s + dy * c;
+
+                let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
+                nodes[nodeIndex].x = localX + shape.width / 2;
+                nodes[nodeIndex].y = localY + shape.height / 2;
+                shape.update({ polylineNodes: nodes });
+                debouncedUpdateForm();
+                needsRedraw = true;
+                return;
+            }
+
             if (isRotating) {
                 const initial = initialDragState[0];
                 const obj = objects.find(o => o.id === initial.id);
@@ -6210,9 +6281,252 @@ document.addEventListener('DOMContentLoaded', function () {
                     const center = obj.getCenter();
                     const currentAngle = Math.atan2(y - center.y, x - center.x);
                     const angleDelta = currentAngle - initial.startAngle;
-                    obj.rotation = (initial.initialObjectAngle + angleDelta) * 180 / Math.PI;
-                    drawFrame();
+                    obj.update({ rotation: (initial.initialObjectAngle + angleDelta) * 180 / Math.PI });
+                    debouncedUpdateForm();
+                    needsRedraw = true;
                 }
+            } else if (isResizing) {
+                // ... (resize logic, which remains complex)
+                snapLines = [];
+                const SNAP_THRESHOLD = 10;
+                const initial = initialDragState[0];
+                let mouseX = x;
+                let mouseY = y;
+                snapLines = [];
+
+                if (!cachedSnapTargets) {
+                    cachedSnapTargets = [];
+                    const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
+                    otherObjects.forEach(otherObj => cachedSnapTargets.push(...getWorldPoints(otherObj)));
+                    cachedSnapTargets.push(
+                        { x: canvas.width / 2, y: canvas.height / 2, type: 'center' }, { x: canvas.width / 2, y: 0, type: 'edge' }, { x: canvas.width / 2, y: canvas.height, type: 'edge' }, { x: 0, y: canvas.height / 2, type: 'edge' }, { x: canvas.width, y: canvas.height / 2, type: 'edge' }
+                    );
+                }
+
+                const unSnappedState = (() => {
+                    const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
+                    const anchorPoint = initial.anchorPoint;
+                    const resizeAngle = tempObj.rotation * Math.PI / 180;
+                    const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                    if (isSideHandle) {
+                        const dragVecX = x - dragStartX;
+                        const dragVecY = y - dragStartY;
+                        const s = Math.sin(resizeAngle);
+                        const c = Math.cos(resizeAngle);
+                        let newWidth = initial.initialWidth;
+                        let newHeight = initial.initialHeight;
+                        let centerShiftX = 0, centerShiftY = 0;
+                        if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
+                            const change = dragVecX * c + dragVecY * s;
+                            newWidth += activeResizeHandle === 'left' ? -change : change;
+                            centerShiftX = (change / 2) * c;
+                            centerShiftY = (change / 2) * s;
+                        } else {
+                            const change = -dragVecX * s + dragVecY * c;
+                            newHeight += activeResizeHandle === 'top' ? -change : change;
+                            centerShiftX = (change / 2) * -s;
+                            centerShiftY = (change / 2) * c;
+                        }
+                        const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
+                        const newCenterX = initialCenter.x + centerShiftX;
+                        const newCenterY = initialCenter.y + centerShiftY;
+                        tempObj.width = newWidth;
+                        tempObj.height = newHeight;
+                        tempObj.x = newCenterX - tempObj.width / 2;
+                        tempObj.y = newCenterY - tempObj.height / 2;
+                    } else {
+                        const worldVecX = x - anchorPoint.x;
+                        const worldVecY = y - anchorPoint.y;
+                        const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
+                        const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
+                        const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
+                        const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
+                        tempObj.width = localVecX * handleXSign;
+                        tempObj.height = localVecY * handleYSign;
+                        const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
+                        const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
+                        const newCenterX = anchorPoint.x + worldSizingVecX / 2;
+                        const newCenterY = anchorPoint.y + worldSizingVecY / 2;
+                        tempObj.x = newCenterX - tempObj.width / 2;
+                        tempObj.y = newCenterY - tempObj.height / 2;
+                    }
+                    return tempObj;
+                })();
+
+                const ghostPoints = getWorldPoints(unSnappedState);
+                let pointsToSnap;
+                const isHorizontalOnly = activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                const isVerticalOnly = activeResizeHandle === 'top' || activeResizeHandle === 'bottom';
+
+                if (isHorizontalOnly) {
+                    pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
+                } else if (isVerticalOnly) {
+                    pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
+                } else {
+                    pointsToSnap = ghostPoints;
+                }
+
+                const hSnaps = [], vSnaps = [];
+
+                pointsToSnap.forEach(point => {
+                    cachedSnapTargets.forEach(target => {
+                        if (point.type === target.type) {
+                            if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x });
+                            if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y });
+                        }
+                    });
+                });
+
+                if (!isVerticalOnly && hSnaps.length > 0) {
+                    hSnaps.sort((a, b) => a.dist - b.dist);
+                    mouseX += hSnaps[0].adj;
+                    snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2 });
+                }
+                if (!isHorizontalOnly && vSnaps.length > 0) {
+                    vSnaps.sort((a, b) => a.dist - b.dist);
+                    mouseY += vSnaps[0].adj;
+                    snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2 });
+                }
+
+                const obj = objects.find(o => o.id === initial.id);
+                if (obj) {
+                    const finalState = (() => {
+                        const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
+                        const anchorPoint = initial.anchorPoint;
+                        const resizeAngle = tempObj.rotation * Math.PI / 180;
+                        const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                        if (isSideHandle) {
+                            const dragVecX = mouseX - dragStartX;
+                            const dragVecY = mouseY - dragStartY;
+                            const s = Math.sin(resizeAngle);
+                            const c = Math.cos(resizeAngle);
+                            let newWidth = initial.initialWidth;
+                            let newHeight = initial.initialHeight;
+                            let centerShiftX = 0, centerShiftY = 0;
+                            if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
+                                const change = dragVecX * c + dragVecY * s;
+                                newWidth += activeResizeHandle === 'left' ? -change : change;
+                                centerShiftX = (change / 2) * c;
+                                centerShiftY = (change / 2) * s;
+                            } else {
+                                const change = -dragVecX * s + dragVecY * c;
+                                newHeight += activeResizeHandle === 'top' ? -change : change;
+                                centerShiftX = (change / 2) * -s;
+                                centerShiftY = (change / 2) * c;
+                            }
+                            const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
+                            const newCenterX = initialCenter.x + centerShiftX;
+                            const newCenterY = initialCenter.y + centerShiftY;
+                            tempObj.width = newWidth;
+                            tempObj.height = newHeight;
+                            tempObj.x = newCenterX - tempObj.width / 2;
+                            tempObj.y = newCenterY - tempObj.height / 2;
+                        } else {
+                            const worldVecX = mouseX - anchorPoint.x;
+                            const worldVecY = mouseY - anchorPoint.y;
+                            const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
+                            const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
+                            const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
+                            const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
+                            tempObj.width = localVecX * handleXSign;
+                            tempObj.height = localVecY * handleYSign;
+                            const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
+                            const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
+                            const newCenterX = anchorPoint.x + worldSizingVecX / 2;
+                            const newCenterY = anchorPoint.y + worldSizingVecY / 2;
+                            tempObj.x = newCenterX - tempObj.width / 2;
+                            tempObj.y = newCenterY - tempObj.height / 2;
+                        }
+                        return tempObj;
+                    })();
+
+                    obj.update({
+                        x: Math.round(finalState.x),
+                        y: Math.round(finalState.y),
+                        width: Math.round(Math.max(10, finalState.width)),
+                        height: Math.round(Math.max(10, finalState.height)),
+                        innerDiameter: obj.shape === 'ring' ? Math.round(obj.width * initial.diameterRatio) : undefined
+                    });
+                    debouncedUpdateForm();
+                    needsRedraw = true;
+
+                }
+            } else if (isDragging) {
+                snapLines = [];
+                const dx = x - dragStartX;
+                const dy = y - dragStartY;
+                const SNAP_THRESHOLD = 10;
+                let finalDx = dx;
+                let finalDy = dy;
+
+                if (!cachedSnapTargets) {
+                    cachedSnapTargets = [];
+                    const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
+                    otherObjects.forEach(otherObj => {
+                        cachedSnapTargets.push(...getWorldPoints(otherObj));
+                    });
+                    cachedSnapTargets.push(
+                        { x: canvas.width / 2, y: canvas.height / 2, type: 'center' },
+                        { x: canvas.width / 2, y: 0, type: 'edge' },
+                        { x: canvas.width / 2, y: canvas.height, type: 'edge' },
+                        { x: 0, y: canvas.height / 2, type: 'edge' },
+                        { x: canvas.width, y: canvas.height / 2, type: 'edge' }
+                    );
+                }
+
+                const hSnaps = [], vSnaps = [];
+
+                initialDragState.forEach(state => {
+                    const obj = objects.find(o => o.id === state.id);
+                    if (obj) {
+                        const originalX = obj.x;
+                        const originalY = obj.y;
+                        obj.x = state.x + dx;
+                        obj.y = state.y + dy;
+                        const selectedPoints = getWorldPoints(obj);
+                        selectedPoints.forEach(point => {
+                            cachedSnapTargets.forEach(target => {
+                                if (point.type === target.type) {
+                                    if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x, snapType: point.type });
+                                    if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y, snapType: point.type });
+                                }
+                            });
+                        });
+                        obj.x = originalX;
+                        obj.y = originalY;
+                    }
+                });
+
+                if (hSnaps.length > 0) {
+                    hSnaps.sort((a, b) => a.dist - b.dist);
+                    finalDx += hSnaps[0].adj;
+                    snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2, snapType: hSnaps[0].snapType });
+                }
+                if (vSnaps.length > 0) {
+                    vSnaps.sort((a, b) => a.dist - b.dist);
+                    finalDy += vSnaps[0].adj;
+                    snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2, snapType: vSnaps[0].snapType });
+                }
+
+                initialDragState.forEach(state => {
+                    const obj = objects.find(o => o.id === state.id);
+                    if (obj) {
+                        let newX = state.x + finalDx;
+                        let newY = state.y + finalDy;
+                        if (constrainToCanvas) {
+                            const tempObj = new Shape({ ...obj, x: newX, y: newY });
+                            const { minX, minY, maxX, maxY } = getBoundingBox(tempObj);
+                            if (minX < 0) newX -= minX;
+                            if (maxX > canvas.width) newX -= (maxX - canvas.width);
+                            if (minY < 0) newY -= minY;
+                            if (maxY > canvas.height) newY -= (maxY - canvas.height);
+                        }
+                        obj.x = newX;
+                        obj.y = newY;
+                    }
+                });
+                debouncedUpdateForm();
+                needsRedraw = true;
             }
         };
 
@@ -6243,12 +6557,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (obj.innerDiameter) obj.innerDiameter = Math.round(obj.innerDiameter);
                         if (obj.fontSize) obj.fontSize = Math.round(obj.fontSize);
                         obj.rotation = Math.round(obj.rotation);
-
-                        // --- START OF FIX ---
-                        // Call the object's update method to save its new rotation
-                        // as the "base" rotation for the audio reactivity system.
                         obj.update({ rotation: obj.rotation });
-                        // --- END OF FIX ---
                     }
                 });
                 updateFormValuesFromObjects();
@@ -6266,7 +6575,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp, { once: true });
-    });
+    });;
 
 
     const debouncedUpdateForm = debounce(updateFormValuesFromObjects, 10);
@@ -6276,343 +6585,38 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {MouseEvent} e - The mousemove event object.
      */
     canvasContainer.addEventListener('mousemove', e => {
-        // This part only updates the state. The 'animate' loop handles the redraw.
         if (isDrawingPolyline && previewLine.active) {
             const { x, y } = getCanvasCoordinates(e);
             previewLine.endX = x;
             previewLine.endY = y;
-            // NOTE: We do NOT call drawFrame() here. We just update the state.
             return;
         }
 
-        // --- This is the original logic for dragging, resizing, and showing coordinates ---
         if (coordsDisplay) {
             const { x, y } = getCanvasCoordinates(e);
             coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}: (${Math.round(x)}, ${Math.round(y)})`;
         }
 
-        e.preventDefault();
-        const { x, y } = getCanvasCoordinates(e);
-
-        if (isDraggingNode) {
-            const { id, nodeIndex } = activeNodeDragState;
-            const shape = objects.find(o => o.id === id);
-            if (!shape) return;
-
-            const center = shape.getCenter();
-            const staticAngle = -shape.getRenderAngle();
-            const s = Math.sin(staticAngle);
-            const c = Math.cos(staticAngle);
-            const dx = x - center.x;
-            const dy = y - center.y;
-            const localX = dx * c - dy * s;
-            const localY = dx * s + dy * c;
-
-            let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
-
-            nodes[nodeIndex].x = localX + shape.width / 2;
-            nodes[nodeIndex].y = localY + shape.height / 2;
-
-            shape.update({ polylineNodes: nodes });
-
-            updateFormValuesFromObjects();
-            drawFrame();
+        if (isDragging || isResizing || isRotating || isDraggingNode) {
             return;
         }
 
-        if (!isDragging && !isResizing && !isRotating && e.buttons === 1 && initialDragState.length > 0) {
-            const dx = x - dragStartX;
-            const dy = y - dragStartY;
-            if (Math.sqrt(dx * dx + dy * dy) > 5) {
-                isDragging = true;
-                const hitObject = [...objects].reverse().find(obj => obj.isPointInside(dragStartX, dragStartY));
-                if (hitObject && !selectedObjectIds.includes(hitObject.id)) {
-                    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                        selectedObjectIds = [hitObject.id];
-                        updateToolbarState();
-                        syncPanelsWithSelection();
-                    }
+        const { x, y } = getCanvasCoordinates(e);
+        let cursor = 'default';
+        const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+
+        if (topObject) {
+            cursor = 'pointer';
+            if (selectedObjectIds.includes(topObject.id)) {
+                const handle = topObject.getHandleAtPoint(x, y);
+                if (handle) {
+                    cursor = handle.cursor;
+                } else if (!topObject.locked) {
+                    cursor = 'move';
                 }
             }
         }
-
-        if (isRotating) {
-            const initial = initialDragState[0];
-            const obj = objects.find(o => o.id === initial.id);
-            if (obj) {
-                const center = obj.getCenter();
-                const currentAngle = Math.atan2(y - center.y, x - center.x);
-                const angleDelta = currentAngle - initial.startAngle;
-
-                // Use obj.update to correctly apply the new rotation and trigger a redraw.
-                obj.update({ rotation: (initial.initialObjectAngle + angleDelta) * 180 / Math.PI });
-            }
-            // This is a necessary flag to ensure the animation loop knows to pause auto-rotation.
-            objects.forEach(o => {
-                if (o.id === initialDragState[0].id) {
-                    o.isBeingManuallyRotated = true;
-                }
-            });
-            debouncedUpdateForm();
-            needsRedraw = true;
-
-        } else if (isResizing) {
-            snapLines = [];
-            const SNAP_THRESHOLD = 10;
-            const initial = initialDragState[0];
-            let mouseX = x;
-            let mouseY = y;
-            snapLines = [];
-
-            if (!cachedSnapTargets) {
-                cachedSnapTargets = [];
-                const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
-                otherObjects.forEach(otherObj => cachedSnapTargets.push(...getWorldPoints(otherObj)));
-                cachedSnapTargets.push(
-                    { x: canvas.width / 2, y: canvas.height / 2, type: 'center' }, { x: canvas.width / 2, y: 0, type: 'edge' }, { x: canvas.width / 2, y: canvas.height, type: 'edge' }, { x: 0, y: canvas.height / 2, type: 'edge' }, { x: canvas.width, y: canvas.height / 2, type: 'edge' }
-                );
-            }
-
-            const unSnappedState = (() => {
-                const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
-                const anchorPoint = initial.anchorPoint;
-                const resizeAngle = tempObj.rotation * Math.PI / 180;
-                const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
-                if (isSideHandle) {
-                    const dragVecX = x - dragStartX;
-                    const dragVecY = y - dragStartY;
-                    const s = Math.sin(resizeAngle);
-                    const c = Math.cos(resizeAngle);
-                    let newWidth = initial.initialWidth;
-                    let newHeight = initial.initialHeight;
-                    let centerShiftX = 0, centerShiftY = 0;
-                    if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
-                        const change = dragVecX * c + dragVecY * s;
-                        newWidth += activeResizeHandle === 'left' ? -change : change;
-                        centerShiftX = (change / 2) * c;
-                        centerShiftY = (change / 2) * s;
-                    } else {
-                        const change = -dragVecX * s + dragVecY * c;
-                        newHeight += activeResizeHandle === 'top' ? -change : change;
-                        centerShiftX = (change / 2) * -s;
-                        centerShiftY = (change / 2) * c;
-                    }
-                    const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
-                    const newCenterX = initialCenter.x + centerShiftX;
-                    const newCenterY = initialCenter.y + centerShiftY;
-                    tempObj.width = newWidth;
-                    tempObj.height = newHeight;
-                    tempObj.x = newCenterX - tempObj.width / 2;
-                    tempObj.y = newCenterY - tempObj.height / 2;
-                } else {
-                    const worldVecX = x - anchorPoint.x;
-                    const worldVecY = y - anchorPoint.y;
-                    const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
-                    const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
-                    const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
-                    const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
-                    tempObj.width = localVecX * handleXSign;
-                    tempObj.height = localVecY * handleYSign;
-                    const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
-                    const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
-                    const newCenterX = anchorPoint.x + worldSizingVecX / 2;
-                    const newCenterY = anchorPoint.y + worldSizingVecY / 2;
-                    tempObj.x = newCenterX - tempObj.width / 2;
-                    tempObj.y = newCenterY - tempObj.height / 2;
-                }
-                return tempObj;
-            })();
-
-            const ghostPoints = getWorldPoints(unSnappedState);
-            let pointsToSnap;
-            const isHorizontalOnly = activeResizeHandle === 'left' || activeResizeHandle === 'right';
-            const isVerticalOnly = activeResizeHandle === 'top' || activeResizeHandle === 'bottom';
-
-            if (isHorizontalOnly) {
-                pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
-            } else if (isVerticalOnly) {
-                pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
-            } else {
-                pointsToSnap = ghostPoints;
-            }
-
-            const hSnaps = [], vSnaps = [];
-
-            pointsToSnap.forEach(point => {
-                cachedSnapTargets.forEach(target => {
-                    if (point.type === target.type) {
-                        if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x });
-                        if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y });
-                    }
-                });
-            });
-
-            if (!isVerticalOnly && hSnaps.length > 0) {
-                hSnaps.sort((a, b) => a.dist - b.dist);
-                mouseX += hSnaps[0].adj;
-                snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2 });
-            }
-            if (!isHorizontalOnly && vSnaps.length > 0) {
-                vSnaps.sort((a, b) => a.dist - b.dist);
-                mouseY += vSnaps[0].adj;
-                snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2 });
-            }
-
-            const obj = objects.find(o => o.id === initial.id);
-            if (obj) {
-                const finalState = (() => {
-                    const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
-                    const anchorPoint = initial.anchorPoint;
-                    const resizeAngle = tempObj.rotation * Math.PI / 180;
-                    const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
-                    if (isSideHandle) {
-                        const dragVecX = mouseX - dragStartX;
-                        const dragVecY = mouseY - dragStartY;
-                        const s = Math.sin(resizeAngle);
-                        const c = Math.cos(resizeAngle);
-                        let newWidth = initial.initialWidth;
-                        let newHeight = initial.initialHeight;
-                        let centerShiftX = 0, centerShiftY = 0;
-                        if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
-                            const change = dragVecX * c + dragVecY * s;
-                            newWidth += activeResizeHandle === 'left' ? -change : change;
-                            centerShiftX = (change / 2) * c;
-                            centerShiftY = (change / 2) * s;
-                        } else {
-                            const change = -dragVecX * s + dragVecY * c;
-                            newHeight += activeResizeHandle === 'top' ? -change : change;
-                            centerShiftX = (change / 2) * -s;
-                            centerShiftY = (change / 2) * c;
-                        }
-                        const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
-                        const newCenterX = initialCenter.x + centerShiftX;
-                        const newCenterY = initialCenter.y + centerShiftY;
-                        tempObj.width = newWidth;
-                        tempObj.height = newHeight;
-                        tempObj.x = newCenterX - tempObj.width / 2;
-                        tempObj.y = newCenterY - tempObj.height / 2;
-                    } else {
-                        const worldVecX = mouseX - anchorPoint.x;
-                        const worldVecY = mouseY - anchorPoint.y;
-                        const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
-                        const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
-                        const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
-                        const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
-                        tempObj.width = localVecX * handleXSign;
-                        tempObj.height = localVecY * handleYSign;
-                        const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
-                        const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
-                        const newCenterX = anchorPoint.x + worldSizingVecX / 2;
-                        const newCenterY = anchorPoint.y + worldSizingVecY / 2;
-                        tempObj.x = newCenterX - tempObj.width / 2;
-                        tempObj.y = newCenterY - tempObj.height / 2;
-                    }
-                    return tempObj;
-                })();
-
-                obj.update({
-                    x: Math.round(finalState.x),
-                    y: Math.round(finalState.y),
-                    width: Math.round(Math.max(10, finalState.width)),
-                    height: Math.round(Math.max(10, finalState.height)),
-                    innerDiameter: obj.shape === 'ring' ? Math.round(obj.width * initial.diameterRatio) : undefined
-                });
-
-                debouncedUpdateForm();
-                needsRedraw = true;
-            }
-        } else if (isDragging) {
-            snapLines = [];
-            const dx = x - dragStartX;
-            const dy = y - dragStartY;
-            const SNAP_THRESHOLD = 10;
-            let finalDx = dx;
-            let finalDy = dy;
-
-            if (!cachedSnapTargets) {
-                cachedSnapTargets = [];
-                const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
-                otherObjects.forEach(otherObj => {
-                    cachedSnapTargets.push(...getWorldPoints(otherObj));
-                });
-                cachedSnapTargets.push(
-                    { x: canvas.width / 2, y: canvas.height / 2, type: 'center' },
-                    { x: canvas.width / 2, y: 0, type: 'edge' },
-                    { x: canvas.width / 2, y: canvas.height, type: 'edge' },
-                    { x: 0, y: canvas.height / 2, type: 'edge' },
-                    { x: canvas.width, y: canvas.height / 2, type: 'edge' }
-                );
-            }
-
-            const hSnaps = [], vSnaps = [];
-
-            initialDragState.forEach(state => {
-                const obj = objects.find(o => o.id === state.id);
-                if (obj) {
-                    const originalX = obj.x;
-                    const originalY = obj.y;
-                    obj.x = state.x + dx;
-                    obj.y = state.y + dy;
-                    const selectedPoints = getWorldPoints(obj);
-                    selectedPoints.forEach(point => {
-                        cachedSnapTargets.forEach(target => {
-                            if (point.type === target.type) {
-                                if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x, snapType: point.type });
-                                if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y, snapType: point.type });
-                            }
-                        });
-                    });
-                    obj.x = originalX;
-                    obj.y = originalY;
-                }
-            });
-
-            if (hSnaps.length > 0) {
-                hSnaps.sort((a, b) => a.dist - b.dist);
-                finalDx += hSnaps[0].adj;
-                snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2, snapType: hSnaps[0].snapType });
-            }
-            if (vSnaps.length > 0) {
-                vSnaps.sort((a, b) => a.dist - b.dist);
-                finalDy += vSnaps[0].adj;
-                snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2, snapType: vSnaps[0].snapType });
-            }
-
-            initialDragState.forEach(state => {
-                const obj = objects.find(o => o.id === state.id);
-                if (obj) {
-                    let newX = state.x + finalDx;
-                    let newY = state.y + finalDy;
-                    if (constrainToCanvas) {
-                        const tempObj = new Shape({ ...obj, x: newX, y: newY });
-                        const { minX, minY, maxX, maxY } = getBoundingBox(tempObj);
-                        if (minX < 0) newX -= minX;
-                        if (maxX > canvas.width) newX -= (maxX - canvas.width);
-                        if (minY < 0) newY -= minY;
-                        if (maxY > canvas.height) newY -= (maxY - canvas.height);
-                    }
-                    obj.x = newX;
-                    obj.y = newY;
-                }
-            });
-            debouncedUpdateForm();
-            needsRedraw = true;
-        } else {
-            let cursor = 'default';
-            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
-            if (topObject) {
-                cursor = 'pointer';
-                if (selectedObjectIds.includes(topObject.id)) {
-                    const handle = topObject.getHandleAtPoint(x, y);
-                    if (handle) {
-                        cursor = handle.cursor;
-                    } else if (!topObject.locked) {
-                        cursor = 'move';
-                    }
-                }
-            }
-            canvasContainer.style.cursor = cursor;
-        }
+        canvasContainer.style.cursor = cursor;
     });
 
     /**
@@ -6656,56 +6660,6 @@ document.addEventListener('DOMContentLoaded', function () {
         then = window.performance.now();
         requestAnimationFrame(animate);
 
-        const savedVSizes = getCookie('split-v-sizes');
-        const initialVSizes = savedVSizes ? JSON.parse(savedVSizes) : [30, 70];
-
-        lastVSizes = initialVSizes;
-
-        horizontalSplit = Split(['#left-panel', '#right-panel'], {
-            sizes: initialVSizes,
-            minSize: [400, 500],
-            gutterSize: 12,
-            gutter: (index, direction) => {
-                const gutter = document.createElement('div');
-                gutter.className = `gutter gutter-${direction}`;
-                const icon = document.createElement('i');
-                icon.className = 'bi bi-three-dots-vertical';
-                gutter.appendChild(icon);
-                return gutter;
-            },
-            onDragEnd: function (sizes) {
-                setCookie('split-v-sizes', JSON.stringify(sizes), 365);
-                lastVSizes = sizes;
-                // On manual resize, update the target pixel width
-                const leftPanel = document.getElementById('left-panel');
-                if (leftPanel) {
-                    leftPanelPixelWidth = leftPanel.offsetWidth;
-                }
-            }
-        });
-
-        const mainSplitEl = document.getElementById('main-split');
-
-        // This new function handles the logic for fixing the panel width
-        function fixLeftPanelWidth() {
-            if (!horizontalSplit || leftPanelPixelWidth <= 0 || !mainSplitEl) return;
-
-            const totalWidth = mainSplitEl.offsetWidth;
-            if (totalWidth === 0) return;
-
-            // Calculate the percentage the left panel *should* be to maintain its pixel width
-            const newLeftPercentage = (leftPanelPixelWidth / totalWidth) * 100;
-            horizontalSplit.setSizes([newLeftPercentage, 100 - newLeftPercentage]);
-        }
-
-        // Set the initial pixel width shortly after page load
-        setTimeout(() => {
-            const leftPanel = document.getElementById('left-panel');
-            if (leftPanel) {
-                leftPanelPixelWidth = leftPanel.offsetWidth;
-            }
-        }, 200);
-
         const lastUpdatedSpan = document.getElementById('last-updated-span');
         if (lastUpdatedSpan) {
             const now = new Date();
@@ -6718,7 +6672,6 @@ document.addEventListener('DOMContentLoaded', function () {
             lastUpdatedSpan.textContent = `Current as of: ${formattedDate}, ${formattedTime}`;
         }
 
-        fixLeftPanelWidth();
         initializeSortable();
         recordHistory();
         updateUndoRedoButtons();
