@@ -392,9 +392,7 @@ body {
     transition: none !important;
 }
 
-/* -------------------------------------------------------- */
 /* 6. FINAL DARK THEME CONTIGUITY FIX (Ensures RED Logout)  */
-/* -------------------------------------------------------- */
 [data-bs-theme="dark"] {
     --bs-auth-fill: var(--bs-gray-700); 
     
@@ -413,29 +411,35 @@ body {
         color: #fff !important; 
     }
 
-    /* --- CRITICAL RED LOGOUT FIX (Increased Specificity) --- */
+    /* --- CRITICAL FIX: Make Notification Button Gray to Match User Span --- */
+    .btn-group[aria-label="Authentication"] #notification-dropdown-toggle {
+        /* Override the default btn-info background with the gray fill color */
+        background-color: var(--bs-auth-fill) !important;
+        border-color: var(--bs-auth-fill) !important;
+        color: var(--bs-info) !important; /* Keep the icon color blue/cyan */
+
+        /* Ensure the right corner is flat */
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+    
     /* Target the logout button using both its ID and its class within the specific group */
     .btn-group[aria-label="Authentication"] #logout-btn {
         /* Override the inherited gray with the explicit red danger color */
         background-color: var(--bs-danger) !important;
         border-color: var(--bs-danger) !important;
         color: #fff !important; /* Ensure the icon/text is white */
-    }
-
-
-    /* Ensure the first and last element corners are rounded correctly */
-    #notification-dropdown-toggle {
-        border-top-right-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
-    }
-    
-    /* Target the logout button's specific selector to ensure its left border is flat and the right is rounded */
-    #logout-btn {
+        
+        /* Ensure left border is flat and the right is rounded */
         border-top-left-radius: 0 !important;
         border-bottom-left-radius: 0 !important;
-        
-        /* Re-apply standard Bootstrap border-radius for the right corners */
         border-top-right-radius: var(--bs-border-radius) !important;
         border-bottom-right-radius: var(--bs-border-radius) !important;
+    }
+
+    /* Ensure the first element (Notifications) has the left rounded corners */
+    .btn-group[aria-label="Authentication"] #notification-dropdown-toggle {
+        border-top-left-radius: var(--bs-border-radius) !important;
+        border-bottom-left-radius: var(--bs-border-radius) !important;
     }
 }
