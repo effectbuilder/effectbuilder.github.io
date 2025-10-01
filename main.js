@@ -2765,11 +2765,13 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedObjectIds = [];
 
         // --- START: THIS IS THE FIX ---
-        // Completely rebuild the configStore from the master template
-        // instead of just filtering it.
+        // Rebuild the configStore and filter out any predefined object properties,
+        // creating a truly blank workspace.
         const parser = new DOMParser();
         const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
-        configStore = Array.from(doc.querySelectorAll('meta')).map(parseMetaToConfig);
+        configStore = Array.from(doc.querySelectorAll('meta'))
+            .map(parseMetaToConfig)
+            .filter(conf => !(conf.property || conf.name).startsWith('obj'));
         // --- END: THIS IS THE FIX ---
 
         appHistory.stack = [];
@@ -3564,12 +3566,18 @@ document.addEventListener('DOMContentLoaded', function () {
             formGroup.appendChild(container);
             setActiveStop(stops.length > 0 ? stops[0].id : -1);
             setTimeout(() => {
+                // This unconditional call ensures the preview is rendered for ALL gradient pickers on load,
+                // including the global one which is not in a fieldset.
+                updateGradient();
+
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset) {
+                    // This part only adds the 'sharp gradient' dependency for object-specific pickers.
                     const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
                     const sharpToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
-                    if (sharpToggle) sharpToggle.addEventListener('input', updateGradient);
-                    updateGradient();
+                    if (sharpToggle) {
+                        sharpToggle.addEventListener('input', updateGradient);
+                    }
                 }
             }, 0);
             hiddenInput.addEventListener('rebuild', (e) => {
@@ -4199,7 +4207,7 @@ document.addEventListener('DOMContentLoaded', function () {
         //     }
         // }
 
-        updateFormValuesFromObjects();
+        // updateFormValuesFromObjects();
 
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
@@ -5060,9 +5068,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     value = String(value).replace(/\n/g, '\n');
                 }
 
+                // --- CRITICAL FIX: Ensure all scaled properties are scaled up here ---
                 if (propsToScale.includes(key) && typeof value === 'number') {
                     value *= 4;
                 }
+                // --- END CRITICAL FIX ---
 
                 // MODIFIED: Correctly handle new gradientStops properties
                 if (key === 'gradientStops') {
@@ -5130,10 +5140,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (existingConf) {
                     // If the property exists in our baseline, update its default value.
                     existingConf.default = loadedConf.default;
-                } else {
-                    // If it's a new property not in our template, add it (for forward compatibility).
-                    mergedGeneralConfigMap.set(key, loadedConf);
                 }
+                // The 'else' block has been removed. Legacy properties are now ignored.
             });
             const mergedGeneralConfigs = Array.from(mergedGeneralConfigMap.values());
             // --- END: FIXES APPLIED TO GENERAL CONFIGS ---
@@ -6292,6 +6300,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     canvasContainer.addEventListener('mousedown', e => {
         if (activeTool === 'polyline') {
+            // This part for polyline drawing is unchanged and correct
             e.preventDefault();
             const { x, y } = getCanvasCoordinates(e);
 
@@ -6353,84 +6362,95 @@ document.addEventListener('DOMContentLoaded', function () {
         dragStartX = x;
         dragStartY = y;
 
-        let activeObject = null;
-        if (selectedObjectIds.length === 1) {
-            activeObject = objects.find(o => o.id === selectedObjectIds[0]);
+        // --- START: FULLY REVISED SELECTION AND DRAG INITIALIZATION ---
+
+        // 1. Handle Selection Changes
+        let selectionChanged = false;
+        const alreadySelectedHit = objects.find(obj =>
+            selectedObjectIds.includes(obj.id) && obj.isPointInside(x, y)
+        );
+
+        if (alreadySelectedHit) {
+            if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                selectedObjectIds = selectedObjectIds.filter(id => id !== alreadySelectedHit.id);
+                selectionChanged = true;
+            }
+        } else {
+            const topHitObject = [...objects].find(obj => obj.isPointInside(x, y));
+            if (topHitObject) {
+                if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                    if (!selectedObjectIds.includes(topHitObject.id)) {
+                        selectedObjectIds.push(topHitObject.id);
+                    }
+                } else {
+                    selectedObjectIds = [topHitObject.id];
+                }
+            } else {
+                selectedObjectIds = [];
+            }
+            selectionChanged = true;
         }
 
-        if (activeObject && !activeObject.locked) {
-            const handle = activeObject.getHandleAtPoint(x, y);
+        if (selectionChanged) {
+            updateToolbarState();
+            syncPanelsWithSelection();
+            needsRedraw = true;
+        }
+
+        // 2. Handle Action Initialization (Drag, Resize, Rotate)
+        let activeObjectForAction = null;
+        if (selectedObjectIds.length > 0) {
+            activeObjectForAction = [...objects].find(obj => selectedObjectIds.includes(obj.id) && obj.isPointInside(x, y));
+            if (!activeObjectForAction && selectedObjectIds.length === 1) {
+                activeObjectForAction = objects.find(o => o.id === selectedObjectIds[0]);
+            }
+        }
+
+        if (activeObjectForAction && !activeObjectForAction.locked) {
+            const handle = activeObjectForAction.getHandleAtPoint(x, y);
             if (handle) {
-                if (e.altKey && handle.type === 'node') {
-                    if (activeObject.deleteNode(handle.index)) {
-                        updateFormValuesFromObjects();
-                        recordHistory();
-                        needsRedraw = true;
-                    }
-                    return;
-                }
                 if (handle.type === 'rotation') {
                     isRotating = true;
-                    const center = activeObject.getCenter();
+                    const center = activeObjectForAction.getCenter();
                     const startAngle = Math.atan2(y - center.y, x - center.x);
-                    initialDragState = [{ id: activeObject.id, startAngle: startAngle, initialObjectAngle: activeObject.getRenderAngle() }];
+                    initialDragState = [{ id: activeObjectForAction.id, startAngle: startAngle, initialObjectAngle: activeObjectForAction.getRenderAngle() }];
                 } else if (handle.type === 'node') {
                     isDraggingNode = true;
-                    activeNodeDragState = { id: activeObject.id, nodeIndex: handle.index };
+                    activeNodeDragState = { id: activeObjectForAction.id, nodeIndex: handle.index };
                 } else {
                     isResizing = true;
                     activeResizeHandle = handle.name;
                     const oppositeHandleName = getOppositeHandle(handle.name);
-                    const anchorPoint = activeObject.getWorldCoordsOfCorner(oppositeHandleName);
-                    initialDragState = [{ id: activeObject.id, initialX: activeObject.x, initialY: activeObject.y, initialWidth: activeObject.width, initialHeight: activeObject.height, anchorPoint: anchorPoint }];
+                    const anchorPoint = activeObjectForAction.getWorldCoordsOfCorner(oppositeHandleName);
+                    initialDragState = [{ id: activeObjectForAction.id, initialX: activeObjectForAction.x, initialY: activeObjectForAction.y, initialWidth: activeObjectForAction.width, initialHeight: activeObjectForAction.height, anchorPoint: anchorPoint }];
                 }
             }
         }
 
-        if (!isRotating && !isResizing && !isDraggingNode) {
-            const hitObject = [...objects].find(obj => obj.isPointInside(x, y));
-            if (hitObject) {
-                if (!selectedObjectIds.includes(hitObject.id)) {
-                    if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                        selectedObjectIds.push(hitObject.id);
-                    } else {
-                        selectedObjectIds = [hitObject.id];
-                    }
-                }
-                updateToolbarState();
-                syncPanelsWithSelection();
-                needsRedraw = true;
-            } else {
-                selectedObjectIds = [];
-                updateToolbarState();
-                syncPanelsWithSelection();
-                needsRedraw = true;
+        // 3. THIS BLOCK FIXES THE "SELECT-THEN-DRAG" BUG
+        if (!isResizing && !isRotating && !isDraggingNode && selectedObjectIds.length > 0) {
+            // Check if the initial click point is inside ANY of the now-selected objects.
+            const hitTargetIsSelectedAndDraggable = objects.some(obj =>
+                selectedObjectIds.includes(obj.id) &&
+                !obj.locked &&
+                obj.isPointInside(dragStartX, dragStartY)
+            );
+
+            // If the click was on a selected, draggable object, start the drag immediately.
+            if (hitTargetIsSelectedAndDraggable) {
+                isDragging = true;
+                initialDragState = selectedObjectIds.map(id => {
+                    const obj = objects.find(o => o.id === id);
+                    // Only include non-locked objects in the drag operation.
+                    return (obj && !obj.locked) ? { id, x: obj.x, y: obj.y } : null;
+                }).filter(Boolean); // This removes nulls for any locked objects in a multi-selection.
             }
         }
 
-        const canDrag = selectedObjectIds.length > 0 && !selectedObjectIds.every(id => { const obj = objects.find(o => o.id === id); return obj && obj.locked; });
-        if (canDrag && !isResizing && !isRotating && !isDraggingNode) {
-            initialDragState = selectedObjectIds.map(id => {
-                const obj = objects.find(o => o.id === id);
-                return { id, x: obj.x, y: obj.y };
-            });
-        } else {
-            initialDragState = [];
-        }
+        // --- END: FULLY REVISED LOGIC ---
 
         const handleMouseMove = (moveEvent) => {
             const { x, y } = getCanvasCoordinates(moveEvent);
-
-            if (!isDragging && !isResizing && !isRotating && !isDraggingNode && moveEvent.buttons === 1 && initialDragState.length > 0) {
-                const dx = x - dragStartX;
-                const dy = y - dragStartY;
-                if (Math.sqrt(dx * dx + dy * dy) > 5) {
-                    const hitObject = [...objects].reverse().find(obj => obj.isPointInside(dragStartX, dragStartY));
-                    if (hitObject && !hitObject.locked && selectedObjectIds.includes(hitObject.id)) {
-                        isDragging = true;
-                    }
-                }
-            }
 
             if (isDragging) {
                 const dx = x - dragStartX;
@@ -6497,7 +6517,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 initialDragState.forEach(state => {
                     const obj = objects.find(o => o.id === state.id);
-                    if (obj) {
+                    if (obj && !obj.locked) {
                         let newX = state.x + finalDx;
                         let newY = state.y + finalDy;
                         if (constrainToCanvas) {
@@ -7019,13 +7039,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const key = loadedConf.property || loadedConf.name;
                 const existingConf = mergedGeneralConfigMap.get(key);
                 if (existingConf) {
-                    // If it exists in the master template, just update its default value.
+                    // If a property from the loaded file exists in our master template,
+                    // update its default value.
                     existingConf.default = loadedConf.default;
-                } else {
-                    // If this is a property not in the master template, add it.
-                    // This is important for forward-compatibility if new globals are added.
-                    mergedGeneralConfigMap.set(key, loadedConf);
                 }
+                // If it doesn't exist (i.e., it's a legacy property), do nothing.
             });
 
             newConfigStore.push(...Array.from(mergedGeneralConfigMap.values()));
@@ -7230,17 +7248,19 @@ document.addEventListener('DOMContentLoaded', function () {
         canvasContainer.style.cursor = 'default';
         currentProjectDocId = null;
         updateShareButtonState();
+
+        // Determine the next available ID
         const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
+
+        // 1. Get the default configurations for the new object
         const newConfigs = getDefaultObjectConfig(newId);
 
         // Find the insertion point (after general settings, before existing object settings).
         const firstObjectConfigIndex = configStore.findIndex(c => (c.property || c.name || '').startsWith('obj'));
 
         if (firstObjectConfigIndex === -1) {
-            // If no other objects exist, just add the new configs to the end.
             configStore.push(...newConfigs);
         } else {
-            // Otherwise, insert the new configs before the first existing object's configs.
             configStore.splice(firstObjectConfigIndex, 0, ...newConfigs);
         }
 
@@ -7250,15 +7270,24 @@ document.addEventListener('DOMContentLoaded', function () {
             gradient: {}
         };
 
+        // 2. Process all config defaults and manually apply the scaling to relevant properties
         newConfigs.forEach(conf => {
             const key = conf.property.replace(`obj${newId}_`, '');
             let value = conf.default;
 
             if (conf.type === 'number') {
+                // Must ensure value is parsed before comparison or arithmetic
                 value = parseFloat(value);
             } else if (conf.type === 'boolean') {
                 value = (value === 'true');
             }
+
+            // --- CRITICAL FIX: Scale the required properties UP by 4 ---
+            // This is the correct loop where X and Y scaling must happen.
+            if (propsToScale.includes(key) && typeof value === 'number') {
+                value *= 4; // Scale UI value (e.g., 10) up to canvas value (40)
+            }
+            // --------------------------------------------------------
 
             if (key.startsWith('gradColor')) {
                 state.gradient[key.replace('grad', '').toLowerCase()] = value;
@@ -7269,13 +7298,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        propsToScale.forEach(prop => {
-            if (state[prop] !== undefined) {
-                state[prop] *= 4;
-            }
+        // 3. Create the new Shape object with the correctly scaled state
+        const newShape = new Shape({ ...state, ctx, canvasWidth: canvas.width });
+
+        const defaultWidth = newShape.width || 200;
+        const defaultHeight = newShape.height || 152;
+
+        newShape.update({
+            x: (1280 - defaultWidth) / 2, // 1280 is the canvas width
+            y: (800 - defaultHeight) / 2,  // 800 is the canvas height
+            width: defaultWidth,
+            height: defaultHeight
         });
 
-        const newShape = new Shape({ ...state, ctx, canvasWidth: canvas.width });
+        // Update the config store/form to reflect the new centered position
+        const updateConfig = (prop, val) => {
+            const conf = configStore.find(c => c.property === `obj${newId}_${prop}`);
+            if (conf) conf.default = String(Math.round(val / 4)); // Scale back down to UI value
+        };
+        updateConfig('x', newShape.x);
+        updateConfig('y', newShape.y);
+        updateConfig('width', newShape.width);
+        updateConfig('height', newShape.height);
+        // --- END CRITICAL FIX ---
+
 
         // Add the new shape to the beginning of the objects array to place it on the top layer.
         objects.unshift(newShape);
@@ -7283,8 +7329,6 @@ document.addEventListener('DOMContentLoaded', function () {
         isRestoring = true;
         renderForm();
         isRestoring = false;
-
-        updateFormValuesFromObjects();
         drawFrame();
         recordHistory();
     });
@@ -8191,6 +8235,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentBaseQuery; // To store the base query for loading more
 
+    // --- START: GALLERY SEARCH CLEAR BUTTON LOGIC ---
+    const galleryClearBtn = document.getElementById('gallery-search-clear-btn');
+
+    if (gallerySearchInput && galleryClearBtn) {
+        // Show or hide the button based on whether there's text
+        gallerySearchInput.addEventListener('input', () => {
+            if (gallerySearchInput.value.length > 0) {
+                galleryClearBtn.classList.remove('d-none');
+            } else {
+                galleryClearBtn.classList.add('d-none');
+            }
+        });
+
+        // Handle the click event on the clear button
+        galleryClearBtn.addEventListener('click', () => {
+            gallerySearchInput.value = ''; // Clear the input field
+            galleryClearBtn.classList.add('d-none'); // Hide the button
+
+            // Programmatically trigger an 'input' event to re-run the search logic
+            gallerySearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            gallerySearchInput.focus(); // Return focus to the search box
+        });
+    }
+    // --- END: GALLERY SEARCH CLEAR BUTTON LOGIC ---
+
     /**
      * Fetches projects for the gallery.
      * - Uses pagination for 'createdAt' and 'name' sorts.
@@ -8388,28 +8457,6 @@ document.addEventListener('DOMContentLoaded', function () {
     galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
         lastVisibleDoc = null;
     });
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                if (window.auth && typeof window.auth.signOut === 'function') {
-                    await window.auth.signOut();
-                    showToast("Signed out successfully.", 'success');
-
-                    // Note: The listener in your Firebase setup should handle the UI change.
-                    // We typically don't manually hide/show the buttons here if 
-                    // the onAuthStateChanged listener is working correctly.
-                } else {
-                    console.error("Firebase authentication object is not initialized.");
-                    showToast("Error: Authentication not ready.", 'danger');
-                }
-            } catch (error) {
-                console.error("Error signing out:", error);
-                showToast("Error signing out. Please try again.", 'danger');
-            }
-        });
-    }
 
     // --- END: NEW LAZY LOADING GALLERY LOGIC ---
 

@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, FieldPath, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-// NOTE: FieldPath and writeBatch are imported, but the error is resolved by the export below.
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -45,45 +44,31 @@ window.updateDoc = updateDoc;
 window.increment = increment;
 window.serverTimestamp = serverTimestamp;
 window.setDoc = setDoc;
-
-// FIX: Expose the correct constant for Document ID. The string '__name__' is the underlying 
-// field name used by Firestore for the document ID in queries when FieldPath.documentId fails.
-window.documentId = '__name__';
-window.writeBatch = writeBatch; // Expose writeBatch for 'Mark All Read' feature
+window.documentId = '__name__'; // Correctly query by document ID
+window.writeBatch = writeBatch;
 
 
 // Wait for the DOM to be fully loaded before setting up UI event listeners
 document.addEventListener('DOMContentLoaded', () => {
     const provider = new window.GoogleAuthProvider();
     const loginBtn = document.getElementById('login-btn');
-    // const logoutBtn = document.getElementById('logout-btn'); <-- Removed direct ref since we use delegation
 
-    // --- Attach the Sign In listener here, since it's always present ---
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
             window.signInWithPopup(window.auth, provider).catch(console.error);
         });
     }
 
-    // --- CRITICAL FIX: EVENT DELEGATION FOR LOGOUT BUTTON ---
-    // Listen for ALL clicks on the document, but only react if the target is the logout button.
+    // Use event delegation for the logout button, which is more robust
     document.addEventListener('click', async (e) => {
         const logoutBtnClicked = e.target.closest('#logout-btn');
 
         if (logoutBtnClicked) {
-            e.preventDefault(); // Prevent default button behavior
+            e.preventDefault(); 
             try {
-                if (window.auth && typeof window.auth.signOut === 'function') {
-                    await window.signOut(window.auth);
-                    // showToast is defined in main.js, so we assume it exists globally
-                    if (typeof showToast === 'function') {
-                        showToast("Signed out successfully.", 'success');
-                    }
-                } else {
-                    console.error("Firebase authentication object is not initialized.");
-                    if (typeof showToast === 'function') {
-                        showToast("Error: Authentication not ready.", 'danger');
-                    }
+                await window.signOut(window.auth);
+                if (typeof showToast === 'function') {
+                    showToast("Signed out successfully.", 'success');
                 }
             } catch (error) {
                 console.error("Error signing out:", error);
@@ -93,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    // --- END CRITICAL FIX ---
 
 
     // This listener handles all UI changes related to authentication state.
@@ -104,22 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const userDisplay = document.getElementById('user-display');
         const saveWsBtn = document.getElementById('save-ws-btn');
         const loadWsBtn = document.getElementById('load-ws-btn');
-
         const isLoggedIn = !!user;
-        // CORRECTED LINE (remove '+ defaultIcon'):
-        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOHJhOCA4IDAgMTAxNiAwQTggOCAwIDAwMCA4em04LTdhNyA3IDAgMDE3IDcgNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPgo8L3N2Zy>';
-
-        const authNotificationBlock = document.getElementById('auth-notification-block');
+        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4='; 
 
         if (isLoggedIn) {
             // Show the logged-in group and hide the login button
             if (loginBtn) loginBtn.classList.add('d-none');
             if (userSessionGroup) userSessionGroup.classList.remove('d-none');
-
-            const notificationToggle = document.getElementById('notification-dropdown-toggle');
-            if (notificationToggle) {
-                notificationToggle.classList.remove('d-none');
-            }
+            
+            // REMOVED: Redundant code to toggle notification button visibility,
+            // as it's now inside the userSessionGroup.
 
             // Populate user info
             if (userDisplay) userDisplay.textContent = user.displayName || user.email;
@@ -131,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
 
-            // NEW: Set/Update user document with display name
+            // Set/Update user document with display name in Firestore
             if (user) {
                 const userDocRef = window.doc(window.db, "users", user.uid);
                 window.setDoc(userDocRef, {
@@ -152,10 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loginBtn) loginBtn.classList.remove('d-none');
             if (userSessionGroup) userSessionGroup.classList.add('d-none');
 
-            const notificationToggle = document.getElementById('notification-dropdown-toggle');
-            if (notificationToggle) {
-                notificationToggle.classList.add('d-none');
-            }
+            // REMOVED: Redundant code to toggle notification button visibility.
 
             // Clear notification listener on logout
             if (typeof window.setupNotificationListener === 'function') {
@@ -163,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Enable/disable other buttons
+        // Enable/disable other buttons based on auth state
         if (saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
         if (loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
 

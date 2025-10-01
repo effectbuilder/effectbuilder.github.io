@@ -66,40 +66,41 @@
                     </button>
                 </div>
 
-                <div id="auth-notification-block" class="d-flex" role="group" aria-label="Authentication and notifications">
+                <div id="auth-notification-block" class="d-flex align-items-center">
 
-                    <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-bell"></i>
-                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
-                            0
-                            <span class="visually-hidden">new notifications</span>
-                        </span>
-                    </button>
+                    <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
 
-                    <button class="btn btn-success me-3" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
+                    <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
 
-                    <div class="btn-group d-none" id="user-session-group" role="group">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell"></i>
+                                <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                    0
+                                    <span class="visually-hidden">new notifications</span>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
+                                <li class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <strong>Notifications</strong>
+                                    <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <div id="notification-list-container">
+                                </div>
+                            </ul>
+                        </div>
+
                         <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
                             <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
                             <span id="user-display"></span>
                         </span>
+
                         <button class="btn btn-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
                     </div>
 
-                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
-                        <li class="dropdown-header d-flex justify-content-between align-items-center">
-                            <strong>Notifications</strong>
-                            <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <div id="notification-list-container">
-                            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                                Sign in to view notifications.
-                            </li>
-                        </div>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -576,6 +577,9 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" id="gallery-search-input" class="form-control" placeholder="Search effects...">
+                        <button class="btn btn-outline-secondary d-none" type="button" id="gallery-search-clear-btn" title="Clear search">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
