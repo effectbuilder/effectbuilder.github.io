@@ -477,6 +477,33 @@ function getBoundingBox(obj) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    async function regenerateAndSaveThumbnail(effectId) {
+        showToast("Regenerating thumbnail...", "info");
+
+        // Wait a moment for the effect to render fully
+        setTimeout(async () => {
+            try {
+                const newThumbnail = generateThumbnail(document.getElementById('signalCanvas'));
+                const docRef = window.doc(window.db, "projects", effectId);
+
+                await window.updateDoc(docRef, {
+                    thumbnail: newThumbnail
+                });
+
+                showToast("Thumbnail regenerated and saved successfully! This tab will now close.", "success");
+
+                // Close the tab after a short delay
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
+
+            } catch (error) {
+                console.error("Error regenerating thumbnail:", error);
+                showToast("Failed to save new thumbnail.", "danger");
+            }
+        }, 3000); // 3.0 second delay to ensure rendering is complete
+    }
+
     // --- START: NEW GENERIC COLOR PICKER LOGIC ---
     const generalColorPickerModalEl = document.getElementById('general-color-picker-modal');
     const generalPickerContainer = document.getElementById('general-picker-container');
@@ -625,8 +652,8 @@ document.addEventListener('DOMContentLoaded', function () {
             globalControls.id = 'export-global-controls';
             globalControls.className = 'd-flex gap-2 border-bottom pb-3 mb-3';
             globalControls.innerHTML = `
-        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
+        <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
+        <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
     `;
             // Add the controls right after the introductory paragraph
             modalBody.querySelector('p').insertAdjacentElement('afterend', globalControls);
@@ -637,14 +664,14 @@ document.addEventListener('DOMContentLoaded', function () {
             presetControls.innerHTML = `
     <span class="text-body-secondary small me-2 align-self-center">Presets:</span>
     <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-outline-info" data-preset="animation">Animation</button>
-        <button type="button" class="btn btn-outline-info" data-preset="colors">Colors</button>
-        <button type="button" class="btn btn-outline-info" data-preset="geometry">Geometry</button>
-        <button type="button" class="btn btn-outline-info" data-preset="gradients">Gradients</button> </div>
+        <button type="button" class="btn btn-info" data-preset="animation">Animation</button>
+        <button type="button" class="btn btn-info" data-preset="colors">Colors</button>
+        <button type="button" class="btn btn-info" data-preset="geometry">Geometry</button>
+        <button type="button" class="btn btn-info" data-preset="gradients">Gradients</button> </div>
     <div class="vr mx-2"></div>
     <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-outline-success" data-preset="minimal">Minimal (User-Friendly)</button>
-        <button type="button" class="btn btn-outline-success" data-preset="static">Static (No Animation)</button>
+        <button type="button" class="btn btn-success" data-preset="minimal">Minimal (User-Friendly)</button>
+        <button type="button" class="btn btn-success" data-preset="static">Static (No Animation)</button>
     </div>
 `;
             globalControls.insertAdjacentElement('afterend', presetControls);
@@ -1458,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const value = idx + 2;
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+            btn.className = 'btn btn-sm btn-light dynamic-color';
             btn.dataset.value = value;
             btn.style.backgroundColor = stop.color;
             btn.title = `Right-click to delete | Gradient Color #${idx + 1} (Index: ${value})`;
@@ -1748,7 +1775,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const value = idx + 2;
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'btn btn-sm btn-outline-light dynamic-color';
+                btn.className = 'btn btn-sm btn-light dynamic-color';
                 btn.dataset.value = value;
                 btn.style.backgroundColor = stop.color;
                 btn.title = `Click to edit, Right-click to delete | Color #${idx + 1}`;
@@ -1787,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const addBtn = document.createElement('button');
             addBtn.type = 'button';
             addBtn.id = 'pixel-editor-add-color-btn';
-            addBtn.className = 'btn btn-sm btn-outline-secondary btn-add-color';
+            addBtn.className = 'btn btn-sm btn-secondary btn-add-color';
             addBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
             addBtn.title = 'Add a new color to the palette';
 
@@ -2334,11 +2361,11 @@ document.addEventListener('DOMContentLoaded', function () {
             allFeatureButtons.forEach(btn => {
                 if (btn.dataset.docId === docIdToToggle) {
                     const isNowFeatured = !buttonEl.classList.contains('btn-warning');
-                    btn.className = `btn btn-sm btn-feature ${isNowFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                    btn.className = `btn btn-sm btn-feature ${isNowFeatured ? 'btn-warning' : 'btn-warning'}`;
                     btn.innerHTML = isNowFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
                     btn.title = isNowFeatured ? 'Unfeature this effect' : 'Feature this effect';
                 } else {
-                    btn.className = 'btn btn-sm btn-feature btn-outline-warning';
+                    btn.className = 'btn btn-sm btn-feature btn-warning';
                     btn.innerHTML = '<i class="bi bi-star"></i>';
                     btn.title = 'Feature this effect';
                 }
@@ -2597,13 +2624,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (likeBtn) {
                 if (action === 'liked') {
-                    likeBtn.classList.remove('btn-outline-danger');
+                    likeBtn.classList.remove('btn-danger');
                     likeBtn.classList.add('btn-danger');
                     likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
                     likeBtn.title = "Unlike this effect";
                 } else {
                     likeBtn.classList.remove('btn-danger');
-                    likeBtn.classList.add('btn-outline-danger');
+                    likeBtn.classList.add('btn-danger');
                     likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
                     likeBtn.title = "Like this effect";
                 }
@@ -2864,7 +2891,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btnGroup.setAttribute('role', 'group');
 
             const loadBtn = document.createElement('button');
-            loadBtn.className = 'btn btn-outline-primary';
+            loadBtn.className = 'btn btn-primary';
             loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-1"></i> Load';
             loadBtn.title = "Load Effect";
             loadBtn.onclick = () => {
@@ -2877,7 +2904,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const isInitiallyLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
             const likeBtn = document.createElement('button');
             likeBtn.id = `like-btn-${project.docId}`;
-            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-outline-danger'}`;
+            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-danger'}`;
             likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
             likeBtn.title = isInitiallyLiked ? "Unlike" : "Like";
             likeBtn.onclick = () => likeEffect(project.docId);
@@ -2889,7 +2916,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (currentUser && (currentUser.uid === project.userId || currentUser.uid === ADMIN_UID)) {
                 if (currentUser.uid === project.userId) {
                     const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+                    deleteBtn.className = 'btn btn-sm btn-danger ms-2';
                     deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
                     deleteBtn.title = "Delete Effect";
                     deleteBtn.onclick = () => {
@@ -2905,7 +2932,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (currentUser.uid === ADMIN_UID) {
                     const isFeatured = project.featured === true;
                     const featureBtn = document.createElement('button');
-                    featureBtn.className = `btn btn-sm ms-2 ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
+                    featureBtn.className = `btn btn-sm ms-2 ${isFeatured ? 'btn-warning' : 'btn-warning'}`;
                     featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
                     featureBtn.title = isFeatured ? 'Unfeature' : 'Feature';
                     featureBtn.dataset.docId = project.docId;
@@ -3586,12 +3613,12 @@ document.addEventListener('DOMContentLoaded', function () {
             nodes.forEach((node, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.index = index;
-                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
             const addButton = document.createElement('button');
             addButton.type = 'button';
-            addButton.className = 'btn btn-sm btn-outline-success mt-2 btn-add-node';
+            addButton.className = 'btn btn-sm btn-success mt-2 btn-add-node';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Node';
             container.appendChild(hiddenTextarea);
             container.appendChild(table);
@@ -3625,7 +3652,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 frameItem.dataset.index = index;
                 const textareaId = `frame-data-${objectId}-${index}`;
                 const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
-                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">Frame #${index + 1}</strong><div><button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
+                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">Frame #${index + 1}</strong><div><button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
                 framesContainer.appendChild(frameItem);
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
                 renderPixelArtPreview(previewCanvas, frameDataStr, gradientStops);
@@ -3634,23 +3661,23 @@ document.addEventListener('DOMContentLoaded', function () {
             buttonGroup.className = 'd-flex flex-wrap gap-2 mt-2';
             const addButton = document.createElement('button');
             addButton.type = 'button';
-            addButton.className = 'btn btn-sm btn-outline-success btn-add-frame';
+            addButton.className = 'btn btn-sm btn-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
             const pasteSpriteButton = document.createElement('button');
             pasteSpriteButton.type = 'button';
-            pasteSpriteButton.className = 'btn btn-sm btn-outline-secondary btn-paste-sprite';
+            pasteSpriteButton.className = 'btn btn-sm btn-secondary btn-paste-sprite';
             pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
             pasteSpriteButton.dataset.bsToggle = 'modal';
             pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
-            uploadGifButton.className = 'btn btn-sm btn-outline-warning';
+            uploadGifButton.className = 'btn btn-sm btn-warning';
             uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> Upload GIF';
             uploadGifButton.dataset.bsToggle = 'modal';
             uploadGifButton.dataset.bsTarget = '#upload-gif-modal';
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
-            browseButton.className = 'btn btn-sm btn-outline-info';
+            browseButton.className = 'btn btn-sm btn-info';
             browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
             browseButton.dataset.bsToggle = 'modal';
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
@@ -3847,7 +3874,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     obj.locked = !obj.locked;
                     const icon = lockBtn.querySelector('i');
                     lockBtn.classList.toggle('btn-warning', obj.locked);
-                    lockBtn.classList.toggle('btn-outline-secondary', !obj.locked);
+                    lockBtn.classList.toggle('btn-secondary', !obj.locked);
                     icon.className = `bi ${obj.locked ? 'bi-lock-fill' : 'bi-unlock-fill'}`;
                     const tooltip = bootstrap.Tooltip.getInstance(lockBtn);
                     if (tooltip) {
@@ -3910,7 +3937,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         const lockButton = document.createElement('button');
         const isLocked = obj.locked || false;
-        lockButton.className = `btn btn-sm btn-lock ${isLocked ? 'btn-warning' : 'btn-outline-secondary'} d-flex align-items-center justify-content-center px-2 ms-2`;
+        lockButton.className = `btn btn-sm btn-lock ${isLocked ? 'btn-warning' : 'btn-secondary'} d-flex align-items-center justify-content-center px-2 ms-2`;
         lockButton.style.height = '28px';
         lockButton.style.width = '28px';
         lockButton.type = 'button';
@@ -3921,7 +3948,7 @@ document.addEventListener('DOMContentLoaded', function () {
         controlsGroup.appendChild(lockButton);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
-        dropdown.innerHTML = `<button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>Duplicate</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul>`;
+        dropdown.innerHTML = `<button class="btn btn-sm btn-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>Duplicate</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul>`;
         controlsGroup.appendChild(dropdown);
         const collapseIcon = document.createElement('span');
         collapseIcon.className = `legend-button ${showObject ? '' : 'collapsed'} ms-2`;
@@ -4179,13 +4206,6 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
 
         initializeFrameSorters();
-
-        const publisherInput = form.elements['publisher'];
-        if (publisherInput) {
-            console.log(`3. END of renderForm. Final form input value is: "${publisherInput.value}"`);
-        } else {
-            console.log("3. END of renderForm. Publisher input not found in form.");
-        }
     }
 
     function updateSensorControlVisibility(fieldset) {
@@ -4943,7 +4963,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td>
                     <td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td>
                     <td class="align-middle">
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button>
                     </td>`;
                         tbody.appendChild(tr);
                     });
@@ -5099,7 +5119,14 @@ document.addEventListener('DOMContentLoaded', function () {
             loadedGeneralConfigs.forEach(loadedConf => {
                 const key = loadedConf.property || loadedConf.name;
                 const existingConf = mergedGeneralConfigMap.get(key);
-                if (existingConf) {
+                if (key === 'enableAnimation') {
+                    // FORCE 'enableAnimation' to 'true' regardless of the saved value
+                    if (existingConf) {
+                        existingConf.default = "true";
+                    } else {
+                        mergedGeneralConfigMap.set(key, { ...loadedConf, default: "true" });
+                    }
+                } else if (existingConf) {
                     // If the property exists in our baseline, update its default value.
                     existingConf.default = loadedConf.default;
                 } else {
@@ -5199,6 +5226,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const effectTitle = getControlValues()['title'] || "SRGB Effect Builder";
                 window.history.pushState({ effectId: workspace.docId }, effectTitle, newUrl);
             }
+            updateAll();
         } catch (error) {
             console.error("Error loading workspace:", error);
             showToast("Failed to load workspace.", 'danger');
@@ -5577,7 +5605,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
                 const tr = document.createElement('tr');
                 tr.dataset.index = newIndex;
-                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
 
                 const hiddenTextarea = container.querySelector('textarea');
@@ -5636,12 +5664,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
                             <div>
-                                <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                                <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;"
                                         data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
                                         data-target-id="${textareaId}" title="Edit Frame">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                                <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -5744,7 +5772,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
             const tr = document.createElement('tr');
             tr.dataset.index = newIndex;
-            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
             tbody.appendChild(tr);
 
             const hiddenTextarea = container.querySelector('textarea');
@@ -5803,13 +5831,13 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
                 <div>
-                    <button type="button" class="btn btn-sm btn-outline-info p-1" style="line-height: 1;"
+                    <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;"
                             data-bs-toggle="modal"
                             data-bs-target="#pixelArtEditorModal"
                             data-target-id="${textareaId}" title="Edit Frame">
                         <i class="bi bi-pencil-square"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
+                    <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -6194,13 +6222,13 @@ document.addEventListener('DOMContentLoaded', function () {
         constrainToCanvas = !constrainToCanvas;
 
         // Remove all possible style classes first to avoid conflicts
-        constrainBtn.classList.remove('btn-primary', 'btn-outline-secondary', 'btn-secondary');
+        constrainBtn.classList.remove('btn-primary', 'btn-secondary', 'btn-secondary');
 
         // Add the correct class based on the new state
         if (constrainToCanvas) {
             constrainBtn.classList.add('btn-secondary');
         } else {
-            constrainBtn.classList.add('btn-outline-secondary');
+            constrainBtn.classList.add('btn-secondary');
         }
     });
 
@@ -6339,7 +6367,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (!isRotating && !isResizing && !isDraggingNode) {
-            const hitObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+            const hitObject = [...objects].find(obj => obj.isPointInside(x, y));
             if (hitObject) {
                 if (!selectedObjectIds.includes(hitObject.id)) {
                     if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -6587,11 +6615,11 @@ document.addEventListener('DOMContentLoaded', function () {
     async function init() {
         handleURLParameters();
         const constrainBtn = document.getElementById('constrain-btn');
-        constrainBtn.classList.remove('btn-secondary', 'btn-outline-secondary');
+        constrainBtn.classList.remove('btn-secondary', 'btn-secondary');
         if (constrainToCanvas) {
             constrainBtn.classList.add('btn-secondary');
         } else {
-            constrainBtn.classList.add('btn-outline-secondary');
+            constrainBtn.classList.add('btn-secondary');
         }
 
         const effectLoaded = await loadSharedEffect();
@@ -6716,7 +6744,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     const projectData = { docId: effectDoc.id, ...effectDoc.data() };
                     if (projectData.isPublic) {
                         loadWorkspace(projectData);
-                        showToast("Shared effect loaded!", 'success');
+
+                        // This is the new logic that checks for the action parameter
+                        if (params.get('action') === 'regenThumbnail') {
+                            regenerateAndSaveThumbnail(effectId);
+                        } else {
+                            showToast("Shared effect loaded!", 'success');
+                        }
+
                         return true;
                     } else {
                         showToast("This effect is not public.", 'danger');
@@ -6731,7 +6766,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // If no effectId was in the URL or the loading failed, return false.
-        // This removes the "featured effect" fallback and forces the app to use the default config.
         return false;
     }
 
@@ -6833,7 +6867,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {HTMLCanvasElement} sourceCanvas - The main canvas to capture.
      * @returns {string} A dataURL string of the thumbnail.
      */
-    function generateThumbnail(sourceCanvas, width = 200) {
+    function generateThumbnail(sourceCanvas, width = 400) {
         // Temporarily store the current selection
         const originalSelection = [...selectedObjectIds];
 
@@ -6850,7 +6884,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Draw the clean main canvas onto the smaller thumbnail canvas
         thumbCtx.drawImage(sourceCanvas, 0, 0, thumbWidth, thumbHeight);
-        const dataUrl = thumbnailCanvas.toDataURL('image/jpeg', 0.7);
+        const dataUrl = thumbnailCanvas.toDataURL('image/png');
 
         // Restore the original selection and redraw the canvas for the user
         selectedObjectIds = originalSelection;
@@ -7097,9 +7131,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadEffectBtn = document.getElementById('upload-effect-btn');
     const effectFileInput = document.getElementById('effect-file-input');
 
-    uploadEffectBtn.addEventListener('click', () => {
-        effectFileInput.click(); // Programmatically click the hidden file input
-    });
+    // uploadEffectBtn.addEventListener('click', () => {
+    //     effectFileInput.click(); // Programmatically click the hidden file input
+    // });
 
     effectFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -7978,7 +8012,7 @@ document.addEventListener('DOMContentLoaded', function () {
             subtitle.innerHTML = `From: <em>${art.projectName}</em><br>By: ${art.creatorName}`;
 
             const insertBtn = document.createElement('button');
-            insertBtn.className = 'btn btn-sm btn-outline-success';
+            insertBtn.className = 'btn btn-sm btn-success';
             insertBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> Insert`;
             insertBtn.addEventListener('click', () => handlePixelArtInsert(art.framesData, art.gradientData));
 

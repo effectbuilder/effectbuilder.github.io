@@ -1,3 +1,8 @@
+/*
+    --------------------------------------------------------
+    1. Base Styles (Unchanged)
+    --------------------------------------------------------
+*/
 html,
 body {
     height: 100%;
@@ -18,7 +23,6 @@ body {
     position: relative;
     cursor: default;
     flex-shrink: 0;
-    /* Prevent the container from being squished */
 }
 
 #signalCanvas {
@@ -27,19 +31,12 @@ body {
     height: 100%;
 }
 
-/* This is the div that contains #canvas-container */
-/* It needs to grow and center its content */
 #right-panel-top>.flex-grow-1 {
     display: flex;
     justify-content: center;
-    /* Center #canvas-container horizontally */
     align-items: center;
-    /* Center #canvas-container vertically */
     flex-grow: 1;
-    /* Ensure it takes available space */
     min-height: 0;
-    /* Important for flex items to shrink */
-    /* Removed explicit height: 100%; to allow aspect-ratio to work without conflict */
 }
 
 .legend-button {
@@ -52,15 +49,11 @@ body {
     transition: color 0.2s ease;
 }
 
-
-/* This targets the <i> icon inside the clickable header */
 [data-bs-toggle="collapse"] .legend-button .bi {
     transition: transform 0.2s ease-in-out;
     display: inline-block;
 }
 
-/* When the header is expanded by Bootstrap, it sets aria-expanded="true".
-   This rule targets the icon inside and rotates it to point down. */
 [data-bs-toggle="collapse"][aria-expanded="true"] .legend-button .bi {
     transform: rotate(-180deg);
 }
@@ -107,14 +100,17 @@ body {
     user-select: none;
 }
 
-/* Make enabled toolbar buttons more evident */
+/* -------------------------------------------------------- */
+/* 2. Dark Theme (Default) Toolbar Styles (Unchanged)       */
+/* -------------------------------------------------------- */
+
+/* The solid effect is applied below in the light theme block. 
+   These remain for the dark theme's default outline appearance. */
 #toolbar .btn.btn-outline-secondary:not([disabled]) {
-    /* Use a slightly brighter gray for the border and icon color */
     --bs-btn-border-color: var(--bs-gray-600);
     --bs-btn-color: var(--bs-gray-400);
 }
 
-/* Make the hover effect stronger and more vibrant */
 #toolbar .btn.btn-outline-secondary:not([disabled]):hover {
     background-color: var(--bs-primary);
     border-color: var(--bs-primary);
@@ -130,24 +126,23 @@ body {
 .pixel-editor-cell {
     width: 100%;
     padding-bottom: 100%;
-    /* Creates a square aspect ratio */
     background-color: rgba(0, 0, 0, 0.5);
     position: relative;
 }
 
 .notification-read {
     opacity: 0.6;
-    /* Dim the entire item */
     background-color: #343a40;
-    /* Slightly darker background for read items (for dark theme) */
 }
 
-/* Ensure the icon remains visible */
 .notification-read .text-danger {
     opacity: 0.7;
 }
 
-/* --- New Gradient Picker Styles --- */
+/* -------------------------------------------------------- */
+/* 3. Custom Control Styles (Unchanged for dark defaults)   */
+/* -------------------------------------------------------- */
+
 .gradient-picker-container {
     position: relative;
     user-select: none;
@@ -191,10 +186,10 @@ body {
     width: 25px;
     height: 25px;
     border: 2px solid #000;
-    border-radius: 50%; /* This makes it a circle */
+    border-radius: 50%;
     transform: translateX(-50%);
     cursor: grab;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     transition: transform 0.1s ease-out, border-color 0.1s ease-out;
 }
 
@@ -207,9 +202,168 @@ body {
 .gradient-active-stop-controls {
     margin-top: 10px;
     padding: 10px;
-    background-color: rgba(0,0,0,0.2);
+    background-color: rgba(0, 0, 0, 0.2);
     border-radius: 6px;
 }
+
+.node-table {
+    --bs-table-bg: var(--bs-body-bg);
+}
+
+/* -------------------------------------------------------- */
+/* 4. HIGH-CONTRAST LIGHT THEME OVERRIDES                   */
+/* -------------------------------------------------------- */
+
+[data-bs-theme="light"] {
+    /* Define High-Contrast Colors: Light Gray for Panels, Pure White for Inputs */
+    --bs-body-bg-custom: var(--bs-gray-200);      /* Light Gray for #left-panel, #toolbar, bg-body-tertiary */
+    --bs-body-bg-custom-lighter: #fff;           /* Pure White for inner content, inputs */
+    --bs-border-color-strong: var(--bs-gray-500); /* Darker border for controls */
+    --bs-text-color-dark: var(--bs-gray-900);     /* Dark text */
+    
+    /* NEW: Define a prominent dark color for the Authentication Group area */
+    --bs-auth-fill: var(--bs-gray-700); 
+
+    /* Apply Custom Backgrounds for Panel and Headers */
+    #left-panel, #toolbar, .bg-body-tertiary {
+        background-color: var(--bs-body-bg-custom) !important;
+    }
+    
+    /* Stronger Border for all Fieldsets/Borders */
+    .border {
+        border-color: var(--bs-border-color-strong) !important;
+    }
+
+    /* Input/Select Contrast */
+    .form-control, .form-select, .input-group-text, .card-body {
+        border-color: var(--bs-border-color-strong) !important;
+        background-color: var(--bs-body-bg-custom-lighter) !important;
+        color: var(--bs-text-color-dark) !important; 
+    }
+    
+    /* FIX 1: Pixel Editor Contrast */
+    #pixel-editor-grid-container {
+        border: 1px solid var(--bs-gray-700); /* Very dark border around the grid */
+    }
+    
+    /* FIX 2: Transparent Pixel Cells (Clearer Checkerboard) */
+    .pixel-editor-cell {
+        background-color: rgba(0, 0, 0, 0.15); 
+    }
+
+    /* FIX 3: Gradient Preview Bar - Use Darkest Grays for Checkerboard */
+    .gradient-preview-bar {
+        border-color: var(--bs-border-color-strong);
+        background-image:
+            linear-gradient(45deg, var(--bs-gray-400) 25%, transparent 25%),
+            linear-gradient(-45deg, var(--bs-gray-400) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, var(--bs-gray-400) 75%),
+            linear-gradient(-45deg, transparent 75%, var(--bs-gray-400) 75%);
+    }
+
+    /* FIX 4 & 5: Gradient Marker Contrast */
+    .gradient-stop-marker {
+        border-color: var(--bs-gray-900); /* Dark border for visibility */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    
+    .gradient-stop-marker.active {
+        border-color: var(--bs-primary); /* Strong color for active state */
+    }
+
+    /* FIX 6: Gradient Active Controls Background (Distinct, clean background) */
+    .gradient-active-stop-controls {
+        background-color: var(--bs-body-bg-custom-lighter);
+        border: 1px solid var(--bs-border-color-strong);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* FIX 7: Polyline Node Table (Clear White Table with Stronger Borders) */
+    .node-table {
+        --bs-table-bg: var(--bs-body-bg-custom-lighter);
+        --bs-table-color: var(--bs-text-color-dark);
+        --bs-table-border-color: var(--bs-border-color-strong);
+    }
+
+    /* FIX 8: Control Group Header/Background */
+    .bg-body-tertiary {
+        background-color: var(--bs-body-bg-custom) !important;
+    }
+    
+    /* FIX 9: Notification Read Item (Clear background for high contrast) */
+    .notification-read {
+        background-color: var(--bs-gray-200); 
+        opacity: 1; 
+    }
+    
+    /* -------------------------------------------------------- */
+    /* CRITICAL FIX: Make TOOLBAR BUTTONS SOLID in Light Theme  */
+    /* -------------------------------------------------------- */
+
+    #toolbar .btn.btn-outline-secondary {
+        /* Set base appearance to be a filled button */
+        --bs-btn-bg: var(--bs-gray-300);              /* Light gray background */
+        --bs-btn-border-color: var(--bs-gray-400);    /* Clear border */
+        --bs-btn-color: var(--bs-gray-900);           /* Dark text/icon color */
+    }
+
+    #toolbar .btn.btn-outline-secondary:hover:not([disabled]),
+    #toolbar .btn.btn-outline-secondary:active:not([disabled]) {
+        /* Increase contrast and give feedback on hover/active */
+        --bs-btn-bg: var(--bs-gray-400);              
+        --bs-btn-border-color: var(--bs-gray-500);    
+        --bs-btn-color: var(--bs-gray-900);           
+    }
+    
+    /* Ensure the Constrain button's 'on' state (btn-secondary) remains solid and prominent */
+    #toolbar .btn.btn-secondary {
+        --bs-btn-bg: var(--bs-gray-600);
+        --bs-btn-border-color: var(--bs-gray-600);
+        --bs-btn-color: #fff;
+    }
+
+    /* -------------------------------------------------------- */
+    /* CRITICAL FIX: CONTIGUOUS AUTHENTICATION GROUP (LIGHT THEME) */
+    /* -------------------------------------------------------- */
+
+    .btn-group[aria-label="Authentication"] #user-session-group {
+        /* Remove nested button group styling that causes gaps */
+        display: contents !important;
+    }
+
+    /* Target the User Display SPAN, which uses the incorrect btn-outline-secondary class in the HTML */
+    .btn-group[aria-label="Authentication"] #user-session-group > span {
+        background-color: var(--bs-auth-fill) !important;
+        color: #fff !important; 
+        border-color: var(--bs-auth-fill) !important;
+        
+        /* The span has btn padding, so we just zero out the corners and margin */
+        border-radius: 0 !important;
+        margin: 0 !important;
+        
+        /* Fix the disabled styling so it uses the dark fill */
+        opacity: 1 !important; 
+    }
+    
+    /* Target the Notification button and Logout button for corner fixes */
+    .btn-group[aria-label="Authentication"] #notification-dropdown-toggle {
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+    .btn-group[aria-label="Authentication"] #logout-btn {
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        
+        /* Re-apply standard Bootstrap border-radius for the right corners */
+        border-top-right-radius: var(--bs-border-radius) !important;
+        border-bottom-right-radius: var(--bs-border-radius) !important;
+    }
+    
+}
+
+/* -------------------------------------------------------- */
+/* 5. Utility and Layout (Unchanged)                        */
+/* -------------------------------------------------------- */
 
 .color-picker-swatch {
     width: 100%; height: 2.375rem; border: 1px solid var(--bs-border-color);
@@ -224,39 +378,64 @@ body {
     align-items: center !important;
 }
 
-/* DELETE THESE UNUSED RULES */
-.custom-input-group {
-    display: flex;
-    align-items: center;
-    width: 110px;
-}
-
-.custom-input-group input {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.custom-input-group span {
-    padding: 0.25rem 0.5rem;
-    font-size: .875rem;
-    background-color: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-left: 0;
-    border-radius: var(--bs-border-radius);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-}
-
 #left-panel {
     width: 650px;
-    flex-shrink: 0; /* Prevents the panel from shrinking */
+    flex-shrink: 0;
 }
 
 #right-panel {
-    flex-grow: 1; /* Allows the panel to take up remaining space */
-    min-width: 0; /* Important for flexbox shrinking behavior */
+    flex-grow: 1;
+    min-width: 0;
 }
 
 .gradient-stop-marker.is-dragging {
     transition: none !important;
+}
+
+/* -------------------------------------------------------- */
+/* 6. FINAL DARK THEME CONTIGUITY FIX (Ensures RED Logout)  */
+/* -------------------------------------------------------- */
+[data-bs-theme="dark"] {
+    --bs-auth-fill: var(--bs-gray-700); 
+    
+    /* Fix the gap between Notification button and User Display */
+    .btn-group #user-session-group {
+        display: contents !important;
+    }
+
+    .btn-group #user-session-group > .btn,
+    .btn-group #user-session-group > span {
+        border-radius: 0;
+        margin: 0;
+        /* Force user display span to be gray */
+        background-color: var(--bs-auth-fill) !important;
+        border-color: var(--bs-auth-fill) !important;
+        color: #fff !important; 
+    }
+
+    /* --- CRITICAL RED LOGOUT FIX (Increased Specificity) --- */
+    /* Target the logout button using both its ID and its class within the specific group */
+    .btn-group[aria-label="Authentication"] #logout-btn {
+        /* Override the inherited gray with the explicit red danger color */
+        background-color: var(--bs-danger) !important;
+        border-color: var(--bs-danger) !important;
+        color: #fff !important; /* Ensure the icon/text is white */
+    }
+
+
+    /* Ensure the first and last element corners are rounded correctly */
+    #notification-dropdown-toggle {
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+    
+    /* Target the logout button's specific selector to ensure its left border is flat and the right is rounded */
+    #logout-btn {
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        
+        /* Re-apply standard Bootstrap border-radius for the right corners */
+        border-top-right-radius: var(--bs-border-radius) !important;
+        border-bottom-right-radius: var(--bs-border-radius) !important;
+    }
 }
