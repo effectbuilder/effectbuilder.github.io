@@ -66,7 +66,7 @@
                     </button>
                 </div>
 
-                <div class="btn-group" role="group" aria-label="Authentication">
+                <div id="auth-notification-block" class="d-flex" role="group" aria-label="Authentication and notifications">
 
                     <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-bell"></i>
@@ -76,7 +76,7 @@
                         </span>
                     </button>
 
-                    <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
+                    <button class="btn btn-success me-3" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
 
                     <div class="btn-group d-none" id="user-session-group" role="group">
                         <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
@@ -85,21 +85,22 @@
                         </span>
                         <button class="btn btn-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
                     </div>
-                </div>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
-                    <li class="dropdown-header d-flex justify-content-between align-items-center">
-                        <strong>Notifications</strong>
-                        <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <div id="notification-list-container">
-                        <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                            Sign in to view notifications.
+
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
+                        <li class="dropdown-header d-flex justify-content-between align-items-center">
+                            <strong>Notifications</strong>
+                            <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
                         </li>
-                    </div>
-                </ul>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <div id="notification-list-container">
+                            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                                Sign in to view notifications.
+                            </li>
+                        </div>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
