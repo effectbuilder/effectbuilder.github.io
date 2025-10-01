@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GIF Frame Composition Test</title>
+    <style>
+        body { font-family: sans-serif; background: #333; color: #fff; padding: 20px; }
+        h1 { border-bottom: 1px solid #555; padding-bottom: 10px; }
+        #output { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
+        .frame-container { background: #444; padding: 10px; border-radius: 5px; }
+        canvas { border: 1px solid #888; image-rendering: pixelated; image-rendering: crisp-edges; }
+        p { margin: 0 0 5px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>GIF Composition Test</h1>
+    <p>Select your two-frame GIF. Each fully composed frame will be displayed below.</p>
+    <input type="file" id="gif-input" accept="image/gif">
+    <div id="output"></div>
+
+    <script type="module">
+        import { parseGIF, decompressFrames } from 'https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm';
+
+        document.getElementById('gif-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('output').innerHTML = '<p>Processing...</p>';
+            
+            try {
+                const buffer = await file.arrayBuffer();
+                const gif = parseGIF(buffer);
+                const frames = decompressFrames(gif, true);
+
+                if (!frames || !frames.length) {
+                    alert("Error: Could not extract frames from GIF.");
+                    return;
+                }
+
+                // This canvas is our off-screen "whiteboard" where we build the animation
+                const masterCanvas = document.createElement('canvas');
+                masterCanvas.width = gif.lsd.width;
+                masterCanvas.height = gif.lsd.height;
+                const masterCtx = masterCanvas.getContext('2d');
+                let savedCanvasState = null;
+
+                const outputContainer = document.getElementById('output');
+                outputContainer.innerHTML = ''; // Clear "Processing..." message
+
+                // Process each frame one by one
+                for (let i = 0; i < frames.length; i++) {
+                    const frame = frames[i];
+                    const prevFrame = i > 0 ? frames[i - 1] : null;
+
+                    // 1. Handle disposal of the PREVIOUS frame
+                    if (prevFrame) {
+                        if (prevFrame.disposalType === 2) { 
+                            masterCtx.clearRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                        } else if (prevFrame.disposalType === 3 && savedCanvasState) {
+                            masterCtx.putImageData(savedCanvasState, 0, 0);
+                        }
+                    }
+                    savedCanvasState = (frame.disposalType === 3) ? masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height) : null;
+                    
+                    // 2. Draw the CURRENT frame's patch
+                    if (frame.pixels && frame.pixels.length > 0) {
+                        const patchImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
+                        const patchData = patchImageData.data;
+                        const colorTable = frame.lct || gif.gct;
+
+                        if (colorTable) {
+                            for (let j = 0; j < frame.pixels.length; j++) {
+                                const colorIndex = frame.pixels[j];
+                                if (colorIndex !== frame.transparentIndex && colorTable[colorIndex]) {
+                                    const color = colorTable[colorIndex];
+                                    const offset = j * 4;
+                                    patchData[offset]     = color[0];
+                                    patchData[offset + 1] = color[1];
+                                    patchData[offset + 2] = color[2];
+                                    patchData[offset + 3] = 255;
+                                }
+                            }
+                            masterCtx.putImageData(patchImageData, frame.dims.left, frame.dims.top);
+                        }
+                    }
+
+                    // 3. Display the result of this step
+                    const frameDiv = document.createElement('div');
+                    frameDiv.className = 'frame-container';
+                    
+                    const p = document.createElement('p');
+                    p.textContent = `Frame ${i + 1} (Composed)`;
+                    frameDiv.appendChild(p);
+
+                    const displayCanvas = document.createElement('canvas');
+                    displayCanvas.width = masterCanvas.width;
+                    displayCanvas.height = masterCanvas.height;
+                    const displayCtx = displayCanvas.getContext('2d');
+                    displayCtx.drawImage(masterCanvas, 0, 0);
+                    frameDiv.appendChild(displayCanvas);
+                    
+                    outputContainer.appendChild(frameDiv);
+                }
+
+            } catch (err) {
+                alert("A critical error occurred: " + err.message);
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
