@@ -184,6 +184,7 @@ let isPixelArtGalleryLoaded = false;
 let pixelArtCache = [];
 let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
+let isUpdatingFromShapes = false;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
 
 /**
@@ -1524,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     break;
                 case 'right':
-                    for (let r = 0; r < rows; r++) {
+                    for (let r = 0; r < cols; r++) {
                         for (let c = 0; c < cols; c++) {
                             newGrid[r][c] = gridData[r][(c - 1 + cols) % cols];
                         }
@@ -1535,74 +1536,137 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         document.addEventListener('keydown', (e) => {
-            // First, check if the pixel art editor is currently visible.
-            if (!editorModalEl.classList.contains('show')) {
-                return;
-            }
+            const editorModalEl = document.getElementById('pixelArtEditorModal');
+            const isEditorOpen = editorModalEl && editorModalEl.classList.contains('show');
 
-            // Next, check if the user is typing in an input field. If so, do nothing.
-            const isTyping = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
-            if (isTyping) {
-                return;
-            }
+            // --- Priority 1: Pixel Art Editor ---
+            if (isEditorOpen) {
+                const isTyping = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+                if (isTyping) {
+                    return; // Allow typing in modal inputs
+                }
 
-            let direction = null;
-            if (e.key === 'ArrowUp') direction = 'up';
-            if (e.key === 'ArrowDown') direction = 'down';
-            if (e.key === 'ArrowLeft') direction = 'left';
-            if (e.key === 'ArrowRight') direction = 'right';
+                let editorActionHandled = false;
+                let direction = null;
+                if (e.key === 'ArrowUp') direction = 'up';
+                if (e.key === 'ArrowDown') direction = 'down';
+                if (e.key === 'ArrowLeft') direction = 'left';
+                if (e.key === 'ArrowRight') direction = 'right';
 
-            // 1. Handle Frame Navigation (No modifier keys)
-            if (!e.ctrlKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-                e.preventDefault();
-                if (e.key === 'ArrowLeft') prevFrameBtn.click();
-                if (e.key === 'ArrowRight') nextFrameBtn.click();
-                return;
-            }
+                // Frame Navigation (no modifiers)
+                if (!e.ctrlKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
+                    const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
+                    if (e.key === 'ArrowLeft' && prevFrameBtn) prevFrameBtn.click();
+                    if (e.key === 'ArrowRight' && nextFrameBtn) nextFrameBtn.click();
+                    editorActionHandled = true;
+                }
 
-            // 2. Handle Pixel Shifting (Ctrl or Shift key must be pressed)
-            if ((e.ctrlKey || e.shiftKey) && direction) {
-                e.preventDefault();
-
-                if (e.ctrlKey) {
-                    // --- SHIFT CURRENT FRAME ---
-                    const currentGrid = readGrid();
-                    const newGrid = shiftGrid(currentGrid, direction);
-                    renderGrid(newGrid, currentGradientStops);
-
-                } else if (e.shiftKey) {
-                    // --- SHIFT ALL FRAMES ---
+                // Pixel Shifting (with modifiers)
+                else if ((e.ctrlKey || e.shiftKey) && direction) {
+                    const shiftAll = e.shiftKey;
                     const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
-                    if (!fieldset) return;
+                    if (fieldset) {
+                        const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                        const gradientStops = targetObject ? targetObject.gradient.stops : [];
+                        const allFrameItems = Array.from(fieldset.querySelectorAll('.pixel-art-frame-item'));
 
-                    const mainTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                    const allFrameItems = Array.from(fieldset.querySelectorAll('.pixel-art-frame-item'));
-                    const newFramesArray = [];
+                        allFrameItems.forEach((item, index) => {
+                            if (shiftAll || index === currentEditorFrameIndex) {
+                                const dataTextarea = item.querySelector('.frame-data-input');
+                                const gridData = JSON.parse(dataTextarea.value);
+                                const newGrid = shiftGrid(gridData, direction);
+                                const newDataString = JSON.stringify(newGrid);
+                                dataTextarea.value = newDataString;
 
-                    allFrameItems.forEach((item, index) => {
-                        const dataTextarea = item.querySelector('.frame-data-input');
-                        const durationInput = item.querySelector('.frame-duration-input');
+                                // --- THIS IS THE FIX ---
+                                // Find the preview canvas for this specific frame item and redraw it.
+                                const previewCanvas = item.querySelector('.pixel-art-preview-canvas');
+                                if (previewCanvas) {
+                                    renderPixelArtPreview(previewCanvas, newDataString, gradientStops);
+                                }
 
-                        const gridData = JSON.parse(dataTextarea.value);
-                        const newGrid = shiftGrid(gridData, direction);
-                        dataTextarea.value = JSON.stringify(newGrid);
-
-                        // If this is the currently viewed frame, update the visible grid
-                        if (index === currentEditorFrameIndex) {
-                            renderGrid(newGrid, currentGradientStops);
-                        }
-
-                        newFramesArray.push({
-                            data: dataTextarea.value,
-                            duration: parseFloat(durationInput.value) || 0.1
+                                // Also update the main editor grid if it's the current frame
+                                if (index === currentEditorFrameIndex) {
+                                    renderGrid(newGrid, gradientStops);
+                                }
+                            }
                         });
-                    });
 
-                    // Update the main hidden textarea that stores all frames
-                    mainTextarea.value = JSON.stringify(newFramesArray);
-                    mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    recordHistory();
-                    showToast(`Shifted pixels in all ${allFrameItems.length} frames!`, 'info');
+                        if (shiftAll) {
+                            const mainTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                            const newFramesArray = allFrameItems.map(item => ({ data: item.querySelector('.frame-data-input').value, duration: parseFloat(item.querySelector('.frame-duration-input').value) }));
+                            mainTextarea.value = JSON.stringify(newFramesArray);
+                            mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                            showToast(`Shifted pixels in all ${allFrameItems.length} frames!`, 'info');
+                        }
+                    }
+                    editorActionHandled = true;
+                }
+
+                if (editorActionHandled) {
+                    e.preventDefault();
+                    e.stopPropagation(); // CRITICAL: This stops the event from reaching other logic.
+                    return;
+                }
+            }
+
+            // --- Priority 2: Global Shortcuts & Input Focus Check ---
+            const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
+
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key.toLowerCase() === 'z') { e.preventDefault(); applyHistoryState(appHistory.undo()); return; }
+                if (e.key.toLowerCase() === 'y') { e.preventDefault(); applyHistoryState(appHistory.redo()); return; }
+                if (isInputFocused) return; // Allow copy/paste in text fields
+                if (e.key.toLowerCase() === 'c' && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('copy-props-btn').click(); return; }
+                if (e.key.toLowerCase() === 'v' && propertyClipboard && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('paste-props-btn').click(); return; }
+            }
+
+            if (isInputFocused) {
+                return; // Exit if typing in any other input on the page
+            }
+
+            // --- Priority 3: Canvas Object Manipulation ---
+            if (e.key === 'Escape' && !document.body.classList.contains('modal-open')) {
+                if (isDrawingPolyline) {
+                    finalizePolyline();
+                } else if (selectedObjectIds.length > 0) {
+                    selectedObjectIds = [];
+                    updateToolbarState();
+                    syncPanelsWithSelection();
+                    needsRedraw = true;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjectIds.length > 0) {
+                e.preventDefault();
+                deleteObjects([...selectedObjectIds]);
+                return;
+            }
+
+            if (selectedObjectIds.length > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const moveAmount = e.shiftKey ? 40 : 4; // 10px or 1px in UI scale
+                let moved = false;
+                selectedObjectIds.forEach(id => {
+                    const obj = objects.find(o => o.id === id);
+                    if (obj && !obj.locked) {
+                        moved = true;
+                        switch (e.key) {
+                            case 'ArrowUp': obj.y -= moveAmount; break;
+                            case 'ArrowDown': obj.y += moveAmount; break;
+                            case 'ArrowLeft': obj.x -= moveAmount; break;
+                            case 'ArrowRight': obj.x += moveAmount; break;
+                        }
+                    }
+                });
+
+                if (moved) {
+                    updateFormValuesFromObjects();
+                    debouncedRecordHistory();
+                    needsRedraw = true;
                 }
             }
         });
@@ -1896,28 +1960,74 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             const valueToDelete = parseFloat(button.dataset.value);
-            const isColorUsed = readGrid().flat().some(pixelValue => pixelValue === valueToDelete);
-            if (isColorUsed) {
-                showToast("Cannot delete a color that is currently in use on the canvas.", "danger");
+
+            // This check correctly prevents deleting a color that is currently in use.
+            let isColorUsedInAnyFrame = false;
+            const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+            if (fieldset) {
+                const allFrameTextareas = fieldset.querySelectorAll('.frame-data-input');
+                for (const textarea of allFrameTextareas) {
+                    try {
+                        const gridData = JSON.parse(textarea.value);
+                        if (gridData.flat().some(pixelValue => pixelValue === valueToDelete)) {
+                            isColorUsedInAnyFrame = true;
+                            break;
+                        }
+                    } catch (err) { console.error("Error parsing frame data during usage check:", err); }
+                }
+            }
+            if (isColorUsedInAnyFrame) {
+                showToast("Cannot delete a color that is in use in one or more animation frames.", "danger");
                 return;
             }
+
+            // --- START: NEW DATA REMAPPING LOGIC ---
+            // This runs after we confirm the color is safe to delete.
+            if (fieldset) {
+                const allFrameTextareas = fieldset.querySelectorAll('.frame-data-input');
+                allFrameTextareas.forEach(textarea => {
+                    try {
+                        const gridData = JSON.parse(textarea.value);
+                        // Loop through every pixel and decrement the index of any color after the one we deleted.
+                        const remappedGrid = gridData.map(row =>
+                            row.map(pixelValue =>
+                                (pixelValue > valueToDelete) ? pixelValue - 1 : pixelValue
+                            )
+                        );
+                        textarea.value = JSON.stringify(remappedGrid);
+                    } catch (err) {
+                        console.error("Error remapping frame data after color deletion:", err);
+                    }
+                });
+            }
+            // --- END: NEW DATA REMAPPING LOGIC ---
+
             const indexToDelete = valueToDelete - 2;
             const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
             if (!targetObject) return;
+
             let newStops = [...currentGradientStops];
             newStops.splice(indexToDelete, 1);
             if (newStops.length > 1) {
                 newStops.forEach((stop, index) => { stop.position = index / (newStops.length - 1); });
             }
+
             targetObject.update({ gradient: { stops: newStops } });
             currentGradientStops = newStops;
-            const fieldset = form.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+
             const gradientControl = fieldset.querySelector('textarea[name$="_gradientStops"]');
             if (gradientControl) {
                 gradientControl.value = JSON.stringify(newStops);
                 gradientControl.dispatchEvent(new CustomEvent('rebuild', { detail: { stops: newStops } }));
             }
+
             renderEditorPalette();
+            // Re-render the currently visible grid with the remapped data
+            const currentFrameTextarea = document.getElementById(`frame-data-${currentEditorObjectId}-${currentEditorFrameIndex}`);
+            if (currentFrameTextarea) {
+                renderGrid(JSON.parse(currentFrameTextarea.value), currentGradientStops);
+            }
+
             const firstPaintButton = paletteContainer.querySelector('[data-value]');
             if (firstPaintButton) firstPaintButton.click();
             recordHistory();
@@ -2090,7 +2200,8 @@ document.addEventListener('DOMContentLoaded', function () {
         ],
         ring: [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'innerDiameter', 'numberOfSegments', 'angularWidth',
+            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+            'innerDiameter', 'numberOfSegments', 'angularWidth',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
@@ -2128,12 +2239,14 @@ document.addEventListener('DOMContentLoaded', function () {
         'tetris': [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
-            'tetrisAnimation', 'tetrisBlockCount', 'tetrisDropDelay', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         fire: [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
+            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'fire-radial': [
@@ -2622,20 +2735,24 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetWorkspace() {
         // Clear all object-specific data
         objects = [];
-        configStore = configStore.filter(c => !(c.property || c.name).startsWith('obj'));
         selectedObjectIds = [];
 
-        // Reset the undo/redo appHistory
+        // --- START: THIS IS THE FIX ---
+        // Completely rebuild the configStore from the master template
+        // instead of just filtering it.
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+        configStore = Array.from(doc.querySelectorAll('meta')).map(parseMetaToConfig);
+        // --- END: THIS IS THE FIX ---
+
         appHistory.stack = [];
         appHistory.index = -1;
 
-        // Get the current user and set new default values
         const user = window.auth.currentUser;
         const newTitle = "Untitled Effect";
         const newPublisher = (user && user.displayName) ? user.displayName : "Anonymous";
         const newDescription = "";
 
-        // Find and update the global settings in the central configStore
         const titleConf = configStore.find(c => c.name === 'title');
         if (titleConf) titleConf.default = newTitle;
 
@@ -2645,18 +2762,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const pubConf = configStore.find(c => c.name === 'publisher');
         if (pubConf) pubConf.default = newPublisher;
 
-        // Temporarily set the isRestoring flag to prevent state preservation during the render
         isRestoring = true;
         renderForm();
         isRestoring = false;
 
         drawFrame();
         updateUndoRedoButtons();
-
-        // Record this new, blank state as the first appHistory entry
         recordHistory();
 
-        // Clear any saved project ID from the session
         currentProjectDocId = null;
         updateShareButtonState();
 
@@ -4046,18 +4159,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // --- 5. FINALIZATION ---
-        if (!isRestoring) {
-            for (const key in generalSettingsValues) {
-                const el = form.elements[key];
-                if (el) {
-                    if (el.type === 'checkbox') {
-                        el.checked = generalSettingsValues[key];
-                    } else {
-                        el.value = generalSettingsValues[key];
-                    }
-                }
-            }
-        }
+        // if (!isRestoring) {
+        //     for (const key in generalSettingsValues) {
+        //         const el = form.elements[key];
+        //         if (el) {
+        //             if (el.type === 'checkbox') {
+        //                 el.checked = generalSettingsValues[key];
+        //             } else {
+        //                 el.value = generalSettingsValues[key];
+        //             }
+        //         }
+        //     }
+        // }
 
         updateFormValuesFromObjects();
 
@@ -4066,6 +4179,13 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
 
         initializeFrameSorters();
+
+        const publisherInput = form.elements['publisher'];
+        if (publisherInput) {
+            console.log(`3. END of renderForm. Final form input value is: "${publisherInput.value}"`);
+        } else {
+            console.log("3. END of renderForm. Publisher input not found in form.");
+        }
     }
 
     function updateSensorControlVisibility(fieldset) {
@@ -4183,7 +4303,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 configStore = [...generalConfigs, ...reorderedObjectConfigs];
 
                 // --- 4. Update the application state ---
-                updateObjectsFromForm();
+
                 drawFrame();
                 recordHistory();
             }
@@ -4574,7 +4694,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const soundEnabled = generalValues.enableSound !== false;
         const isAnimating = generalValues.enableAnimation !== false;
 
-        // Start with a default "silent" audio object
         let audioData = {
             bass: { avg: 0, peak: 0 },
             mids: { avg: 0, peak: 0 },
@@ -4583,13 +4702,10 @@ document.addEventListener('DOMContentLoaded', function () {
             frequencyData: new Uint8Array(128).fill(0)
         };
 
-        // Only generate real or mock audio data if sound is globally enabled
         if (soundEnabled) {
             if (isAudioSetup) {
-                // Case 1: Real audio is connected and enabled. Use it.
                 audioData = getAudioMetrics();
             } else {
-                // Case 2: No real audio, so generate mock preview data.
                 const time = now / 1000;
                 const randomRate = (Math.sin(time * 0.1) + 1.2);
                 const mockVol = (Math.sin(time * 0.8 * randomRate) * 0.5 + Math.sin(time * 0.5 * randomRate) * 0.5) / 2 + 0.5;
@@ -4617,9 +4733,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-        const sensorData = {}; // Start with an empty object
+        const sensorData = {};
 
-        // Only generate mock sensor data if the master animation switch is on
         if (isAnimating) {
             neededSensors.forEach((sensorName, index) => {
                 const mockValue = Math.sin(now / 2000 + index) * 50 + 50;
@@ -4752,6 +4867,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * This is now the primary way user input affects the application state.
      */
     function updateObjectsFromForm() {
+        if (isRestoring || isUpdatingFromShapes) return;
         if (isRestoring) return;
         const formValues = getControlValues();
 
@@ -4783,7 +4899,8 @@ document.addEventListener('DOMContentLoaded', function () {
      * Reads all properties from the 'objects' array and updates the form inputs to match.
      */
     function updateFormValuesFromObjects() {
-        // This list now includes the missing polyline animation properties.
+        if (isUpdatingFromShapes) return; // Prevents the function from running twice
+        isUpdatingFromShapes = true;      // Set the flag to "busy"
 
         objects.forEach(obj => {
             const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
@@ -4854,6 +4971,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         generateOutputScript();
+
+        isUpdatingFromShapes = false;     // Unset the flag when done
     }
 
     /**
@@ -4965,14 +5084,31 @@ document.addEventListener('DOMContentLoaded', function () {
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
             const masterConfigTemplates = Array.from(doc.querySelectorAll('meta')).map(parseMetaToConfig);
 
+            // --- START: CORRECTED MERGE LOGIC ---
             const masterGeneralConfigs = masterConfigTemplates.filter(c => !(c.property || c.name).startsWith('obj'));
-            const mergedGeneralConfigs = masterGeneralConfigs.map(masterConf => {
-                const key = masterConf.property || masterConf.name;
-                if (loadedConfigMap.has(key)) {
-                    return { ...masterConf, default: loadedConfigMap.get(key).default };
-                }
-                return masterConf;
+            const loadedGeneralConfigs = loadedConfigs.filter(c => !(c.property || c.name).startsWith('obj'));
+
+            const mergedGeneralConfigMap = new Map();
+
+            // 1. Add all master configs to the map first to establish a complete baseline.
+            masterGeneralConfigs.forEach(conf => {
+                mergedGeneralConfigMap.set(conf.property || conf.name, { ...conf });
             });
+
+            // 2. Iterate through loaded configs and UPDATE the baseline map.
+            loadedGeneralConfigs.forEach(loadedConf => {
+                const key = loadedConf.property || loadedConf.name;
+                const existingConf = mergedGeneralConfigMap.get(key);
+                if (existingConf) {
+                    // If the property exists in our baseline, update its default value.
+                    existingConf.default = loadedConf.default;
+                } else {
+                    // If it's a new property not in our template, add it (for forward compatibility).
+                    mergedGeneralConfigMap.set(key, loadedConf);
+                }
+            });
+            const mergedGeneralConfigs = Array.from(mergedGeneralConfigMap.values());
+            // --- END: CORRECTED MERGE LOGIC ---
 
             const orderedIds = [];
             const seenIds = new Set();
@@ -4986,12 +5122,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             });
-            const objectIds = orderedIds;
+
             const finalMergedObjectConfigs = [];
-            objectIds.forEach(id => {
+            orderedIds.forEach(id => {
                 const fullDefaultConfigSet = getDefaultObjectConfig(id);
                 const savedObjectConfigsForId = loadedConfigs.filter(c => c.property && c.property.startsWith(`obj${id}_`));
                 const savedPropsMap = new Map(savedObjectConfigsForId.map(c => [c.property, c]));
+
                 const mergedConfigsForThisObject = fullDefaultConfigSet.map(defaultConf => {
                     if (savedPropsMap.has(defaultConf.property)) {
                         const savedConf = savedPropsMap.get(defaultConf.property);
@@ -5006,7 +5143,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             createInitialObjects();
 
-            if (savedObjects.length > 0) {
+            if (savedObjects && savedObjects.length > 0) {
                 savedObjects.forEach(savedObj => {
                     const obj = objects.find(o => o.id === savedObj.id);
                     if (obj) {
@@ -5017,23 +5154,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             renderForm();
-
-            configStore.filter(c => !(c.property || c.name).startsWith('obj')).forEach(conf => {
-                const key = conf.property || conf.name;
-                const el = form.elements[key];
-                if (el) {
-                    if (el.type === 'checkbox') {
-                        el.checked = (conf.default === true || conf.default === 'true');
-                    } else {
-                        el.value = conf.default;
-                    }
-                    const slider = form.querySelector(`#${el.id}_slider`);
-                    if (slider) slider.value = conf.default;
-                    const hexInput = form.querySelector(`#${el.id}_hex`);
-                    if (hexInput) hexInput.value = conf.default;
-                }
-            });
-
             updateObjectsFromForm();
             drawFrame();
             recordHistory();
@@ -5068,6 +5188,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             isRestoring = true;
+            // This now calls the new, robust loader function
             _loadFromConfigArray(workspace.configs, workspace.objects);
 
             currentProjectDocId = workspace.docId || null;
@@ -5368,6 +5489,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('input', (e) => {
         const target = e.target;
+
         if (target.name) {
             dirtyProperties.add(target.name);
         }
@@ -5809,126 +5931,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.addEventListener('keydown', (e) => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjectIds.length > 0) {
-            e.preventDefault(); // Prevents the browser's default action (like going back a page)
-            deleteObjects([...selectedObjectIds]);
-        }
 
-        if (isDrawingPolyline && (e.key === 'Enter' || e.key === 'Escape')) {
-            e.preventDefault();
-            finalizePolyline();
-            return;
-        }
-
-        const isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable);
-
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key.toLowerCase() === 'z') {
-                e.preventDefault();
-                const state = appHistory.undo();
-                applyHistoryState(state);
-                return;
-            } else if (e.key.toLowerCase() === 'y') {
-                e.preventDefault();
-                const state = appHistory.redo();
-                applyHistoryState(state);
-                return;
-            } else if (e.key.toLowerCase() === 'c') {
-                if (isInputFocused) {
-                    return;
-                }
-                e.preventDefault();
-                if (selectedObjectIds.length > 0) {
-                    // Trigger the same logic as the copy button click
-                    document.getElementById('copy-props-btn').click();
-                }
-                return;
-            } else if (e.key.toLowerCase() === 'v') {
-                if (isInputFocused) {
-                    return;
-                }
-                e.preventDefault();
-                if (propertyClipboard && selectedObjectIds.length > 0) {
-                    // Trigger the same logic as the paste button click
-                    document.getElementById('paste-props-btn').click();
-                }
-                return;
-            }
-        }
-
-        // Block other application-specific hotkeys if an input is focused.
-        if (isInputFocused) {
-            return;
-        }
-
-        // Handle Escape key to deselect all objects.
-        if (e.key === 'Escape' && selectedObjectIds.length > 0 && !document.body.classList.contains('modal-open')) {
-            e.preventDefault();
-            selectedObjectIds = [];
-            updateToolbarState();
-            syncPanelsWithSelection();
-            drawFrame();
-        }
-
-        // Handle keyboard movement for selected objects
-        if (selectedObjectIds.length > 0) {
-            let moveAmount = 4; // Corresponds to 1 UI pixel
-            if (e.shiftKey) {
-                moveAmount = 40; // Corresponds to 10 UI pixels
-            }
-
-            let moved = false;
-            selectedObjectIds.forEach(id => {
-                const obj = objects.find(o => o.id === id);
-                if (obj && !obj.locked) {
-                    let newX = obj.x;
-                    let newY = obj.y;
-
-                    switch (e.key) {
-                        case 'ArrowUp':
-                            newY -= moveAmount;
-                            moved = true;
-                            break;
-                        case 'ArrowDown':
-                            newY += moveAmount;
-                            moved = true;
-                            break;
-                        case 'ArrowLeft':
-                            newX -= moveAmount;
-                            moved = true;
-                            break;
-                        case 'ArrowRight':
-                            newX += moveAmount;
-                            moved = true;
-                            break;
-                    }
-
-                    if (moved) {
-                        if (constrainToCanvas) {
-                            newX = Math.max(0, Math.min(newX, canvas.width - obj.width));
-                            newY = Math.max(0, Math.min(newY, canvas.height - obj.height));
-                        }
-                        obj.x = newX;
-                        obj.y = newY;
-                    }
-                }
-            });
-
-            if (moved) {
-                e.preventDefault();
-                updateFormValuesFromObjects();
-                drawFrame();
-                recordHistory();
-            }
-        }
-
-        // Handle Delete key for selected objects
-        if ((e.key === 'Delete') && selectedObjectIds.length > 0) {
-            e.preventDefault();
-            deleteObjects([...selectedObjectIds]);
-        }
-    });
 
     /**
      * Updates the global configStore with the current state of all form controls.
@@ -5961,34 +5964,14 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        syncConfigStoreWithForm();
+        const trimmedName = (getControlValues()['title'] || 'Untitled Effect').trim();
 
-        const name = getControlValues()['title'] || 'Untitled Effect';
-        const trimmedName = name.trim();
-
-        const sanitizedConfigs = configStore.map(conf => {
-            const sanitized = {};
-            for (const key in conf) {
-                if (conf[key] !== undefined) {
-                    sanitized[key] = conf[key];
-                }
-            }
-            return sanitized;
-        });
-
-        const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
-        const projectData = {
-            name: trimmedName,
-            thumbnail: thumbnail,
-            configs: sanitizedConfigs,
-            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked })),
-            updatedAt: new Date()
-        };
-
-        const q = window.query(window.collection(window.db, "projects"), window.where("userId", "==", user.uid), window.where("name", "==", trimmedName));
+        const projectsRef = window.collection(window.db, "projects");
+        const q = window.query(projectsRef, window.where("userId", "==", user.uid), window.where("name", "==", trimmedName));
         const querySnapshot = await window.getDocs(q);
 
         if (!querySnapshot.empty) {
+            // This is the OVERWRITE logic for an existing effect you own.
             const existingDocId = querySnapshot.docs[0].id;
             showConfirmModal(
                 'Confirm Overwrite',
@@ -5996,6 +5979,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 'Overwrite',
                 async () => {
                     try {
+                        syncConfigStoreWithForm(); // Sync before creating data
+                        const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
+                        const projectData = {
+                            name: trimmedName,
+                            thumbnail: thumbnail,
+                            configs: configStore.map(c => { const s = {}; for (const k in c) { if (c[k] !== undefined) s[k] = c[k]; } return s; }),
+                            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked })),
+                            updatedAt: window.serverTimestamp()
+                        };
                         const docRef = window.doc(window.db, "projects", existingDocId);
                         await window.updateDoc(docRef, projectData);
                         currentProjectDocId = existingDocId;
@@ -6008,13 +6000,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             );
         } else {
+            // This is the CREATE NEW logic for a new effect or a copy.
             try {
-                projectData.userId = user.uid;
-                projectData.creatorName = user.displayName || 'Anonymous';
-                projectData.isPublic = true;
-                projectData.createdAt = new Date();
+                // --- START: THIS IS THE FIX ---
+                // Force the publisher in the config to be the current user's name
+                // before saving the new copy.
+                const pubConf = configStore.find(c => c.name === 'publisher');
+                if (pubConf) {
+                    pubConf.default = user.displayName || 'Anonymous';
+                }
+                syncConfigStoreWithForm();
+                // --- END: THIS IS THE FIX ---
 
-                const docRef = await window.addDoc(window.collection(window.db, "projects"), projectData);
+                const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
+                const projectData = {
+                    name: trimmedName,
+                    thumbnail: thumbnail,
+                    configs: configStore.map(c => { const s = {}; for (const k in c) { if (c[k] !== undefined) s[k] = c[k]; } return s; }),
+                    objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked })),
+                    userId: user.uid,
+                    creatorName: user.displayName || 'Anonymous',
+                    isPublic: true,
+                    createdAt: window.serverTimestamp(),
+                    updatedAt: window.serverTimestamp(),
+                    likes: 0,
+                    downloadCount: 0,
+                    viewCount: 0
+                };
+
+                const docRef = await window.addDoc(projectsRef, projectData);
                 currentProjectDocId = docRef.id;
                 updateShareButtonState();
                 showToast(`Effect "${trimmedName}" was saved successfully!`, 'success');
@@ -6194,13 +6208,45 @@ document.addEventListener('DOMContentLoaded', function () {
      * Handles the mousedown event on the canvas to initiate dragging or resizing.
      * @param {MouseEvent} e - The mousedown event object.
      */
+    canvasContainer.addEventListener('mousemove', e => {
+        if (isDrawingPolyline && previewLine.active) {
+            const { x, y } = getCanvasCoordinates(e);
+            previewLine.endX = x;
+            previewLine.endY = y;
+            return;
+        }
+
+        if (coordsDisplay) {
+            const { x, y } = getCanvasCoordinates(e);
+            coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}`;
+        }
+
+        if (!isDragging && !isResizing && !isRotating && !isDraggingNode) {
+            const { x, y } = getCanvasCoordinates(e);
+            let cursor = 'default';
+            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+
+            if (topObject) {
+                cursor = 'pointer';
+                if (selectedObjectIds.includes(topObject.id) && !topObject.locked) {
+                    const handle = topObject.getHandleAtPoint(x, y);
+                    if (handle) {
+                        cursor = handle.cursor;
+                    } else {
+                        cursor = 'move';
+                    }
+                }
+            }
+            canvasContainer.style.cursor = cursor;
+        }
+    });
+
     canvasContainer.addEventListener('mousedown', e => {
         if (activeTool === 'polyline') {
             e.preventDefault();
             const { x, y } = getCanvasCoordinates(e);
 
             if (!isDrawingPolyline) {
-                // First click: Create the shape and start the preview
                 isDrawingPolyline = true;
                 const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
                 currentlyDrawingShapeId = newId;
@@ -6209,26 +6255,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     id: newId, shape: 'polyline', name: `Polyline ${newId}`,
                     x: x, y: y, width: 1, height: 1,
                     polylineNodes: [{ x: 0, y: 0 }],
-                    ctx: ctx, enableStroke: true, strokeWidth: 4
+                    ctx: ctx, enableStroke: true, strokeWidth: 8
                 });
                 objects.unshift(newShape);
 
-                const newObjectConfigs = getDefaultObjectConfig(newId).filter(conf => {
-                    const propName = conf.property.substring(conf.property.indexOf('_') + 1);
-                    if (propName === 'strokeGradientStops') return true;
-                    return (shapePropertyMap['polyline'] || []).includes(propName);
-                });
-
-                const enableStrokeConf = newObjectConfigs.find(c => c.property === `obj${newId}_enableStroke`);
-                if (enableStrokeConf) {
-                    enableStrokeConf.default = 'true';
-                }
-                const strokeWidthConf = newObjectConfigs.find(c => c.property === `obj${newId}_strokeWidth`);
-                if (strokeWidthConf) {
-                    strokeWidthConf.default = '4';
-                }
-
+                const newObjectConfigs = getDefaultObjectConfig(newId);
                 const firstObjectConfigIndex = configStore.findIndex(c => (c.property || '').startsWith('obj'));
+
                 if (firstObjectConfigIndex === -1) { configStore.push(...newObjectConfigs); }
                 else { configStore.splice(firstObjectConfigIndex, 0, ...newObjectConfigs); }
 
@@ -6241,32 +6274,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewLine.endX = x;
                 previewLine.endY = y;
                 previewLine.active = true;
-
+                needsRedraw = true;
             } else {
-                // Subsequent clicks: Add a new node
                 const shape = objects.find(o => o.id === currentlyDrawingShapeId);
                 if (!shape) return;
 
-                const center = shape.getCenter();
-                const angle = -shape.getRenderAngle();
+                const center = { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
+                const angle = -shape.rotation * Math.PI / 180;
                 const localClickX = (x - center.x) * Math.cos(angle) - (y - center.y) * Math.sin(angle);
                 const localClickY = (x - center.x) * Math.sin(angle) + (y - center.y) * Math.cos(angle);
+
                 const nodeX = localClickX + shape.width / 2;
                 const nodeY = localClickY + shape.height / 2;
 
                 const newNodes = [...shape.polylineNodes, { x: nodeX, y: nodeY }];
                 shape.update({ polylineNodes: newNodes });
-
                 updateFormValuesFromObjects();
 
                 previewLine.startX = x;
                 previewLine.startY = y;
+                needsRedraw = true;
             }
-            drawFrame();
             return;
         }
 
         e.preventDefault();
+        isDragging = isResizing = isRotating = isDraggingNode = false;
         const { x, y } = getCanvasCoordinates(e);
         dragStartX = x;
         dragStartY = y;
@@ -6280,56 +6313,34 @@ document.addEventListener('DOMContentLoaded', function () {
             const handle = activeObject.getHandleAtPoint(x, y);
             if (handle) {
                 if (e.altKey && handle.type === 'node') {
-                    const nodeDeleted = activeObject.deleteNode(handle.index);
-                    if (nodeDeleted) {
+                    if (activeObject.deleteNode(handle.index)) {
                         updateFormValuesFromObjects();
                         recordHistory();
-                        drawFrame();
+                        needsRedraw = true;
                     }
                     return;
                 }
-
                 if (handle.type === 'rotation') {
                     isRotating = true;
-                    activeObject.isBeingManuallyRotated = true;
-                    if (activeObject.rotationSpeed !== 0) {
-                        activeObject._pausedRotationSpeed = activeObject.rotationSpeed;
-                        activeObject.rotationSpeed = 0;
-                        activeObject.rotation = activeObject.rotationAngle * 180 / Math.PI;
-                    }
                     const center = activeObject.getCenter();
                     const startAngle = Math.atan2(y - center.y, x - center.x);
-                    initialDragState = [{
-                        id: activeObject.id,
-                        startAngle: startAngle,
-                        initialObjectAngle: activeObject.getRenderAngle()
-                    }];
+                    initialDragState = [{ id: activeObject.id, startAngle: startAngle, initialObjectAngle: activeObject.getRenderAngle() }];
                 } else if (handle.type === 'node') {
                     isDraggingNode = true;
-                    activeNodeDragState = {
-                        id: activeObject.id,
-                        nodeIndex: handle.index
-                    };
+                    activeNodeDragState = { id: activeObject.id, nodeIndex: handle.index };
                 } else {
                     isResizing = true;
                     activeResizeHandle = handle.name;
                     const oppositeHandleName = getOppositeHandle(handle.name);
                     const anchorPoint = activeObject.getWorldCoordsOfCorner(oppositeHandleName);
-                    initialDragState = [{
-                        id: activeObject.id, initialX: activeObject.x, initialY: activeObject.y,
-                        initialWidth: activeObject.width, initialHeight: activeObject.height,
-                        anchorPoint: anchorPoint,
-                        diameterRatio: activeObject.shape === 'ring' ? activeObject.innerDiameter / activeObject.width : 1
-                    }];
+                    initialDragState = [{ id: activeObject.id, initialX: activeObject.x, initialY: activeObject.y, initialWidth: activeObject.width, initialHeight: activeObject.height, anchorPoint: anchorPoint }];
                 }
             }
         }
 
         if (!isRotating && !isResizing && !isDraggingNode) {
-            const hitObject = objects.find(obj => obj.isPointInside(x, y));
+            const hitObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
             if (hitObject) {
-                const isNewlySelected = !selectedObjectIds.includes(hitObject.id);
-
                 if (!selectedObjectIds.includes(hitObject.id)) {
                     if (e.shiftKey || e.ctrlKey || e.metaKey) {
                         selectedObjectIds.push(hitObject.id);
@@ -6337,259 +6348,48 @@ document.addEventListener('DOMContentLoaded', function () {
                         selectedObjectIds = [hitObject.id];
                     }
                 }
-
                 updateToolbarState();
                 syncPanelsWithSelection();
-                drawFrame();
-
-                if (isNewlySelected && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                    const fieldset = form.querySelector(`fieldset[data-object-id="${hitObject.id}"]`);
-                    if (fieldset) {
-                        setTimeout(() => {
-                            fieldset.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }, 200);
-                    }
-                }
+                needsRedraw = true;
             } else {
                 selectedObjectIds = [];
                 updateToolbarState();
                 syncPanelsWithSelection();
-                drawFrame();
+                needsRedraw = true;
             }
+        }
+
+        const canDrag = selectedObjectIds.length > 0 && !selectedObjectIds.every(id => { const obj = objects.find(o => o.id === id); return obj && obj.locked; });
+        if (canDrag && !isResizing && !isRotating && !isDraggingNode) {
+            initialDragState = selectedObjectIds.map(id => {
+                const obj = objects.find(o => o.id === id);
+                return { id, x: obj.x, y: obj.y };
+            });
+        } else {
+            initialDragState = [];
         }
 
         const handleMouseMove = (moveEvent) => {
             const { x, y } = getCanvasCoordinates(moveEvent);
 
-            if (!isDragging && !isResizing && !isRotating && !isDraggingNode && moveEvent.buttons === 1) {
+            if (!isDragging && !isResizing && !isRotating && !isDraggingNode && moveEvent.buttons === 1 && initialDragState.length > 0) {
                 const dx = x - dragStartX;
                 const dy = y - dragStartY;
                 if (Math.sqrt(dx * dx + dy * dy) > 5) {
                     const hitObject = [...objects].reverse().find(obj => obj.isPointInside(dragStartX, dragStartY));
-                    if (hitObject && !selectedObjectIds.includes(hitObject.id)) {
-                        if (!moveEvent.shiftKey && !moveEvent.ctrlKey && !moveEvent.metaKey) {
-                            selectedObjectIds = [hitObject.id];
-                            updateToolbarState();
-                            syncPanelsWithSelection();
-                        }
-                    }
-                    if (hitObject && !hitObject.locked) {
+                    if (hitObject && !hitObject.locked && selectedObjectIds.includes(hitObject.id)) {
                         isDragging = true;
-                        initialDragState = selectedObjectIds.map(id => {
-                            const obj = objects.find(o => o.id === id);
-                            return { id, x: obj.x, y: obj.y };
-                        });
                     }
                 }
             }
 
-            if (isDraggingNode) {
-                const { id, nodeIndex } = activeNodeDragState;
-                const shape = objects.find(o => o.id === id);
-                if (!shape) return;
-
-                const center = shape.getCenter();
-                const staticAngle = -shape.getRenderAngle();
-                const s = Math.sin(staticAngle);
-                const c = Math.cos(staticAngle);
-                const dx = x - center.x;
-                const dy = y - center.y;
-                const localX = dx * c - dy * s;
-                const localY = dx * s + dy * c;
-
-                let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
-                nodes[nodeIndex].x = localX + shape.width / 2;
-                nodes[nodeIndex].y = localY + shape.height / 2;
-                shape.update({ polylineNodes: nodes });
-                debouncedUpdateForm();
-                needsRedraw = true;
-                return;
-            }
-
-            if (isRotating) {
-                const initial = initialDragState[0];
-                const obj = objects.find(o => o.id === initial.id);
-                if (obj) {
-                    const center = obj.getCenter();
-                    const currentAngle = Math.atan2(y - center.y, x - center.x);
-                    const angleDelta = currentAngle - initial.startAngle;
-                    obj.update({ rotation: (initial.initialObjectAngle + angleDelta) * 180 / Math.PI });
-                    debouncedUpdateForm();
-                    needsRedraw = true;
-                }
-            } else if (isResizing) {
-                // ... (resize logic, which remains complex)
-                snapLines = [];
-                const SNAP_THRESHOLD = 10;
-                const initial = initialDragState[0];
-                let mouseX = x;
-                let mouseY = y;
-                snapLines = [];
-
-                if (!cachedSnapTargets) {
-                    cachedSnapTargets = [];
-                    const otherObjects = objects.filter(o => !selectedObjectIds.includes(o.id));
-                    otherObjects.forEach(otherObj => cachedSnapTargets.push(...getWorldPoints(otherObj)));
-                    cachedSnapTargets.push(
-                        { x: canvas.width / 2, y: canvas.height / 2, type: 'center' }, { x: canvas.width / 2, y: 0, type: 'edge' }, { x: canvas.width / 2, y: canvas.height, type: 'edge' }, { x: 0, y: canvas.height / 2, type: 'edge' }, { x: canvas.width, y: canvas.height / 2, type: 'edge' }
-                    );
-                }
-
-                const unSnappedState = (() => {
-                    const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
-                    const anchorPoint = initial.anchorPoint;
-                    const resizeAngle = tempObj.rotation * Math.PI / 180;
-                    const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
-                    if (isSideHandle) {
-                        const dragVecX = x - dragStartX;
-                        const dragVecY = y - dragStartY;
-                        const s = Math.sin(resizeAngle);
-                        const c = Math.cos(resizeAngle);
-                        let newWidth = initial.initialWidth;
-                        let newHeight = initial.initialHeight;
-                        let centerShiftX = 0, centerShiftY = 0;
-                        if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
-                            const change = dragVecX * c + dragVecY * s;
-                            newWidth += activeResizeHandle === 'left' ? -change : change;
-                            centerShiftX = (change / 2) * c;
-                            centerShiftY = (change / 2) * s;
-                        } else {
-                            const change = -dragVecX * s + dragVecY * c;
-                            newHeight += activeResizeHandle === 'top' ? -change : change;
-                            centerShiftX = (change / 2) * -s;
-                            centerShiftY = (change / 2) * c;
-                        }
-                        const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
-                        const newCenterX = initialCenter.x + centerShiftX;
-                        const newCenterY = initialCenter.y + centerShiftY;
-                        tempObj.width = newWidth;
-                        tempObj.height = newHeight;
-                        tempObj.x = newCenterX - tempObj.width / 2;
-                        tempObj.y = newCenterY - tempObj.height / 2;
-                    } else {
-                        const worldVecX = x - anchorPoint.x;
-                        const worldVecY = y - anchorPoint.y;
-                        const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
-                        const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
-                        const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
-                        const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
-                        tempObj.width = localVecX * handleXSign;
-                        tempObj.height = localVecY * handleYSign;
-                        const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
-                        const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
-                        const newCenterX = anchorPoint.x + worldSizingVecX / 2;
-                        const newCenterY = anchorPoint.y + worldSizingVecY / 2;
-                        tempObj.x = newCenterX - tempObj.width / 2;
-                        tempObj.y = newCenterY - tempObj.height / 2;
-                    }
-                    return tempObj;
-                })();
-
-                const ghostPoints = getWorldPoints(unSnappedState);
-                let pointsToSnap;
-                const isHorizontalOnly = activeResizeHandle === 'left' || activeResizeHandle === 'right';
-                const isVerticalOnly = activeResizeHandle === 'top' || activeResizeHandle === 'bottom';
-
-                if (isHorizontalOnly) {
-                    pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
-                } else if (isVerticalOnly) {
-                    pointsToSnap = ghostPoints.filter(p => p.handle && p.handle.includes(activeResizeHandle));
-                } else {
-                    pointsToSnap = ghostPoints;
-                }
-
-                const hSnaps = [], vSnaps = [];
-
-                pointsToSnap.forEach(point => {
-                    cachedSnapTargets.forEach(target => {
-                        if (point.type === target.type) {
-                            if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x });
-                            if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y });
-                        }
-                    });
-                });
-
-                if (!isVerticalOnly && hSnaps.length > 0) {
-                    hSnaps.sort((a, b) => a.dist - b.dist);
-                    mouseX += hSnaps[0].adj;
-                    snapLines.push({ type: 'vertical', x: hSnaps[0].line, duration: 2 });
-                }
-                if (!isHorizontalOnly && vSnaps.length > 0) {
-                    vSnaps.sort((a, b) => a.dist - b.dist);
-                    mouseY += vSnaps[0].adj;
-                    snapLines.push({ type: 'horizontal', y: vSnaps[0].line, duration: 2 });
-                }
-
-                const obj = objects.find(o => o.id === initial.id);
-                if (obj) {
-                    const finalState = (() => {
-                        const tempObj = new Shape({ ...objects.find(o => o.id === initial.id) });
-                        const anchorPoint = initial.anchorPoint;
-                        const resizeAngle = tempObj.rotation * Math.PI / 180;
-                        const isSideHandle = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
-                        if (isSideHandle) {
-                            const dragVecX = mouseX - dragStartX;
-                            const dragVecY = mouseY - dragStartY;
-                            const s = Math.sin(resizeAngle);
-                            const c = Math.cos(resizeAngle);
-                            let newWidth = initial.initialWidth;
-                            let newHeight = initial.initialHeight;
-                            let centerShiftX = 0, centerShiftY = 0;
-                            if (activeResizeHandle === 'right' || activeResizeHandle === 'left') {
-                                const change = dragVecX * c + dragVecY * s;
-                                newWidth += activeResizeHandle === 'left' ? -change : change;
-                                centerShiftX = (change / 2) * c;
-                                centerShiftY = (change / 2) * s;
-                            } else {
-                                const change = -dragVecX * s + dragVecY * c;
-                                newHeight += activeResizeHandle === 'top' ? -change : change;
-                                centerShiftX = (change / 2) * -s;
-                                centerShiftY = (change / 2) * c;
-                            }
-                            const initialCenter = { x: initial.initialX + initial.initialWidth / 2, y: initial.initialY + initial.initialHeight / 2 };
-                            const newCenterX = initialCenter.x + centerShiftX;
-                            const newCenterY = initialCenter.y + centerShiftY;
-                            tempObj.width = newWidth;
-                            tempObj.height = newHeight;
-                            tempObj.x = newCenterX - tempObj.width / 2;
-                            tempObj.y = newCenterY - tempObj.height / 2;
-                        } else {
-                            const worldVecX = mouseX - anchorPoint.x;
-                            const worldVecY = mouseY - anchorPoint.y;
-                            const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
-                            const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
-                            const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
-                            const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
-                            tempObj.width = localVecX * handleXSign;
-                            tempObj.height = localVecY * handleYSign;
-                            const worldSizingVecX = (tempObj.width * handleXSign) * Math.cos(resizeAngle) - (tempObj.height * handleYSign) * Math.sin(resizeAngle);
-                            const worldSizingVecY = (tempObj.width * handleXSign) * Math.sin(resizeAngle) + (tempObj.height * handleYSign) * Math.cos(resizeAngle);
-                            const newCenterX = anchorPoint.x + worldSizingVecX / 2;
-                            const newCenterY = anchorPoint.y + worldSizingVecY / 2;
-                            tempObj.x = newCenterX - tempObj.width / 2;
-                            tempObj.y = newCenterY - tempObj.height / 2;
-                        }
-                        return tempObj;
-                    })();
-
-                    obj.update({
-                        x: Math.round(finalState.x),
-                        y: Math.round(finalState.y),
-                        width: Math.round(Math.max(10, finalState.width)),
-                        height: Math.round(Math.max(10, finalState.height)),
-                        innerDiameter: obj.shape === 'ring' ? Math.round(obj.width * initial.diameterRatio) : undefined
-                    });
-                    debouncedUpdateForm();
-                    needsRedraw = true;
-
-                }
-            } else if (isDragging) {
-                snapLines = [];
+            if (isDragging) {
                 const dx = x - dragStartX;
                 const dy = y - dragStartY;
                 const SNAP_THRESHOLD = 10;
                 let finalDx = dx;
                 let finalDy = dy;
+                snapLines = [];
 
                 if (!cachedSnapTargets) {
                     cachedSnapTargets = [];
@@ -6610,23 +6410,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 initialDragState.forEach(state => {
                     const obj = objects.find(o => o.id === state.id);
-                    if (obj) {
-                        const originalX = obj.x;
-                        const originalY = obj.y;
-                        obj.x = state.x + dx;
-                        obj.y = state.y + dy;
-                        const selectedPoints = getWorldPoints(obj);
-                        selectedPoints.forEach(point => {
-                            cachedSnapTargets.forEach(target => {
-                                if (point.type === target.type) {
-                                    if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x, snapType: point.type });
-                                    if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y, snapType: point.type });
-                                }
-                            });
+                    if (!obj) return;
+
+                    const ghostState = {
+                        shape: obj.shape,
+                        x: state.x + dx,
+                        y: state.y + dy,
+                        width: obj.width,
+                        height: obj.height,
+                        rotation: obj.rotation,
+                        innerDiameter: obj.innerDiameter,
+                        getCenter: () => ({ x: ghostState.x + ghostState.width / 2, y: ghostState.y + ghostState.height / 2 }),
+                        getRenderAngle: () => ghostState.rotation * Math.PI / 180
+                    };
+                    const ghostPoints = getWorldPoints(ghostState);
+
+                    ghostPoints.forEach(point => {
+                        cachedSnapTargets.forEach(target => {
+                            if (point.type === target.type) {
+                                if (Math.abs(point.x - target.x) < SNAP_THRESHOLD) hSnaps.push({ dist: Math.abs(point.x - target.x), adj: target.x - point.x, line: target.x, snapType: point.type });
+                                if (Math.abs(point.y - target.y) < SNAP_THRESHOLD) vSnaps.push({ dist: Math.abs(point.y - target.y), adj: target.y - point.y, line: target.y, snapType: point.type });
+                            }
                         });
-                        obj.x = originalX;
-                        obj.y = originalY;
-                    }
+                    });
                 });
 
                 if (hSnaps.length > 0) {
@@ -6653,61 +6459,83 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (minY < 0) newY -= minY;
                             if (maxY > canvas.height) newY -= (maxY - canvas.height);
                         }
-                        obj.x = newX;
-                        obj.y = newY;
+                        obj.update({ x: newX, y: newY });
                     }
                 });
+
                 debouncedUpdateForm();
+                needsRedraw = true;
+            } else if (isResizing) {
+                const initial = initialDragState[0];
+                const obj = objects.find(o => o.id === initial.id);
+                if (obj) {
+                    const resizeAngle = obj.rotation * Math.PI / 180;
+                    const anchorPoint = initial.anchorPoint;
+                    const worldVecX = x - anchorPoint.x;
+                    const worldVecY = y - anchorPoint.y;
+                    const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
+                    const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
+                    const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
+                    const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
+                    const newWidth = localVecX * handleXSign;
+                    const newHeight = localVecY * handleYSign;
+                    const worldSizingVecX = (newWidth * handleXSign) * Math.cos(resizeAngle) - (newHeight * handleYSign) * Math.sin(resizeAngle);
+                    const worldSizingVecY = (newWidth * handleXSign) * Math.sin(resizeAngle) + (newHeight * handleYSign) * Math.cos(resizeAngle);
+                    const newCenterX = anchorPoint.x + worldSizingVecX / 2;
+                    const newCenterY = anchorPoint.y + worldSizingVecY / 2;
+                    obj.update({ x: newCenterX - newWidth / 2, y: newCenterY - newHeight / 2, width: newWidth, height: newHeight });
+                }
+                needsRedraw = true;
+            } else if (isRotating) {
+                const initial = initialDragState[0];
+                const obj = objects.find(o => o.id === initial.id);
+                if (obj) {
+                    const center = obj.getCenter();
+                    const currentAngle = Math.atan2(y - center.y, x - center.x);
+                    const angleDelta = currentAngle - initial.startAngle;
+                    obj.update({ rotation: (initial.initialObjectAngle + angleDelta) * 180 / Math.PI });
+                }
+                needsRedraw = true;
+            } else if (isDraggingNode) {
+                const { id, nodeIndex } = activeNodeDragState;
+                const shape = objects.find(o => o.id === id);
+                if (!shape) return;
+
+                const center = shape.getCenter();
+                const staticAngle = -shape.getRenderAngle();
+                const s = Math.sin(staticAngle);
+                const c = Math.cos(staticAngle);
+                const dx = x - center.x;
+                const dy = y - center.y;
+                const localX = dx * c - dy * s;
+                const localY = dx * s + dy * c;
+
+                let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
+                nodes[nodeIndex].x = localX + shape.width / 2;
+                nodes[nodeIndex].y = localY + shape.height / 2;
+                shape.update({ polylineNodes: nodes });
                 needsRedraw = true;
             }
         };
 
         const handleMouseUp = (upEvent) => {
-            upEvent.preventDefault();
             window.removeEventListener('mousemove', handleMouseMove);
 
-            const wasManipulating = isDragging || isResizing || isRotating || isDraggingNode;
-            if (isRotating) {
-                const obj = objects.find(o => o.id === initialDragState[0].id);
-                if (obj) {
-                    obj.isBeingManuallyRotated = false;
-                    if (obj._pausedRotationSpeed !== null) {
-                        obj.rotationSpeed = obj._pausedRotationSpeed;
-                        obj.rotationAngle = obj.rotation * Math.PI / 180;
-                        obj._pausedRotationSpeed = null;
-                    }
-                }
-            }
-
-            if (wasManipulating) {
-                objects.forEach(obj => {
-                    if (selectedObjectIds.includes(obj.id)) {
-                        obj.x = Math.round(obj.x);
-                        obj.y = Math.round(obj.y);
-                        obj.width = Math.round(obj.width);
-                        obj.height = Math.round(obj.height);
-                        if (obj.innerDiameter) obj.innerDiameter = Math.round(obj.innerDiameter);
-                        if (obj.fontSize) obj.fontSize = Math.round(obj.fontSize);
-                        obj.rotation = Math.round(obj.rotation);
-                        obj.update({ rotation: obj.rotation });
-                    }
-                });
+            if (isDragging || isResizing || isRotating || isDraggingNode) {
                 updateFormValuesFromObjects();
                 recordHistory();
             }
 
             isDragging = isResizing = isRotating = isDraggingNode = false;
-            activeResizeHandle = null;
-            activeNodeDragState = null;
             initialDragState = [];
             snapLines = [];
             cachedSnapTargets = null;
-            drawFrame();
+            needsRedraw = true;
         };
 
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp, { once: true });
-    });;
+    });
 
 
     const debouncedUpdateForm = debounce(updateFormValuesFromObjects, 10);
@@ -6716,39 +6544,39 @@ document.addEventListener('DOMContentLoaded', function () {
      * Handles mouse movement over the canvas for dragging, resizing, and cursor updates.
      * @param {MouseEvent} e - The mousemove event object.
      */
+    // This is the main mousemove handler, which should ONLY handle cursor and coordinate display.
     canvasContainer.addEventListener('mousemove', e => {
         if (isDrawingPolyline && previewLine.active) {
             const { x, y } = getCanvasCoordinates(e);
             previewLine.endX = x;
             previewLine.endY = y;
+            needsRedraw = true; // Flag that a redraw is needed
             return;
         }
 
         if (coordsDisplay) {
             const { x, y } = getCanvasCoordinates(e);
-            coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}: (${Math.round(x)}, ${Math.round(y)})`;
+            coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}`;
         }
 
-        if (isDragging || isResizing || isRotating || isDraggingNode) {
-            return;
-        }
+        if (!isDragging && !isResizing && !isRotating && !isDraggingNode) {
+            const { x, y } = getCanvasCoordinates(e);
+            let cursor = 'default';
+            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
 
-        const { x, y } = getCanvasCoordinates(e);
-        let cursor = 'default';
-        const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
-
-        if (topObject) {
-            cursor = 'pointer';
-            if (selectedObjectIds.includes(topObject.id)) {
-                const handle = topObject.getHandleAtPoint(x, y);
-                if (handle) {
-                    cursor = handle.cursor;
-                } else if (!topObject.locked) {
-                    cursor = 'move';
+            if (topObject) {
+                cursor = 'pointer';
+                if (selectedObjectIds.includes(topObject.id) && !topObject.locked) {
+                    const handle = topObject.getHandleAtPoint(x, y);
+                    if (handle) {
+                        cursor = handle.cursor;
+                    } else {
+                        cursor = 'move';
+                    }
                 }
             }
+            canvasContainer.style.cursor = cursor;
         }
-        canvasContainer.style.cursor = cursor;
     });
 
     /**
@@ -6844,7 +6672,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (galleryOffcanvasEl) {
         galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
             if (galleryListener) {
-                // console.log("Detaching gallery listener.");
                 galleryListener(); // This is the unsubscribe function
                 galleryListener = null;
             }
@@ -7398,8 +7225,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Add the new shape to the beginning of the objects array to place it on the top layer.
         objects.unshift(newShape);
 
-
+        isRestoring = true;
         renderForm();
+        isRestoring = false;
+
         updateFormValuesFromObjects();
         drawFrame();
         recordHistory();
@@ -7526,7 +7355,9 @@ document.addEventListener('DOMContentLoaded', function () {
             createInitialObjects();
 
             // 7. Re-render the UI and finalize the state
+            isRestoring = true;
             renderForm();
+            isRestoring = false;
             updateObjectsFromForm();
             drawFrame();
             debouncedRecordHistory();
@@ -7858,10 +7689,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Reset properties at the start of each frame.
-        this.rotation = this.baseRotation || 0;
-        this.internalScale = 1.0;
-        this.colorOverride = null;
-        this.gradient = { ...(this.baseGradient || { color1: '#000000', color2: '#000000' }) };
+        // this.rotation = this.baseRotation || 0;
+        // this.internalScale = 1.0;
+        // this.colorOverride = null;
+        // this.gradient = { ...(this.baseGradient || { color1: '#000000', color2: '#000000' }) };
 
         // 1. Update Flash Decay
         if (this.flashDecay > 0) {
