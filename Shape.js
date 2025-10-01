@@ -1609,7 +1609,20 @@ class Shape {
                     console.error("Error parsing pixelArtFrames in update:", e);
                 }
             } else if (key === 'gradient' && typeof props[key] === 'object' && props[key] !== null) {
-                Object.assign(this.gradient, props[key]);
+                const newGrad = props[key];
+                if (newGrad.stops && Array.isArray(newGrad.stops)) {
+                    // New format with a stops array, just assign it
+                    this.gradient.stops = newGrad.stops;
+                } else if (newGrad.color1 || newGrad.color2) {
+                    // Legacy format with color1/color2, convert it to a stops array
+                    this.gradient.stops = [
+                        { color: newGrad.color1 || '#00ff00', position: 0.0 },
+                        { color: newGrad.color2 || '#d400ff', position: 1.0 }
+                    ];
+                } else {
+                    // Fallback for other partial updates
+                    Object.assign(this.gradient, newGrad);
+                }
             } else if (key === 'strokeGradient' && typeof props[key] === 'object' && props[key] !== null) {
                 Object.assign(this.strokeGradient, props[key]);
             } else {
@@ -1633,6 +1646,8 @@ class Shape {
         this._conicPatternCache = null;
         this._strokeConicPatternCache = null;
         this.dirty = true;
+        this.baseX = this.x;
+        this.baseY = this.y;
         this.baseWidth = this.width;
         this.baseHeight = this.height;
         this.baseRotation = this.rotation;
@@ -2006,9 +2021,9 @@ class Shape {
         const phaseIndex = this._getPhaseIndex(phase);
         const progress = (this.strokeScrollOffset + phaseIndex * this.strokePhaseOffset / 100.0);
 
-        // First, check if the stroke gradient type is any kind of rainbow.
+        // Handle ALL rainbow types first
         if (this.strokeGradType.startsWith('rainbow')) {
-            const strokeOptions = {
+            const rainbowOptions = {
                 gradType: this.strokeGradType,
                 scrollDirection: this.strokeScrollDir,
                 animationMode: this.strokeAnimationMode,
@@ -2017,25 +2032,19 @@ class Shape {
                 height: this.height
             };
 
-            if (this.strokeGradType === 'rainbow' || this.strokeGradType === 'rainbow-radial') {
-                return this._createRainbowGradient(progress, strokeOptions); // Use the new 'progress'
-            }
-
             if (this.strokeGradType === 'rainbow-conic') {
                 const numStops = 12;
-                const rainbowStops = [];
-                for (let i = 0; i < numStops; i++) {
-                    const hue = (i / (numStops - 1)) * 360;
-                    rainbowStops.push({
-                        color: hslToHex(hue, 100, 50),
-                        position: i / (numStops - 1)
-                    });
-                }
-                return this._createConicGradient(progress, { ...options, type: 'stroke' });
+                const rainbowStops = Array.from({ length: numStops }, (_, i) => ({
+                    color: hslToHex((i / (numStops - 1)) * 360, 100, 50),
+                    position: i / (numStops - 1)
+                }));
+                return this._createConicGradient(progress, { ...rainbowOptions, stops: rainbowStops, type: 'stroke' });
+            } else {
+                return this._createRainbowGradient(progress, rainbowOptions);
             }
         }
 
-        // If not a rainbow type, proceed with standard logic.
+        // Handle standard gradient types
         let stopsToRender = this.strokeGradient?.stops || [{ color: '#FFFFFF', position: 0 }];
 
         if (this.strokeCycleColors) {
@@ -2060,8 +2069,8 @@ class Shape {
             case 'radial':
                 return this._createRadialGradient(progress, { ...options, width: this.width, height: this.height });
             case 'conic':
-                return this._createConicGradient(progress, options);
-            default:
+                return this._createConicGradient(progress, { ...options, type: 'stroke' });
+            default: // solid, alternating, random
                 return this._getStaticColor(phase, { type: this.strokeGradType, stops: stopsToRender });
         }
     }
@@ -3819,39 +3828,57 @@ class Shape {
                     if (this.strokeScrollDir === 'along-path' || this.strokeScrollDir === 'along-path-reversed') {
                         const { totalLength } = this._calculatePathSegments();
                         if (totalLength > 0) {
-                            // --- START OF FIX ---
-                            // Determine which set of stops to use, applying color cycle if needed.
-                            let stopsForPath = this.strokeGradient.stops;
-                            if (this.strokeCycleColors) {
-                                // Create a temporary, hue-shifted set of stops for this frame.
-                                stopsForPath = this.strokeGradient.stops.map(stop => {
-                                    const originalHsl = hexToHsl(stop.color);
-                                    const newHue = (originalHsl[0] + this.strokeHue1) % 360;
-                                    return { ...stop, color: hslToHex(newHue, originalHsl[1], originalHsl[2]) };
-                                });
-                            }
-                            // --- END OF FIX ---
-
                             const direction = this.strokeScrollDir === 'along-path-reversed' ? -1 : 1;
                             const animOffset = this.strokeScrollOffset;
                             const step = 2; // Draw in small 2-pixel segments for smoothness
 
-                            for (let d = 0; d < totalLength; d += step) {
-                                const currentPoint = this._getPointAndAngleAtDistance(d);
-                                const nextPoint = this._getPointAndAngleAtDistance(Math.min(d + step, totalLength));
-                                const progress = (d + step / 2) / totalLength;
+                            // Check if the stroke type is a rainbow
+                            if (this.strokeGradType.startsWith('rainbow')) {
+                                for (let d = 0; d < totalLength; d += step) {
+                                    const currentPoint = this._getPointAndAngleAtDistance(d);
+                                    const nextPoint = this._getPointAndAngleAtDistance(Math.min(d + step, totalLength));
 
-                                // Invert the gradient's direction for the 'reversed' option.
-                                const colorProgress = (direction === -1) ? 1.0 - progress : progress;
-                                const time = colorProgress + (animOffset * direction);
+                                    // Calculate progress (0 to 1) along the path
+                                    const progress = (d + step / 2) / totalLength;
 
-                                const color = this._getGradientColorAt(time, stopsForPath, this.strokeUseSharpGradient);
+                                    // Apply animation offset and direction
+                                    const time = progress + (animOffset * direction);
 
-                                this.ctx.strokeStyle = color;
-                                this.ctx.beginPath();
-                                this.ctx.moveTo(currentPoint.x, currentPoint.y);
-                                this.ctx.lineTo(nextPoint.x, nextPoint.y);
-                                this.ctx.stroke();
+                                    // Calculate hue directly from time
+                                    const hue = ((time % 1.0 + 1.0) % 1.0) * 360;
+
+                                    this.ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                                    this.ctx.beginPath();
+                                    this.ctx.moveTo(currentPoint.x, currentPoint.y);
+                                    this.ctx.lineTo(nextPoint.x, nextPoint.y);
+                                    this.ctx.stroke();
+                                }
+                            } else {
+                                // This is the original logic for standard gradients, which is still needed.
+                                let stopsForPath = this.strokeGradient.stops;
+                                if (this.strokeCycleColors) {
+                                    const cycleOffset = this.strokeHue1;
+                                    stopsForPath = this.strokeGradient.stops.map(stop => {
+                                        const originalHsl = hexToHsl(stop.color);
+                                        const newHue = (originalHsl[0] + cycleOffset) % 360;
+                                        return { ...stop, color: hslToHex(newHue, originalHsl[1], originalHsl[2]) };
+                                    });
+                                }
+
+                                for (let d = 0; d < totalLength; d += step) {
+                                    const currentPoint = this._getPointAndAngleAtDistance(d);
+                                    const nextPoint = this._getPointAndAngleAtDistance(Math.min(d + step, totalLength));
+                                    const progress = (d + step / 2) / totalLength;
+                                    const colorProgress = (direction === -1) ? 1.0 - progress : progress;
+                                    const time = colorProgress + (animOffset * direction);
+                                    const color = this._getGradientColorAt(time, stopsForPath, this.strokeUseSharpGradient);
+
+                                    this.ctx.strokeStyle = color;
+                                    this.ctx.beginPath();
+                                    this.ctx.moveTo(currentPoint.x, currentPoint.y);
+                                    this.ctx.lineTo(nextPoint.x, nextPoint.y);
+                                    this.ctx.stroke();
+                                }
                             }
                         }
                     } else {
