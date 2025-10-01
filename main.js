@@ -652,9 +652,9 @@ document.addEventListener('DOMContentLoaded', function () {
             globalControls.id = 'export-global-controls';
             globalControls.className = 'd-flex gap-2 border-bottom pb-3 mb-3';
             globalControls.innerHTML = `
-        <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
-        <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
-    `;
+                <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-check-square me-2"></i>Expose All</button>
+                <button type="button" class="btn btn-sm btn-secondary flex-grow-1"><i class="bi bi-square me-2"></i>Hardcode All</button>
+            `;
             // Add the controls right after the introductory paragraph
             modalBody.querySelector('p').insertAdjacentElement('afterend', globalControls);
 
@@ -662,18 +662,18 @@ document.addEventListener('DOMContentLoaded', function () {
             presetControls.id = 'export-preset-controls';
             presetControls.className = 'd-flex flex-wrap gap-2 border-bottom pb-3 mb-3';
             presetControls.innerHTML = `
-    <span class="text-body-secondary small me-2 align-self-center">Presets:</span>
-    <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-info" data-preset="animation">Animation</button>
-        <button type="button" class="btn btn-info" data-preset="colors">Colors</button>
-        <button type="button" class="btn btn-info" data-preset="geometry">Geometry</button>
-        <button type="button" class="btn btn-info" data-preset="gradients">Gradients</button> </div>
-    <div class="vr mx-2"></div>
-    <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-success" data-preset="minimal">Minimal (User-Friendly)</button>
-        <button type="button" class="btn btn-success" data-preset="static">Static (No Animation)</button>
-    </div>
-`;
+                <span class="text-body-secondary small me-2 align-self-center">Presets:</span>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-info" data-preset="animation">Animation</button>
+                    <button type="button" class="btn btn-info" data-preset="colors">Colors</button>
+                    <button type="button" class="btn btn-info" data-preset="geometry">Geometry</button>
+                    <button type="button" class="btn btn-info" data-preset="gradients">Gradients</button> </div>
+                <div class="vr mx-2"></div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-success" data-preset="minimal">Minimal (User-Friendly)</button>
+                    <button type="button" class="btn btn-success" data-preset="static">Static (No Animation)</button>
+                </div>
+                `;
             globalControls.insertAdjacentElement('afterend', presetControls);
 
             globalControls.querySelector('button:first-child').addEventListener('click', () => {
@@ -699,15 +699,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 const item = document.createElement('div');
                 item.className = 'accordion-item';
                 item.innerHTML = `
-            <h2 class="accordion-header">
-                <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${accordionId}" aria-expanded="${index === 0}">
-                    ${obj.name || `Object ${obj.id}`}
-                </button>
-            </h2>
-            <div id="collapse-${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#export-options-accordion">
-                <div class="accordion-body"></div>
-            </div>
-        `;
+                    <h2 class="accordion-header">
+                        <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${accordionId}" aria-expanded="${index === 0}">
+                            ${obj.name || `Object ${obj.id}`}
+                        </button>
+                    </h2>
+                    <div id="collapse-${accordionId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#export-options-accordion">
+                        <div class="accordion-body"></div>
+                    </div>
+                `;
 
                 const body = item.querySelector('.accordion-body');
 
@@ -726,13 +726,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         // --- Add Group Master Checkbox ---
                         groupContainer.innerHTML = `
-                    <div class="form-check bg-body-tertiary rounded p-2 mb-2">
-                        <input class="form-check-input group-master-check" type="checkbox" id="${groupId}-master" data-group-id="${groupId}" checked>
-                        <label class="form-check-label fw-bold" for="${groupId}-master">
-                            ${groupName}
-                        </label>
-                    </div>
-                `;
+                            <div class="form-check bg-body-tertiary rounded p-2 mb-2">
+                                <input class="form-check-input group-master-check" type="checkbox" id="${groupId}-master" data-group-id="${groupId}" checked>
+                                <label class="form-check-label fw-bold" for="${groupId}-master">
+                                    ${groupName}
+                                </label>
+                            </div>
+                        `;
 
                         relevantConfigs.forEach(conf => {
                             const label = conf.label.split(':').slice(1).join(':').trim();
@@ -740,11 +740,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             checkWrapper.className = 'form-check ms-3';
                             // --- Add class to link to master checkbox ---
                             checkWrapper.innerHTML = `
-                        <input class="form-check-input property-check ${groupId}" type="checkbox" id="${conf.property}-export-check" name="${conf.property}" checked>
-                        <label class="form-check-label" for="${conf.property}-export-check">
-                            ${label}
-                        </label>
-                    `;
+                                <input class="form-check-input property-check ${groupId}" type="checkbox" id="${conf.property}-export-check" name="${conf.property}" checked>
+                                <label class="form-check-label" for="${conf.property}-export-check">
+                                    ${label}
+                                </label>
+                            `;
                             groupContainer.appendChild(checkWrapper);
                         });
                         body.appendChild(groupContainer);
@@ -813,193 +813,193 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 6. Assemble the final, self-contained runtime script
             const exportedScript = `
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('signalCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = 320;
-    canvas.height = 200;
-    let objects = [];
-    
-    ${jsVars}
+                document.addEventListener('DOMContentLoaded', function () {
+                    const canvas = document.getElementById('signalCanvas');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 320;
+                    canvas.height = 200;
+                    let objects = [];
+                    
+                    ${jsVars}
 
-    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
-    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
-    ${allHelperFunctions}
-    
-    const Shape = ${safeShapeClassString};
+                    const FONT_DATA_4PX = ${JSON.stringify(FONT_DATA_4PX)};
+                    const FONT_DATA_5PX = ${JSON.stringify(FONT_DATA_5PX)};
+                    ${allHelperFunctions}
+                    
+                    const Shape = ${safeShapeClassString};
 
-    let then;
-    const allPropKeys = ${formattedKeys};
-    const jsProperties = ${JSON.stringify(jsVarKeys)};
+                    let then;
+                    const allPropKeys = ${formattedKeys};
+                    const jsProperties = ${JSON.stringify(jsVarKeys)};
 
-    function updateObjectFromWindow(obj) {
-        const id = obj.id;
-        const newProps = {};
-        const fillStops = [];
-        for (let i = 1; i <= 10; i++) {
-            const fcKey = \`obj\${id}_gradColor_\${i}\`;
-            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
-            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
-                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
-            }
-        }
-        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
-        
-        const strokeStops = [];
-        for (let i = 1; i <= 10; i++) {
-             const scKey = \`obj\${id}_strokeColor_\${i}\`;
-             const spKey = \`obj\${id}_strokePosition_\${i}\`;
-             if (window[scKey] !== undefined && window[spKey] !== undefined) {
-                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
-            }
-        }
-        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
+                    function updateObjectFromWindow(obj) {
+                        const id = obj.id;
+                        const newProps = {};
+                        const fillStops = [];
+                        for (let i = 1; i <= 10; i++) {
+                            const fcKey = \`obj\${id}_gradColor_\${i}\`;
+                            const fpKey = \`obj\${id}_gradPosition_\${i}\`;
+                            if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
+                                fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+                            }
+                        }
+                        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
+                        
+                        const strokeStops = [];
+                        for (let i = 1; i <= 10; i++) {
+                            const scKey = \`obj\${id}_strokeColor_\${i}\`;
+                            const spKey = \`obj\${id}_strokePosition_\${i}\`;
+                            if (window[scKey] !== undefined && window[spKey] !== undefined) {
+                                strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+                            }
+                        }
+                        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
 
-        allPropKeys.forEach(key => {
-            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
-                const propName = key.substring(key.indexOf('_') + 1);
-                if (propName.includes('Color_') || propName.includes('Position_')) return;
-                let value = window[key];
-                if (value === "true") value = true;
-                if (value === "false") value = false;
-                if (propName === 'scrollDir') newProps.scrollDirection = value;
-                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
-                else newProps[propName] = value;
-            }
-        });
-        obj.update(newProps);
-    }
-
-    function createInitialObjects() {
-        if (allPropKeys.length === 0) return;
-        
-        const uniqueIds = [...new Set(allPropKeys.map(p => {
-            if (!p || !p.startsWith('obj')) return null;
-            const end = p.indexOf('_');
-            if (end <= 3) return null;
-            const idString = p.substring(3, end);
-            const id = parseInt(idString, 10);
-            return isNaN(id) ? null : String(id);
-        }).filter(id => id !== null))];
-
-        objects = uniqueIds.map(id => {
-            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
-            const prefix = 'obj' + id + '_';
-            
-            const fillStops = [];
-            for (let i = 1; i <= 10; i++) {
-                const fcKey = prefix + 'gradColor_' + i;
-                const fpKey = prefix + 'gradPosition_' + i;
-                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
-                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
-                }
-            }
-            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
-            
-            const strokeStops = [];
-            for (let i = 1; i <= 10; i++) {
-                const scKey = prefix + 'strokeColor_' + i;
-                const spKey = prefix + 'strokePosition_' + i;
-                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
-                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
-                }
-            }
-            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
-
-            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
-                const propName = key.substring(prefix.length);
-                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
-                let value;
-                try {
-                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
-                } catch (e) {
-                    if (typeof window[key] !== 'undefined') { value = window[key]; }
-                }
-                if (typeof value !== 'undefined') {
-                    if (value === "true") value = true;
-                    if (value === "false") value = false;
-                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
-                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
-                    } else if (propName === 'scrollDir') {
-                        config.scrollDirection = value;
-                    } else if (propName === 'strokeScrollDir') {
-                        config.strokeScrollDir = value;
-                    } else {
-                        config[propName] = value;
+                        allPropKeys.forEach(key => {
+                            if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
+                                const propName = key.substring(key.indexOf('_') + 1);
+                                if (propName.includes('Color_') || propName.includes('Position_')) return;
+                                let value = window[key];
+                                if (value === "true") value = true;
+                                if (value === "false") value = false;
+                                if (propName === 'scrollDir') newProps.scrollDirection = value;
+                                else if (propName === 'strokeScrollDir') newProps.strokeScrollDir = value;
+                                else newProps[propName] = value;
+                            }
+                        });
+                        obj.update(newProps);
                     }
-                }
-            });
-            return new Shape(config);
-        });
-    }
 
-    function drawFrame(deltaTime = 0) {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
-        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
-        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
-        const sensorData = {};
-        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
-        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
-        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
-        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
-        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
-        let gStops = [];
-        if (useGlobalPalette) {
-            for (let i = 1; i <= 10; i++) {
-                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
-                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
-                }
-            }
-            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
-        }
-        for (let i = objects.length - 1; i >= 0; i--) {
-            const obj = objects[i];
-            updateObjectFromWindow(obj);
-            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
-            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
-            const originalCycleColors = obj.cycleColors;
-            const originalCycleSpeed = obj.cycleSpeed;
-            if (useGlobalCycle) {
-                const speed = (gCycleSpeed || 0) / 50.0;
-                obj.cycleColors = true; obj.cycleSpeed = speed;
-                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
-            }
-            if (useGlobalPalette && gStops.length > 0) {
-                if (obj.shape !== 'pixel-art') {
-                    obj.gradient.stops = gStops;
-                    obj.strokeGradient.stops = gStops;
-                }
-            }
-            const dt = shouldAnimate ? deltaTime : 0;
-            obj.updateAnimationState(audioData, sensorData, dt);
-            obj.draw(false, audioData, {});
-            obj.gradient = originalGradient;
-            obj.strokeGradient = originalStrokeGradient;
-            obj.cycleColors = originalCycleColors;
-            obj.cycleSpeed = originalCycleSpeed;
-        }
-    }
-    function animate(timestamp) {
-        requestAnimationFrame(animate);
-        const now = timestamp;
-        let deltaTime = (now - (then || now)) / 1000.0;
-        if (deltaTime > 0.1) deltaTime = 0.1;
-        then = now;
-        drawFrame(deltaTime);
-    }
-    function init() {
-        createInitialObjects();
-        then = window.performance.now();
-        animate(then);
-    }
-    init();
-});
-`;
+                    function createInitialObjects() {
+                        if (allPropKeys.length === 0) return;
+                        
+                        const uniqueIds = [...new Set(allPropKeys.map(p => {
+                            if (!p || !p.startsWith('obj')) return null;
+                            const end = p.indexOf('_');
+                            if (end <= 3) return null;
+                            const idString = p.substring(3, end);
+                            const id = parseInt(idString, 10);
+                            return isNaN(id) ? null : String(id);
+                        }).filter(id => id !== null))];
+
+                        objects = uniqueIds.map(id => {
+                            const config = { id: parseInt(id), ctx: ctx, gradient: {}, strokeGradient: {} };
+                            const prefix = 'obj' + id + '_';
+                            
+                            const fillStops = [];
+                            for (let i = 1; i <= 10; i++) {
+                                const fcKey = prefix + 'gradColor_' + i;
+                                const fpKey = prefix + 'gradPosition_' + i;
+                                if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
+                                    fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
+                                }
+                            }
+                            if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
+                            
+                            const strokeStops = [];
+                            for (let i = 1; i <= 10; i++) {
+                                const scKey = prefix + 'strokeColor_' + i;
+                                const spKey = prefix + 'strokePosition_' + i;
+                                if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
+                                    strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
+                                }
+                            }
+                            if (strokeStops.length > 0) config.strokeGradientStops = strokeStops.sort((a,b) => a.position - b.position);
+
+                            allPropKeys.filter(p => p.startsWith(prefix)).forEach(key => {
+                                const propName = key.substring(prefix.length);
+                                if (propName.includes('gradColor_') || propName.includes('gradPosition_') || propName.includes('strokeColor_') || propName.includes('strokePosition_')) return;
+                                let value;
+                                try {
+                                    if (eval(\`typeof \${key}\`) !== 'undefined') { value = eval(key); }
+                                } catch (e) {
+                                    if (typeof window[key] !== 'undefined') { value = window[key]; }
+                                }
+                                if (typeof value !== 'undefined') {
+                                    if (value === "true") value = true;
+                                    if (value === "false") value = false;
+                                    if (propName === 'pixelArtFrames' || propName === 'polylineNodes') {
+                                        try { config[propName] = (typeof value === 'string') ? JSON.parse(value) : value; } catch(e) {}
+                                    } else if (propName === 'scrollDir') {
+                                        config.scrollDirection = value;
+                                    } else if (propName === 'strokeScrollDir') {
+                                        config.strokeScrollDir = value;
+                                    } else {
+                                        config[propName] = value;
+                                    }
+                                }
+                            });
+                            return new Shape(config);
+                        });
+                    }
+
+                    function drawFrame(deltaTime = 0) {
+                        if (!ctx) return;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        const shouldAnimate = typeof enableAnimation !== 'undefined' ? !!enableAnimation : true;
+                        const soundEnabled = typeof enableSound !== 'undefined' ? !!enableSound : false;
+                        const audioData = soundEnabled ? getSignalRGBAudioMetrics() : { bass: { avg: 0 }, mids: { avg: 0 }, highs: { avg: 0 }, volume: { avg: 0 }, frequencyData: [] };
+                        const sensorData = {};
+                        const neededSensors = [...new Set(objects.map(o => o.userSensor).filter(Boolean))];
+                        neededSensors.forEach(sensorName => { sensorData[sensorName] = (typeof engine !== 'undefined') ? engine.getSensorValue(sensorName) : { value: 0 }; });
+                        const useGlobalPalette = typeof enablePalette !== 'undefined' ? !!enablePalette : false;
+                        const useGlobalCycle = typeof enableGlobalCycle !== 'undefined' ? !!enableGlobalCycle : false;
+                        const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
+                        let gStops = [];
+                        if (useGlobalPalette) {
+                            for (let i = 1; i <= 10; i++) {
+                                if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
+                                    gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
+                                }
+                            }
+                            if(gStops.length > 0) gStops.sort((a,b) => a.position - b.position);
+                        }
+                        for (let i = objects.length - 1; i >= 0; i--) {
+                            const obj = objects[i];
+                            updateObjectFromWindow(obj);
+                            const originalGradient = JSON.parse(JSON.stringify(obj.gradient));
+                            const originalStrokeGradient = JSON.parse(JSON.stringify(obj.strokeGradient));
+                            const originalCycleColors = obj.cycleColors;
+                            const originalCycleSpeed = obj.cycleSpeed;
+                            if (useGlobalCycle) {
+                                const speed = (gCycleSpeed || 0) / 50.0;
+                                obj.cycleColors = true; obj.cycleSpeed = speed;
+                                obj.strokeCycleColors = true; obj.strokeCycleSpeed = speed;
+                            }
+                            if (useGlobalPalette && gStops.length > 0) {
+                                if (obj.shape !== 'pixel-art') {
+                                    obj.gradient.stops = gStops;
+                                    obj.strokeGradient.stops = gStops;
+                                }
+                            }
+                            const dt = shouldAnimate ? deltaTime : 0;
+                            obj.updateAnimationState(audioData, sensorData, dt);
+                            obj.draw(false, audioData, {});
+                            obj.gradient = originalGradient;
+                            obj.strokeGradient = originalStrokeGradient;
+                            obj.cycleColors = originalCycleColors;
+                            obj.cycleSpeed = originalCycleSpeed;
+                        }
+                    }
+                    function animate(timestamp) {
+                        requestAnimationFrame(animate);
+                        const now = timestamp;
+                        let deltaTime = (now - (then || now)) / 1000.0;
+                        if (deltaTime > 0.1) deltaTime = 0.1;
+                        then = now;
+                        drawFrame(deltaTime);
+                    }
+                    function init() {
+                        createInitialObjects();
+                        then = window.performance.now();
+                        animate(then);
+                    }
+                    init();
+                });
+                `;
 
             // 7. Assemble the full HTML string with REAL newlines
             const finalHtml = [
@@ -5104,7 +5104,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
             const masterConfigTemplates = Array.from(doc.querySelectorAll('meta')).map(parseMetaToConfig);
 
-            // --- START: CORRECTED MERGE LOGIC ---
+            // --- START: FIXES APPLIED HERE ---
             const masterGeneralConfigs = masterConfigTemplates.filter(c => !(c.property || c.name).startsWith('obj'));
             const loadedGeneralConfigs = loadedConfigs.filter(c => !(c.property || c.name).startsWith('obj'));
 
@@ -5119,8 +5119,9 @@ document.addEventListener('DOMContentLoaded', function () {
             loadedGeneralConfigs.forEach(loadedConf => {
                 const key = loadedConf.property || loadedConf.name;
                 const existingConf = mergedGeneralConfigMap.get(key);
+
+                // FIX: Force 'enableAnimation' to 'true'
                 if (key === 'enableAnimation') {
-                    // FORCE 'enableAnimation' to 'true' regardless of the saved value
                     if (existingConf) {
                         existingConf.default = "true";
                     } else {
@@ -5135,7 +5136,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
             const mergedGeneralConfigs = Array.from(mergedGeneralConfigMap.values());
-            // --- END: CORRECTED MERGE LOGIC ---
+            // --- END: FIXES APPLIED TO GENERAL CONFIGS ---
 
             const orderedIds = [];
             const seenIds = new Set();
@@ -5151,18 +5152,32 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const finalMergedObjectConfigs = [];
+
+            // FIX: Define legacy properties to exclude
+            const LEGACY_COLOR_PROPS = new Set([
+                'gradColor1', 'gradColor2', 'strokeGradColor1', 'strokeGradColor2'
+            ]);
+
             orderedIds.forEach(id => {
                 const fullDefaultConfigSet = getDefaultObjectConfig(id);
                 const savedObjectConfigsForId = loadedConfigs.filter(c => c.property && c.property.startsWith(`obj${id}_`));
                 const savedPropsMap = new Map(savedObjectConfigsForId.map(c => [c.property, c]));
 
                 const mergedConfigsForThisObject = fullDefaultConfigSet.map(defaultConf => {
+                    const propName = defaultConf.property.substring(defaultConf.property.indexOf('_') + 1);
+
+                    // FIX: Filter out any deprecated color property.
+                    if (LEGACY_COLOR_PROPS.has(propName)) {
+                        return null; // This returns null for this map element, continuing the map operation.
+                    }
+
                     if (savedPropsMap.has(defaultConf.property)) {
                         const savedConf = savedPropsMap.get(defaultConf.property);
                         return { ...defaultConf, default: savedConf.default, label: savedConf.label || defaultConf.label };
                     }
                     return defaultConf;
-                });
+                }).filter(conf => conf !== null); // Filter out the excluded nulls.
+
                 finalMergedObjectConfigs.push(...mergedConfigsForThisObject);
             });
 
@@ -5171,6 +5186,12 @@ document.addEventListener('DOMContentLoaded', function () {
             createInitialObjects();
 
             if (savedObjects && savedObjects.length > 0) {
+                // FIX: Ensure objects are processed in the order they appear in the configuration file
+                const initialObjectOrderMap = new Map(orderedIds.map((id, index) => [id, index]));
+
+                // Sort the savedObjects array to match the configuration order
+                savedObjects.sort((a, b) => initialObjectOrderMap.get(a.id) - initialObjectOrderMap.get(b.id));
+
                 savedObjects.forEach(savedObj => {
                     const obj = objects.find(o => o.id === savedObj.id);
                     if (obj) {
@@ -8367,6 +8388,28 @@ document.addEventListener('DOMContentLoaded', function () {
     galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
         lastVisibleDoc = null;
     });
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                if (window.auth && typeof window.auth.signOut === 'function') {
+                    await window.auth.signOut();
+                    showToast("Signed out successfully.", 'success');
+
+                    // Note: The listener in your Firebase setup should handle the UI change.
+                    // We typically don't manually hide/show the buttons here if 
+                    // the onAuthStateChanged listener is working correctly.
+                } else {
+                    console.error("Firebase authentication object is not initialized.");
+                    showToast("Error: Authentication not ready.", 'danger');
+                }
+            } catch (error) {
+                console.error("Error signing out:", error);
+                showToast("Error signing out. Please try again.", 'danger');
+            }
+        });
+    }
 
     // --- END: NEW LAZY LOADING GALLERY LOGIC ---
 
