@@ -56,19 +56,45 @@ window.writeBatch = writeBatch; // Expose writeBatch for 'Mark All Read' feature
 document.addEventListener('DOMContentLoaded', () => {
     const provider = new window.GoogleAuthProvider();
     const loginBtn = document.getElementById('login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
+    // const logoutBtn = document.getElementById('logout-btn'); <-- Removed direct ref since we use delegation
 
+    // --- Attach the Sign In listener here, since it's always present ---
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
             window.signInWithPopup(window.auth, provider).catch(console.error);
         });
     }
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            window.signOut(window.auth).catch(console.error);
-        });
-    }
+    // --- CRITICAL FIX: EVENT DELEGATION FOR LOGOUT BUTTON ---
+    // Listen for ALL clicks on the document, but only react if the target is the logout button.
+    document.addEventListener('click', async (e) => {
+        const logoutBtnClicked = e.target.closest('#logout-btn');
+
+        if (logoutBtnClicked) {
+            e.preventDefault(); // Prevent default button behavior
+            try {
+                if (window.auth && typeof window.auth.signOut === 'function') {
+                    await window.signOut(window.auth);
+                    // showToast is defined in main.js, so we assume it exists globally
+                    if (typeof showToast === 'function') {
+                        showToast("Signed out successfully.", 'success');
+                    }
+                } else {
+                    console.error("Firebase authentication object is not initialized.");
+                    if (typeof showToast === 'function') {
+                        showToast("Error: Authentication not ready.", 'danger');
+                    }
+                }
+            } catch (error) {
+                console.error("Error signing out:", error);
+                if (typeof showToast === 'function') {
+                    showToast("Error signing out. Please try again.", 'danger');
+                }
+            }
+        }
+    });
+    // --- END CRITICAL FIX ---
+
 
     // This listener handles all UI changes related to authentication state.
     window.onAuthStateChanged(window.auth, user => {
@@ -78,28 +104,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const userDisplay = document.getElementById('user-display');
         const saveWsBtn = document.getElementById('save-ws-btn');
         const loadWsBtn = document.getElementById('load-ws-btn');
+
         const isLoggedIn = !!user;
-        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOHJhOCA4IDAgMTAxNiAwQTggOCAwIDAwMCA4em04LTdhNyA3IDAgMDE3IDcgNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPgo8L3Nzdmc+';
+        // CORRECTED LINE (remove '+ defaultIcon'):
+        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOHJhOCA4IDAgMTAxNiAwQTggOCAwIDAwMCA4em04LTdhNyA3IDAgMDE3IDcgNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPgo8L3N2Zy>';
+
+        const authNotificationBlock = document.getElementById('auth-notification-block');
 
         if (isLoggedIn) {
             // Show the logged-in group and hide the login button
-            if(loginBtn) loginBtn.classList.add('d-none');
-            if(userSessionGroup) userSessionGroup.classList.remove('d-none');
+            if (loginBtn) loginBtn.classList.add('d-none');
+            if (userSessionGroup) userSessionGroup.classList.remove('d-none');
+
+            const notificationToggle = document.getElementById('notification-dropdown-toggle');
+            if (notificationToggle) {
+                notificationToggle.classList.remove('d-none');
+            }
 
             // Populate user info
-            if(userDisplay) userDisplay.textContent = user.displayName || user.email;
-            if(userPhotoEl) {
+            if (userDisplay) userDisplay.textContent = user.displayName || user.email;
+            if (userPhotoEl) {
                 userPhotoEl.src = user.photoURL || defaultIcon;
                 userPhotoEl.onerror = () => {
                     userPhotoEl.src = defaultIcon;
                     userPhotoEl.onerror = null;
                 };
             }
-            
+
             // NEW: Set/Update user document with display name
             if (user) {
                 const userDocRef = window.doc(window.db, "users", user.uid);
-                // Use setDoc with merge:true to create/update the document
                 window.setDoc(userDocRef, {
                     displayName: user.displayName || 'Anonymous User',
                     photoURL: user.photoURL || null
@@ -115,9 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
             // Show the login button and hide the logged-in group
-            if(loginBtn) loginBtn.classList.remove('d-none');
-            if(userSessionGroup) userSessionGroup.classList.add('d-none');
-            
+            if (loginBtn) loginBtn.classList.remove('d-none');
+            if (userSessionGroup) userSessionGroup.classList.add('d-none');
+
+            const notificationToggle = document.getElementById('notification-dropdown-toggle');
+            if (notificationToggle) {
+                notificationToggle.classList.add('d-none');
+            }
+
             // Clear notification listener on logout
             if (typeof window.setupNotificationListener === 'function') {
                 window.setupNotificationListener(null);
@@ -125,9 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Enable/disable other buttons
-        if(saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
-        if(loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
-        
+        if (saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
+        if (loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
+
         // Ensure gallery updates after auth state is known
         if (typeof window.loadUserSpecificGalleryData === 'function') {
             window.loadUserSpecificGalleryData();
