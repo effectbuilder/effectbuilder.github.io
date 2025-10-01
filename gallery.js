@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const likeBtn = document.getElementById(`gallery-like-btn-${docId}`);
         const likeCountSpan = document.getElementById(`gallery-like-count-${docId}`);
-        
+
         // Determine action based on button class
         const isCurrentlyLiked = likeBtn && likeBtn.classList.contains('btn-danger');
 
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const docRef = window.doc(window.db, "projects", docId);
             let action = isCurrentlyLiked ? 'unliked' : 'liked';
             let projectOwnerId = '';
-            
+
             await window.runTransaction(window.db, async (transaction) => {
                 const projectDoc = await transaction.get(docRef);
                 if (!projectDoc.exists()) throw new Error("Project not found.");
@@ -102,9 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     newLikesCount = Math.max(0, newLikesCount - 1);
                     delete likedBy[user.uid];
                 }
-                
+
                 // Update the project document
-                transaction.update(docRef, { 
+                transaction.update(docRef, {
                     likes: newLikesCount,
                     likedBy: likedBy,
                     updatedAt: new Date()
@@ -128,11 +128,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     read: false
                 });
             }
-            
+
             // --- Optimistic UI Update ---
             const countChange = action === 'liked' ? 1 : -1;
             const newCount = likeCountSpan ? (parseInt(likeCountSpan.textContent) || 0) + countChange : 0;
-            
+
             if (likeBtn) {
                 if (action === 'liked') {
                     likeBtn.classList.remove('btn-outline-danger');
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error("Error processing like action:", error);
             alert("Failed to process like/unlike action. Please check your network or sign-in status.");
-            loadPublicGallery(); 
+            loadPublicGallery();
         }
     }
 
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const viewCount = project.viewCount || 0;
             const downloadCount = project.downloadCount || 0;
             const likeCount = project.likes || 0;
-            
+
             // Check if current user has liked this project (based on database data)
             const userHasLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
 
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const controlsDiv = document.createElement('div');
             controlsDiv.className = 'd-flex align-items-center gap-2';
-            
+
             const loadBtn = document.createElement('a');
             loadBtn.className = 'btn btn-primary';
             loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-2"></i>Load';
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
             likeBtn.innerHTML = userHasLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
             likeBtn.title = userHasLiked ? "Unlike" : "Like";
             likeBtn.disabled = !currentUser; // Disable if not logged in
-            
+
             likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
             controlsDiv.appendChild(likeBtn);
             // --- END LIKE BUTTON ---
@@ -324,7 +324,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const buttonsSubDiv = document.createElement('div');
             buttonsSubDiv.className = 'd-flex flex-column gap-1';
 
-            if (currentUser && (currentUser.uid === project.userId || currentUser.uid === ADMIN_UID)) {
+            // Logic for the owner to edit their own effect
+            if (currentUser && currentUser.uid === project.userId) {
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn btn-sm btn-outline-secondary';
                 editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
@@ -333,7 +334,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 buttonsSubDiv.appendChild(editBtn);
             }
 
+            // Logic for ADMIN ONLY
             if (currentUser && currentUser.uid === ADMIN_UID) {
+                // Add an edit button for the admin if they are not the owner
+                if (currentUser.uid !== project.userId) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-sm btn-outline-secondary';
+                    editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                    editBtn.title = "Edit Name/Description";
+                    editBtn.onclick = () => openEditModal(project);
+                    buttonsSubDiv.appendChild(editBtn);
+                }
+
                 const featureBtn = document.createElement('button');
                 const isFeatured = project.featured === true;
                 featureBtn.className = `btn btn-sm btn-feature ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
@@ -342,6 +354,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 featureBtn.dataset.docId = project.docId;
                 featureBtn.onclick = function () { toggleFeaturedStatus(this, project.docId); };
                 buttonsSubDiv.appendChild(featureBtn);
+
+                // --- THE NEW REGENERATE BUTTON ---
+                const regenBtn = document.createElement('a');
+                regenBtn.className = 'btn btn-sm btn-outline-info';
+                regenBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+                regenBtn.title = "Regenerate Thumbnail";
+                regenBtn.href = `./?effectId=${project.docId}&action=regenThumbnail`;
+                regenBtn.target = "_blank";
+                buttonsSubDiv.appendChild(regenBtn);
+                // --- END ---
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'btn btn-sm btn-outline-danger';
@@ -361,10 +383,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 buttonsSubDiv.appendChild(deleteBtn);
             }
 
-            if(buttonsSubDiv.hasChildNodes()){
-                 controlsDiv.appendChild(buttonsSubDiv);
+            if (buttonsSubDiv.hasChildNodes()) {
+                controlsDiv.appendChild(buttonsSubDiv);
             }
-           
+
             li.appendChild(controlsDiv);
             galleryList.appendChild(li);
         });
@@ -374,15 +396,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const containers = [paginationContainerTop, paginationContainerBottom];
         const navs = [paginationNavTop, paginationNavBottom];
 
-        containers.forEach(container => { if(container) container.innerHTML = '' });
+        containers.forEach(container => { if (container) container.innerHTML = '' });
 
         const totalPages = Math.ceil(allProjects.length / projectsPerPage);
-        
+
         if (totalPages <= 1) {
-            navs.forEach(nav => { if(nav) nav.style.display = 'none' });
+            navs.forEach(nav => { if (nav) nav.style.display = 'none' });
             return;
         }
-        navs.forEach(nav => { if(nav) nav.style.display = 'flex' });
+        navs.forEach(nav => { if (nav) nav.style.display = 'flex' });
 
         const createPageItem = (text, page, isDisabled = false, isActive = false) => {
             const li = document.createElement('li');
@@ -399,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
         items.push(createPageItem('Next', currentPage + 1, currentPage === totalPages));
 
         containers.forEach(container => {
-            if(container) {
+            if (container) {
                 items.forEach(item => container.appendChild(item.cloneNode(true)));
             }
         });
@@ -418,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (paginationContainerTop) paginationContainerTop.addEventListener('click', handlePaginationClick);
     if (paginationContainerBottom) paginationContainerBottom.addEventListener('click', handlePaginationClick);
-    
+
     // --- Data Loading ---
     async function loadPublicGallery() {
         galleryList.innerHTML = `<li class="list-group-item text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></li>`;
@@ -429,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.orderBy("createdAt", "desc")
             );
             const querySnapshot = await window.getDocs(q);
-            
+
             allProjects = []; // Clear previous results
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
