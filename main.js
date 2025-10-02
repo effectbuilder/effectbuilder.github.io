@@ -6376,19 +6376,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectionChanged = true;
             }
         } else {
-            const topHitObject = [...objects].find(obj => obj.isPointInside(x, y));
-            if (topHitObject) {
-                if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                    if (!selectedObjectIds.includes(topHitObject.id)) {
-                        selectedObjectIds.push(topHitObject.id);
+            // --- FIX for rotation handle ---
+            // Before clearing selection, check if a handle of a selected object was clicked.
+            let handleFoundOnSelection = false;
+            if (selectedObjectIds.length > 0) {
+                const hitObjectWithHandle = [...objects].reverse().find(obj =>
+                    selectedObjectIds.includes(obj.id) && obj.getHandleAtPoint(x, y)
+                );
+                if (hitObjectWithHandle) {
+                    handleFoundOnSelection = true;
+                }
+            }
+
+            // If no handle was clicked, proceed with the normal logic to change or clear the selection.
+            if (!handleFoundOnSelection) {
+                const topHitObject = [...objects].find(obj => obj.isPointInside(x, y));
+                if (topHitObject) {
+                    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                        if (!selectedObjectIds.includes(topHitObject.id)) {
+                            selectedObjectIds.push(topHitObject.id);
+                        }
+                    } else {
+                        selectedObjectIds = [topHitObject.id];
                     }
                 } else {
-                    selectedObjectIds = [topHitObject.id];
+                    selectedObjectIds = [];
                 }
-            } else {
-                selectedObjectIds = [];
+                selectionChanged = true;
             }
-            selectionChanged = true;
+            // --- END FIX ---
         }
 
         if (selectionChanged) {
@@ -6539,20 +6555,60 @@ document.addEventListener('DOMContentLoaded', function () {
                 const obj = objects.find(o => o.id === initial.id);
                 if (obj) {
                     const resizeAngle = obj.rotation * Math.PI / 180;
+                    const cosA = Math.cos(resizeAngle);
+                    const sinA = Math.sin(resizeAngle);
                     const anchorPoint = initial.anchorPoint;
+
+                    // Vector from anchor to mouse in world space
                     const worldVecX = x - anchorPoint.x;
                     const worldVecY = y - anchorPoint.y;
-                    const localVecX = worldVecX * Math.cos(-resizeAngle) - worldVecY * Math.sin(-resizeAngle);
-                    const localVecY = worldVecX * Math.sin(-resizeAngle) + worldVecY * Math.cos(-resizeAngle);
-                    const handleXSign = activeResizeHandle.includes('left') ? -1 : 1;
-                    const handleYSign = activeResizeHandle.includes('top') ? -1 : 1;
-                    const newWidth = localVecX * handleXSign;
-                    const newHeight = localVecY * handleYSign;
-                    const worldSizingVecX = (newWidth * handleXSign) * Math.cos(resizeAngle) - (newHeight * handleYSign) * Math.sin(resizeAngle);
-                    const worldSizingVecY = (newWidth * handleXSign) * Math.sin(resizeAngle) + (newHeight * handleYSign) * Math.cos(resizeAngle);
-                    const newCenterX = anchorPoint.x + worldSizingVecX / 2;
-                    const newCenterY = anchorPoint.y + worldSizingVecY / 2;
-                    obj.update({ x: newCenterX - newWidth / 2, y: newCenterY - newHeight / 2, width: newWidth, height: newHeight });
+
+                    // Rotate vector into object's local space
+                    const localVecX = worldVecX * cosA + worldVecY * sinA;
+                    const localVecY = -worldVecX * sinA + worldVecY * cosA;
+
+                    // Calculate new dimensions (always positive)
+                    let newWidth = Math.abs(localVecX);
+                    let newHeight = Math.abs(localVecY);
+
+                    // Preserve one dimension for cardinal handles
+                    if (activeResizeHandle === 'top' || activeResizeHandle === 'bottom') {
+                        newWidth = initial.initialWidth;
+                    }
+                    if (activeResizeHandle === 'left' || activeResizeHandle === 'right') {
+                        newHeight = initial.initialHeight;
+                    }
+
+                    // --- START FIX for object moving during resize ---
+                    let newCenterX, newCenterY;
+                    const isCardinal = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+
+                    if (isCardinal) {
+                        // For side handles, calculate the new center by offsetting from the stationary anchor.
+                        // This prevents the object from moving with the mouse on the non-resizing axis.
+                        const localAnchorX = activeResizeHandle === 'left' ? newWidth / 2 : activeResizeHandle === 'right' ? -newWidth / 2 : 0;
+                        const localAnchorY = activeResizeHandle === 'top' ? newHeight / 2 : activeResizeHandle === 'bottom' ? -newHeight / 2 : 0;
+
+                        const worldOffsetX = localAnchorX * cosA - localAnchorY * sinA;
+                        const worldOffsetY = localAnchorX * sinA + localAnchorY * cosA;
+
+                        newCenterX = anchorPoint.x - worldOffsetX;
+                        newCenterY = anchorPoint.y - worldOffsetY;
+
+                    } else {
+                        // For corner handles, the center is the midpoint of the diagonal (anchor to mouse).
+                        newCenterX = (anchorPoint.x + x) / 2;
+                        newCenterY = (anchorPoint.y + y) / 2;
+                    }
+                    // --- END FIX ---
+
+                    // Update the object with the correctly calculated center and dimensions
+                    obj.update({
+                        x: newCenterX - newWidth / 2,
+                        y: newCenterY - newHeight / 2,
+                        width: newWidth,
+                        height: newHeight
+                    });
                 }
                 needsRedraw = true;
             } else if (isRotating) {
