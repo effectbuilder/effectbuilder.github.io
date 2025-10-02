@@ -418,7 +418,7 @@ class Shape {
         this.handleSize = 15;
         this.rotationHandleOffset = -30;
         this.rotationHandleRadius = 15;
-        this.handles = [{ name: 'top-left', cursor: 'nwse-resize' }, { name: 'top', cursor: 'ns-resize' }, { name: 'top-right', cursor: 'nesw-resize' }, { name: 'left', cursor: 'ew-resize' }, { name: 'right', cursor: 'ew-resize' }, { name: 'bottom-left', cursor: 'nesw-resize' }, { name: 'bottom', cursor: 'ns-resize' }, { name: 'bottom-right', cursor: 'nwse-resize' }];
+        this.handles = [{ name: 'top-left', cursor: Cursors.nwseResize }, { name: 'top', cursor: Cursors.nsResize }, { name: 'top-right', cursor: Cursors.neswResize }, { name: 'left', cursor: Cursors.ewResize }, { name: 'right', cursor: Cursors.ewResize }, { name: 'bottom-left', cursor: Cursors.neswResize }, { name: 'bottom', cursor: Cursors.nsResize }, { name: 'bottom-right', cursor: Cursors.nwseResize }];
         this.randomElementState = null;
         this.text = text || 'Hello';
         this.fontSize = fontSize || 60;
@@ -1353,7 +1353,7 @@ class Shape {
                     const nodeY = node.y - offsetY;
                     const dist = Math.sqrt(Math.pow(localPoint.x - nodeX, 2) + Math.pow(localPoint.y - nodeY, 2));
                     if (dist <= handleRadius) {
-                        return { name: `node-${i}`, cursor: 'move', type: 'node', index: i };
+                        return { name: `node-${i}`, cursor: Cursors.move, type: 'node', index: i };
                     }
                 }
             }
@@ -1366,7 +1366,7 @@ class Shape {
         const dist = Math.sqrt(Math.pow(localPoint.x - rotHandlePos.x, 2) + Math.pow(localPoint.y - rotHandlePos.y, 2));
 
         if (dist <= this.rotationHandleRadius + h2) {
-            return { name: 'rotate', cursor: 'crosshair', type: 'rotation' };
+            return { name: 'rotate', cursor: Cursors.rotate, type: 'rotation' };
         }
 
         // Check for resize handles

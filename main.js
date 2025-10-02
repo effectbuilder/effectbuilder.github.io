@@ -12,6 +12,35 @@ const propsToScale = [
     'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'
 ];
 
+// --- Custom Cursor Library (Definitive Version) ---
+const CURSOR_SIZE = 48;
+const HOTSPOT = CURSOR_SIZE / 2;
+const VIEWBOX_CENTER = 16;
+const PADDED_VIEWBOX = '-4 -4 40 40';
+
+window.Cursors = {
+    // FINAL: Correctly drawn 'arrow-clockwise' icon as a solid shape with an outline.
+    rotate: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' class='bi bi-arrow-clockwise' viewBox='0 0 16 16'><path fill-rule='evenodd' d='M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z'/><path d='M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466'/></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Double-arrow for Move
+    move: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' viewBox='0 0 16 16'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/><g transform='rotate(90 8 8)'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/></g></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Base double-arrow for North-South
+    nsResize: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' viewBox='0 0 16 16'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Rotated double-arrow for East-West
+    ewResize: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white'  viewBox='0 0 16 16'><g transform='rotate(90 8 8)'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/></g></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Rotated double-arrow for NE-SW
+    neswResize: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' viewBox='0 0 16 16'><g transform='rotate(45 8 8)'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/></g></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Rotated double-arrow for NW-SE
+    nwseResize: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' viewBox='0 0 16 16'><g transform='rotate(-45 8 8)'><path d='M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z'/></g></svg>") ${HOTSPOT} ${HOTSPOT}, auto`,
+
+    // Double-arrow for Crosshair
+    crosshair: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${CURSOR_SIZE}' height='${CURSOR_SIZE}' fill='white' viewBox='0 0 16 16'><path fill-rule='evenodd' d='M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10M.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8'/></svg>") ${HOTSPOT} ${HOTSPOT}, auto`
+};
+
 // Update this for a new property
 //Tabs
 const controlGroupMap = {
@@ -475,57 +504,73 @@ function getBoundingBox(obj) {
 }
 
 /**
- * Fetches the total commit count from a GitHub repository to create a version number.
- * The version will be in the format: Major.Minor.CommitCount
+ * Sets the version number by fetching from GitHub, with a 5-minute cache
+ * stored in the browser's localStorage to reduce API calls.
  */
-async function setVersionFromGitHub() {
+async function setVersionWithCaching() {
     // --- CONFIGURE THIS SECTION ---
-    const owner = "effectbuilder";
-    const repo = "effectbuilder.github.io";
-    const branch = "main";
-    const majorMinor = "1.0";
+    const owner = "effectbuilder";         // Your GitHub username or organization
+    const repo = "effectbuilder.github.io";       // Your repository name
+    const branch = "main";                    // Your default branch name
+    const majorMinor = "1.0";                 // Your project's Major.Minor version
+    const CACHE_DURATION_MS = 5 * 60 * 1000;  // 5 minutes in milliseconds
     // ------------------------------
 
     const versionEl = document.getElementById('version-display');
     if (!versionEl) return;
 
+    let cachedInfo = null;
+    try {
+        cachedInfo = JSON.parse(localStorage.getItem('githubVersionInfo'));
+    } catch (e) {
+        console.warn("Could not parse version cache.");
+    }
+
+    // 1. Check if a fresh version exists in the cache
+    if (cachedInfo && (Date.now() - cachedInfo.timestamp < CACHE_DURATION_MS)) {
+        versionEl.textContent = cachedInfo.version;
+        return; // Use the cached version and stop here
+    }
+
+    // 2. If cache is old or missing, fetch from GitHub
     try {
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=1`);
-
-        if (!response.ok) {
-            throw new Error(`GitHub API responded with status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`API status: ${response.status}`);
 
         const linkHeader = response.headers.get('Link');
         let commitCount = 0;
 
         if (linkHeader) {
             const lastPageMatch = linkHeader.match(/page=(\d+)>; rel="last"/);
-            if (lastPageMatch) {
-                commitCount = parseInt(lastPageMatch[1], 10);
-            }
+            if (lastPageMatch) commitCount = parseInt(lastPageMatch[1], 10);
         } else {
-            // If there's no "Link" header, it means there's only one page of results.
-            // We read the JSON body to count them.
             const commits = await response.json();
             commitCount = commits.length;
         }
 
-        if (commitCount > 0) {
-            versionEl.textContent = `${majorMinor}.${commitCount}`;
-        } else {
-            // Fallback if the repository is empty
-            versionEl.textContent = `${majorMinor}.0`;
-        }
+        const newVersion = `${majorMinor}.${commitCount > 0 ? commitCount : 0}`;
+        versionEl.textContent = newVersion;
+
+        // 3. Save the new version and current timestamp to the cache
+        const newCacheInfo = {
+            version: newVersion,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('githubVersionInfo', JSON.stringify(newCacheInfo));
 
     } catch (error) {
         console.error("Error fetching version from GitHub:", error);
-        versionEl.textContent = `${majorMinor}.? (API Error)`;
+        // If the API fails, use the stale cache data if it exists
+        if (cachedInfo) {
+            versionEl.textContent = `${cachedInfo.version} (Offline)`;
+        } else {
+            versionEl.textContent = `${majorMinor}.? (API Error)`;
+        }
     }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    setVersionFromGitHub();
+    setVersionWithCaching();
     async function regenerateAndSaveThumbnail(effectId) {
         showToast("Regenerating thumbnail...", "info");
 
@@ -6330,19 +6375,35 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!isDragging && !isResizing && !isRotating && !isDraggingNode) {
             const { x, y } = getCanvasCoordinates(e);
             let cursor = 'default';
-            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+            let handleFound = false;
 
-            if (topObject) {
-                cursor = 'pointer';
-                if (selectedObjectIds.includes(topObject.id) && !topObject.locked) {
-                    const handle = topObject.getHandleAtPoint(x, y);
+            // 1. Prioritize checking for handles on any selected object.
+            // This loop checks selected objects even if the mouse is outside their main bounding box.
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                if (selectedObjectIds.includes(obj.id) && !obj.locked) {
+                    const handle = obj.getHandleAtPoint(x, y);
                     if (handle) {
                         cursor = handle.cursor;
-                    } else {
-                        cursor = 'move';
+                        handleFound = true;
+                        break; // A handle was found, so we can stop searching.
                     }
                 }
             }
+
+            // 2. If no handle was found, check if we are hovering over an object's body.
+            if (!handleFound) {
+                const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
+                if (topObject) {
+                    if (selectedObjectIds.includes(topObject.id) && !topObject.locked) {
+                        cursor = 'move'; // Hovering over a selected object
+                    } else {
+                        cursor = 'pointer'; // Hovering over an unselected object
+                    }
+                }
+            }
+
+            // 3. Apply the final cursor style.
             canvasContainer.style.cursor = cursor;
         }
     });
@@ -6713,45 +6774,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const debouncedUpdateForm = debounce(updateFormValuesFromObjects, 10);
-
-    /**
-     * Handles mouse movement over the canvas for dragging, resizing, and cursor updates.
-     * @param {MouseEvent} e - The mousemove event object.
-     */
-    // This is the main mousemove handler, which should ONLY handle cursor and coordinate display.
-    canvasContainer.addEventListener('mousemove', e => {
-        if (isDrawingPolyline && previewLine.active) {
-            const { x, y } = getCanvasCoordinates(e);
-            previewLine.endX = x;
-            previewLine.endY = y;
-            needsRedraw = true; // Flag that a redraw is needed
-            return;
-        }
-
-        if (coordsDisplay) {
-            const { x, y } = getCanvasCoordinates(e);
-            coordsDisplay.textContent = `${Math.round(x / 4)}, ${Math.round(y / 4)}`;
-        }
-
-        if (!isDragging && !isResizing && !isRotating && !isDraggingNode) {
-            const { x, y } = getCanvasCoordinates(e);
-            let cursor = 'default';
-            const topObject = [...objects].reverse().find(obj => obj.isPointInside(x, y));
-
-            if (topObject) {
-                cursor = 'pointer';
-                if (selectedObjectIds.includes(topObject.id) && !topObject.locked) {
-                    const handle = topObject.getHandleAtPoint(x, y);
-                    if (handle) {
-                        cursor = handle.cursor;
-                    } else {
-                        cursor = 'move';
-                    }
-                }
-            }
-            canvasContainer.style.cursor = cursor;
-        }
-    });
 
     /**
      * The main initialization function for the application.
@@ -7341,7 +7363,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addPolylineBtn.addEventListener('click', () => {
         activeTool = 'polyline';
-        canvasContainer.style.cursor = 'crosshair';
+        canvasContainer.style.cursor = Cursors.crosshair;
         isDrawingPolyline = false; // Reset state
         currentlyDrawingShapeId = null;
         previewLine.active = false;
