@@ -474,9 +474,58 @@ function getBoundingBox(obj) {
     };
 }
 
+/**
+ * Fetches the total commit count from a GitHub repository to create a version number.
+ * The version will be in the format: Major.Minor.CommitCount
+ */
+async function setVersionFromGitHub() {
+    // --- CONFIGURE THIS SECTION ---
+    const owner = "effectbuilder";
+    const repo = "effectbuilder.github.io";
+    const branch = "main";
+    const majorMinor = "1.0";
+    // ------------------------------
 
+    const versionEl = document.getElementById('version-display');
+    if (!versionEl) return;
+
+    try {
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=1`);
+
+        if (!response.ok) {
+            throw new Error(`GitHub API responded with status: ${response.status}`);
+        }
+
+        const linkHeader = response.headers.get('Link');
+        let commitCount = 0;
+
+        if (linkHeader) {
+            const lastPageMatch = linkHeader.match(/page=(\d+)>; rel="last"/);
+            if (lastPageMatch) {
+                commitCount = parseInt(lastPageMatch[1], 10);
+            }
+        } else {
+            // If there's no "Link" header, it means there's only one page of results.
+            // We read the JSON body to count them.
+            const commits = await response.json();
+            commitCount = commits.length;
+        }
+
+        if (commitCount > 0) {
+            versionEl.textContent = `${majorMinor}.${commitCount}`;
+        } else {
+            // Fallback if the repository is empty
+            versionEl.textContent = `${majorMinor}.0`;
+        }
+
+    } catch (error) {
+        console.error("Error fetching version from GitHub:", error);
+        versionEl.textContent = `${majorMinor}.? (API Error)`;
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function () {
+    setVersionFromGitHub();
     async function regenerateAndSaveThumbnail(effectId) {
         showToast("Regenerating thumbnail...", "info");
 
