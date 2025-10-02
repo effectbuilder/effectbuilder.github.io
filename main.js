@@ -509,11 +509,12 @@ function getBoundingBox(obj) {
  */
 async function setVersionWithCaching() {
     // --- CONFIGURE THIS SECTION ---
-    const owner = "effectbuilder";         // Your GitHub username or organization
-    const repo = "effectbuilder.github.io";       // Your repository name
-    const branch = "main";                    // Your default branch name
-    const majorMinor = "1.0";                 // Your project's Major.Minor version
-    const CACHE_DURATION_MS = 5 * 60 * 1000;  // 5 minutes in milliseconds
+    const owner = "effectbuilder";           // Your GitHub username or organization
+    const repo = "effectbuilder.github.io";  // Your repository name
+    const branch = "main";                   // Your default branch name
+    const majorMinor = "1.0";                // Your project's Major.Minor version
+    const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const PER_PAGE_COUNT = 100;
     // ------------------------------
 
     const versionEl = document.getElementById('version-display');
@@ -534,21 +535,38 @@ async function setVersionWithCaching() {
 
     // 2. If cache is old or missing, fetch from GitHub
     try {
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=1`);
-        if (!response.ok) throw new Error(`API status: ${response.status}`);
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=${PER_PAGE_COUNT}`;
+        const response = await fetch(apiUrl);
+
+        // --- FIX: Read the JSON response immediately. ---
+        // This is necessary even on failure to get the error body (e.g., rate limit message).
+        const commits = await response.json();
+
+        if (!response.ok) {
+            // If not ok, throw the error with the status and the message from the JSON body
+            throw new Error(`API status: ${response.status}. Message: ${commits.message || 'Unknown Error'}`);
+        }
 
         const linkHeader = response.headers.get('Link');
-        let commitCount = 0;
+        let totalCommits = 0;
 
         if (linkHeader) {
             const lastPageMatch = linkHeader.match(/page=(\d+)>; rel="last"/);
-            if (lastPageMatch) commitCount = parseInt(lastPageMatch[1], 10);
-        } else {
-            const commits = await response.json();
-            commitCount = commits.length;
+
+            if (lastPageMatch) {
+                const lastPageNum = parseInt(lastPageMatch[1], 10);
+                // Approximate total commits
+                totalCommits = lastPageNum * PER_PAGE_COUNT;
+            }
         }
 
-        const newVersion = `${majorMinor}.${commitCount > 0 ? commitCount : 0}`;
+        // If totalCommits is still 0 (Link header missing), use the actual count from the JSON
+        if (totalCommits === 0) {
+            totalCommits = commits.length; // Use the commits variable we already awaited
+        }
+
+        // Use the totalCommits we calculated
+        const newVersion = `${majorMinor}.${totalCommits}`;
         versionEl.textContent = newVersion;
 
         // 3. Save the new version and current timestamp to the cache
