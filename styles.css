@@ -8,6 +8,10 @@ body {
     height: 100%;
 }
 
+.brand-separator {
+    margin-right: 340px !important; /* Adjust '50px' to whatever large value you need */
+}
+
 #right-panel-top {
     display: flex;
     align-items: center;

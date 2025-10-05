@@ -63,6 +63,125 @@ const controlGroupMap = {
     'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
 };
 
+// Update this for a new property
+const shapePropertyMap = {
+    rectangle: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    polyline: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
+        'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
+        'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
+        'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
+        'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+    ],
+    circle: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    ring: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+        'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+        'innerDiameter', 'numberOfSegments', 'angularWidth',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    polygon: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    star: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    text: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+        'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
+        'textAnimationSpeed', 'showTime', 'showDate',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+    ],
+    oscilloscope: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+        'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+        'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
+        'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+    ],
+    'tetris': [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset', 'scrollDir',
+        'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+        // 'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+    ],
+    fire: [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+        'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
+        'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+    ],
+    'fire-radial': [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+        'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+    ],
+    'pixel-art': [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
+        'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
+    ],
+    'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationSpeed', 'scrollDir',
+        'vizLayout', 'vizDrawStyle', 'vizStyle',
+        'vizLineWidth',
+        'vizAutoScale', 'vizMaxBarHeight',
+        'vizBarCount', 'vizBarSpacing', 'vizSmoothing',
+        'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
+        'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
+    ],
+    'strimer': [
+        'shape', 'x', 'y', 'width', 'height', 'rotation',
+        'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
+        'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
+        'strimerDirection', 'strimerEasing',
+        'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
+    ],
+    'spawner': [
+        'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
+        'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+        'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
+        'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
+        'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
+        'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor',
+        'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
+        'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
+    ],
+};
+
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
@@ -922,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
 
             const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
+            const cursorsDefinition = JSON.stringify(window.Cursors);
 
             // 6. Assemble the final, self-contained runtime script
             const exportedScript = `
@@ -932,6 +1052,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     canvas.width = 320;
                     canvas.height = 200;
                     let objects = [];
+
+                    const Cursors = ${cursorsDefinition};
                     
                     ${jsVars}
 
@@ -1186,76 +1308,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const processPastedImage = (image, targetWidth, targetHeight, color1, color2) => {
-        const targetPalette = [
-            { value: 1.0, name: 'White', rgb: { r: 255, g: 255, b: 255 } },
-            { value: 0.3, name: 'Color 1', rgb: parseColorToRgba(color1) },
-            { value: 0.4, name: 'Color 2', rgb: parseColorToRgba(color2) },
-            { value: 0.0, name: 'Black', rgb: { r: 0, g: 0, b: 0 } }
-            // Note: 'Fill Style' is intentionally left out to be handled separately
-        ];
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = targetWidth;
-        tempCanvas.height = targetHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-        const imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight).data;
-
-        const colorMap = new Map();
-        const availablePalette = [...targetPalette];
-
-        // Find all unique, non-transparent colors in the image
-        const uniqueColors = new Set();
-        for (let i = 0; i < imageData.length; i += 4) {
-            if (imageData[i + 3] > 128) { // Only consider opaque pixels
-                uniqueColors.add(JSON.stringify({ r: imageData[i], g: imageData[i + 1], b: imageData[i + 2] }));
-            }
-        }
-
-        // Map the most common unique colors to our available palette
-        Array.from(uniqueColors).slice(0, availablePalette.length).forEach(colorStr => {
-            const sourceRgb = JSON.parse(colorStr);
-            let bestMatch = null;
-            let minDistance = Infinity;
-            let bestMatchIndex = -1;
-
-            availablePalette.forEach((paletteColor, index) => {
-                const distance = colorDistance(sourceRgb, paletteColor.rgb);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    bestMatch = paletteColor;
-                    bestMatchIndex = index;
-                }
-            });
-
-            if (bestMatch) {
-                colorMap.set(colorStr, bestMatch);
-                availablePalette.splice(bestMatchIndex, 1);
-            }
-        });
-
-        // Create the final pixel data array
-        const newData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(0));
-        for (let i = 0; i < imageData.length; i += 4) {
-            const r = Math.floor(i / (targetWidth * 4));
-            const c = (i / 4) % targetWidth;
-
-            // --- THIS IS THE KEY ---
-            // If the pixel is transparent, assign it the Fill Style value (0.7).
-            // Otherwise, find its mapped color.
-            if (imageData[i + 3] < 128) {
-                newData[r][c] = 0.7; // Assign Fill Style to transparent pixels
-            } else {
-                const key = JSON.stringify({ r: imageData[i], g: imageData[i + 1], b: imageData[i + 2] });
-                const mappedColor = colorMap.get(key);
-                newData[r][c] = mappedColor ? mappedColor.value : 0.0; // Default to black if no match
-            }
-        }
-
-        return newData;
-    };
-
     const handleGifPaste = async (gifBlob, objectId) => {
         try {
             const buffer = await gifBlob.arrayBuffer();
@@ -1435,29 +1487,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const gifType = imageItem.types.find(type => type === 'image/gif');
-            if (gifType) {
-                const blob = await imageItem.getType(gifType);
-                handleGifPaste(blob, objectId);
-                return;
-            }
-
             const imageType = imageItem.types.find(type => type.startsWith('image/'));
             const blob = await imageItem.getType(imageType);
             const imageUrl = URL.createObjectURL(blob);
             const image = new Image();
 
             image.onload = () => {
-                // --- START: New Automatic Spritesheet Processing ---
                 const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
                 const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
+                const shouldDownsample = document.getElementById('sprite-downsample').checked;
+                const shouldQuantize = document.getElementById('sprite-quantize-colors').checked;
+                const maxPaletteSize = parseInt(document.getElementById('sprite-max-colors').value, 10) || 32;
 
                 if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
                     showToast("Frame dimensions must be positive numbers.", "danger");
+                    URL.revokeObjectURL(imageUrl);
                     return;
                 }
 
-                // 1. Analyze colors from the entire image to build a consistent palette.
+                // 1. Analyze color frequencies from the source image
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = image.width;
                 tempCanvas.height = image.height;
@@ -1465,31 +1513,67 @@ document.addEventListener('DOMContentLoaded', function () {
                 tempCtx.drawImage(image, 0, 0);
                 const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height).data;
 
-                const uniqueColors = new Map();
+                const colorFrequencies = new Map();
                 for (let i = 0; i < imageData.length; i += 4) {
                     if (imageData[i + 3] > 128) {
-                        const hex = rgbToHex(`rgb(${imageData[i]},${imageData[i + 1]},${imageData[i + 2]})`);
-                        if (!uniqueColors.has(hex)) {
-                            uniqueColors.set(hex, {
-                                hex: hex,
-                                luminance: 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2]
+                        const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2];
+                        const hex = rgbToHex(`rgb(${r},${g},${b})`);
+                        if (colorFrequencies.has(hex)) {
+                            colorFrequencies.get(hex).count++;
+                        } else {
+                            colorFrequencies.set(hex, {
+                                hex, r, g, b, count: 1,
+                                luminance: 0.2126 * r + 0.7152 * g + 0.0722 * b
                             });
                         }
                     }
                 }
 
-                // 2. Create the new gradient, sorted by brightness.
-                const sortedColors = [...uniqueColors.values()].sort((a, b) => a.luminance - b.luminance);
+                let allColors = [...colorFrequencies.values()];
+                let finalPaletteColors;
+
+                // --- START: New, more robust color quantization logic ---
+                if (shouldQuantize && allColors.length > maxPaletteSize) {
+                    showToast(`Image has ${allColors.length} colors. Reducing to a palette of ${maxPaletteSize}...`, 'info');
+
+                    // 1. Prioritize the most common colors by sorting them first.
+                    allColors.sort((a, b) => b.count - a.count);
+
+                    const reducedPalette = [];
+                    const COLOR_GROUPING_THRESHOLD = 35; // A balanced value for grouping.
+
+                    for (const color of allColors) {
+                        // Stop once we've collected enough representative colors.
+                        if (reducedPalette.length >= maxPaletteSize) {
+                            break;
+                        }
+
+                        // Check if this color is visually distinct from colors already in our new palette.
+                        const isSimilar = reducedPalette.some(pColor => colorDistance(color, pColor) < COLOR_GROUPING_THRESHOLD);
+
+                        if (!isSimilar) {
+                            reducedPalette.push(color);
+                        }
+                    }
+                    finalPaletteColors = reducedPalette.length > 0 ? reducedPalette : allColors.slice(0, maxPaletteSize);
+
+                } else {
+                    finalPaletteColors = allColors;
+                }
+                // --- END: New quantization logic ---
+
+                // 2. Create gradient stops from the final palette
+                const sortedColors = finalPaletteColors.sort((a, b) => a.luminance - b.luminance);
                 const newGradientStops = sortedColors.map((color, index) => ({
                     color: color.hex,
                     position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
                 }));
-                const colorToPositionMap = new Map(newGradientStops.map(stop => [stop.color, stop.position]));
+                const colorToIndexMap = new Map(sortedColors.map((color, index) => [color.hex, index + 2]));
 
-                // 3. Process the spritesheet into frames with the new indexed pixel data.
-                const spriteCols = Math.floor(image.width / frameWidth);
-                const spriteRows = Math.floor(image.height / frameHeight);
+                // 3. Process the image into frames
                 const newFrames = [];
+                let spriteCols = shouldDownsample ? 1 : Math.floor(image.width / frameWidth);
+                let spriteRows = shouldDownsample ? 1 : Math.floor(image.height / frameHeight);
 
                 for (let row = 0; row < spriteRows; row++) {
                     for (let col = 0; col < spriteCols; col++) {
@@ -1497,47 +1581,63 @@ document.addEventListener('DOMContentLoaded', function () {
                         frameCanvas.width = frameWidth;
                         frameCanvas.height = frameHeight;
                         const frameCtx = frameCanvas.getContext('2d');
-                        frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+
+                        if (shouldDownsample) {
+                            frameCtx.imageSmoothingEnabled = false;
+                            frameCtx.drawImage(image, 0, 0, image.width, image.height, 0, 0, frameWidth, frameHeight);
+                        } else {
+                            frameCtx.drawImage(image, col * frameWidth, row * frameHeight, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+                        }
 
                         const frameImgData = frameCtx.getImageData(0, 0, frameWidth, frameHeight).data;
                         const pixelData = Array(frameHeight).fill(0).map(() => Array(frameWidth).fill(0));
 
                         for (let i = 0; i < frameImgData.length; i += 4) {
-                            const r_idx = Math.floor(i / (frameWidth * 4));
+                            const r_idx = Math.floor((i / 4) / frameWidth);
                             const c_idx = (i / 4) % frameWidth;
 
                             if (frameImgData[i + 3] < 128) {
-                                pixelData[r_idx][c_idx] = 0.0;
+                                pixelData[r_idx][c_idx] = 0.7;
                             } else {
-                                const hex = rgbToHex(`rgb(${frameImgData[i]},${frameImgData[i + 1]},${frameImgData[i + 2]})`);
-                                pixelData[r_idx][c_idx] = colorToPositionMap.get(hex) || 0.0;
+                                const currentPixelRgb = { r: frameImgData[i], g: frameImgData[i + 1], b: frameImgData[i + 2] };
+                                const closestHex = findClosestColor(currentPixelRgb, sortedColors);
+                                pixelData[r_idx][c_idx] = colorToIndexMap.get(closestHex) || 0;
                             }
                         }
                         newFrames.push({ data: JSON.stringify(pixelData), duration: 0.1 });
                     }
                 }
 
-                // 4. Apply changes and update UI.
+                // 4. Apply changes and show final colored toast message
                 const shouldAppend = document.getElementById('sprite-paste-append').checked;
-                const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
-                const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
-                const existingFrames = shouldAppend && hiddenTextarea.value ? JSON.parse(hiddenTextarea.value) : [];
+                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
+                if (!targetObject) return;
+
+                const existingFrames = shouldAppend ? targetObject.pixelArtFrames : [];
                 const combinedFrames = [...existingFrames, ...newFrames];
 
-                const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                if (targetObject) {
-                    targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
-                    renderForm();
-                    updateFormValuesFromObjects();
-                    drawFrame();
-                    recordHistory();
-                }
+                const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+                if (framesConf) framesConf.default = JSON.stringify(combinedFrames);
+                const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+                if (gradientConf) gradientConf.default = JSON.stringify(newGradientStops);
+
+                targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
+                renderForm();
+                updateFormValuesFromObjects();
+                drawFrame();
+                recordHistory();
 
                 URL.revokeObjectURL(imageUrl);
                 const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
                 if (spritePasteModal) spritePasteModal.hide();
-                showToast(`${newFrames.length} frame(s) processed with ${sortedColors.length} colors!`, "success");
-                // --- END: New Automatic Spritesheet Processing ---
+
+                const colorCount = sortedColors.length;
+                let colorClass = '';
+                if (colorCount <= 64) colorClass = 'text-success';
+                else if (colorCount <= 256) colorClass = 'text-warning';
+                else colorClass = 'text-danger';
+                const toastMessage = `${newFrames.length} frame(s) processed with <strong class="${colorClass}">${colorCount}</strong> colors!`;
+                showToast(toastMessage, "success");
             };
             image.src = imageUrl;
 
@@ -1546,6 +1646,8 @@ document.addEventListener('DOMContentLoaded', function () {
             showToast("Could not paste sprite: " + err.message, "danger");
         }
     };
+
+    document.getElementById('confirm-sprite-paste-btn').addEventListener('click', handleSpritePaste);
 
     const pasteSingleImageFrame = (blob) => {
         const frameWidthInput = document.getElementById('pixel-editor-width');
@@ -1758,7 +1860,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (e.key.toLowerCase() === 'y') { e.preventDefault(); applyHistoryState(appHistory.redo()); return; }
                 if (isInputFocused) return; // Allow copy/paste in text fields
                 if (e.key.toLowerCase() === 'c' && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('copy-props-btn').click(); return; }
-                if (e.key.toLowerCase() === 'v' && propertyClipboard && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('paste-props-btn').click(); return; }
+                if (e.key.toLowerCase() === 'v') {
+                    e.preventDefault(); // Prevent the browser's default paste action once
+
+                    // Priority 1: Check for a pixel-art paste first.
+                    if (selectedObjectIds.length === 1) {
+                        const obj = objects.find(o => o.id === selectedObjectIds[0]);
+                        if (obj && obj.shape === 'pixel-art') {
+                            const spritePasteModal = new bootstrap.Modal(document.getElementById('paste-sprite-modal'));
+                            spritePasteModal.show();
+                            return; // Action handled, so we exit.
+                        }
+                    }
+
+                    // Priority 2: If it's not a pixel-art paste, then check for a property paste.
+                    if (propertyClipboard && selectedObjectIds.length > 0) {
+                        document.getElementById('paste-props-btn').click();
+                        return; // Action handled, so we exit.
+                    }
+                }
             }
 
             if (isInputFocused) {
@@ -2309,125 +2429,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let isDrawingPolyline = false;
     let currentlyDrawingShapeId = null;
     let previewLine = { startX: 0, startY: 0, endX: 0, endY: 0, active: false };
-
-    // Update this for a new property
-    const shapePropertyMap = {
-        rectangle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        polyline: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
-            'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
-            'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
-            'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
-            'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
-        ],
-        circle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        ring: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
-            'innerDiameter', 'numberOfSegments', 'angularWidth',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        polygon: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        star: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        text: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
-            'textAnimationSpeed', 'showTime', 'showDate',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-        ],
-        oscilloscope: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
-            'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
-            'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-        ],
-        'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
-            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-        ],
-        fire: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
-            'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
-        ],
-        'fire-radial': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
-        ],
-        'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
-            'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
-        ],
-        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationSpeed', 'scrollDir',
-            'vizLayout', 'vizDrawStyle', 'vizStyle',
-            'vizLineWidth',
-            'vizAutoScale', 'vizMaxBarHeight',
-            'vizBarCount', 'vizBarSpacing', 'vizSmoothing',
-            'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing',
-            'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
-        ],
-        'strimer': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation',
-            'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
-            'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
-            'strimerDirection', 'strimerEasing',
-            'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
-        ],
-        'spawner': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
-            'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
-            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
-            'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
-            'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor',
-            'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
-            'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
-        ],
-    };
 
     const galleryOffcanvasEl = document.getElementById('gallery-offcanvas');
     const galleryList = document.getElementById('gallery-project-list');
@@ -3037,7 +3038,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         showConfirmModal(
                             'Delete Project', `Are you sure you want to delete "${project.name}"?`, 'Delete',
                             async () => {
-                                await window.deleteDoc(window.doc(window.db, "projects", project.docId));
+                                try {
+                                    // This line deletes the document from the database
+                                    await window.deleteDoc(window.doc(window.db, "projects", project.docId));
+
+                                    // --- START: ADDED FIX ---
+                                    // This finds the card's div by its unique ID and removes it from the page
+                                    const galleryItem = document.getElementById(`gallery-item-${project.docId}`);
+                                    if (galleryItem) {
+                                        galleryItem.remove();
+                                    }
+                                    showToast(`"${project.name}" was deleted.`, 'success');
+                                    // --- END: ADDED FIX ---
+
+                                } catch (error) {
+                                    console.error("Error deleting document:", error);
+                                    showToast("Failed to delete the effect.", 'danger');
+                                }
                             }
                         );
                     };
@@ -4210,11 +4227,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         allObjectFieldsets.forEach(fieldset => {
             const id = parseInt(fieldset.dataset.objectId, 10);
-            const nameSpan = fieldset.querySelector('.object-name');
-            const obj = objects.find(o => o.id === id);
-            if (obj && nameSpan) {
-                obj.name = nameSpan.textContent;
-            }
 
             const collapseEl = fieldset.querySelector('.collapse');
             if (collapseEl) {
@@ -5303,6 +5315,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
             configStore = [...mergedGeneralConfigs, ...finalMergedObjectConfigs];
 
+            const namesMap = {};
+            if (savedObjects) {
+                savedObjects.forEach(obj => {
+                    if (obj.id !== undefined && obj.name !== undefined) {
+                        namesMap[obj.id] = obj.name;
+                    }
+                });
+            }
+
             createInitialObjects();
 
             if (savedObjects && savedObjects.length > 0) {
@@ -5736,9 +5757,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const addFrameBtn = e.target.closest('.btn-add-frame');
         const deleteFrameBtn = e.target.closest('.btn-delete-frame');
 
+        // Handles adding a new node to a polyline
         if (addNodeBtn) {
             const container = addNodeBtn.closest('.node-table-container');
-            if (container) { // Check if the container was found
+            if (container) {
                 const tbody = container.querySelector('tbody');
                 const newIndex = tbody.children.length;
                 const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
@@ -5761,9 +5783,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Handles deleting a node from a polyline
         if (deleteNodeBtn) {
             const container = deleteNodeBtn.closest('.node-table-container');
-            if (container) { // Check if the container was found
+            if (container) {
                 const tbody = container.querySelector('tbody');
                 if (tbody.children.length > 2) {
                     deleteNodeBtn.closest('tr').remove();
@@ -5786,10 +5809,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Handles adding a new pixel art frame
         if (addFrameBtn) {
             const container = addFrameBtn.closest('.pixel-art-table-container');
-            if (container) { // Check if the container was found
-                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+            if (container) {
+                const framesContainer = container.querySelector('.pixel-art-frames-container');
                 const newIndex = framesContainer.children.length;
                 const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
                 const frameItem = document.createElement('div');
@@ -5805,14 +5829,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
                             <div>
-                                <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;"
-                                        data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal"
-                                        data-target-id="${textareaId}" title="Edit Frame">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button>
+                                <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button>
                             </div>
                         </div>
                         <div class="input-group input-group-sm">
@@ -5820,15 +5838,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.01" step="0.01">
                         </div>
                         <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-                    </div>
-                `;
+                    </div>`;
                 framesContainer.appendChild(frameItem);
 
                 const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
-                const color1 = targetObject.gradient.stops?.[0]?.color;
-                const color2 = targetObject.gradient.stops?.[1]?.color;
+                const gradientStops = targetObject ? targetObject.gradient.stops : [];
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-                renderPixelArtPreview(previewCanvas, defaultFrameData, color1, color2);
+                renderPixelArtPreview(previewCanvas, defaultFrameData, gradientStops);
 
                 const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
                 const newFrames = Array.from(framesContainer.children).map(item => ({
@@ -5842,10 +5858,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Handles deleting a pixel art frame
         if (deleteFrameBtn) {
             const container = deleteFrameBtn.closest('.pixel-art-table-container');
-            if (container) { // Check if the container was found
-                const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
+            if (container) {
+                const framesContainer = container.querySelector('.pixel-art-frames-container');
                 if (framesContainer.children.length > 1) {
                     const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
                     if (tooltip) {
@@ -5872,174 +5889,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const fieldset = e.target.closest('fieldset[data-object-id]');
-        const isInteractive = e.target.closest('button, a, input, [contenteditable="true"]');
-        if (fieldset && !isInteractive) {
-            const idToSelect = parseInt(fieldset.dataset.objectId, 10);
-            if (!(selectedObjectIds.length === 1 && selectedObjectIds[0] === idToSelect)) {
-                selectedObjectIds = [idToSelect];
-                updateToolbarState();
-                syncPanelsWithSelection();
-                drawFrame();
-            }
-        }
-    });
-
-    form.addEventListener('click', (e) => {
-        // --- START: CONSOLIDATED BUTTON CLICK LOGIC ---
-        const addNodeBtn = e.target.closest('.btn-add-node');
-        const deleteNodeBtn = e.target.closest('.btn-delete-node');
-        const addFrameBtn = e.target.closest('.btn-add-frame');
-        const deleteFrameBtn = e.target.closest('.btn-delete-frame');
-
-        const uploadGifBtn = e.target.closest('.btn-upload-gif');
-        if (uploadGifBtn) {
-            const fieldset = uploadGifBtn.closest('fieldset[data-object-id]');
-            const objectId = fieldset.dataset.objectId;
-            const gifInput = document.getElementById(`gif-upload-input-${objectId}`);
-            if (gifInput) {
-                gifInput.click(); // Programmatically click the hidden file input
-            }
-            return; // Stop further processing
-        }
-
-        // Handle Polyline Node Table Additions
-        if (addNodeBtn) {
-            const container = addNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            const newIndex = tbody.children.length;
-            const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
-            const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
-            const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
-            const tr = document.createElement('tr');
-            tr.dataset.index = newIndex;
-            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
-            tbody.appendChild(tr);
-
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-
-        // Handle Polyline Node Table Deletions
-        if (deleteNodeBtn) {
-            const container = deleteNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            if (tbody.children.length > 2) {
-                deleteNodeBtn.closest('tr').remove();
-                Array.from(tbody.children).forEach((tr, index) => {
-                    tr.dataset.index = index;
-                    tr.firstElementChild.textContent = index + 1;
-                });
-            } else {
-                showToast("A polyline must have at least 2 nodes.", "danger");
-            }
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-
-        // Handle Pixel Art Frame Additions
-        if (addFrameBtn) {
-            const container = addFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            const newIndex = framesContainer.children.length;
-
-            const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
-
-            const frameItem = document.createElement('div');
-            frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-            frameItem.dataset.index = newIndex;
-
-            const defaultFrameData = '[[0.7]]';
-            const textareaId = `frame-data-new-${Date.now()}`;
-
-            frameItem.innerHTML = `
-        <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
-                <div>
-                    <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;"
-                            data-bs-toggle="modal"
-                            data-bs-target="#pixelArtEditorModal"
-                            data-target-id="${textareaId}" title="Edit Frame">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text" title="Duration (seconds)">
-                    <i class="bi bi-clock"></i>
-                </span>
-                <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.1" step="0.1">
-            </div>
-            <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-        </div>
-    `;
-            framesContainer.appendChild(frameItem);
-
-            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-            renderPixelArtPreview(previewCanvas, defaultFrameData);
-
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
-            return;
-        }
-
-        // Handle Pixel Art Frame Deletions
-        if (deleteFrameBtn) {
-            const container = deleteFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            if (framesContainer.children.length > 1) {
-                const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
-                if (tooltip) {
-                    // Destroy the tooltip before removing the button
-                    tooltip.dispose();
-                }
-                deleteFrameBtn.closest('.pixel-art-frame-item').remove();
-                Array.from(framesContainer.children).forEach((item, index) => {
-                    item.dataset.index = index;
-                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
-                });
-            } else {
-                showToast("Pixel Art object must have at least one frame.", "warning");
-            }
-
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-        // --- END: CONSOLIDATED BUTTON CLICK LOGIC ---
-
-        // Original logic for selecting a panel
+        // Handles selecting an object panel
         const fieldset = e.target.closest('fieldset[data-object-id]');
         const isInteractive = e.target.closest('button, a, input, [contenteditable="true"]');
         if (fieldset && !isInteractive) {
@@ -8602,6 +8452,14 @@ document.addEventListener('DOMContentLoaded', function () {
     galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
         lastVisibleDoc = null;
     });
+
+    const quantizeCheckbox = document.getElementById('sprite-quantize-colors');
+    const quantizeOptions = document.getElementById('quantize-options-group');
+    if (quantizeCheckbox && quantizeOptions) {
+        quantizeCheckbox.addEventListener('change', () => {
+            quantizeOptions.style.display = quantizeCheckbox.checked ? '' : 'none';
+        });
+    }
 
     // --- END: NEW LAZY LOADING GALLERY LOGIC ---
 
