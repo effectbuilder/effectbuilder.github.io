@@ -49,29 +49,54 @@
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
-                <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
-                <hr>
-                <nav id="pagination-nav-top" class="d-flex justify-content-center mb-4">
-                    <ul id="pagination-container-top" class="pagination">
-                    </ul>
-                </nav>
-                <ul class="list-group" id="gallery-project-list">
-                    <li class="list-group-item text-center p-4">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </li>
-                </ul>
-                <nav id="pagination-nav" class="d-flex justify-content-center mt-4">
-                    <ul id="pagination-container-bottom" class="pagination">
-                    </ul>
-                </nav>
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
+
+            <div id="admin-tools" class="d-none alert alert-secondary p-2">
+                <strong class="me-3">Admin Tools:</strong>
+                <button id="download-db-btn" class="btn btn-sm btn-info">
+                    <i class="bi bi-database-down me-2"></i>Download Projects Database
+                </button>
             </div>
+            <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
+            <hr>
+            <nav id="pagination-nav-top" class="d-flex justify-content-center align-items-center mb-4">
+                <ul id="pagination-container-top" class="pagination mb-0">
+                </ul>
+                <div class="ms-3">
+                    <select class="form-select form-select-sm items-per-page-select" id="items-per-page-select-top" style="width: auto;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                        <option value="9999">Show All</option>
+                    </select>
+                </div>
+            </nav>
+            <ul class="list-group" id="gallery-project-list">
+                <li class="list-group-item text-center p-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </li>
+            </ul>
+            <nav id="pagination-nav" class="d-flex justify-content-center align-items-center mt-4">
+                <ul id="pagination-container-bottom" class="pagination mb-0">
+                </ul>
+                <div class="ms-3">
+                    <select class="form-select form-select-sm items-per-page-select" id="items-per-page-select-bottom" style="width: auto;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                        <option value="9999">Show All</option>
+                    </select>
+                </div>
+            </nav>
+
         </div>
+    </div>
     </div>
 
     <div class="modal fade" id="edit-project-modal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">

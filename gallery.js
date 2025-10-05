@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const editProjectModal = new bootstrap.Modal(editProjectModalEl);
 
     // --- Pagination State Variables ---
-    const projectsPerPage = 8;
+    let projectsPerPage = 10;
     let allProjects = [];
     let currentPage = 1;
     const paginationNavTop = document.getElementById('pagination-nav-top');
@@ -51,11 +51,65 @@ document.addEventListener('DOMContentLoaded', function () {
             userSessionGroup.classList.remove('d-none');
             document.getElementById('user-photo').src = user.photoURL;
             document.getElementById('user-display').textContent = user.displayName;
+
+            // --- START: ADD THIS ADMIN CHECK ---
+            const adminTools = document.getElementById('admin-tools');
+            if (adminTools && user.uid === ADMIN_UID) {
+                adminTools.classList.remove('d-none');
+            }
+            // --- END: ADD THIS ADMIN CHECK ---
+
         } else {
             loginBtn.classList.remove('d-none');
             userSessionGroup.classList.add('d-none');
         }
         loadPublicGallery();
+    }
+
+    async function downloadDatabaseCopy() {
+        const downloadBtn = document.getElementById('download-db-btn');
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Fetching...';
+
+        try {
+            const projectsRef = window.collection(window.db, "projects");
+            const querySnapshot = await window.getDocs(projectsRef);
+
+            const allProjectsData = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                // Convert Firestore Timestamps to readable ISO strings
+                if (data.createdAt && data.createdAt.toDate) {
+                    data.createdAt = data.createdAt.toDate().toISOString();
+                }
+                if (data.updatedAt && data.updatedAt.toDate) {
+                    data.updatedAt = data.updatedAt.toDate().toISOString();
+                }
+                allProjectsData.push({ id: doc.id, ...data });
+            });
+
+            // Create a JSON string and a Blob for downloading
+            const jsonString = JSON.stringify(allProjectsData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary link to trigger the download
+            const a = document.createElement('a');
+            a.href = url;
+            const today = new Date().toISOString().split('T')[0];
+            a.download = `srgbeb_projects_backup_${today}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error("Error downloading database:", error);
+            alert("An error occurred while trying to download the database.");
+        } finally {
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="bi bi-database-down me-2"></i>Download Projects Database';
+        }
     }
 
     setTimeout(() => {
@@ -468,4 +522,39 @@ document.addEventListener('DOMContentLoaded', function () {
             galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects. Please try again later.</li>';
         }
     }
+
+    // Inside document.addEventListener('DOMContentLoaded', ...
+
+    const downloadDbBtn = document.getElementById('download-db-btn');
+    if (downloadDbBtn) {
+        downloadDbBtn.addEventListener('click', downloadDatabaseCopy);
+    }
+
+    // --- START: ADD THIS NEW PAGINATION LOGIC BLOCK ---
+    const perPageSelects = document.querySelectorAll('.items-per-page-select');
+
+    // Load the saved preference from localStorage when the page loads
+    const savedPerPage = localStorage.getItem('galleryItemsPerPage');
+    if (savedPerPage) {
+        projectsPerPage = parseInt(savedPerPage, 10);
+    }
+    perPageSelects.forEach(select => select.value = projectsPerPage);
+
+    // Add an event listener to both dropdowns
+    perPageSelects.forEach(select => {
+        select.addEventListener('change', (e) => {
+            const newValue = parseInt(e.target.value, 10);
+
+            // Update the state
+            projectsPerPage = newValue;
+            localStorage.setItem('galleryItemsPerPage', newValue);
+
+            // Sync both dropdowns to the new value
+            perPageSelects.forEach(s => s.value = newValue);
+
+            // Re-render the gallery starting from page 1
+            renderPage(1);
+        });
+    });
+    // --- END: ADD THIS NEW PAGINATION LOGIC BLOCK ---
 });

@@ -31,12 +31,12 @@
 <body class="d-flex flex-column vh-100">
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="./">
+            <a class="navbar-brand d-flex align-items-center brand-separator" href="./">
                 <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
                 SRGB Interactive Effect Builder
             </a>
 
-            <div class="ms-auto d-flex align-items-center">
+            <div class="me-auto d-flex align-items-center">
 
                 <div class="btn-group me-3" role="group" aria-label="Project management actions">
                     <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
@@ -44,10 +44,10 @@
                     <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-secondary" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
                     <button class="btn btn-secondary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
-                    <button class="btn btn-secondary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
+                    <button class="btn btn-secondary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i> Import to SignalRGB</button>
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Community">
-                    <button class="btn btn-primary" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
+                    <button class="btn btn-primary" id="browse-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Gallery"><i class="bi bi-view-list me-1"></i> Gallery</button>
                 </div>
                 <!-- <div class="btn-group me-3" role="group" aria-label="Effect sharing actions">
                     <button class="btn btn-secondary" id="upload-effect-btn" data-bs-toggle="tooltip" title="Upload an effect HTML file"><i class="bi bi-upload me-1"></i> Upload</button>
@@ -56,14 +56,10 @@
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
-                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
-                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
-                    <a class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
-                        <i class="bi bi-github"></i>
-                    </a>
-                    <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
-                        <i class="bi" id="theme-icon"></i>
-                    </button>
+                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i> Help</button>
+                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i> About</button>
+                    <button class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub"> <i class="bi bi-github"></i> Github</button>
+                    <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme"> <i class="bi" id="theme-icon"></i> Theme</button>
                 </div>
 
                 <div id="auth-notification-block" class="d-flex align-items-center">
@@ -360,7 +356,7 @@
                                         <hr>
                                         <h6>The Pixel Art Gallery</h6>
                                         <ul>
-                                            <li><strong>Access:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-images"></i> Browse Gallery</kbd> button in the "Pixel Art" tab to open the community gallery.</li>
+                                            <li><strong>Access:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-images"></i> Browse Gallery</kbd> button in the "Pixel Art" tab to open the gallery.</li>
                                             <li><strong>Functionality:</strong> Browse and search for pixel art from public community effects.</li>
                                             <li><strong>Usage:</strong> Clicking <kbd><i class="bi bi-plus-lg me-1"></i> Insert</kbd> on an item will append its animation frames to your currently selected `pixel-art` object.</li>
                                         </ul>
@@ -404,7 +400,7 @@
                                         <ul>
                                             <li><kbd><i class="bi bi-cloud-arrow-up"></i> Save</kbd>: Saves your current project to your "My Projects" gallery in the cloud. You must be signed in.</li>
                                             <li><kbd><i class="bi bi-folder2-open"></i> Open</kbd>: Opens the gallery panel to load one of your saved projects.</li>
-                                            <li><kbd><i class="bi bi-view-list"></i> Community Gallery</kbd>: Opens the gallery panel to browse public effects from all users.</li>
+                                            <li><kbd><i class="bi bi-view-list"></i> Gallery</kbd>: Opens the gallery panel to browse public effects from all users.</li>
                                             <li><kbd><i class="bi bi-upload"></i> Upload</kbd>: Load an effect from a `.html` file from your computer.</li>
                                             <li><kbd><i class="bi bi-download"></i> Export</kbd>: Generates a <strong>.zip file</strong> containing your effect and a thumbnail, ready to be imported into SignalRGB.</li>
                                             <li><kbd><i class="bi bi-share"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
@@ -500,7 +496,7 @@
                         <p>This project is licensed under the GNU General Public License v3.0. You may copy, distribute and modify the software as long as you track changes/dates in source files and keep modifications under the same license. The software is provided "as is", without warranty of any kind. For the full license text, please see the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank">official GNU GPLv3 page</a>.</p>
 
                         <h6 class="mt-4">6. Public Content and Licensing</h6>
-                        <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
+                        <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Gallery to function.</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
@@ -530,12 +526,12 @@
                         <h6 class="mt-4">How We Use Information</h6>
                         <ul>
                             <li>To associate your saved effects with your user profile.</li>
-                            <li>To display your public display name and profile photo next to your creations in the Community Gallery.</li>
+                            <li>To display your public display name and profile photo next to your creations in the Gallery.</li>
                             <li>To operate and maintain the Tool and its features, such as the cloud-saving and sharing functionalities.</li>
                         </ul>
 
                         <h6 class="mt-4">Information Sharing</h6>
-                        <p>Your saved effects and your public display name are visible to other users when they browse the Community Gallery. We do not share or sell your personal information with third parties.</p>
+                        <p>Your saved effects and your public display name are visible to other users when they browse the Gallery. We do not share or sell your personal information with third parties.</p>
 
                         <h6 class="mt-4">Your Rights</h6>
                         <p>You have the right to delete your saved effects. This can be done from the "My Projects" section of the gallery when you are signed in.</p>
@@ -569,7 +565,7 @@
 
         <div class="offcanvas offcanvas-end" tabindex="-1" id="gallery-offcanvas" aria-labelledby="galleryOffcanvasLabel" style="width: 700px;">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Community Gallery</h5>
+                <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i> Gallery</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column">
@@ -801,8 +797,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
-                        <p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p>
+                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns.</p>
+
                         <div class="row">
                             <div class="col">
                                 <label for="sprite-frame-width" class="form-label-sm">Single Frame Width</label>
@@ -813,9 +809,20 @@
                                 <input type="number" class="form-control" id="sprite-frame-height" value="16" min="1" max="128">
                             </div>
                         </div>
+
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="sprite-quantize-colors" checked>
+                            <label class="form-check-label" for="sprite-quantize-colors">Group similar colors (quantize)</label>
+                        </div>
+                        <div id="quantize-options-group">
+                            <label for="sprite-max-colors" class="form-label-sm">Max Palette Size</label>
+                            <input type="number" class="form-control" id="sprite-max-colors" value="32" min="2" max="256">
+                            <div class="form-text">Reduces a large palette to the most common colors.</div>
+                        </div>
+
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-downsample">
-                            <label class="form-check-label" for="sprite-downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
+                            <label class="form-check-label" for="sprite-downsample">Downsample to frame dimensions (for hi-res art)</label>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-paste-append">
