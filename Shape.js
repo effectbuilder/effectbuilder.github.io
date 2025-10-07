@@ -3162,7 +3162,9 @@ class Shape {
                             const value = data[r]?.[c] || 0;
                             let fillColor = null; // Use null to indicate "do not draw"
 
-                            if (value === 0) {
+                            if (value === -1) {
+                                fillColor = null;
+                            } else if (value === 0) {
                                 fillColor = '#000000'; // Black color
                             } else if (value === 0.7) {
                                 // Only get a fill style if gradType is not 'none'
