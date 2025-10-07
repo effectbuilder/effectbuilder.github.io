@@ -878,13 +878,28 @@
                                 <input type="number" class="form-control" id="gif-target-height" value="16" min="1" max="128">
                             </div>
                         </div>
+                        <div class="row mt-3">
+                            <div class="col">
+                                <label for="gif-max-colors" class="form-label-sm">Max Colors (2-32)</label>
+                                <input type="number" class="form-control" id="gif-max-colors" value="16" min="2" max="32">
+                                <div class="form-text">Reduces the GIF's palette to the specified number of colors.</div>
+                            </div>
+                        </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="gif-append-frames">
                             <label class="form-check-label" for="gif-append-frames">Append to existing frames (instead of replacing)</label>
                         </div>
                         <hr>
+                        <div id="gif-info-display" class="text-body-secondary small" style="display: none;">
+                            <p class="mb-1"><strong>Original GIF Info:</strong></p>
+                            <ul class="list-unstyled mb-0">
+                                <li>Dimensions: <span id="gif-info-dims">--</span></li>
+                                <li>Unique Colors: <span id="gif-info-colors">--</span></li>
+                            </ul>
+                        </div>
+                        <hr>
                         <div class="d-grid">
-                            <button type="button" class="btn btn-primary" id="confirm-gif-upload-btn"><i class="bi bi-upload me-2"></i>Choose File and Process</button>
+                            <button type="button" class="btn btn-primary" id="confirm-gif-upload-btn">...</button>
                         </div>
                     </div>
                 </div>
@@ -927,8 +942,20 @@
                         <h5 class="modal-title" id="pixelArtColorPickerModalLabel">Edit Color</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body d-flex justify-content-center">
+                    <div class="modal-body d-flex flex-column justify-content-center">
                         <div id="modal-picker-container"></div>
+                        <div class="custom-color-inputs mt-3">
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text">HEX</span>
+                                <input type="text" class="form-control" id="pixel-editor-hex-input">
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">RGB</span>
+                                <input type="number" class="form-control" id="pixel-editor-r-input" min="0" max="255" aria-label="Red">
+                                <input type="number" class="form-control" id="pixel-editor-g-input" min="0" max="255" aria-label="Green">
+                                <input type="number" class="form-control" id="pixel-editor-b-input" min="0" max="255" aria-label="Blue">
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
@@ -945,6 +972,32 @@
                     </div>
                     <div class="modal-body d-flex justify-content-center">
                         <div id="general-picker-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="gif-search-modal" tabindex="-1" aria-labelledby="gifSearchModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="gifSearchModalLabel"><i class="bi bi-film me-2"></i>Search for GIFs</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="gif-search-form" class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="gif-search-input" class="form-control" placeholder="Search for GIFs..." required>
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+                            </div>
+                        </form>
+                        <div id="gif-results-container" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                        <img src="https://developers.giphy.com/static/img/dev-logo-lg.gif" alt="Powered by Giphy" height="20">
+                        <div id="gif-search-footer" style="display: none;"></div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
