@@ -5,6 +5,17 @@ window.seismicSpeedMultiplier = 1;
 window.tetrisGravityMultiplier = 4;
 window.textSpeedMultiplier = 1;
 
+// --- Giphy Search Integration ---
+const GIPHY_API_KEY = 'jqmZdx1G37Nr0QZ5dEtDzmzUxfCZsyeg'; // <-- IMPORTANT: PASTE YOUR GIPHY API KEY HERE
+let giphySearchOffset = 0;
+let currentGiphySearchTerm = '';
+let activeGifSearchObjectId = null;
+let selectedGifBlob = null;
+let preParsedGif = null;
+let preParsedGifColorCount = 0;
+let isFetchingGifs = false;
+// --- Giphy Search Integration ---
+
 const propsToScale = [
     'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
     'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
@@ -434,6 +445,88 @@ function findClosestColor(rgb, colorPalette) {
     return closestColorHex;
 }
 
+/**
+ * Reduces a list of colors to a smaller palette using the Median Cut algorithm.
+ * @param {Array<[r, g, b]>} colors - An array of colors, where each color is an array of [r, g, b] values.
+ * @param {number} k - The desired number of colors in the final palette.
+ * @returns {Array<{r: number, g: number, b: number}>} The new, reduced color palette.
+ */
+function medianCut(colors, k) {
+    if (colors.length <= k) {
+        return colors.map(c => ({ r: c[0], g: c[1], b: c[2] }));
+    }
+
+    // Start with a single bucket containing all colors
+    let buckets = [colors];
+
+    while (buckets.length < k) {
+        // Find the bucket with the largest color range
+        let largestBucketIndex = -1;
+        let largestRange = -1;
+
+        for (let i = 0; i < buckets.length; i++) {
+            const bucket = buckets[i];
+            if (bucket.length === 0) continue;
+
+            let minR = 255, maxR = 0, minG = 255, maxG = 0, minB = 255, maxB = 0;
+            for (const color of bucket) {
+                minR = Math.min(minR, color[0]); maxR = Math.max(maxR, color[0]);
+                minG = Math.min(minG, color[1]); maxG = Math.max(maxG, color[1]);
+                minB = Math.min(minB, color[2]); maxB = Math.max(maxB, color[2]);
+            }
+            const range = Math.max(maxR - minR, maxG - minG, maxB - minB);
+            if (range > largestRange) {
+                largestRange = range;
+                largestBucketIndex = i;
+            }
+        }
+
+        if (largestBucketIndex === -1) break; // No more buckets to split
+
+        const bucketToSplit = buckets[largestBucketIndex];
+        let splitChannel = 0; // 0=R, 1=G, 2=B
+        let minR = 255, maxR = 0, minG = 255, maxG = 0, minB = 255, maxB = 0;
+        for (const color of bucketToSplit) {
+            minR = Math.min(minR, color[0]); maxR = Math.max(maxR, color[0]);
+            minG = Math.min(minG, color[1]); maxG = Math.max(maxG, color[1]);
+            minB = Math.min(minB, color[2]); maxB = Math.max(maxB, color[2]);
+        }
+        const rangeR = maxR - minR, rangeG = maxG - minG, rangeB = maxB - minB;
+        if (rangeG >= rangeR && rangeG >= rangeB) splitChannel = 1;
+        else if (rangeB >= rangeR && rangeB >= rangeG) splitChannel = 2;
+
+        // Sort the bucket by the channel with the largest range
+        bucketToSplit.sort((a, b) => a[splitChannel] - b[splitChannel]);
+
+        // Split the bucket at the median
+        const mid = Math.floor(bucketToSplit.length / 2);
+        const newBucket1 = bucketToSplit.slice(0, mid);
+        const newBucket2 = bucketToSplit.slice(mid);
+
+        // Replace the original bucket with the two new ones
+        buckets.splice(largestBucketIndex, 1, newBucket1, newBucket2);
+    }
+
+    // Average the colors in each bucket to get the final palette
+    const palette = [];
+    for (const bucket of buckets) {
+        if (bucket.length === 0) continue;
+        let r_sum = 0, g_sum = 0, b_sum = 0;
+        for (const color of bucket) {
+            r_sum += color[0];
+            g_sum += color[1];
+            b_sum += color[2];
+        }
+        palette.push({
+            r: Math.round(r_sum / bucket.length),
+            g: Math.round(g_sum / bucket.length),
+            b: Math.round(b_sum / bucket.length)
+        });
+    }
+
+    return palette;
+}
+
 function handleURLParameters() {
     const params = new URLSearchParams(window.location.search);
     const modalToShow = params.get('show');
@@ -589,6 +682,160 @@ async function setVersionWithCaching() {
 
 document.addEventListener('DOMContentLoaded', function () {
     setVersionWithCaching();
+
+    function createCustomColorPicker(containerElement) {
+        return new iro.ColorPicker(containerElement, {
+            width: 200,
+            color: "#fff",
+            borderWidth: 0,
+            borderColor: "#fff",
+            layout: [
+                { component: iro.ui.Wheel },
+                { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                { component: iro.ui.Input, options: { inputType: 'hex', label: 'HEX' } },
+                { component: iro.ui.Input, options: { inputType: 'rgb', label: 'RGB' } }
+            ]
+        });
+    }
+
+    async function preProcessGifBlob(blob) {
+        const gifInfoDisplay = document.getElementById('gif-info-display');
+        gifInfoDisplay.style.display = 'none'; // Hide by default
+        preParsedGif = null;
+        preParsedGifColorCount = 0;
+
+        try {
+            const buffer = await blob.arrayBuffer();
+            const gif = parseGIF(buffer);
+            const frames = decompressFrames(gif, false); // Must use false to access LCTs
+
+            preParsedGif = { ...gif, frames }; // Store parsed object and frames
+
+            const allColors = new Set();
+            const addColorsFromTable = (table) => {
+                if (table) { for (const color of table) { allColors.add(JSON.stringify(color)); } }
+            };
+            addColorsFromTable(gif.gct);
+            frames.forEach(frame => addColorsFromTable(frame.lct));
+            preParsedGifColorCount = allColors.size;
+
+            // Update the UI placeholders in the modal
+            document.getElementById('gif-info-dims').textContent = `${gif.lsd.width} x ${gif.lsd.height}`;
+            document.getElementById('gif-info-colors').textContent = preParsedGifColorCount;
+            gifInfoDisplay.style.display = 'block'; // Show the info
+        } catch (err) {
+            console.error("Error pre-processing GIF:", err);
+            showToast("Could not read GIF properties.", "danger");
+        }
+    }
+
+    /**
+     * Initiates a search on Giphy's API and renders the results.
+     * @param {string} term The search term.
+     * @param {boolean} append If true, adds results to the existing list (for pagination).
+     */
+    async function searchGiphy(term, append = false) {
+        if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE') {
+            showToast("Giphy API key is not configured in main.js.", "danger");
+            return;
+        }
+
+        const resultsContainer = document.getElementById('gif-results-container');
+
+        if (!append) {
+            // This is a new search
+            giphySearchOffset = 0;
+            currentGiphySearchTerm = term;
+            resultsContainer.innerHTML = `<div class="w-100 text-center p-4"><div class="spinner-border" role="status"></div></div>`;
+            isFetchingGifs = true; // Set lock for the initial fetch
+        } else {
+            // This is for infinite scroll
+            isFetchingGifs = true; // Set lock to prevent multiple fetches
+            // Add a spinner at the bottom
+            resultsContainer.insertAdjacentHTML('beforeend', '<div class="col-12 text-center p-3" id="gif-loading-spinner"><div class="spinner-border spinner-border-sm"></div></div>');
+        }
+
+        try {
+            const limit = 12;
+            let url;
+            if (term === '__trending__') {
+                // If the term is our special keyword, use the trending endpoint
+                url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&offset=${giphySearchOffset}`;
+            } else {
+                // Otherwise, use the search endpoint as before
+                url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
+            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Giphy API responded with status ${response.status}`);
+            const data = await response.json();
+
+            if (!append) resultsContainer.innerHTML = '';
+
+            if (data.data.length === 0 && !append) {
+                resultsContainer.innerHTML = `<p class="text-body-secondary text-center w-100 mt-4">No results found for \`${term}\`.</p>`;
+            }
+
+            data.data.forEach(gif => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                const card = document.createElement('div');
+                card.className = 'card gif-result-card h-100';
+                card.style.cursor = 'pointer';
+
+                const img = document.createElement('img');
+                img.src = gif.images.fixed_width.url;
+                img.alt = gif.title;
+                img.className = 'card-img-top';
+                img.loading = 'lazy';
+
+                const dimsOverlay = document.createElement('div');
+                dimsOverlay.className = 'gif-dims-overlay';
+                dimsOverlay.textContent = `${gif.images.original.width}x${gif.images.original.height}`;
+
+                card.appendChild(img);
+                card.appendChild(dimsOverlay);
+                col.appendChild(card);
+                resultsContainer.appendChild(col);
+
+                card.addEventListener('click', async () => {
+                    // This logic remains the same
+                    card.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Fetching...</span></div></div>`;
+                    try {
+                        const originalGifUrl = gif.images.original.url;
+                        const gifResponse = await fetch(originalGifUrl);
+                        selectedGifBlob = await gifResponse.blob();
+                        await preProcessGifBlob(selectedGifBlob);
+                        const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
+                        searchModal.hide();
+                        const optionsModal = new bootstrap.Modal(document.getElementById('upload-gif-modal'));
+                        optionsModal.show();
+                    } catch (err) {
+                        console.error("Error fetching selected GIF:", err);
+                        showToast("Failed to fetch the selected GIF.", "danger");
+                        card.innerHTML = '';
+                        card.appendChild(img);
+                    }
+                });
+            });
+
+            giphySearchOffset += data.data.length;
+
+            const hasMore = giphySearchOffset < data.pagination.total_count;
+            return hasMore;
+
+        } catch (err) {
+            console.error("Giphy search failed:", err);
+            showToast("Giphy search failed. Check your API key and network connection.", "danger");
+            resultsContainer.innerHTML = `<p class="text-danger text-center w-100 mt-4">Search failed.</p>`;
+        } finally {
+            // Remove the loading spinner
+            const spinner = document.getElementById('gif-loading-spinner');
+            if (spinner) spinner.remove();
+            // Unlock to allow the next fetch
+            isFetchingGifs = false;
+        }
+    }
+
     async function regenerateAndSaveThumbnail(effectId) {
         showToast("Regenerating thumbnail...", "info");
 
@@ -623,25 +870,18 @@ document.addEventListener('DOMContentLoaded', function () {
     let iroColorPicker = null;
     let onColorChangeCallback = null;
 
+    // Expose these to the window object for universal access
+    window.globalGeneralColorPickerModal = null;
+    window.globalIroColorPicker = null;
+    window.globalOnColorChangeCallback = null;
+
     if (generalColorPickerModalEl && generalPickerContainer) {
-        generalColorPickerModal = new bootstrap.Modal(generalColorPickerModalEl);
+        window.globalGeneralColorPickerModal = new bootstrap.Modal(generalColorPickerModalEl);
+        window.globalIroColorPicker = createCustomColorPicker(generalPickerContainer);
 
-        iroColorPicker = new iro.ColorPicker(generalPickerContainer, {
-            width: 240,
-            color: "#fff",
-            borderWidth: 1,
-            borderColor: "#fff",
-            layout: [
-                { component: iro.ui.Wheel },
-                { component: iro.ui.Slider, options: { sliderType: 'value' } },
-                { component: iro.ui.Slider, options: { sliderType: 'hue' } },
-                { component: iro.ui.Input, options: { inputType: 'hex' } }
-            ]
-        });
-
-        iroColorPicker.on('color:change', (color) => {
-            if (typeof onColorChangeCallback === 'function') {
-                onColorChangeCallback(color.hexString);
+        window.globalIroColorPicker.on('color:change', (color) => {
+            if (typeof window.globalOnColorChangeCallback === 'function') {
+                window.globalOnColorChangeCallback(color.hexString);
             }
         });
     }
@@ -1171,21 +1411,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
-    if (confirmGifUploadBtn) {
-        confirmGifUploadBtn.addEventListener('click', () => {
-            if (selectedObjectIds.length !== 1) {
-                showToast("Please select a single pixel art object first.", "warning");
-                return;
-            }
-            const objectId = selectedObjectIds[0];
-            const gifInput = document.getElementById(`gif-upload-input-${objectId}`);
-            if (gifInput) {
-                gifInput.click();
-            }
-        });
-    }
-
     const processPastedImage = (image, targetWidth, targetHeight, color1, color2) => {
         const targetPalette = [
             { value: 1.0, name: 'White', rgb: { r: 255, g: 255, b: 255 } },
@@ -1258,26 +1483,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const handleGifPaste = async (gifBlob, objectId) => {
         try {
-            const buffer = await gifBlob.arrayBuffer();
-            const gif = await parseGIF(buffer);
-            const frames = await decompressFrames(gif, true);
+            if (!preParsedGif) {
+                showToast("Error: GIF data was not pre-processed.", "danger");
+                return;
+            }
+            const gif = preParsedGif;
+            const frames = preParsedGif.frames;
 
             if (!frames || !frames.length) {
                 showToast("Could not extract frames from GIF.", "warning");
                 return;
             }
 
+            // --- 1. Analyze colors ---
+            // --- 1. Analyze and Reduce Colors ---
             const allColors = new Set();
             const addColorsFromTable = (table) => {
                 if (table) {
                     for (const color of table) {
                         if ((Array.isArray(color) || color instanceof Uint8Array) && color.length === 3) {
-                            allColors.add(JSON.stringify(Array.from(color)));
+                            // We add the raw [r, g, b] array to the set
+                            allColors.add(Array.from(color));
                         }
                     }
                 }
             };
-
             addColorsFromTable(gif.gct);
             frames.forEach(frame => addColorsFromTable(frame.lct));
 
@@ -1286,80 +1516,92 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const uniqueColors = new Map();
-            allColors.forEach(colorStr => {
-                const [r, g, b] = JSON.parse(colorStr);
-                const hex = rgbToHex(`rgb(${r},${g},${b})`);
-                if (!uniqueColors.has(hex)) {
-                    const hsl = hexToHsl(hex);
-                    uniqueColors.set(hex, { hex, r, g, b, h: hsl[0], s: hsl[1], l: hsl[2] });
-                }
-            });
+            // Get the desired number of colors from the UI
+            const maxColors = parseInt(document.getElementById('gif-max-colors').value, 10) || 16;
 
-            const sortedColors = [...uniqueColors.values()].sort((a, b) => {
+            // Run the Median Cut algorithm to get the new, smaller palette
+            const reducedPaletteRgb = medianCut(Array.from(allColors), maxColors);
+
+            // Convert the reduced palette into the format the rest of the app uses
+            const sortedColors = reducedPaletteRgb.map(c => {
+                const hex = rgbToHex(`rgb(${c.r},${c.g},${c.b})`);
+                const hsl = hexToHsl(hex);
+                return { hex, r: c.r, g: c.g, b: c.b, h: hsl[0], s: hsl[1], l: hsl[2] };
+            }).sort((a, b) => { // Sort the final palette for a pleasant gradient
                 if (a.h < b.h) return -1; if (a.h > b.h) return 1;
                 if (a.s < b.s) return -1; if (a.s > b.s) return 1;
                 return a.l - b.l;
             });
-
-            const newGradientStops = sortedColors.map((color, index) => ({
-                color: color.hex,
-                position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5
-            }));
-
-            // FIX: Map colors to their integer index (plus an offset) instead of a decimal position.
+            const newGradientStops = sortedColors.map((color, index) => ({ color: color.hex, position: sortedColors.length > 1 ? index / (sortedColors.length - 1) : 0.5 }));
             const colorToIndexMap = new Map(sortedColors.map((color, index) => [color.hex, index + 2]));
 
+            // --- 2. Process Frames with Correct Manual Compositing ---
             const targetWidth = parseInt(document.getElementById('gif-target-width').value, 10) || 32;
             const targetHeight = parseInt(document.getElementById('gif-target-height').value, 10) || 32;
             const newFramesData = [];
+
             const masterCanvas = document.createElement('canvas');
             masterCanvas.width = gif.lsd.width;
             masterCanvas.height = gif.lsd.height;
             const masterCtx = masterCanvas.getContext('2d');
             let savedCanvasState = null;
 
+            let bgColor = null;
+            if (gif.gct && gif.lsd.backgroundColorIndex !== null) {
+                bgColor = gif.gct[gif.lsd.backgroundColorIndex];
+            }
+
             for (let i = 0; i < frames.length; i++) {
                 const frame = frames[i];
+                const dims = frame.dims;
                 const prevFrame = i > 0 ? frames[i - 1] : null;
 
+                // ** A) Handle disposal of the PREVIOUS frame **
                 if (prevFrame) {
-                    if (prevFrame.disposalType === 2) {
-                        const bgColorIndex = gif.lsd.backgroundColorIndex;
-                        if (gif.gct && gif.gct[bgColorIndex]) {
-                            const [r, g, b] = gif.gct[bgColorIndex];
-                            masterCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    if (prevFrame.disposalType === 3 && savedCanvasState) {
+                        masterCtx.putImageData(savedCanvasState, 0, 0);
+                    } else if (prevFrame.disposalType === 2) {
+                        if (bgColor) {
+                            masterCtx.fillStyle = `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})`;
                             masterCtx.fillRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
                         } else {
                             masterCtx.clearRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
                         }
-                    } else if (prevFrame.disposalType === 3 && savedCanvasState) {
-                        masterCtx.putImageData(savedCanvasState, 0, 0);
                     }
                 }
-                savedCanvasState = (frame.disposalType === 3) ? masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height) : null;
 
-                if (frame.pixels && frame.pixels.length > 0) {
-                    const patchImageData = masterCtx.createImageData(frame.dims.width, frame.dims.height);
-                    const patchData = patchImageData.data;
-                    const colorTable = frame.lct || gif.gct;
+                // ** B) Save state if needed for the NEXT frame **
+                if (frame.disposalType === 3) {
+                    savedCanvasState = masterCtx.getImageData(0, 0, masterCanvas.width, masterCanvas.height);
+                }
 
-                    if (colorTable) {
-                        for (let j = 0; j < frame.pixels.length; j++) {
-                            const colorIndex = frame.pixels[j];
-                            if (colorIndex !== frame.transparentIndex && colorTable[colorIndex]) {
-                                const color = colorTable[colorIndex];
+                // ** C) Draw the new pixel patch using the corrected drawImage method **
+                const colorTable = frame.lct || gif.gct;
+                if (colorTable && frame.pixels && dims.width > 0 && dims.height > 0) {
+                    const patchCanvas = document.createElement('canvas');
+                    patchCanvas.width = dims.width;
+                    patchCanvas.height = dims.height;
+                    const patchCtx = patchCanvas.getContext('2d');
+                    const patchImageData = patchCtx.createImageData(dims.width, dims.height);
+
+                    for (let j = 0; j < frame.pixels.length; j++) {
+                        const colorIndex = frame.pixels[j];
+                        if (colorIndex !== frame.transparentIndex) {
+                            const color = colorTable[colorIndex];
+                            if (color) {
                                 const offset = j * 4;
-                                patchData[offset] = color[0];
-                                patchData[offset + 1] = color[1];
-                                patchData[offset + 2] = color[2];
-                                patchData[offset + 3] = 255;
+                                patchImageData.data[offset] = color[0];
+                                patchImageData.data[offset + 1] = color[1];
+                                patchImageData.data[offset + 2] = color[2];
+                                patchImageData.data[offset + 3] = 255;
                             }
                         }
-                        masterCtx.putImageData(patchImageData, frame.dims.left, frame.dims.top);
                     }
+                    patchCtx.putImageData(patchImageData, 0, 0);
+                    masterCtx.drawImage(patchCanvas, dims.left, dims.top);
                 }
 
+                // ** D) Downsample the now-complete frame and convert to pixel data **
                 const downsampleCanvas = document.createElement('canvas');
                 downsampleCanvas.width = targetWidth;
                 downsampleCanvas.height = targetHeight;
@@ -1368,54 +1610,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 downsampleCtx.drawImage(masterCanvas, 0, 0, targetWidth, targetHeight);
 
                 const imageData = downsampleCtx.getImageData(0, 0, targetWidth, targetHeight).data;
-                const pixelData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(0));
+                const pixelData = Array(targetHeight).fill(0).map(() => Array(targetWidth).fill(-1));
                 for (let j = 0; j < imageData.length; j += 4) {
                     const r_idx = Math.floor(j / (targetWidth * 4));
                     const c_idx = (j / 4) % targetWidth;
                     if (imageData[j + 3] < 128) {
-                        pixelData[r_idx][c_idx] = 0; // Transparent is 0
+                        pixelData[r_idx][c_idx] = -1; // Transparent
                     } else {
                         const currentPixelRgb = { r: imageData[j], g: imageData[j + 1], b: imageData[j + 2] };
                         const closestHex = findClosestColor(currentPixelRgb, sortedColors);
-                        // FIX: Store the integer index from the new map.
                         pixelData[r_idx][c_idx] = colorToIndexMap.get(closestHex) || 0;
                     }
                 }
                 newFramesData.push({ data: JSON.stringify(pixelData), duration: (frame.delay || 100) / 1000 });
             }
 
-            // --- 4. Update UI ---
+            // --- 3. Update UI ---
             const shouldAppend = document.getElementById('gif-append-frames').checked;
             const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
             if (!targetObject) return;
-
             const existingFrames = shouldAppend ? targetObject.pixelArtFrames : [];
             const combinedFrames = [...existingFrames, ...newFramesData];
-
-            // FIX: Update the central configStore BEFORE re-rendering the form.
             const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
-            if (framesConf) {
-                framesConf.default = JSON.stringify(combinedFrames);
-            }
+            if (framesConf) framesConf.default = JSON.stringify(combinedFrames);
             const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
-            if (gradientConf) {
-                gradientConf.default = JSON.stringify(newGradientStops);
-            }
-
-            // Now, update the live object and re-render everything
+            if (gradientConf) gradientConf.default = JSON.stringify(newGradientStops);
             targetObject.update({ gradient: { stops: newGradientStops }, pixelArtFrames: combinedFrames });
-            renderForm();
-            updateFormValuesFromObjects();
-            drawFrame();
-            recordHistory();
-
+            renderForm(); updateFormValuesFromObjects(); drawFrame(); recordHistory();
             const uploadModal = bootstrap.Modal.getInstance(document.getElementById('upload-gif-modal'));
             if (uploadModal) uploadModal.hide();
+            const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
+            if (searchModal) searchModal.hide();
             showToast(`${newFramesData.length} GIF frames processed with ${sortedColors.length} colors!`, "success");
 
         } catch (err) {
             console.error("Error processing GIF: " + err.message, err);
-            showToast("Could not process GIF file.", "danger");
+            showToast("Could not process GIF file. It may be corrupt or in an unsupported format.", "danger");
         }
     };
 
@@ -1621,6 +1851,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // State variables
         let targetTextarea = null, currentEditorObjectId = null, currentEditorFrameIndex = -1, totalFramesInEditor = 0;
         let currentPaintValue = 0.7, isPainting = false, currentTool = 'paint', currentGradientStops = [];
+        let colorPickerModal = null;
 
         // Main Editor elements
         const gridContainer = document.getElementById('pixel-editor-grid-container');
@@ -1833,9 +2064,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Color Picker Modal elements & iro.js instance
         const colorPickerModalEl = document.getElementById('pixel-art-color-picker-modal');
-        const pickerContainer = document.getElementById('modal-picker-container');
-        const colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
-        let iroColorPicker = null;
+        if (colorPickerModalEl) {
+            const pickerContainer = document.getElementById('modal-picker-container');
+            colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
+            let iroColorPicker = null;
+
+            // Get references to our new custom input fields
+            const hexInput = document.getElementById('pixel-editor-hex-input');
+            const rInput = document.getElementById('pixel-editor-r-input');
+            const gInput = document.getElementById('pixel-editor-g-input');
+            const bInput = document.getElementById('pixel-editor-b-input');
+
+            if (pickerContainer) {
+                iroColorPicker = createCustomColorPicker(pickerContainer);
+
+                // --- Sync from Picker to Inputs ---
+                iroColorPicker.on('color:change', (color) => {
+                    // Update the HEX input
+                    hexInput.value = color.hexString;
+                    // Update the RGB inputs
+                    const { r, g, b } = color.rgb;
+                    rInput.value = r;
+                    gInput.value = g;
+                    bInput.value = b;
+
+                    // This is the original logic to update the live palette color
+                    const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
+                    if (activeBtn) {
+                        const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
+                        updateActiveColor(color.hexString, indexToUpdate);
+                    }
+                });
+
+                // --- Sync from Inputs to Picker ---
+                hexInput.addEventListener('input', () => {
+                    try {
+                        iroColorPicker.color.hexString = hexInput.value;
+                    } catch (e) { /* Ignore invalid hex codes */ }
+                });
+                rInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+                gInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+                bInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+            }
+        }
 
         const debouncedRecordHistory = debounce(recordHistory, 500);
 
@@ -1856,29 +2127,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 debouncedRecordHistory();
             }
         };
-
-        if (pickerContainer) {
-            iroColorPicker = new iro.ColorPicker(pickerContainer, {
-                width: 240,
-                color: "#fff",
-                borderWidth: 1,
-                borderColor: "#fff",
-                layout: [
-                    { component: iro.ui.Wheel },
-                    { component: iro.ui.Slider, options: { sliderType: 'value' } },
-                    { component: iro.ui.Slider, options: { sliderType: 'hue' } },
-                    { component: iro.ui.Input, options: { inputType: 'hex' } } // This adds the hex input
-                ]
-            });
-
-            iroColorPicker.on('color:change', (color) => {
-                const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
-                if (activeBtn) {
-                    const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
-                    updateActiveColor(color.hexString, indexToUpdate);
-                }
-            });
-        }
 
         const renderEditorPalette = () => {
             const dynamicButtons = paletteContainer.querySelectorAll('.dynamic-color, .btn-add-color');
@@ -3469,7 +3717,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.style.display = 'none';
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Select/Edit:</strong> Click a marker | <strong>Delete:</strong> Drag marker down | <strong>Quick Edit:</strong> Double-click a marker`;
+            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click swatch or double-click marker | <strong>Delete:</strong> Drag marker down`;
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
@@ -3478,7 +3726,6 @@ document.addEventListener('DOMContentLoaded', function () {
             let stops = []; let activeStopId = -1; let nextStopId = 0;
             let lastMarkerClick = { id: null, time: 0 };
 
-            // NEW: Lightweight function for real-time preview updates
             const updatePreviewOnly = () => {
                 stops.sort((a, b) => a.position - b.position);
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
@@ -3503,13 +3750,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewOverlay.style.background = gradientString;
             };
 
-            // MODIFIED: This function now calls the lightweight preview and then handles the heavy update
             const updateGradient = () => {
                 updatePreviewOnly();
                 const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
                 hiddenInput.value = JSON.stringify(stopsToSave);
-                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
-                if (fieldset && !isRestoring) {
+                if (!isRestoring) {
                     hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             };
@@ -3526,6 +3771,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     stopsContainer.appendChild(marker);
                 });
             };
+
             const updateActiveControls = () => {
                 const activeStop = stops.find(s => s.id === activeStopId);
                 if (!activeStop) {
@@ -3535,7 +3781,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 activeControlsContainer.style.display = '';
                 activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
                 activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
+                activeControlsContainer.querySelector('.active-color-swatch').style.backgroundColor = activeStop.color;
             };
+
             const setActiveStop = (id) => {
                 activeStopId = id;
                 renderStops();
@@ -3543,25 +3791,27 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             activeControlsContainer.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <label class="col-form-label-sm flex-shrink-0">Color:</label>
-                    <div class="input-group input-group-sm" style="width: 90px;">
-                        <input type="text" class="form-control active-hex-input">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="col-form-label-sm flex-shrink-0">Color:</label>
+                        <div class="color-picker-swatch active-color-swatch" style="cursor: pointer;"></div>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control active-hex-input">
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="col-form-label-sm flex-shrink-0">Position:</label>
+                        <div class="input-group input-group-sm" style="width: 110px;">
+                            <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
+                            <span class="input-group-text">%</span>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <label class="col-form-label-sm flex-shrink-0">Position:</label>
-                    <div class="input-group input-group-sm" style="width: 110px;">
-                        <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
-                        <span class="input-group-text">%</span>
-                    </div>
-                </div>
-            </div>
-            `;
+                `;
 
             const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
             const activePosInput = activeControlsContainer.querySelector('.active-position-input');
+            const activeSwatch = activeControlsContainer.querySelector('.active-color-swatch');
 
             const updateActiveStopProperty = (prop, value) => {
                 const activeStop = stops.find(s => s.id === activeStopId);
@@ -3572,11 +3822,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
 
-            activeHexInput.addEventListener('input', () => {
-                if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) {
-                    updateActiveStopProperty('color', activeHexInput.value);
+            const openColorPickerForActiveStop = () => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (activeStop && window.globalIroColorPicker && window.globalGeneralColorPickerModal) {
+                    window.globalOnColorChangeCallback = (newColor) => {
+                        activeHexInput.value = newColor;
+                        updateActiveStopProperty('color', newColor);
+                    };
+                    window.globalIroColorPicker.color.hexString = activeStop.color;
+                    window.globalGeneralColorPickerModal.show();
                 }
-            });
+            };
+
+            if (activeSwatch) {
+                activeSwatch.addEventListener('click', openColorPickerForActiveStop);
+            }
+            activeHexInput.addEventListener('input', () => { if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) { updateActiveStopProperty('color', activeHexInput.value); } });
             activePosInput.addEventListener('input', () => { updateActiveStopProperty('position', Math.max(0, Math.min(1, parseFloat(activePosInput.value) / 100))); });
 
             stopsContainer.addEventListener('mousedown', (e) => {
@@ -3587,72 +3848,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     const now = new Date().getTime();
                     const DOUBLE_CLICK_THRESHOLD = 300;
 
-                    // This call rebuilds the markers, which was the source of the problem.
-                    setActiveStop(id);
-
-                    // --- START OF THE FIX ---
-                    // After setActiveStop runs, we must get a NEW reference to the active marker.
-                    const markerToDrag = stopsContainer.querySelector('.gradient-stop-marker.active');
-                    if (!markerToDrag) return; // Exit if no marker is found.
-                    // --- END OF THE FIX ---
-
                     if (now - lastMarkerClick.time < DOUBLE_CLICK_THRESHOLD && lastMarkerClick.id === id) {
                         lastMarkerClick = { id: null, time: 0 };
-                        const stopToEdit = stops.find(s => s.id === id);
-                        if (stopToEdit && iroColorPicker) {
-                            onColorChangeCallback = (newColor) => {
-                                activeHexInput.value = newColor;
-                                updateActiveStopProperty('color', newColor);
-                            };
-                            iroColorPicker.color.hexString = stopToEdit.color;
-                            generalColorPickerModal.show();
-                        }
+                        setActiveStop(id);
+                        openColorPickerForActiveStop();
                         return;
                     }
                     lastMarkerClick = { id: id, time: now };
 
-                    markerToDrag.classList.add('is-dragging');
+                    setActiveStop(id);
+                    const markerToDrag = stopsContainer.querySelector('.gradient-stop-marker.active');
+                    if (!markerToDrag) return;
 
+                    markerToDrag.classList.add('is-dragging');
                     let isDraggingStop = true;
                     const startX = e.clientX;
                     const stopToDrag = stops.find(s => s.id === id);
                     const initialPosition = stopToDrag ? stopToDrag.position : 0;
                     const containerWidth = stopsContainer.offsetWidth;
-
                     const onMouseMove = (moveEvent) => {
                         if (!isDraggingStop) return;
                         const dx = moveEvent.clientX - startX;
                         const posDelta = dx / containerWidth;
                         let newPos = Math.max(0, Math.min(1, initialPosition + posDelta));
                         stopToDrag.position = newPos;
-
-                        // Use our new, correct reference to the marker
                         markerToDrag.style.left = `${newPos * 100}%`;
-
                         activePosInput.value = (newPos * 100).toFixed(1);
                         updateGradient();
-
                         if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
                             const indexToDelete = stops.findIndex(s => s.id === activeStopId);
                             if (indexToDelete > -1) stops.splice(indexToDelete, 1);
+                            isDraggingStop = false;
+                            window.removeEventListener('mousemove', onMouseMove);
                             setActiveStop(-1);
-                            // onMouseUp(); // This line was correctly removed previously
+                            updateGradient();
                         }
                     };
-
                     const onMouseUp = () => {
                         window.removeEventListener('mousemove', onMouseMove);
-                        markerToDrag.classList.remove('is-dragging');
-
-                        if (isDraggingStop) {
-                            isDraggingStop = false;
-                            updateGradient(); // No need to call renderStops() here, updateGradient handles it.
-                        }
+                        if (markerToDrag) markerToDrag.classList.remove('is-dragging');
+                        if (isDraggingStop) { isDraggingStop = false; updateGradient(); }
                     };
-
                     window.addEventListener('mousemove', onMouseMove);
                     window.addEventListener('mouseup', onMouseUp, { once: true });
-
                 } else if (e.target === stopsContainer) {
                     const rect = stopsContainer.getBoundingClientRect();
                     const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -3664,34 +3902,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            try {
-                const loadedStops = JSON.parse(defaultValue);
-                stops = loadedStops.map(s => ({ ...s, id: nextStopId++ }));
-            } catch (e) {
-                stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }];
-            }
+            try { const loadedStops = JSON.parse(defaultValue); stops = loadedStops.map(s => ({ ...s, id: nextStopId++ })); }
+            catch (e) { stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }]; }
+
             container.appendChild(previewBar);
             container.appendChild(stopsContainer);
             container.appendChild(activeControlsContainer);
             container.appendChild(helpText);
             container.appendChild(hiddenInput);
             formGroup.appendChild(container);
-            setActiveStop(stops.length > 0 ? stops[0].id : -1);
-            setTimeout(() => {
-                // This unconditional call ensures the preview is rendered for ALL gradient pickers on load,
-                // including the global one which is not in a fieldset.
-                updateGradient();
 
+            setActiveStop(stops.length > 0 ? stops[0].id : -1);
+
+            setTimeout(() => {
+                updateGradient();
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset) {
-                    // This part only adds the 'sharp gradient' dependency for object-specific pickers.
                     const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
                     const sharpToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
-                    if (sharpToggle) {
-                        sharpToggle.addEventListener('input', updateGradient);
-                    }
+                    if (sharpToggle) { sharpToggle.addEventListener('input', updateGradient); }
                 }
             }, 0);
+
             hiddenInput.addEventListener('rebuild', (e) => {
                 const newStops = e.detail.stops || [];
                 stops = newStops.map(s => ({ ...s, id: nextStopId++ }));
@@ -3801,9 +4033,19 @@ document.addEventListener('DOMContentLoaded', function () {
             browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
             browseButton.dataset.bsToggle = 'modal';
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
+
+            // --- NEW: Add the "Search GIFs" button ---
+            const searchGifButton = document.createElement('button');
+            searchGifButton.type = 'button';
+            searchGifButton.className = 'btn btn-sm btn-primary btn-search-gif';
+            searchGifButton.innerHTML = '<i class="bi bi-search"></i> Search GIFs';
+            searchGifButton.title = "Search Giphy for animations";
+            // --- END NEW ---
+
             buttonGroup.appendChild(addButton);
             buttonGroup.appendChild(pasteSpriteButton);
             buttonGroup.appendChild(uploadGifButton);
+            buttonGroup.appendChild(searchGifButton);
             buttonGroup.appendChild(browseButton);
             const gifInput = document.createElement('input');
             gifInput.type = 'file';
@@ -5736,6 +5978,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const addFrameBtn = e.target.closest('.btn-add-frame');
         const deleteFrameBtn = e.target.closest('.btn-delete-frame');
 
+        // --- Start: Handle "Search GIFs" button click ---
+        const searchGifBtn = e.target.closest('.btn-search-gif');
+        if (searchGifBtn) {
+            e.preventDefault();
+            const fieldset = searchGifBtn.closest('fieldset[data-object-id]');
+            activeGifSearchObjectId = fieldset.dataset.objectId;
+            const gifSearchModal = new bootstrap.Modal(document.getElementById('gif-search-modal'));
+            gifSearchModal.show();
+            return;
+        }
+        // --- End: Handle "Search GIFs" button click ---
+
         if (addNodeBtn) {
             const container = addNodeBtn.closest('.node-table-container');
             if (container) { // Check if the container was found
@@ -7630,13 +7884,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (target.classList.contains('gif-upload-input')) {
             const file = target.files[0];
             if (file) {
-                const fieldset = target.closest('fieldset[data-object-id]');
-                const objectId = fieldset.dataset.objectId;
-
-                // We can reuse our existing GIF handler!
-                handleGifPaste(file, objectId);
+                // New workflow: store blob, pre-process, and show options modal
+                selectedGifBlob = file;
+                (async () => {
+                    await preProcessGifBlob(selectedGifBlob);
+                    const optionsModal = new bootstrap.Modal(document.getElementById('upload-gif-modal'));
+                    optionsModal.show();
+                })();
             }
-            // Reset the input so the user can upload the same file again if they choose
             target.value = null;
         }
 
@@ -8604,6 +8859,125 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // --- END: NEW LAZY LOADING GALLERY LOGIC ---
+
+    // --- NEW: Add event listeners for the GIF search modal ---
+    const gifSearchModalEl = document.getElementById('gif-search-modal');
+
+    if (gifSearchModalEl) {
+        const gifSearchForm = document.getElementById('gif-search-form');
+        const gifSearchInput = document.getElementById('gif-search-input');
+
+        gifSearchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const searchTerm = gifSearchInput.value.trim();
+            if (searchTerm) {
+                currentGiphySearchTerm = searchTerm;
+                performGiphySearchAndFill(currentGiphySearchTerm);
+            }
+        });
+
+        // Reset state when modal is closed
+        gifSearchModalEl.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('gif-results-container').innerHTML = '';
+            gifSearchInput.value = '';
+            currentGiphySearchTerm = '';
+            giphySearchOffset = 0;
+            activeGifSearchObjectId = null;
+        });
+
+        if (gifSearchModalEl) {
+            const gifSearchModalBody = gifSearchModalEl.querySelector('.modal-body');
+            if (gifSearchModalBody) {
+                gifSearchModalBody.addEventListener('scroll', () => {
+                    // If we are already fetching, do nothing
+                    if (isFetchingGifs) return;
+
+                    const { scrollTop, scrollHeight, clientHeight } = gifSearchModalBody;
+
+                    // If the user has scrolled to within 200px of the bottom
+                    if (scrollHeight - scrollTop - clientHeight < 200) {
+                        if (currentGiphySearchTerm) {
+                            // Fetch the next page of results
+                            searchGiphy(currentGiphySearchTerm, true);
+                        }
+                    }
+                });
+            }
+        }
+
+        gifSearchModalEl.addEventListener('show.bs.modal', () => {
+            const resultsContainer = document.getElementById('gif-results-container');
+            // Only fetch if the modal is empty
+            if (resultsContainer.innerHTML.trim() === '') {
+                currentGiphySearchTerm = '__trending__';
+                performGiphySearchAndFill(currentGiphySearchTerm);
+            }
+        });
+    }
+
+    const uploadGifModalEl = document.getElementById('upload-gif-modal');
+    const confirmGifUploadBtn = document.getElementById('confirm-gif-upload-btn');
+
+    if (uploadGifModalEl && confirmGifUploadBtn) {
+        // When the modal is about to show, change the button text if a GIF is pre-selected
+        uploadGifModalEl.addEventListener('show.bs.modal', () => {
+            if (selectedGifBlob) {
+                confirmGifUploadBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Process Selected GIF';
+            } else {
+                confirmGifUploadBtn.innerHTML = '<i class="bi bi-upload me-2"></i>Choose File and Process';
+            }
+        });
+
+        // When the modal is hidden, always reset the selected blob
+        uploadGifModalEl.addEventListener('hidden.bs.modal', () => {
+            selectedGifBlob = null;
+            preParsedGif = null;
+            preParsedGifColorCount = 0;
+            document.getElementById('gif-info-display').style.display = 'none';
+        });
+
+        // This replaces the old, simpler click listener for this button
+        confirmGifUploadBtn.addEventListener('click', async () => {
+            if (selectedObjectIds.length !== 1) {
+                showToast("Please select a single pixel art object first.", "warning");
+                return;
+            }
+            const objectId = selectedObjectIds[0];
+
+            if (selectedGifBlob) {
+                // If a GIF was selected from search, process it
+                await handleGifPaste(selectedGifBlob, objectId);
+                const modalInstance = bootstrap.Modal.getInstance(uploadGifModalEl);
+                if (modalInstance) modalInstance.hide();
+            } else {
+                // Otherwise, do the original action: open the file dialog
+                const gifInput = document.getElementById(`gif-upload-input-${objectId}`);
+                if (gifInput) {
+                    gifInput.click();
+                }
+            }
+        });
+    }
+
+    async function performGiphySearchAndFill(term) {
+        // 1. Perform the initial search for the first page
+        const hasMoreInitial = await searchGiphy(term, false);
+
+        // 2. Check if we need to load more pages to fill the screen
+        const modalBody = document.querySelector('#gif-search-modal .modal-body');
+        let hasMore = hasMoreInitial;
+
+        // While there's no scrollbar AND the API has more results, keep fetching
+        while (hasMore && modalBody.scrollHeight <= modalBody.clientHeight) {
+            // Prevent multiple rapid-fire requests if something goes wrong
+            if (isFetchingGifs) break;
+            console.log("No scrollbar detected, automatically fetching more GIFs...");
+            hasMore = await searchGiphy(term, true);
+        }
+    }
+    // --- END NEW ---
+
+
 
     // Start the application.
     init();
