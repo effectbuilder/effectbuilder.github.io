@@ -942,8 +942,20 @@
                         <h5 class="modal-title" id="pixelArtColorPickerModalLabel">Edit Color</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body d-flex justify-content-center">
+                    <div class="modal-body d-flex flex-column justify-content-center">
                         <div id="modal-picker-container"></div>
+                        <div class="custom-color-inputs mt-3">
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text">HEX</span>
+                                <input type="text" class="form-control" id="pixel-editor-hex-input">
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">RGB</span>
+                                <input type="number" class="form-control" id="pixel-editor-r-input" min="0" max="255" aria-label="Red">
+                                <input type="number" class="form-control" id="pixel-editor-g-input" min="0" max="255" aria-label="Green">
+                                <input type="number" class="form-control" id="pixel-editor-b-input" min="0" max="255" aria-label="Blue">
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
@@ -984,9 +996,7 @@
                     </div>
                     <div class="modal-footer d-flex justify-content-between align-items-center">
                         <img src="https://developers.giphy.com/static/img/dev-logo-lg.gif" alt="Powered by Giphy" height="20">
-                        <div id="gif-search-footer" style="display: none;">
-                            <button type="button" class="btn btn-secondary" id="gif-load-more-btn">Load More</button>
-                        </div>
+                        <div id="gif-search-footer" style="display: none;"></div>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
