@@ -13,6 +13,7 @@ let activeGifSearchObjectId = null;
 let selectedGifBlob = null;
 let preParsedGif = null;
 let preParsedGifColorCount = 0;
+let isFetchingGifs = false;
 // --- Giphy Search Integration ---
 
 const propsToScale = [
@@ -682,6 +683,21 @@ async function setVersionWithCaching() {
 document.addEventListener('DOMContentLoaded', function () {
     setVersionWithCaching();
 
+    function createCustomColorPicker(containerElement) {
+        return new iro.ColorPicker(containerElement, {
+            width: 200,
+            color: "#fff",
+            borderWidth: 0,
+            borderColor: "#fff",
+            layout: [
+                { component: iro.ui.Wheel },
+                { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                { component: iro.ui.Input, options: { inputType: 'hex', label: 'HEX' } },
+                { component: iro.ui.Input, options: { inputType: 'rgb', label: 'RGB' } }
+            ]
+        });
+    }
+
     async function preProcessGifBlob(blob) {
         const gifInfoDisplay = document.getElementById('gif-info-display');
         gifInfoDisplay.style.display = 'none'; // Hide by default
@@ -725,22 +741,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const resultsContainer = document.getElementById('gif-results-container');
-        const searchFooter = document.getElementById('gif-search-footer');
-        const loadMoreBtn = document.getElementById('gif-load-more-btn');
 
         if (!append) {
+            // This is a new search
             giphySearchOffset = 0;
             currentGiphySearchTerm = term;
             resultsContainer.innerHTML = `<div class="w-100 text-center p-4"><div class="spinner-border" role="status"></div></div>`;
-            loadMoreBtn.classList.add('d-none');
+            isFetchingGifs = true; // Set lock for the initial fetch
         } else {
-            loadMoreBtn.disabled = true;
-            loadMoreBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+            // This is for infinite scroll
+            isFetchingGifs = true; // Set lock to prevent multiple fetches
+            // Add a spinner at the bottom
+            resultsContainer.insertAdjacentHTML('beforeend', '<div class="col-12 text-center p-3" id="gif-loading-spinner"><div class="spinner-border spinner-border-sm"></div></div>');
         }
 
         try {
             const limit = 12;
-            const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
+            let url;
+            if (term === '__trending__') {
+                // If the term is our special keyword, use the trending endpoint
+                url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&offset=${giphySearchOffset}`;
+            } else {
+                // Otherwise, use the search endpoint as before
+                url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
+            }
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Giphy API responded with status ${response.status}`);
             const data = await response.json();
@@ -748,7 +772,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!append) resultsContainer.innerHTML = '';
 
             if (data.data.length === 0 && !append) {
-                resultsContainer.innerHTML = `<p class="text-body-secondary text-center w-100 mt-4">No results found for "${term}".</p>`;
+                resultsContainer.innerHTML = `<p class="text-body-secondary text-center w-100 mt-4">No results found for \`${term}\`.</p>`;
             }
 
             data.data.forEach(gif => {
@@ -764,32 +788,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 img.className = 'card-img-top';
                 img.loading = 'lazy';
 
+                const dimsOverlay = document.createElement('div');
+                dimsOverlay.className = 'gif-dims-overlay';
+                dimsOverlay.textContent = `${gif.images.original.width}x${gif.images.original.height}`;
+
                 card.appendChild(img);
+                card.appendChild(dimsOverlay);
                 col.appendChild(card);
                 resultsContainer.appendChild(col);
 
                 card.addEventListener('click', async () => {
+                    // This logic remains the same
                     card.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Fetching...</span></div></div>`;
                     try {
                         const originalGifUrl = gif.images.original.url;
                         const gifResponse = await fetch(originalGifUrl);
-                        // Store the fetched GIF blob globally
                         selectedGifBlob = await gifResponse.blob();
-
                         await preProcessGifBlob(selectedGifBlob);
-
-                        // Close the search modal
                         const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
                         searchModal.hide();
-
-                        // Open the GIF options modal
                         const optionsModal = new bootstrap.Modal(document.getElementById('upload-gif-modal'));
                         optionsModal.show();
-
                     } catch (err) {
                         console.error("Error fetching selected GIF:", err);
                         showToast("Failed to fetch the selected GIF.", "danger");
-                        // Reset card on error
                         card.innerHTML = '';
                         card.appendChild(img);
                     }
@@ -797,21 +819,20 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             giphySearchOffset += data.data.length;
-            const totalAvailable = data.pagination.total_count;
-            if (giphySearchOffset < totalAvailable) {
-                loadMoreBtn.classList.remove('d-none');
-            } else {
-                loadMoreBtn.classList.add('d-none');
-            }
+
+            const hasMore = giphySearchOffset < data.pagination.total_count;
+            return hasMore;
 
         } catch (err) {
             console.error("Giphy search failed:", err);
             showToast("Giphy search failed. Check your API key and network connection.", "danger");
             resultsContainer.innerHTML = `<p class="text-danger text-center w-100 mt-4">Search failed.</p>`;
         } finally {
-            loadMoreBtn.disabled = false;
-            loadMoreBtn.innerHTML = 'Load More';
-            searchFooter.style.display = 'block';
+            // Remove the loading spinner
+            const spinner = document.getElementById('gif-loading-spinner');
+            if (spinner) spinner.remove();
+            // Unlock to allow the next fetch
+            isFetchingGifs = false;
         }
     }
 
@@ -849,25 +870,18 @@ document.addEventListener('DOMContentLoaded', function () {
     let iroColorPicker = null;
     let onColorChangeCallback = null;
 
+    // Expose these to the window object for universal access
+    window.globalGeneralColorPickerModal = null;
+    window.globalIroColorPicker = null;
+    window.globalOnColorChangeCallback = null;
+
     if (generalColorPickerModalEl && generalPickerContainer) {
-        generalColorPickerModal = new bootstrap.Modal(generalColorPickerModalEl);
+        window.globalGeneralColorPickerModal = new bootstrap.Modal(generalColorPickerModalEl);
+        window.globalIroColorPicker = createCustomColorPicker(generalPickerContainer);
 
-        iroColorPicker = new iro.ColorPicker(generalPickerContainer, {
-            width: 240,
-            color: "#fff",
-            borderWidth: 1,
-            borderColor: "#fff",
-            layout: [
-                { component: iro.ui.Wheel },
-                { component: iro.ui.Slider, options: { sliderType: 'value' } },
-                { component: iro.ui.Slider, options: { sliderType: 'hue' } },
-                { component: iro.ui.Input, options: { inputType: 'hex' } }
-            ]
-        });
-
-        iroColorPicker.on('color:change', (color) => {
-            if (typeof onColorChangeCallback === 'function') {
-                onColorChangeCallback(color.hexString);
+        window.globalIroColorPicker.on('color:change', (color) => {
+            if (typeof window.globalOnColorChangeCallback === 'function') {
+                window.globalOnColorChangeCallback(color.hexString);
             }
         });
     }
@@ -1837,6 +1851,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // State variables
         let targetTextarea = null, currentEditorObjectId = null, currentEditorFrameIndex = -1, totalFramesInEditor = 0;
         let currentPaintValue = 0.7, isPainting = false, currentTool = 'paint', currentGradientStops = [];
+        let colorPickerModal = null;
 
         // Main Editor elements
         const gridContainer = document.getElementById('pixel-editor-grid-container');
@@ -2049,9 +2064,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Color Picker Modal elements & iro.js instance
         const colorPickerModalEl = document.getElementById('pixel-art-color-picker-modal');
-        const pickerContainer = document.getElementById('modal-picker-container');
-        const colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
-        let iroColorPicker = null;
+        if (colorPickerModalEl) {
+            const pickerContainer = document.getElementById('modal-picker-container');
+            colorPickerModal = new bootstrap.Modal(colorPickerModalEl);
+            let iroColorPicker = null;
+
+            // Get references to our new custom input fields
+            const hexInput = document.getElementById('pixel-editor-hex-input');
+            const rInput = document.getElementById('pixel-editor-r-input');
+            const gInput = document.getElementById('pixel-editor-g-input');
+            const bInput = document.getElementById('pixel-editor-b-input');
+
+            if (pickerContainer) {
+                iroColorPicker = createCustomColorPicker(pickerContainer);
+
+                // --- Sync from Picker to Inputs ---
+                iroColorPicker.on('color:change', (color) => {
+                    // Update the HEX input
+                    hexInput.value = color.hexString;
+                    // Update the RGB inputs
+                    const { r, g, b } = color.rgb;
+                    rInput.value = r;
+                    gInput.value = g;
+                    bInput.value = b;
+
+                    // This is the original logic to update the live palette color
+                    const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
+                    if (activeBtn) {
+                        const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
+                        updateActiveColor(color.hexString, indexToUpdate);
+                    }
+                });
+
+                // --- Sync from Inputs to Picker ---
+                hexInput.addEventListener('input', () => {
+                    try {
+                        iroColorPicker.color.hexString = hexInput.value;
+                    } catch (e) { /* Ignore invalid hex codes */ }
+                });
+                rInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+                gInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+                bInput.addEventListener('input', () => { iroColorPicker.color.rgb = { r: rInput.value, g: gInput.value, b: bInput.value }; });
+            }
+        }
 
         const debouncedRecordHistory = debounce(recordHistory, 500);
 
@@ -2072,29 +2127,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 debouncedRecordHistory();
             }
         };
-
-        if (pickerContainer) {
-            iroColorPicker = new iro.ColorPicker(pickerContainer, {
-                width: 240,
-                color: "#fff",
-                borderWidth: 1,
-                borderColor: "#fff",
-                layout: [
-                    { component: iro.ui.Wheel },
-                    { component: iro.ui.Slider, options: { sliderType: 'value' } },
-                    { component: iro.ui.Slider, options: { sliderType: 'hue' } },
-                    { component: iro.ui.Input, options: { inputType: 'hex' } } // This adds the hex input
-                ]
-            });
-
-            iroColorPicker.on('color:change', (color) => {
-                const activeBtn = paletteContainer.querySelector('.dynamic-color.active');
-                if (activeBtn) {
-                    const indexToUpdate = parseFloat(activeBtn.dataset.value) - 2;
-                    updateActiveColor(color.hexString, indexToUpdate);
-                }
-            });
-        }
 
         const renderEditorPalette = () => {
             const dynamicButtons = paletteContainer.querySelectorAll('.dynamic-color, .btn-add-color');
@@ -3685,7 +3717,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.style.display = 'none';
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Select/Edit:</strong> Click a marker | <strong>Delete:</strong> Drag marker down | <strong>Quick Edit:</strong> Double-click a marker`;
+            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click swatch or double-click marker | <strong>Delete:</strong> Drag marker down`;
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
@@ -3694,7 +3726,6 @@ document.addEventListener('DOMContentLoaded', function () {
             let stops = []; let activeStopId = -1; let nextStopId = 0;
             let lastMarkerClick = { id: null, time: 0 };
 
-            // NEW: Lightweight function for real-time preview updates
             const updatePreviewOnly = () => {
                 stops.sort((a, b) => a.position - b.position);
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
@@ -3719,13 +3750,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewOverlay.style.background = gradientString;
             };
 
-            // MODIFIED: This function now calls the lightweight preview and then handles the heavy update
             const updateGradient = () => {
                 updatePreviewOnly();
                 const stopsToSave = stops.map(({ color, position }) => ({ color, position }));
                 hiddenInput.value = JSON.stringify(stopsToSave);
-                const fieldset = hiddenInput.closest('fieldset[data-object-id]');
-                if (fieldset && !isRestoring) {
+                if (!isRestoring) {
                     hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             };
@@ -3742,6 +3771,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     stopsContainer.appendChild(marker);
                 });
             };
+
             const updateActiveControls = () => {
                 const activeStop = stops.find(s => s.id === activeStopId);
                 if (!activeStop) {
@@ -3751,7 +3781,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 activeControlsContainer.style.display = '';
                 activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
                 activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
+                activeControlsContainer.querySelector('.active-color-swatch').style.backgroundColor = activeStop.color;
             };
+
             const setActiveStop = (id) => {
                 activeStopId = id;
                 renderStops();
@@ -3759,25 +3791,27 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             activeControlsContainer.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <label class="col-form-label-sm flex-shrink-0">Color:</label>
-                    <div class="input-group input-group-sm" style="width: 90px;">
-                        <input type="text" class="form-control active-hex-input">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="col-form-label-sm flex-shrink-0">Color:</label>
+                        <div class="color-picker-swatch active-color-swatch" style="cursor: pointer;"></div>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control active-hex-input">
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="col-form-label-sm flex-shrink-0">Position:</label>
+                        <div class="input-group input-group-sm" style="width: 110px;">
+                            <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
+                            <span class="input-group-text">%</span>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <label class="col-form-label-sm flex-shrink-0">Position:</label>
-                    <div class="input-group input-group-sm" style="width: 110px;">
-                        <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
-                        <span class="input-group-text">%</span>
-                    </div>
-                </div>
-            </div>
-            `;
+                `;
 
             const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
             const activePosInput = activeControlsContainer.querySelector('.active-position-input');
+            const activeSwatch = activeControlsContainer.querySelector('.active-color-swatch');
 
             const updateActiveStopProperty = (prop, value) => {
                 const activeStop = stops.find(s => s.id === activeStopId);
@@ -3788,11 +3822,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
 
-            activeHexInput.addEventListener('input', () => {
-                if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) {
-                    updateActiveStopProperty('color', activeHexInput.value);
+            const openColorPickerForActiveStop = () => {
+                const activeStop = stops.find(s => s.id === activeStopId);
+                if (activeStop && window.globalIroColorPicker && window.globalGeneralColorPickerModal) {
+                    window.globalOnColorChangeCallback = (newColor) => {
+                        activeHexInput.value = newColor;
+                        updateActiveStopProperty('color', newColor);
+                    };
+                    window.globalIroColorPicker.color.hexString = activeStop.color;
+                    window.globalGeneralColorPickerModal.show();
                 }
-            });
+            };
+
+            if (activeSwatch) {
+                activeSwatch.addEventListener('click', openColorPickerForActiveStop);
+            }
+            activeHexInput.addEventListener('input', () => { if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) { updateActiveStopProperty('color', activeHexInput.value); } });
             activePosInput.addEventListener('input', () => { updateActiveStopProperty('position', Math.max(0, Math.min(1, parseFloat(activePosInput.value) / 100))); });
 
             stopsContainer.addEventListener('mousedown', (e) => {
@@ -3803,72 +3848,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     const now = new Date().getTime();
                     const DOUBLE_CLICK_THRESHOLD = 300;
 
-                    // This call rebuilds the markers, which was the source of the problem.
-                    setActiveStop(id);
-
-                    // --- START OF THE FIX ---
-                    // After setActiveStop runs, we must get a NEW reference to the active marker.
-                    const markerToDrag = stopsContainer.querySelector('.gradient-stop-marker.active');
-                    if (!markerToDrag) return; // Exit if no marker is found.
-                    // --- END OF THE FIX ---
-
                     if (now - lastMarkerClick.time < DOUBLE_CLICK_THRESHOLD && lastMarkerClick.id === id) {
                         lastMarkerClick = { id: null, time: 0 };
-                        const stopToEdit = stops.find(s => s.id === id);
-                        if (stopToEdit && iroColorPicker) {
-                            onColorChangeCallback = (newColor) => {
-                                activeHexInput.value = newColor;
-                                updateActiveStopProperty('color', newColor);
-                            };
-                            iroColorPicker.color.hexString = stopToEdit.color;
-                            generalColorPickerModal.show();
-                        }
+                        setActiveStop(id);
+                        openColorPickerForActiveStop();
                         return;
                     }
                     lastMarkerClick = { id: id, time: now };
 
-                    markerToDrag.classList.add('is-dragging');
+                    setActiveStop(id);
+                    const markerToDrag = stopsContainer.querySelector('.gradient-stop-marker.active');
+                    if (!markerToDrag) return;
 
+                    markerToDrag.classList.add('is-dragging');
                     let isDraggingStop = true;
                     const startX = e.clientX;
                     const stopToDrag = stops.find(s => s.id === id);
                     const initialPosition = stopToDrag ? stopToDrag.position : 0;
                     const containerWidth = stopsContainer.offsetWidth;
-
                     const onMouseMove = (moveEvent) => {
                         if (!isDraggingStop) return;
                         const dx = moveEvent.clientX - startX;
                         const posDelta = dx / containerWidth;
                         let newPos = Math.max(0, Math.min(1, initialPosition + posDelta));
                         stopToDrag.position = newPos;
-
-                        // Use our new, correct reference to the marker
                         markerToDrag.style.left = `${newPos * 100}%`;
-
                         activePosInput.value = (newPos * 100).toFixed(1);
                         updateGradient();
-
                         if (moveEvent.clientY > stopsContainer.getBoundingClientRect().bottom + 30 && stops.length > 2) {
                             const indexToDelete = stops.findIndex(s => s.id === activeStopId);
                             if (indexToDelete > -1) stops.splice(indexToDelete, 1);
+                            isDraggingStop = false;
+                            window.removeEventListener('mousemove', onMouseMove);
                             setActiveStop(-1);
-                            // onMouseUp(); // This line was correctly removed previously
+                            updateGradient();
                         }
                     };
-
                     const onMouseUp = () => {
                         window.removeEventListener('mousemove', onMouseMove);
-                        markerToDrag.classList.remove('is-dragging');
-
-                        if (isDraggingStop) {
-                            isDraggingStop = false;
-                            updateGradient(); // No need to call renderStops() here, updateGradient handles it.
-                        }
+                        if (markerToDrag) markerToDrag.classList.remove('is-dragging');
+                        if (isDraggingStop) { isDraggingStop = false; updateGradient(); }
                     };
-
                     window.addEventListener('mousemove', onMouseMove);
                     window.addEventListener('mouseup', onMouseUp, { once: true });
-
                 } else if (e.target === stopsContainer) {
                     const rect = stopsContainer.getBoundingClientRect();
                     const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -3880,34 +3902,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            try {
-                const loadedStops = JSON.parse(defaultValue);
-                stops = loadedStops.map(s => ({ ...s, id: nextStopId++ }));
-            } catch (e) {
-                stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }];
-            }
+            try { const loadedStops = JSON.parse(defaultValue); stops = loadedStops.map(s => ({ ...s, id: nextStopId++ })); }
+            catch (e) { stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }]; }
+
             container.appendChild(previewBar);
             container.appendChild(stopsContainer);
             container.appendChild(activeControlsContainer);
             container.appendChild(helpText);
             container.appendChild(hiddenInput);
             formGroup.appendChild(container);
-            setActiveStop(stops.length > 0 ? stops[0].id : -1);
-            setTimeout(() => {
-                // This unconditional call ensures the preview is rendered for ALL gradient pickers on load,
-                // including the global one which is not in a fieldset.
-                updateGradient();
 
+            setActiveStop(stops.length > 0 ? stops[0].id : -1);
+
+            setTimeout(() => {
+                updateGradient();
                 const fieldset = hiddenInput.closest('fieldset[data-object-id]');
                 if (fieldset) {
-                    // This part only adds the 'sharp gradient' dependency for object-specific pickers.
                     const sharpToggleName = controlId.replace('gradientStops', 'useSharpGradient').replace('strokeGradientStops', 'strokeUseSharpGradient');
                     const sharpToggle = fieldset.querySelector(`[name="${sharpToggleName}"]`);
-                    if (sharpToggle) {
-                        sharpToggle.addEventListener('input', updateGradient);
-                    }
+                    if (sharpToggle) { sharpToggle.addEventListener('input', updateGradient); }
                 }
             }, 0);
+
             hiddenInput.addEventListener('rebuild', (e) => {
                 const newStops = e.detail.stops || [];
                 stops = newStops.map(s => ({ ...s, id: nextStopId++ }));
@@ -8846,22 +8862,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- NEW: Add event listeners for the GIF search modal ---
     const gifSearchModalEl = document.getElementById('gif-search-modal');
+
     if (gifSearchModalEl) {
         const gifSearchForm = document.getElementById('gif-search-form');
         const gifSearchInput = document.getElementById('gif-search-input');
-        const loadMoreBtn = document.getElementById('gif-load-more-btn');
 
         gifSearchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const searchTerm = gifSearchInput.value.trim();
             if (searchTerm) {
-                searchGiphy(searchTerm, false);
-            }
-        });
-
-        loadMoreBtn.addEventListener('click', () => {
-            if (currentGiphySearchTerm) {
-                searchGiphy(currentGiphySearchTerm, true);
+                currentGiphySearchTerm = searchTerm;
+                performGiphySearchAndFill(currentGiphySearchTerm);
             }
         });
 
@@ -8872,6 +8883,35 @@ document.addEventListener('DOMContentLoaded', function () {
             currentGiphySearchTerm = '';
             giphySearchOffset = 0;
             activeGifSearchObjectId = null;
+        });
+
+        if (gifSearchModalEl) {
+            const gifSearchModalBody = gifSearchModalEl.querySelector('.modal-body');
+            if (gifSearchModalBody) {
+                gifSearchModalBody.addEventListener('scroll', () => {
+                    // If we are already fetching, do nothing
+                    if (isFetchingGifs) return;
+
+                    const { scrollTop, scrollHeight, clientHeight } = gifSearchModalBody;
+
+                    // If the user has scrolled to within 200px of the bottom
+                    if (scrollHeight - scrollTop - clientHeight < 200) {
+                        if (currentGiphySearchTerm) {
+                            // Fetch the next page of results
+                            searchGiphy(currentGiphySearchTerm, true);
+                        }
+                    }
+                });
+            }
+        }
+
+        gifSearchModalEl.addEventListener('show.bs.modal', () => {
+            const resultsContainer = document.getElementById('gif-results-container');
+            // Only fetch if the modal is empty
+            if (resultsContainer.innerHTML.trim() === '') {
+                currentGiphySearchTerm = '__trending__';
+                performGiphySearchAndFill(currentGiphySearchTerm);
+            }
         });
     }
 
@@ -8918,7 +8958,26 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    async function performGiphySearchAndFill(term) {
+        // 1. Perform the initial search for the first page
+        const hasMoreInitial = await searchGiphy(term, false);
+
+        // 2. Check if we need to load more pages to fill the screen
+        const modalBody = document.querySelector('#gif-search-modal .modal-body');
+        let hasMore = hasMoreInitial;
+
+        // While there's no scrollbar AND the API has more results, keep fetching
+        while (hasMore && modalBody.scrollHeight <= modalBody.clientHeight) {
+            // Prevent multiple rapid-fire requests if something goes wrong
+            if (isFetchingGifs) break;
+            console.log("No scrollbar detected, automatically fetching more GIFs...");
+            hasMore = await searchGiphy(term, true);
+        }
+    }
     // --- END NEW ---
+
+
 
     // Start the application.
     init();

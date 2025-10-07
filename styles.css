@@ -373,8 +373,55 @@ body {
     transition: none !important;
 }
 
+
 #pixel-editor-palette {
     flex-wrap: wrap;
     gap: 5px;
-    /* Adds some nice spacing between the color buttons */
+}
+
+/* This rule is updated */
+#gif-results-container .card-img-top {
+    height: 120px;
+    width: 100%;
+    object-fit: contain;
+    /* Changed from 'cover' to 'contain' */
+    background-color: #333;
+}
+
+#gif-search-modal .modal-body {
+    padding: 0;
+    /* Remove padding from the main scrollable area */
+}
+
+#gif-search-form {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bs-modal-bg);
+    padding: 1rem;
+    /* Add padding to the form itself to create space */
+    border-bottom: 1px solid var(--bs-border-color);
+    /* Add a separator line */
+}
+
+#gif-results-container {
+    padding: 1rem;
+    /* Add padding to the results area so it's not stuck to the edges */
+}
+
+.gif-dims-overlay {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    border-top-left-radius: 0.25rem;
+}
+
+.custom-color-inputs .input-group-text {
+    width: 50px;
+    /* Aligns the HEX and RGB labels */
+    justify-content: center;
 }
