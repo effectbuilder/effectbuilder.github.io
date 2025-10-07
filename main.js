@@ -336,6 +336,16 @@ function getLikedProjectsFromLocalStorage() {
     }
 }
 
+function getTextColorForBackground(hexColor) {
+    if (!hexColor || hexColor.length < 7) return '#000000';
+    const r = parseInt(hexColor.substr(1, 2), 16);
+    const g = parseInt(hexColor.substr(3, 2), 16);
+    const b = parseInt(hexColor.substr(5, 2), 16);
+    // Standard luminance calculation
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+}
+
 function rgbToHex(rgbString) {
     const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (!match) return '#000000';
@@ -3717,7 +3727,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.style.display = 'none';
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click swatch or double-click marker | <strong>Delete:</strong> Drag marker down`;
+            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down`;
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
@@ -3779,9 +3789,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 activeControlsContainer.style.display = '';
-                activeControlsContainer.querySelector('.active-hex-input').value = activeStop.color;
+                const hexInput = activeControlsContainer.querySelector('.active-hex-input');
+                hexInput.value = activeStop.color;
+                hexInput.style.backgroundColor = activeStop.color;
+                hexInput.style.color = getTextColorForBackground(activeStop.color);
+
                 activeControlsContainer.querySelector('.active-position-input').value = (activeStop.position * 100).toFixed(1);
-                activeControlsContainer.querySelector('.active-color-swatch').style.backgroundColor = activeStop.color;
             };
 
             const setActiveStop = (id) => {
@@ -3791,27 +3804,26 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             activeControlsContainer.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="col-form-label-sm flex-shrink-0">Color:</label>
-                        <div class="color-picker-swatch active-color-swatch" style="cursor: pointer;"></div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control active-hex-input">
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="col-form-label-sm flex-shrink-0">Position:</label>
-                        <div class="input-group input-group-sm" style="width: 110px;">
-                            <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
-                            <span class="input-group-text">%</span>
-                        </div>
-                    </div>
-                </div>
-                `;
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
+            <label class="col-form-label-sm flex-shrink-0">Color:</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">HEX</span>
+                <input type="text" class="form-control active-hex-input" aria-label="Hex Color" style="cursor: pointer;">
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="col-form-label-sm flex-shrink-0">Position:</label>
+            <div class="input-group input-group-sm" style="width: 110px;">
+                <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    `;
 
             const activeHexInput = activeControlsContainer.querySelector('.active-hex-input');
             const activePosInput = activeControlsContainer.querySelector('.active-position-input');
-            const activeSwatch = activeControlsContainer.querySelector('.active-color-swatch');
 
             const updateActiveStopProperty = (prop, value) => {
                 const activeStop = stops.find(s => s.id === activeStopId);
@@ -3826,18 +3838,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 const activeStop = stops.find(s => s.id === activeStopId);
                 if (activeStop && window.globalIroColorPicker && window.globalGeneralColorPickerModal) {
                     window.globalOnColorChangeCallback = (newColor) => {
-                        activeHexInput.value = newColor;
                         updateActiveStopProperty('color', newColor);
+                        updateActiveControls(); // Update text color in real-time
                     };
                     window.globalIroColorPicker.color.hexString = activeStop.color;
                     window.globalGeneralColorPickerModal.show();
                 }
             };
 
-            if (activeSwatch) {
-                activeSwatch.addEventListener('click', openColorPickerForActiveStop);
-            }
-            activeHexInput.addEventListener('input', () => { if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) { updateActiveStopProperty('color', activeHexInput.value); } });
+            activeHexInput.addEventListener('click', openColorPickerForActiveStop);
+            activeHexInput.addEventListener('input', () => { if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) { updateActiveStopProperty('color', activeHexInput.value); updateActiveControls(); } });
             activePosInput.addEventListener('input', () => { updateActiveStopProperty('position', Math.max(0, Math.min(1, parseFloat(activePosInput.value) / 100))); });
 
             stopsContainer.addEventListener('mousedown', (e) => {
