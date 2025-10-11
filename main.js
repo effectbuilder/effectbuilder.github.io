@@ -226,6 +226,8 @@ let pixelArtSearchTerm = '';
 let pixelArtCurrentPage = 1;
 let isUpdatingFromShapes = false;
 const PIXEL_ART_ITEMS_PER_PAGE = 9;
+let prePastedImageBlob = null;
+let prePastedImageDims = { width: 0, height: 0 };
 
 /**
  * Calculates the interpolated color at a specific progress point within a set of color stops.
@@ -1164,8 +1166,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
 
             // 5. Bundle all required helper functions and the Shape class into strings
-            // FIX: This converts single-line comments to multi-line to prevent truncation
-            const safeShapeClassString = Shape.toString().replace(/\/\/(.*)/g, '/*$1*/');
+            // Convert the Shape class to a string
+            let shapeClassString = Shape.toString();
+
+            // Use a regular expression to find and remove all "cursor" properties from the handles array
+            shapeClassString = shapeClassString.replace(/,\s*cursor:\s*Cursors\.\w+/g, '');
+
+            // Sanitize single-line comments as before
+            const safeShapeClassString = shapeClassString.replace(/\/\/(.*)/g, '/*$1*/');
             const allHelperFunctions = [
                 hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
                 drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
@@ -1661,34 +1669,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const handleSpritePaste = async () => {
         try {
-            if (selectedObjectIds.length !== 1) {
-                showToast("Please select a single pixel art object to paste into.", "warning");
-                return;
-            }
-            const objectId = selectedObjectIds[0];
-
-            const clipboardItems = await navigator.clipboard.read();
-            const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
-
-            if (!imageItem) {
-                showToast("No image found on the clipboard.", "info");
+            // Use the globally stored image blob instead of reading the clipboard again
+            if (!prePastedImageBlob) {
+                showToast("No image was prepared for pasting. Please copy the image again.", "danger");
                 return;
             }
 
-            const gifType = imageItem.types.find(type => type === 'image/gif');
-            if (gifType) {
-                const blob = await imageItem.getType(gifType);
-                handleGifPaste(blob, objectId);
+            const pasteModalEl = document.getElementById('paste-sprite-modal');
+            const objectId = pasteModalEl.dataset.targetObjectId;
+            if (!objectId) {
+                showToast("Error: No target object was specified for pasting.", "danger");
                 return;
             }
 
-            const imageType = imageItem.types.find(type => type.startsWith('image/'));
-            const blob = await imageItem.getType(imageType);
-            const imageUrl = URL.createObjectURL(blob);
+            // This block handles GIF pasting specifically
+            if (prePastedImageBlob.type === 'image/gif') {
+                handleGifPaste(prePastedImageBlob, objectId);
+                prePastedImageBlob = null; // Clean up
+                return;
+            }
+
+            const imageUrl = URL.createObjectURL(prePastedImageBlob);
             const image = new Image();
 
             image.onload = () => {
-                // --- START: New Automatic Spritesheet Processing ---
+                // --- Spritesheet Processing Logic ---
                 const frameWidth = parseInt(document.getElementById('sprite-frame-width').value, 10);
                 const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
 
@@ -1697,7 +1702,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // 1. Analyze colors from the entire image to build a consistent palette.
+                // This logic is now guaranteed to use the correct dimensions
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = image.width;
                 tempCanvas.height = image.height;
@@ -1718,7 +1723,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
-                // 2. Create the new gradient, sorted by brightness.
                 const sortedColors = [...uniqueColors.values()].sort((a, b) => a.luminance - b.luminance);
                 const newGradientStops = sortedColors.map((color, index) => ({
                     color: color.hex,
@@ -1726,7 +1730,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }));
                 const colorToPositionMap = new Map(newGradientStops.map(stop => [stop.color, stop.position]));
 
-                // 3. Process the spritesheet into frames with the new indexed pixel data.
                 const spriteCols = Math.floor(image.width / frameWidth);
                 const spriteRows = Math.floor(image.height / frameHeight);
                 const newFrames = [];
@@ -1747,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const c_idx = (i / 4) % frameWidth;
 
                             if (frameImgData[i + 3] < 128) {
-                                pixelData[r_idx][c_idx] = 0.0;
+                                pixelData[r_idx][c_idx] = 0.7;
                             } else {
                                 const hex = rgbToHex(`rgb(${frameImgData[i]},${frameImgData[i + 1]},${frameImgData[i + 2]})`);
                                 pixelData[r_idx][c_idx] = colorToPositionMap.get(hex) || 0.0;
@@ -1757,12 +1760,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
-                // 4. Apply changes and update UI.
+                // Apply changes and update UI
                 const shouldAppend = document.getElementById('sprite-paste-append').checked;
                 const fieldset = form.querySelector(`fieldset[data-object-id="${objectId}"]`);
+                if (!fieldset) { return; }
+
                 const hiddenTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
                 const existingFrames = shouldAppend && hiddenTextarea.value ? JSON.parse(hiddenTextarea.value) : [];
                 const combinedFrames = [...existingFrames, ...newFrames];
+
+                const framesConf = configStore.find(c => c.property === `obj${objectId}_pixelArtFrames`);
+                if (framesConf) { framesConf.default = JSON.stringify(combinedFrames); }
+
+                const gradientConf = configStore.find(c => c.property === `obj${objectId}_gradientStops`);
+                if (gradientConf) { gradientConf.default = JSON.stringify(newGradientStops); }
 
                 const targetObject = objects.find(o => o.id === parseInt(objectId, 10));
                 if (targetObject) {
@@ -1777,15 +1788,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
                 if (spritePasteModal) spritePasteModal.hide();
                 showToast(`${newFrames.length} frame(s) processed with ${sortedColors.length} colors!`, "success");
-                // --- END: New Automatic Spritesheet Processing ---
             };
             image.src = imageUrl;
 
         } catch (err) {
-            console.error(err);
+            console.error("Paste Error:", err);
             showToast("Could not paste sprite: " + err.message, "danger");
+        } finally {
+            // Clean up the global variable after the operation
+            prePastedImageBlob = null;
+            prePastedImageDims = { width: 0, height: 0 };
         }
     };
+
+    const confirmSpritePasteBtn = document.getElementById('confirm-sprite-paste-btn');
+    if (confirmSpritePasteBtn) {
+        confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
+    }
 
     const pasteSingleImageFrame = (blob) => {
         const frameWidthInput = document.getElementById('pixel-editor-width');
@@ -1874,6 +1893,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const prevFrameBtn = document.getElementById('pixel-editor-prev-frame-btn');
         const nextFrameBtn = document.getElementById('pixel-editor-next-frame-btn');
         const duplicateFrameBtn = document.getElementById('pixel-editor-duplicate-frame-btn');
+        const deleteFrameBtnModal = document.getElementById('pixel-editor-delete-frame-btn');
         const paintBtn = document.getElementById('pixel-editor-paint-btn');
         const fillBtn = document.getElementById('pixel-editor-fill-btn');
         const toolsContainer = document.getElementById('pixel-editor-tools');
@@ -1999,7 +2019,54 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (e.key.toLowerCase() === 'y') { e.preventDefault(); applyHistoryState(appHistory.redo()); return; }
                 if (isInputFocused) return; // Allow copy/paste in text fields
                 if (e.key.toLowerCase() === 'c' && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('copy-props-btn').click(); return; }
-                if (e.key.toLowerCase() === 'v' && propertyClipboard && selectedObjectIds.length > 0) { e.preventDefault(); document.getElementById('paste-props-btn').click(); return; }
+                if (e.key.toLowerCase() === 'v') {
+                    // First, try to paste properties like before
+                    if (propertyClipboard && selectedObjectIds.length > 0) {
+                        e.preventDefault();
+                        document.getElementById('paste-props-btn').click();
+                        return;
+                    }
+                    // If not pasting properties, check if we're pasting an image into a pixel art object
+                    else if (selectedObjectIds.length === 1 && objects.find(o => o.id === selectedObjectIds[0])?.shape === 'pixel-art') {
+                        e.preventDefault();
+
+                        (async () => {
+                            try {
+                                const clipboardItems = await navigator.clipboard.read();
+                                const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
+                                if (!imageItem) {
+                                    showToast("No image found on clipboard.", "info");
+                                    return;
+                                }
+
+                                const imageType = imageItem.types.find(type => type.startsWith('image/'));
+                                prePastedImageBlob = await imageItem.getType(imageType); // Store the blob
+                                const imageUrl = URL.createObjectURL(prePastedImageBlob);
+                                const image = new Image();
+
+                                image.onload = () => {
+                                    prePastedImageDims = { width: image.width, height: image.height }; // Store dimensions
+
+                                    const pasteSpriteModalEl = document.getElementById('paste-sprite-modal');
+                                    const frameWidthInput = document.getElementById('sprite-frame-width');
+                                    const frameHeightInput = document.getElementById('sprite-frame-height');
+
+                                    frameWidthInput.value = image.width;
+                                    frameHeightInput.value = image.height;
+
+                                    const pasteSpriteModal = new bootstrap.Modal(pasteSpriteModalEl);
+                                    pasteSpriteModal.show();
+
+                                    URL.revokeObjectURL(imageUrl);
+                                };
+                                image.src = imageUrl;
+                            } catch (err) {
+                                console.error('Paste error:', err);
+                                showToast('Could not read image from clipboard.', 'danger');
+                            }
+                        })();
+                    }
+                }
             }
 
             if (isInputFocused) {
@@ -2069,6 +2136,116 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Calculate the next frame index, wrapping around if necessary
                 const newIndex = (currentEditorFrameIndex + 1) % totalFramesInEditor;
                 loadFrameIntoEditor(newIndex); // Load the new frame
+            });
+        }
+
+        if (duplicateFrameBtn) {
+            duplicateFrameBtn.addEventListener('click', () => {
+                // Get the elements related to the current object and its frames
+                const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                if (!fieldset) return;
+
+                const framesContainer = fieldset.querySelector('.pixel-art-frames-container');
+                const mainTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                const allFrameItems = Array.from(framesContainer.children);
+                const sourceItem = allFrameItems[currentEditorFrameIndex];
+
+                if (!sourceItem || !mainTextarea) return;
+
+                // 1. Create a clone of the current frame's UI element and insert it
+                const newItem = sourceItem.cloneNode(true);
+                // Manually render the thumbnail for the newly cloned frame
+                const newPreviewCanvas = newItem.querySelector('.pixel-art-preview-canvas');
+                const sourceDataString = sourceItem.querySelector('.frame-data-input').value;
+                const targetObject = objects.find(o => o.id === parseInt(currentEditorObjectId, 10));
+                const gradientStops = targetObject ? targetObject.gradient.stops : [];
+
+                if (newPreviewCanvas && sourceDataString) {
+                    renderPixelArtPreview(newPreviewCanvas, sourceDataString, gradientStops);
+                }
+                sourceItem.insertAdjacentElement('afterend', newItem);
+
+                // 2. Re-index all frame UI elements (IDs, labels, etc.) to reflect the new order
+                const updatedFrameItems = Array.from(framesContainer.children);
+                updatedFrameItems.forEach((item, index) => {
+                    const objectId = currentEditorObjectId;
+                    const newTextareaId = `frame-data-${objectId}-${index}`;
+
+                    item.dataset.index = index;
+                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
+
+                    const editBtn = item.querySelector('button[data-bs-target="#pixelArtEditorModal"]');
+                    const dataTextarea = item.querySelector('.frame-data-input');
+
+                    if (editBtn) editBtn.dataset.targetId = newTextareaId;
+                    if (dataTextarea) dataTextarea.id = newTextareaId;
+                });
+
+                // 3. Update the main hidden textarea, which is the application's source of truth
+                const newFramesArray = updatedFrameItems.map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1
+                }));
+                mainTextarea.value = JSON.stringify(newFramesArray);
+
+                // 4. Trigger the application's main update logic
+                mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+                // 5. Update the editor's state and load the newly created frame
+                totalFramesInEditor = updatedFrameItems.length;
+                loadFrameIntoEditor(currentEditorFrameIndex + 1);
+
+                // 6. Finalize the changes
+                initializeFrameSorters(); // Re-initialize drag-and-drop functionality
+                recordHistory();
+                showToast('Frame duplicated!', 'success');
+            });
+        }
+
+        if (deleteFrameBtnModal) {
+            deleteFrameBtnModal.addEventListener('click', () => {
+                if (totalFramesInEditor <= 1) {
+                    showToast("Cannot delete the last frame.", "warning");
+                    return;
+                }
+
+                const fieldset = document.querySelector(`fieldset[data-object-id="${currentEditorObjectId}"]`);
+                if (!fieldset) return;
+
+                const framesContainer = fieldset.querySelector('.pixel-art-frames-container');
+                const mainTextarea = fieldset.querySelector('textarea[name$="_pixelArtFrames"]');
+                const frameToRemove = framesContainer.children[currentEditorFrameIndex];
+
+                if (frameToRemove) {
+                    frameToRemove.remove(); // Remove the frame from the list UI
+                }
+
+                // Re-index all remaining frames and update the main data source
+                const updatedFrameItems = Array.from(framesContainer.children);
+                updatedFrameItems.forEach((item, index) => {
+                    const objectId = currentEditorObjectId;
+                    const newTextareaId = `frame-data-${objectId}-${index}`;
+                    item.dataset.index = index;
+                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
+                    item.querySelector('button[data-bs-target="#pixelArtEditorModal"]').dataset.targetId = newTextareaId;
+                    item.querySelector('.frame-data-input').id = newTextareaId;
+                });
+
+                const newFramesArray = updatedFrameItems.map(item => ({
+                    data: item.querySelector('.frame-data-input').value,
+                    duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1
+                }));
+                mainTextarea.value = JSON.stringify(newFramesArray);
+                mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+                // Update editor state and load the next appropriate frame
+                totalFramesInEditor--;
+                const newIndexToShow = Math.min(currentEditorFrameIndex, totalFramesInEditor - 1);
+                loadFrameIntoEditor(newIndexToShow);
+
+                initializeFrameSorters();
+                recordHistory();
+                showToast('Frame deleted!', 'success');
             });
         }
 
@@ -4025,12 +4202,12 @@ document.addEventListener('DOMContentLoaded', function () {
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-success btn-add-frame';
             addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
-            const pasteSpriteButton = document.createElement('button');
-            pasteSpriteButton.type = 'button';
-            pasteSpriteButton.className = 'btn btn-sm btn-secondary btn-paste-sprite';
-            pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
-            pasteSpriteButton.dataset.bsToggle = 'modal';
-            pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
+            // const pasteSpriteButton = document.createElement('button');
+            // pasteSpriteButton.type = 'button';
+            // pasteSpriteButton.className = 'btn btn-sm btn-secondary btn-paste-sprite';
+            // pasteSpriteButton.innerHTML = '<i class="bi bi-film"></i> Paste Sprite';
+            // pasteSpriteButton.dataset.bsToggle = 'modal';
+            // pasteSpriteButton.dataset.bsTarget = '#paste-sprite-modal';
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
             uploadGifButton.className = 'btn btn-sm btn-warning';
@@ -4053,7 +4230,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- END NEW ---
 
             buttonGroup.appendChild(addButton);
-            buttonGroup.appendChild(pasteSpriteButton);
+            // buttonGroup.appendChild(pasteSpriteButton);
             buttonGroup.appendChild(uploadGifButton);
             buttonGroup.appendChild(searchGifButton);
             buttonGroup.appendChild(browseButton);
@@ -6050,6 +6227,17 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // const pasteSpriteButton = e.target.closest('.btn-paste-sprite');
+        // if (pasteSpriteButton) {
+        //     const fieldset = pasteSpriteButton.closest('fieldset[data-object-id]');
+        //     if (fieldset) {
+        //         // Store the object ID on the modal element for later retrieval
+        //         const pasteModal = document.getElementById('paste-sprite-modal');
+        //         pasteModal.dataset.targetObjectId = fieldset.dataset.objectId;
+        //     }
+        //     return; // Stop further processing for this click
+        // }
+
         if (addFrameBtn) {
             const container = addFrameBtn.closest('.pixel-art-table-container');
             if (container) { // Check if the container was found
@@ -6149,174 +6337,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    form.addEventListener('click', (e) => {
-        // --- START: CONSOLIDATED BUTTON CLICK LOGIC ---
-        const addNodeBtn = e.target.closest('.btn-add-node');
-        const deleteNodeBtn = e.target.closest('.btn-delete-node');
-        const addFrameBtn = e.target.closest('.btn-add-frame');
-        const deleteFrameBtn = e.target.closest('.btn-delete-frame');
-
-        const uploadGifBtn = e.target.closest('.btn-upload-gif');
-        if (uploadGifBtn) {
-            const fieldset = uploadGifBtn.closest('fieldset[data-object-id]');
-            const objectId = fieldset.dataset.objectId;
-            const gifInput = document.getElementById(`gif-upload-input-${objectId}`);
-            if (gifInput) {
-                gifInput.click(); // Programmatically click the hidden file input
-            }
-            return; // Stop further processing
-        }
-
-        // Handle Polyline Node Table Additions
-        if (addNodeBtn) {
-            const container = addNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            const newIndex = tbody.children.length;
-            const lastNode = newIndex > 0 ? tbody.children[newIndex - 1] : null;
-            const lastX = lastNode ? parseInt(lastNode.querySelector('.node-x-input').value, 10) : 0;
-            const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
-            const tr = document.createElement('tr');
-            tr.dataset.index = newIndex;
-            tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
-            tbody.appendChild(tr);
-
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-
-        // Handle Polyline Node Table Deletions
-        if (deleteNodeBtn) {
-            const container = deleteNodeBtn.closest('.node-table-container');
-            const tbody = container.querySelector('tbody');
-            if (tbody.children.length > 2) {
-                deleteNodeBtn.closest('tr').remove();
-                Array.from(tbody.children).forEach((tr, index) => {
-                    tr.dataset.index = index;
-                    tr.firstElementChild.textContent = index + 1;
-                });
-            } else {
-                showToast("A polyline must have at least 2 nodes.", "danger");
-            }
-            const hiddenTextarea = container.querySelector('textarea');
-            const newNodes = Array.from(tbody.children).map(tr => ({
-                x: parseFloat(tr.querySelector('.node-x-input').value) || 0,
-                y: parseFloat(tr.querySelector('.node-y-input').value) || 0,
-            }));
-            hiddenTextarea.value = JSON.stringify(newNodes);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-
-        // Handle Pixel Art Frame Additions
-        if (addFrameBtn) {
-            const container = addFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            const newIndex = framesContainer.children.length;
-
-            const objectId = addFrameBtn.closest('fieldset[data-object-id]').dataset.objectId;
-
-            const frameItem = document.createElement('div');
-            frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
-            frameItem.dataset.index = newIndex;
-
-            const defaultFrameData = '[[0.7]]';
-            const textareaId = `frame-data-new-${Date.now()}`;
-
-            frameItem.innerHTML = `
-        <canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas>
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <strong class="frame-item-header small">Frame #${newIndex + 1}</strong>
-                <div>
-                    <button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;"
-                            data-bs-toggle="modal"
-                            data-bs-target="#pixelArtEditorModal"
-                            data-target-id="${textareaId}" title="Edit Frame">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text" title="Duration (seconds)">
-                    <i class="bi bi-clock"></i>
-                </span>
-                <input type="number" class="form-control form-control-sm frame-duration-input" value="0.1" min="0.1" step="0.1">
-            </div>
-            <textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${defaultFrameData}</textarea>
-        </div>
-    `;
-            framesContainer.appendChild(frameItem);
-
-            const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
-            renderPixelArtPreview(previewCanvas, defaultFrameData);
-
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory();
-            return;
-        }
-
-        // Handle Pixel Art Frame Deletions
-        if (deleteFrameBtn) {
-            const container = deleteFrameBtn.closest('.pixel-art-table-container');
-            const framesContainer = container.querySelector('.d-flex.flex-column.gap-2');
-            if (framesContainer.children.length > 1) {
-                const tooltip = bootstrap.Tooltip.getInstance(deleteFrameBtn);
-                if (tooltip) {
-                    // Destroy the tooltip before removing the button
-                    tooltip.dispose();
-                }
-                deleteFrameBtn.closest('.pixel-art-frame-item').remove();
-                Array.from(framesContainer.children).forEach((item, index) => {
-                    item.dataset.index = index;
-                    item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
-                });
-            } else {
-                showToast("Pixel Art object must have at least one frame.", "warning");
-            }
-
-            const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
-            const newFrames = Array.from(framesContainer.children).map(item => ({
-                data: item.querySelector('.frame-data-input').value,
-                duration: parseFloat(item.querySelector('.frame-duration-input').value) || 1,
-            }));
-            hiddenTextarea.value = JSON.stringify(newFrames);
-            hiddenTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            recordHistory(); // ADDED: Record this action in the undo/redo stack
-            return;
-        }
-        // --- END: CONSOLIDATED BUTTON CLICK LOGIC ---
-
-        // Original logic for selecting a panel
-        const fieldset = e.target.closest('fieldset[data-object-id]');
-        const isInteractive = e.target.closest('button, a, input, [contenteditable="true"]');
-        if (fieldset && !isInteractive) {
-            const idToSelect = parseInt(fieldset.dataset.objectId, 10);
-            if (!(selectedObjectIds.length === 1 && selectedObjectIds[0] === idToSelect)) {
-                selectedObjectIds = [idToSelect];
-                updateToolbarState();
-                syncPanelsWithSelection();
-                drawFrame();
-            }
-        }
-    });
-
     // MODIFIED - Added Ctrl+C and Ctrl+V keyboard shortcuts for copy/paste
     function finalizePolyline() {
         if (!isDrawingPolyline) return;
@@ -6363,8 +6383,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
-
-
 
     /**
      * Updates the global configStore with the current state of all form controls.
@@ -8642,6 +8660,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const gallerySortOptions = document.querySelectorAll('.gallery-sort-option');
     const galleryFooter = document.getElementById('gallery-footer');
     const galleryScrollContainer = document.getElementById('gallery-scroll-container'); // Added this
+
+    if (confirmSpritePasteBtn) {
+        confirmSpritePasteBtn.addEventListener('click', handleSpritePaste);
+    }
 
     let currentBaseQuery; // To store the base query for loading more
 
