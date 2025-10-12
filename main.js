@@ -1174,10 +1174,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Sanitize single-line comments as before
             const safeShapeClassString = shapeClassString.replace(/\/\/(.*)/g, '/*$1*/');
-            const allHelperFunctions = [
+            let allHelperFunctions = [
                 hexToHsl, hslToHex, parseColorToRgba, lerpColor, getPatternColor,
                 drawPixelText, getSignalRGBAudioMetrics, drawTimePlotAxes
             ].map(fn => `const ${fn.name} = ${fn.toString()};`).join('\n\n');
+
+            allHelperFunctions += `
+                const SUPPORTS_SET_TRANSFORM = (() => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 2; canvas.height = 1;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx || !ctx.createPattern || !new DOMMatrix().translateSelf) return false;
+                        const pCanvas = document.createElement('canvas');
+                        pCanvas.width = 2; pCanvas.height = 1;
+                        const pCtx = pCanvas.getContext('2d');
+                        pCtx.fillStyle = 'red'; pCtx.fillRect(0, 0, 1, 1);
+                        pCtx.fillStyle = 'blue'; pCtx.fillRect(1, 0, 1, 1);
+                        const pattern = ctx.createPattern(pCanvas, 'repeat');
+                        const matrix = new DOMMatrix().translateSelf(-1, 0);
+                        pattern.setTransform(matrix);
+                        ctx.fillStyle = pattern;
+                        ctx.fillRect(0, 0, 2, 1);
+                        const imageData = ctx.getImageData(0, 0, 1, 1).data;
+                        return imageData[2] === 255;
+                    } catch (e) {
+                        return false;
+                    }
+                })();
+                `;
 
             const formattedKeys = '[' + allKeys.map(key => `'${key}'`).join(',') + ']';
 
@@ -1208,25 +1233,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         const newProps = {};
                         const fillStops = [];
                         for (let i = 1; i <= 10; i++) {
+                            // Correctly escaped template literals
                             const fcKey = \`obj\${id}_gradColor_\${i}\`;
                             const fpKey = \`obj\${id}_gradPosition_\${i}\`;
                             if (window[fcKey] !== undefined && window[fpKey] !== undefined) {
                                 fillStops.push({ color: window[fcKey], position: parseFloat(window[fpKey]) / 100.0 });
                             }
                         }
-                        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a,b) => a.position - b.position) };
-                        
+                        if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a, b) => a.position - b.position) };
+
                         const strokeStops = [];
                         for (let i = 1; i <= 10; i++) {
+                            // Correctly escaped template literals
                             const scKey = \`obj\${id}_strokeColor_\${i}\`;
                             const spKey = \`obj\${id}_strokePosition_\${i}\`;
                             if (window[scKey] !== undefined && window[spKey] !== undefined) {
                                 strokeStops.push({ color: window[scKey], position: parseFloat(window[spKey]) / 100.0 });
                             }
                         }
-                        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a,b) => a.position - b.position) };
+                        if (strokeStops.length > 0) newProps.strokeGradient = { stops: strokeStops.sort((a, b) => a.position - b.position) };
 
                         allPropKeys.forEach(key => {
+                            // Correctly escaped template literal
                             if (key.startsWith(\`obj\${id}_\`) && window[key] !== undefined) {
                                 const propName = key.substring(key.indexOf('_') + 1);
                                 if (propName.includes('Color_') || propName.includes('Position_')) return;
