@@ -1,0 +1,242 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Rain</title>
+    <meta description="Droplet effect.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="25">
+    <meta property="number_of_drops" label="Drops" type="number" min="1" max="50" default="20">
+    <meta property="drop_length" label="Drop Length" type="number" min="1" max="10" default="2">
+    <meta property="drop_width" label="Drop Width" type="number" min="1" max="10" default="2">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+
+    <meta property="color1" label="Color 1" type="color" default="#0000ff">
+    <meta property="color2" label="Color 2" type="color" default="#00ffff">
+    <meta property="color3" label="Color 3" type="color" default="#ffffff">
+    <meta property="color4" label="Color 4" type="color" default="#00aaff">
+    <meta property="color5" label="Color 5" type="color" default="#00007f">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="rain-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('rain-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight); // For putImageData
+const pixels = imageData.data; // Reference pixel data
+
+// This array will store all the active drop objects
+let drops = [];
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [0, 0, 255];
+     try {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+     } catch(e) {
+         console.error("Invalid hex:", hex, e);
+         return [0,0,255];
+     }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+function applyBrightness(rgb, brightness) {
+    const b = Math.max(0, Math.min(1, brightness));
+    return [rgb[0] * b, rgb[1] * b, rgb[2] * b];
+}
+
+function lerpColor(c1, c2, factor) {
+    const f = Math.max(0, Math.min(1, factor));
+    const r = c1[0] * (1 - f) + c2[0] * f;
+    const g = c1[1] * (1 - f) + c2[1] * f;
+    const b = c1[2] * (1 - f) + c2[2] * f;
+    return [r, g, b];
+}
+
+// -------------------------------------------------------------------
+// DROP LOGIC
+// -------------------------------------------------------------------
+
+function triggerDrop() {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#0000ff";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#00ffff";
+    const c3 = typeof color3 !== 'undefined' ? color3 : "#ffffff";
+    const c4 = typeof color4 !== 'undefined' ? color4 : "#00aaff";
+    const c5 = typeof color5 !== 'undefined' ? color5 : "#00007f";
+    const currentDropWidth = typeof drop_width !== 'undefined' ? drop_width : 2;
+    const currentDropLength = typeof drop_length !== 'undefined' ? drop_length : 2;
+
+    const userColors = [c1, c2, c3, c4, c5].filter(c => c && c !== ''); // Filter empty
+    let color;
+
+    if (currentRandomColors) {
+        color = randomRgb();
+    } else if (userColors.length > 0) {
+        color = hexToRgb(userColors[Math.floor(Math.random() * userColors.length)]);
+    } else {
+        color = [0, 0, 255]; // Failsafe blue
+    }
+
+    drops.push({
+        progress: 0.0, // Start position (top edge)
+        color: color,
+        col: Math.floor(Math.random() * (canvasWidth - currentDropWidth + 1)), // Ensure drop fits width
+        speed_mult: Math.random() * 3 + 1, // Speed variation (1x to 4x base)
+        length: Math.max(1, currentDropLength), // Ensure length >= 1
+        width: Math.max(1, currentDropWidth)   // Ensure width >= 1
+    });
+}
+
+function runDrops(deltaTime) {
+     // --- ADDED: Fallback for speed ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 25;
+
+    for (const drop of drops) {
+        // Speed scaling - higher speed value makes drops faster
+        drop.progress += 0.5 * drop.speed_mult * (currentSpeed / 10) * deltaTime * 60; // Base speed + multiplier
+    }
+}
+
+function cleanDrops() {
+    // Remove drops that have moved completely off the bottom edge
+    drops = drops.filter(drop => drop.progress - drop.length <= canvasHeight);
+}
+
+function getPixelColor(x, y) {
+    // Check drops in reverse order so newer drops draw on top
+    for (let i = drops.length - 1; i >= 0; i--) {
+        const drop = drops[i];
+
+        // Check if pixel's column falls within the drop's width
+        if (x >= drop.col && x < (drop.col + drop.width)) {
+            const distance = drop.progress - y; // How far ahead the drop's head is
+
+            // Calculate the total visible length including the trail
+            // Trail length scales slightly with speed
+            const trailLengthFactor = (drop.speed_mult - 1) / 3; // Max trail factor of 1
+            const effectiveTrailLength = trailLengthFactor * drop.length * 2; // Trail can be up to 2x drop length
+
+            if (distance >= 0 && distance <= drop.length + effectiveTrailLength) {
+                if (distance < 1) { // Leading edge (fade in)
+                    return applyBrightness(drop.color, distance); // Brightness from 0 to 1
+                } else if (distance <= drop.length) { // Main body (full brightness)
+                    return drop.color;
+                } else { // Trailing edge (fade out)
+                     // Calculate fade based on position within the trail
+                    const trailPos = distance - drop.length;
+                    const brightness = Math.max(0, 1.0 - (trailPos / effectiveTrailLength));
+                    return applyBrightness(drop.color, brightness * brightness); // Square for faster fade
+                }
+            }
+        }
+    }
+    return [0, 0, 0]; // Background
+}
+
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallback for number_of_drops ---
+    const currentNumberOfDrops = typeof number_of_drops !== 'undefined' ? number_of_drops : 20;
+
+    // --- Update State ---
+    runDrops(deltaTime); // Uses fallback speed internally
+    cleanDrops();
+
+    // Randomly spawn new drops if below max count
+    // Spawn probability increases slightly with fewer drops
+    const spawnProb = 0.1 + (0.4 * (1 - drops.length / currentNumberOfDrops));
+    if (drops.length < currentNumberOfDrops && Math.random() < spawnProb) {
+        triggerDrop(); // Uses fallbacks internally
+    }
+
+    // --- Render ---
+    // Clear buffer (faster than fillRect)
+    for(let i=0; i < pixels.length; i+=4) {
+        pixels[i] = 0;
+        pixels[i+1] = 0;
+        pixels[i+2] = 0;
+        pixels[i+3] = 255;
+    }
+
+    // Render drops into the buffer
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            const rgb = getPixelColor(x, y); // Uses fallbacks internally
+            // Check if color is not black before drawing (optimization)
+            if (rgb[0] > 0 || rgb[1] > 0 || rgb[2] > 0) {
+                 const index = (y * canvasWidth + x) * 4;
+                 // Additive blending (max) - ensures brighter overlaps
+                 pixels[index] = Math.max(pixels[index], Math.round(rgb[0]));
+                 pixels[index + 1] = Math.max(pixels[index + 1], Math.round(rgb[1]));
+                 pixels[index + 2] = Math.max(pixels[index + 2], Math.round(rgb[2]));
+                 // Alpha remains 255
+            }
+        }
+    }
+    ctx.putImageData(imageData, 0, 0); // Draw buffer to canvas
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

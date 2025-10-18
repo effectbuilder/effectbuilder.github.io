@@ -1,0 +1,85 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Spectrum Cycling</title>
+    <meta description="Goes through every solid color of the rainbow.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="50">
+    <meta property="saturation" label="Saturation (%)" type="number" min="0" max="100" default="100"> <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="spectrumcycling-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+// --- MODIFIED: Corrected ID ---
+const canvas = document.getElementById('spectrumcycling-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+// Effect state variables
+let progress = 0.0; // Represents hue angle (0-360)
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+
+    if (isNaN(deltaTime) || deltaTime <=0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const currentSaturation = typeof saturation !== 'undefined' ? saturation : 100;
+
+    // Animate the hue value over time, scaling by speed
+    progress = (progress + currentSpeed * deltaTime * 10) % 360; // Adjust multiplier for visual speed
+
+    // --- Render ---
+
+    // Set the fill style using HSL color
+    ctx.fillStyle = `hsl(${progress}, ${currentSaturation}%, 50%)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>

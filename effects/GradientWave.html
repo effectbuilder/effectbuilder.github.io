@@ -1,0 +1,196 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Gradient Wave</title>
+    <meta description="Similar to rainbow wave but with 2 colors.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="30" default="10">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+    <meta property="color1" label="Color 1" type="color" min="0" max="360" default="#ff0000">
+    <meta property="color2" label="Color 2" type="color" min="0" max="360" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="gradientwave-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('gradientwave-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables
+let progress = 0.0;
+let color_start = [255, 0, 0];
+let color_end = [0, 0, 255];
+// --- MODIFIED: Initialize with defaults ---
+let lastColorSettings = (typeof color1 !== 'undefined' ? color1 : "#ff0000") +
+                        (typeof color2 !== 'undefined' ? color2 : "#0000ff");
+let lastRandomToggle = typeof random_colors !== 'undefined' ? random_colors : false;
+let initialized = false; // Flag for initial color setup
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [0, 0, 0];
+    try {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+     } catch (e) {
+         console.error("Invalid hex color:", hex, e);
+         return [0,0,0]; // Fallback
+     }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+/** Linearly interpolates between two colors */
+function lerpColor(c1, c2, factor) {
+    // Clamp factor between 0 and 1
+    const f = Math.max(0, Math.min(1, factor));
+    const r = c1[0] * (1 - f) + c2[0] * f;
+    const g = c1[1] * (1 - f) + c2[1] * f;
+    const b = c1[2] * (1 - f) + c2[2] * f;
+    return [r, g, b];
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 10;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+
+    // --- ADDED: Initialize colors on first run ---
+     if (!initialized) {
+        if (currentRandomColors) {
+            color_start = randomRgb();
+            color_end = randomRgb();
+        } else {
+            color_start = hexToRgb(c1);
+            color_end = hexToRgb(c2);
+        }
+        lastRandomToggle = currentRandomColors; // Sync initial state
+        lastColorSettings = c1 + c2;     // Sync initial state
+        initialized = true;
+    }
+
+
+    // --- Update State ---
+    const currentColorSettings = c1 + c2; // Use fallback variables
+
+    // Update colors if settings changed
+    if (currentRandomColors !== lastRandomToggle || (!currentRandomColors && currentColorSettings !== lastColorSettings)) {
+        if (currentRandomColors) {
+             // Only pick new random colors if switching *to* random mode
+             if (!lastRandomToggle) {
+                 color_start = randomRgb();
+                 color_end = randomRgb();
+             }
+        } else {
+            color_start = hexToRgb(c1);
+            color_end = hexToRgb(c2);
+        }
+        lastRandomToggle = currentRandomColors;
+        lastColorSettings = currentColorSettings;
+    }
+
+    // Update progress for the wave movement
+    progress += (canvasWidth * 0.1) * (currentSpeed / 10) * deltaTime; // Use fallback speed
+
+    // Wrap progress and potentially get new random colors if wrapping
+    if (progress >= (canvasWidth * 2)) {
+        progress %= (canvasWidth * 2); // Use modulo for smoother wrapping
+        if (currentRandomColors) { // Only update if random is enabled
+            color_start = randomRgb();
+            color_end = randomRgb();
+        }
+    }
+
+    // --- Render with ImageData ---
+    for (let x = 0; x < canvasWidth; x++) {
+        // Calculate the effective position for the gradient, considering the wrap-around ping-pong effect
+        let gradient_pos_raw = (progress + x) % (canvasWidth * 2); // Position within the double-width cycle
+        let factor;
+        if (gradient_pos_raw < canvasWidth) {
+             // Moving right
+             factor = gradient_pos_raw / canvasWidth;
+        } else {
+             // Moving left (mirrored)
+             factor = 1.0 - (gradient_pos_raw - canvasWidth) / canvasWidth;
+        }
+
+        const final_color = lerpColor(color_start, color_end, factor);
+
+        // Apply color to the full vertical column
+        for (let y = 0; y < canvasHeight; y++) {
+            const index = (y * canvasWidth + x) * 4;
+            pixels[index] = Math.round(final_color[0]);
+            pixels[index + 1] = Math.round(final_color[1]);
+            pixels[index + 2] = Math.round(final_color[2]);
+            pixels[index + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

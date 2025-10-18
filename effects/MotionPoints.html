@@ -1,0 +1,247 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Motion Points</title>
+    <meta description="Multiple points that move in all directions on your devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="100">
+    <meta property="number_of_points" label="Number of Points" type="number" min="1" max="100" default="20">
+    <meta property="point_size" label="Point Size" type="number" min="1" max="10" default="1">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="true">
+    <meta property="color1" label="Color 1" type="color" default="#ff0000">
+    <meta property="color2" label="Color 2" type="color" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="motionpoints-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('motionpoints-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// This array will store all the active point objects
+let points = [];
+// --- MODIFIED: Initialize with defaults ---
+let lastNumberOfPoints = typeof number_of_points !== 'undefined' ? number_of_points : 20;
+let lastRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+let lastColor1 = typeof color1 !== 'undefined' ? color1 : '#ff0000';
+let lastColor2 = typeof color2 !== 'undefined' ? color2 : '#0000ff';
+let lastSpeed = typeof speed !== 'undefined' ? speed : 100;
+let lastPointSize = typeof point_size !== 'undefined' ? point_size : 1;
+
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [255, 255, 255];
+     try {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+     } catch(e) {
+         console.error("Invalid hex:", hex, e);
+         return [255,255,255];
+     }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+function applyBrightness(rgb, brightness) {
+    const b = Math.max(0, Math.min(1, brightness)); // Clamp brightness
+    return [rgb[0] * b, rgb[1] * b, rgb[2] * b];
+}
+
+// -------------------------------------------------------------------
+// POINT LOGIC
+// -------------------------------------------------------------------
+
+function getRandomColor() {
+     // --- ADDED: Fallbacks for colors ---
+     const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+     const c1 = typeof color1 !== 'undefined' ? color1 : '#ff0000';
+     const c2 = typeof color2 !== 'undefined' ? color2 : '#0000ff';
+
+    const userColors = [c1, c2].filter(c => c && c !== ''); // Filter empty
+
+    if (currentRandomColors) {
+        return randomRgb();
+    } else if (userColors.length > 0) {
+        return hexToRgb(userColors[Math.floor(Math.random() * userColors.length)]);
+    }
+    return [255, 255, 255]; // Failsafe white
+}
+
+function initPoint(point) {
+    point.speed_mult = Math.random() * 0.5 + 0.75; // 0.75 - 1.25
+    point.color = getRandomColor(); // Uses fallbacks internally
+    const dir = Math.floor(Math.random() * 4);
+
+    // Start slightly off-screen to avoid instant reset
+    switch(dir) {
+        case 0: point.x = 1.05; point.y = Math.random(); break; // LEFT
+        case 1: point.x = -0.05; point.y = Math.random(); break; // RIGHT
+        case 2: point.x = Math.random(); point.y = 1.05; break; // UP
+        case 3: point.x = Math.random(); point.y = -0.05; break; // DOWN
+    }
+    point.dir = dir;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+     // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 100;
+    const currentNumberOfPoints = typeof number_of_points !== 'undefined' ? number_of_points : 20;
+    const currentPointSize = typeof point_size !== 'undefined' ? point_size : 1;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+    const c1 = typeof color1 !== 'undefined' ? color1 : '#ff0000';
+    const c2 = typeof color2 !== 'undefined' ? color2 : '#0000ff';
+
+
+    // Check for changes and re-initialize if needed
+    if(currentNumberOfPoints !== lastNumberOfPoints || currentRandomColors !== lastRandomColors ||
+       c1 !== lastColor1 || c2 !== lastColor2 || currentPointSize !== lastPointSize || currentSpeed !== lastSpeed) // Added speed check
+    {
+        points = []; // Clear existing points
+        // --- MODIFIED: Update last state with current (fallback) values ---
+        lastNumberOfPoints = currentNumberOfPoints;
+        lastRandomColors = currentRandomColors;
+        lastColor1 = c1;
+        lastColor2 = c2;
+        lastPointSize = currentPointSize;
+        lastSpeed = currentSpeed; // Update lastSpeed
+         // Re-populate points immediately after clearing
+        while (points.length < currentNumberOfPoints) {
+            const newPoint = {};
+            initPoint(newPoint); // Uses fallbacks internally
+            points.push(newPoint);
+        }
+    }
+
+
+    // Adjust the number of points if the slider changes mid-animation
+    while (points.length < currentNumberOfPoints) {
+        const newPoint = {};
+        initPoint(newPoint);
+        points.push(newPoint);
+    }
+    while (points.length > currentNumberOfPoints) {
+        points.pop();
+    }
+
+    // Move each point
+    const move_delta = 0.005 * (currentSpeed / 10) * deltaTime * 60; // Use fallback speed
+    for (const point of points) {
+        switch(point.dir) {
+            case 0: point.x -= move_delta * point.speed_mult; break;
+            case 1: point.x += move_delta * point.speed_mult; break;
+            case 2: point.y -= move_delta * point.speed_mult; break;
+            case 3: point.y += move_delta * point.speed_mult; break;
+        }
+
+        // Re-initialize if it goes off-screen (check against slightly wider bounds)
+        if (point.x < -0.1 || point.y < -0.1 || point.x > 1.1 || point.y > 1.1) {
+            initPoint(point);
+        }
+    }
+
+    // --- Render ---
+    // Clear buffer (faster than fillRect)
+    for(let i = 0; i < pixels.length; i += 4) {
+        pixels[i] = 0;
+        pixels[i+1] = 0;
+        pixels[i+2] = 0;
+        pixels[i+3] = 255;
+    }
+
+    const safePointSize = Math.max(1, currentPointSize); // Ensure size >= 1
+
+    for (const point of points) {
+        const px = point.x * canvasWidth;
+        const py = point.y * canvasHeight;
+
+        // Determine bounding box based on point size
+        const startY = Math.max(0, Math.floor(py - safePointSize));
+        const endY = Math.min(canvasHeight, Math.ceil(py + safePointSize));
+        const startX = Math.max(0, Math.floor(px - safePointSize));
+        const endX = Math.min(canvasWidth, Math.ceil(px + safePointSize));
+
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+
+                const distance = Math.sqrt(Math.pow(px - (x+0.5), 2) + Math.pow(py - (y+0.5), 2)); // Check distance to pixel center
+
+                if (distance <= safePointSize) {
+                    const brightness = Math.max(0, 1 - (distance / safePointSize)); // Linear falloff
+                    const finalColor = applyBrightness(point.color, brightness * brightness); // Square brightness for faster falloff
+                    const index = (y * canvasWidth + x) * 4;
+
+                    // Additive blending (screen blend simulation)
+                    pixels[index] = Math.min(255, pixels[index] + Math.round(finalColor[0]));
+                    pixels[index + 1] = Math.min(255, pixels[index + 1] + Math.round(finalColor[1]));
+                    pixels[index + 2] = Math.min(255, pixels[index + 2] + Math.round(finalColor[2]));
+                    // pixels[index + 3] remains 255
+                }
+            }
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>

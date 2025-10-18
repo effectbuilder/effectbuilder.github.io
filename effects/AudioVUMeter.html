@@ -1,0 +1,170 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Audio VU Meter</title>
+    <meta description="Fill your devices based on audio load, like a classic VU Meter.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Decay Speed" type="number" min="1" max="20" default="10">
+    <meta property="hue_offset" label="Hue Offset" type="number" min="0" max="360" default="180">
+    <meta property="hue_spread" label="Hue Spread" type="number" min="0" max="100" default="50">
+    <meta property="saturation" label="Saturation" type="number" min="0" max="255" default="255">
+    <meta property="invert_hue" label="Invert Hue Direction" type="boolean" default="false">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="audiovumeter-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('audiovumeter-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Effect state variables
+let last_height = 0.0;
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hsvToRgb(h, s, v) {
+    let r, g, b;
+    h /= 360; s /= 255; v /= 255;
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break; case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break; case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break; case 5: r = v, g = p, b = q; break;
+    }
+    return [r * 255, g * 255, b * 255];
+}
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColor(y, h, current_amplitude, peak_amplitude) {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentHueOffset = typeof hue_offset !== 'undefined' ? hue_offset : 180;
+    const currentHueSpread = typeof hue_spread !== 'undefined' ? hue_spread : 50;
+    const currentInvertHue = typeof invert_hue !== 'undefined' ? invert_hue : false;
+    const currentSaturation = typeof saturation !== 'undefined' ? saturation : 255;
+    
+    const meter_height_current = current_amplitude * h;
+    const meter_height_peak = peak_amplitude * h;
+
+    const inverted_y = h - y;
+
+    if (inverted_y <= meter_height_current) {
+        // This pixel is part of the solid bar
+        let hue = (currentHueOffset + (inverted_y / h) * 360 * (currentHueSpread / 100)) % 360;
+        if (currentInvertHue) {
+            hue = 360 - hue;
+        }
+        const rgb = hsvToRgb(hue, currentSaturation, 255);
+        return `rgb(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])})`;
+
+    } else if (Math.abs(inverted_y - meter_height_peak) <= 1) {
+        // This pixel is part of the decaying peak line
+        let hue = (currentHueOffset + (inverted_y / h) * 360 * (currentHueSpread / 100)) % 360;
+        if (currentInvertHue) {
+            hue = 360 - hue;
+        }
+        const brightness = 255 * (1 - Math.abs(meter_height_peak - inverted_y));
+        const rgb = hsvToRgb(hue, currentSaturation, brightness);
+        return `rgb(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])})`;
+    }
+
+    return 'rgb(0,0,0)';
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    // --- REMOVED: Guard clause that broke browser execution ---
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallback for meta property ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 10;
+    
+    // --- ADDED: Audio data fallback for browser ---
+    const audioData = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq)
+                      ? new Int8Array(engine.audio.freq)
+                      // Create a simple pulsing sine wave for browser preview
+                      : new Int8Array(200).fill(Math.sin(currentTime / 200) * 30 + 30);
+
+    
+    // 1. Calculate the total amplitude from all frequency bins
+    let total_amp = 0;
+    for (let i = 0; i < audioData.length; i++) {
+        total_amp += Math.abs(audioData[i]) / 128.0;
+    }
+    let current_amp = Math.min(1.0, total_amp / audioData.length * 4); // Multiplier for sensitivity
+
+    // 2. Handle the peak decay (the line that falls down)
+    if (last_height > current_amp) {
+        // Decay speed is controlled by the "speed" slider
+        last_height -= 0.1 * currentSpeed * deltaTime;
+        last_height = Math.max(0.0, last_height);
+    } else {
+        last_height = current_amp;
+    }
+
+    // 3. Render to canvas
+    for (let y = 0; y < canvasHeight; y++) {
+        const rowColor = getColor(y, canvasHeight, current_amp, last_height);
+        ctx.fillStyle = rowColor;
+        ctx.fillRect(0, y, canvasWidth, 1);
+    }
+    
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

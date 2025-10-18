@@ -1,0 +1,215 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Bubbles</title>
+    <meta description="Bloop bloop.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="50">
+    <meta property="max_bubbles" label="Max Bubbles" type="number" min="1" max="20" default="10">
+    <meta property="rarity" label="Rarity (lower is more)" type="number" min="1" max="1000" default="50">
+    <meta property="max_expansion" label="Max Expansion" type="number" min="1" max="500" default="100">
+    <meta property="bubbles_thickness" label="Bubbles Thickness" type="number" min="1" max="50" default="10">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="true">
+    <meta property="background_color" label="Background" type="color" default="#000000">
+    <meta property="color1" label="Bubble Color 1" type="color" default="#ff0000">
+    <meta property="color2" label="Bubble Color 2" type="color" default="#00ff00">
+    <meta property="color3" label="Bubble Color 3" type="color" default="#0000ff">
+    <meta property="color4" label="Bubble Color 4" type="color" default="#ffff00">
+    <meta property="color5" label="Bubble Color 5" type="color" default="#ff00ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="bubbles-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('bubbles-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+let bubbles = []; // Array to hold active bubble objects
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex) return [0, 0, 0];
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+function screenBlend(base, blend) {
+    const r = 1 - (1 - base[0] / 255) * (1 - blend[0] / 255);
+    const g = 1 - (1 - base[1] / 255) * (1 - blend[1] / 255);
+    const b = 1 - (1 - base[2] / 255) * (1 - blend[2] / 255);
+    return [r * 255, g * 255, b * 255];
+}
+
+// -------------------------------------------------------------------
+// BUBBLE LOGIC
+// -------------------------------------------------------------------
+
+function initBubble() {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#00ff00";
+    const c3 = typeof color3 !== 'undefined' ? color3 : "#0000ff";
+    const c4 = typeof color4 !== 'undefined' ? color4 : "#ffff00";
+    const c5 = typeof color5 !== 'undefined' ? color5 : "#ff00ff";
+
+    const userColors = [c1, c2, c3, c4, c5].filter(c => c && c !== "#000000");
+    let color;
+
+    if (currentRandomColors) {
+        color = randomRgb();
+    } else if (userColors.length > 0) {
+        color = hexToRgb(userColors[Math.floor(Math.random() * userColors.length)]);
+    } else {
+        color = [255, 255, 255]; // Failsafe to white
+    }
+
+    bubbles.push({
+        radius: 0,
+        speed: 1 + Math.random() * 10,
+        color: color,
+        center: { x: Math.random(), y: Math.random() }
+    });
+}
+
+function expandBubbles(deltaTime) {
+    // --- ADDED: Fallback for meta property ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+
+    for (const bubble of bubbles) {
+        bubble.radius += 0.2 * (currentSpeed / 10) * bubble.speed * deltaTime * 60;
+    }
+}
+
+function cleanupBubbles() {
+    // --- ADDED: Fallback for meta property ---
+    const currentMaxExpansion = typeof max_expansion !== 'undefined' ? max_expansion : 100;
+    bubbles = bubbles.filter(bubble => bubble.radius < currentMaxExpansion);
+}
+
+function getColor(x, y, w, h) {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentBubblesThickness = typeof bubbles_thickness !== 'undefined' ? bubbles_thickness : 10;
+    const currentBackgroundColor = typeof background_color !== 'undefined' ? background_color : "#000000";
+
+    let topBubble = {
+        color_idx: -1,
+        val: 0
+    };
+
+    for (let i = 0; i < bubbles.length; i++) {
+        const bubble = bubbles[i];
+        const distance = Math.sqrt(Math.pow(w * bubble.center.x - x, 2) + Math.pow(h * bubble.center.y - y, 2));
+        const shallow = Math.abs(distance - bubble.radius) / (0.1 * currentBubblesThickness);
+
+        const value = Math.min(255, 255 * (1 / Math.pow(shallow, 2)));
+
+        if (value > topBubble.val) {
+            topBubble = { color_idx: i, val: value };
+        }
+    }
+
+    const backgroundRgb = hexToRgb(currentBackgroundColor);
+
+    if (topBubble.color_idx >= 0) {
+        const bubble = bubbles[topBubble.color_idx];
+        const brightness = topBubble.val / 255.0;
+
+        const bubbleColor = [
+            bubble.color[0] * brightness,
+            bubble.color[1] * brightness,
+            bubble.color[2] * brightness
+        ];
+
+        const finalPixel = screenBlend(backgroundRgb, bubbleColor);
+        return `rgb(${Math.round(finalPixel[0])}, ${Math.round(finalPixel[1])}, ${Math.round(finalPixel[2])})`;
+    }
+
+    return `rgb(${Math.round(backgroundRgb[0])}, ${Math.round(backgroundRgb[1])}, ${Math.round(backgroundRgb[2])})`;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentRarity = typeof rarity !== 'undefined' ? rarity : 50;
+    const currentMaxBubbles = typeof max_bubbles !== 'undefined' ? max_bubbles : 10;
+
+    // --- Update State ---
+    expandBubbles(deltaTime);
+
+    if (Math.random() < (1 / currentRarity) && bubbles.length < currentMaxBubbles) {
+        initBubble();
+    }
+
+    cleanupBubbles();
+
+    // --- Render ---
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            ctx.fillStyle = getColor(x, y, canvasWidth, canvasHeight);
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>
