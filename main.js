@@ -7166,30 +7166,70 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- SHARE BUTTON LOGIC ---
     document.getElementById('share-btn').addEventListener('click', async () => {
         const user = window.auth.currentUser;
-        syncConfigStoreWithForm();
+
+        // 1. You must be logged in to save or update any effect.
+        if (!user) {
+            showToast("You must be logged in to share.", 'danger');
+            return;
+        }
+
+        // 2. Prepare common project data
+        syncConfigStoreWithForm(); // Ensure configStore is up-to-date
         const thumbnail = generateThumbnail(document.getElementById('signalCanvas'));
         const name = getControlValues()['title'] || 'My Shared Effect';
+        const projectsRef = window.collection(window.db, "projects");
 
-        const shareableData = {
-            userId: user ? user.uid : 'anonymous',
-            creatorName: user ? (user.displayName || 'Anonymous') : 'Anonymous',
-            isPublic: true,
-            createdAt: new Date(),
+        // The core data payload (excluding unique IDs, creation time)
+        const projectData = {
             name: name,
-            thumbnail: thumbnail, // Add the thumbnail data
-            configs: configStore,
-            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked }))
+            thumbnail: thumbnail,
+            configs: configStore.map(c => { const s = {}; for (const k in c) { if (c[k] !== undefined) s[k] = c[k]; } return s; }),
+            objects: objects.map(o => ({ id: o.id, name: o.name, locked: o.locked })),
+            isPublic: true,
+            updatedAt: window.serverTimestamp()
         };
 
+        let effectIdToShare = currentProjectDocId;
+        let docRef;
+
         try {
-            const docRef = await window.addDoc(window.collection(window.db, "projects"), shareableData);
-            const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${docRef.id}`;
+            if (effectIdToShare) {
+                // Case 1: Project is already saved. UPDATE the existing document.
+                docRef = window.doc(projectsRef, effectIdToShare);
+                await window.updateDoc(docRef, projectData);
+                showToast(`Effect "${name}" updated and share link generated!`, 'success');
+            } else {
+                // Case 2: Project is NOT saved (no ID). SAVE AS NEW.
+                const newProjectData = {
+                    ...projectData,
+                    userId: user.uid,
+                    creatorName: user.displayName || 'Anonymous',
+                    createdAt: window.serverTimestamp(),
+                    likes: 0,
+                    downloadCount: 0,
+                    viewCount: 0
+                };
+                docRef = await window.addDoc(projectsRef, newProjectData);
+                effectIdToShare = docRef.id;
+                currentProjectDocId = docRef.id; // Update current ID
+                updateShareButtonState();
+                showToast(`New effect "${name}" saved and share link copied!`, 'success');
+            }
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${effectIdToShare}`;
+
+            // Final action: Open the modal and copy the link
             navigator.clipboard.writeText(shareUrl)
-                .then(() => showToast("Share link copied to clipboard!", 'success'))
                 .catch(() => prompt("Copy this link:", shareUrl));
+
+            const shareLinkInput = document.getElementById('share-link-input');
+            shareLinkInput.value = shareUrl;
+            const shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
+            shareModal.show();
+
         } catch (error) {
-            console.error("Error creating share link: ", error);
-            showToast("Could not create share link.", 'danger');
+            console.error("Error creating/updating share link: ", error);
+            showToast("Could not share effect: " + error.message, 'danger');
         }
     });
 
