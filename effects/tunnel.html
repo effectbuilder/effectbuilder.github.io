@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Vortex Tunnel</title>
+    <meta description="A mesmerizing tunnel of rotating shapes with solid walls, vast customization for colors, and audio reactivity." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="shape" label="Shape" type="combobox" values="Triangle,Square,Pentagon,Hexagon,Amorphous,Star" default="Hexagon" />
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,Party,Ocean,Lava,Heat,Forest,Sunset,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Holiday,Pastel,Sakura,Technicolor" default="Rainbow" />
+    <meta property="reactivityMode" label="Reactivity Mode" type="combobox" values="Zoom,Rotation,Twist,Flash" default="Zoom" />
+
+    <meta property="skewPerspective" label="Enable Skew Perspective" type="boolean" default="true" />
+    <meta property="autoPilot" label="Enable Autopilot" type="boolean" default="true" />
+    <meta property="solidWalls" label="Enable Solid Walls" type="boolean" default="true" />
+    <meta property="connectCorners" label="Connect Corners" type="boolean" default="true" />
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="false" />
+
+    <meta property="color1" label="Custom Color 1" type="color" default="#e000e0" />
+    <meta property="color2" label="Custom Color 2" type="color" default="#00e0e0" />
+    
+    <meta property="colorFlowSpeed" label="Color Flow Speed" type="number" min="-100" max="100" default="51" />
+    <meta property="rotationSpeed" label="Base Rotation Speed" type="number" min="-100" max="100" default="7" />
+    <meta property="zoomSpeed" label="Zoom Speed" type="number" min="-100" max="100" default="9" />
+    <meta property="numShapes" label="Number of Shapes" type="number" min="5" max="50" default="26" />
+    <meta property="twist" label="Twist Amount" type="number" min="-90" max="90" default="0" />
+    <meta property="lineWidth" label="Base Line Width" type="number" min="1" max="10" default="1" />
+    <meta property="autoPilotSpeed" label="Autopilot Speed" type="number" min="1" max="100" default="3" />
+    <meta property="autoPilotRadius" label="Autopilot Radius (%)" type="number" min="0" max="50" default="50" />
+    <meta property="centerXOffset" label="Center X Offset (%)" type="number" min="-50" max="50" default="50" />
+    <meta property="centerYOffset" label="Center Y Offset (%)" type="number" min="-50" max="50" default="44" />
+    <meta property="reactivityAmount" label="Reactivity Amount" type="number" min="0" max="100" default="50" />
+    <meta property="smoothingAmount" label="Audio Smoothing" type="number" min="1" max="99" default="90" />
+
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas"></canvas>
+</body>
+<script>
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 320;
+    canvas.height = 200;
+    let lastTime = 0;
+    let smoothedBass = 0;
+    
+    let activePulses = []; 
+    let colorMap = [];
+    let currentColorPaletteName = ''; 
+    let wasFlashActiveLastFrame = false; 
+    let currentRotationAngle = 0; 
+    let currentZoomOffset = 0; 
+
+    const wledPalettes = { "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"], "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"], "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"], "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"], "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"], "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"], "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"], "America": ["#B22234", "#FFFFFF", "#3C3B6E"], "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"], "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"], "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"], "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"], "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"], "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"], "Fairy Light": ["#FF000080", "#00FF0080", "#0000FF80", "#FFFF0080"], "Holiday": ["#D92626", "#0E5D2D", "#F2B705", "#F2F2F2"], "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"], "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"], "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"] };
+    const SimplexNoise = (function () { const F3 = 1 / 3, G3 = 1 / 6, grad3 = new Float32Array([1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0, 1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1]); const sr = s => { s = Math.sin(s) * 43758.5453; return s - Math.floor(s) }; const p = new Uint8Array(256); for (let i = 0; i < 256; i++)p[i] = i; let seed = 1; for (let i = 255; i > 0; i--) { seed++; const j = Math.floor(sr(seed) * (i + 1));[p[i], p[j]] = [p[j], p[i]] } const perm = new Uint8Array(512), permMod12 = new Uint8Array(512); for (let i = 0; i < 512; i++) { perm[i] = p[i & 255]; permMod12[i] = perm[i] % 12 } return { noise3D: function (xin, yin, zin) { let n0, n1, n2, n3; const s = (xin + yin + zin) * F3, i = Math.floor(xin + s), j = Math.floor(yin + s), k = Math.floor(zin + s), t = (i + j + k) * G3, X0 = i - t, Y0 = j - t, Z0 = k - t, x0 = xin - X0, y0 = yin - Y0, z0 = zin - Z0; let i1, j1, k1, i2, j2, k2; if (x0 >= y0) { if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0 } else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1 } else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1 } } else { if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1 } else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1 } else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0 } } const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3, x2 = x0 - i2 + 2 * G3, y2 = y0 - j2 + 2 * G3, z2 = z0 - k2 + 2 * G3, x3 = x0 - 1 + 3 * G3, y3 = y0 - 1 + 3 * G3, z3 = z0 - 1 + 3 * G3, ii = i & 255, jj = j & 255, kk = k & 255, gi0 = permMod12[ii + perm[jj + perm[kk]]], gi1 = permMod12[ii + i1 + perm[jj + j1 + perm[kk + k1]]], gi2 = permMod12[ii + i2 + perm[jj + j2 + perm[kk + k2]]], gi3 = permMod12[ii + 1 + perm[jj + 1 + perm[kk + 1]]]; let t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0; if (t0 < 0) n0 = 0; else { t0 *= t0; n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0 + grad3[gi0 + 2] * z0) } let t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1; if (t1 < 0) n1 = 0; else { t1 *= t1; n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1 + grad3[gi1 + 2] * z1) } let t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2; if (t2 < 0) n2 = 0; else { t2 *= t2; n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2 + grad3[gi2 + 2] * z2) } let t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3; if (t3 < 0) n3 = 0; else { t3 *= t3; n3 = t3 * t3 * (grad3[gi3] * x3 + grad3[gi3 + 1] * y3 + grad3[gi3 + 2] * z3) } return 32 * (n0 + n1 + n2 + n3) } } })();
+
+    function hexToRgb(hex) {
+        if (!hex) return { r: 0, g: 0, b: 0 };
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (result) {
+            return { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) };
+        }
+        const rgbMatch = hex.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/i);
+        if (rgbMatch) {
+            return { r: parseInt(rgbMatch[1]), g: parseInt(rgbMatch[2]), b: parseInt(rgbMatch[3]) };
+        }
+        return { r: 0, g: 0, b: 0 };
+    }
+
+    function lerpColor(colorA, colorB, amount) {
+        const r = Math.round(colorA.r + (colorB.r - colorA.r) * amount);
+        const g = Math.round(colorA.g + (colorB.g - colorA.g) * amount);
+        const b = Math.round(colorA.b + (colorB.b - colorA.b) * amount);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    function lerpColorToBlack(colorRgb, factor) {
+        const r = Math.round(colorRgb.r * factor);
+        const g = Math.round(colorRgb.g * factor);
+        const b = Math.round(colorRgb.b * factor);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    function buildColorMap(paletteName, customColor1, customColor2) {
+        const colorArray = [];
+        const mapSize = 256; 
+
+        if (paletteName === 'Custom') {
+            const colorA = hexToRgb(customColor1);
+            const colorB = hexToRgb(customColor2);
+            for (let i = 0; i < mapSize; i++) {
+                colorArray.push(lerpColor(colorA, colorB, i / (mapSize - 1)));
+            }
+        } else {
+            const palette = wledPalettes[paletteName];
+            if (!palette || palette.length < 2) return [];
+
+            const totalSegments = palette.length - 1;
+            for (let i = 0; i < mapSize; i++) {
+                const amount = i / (mapSize - 1);
+                const segmentIndex = Math.floor(amount * totalSegments);
+                const localAmount = (amount * totalSegments) - segmentIndex;
+                
+                const colorA = hexToRgb(palette[segmentIndex]);
+                const colorB = hexToRgb(palette[Math.min(segmentIndex + 1, totalSegments)]);
+                colorArray.push(lerpColor(colorA, colorB, localAmount));
+            }
+        }
+        return colorArray;
+    }
+
+    function getColorFromMap(colorMap, amount) {
+        const index = Math.min(255, Math.floor(amount * 256));
+        return colorMap[index];
+    }
+
+    function getPointsForShape(shapeType, scale, time, smoothedBass) {
+        const points = [];
+        let radius = scale / 2;
+        let isClosed = true; 
+
+        switch (shapeType) {
+            case "Triangle":
+                for (let i = 0; i < 3; i++) {
+                    points.push([
+                        radius * Math.cos(i * 2 * Math.PI / 3 - Math.PI / 2),
+                        radius * Math.sin(i * 2 * Math.PI / 3 - Math.PI / 2)
+                    ]);
+                }
+                break;
+            case "Hexagon":
+                for (let i = 0; i < 6; i++) {
+                    points.push([
+                        radius * Math.cos(i * Math.PI / 3),
+                        radius * Math.sin(i * Math.PI / 3)
+                    ]);
+                }
+                break;
+            case "Pentagon":
+                for (let i = 0; i < 5; i++) {
+                    points.push([
+                        radius * Math.cos(i * 2 * Math.PI / 5 - Math.PI / 2),
+                        radius * Math.sin(i * 2 * Math.PI / 5 - Math.PI / 2)
+                    ]);
+                }
+                break;
+            case "Star": 
+                const numStarPoints = 10;
+                const outerRadius = radius;
+                const innerRadius = radius * 0.4; 
+                for (let i = 0; i < numStarPoints; i++) {
+                    const currentRadius = (i % 2 === 0) ? outerRadius : innerRadius;
+                    const angle = i * 2 * Math.PI / numStarPoints - Math.PI / 2;
+                    points.push([
+                        currentRadius * Math.cos(angle),
+                        currentRadius * Math.sin(angle)
+                    ]);
+                }
+                break;
+            case "Amorphous": 
+                const numAmorphousPoints = 25; 
+                const noiseScale = 0.5; 
+                const noiseSpeed = 0.5; 
+                const bassInfluence = 0.2; 
+                for (let i = 0; i < numAmorphousPoints; i++) {
+                    const angle = i * 2 * Math.PI / numAmorphousPoints;
+                    const noiseVal = SimplexNoise.noise3D(
+                        Math.cos(angle) * noiseScale + time * noiseSpeed,
+                        Math.sin(angle) * noiseScale + time * noiseSpeed,
+                        time * noiseSpeed + smoothedBass * bassInfluence
+                    );
+                    const currentRadius = radius * (1 + (noiseVal * 0.2 * (1 + smoothedBass * bassInfluence))); 
+                    points.push([
+                        currentRadius * Math.cos(angle),
+                        currentRadius * Math.sin(angle)
+                    ]);
+                }
+                isClosed = true; 
+                break;
+            case "Square":
+            default:
+                points.push([-radius, -radius], [radius, -radius], [radius, radius], [-radius, radius]);
+                break;
+        }
+        return { points: points, isClosed: isClosed }; 
+    }
+
+
+    function animate(currentTime) {
+
+        // Define ALL current/meta variables first
+        const currentShape = typeof shape !== 'undefined' ? shape : "Hexagon";
+        const currentPalette = typeof palette !== 'undefined' ? palette : "Rainbow";
+        const currentReactivityMode = typeof reactivityMode !== 'undefined' ? reactivityMode : "Zoom";
+        const currentColor1 = typeof color1 !== 'undefined' ? color1 : "#e000e0";
+        const currentColor2 = typeof color2 !== 'undefined' ? color2 : "#00e0e0";
+        const currentZoomSpeedMeta = typeof zoomSpeed !== 'undefined' ? zoomSpeed : 9;
+        const currentRotationSpeedMeta = typeof rotationSpeed !== 'undefined' ? rotationSpeed : 7;
+        const currentColorFlowSpeed = typeof colorFlowSpeed !== 'undefined' ? colorFlowSpeed : 51;
+        const currentNumShapes = typeof numShapes !== 'undefined' ? numShapes : 26;
+        const currentTwist = typeof twist !== 'undefined' ? twist : 0; 
+        const currentLineWidth = typeof lineWidth !== 'undefined' ? lineWidth : 1;
+        const currentSkewPerspective = typeof skewPerspective !== 'undefined' ? skewPerspective : true;
+        const currentAutoPilot = typeof autoPilot !== 'undefined' ? autoPilot : true;
+        const currentAutoPilotSpeed = typeof autoPilotSpeed !== 'undefined' ? autoPilotSpeed : 3;
+        const currentAutoPilotRadius = typeof autoPilotRadius !== 'undefined' ? autoPilotRadius : 50;
+        const currentCenterXOffset = typeof centerXOffset !== 'undefined' ? centerXOffset : 50;
+        const currentCenterYOffset = typeof centerYOffset !== 'undefined' ? centerYOffset : 44;
+        const currentSolidWalls = typeof solidWalls !== 'undefined' ? solidWalls : true;
+        const currentConnectCorners = typeof connectCorners !== 'undefined' ? connectCorners : true;
+        const currentSoundResponsive = typeof soundResponsive !== 'undefined' ? soundResponsive : false;
+        const currentReactivityAmount = typeof reactivityAmount !== 'undefined' ? reactivityAmount : 50;
+        const currentSmoothingAmount = typeof smoothingAmount !== 'undefined' ? smoothingAmount : 90;
+
+        // Rebuild color map only if palette changes
+        if (currentPalette !== currentColorPaletteName) {
+            colorMap = buildColorMap(currentPalette, currentColor1, currentColor2);
+            currentColorPaletteName = currentPalette;
+        }
+
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+        if (isNaN(deltaTime) || deltaTime > 0.1) { requestAnimationFrame(animate); return; }
+
+        // Define ALL integer variables AFTER all current/meta variables have been initialized
+        const intRotationSpeed = parseInt(currentRotationSpeedMeta, 10);
+        const intZoomSpeed = parseInt(currentZoomSpeedMeta, 10); 
+        const intNumShapes = parseInt(currentNumShapes, 10);
+        const intTwist = parseInt(currentTwist, 10); 
+        const intLineWidth = parseInt(currentLineWidth, 10);
+        const intColorFlowSpeed = parseInt(currentColorFlowSpeed, 10);
+        const intReactivityAmount = parseInt(currentReactivityAmount, 10);
+        const intCenterXOffset = parseInt(currentCenterXOffset, 10);
+        const intCenterYOffset = parseInt(currentCenterYOffset, 10);
+        const intSmoothingAmount = parseInt(currentSmoothingAmount, 10);
+        const intAutoPilotSpeed = parseInt(currentAutoPilotSpeed, 10);
+        const intAutoPilotRadius = parseInt(currentAutoPilotRadius, 10);
+
+
+        const time = currentTime * 0.001;
+        const baseSize = Math.max(canvas.width, canvas.height) * 2.5;
+        const canvasCenterX = canvas.width / 2;
+        const canvasCenterY = canvas.height / 2;
+
+        let finalCenterXOffset = intCenterXOffset;
+        let finalCenterYOffset = intCenterYOffset;
+        if (currentAutoPilot) {
+            const autoPilotTime = time * (intAutoPilotSpeed / 20.0);
+            const noiseX = SimplexNoise.noise3D(autoPilotTime, 0, 0);
+            const noiseY = SimplexNoise.noise3D(0, autoPilotTime, 0);
+            finalCenterXOffset = noiseX * intAutoPilotRadius;
+            finalCenterYOffset = noiseY * intAutoPilotRadius;
+        }
+
+        const vanishingPointX = canvasCenterX + (canvas.width * (finalCenterXOffset / 100));
+        const vanishingPointY = canvasCenterY + (canvas.height * (finalCenterYOffset / 100));
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let dynamicZoom = intZoomSpeed, dynamicRotation = intRotationSpeed, dynamicTwist = intTwist;
+        let flashActive = false;
+        let reactivity = 0; 
+
+        // PULSE PARAMETERS
+        const MIN_PULSE_DURATION = 0.1; 
+        const MAX_PULSE_DURATION = 0.8; 
+        const MIN_FLASH_WINDOW_WIDTH = 0.001; 
+        
+        let wasFlashActiveLastFrame = false;
+
+        if (currentSoundResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+            const audio = new Uint8Array(engine.audio.freq);
+            const bass = (audio[1] + audio[2] + audio[3]) / 3 / 255;
+            const smoothingFactor = 1.0 - (intSmoothingAmount / 100.0);
+            smoothedBass = smoothedBass + (bass - smoothedBass) * smoothingFactor;
+            
+            reactivity = smoothedBass * intReactivityAmount; 
+            
+            switch (currentReactivityMode) {
+                case "Zoom": dynamicZoom += reactivity; break;
+                case "Rotation": dynamicRotation += reactivity; break;
+                case "Twist": dynamicTwist += reactivity; break;
+                
+                case "Flash": 
+                    flashActive = smoothedBass >= 0.25; 
+                    
+                    if (flashActive && !wasFlashActiveLastFrame) {
+                        activePulses.push({
+                            startTime: currentTime, 
+                            bassIntensity: smoothedBass
+                        });
+                    }
+                    wasFlashActiveLastFrame = flashActive;
+                    break;
+            }
+        }
+        
+        // ROTATION FIX: Update the angle incrementally based on speed and time (multiplied by 5)
+        currentRotationAngle += (dynamicRotation * 0.1 * 5) * deltaTime; 
+        
+        // ZOOM FIX: Update the zoom offset incrementally based on speed and time (divided by 10)
+        currentZoomOffset += (dynamicZoom * 0.1 / 10) * deltaTime; 
+        currentZoomOffset %= (1 / intNumShapes); 
+
+        // PULSE ADVANCEMENT AND CLEANUP LOGIC
+        const nextActivePulses = [];
+        for (const pulse of activePulses) {
+            const bassFactor = pulse.bassIntensity;
+            
+            const currentPulseDuration = MAX_PULSE_DURATION - (MAX_PULSE_DURATION - MIN_PULSE_DURATION) * bassFactor;
+            
+            const pulseProgress = (currentTime - pulse.startTime) / (currentPulseDuration * 1000);
+            
+            if (pulseProgress <= 1.0) { 
+                pulse.pulseProgress = pulseProgress;
+                nextActivePulses.push(pulse);
+            }
+        }
+        activePulses = nextActivePulses;
+
+        // Calculate dynamic pulse width scaled by Reactivity Amount
+        const scaledReactivity = intReactivityAmount / 100.0;
+        const currentFlashWindowWidth = MIN_FLASH_WINDOW_WIDTH + (0.015 * scaledReactivity); 
+        
+        const zoomOffset = currentZoomOffset; 
+        
+        const customColor1 = hexToRgb(currentColor1);
+        const customColor2 = hexToRgb(currentColor2);
+
+
+        const shapesData = [];
+        for (let i = 0; i < intNumShapes; i++) {
+            let progress = (i / intNumShapes + zoomOffset) % 1;
+
+            const perspectiveFactor = Math.pow(2, 12 * (progress - 1));
+
+            const scale = perspectiveFactor * baseSize;
+            if (scale < 1) continue;
+
+            const rotationRad = (currentRotationAngle + (perspectiveFactor * dynamicTwist * 5)) * Math.PI / 180;
+            let currentCenterX = vanishingPointX;
+            let currentCenterY = vanishingPointY;
+            if (currentSkewPerspective) {
+                currentCenterX = canvasCenterX * progress + vanishingPointX * (1 - progress);
+                currentCenterY = canvasCenterY * progress + vanishingPointY * (1 - progress);
+            }
+            const finalLineWidth = intLineWidth + (intLineWidth * 2 * perspectiveFactor);
+            const colorTimeOffset = time * (intColorFlowSpeed / -50.0);
+            const phase = (progress * 2 * Math.PI) + colorTimeOffset;
+            
+            const colorPicker = (Math.sin(phase) + 1) / 2.0;
+            
+            // 1. Get base color
+            // ⭐ FIX: Changed currentColor2 to customColor2 (local variable) for correct Custom Palette function
+            let baseColorStr = (currentPalette === "Custom") ? lerpColor(customColor1, customColor2, colorPicker) : getColorFromMap(colorMap, colorPicker);
+            
+            // 2. Calculate darkening factor (darkest at center/progress=0, brightest at front/progress=1)
+            const darkeningFactor = Math.pow(progress, 2); 
+            
+            // 3. Blend the base color with black using the darkening factor
+            const baseRgb = hexToRgb(baseColorStr);
+            let shapeColorStr = lerpColorToBlack(baseRgb, darkeningFactor);
+            
+            
+            const corners = [];
+            const cosR = Math.cos(rotationRad);
+            const sinR = Math.sin(rotationRad);
+            const { points, isClosed } = getPointsForShape(currentShape, scale, time, smoothedBass); 
+            for (const p of points) {
+                const x = p[0] * cosR - p[1] * sinR;
+                const y = p[0] * sinR + p[1] * cosR;
+                corners.push({ x: x + currentCenterX, y: y + currentCenterY });
+            }
+            
+            shapesData.push({ corners, color: shapeColorStr, progress, lineWidth: finalLineWidth, isClosed: isClosed });
+        }
+
+        shapesData.sort((a, b) => a.progress - b.progress);
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        const isFlashModeActive = currentReactivityMode === "Flash" && activePulses.length > 0;
+
+        for (let i = 0; i < shapesData.length; i++) {
+            const shapeData = shapesData[i];
+            
+            const drawTunnelFeatures = shapeData.isClosed; 
+
+            if (i > 0) {
+                const prevShapeData = shapesData[i - 1];
+                const numCorners = shapeData.corners.length;
+                if (numCorners > 0 && prevShapeData.corners.length === numCorners) {
+                    
+                    // Wall Fill Logic (Solid Walls and Flash)
+                    if (drawTunnelFeatures && currentSolidWalls) {
+                        let wallColor = 'black';
+                        
+                        if (isFlashModeActive) {
+                            for (const pulse of activePulses) {
+                                const pulseProgress = pulse.pulseProgress || 0;
+                                
+                                const pulseHalfWidth = currentFlashWindowWidth / 2;
+                                const pulseStart = pulseProgress - pulseHalfWidth;
+                                const pulseEnd = pulseProgress + pulseHalfWidth;
+                                
+                                if (shapeData.progress >= pulseStart && shapeData.progress <= pulseEnd) {
+                                    wallColor = '#FFFFFF'; 
+                                    break; 
+                                }
+                            }
+                        }
+                        ctx.fillStyle = wallColor; 
+
+                        for (let j = 0; j < numCorners; j++) {
+                            const p1 = prevShapeData.corners[j];
+                            const p2 = prevShapeData.corners[(j + 1) % numCorners];
+                            const p3 = shapeData.corners[(j + 1) % numCorners];
+                            const p4 = shapeData.corners[j];
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.lineTo(p3.x, p3.y);
+                            ctx.lineTo(p4.x, p4.y);
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                    }
+
+                    // Connecting Lines (Draws the "side rails" of the tunnel)
+                    if (drawTunnelFeatures && currentConnectCorners) {
+                        ctx.strokeStyle = shapeData.color; 
+                        ctx.lineWidth = (shapeData.lineWidth + prevShapeData.lineWidth) / 2;
+
+                        for (let j = 0; j < numCorners; j++) {
+                            const p1 = prevShapeData.corners[j];
+                            const p2 = shapeData.corners[j];
+
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Shape Outline Drawing
+            if (shapeData.corners.length > 0) {
+                ctx.strokeStyle = shapeData.color;
+                ctx.lineWidth = shapeData.lineWidth;
+                ctx.beginPath();
+                ctx.moveTo(shapeData.corners[0].x, shapeData.corners[0].y);
+                
+                for (let j = 1; j < shapeData.corners.length; j++) { 
+                    ctx.lineTo(shapeData.corners[j].x, shapeData.corners[j].y); 
+                }
+                
+                if (shapeData.isClosed) {
+                    ctx.closePath(); 
+                    ctx.stroke();
+                } else {
+                    ctx.stroke(); 
+                }
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+</script>
+</html>

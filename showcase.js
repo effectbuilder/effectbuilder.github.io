@@ -61,7 +61,10 @@ document.addEventListener('DOMContentLoaded', function () {
         "fractal_explorer.html",
         "audio_eclipse.html",
         "RetroWave.html",
-        "infinity_spiral.html"
+        "infinity_spiral.html",
+        "PRFlag.html",
+        "SolarSystem.html",
+        "tunnel.html"
     ];
 
     // --- Path Configuration ---
