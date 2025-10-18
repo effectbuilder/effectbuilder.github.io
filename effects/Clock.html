@@ -1,0 +1,147 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Clock</title>
+    <meta description="An elegant digital clock for your linear devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="clock_mode" label="Clock Mode" type="list" values="12-hour,24-hour" default="12-hour">
+    <meta property="hours_color" label="Hours Color" type="color" default="#ff0000">
+    <meta property="minutes_color" label="Minutes Color" type="color" default="#00ff00">
+    <meta property="seconds_color" label="Seconds Color" type="color" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="clock-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('clock-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex) return [0, 0, 0];
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
+/** Lighten blend mode combines the highest value of each channel */
+function lightenBlend(c1, c2) {
+    return [Math.max(c1[0], c2[0]), Math.max(c1[1], c2[1]), Math.max(c1[2], c2[2])];
+}
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColor(x, w, h, m, s) {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentClockMode = typeof clock_mode !== 'undefined' ? clock_mode : "12-hour";
+    const currentHoursColor = typeof hours_color !== 'undefined' ? hours_color : "#ff0000";
+    const currentMinutesColor = typeof minutes_color !== 'undefined' ? minutes_color : "#00ff00";
+    const currentSecondsColor = typeof seconds_color !== 'undefined' ? seconds_color : "#0000ff";
+
+    const mode = currentClockMode === "12-hour" ? 12 : 24;
+
+    const step_h = (w - 1) * h / mode;
+    const step_m = (w - 1) * m / 60.0;
+    const step_s = (w - 1) * s / 60.0;
+
+    let hours_rgb = [0, 0, 0];
+    let minutes_rgb = [0, 0, 0];
+    let seconds_rgb = [0, 0, 0];
+
+    if (Math.abs(x - step_h) <= 1) {
+        const brightness = 1 - Math.abs(x - step_h);
+        const color = hexToRgb(currentHoursColor);
+        hours_rgb = [color[0] * brightness, color[1] * brightness, color[2] * brightness];
+    }
+
+    if (Math.abs(x - step_m) <= 1) {
+        const brightness = 1 - Math.abs(x - step_m);
+        const color = hexToRgb(currentMinutesColor);
+        minutes_rgb = [color[0] * brightness, color[1] * brightness, color[2] * brightness];
+    }
+
+    if (Math.abs(x - step_s) <= 1) {
+        const brightness = 1 - Math.abs(x - step_s);
+        const color = hexToRgb(currentSecondsColor);
+        seconds_rgb = [color[0] * brightness, color[1] * brightness, color[2] * brightness];
+    }
+
+    const final_color = lightenBlend(lightenBlend(hours_rgb, minutes_rgb), seconds_rgb);
+
+    return `rgb(${Math.round(final_color[0])}, ${Math.round(final_color[1])}, ${Math.round(final_color[2])})`;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+function update() {
+    // --- ADDED: Fallback for meta property ---
+    const currentClockMode = typeof clock_mode !== 'undefined' ? clock_mode : "12-hour";
+
+    const now = new Date();
+    const mode = currentClockMode === "12-hour" ? 12 : 24;
+    let current_hour = now.getHours();
+
+    if (mode === 12) {
+        current_hour %= 12;
+        if (current_hour === 0) current_hour = 12; // 12 AM/PM should be 12
+    }
+
+    const s = now.getSeconds() + (now.getMilliseconds() / 1000.0);
+    const m = now.getMinutes() + (s / 60.0);
+    const h = current_hour + (m / 60.0);
+
+    for (let x = 0; x < canvasWidth; x++) {
+        const colColor = getColor(x, canvasWidth, h, m, s);
+        ctx.fillStyle = colColor;
+        ctx.fillRect(x, 0, 1, canvasHeight);
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

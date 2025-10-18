@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fractal Explorer</title>
+    <meta description="Generates mesmerizing, animated fractal patterns with deep customization and audio reactivity." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="fractalType" label="Fractal Type" type="combobox" values="Julia Set,Mandelbrot Set" default="Julia Set">
+    <meta property="maxIterations" label="Detail (Max Iterations)" type="number" default="60" min="10" max="300">
+    <meta property="zoom" label="Zoom" type="number" default="100" min="10" max="1000">
+    <meta property="panX" label="Pan X" type="number" default="0" min="-200" max="200">
+    <meta property="panY" label="Pan Y" type="number" default="0" min="-200" max="200">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Technicolor,Rainbow,Lava,Ocean,Forest,Sunset,Heat,Party,Cloud,Sakura" default="Technicolor">
+    <meta property="color1" label="Custom Color 1" type="color" default="#ff0000">
+    <meta property="color2" label="Custom Color 2" type="color" default="#00ffff">
+    <meta property="colorSpeed" label="Color Cycle Speed" type="number" default="10" min="0" max="100">
+    <meta property="paintInside" label="Paint Inside Set" type="boolean" default="false">
+    <meta property="invertColors" label="Invert Colors" type="boolean" default="false">
+
+    <meta property="enableMotion" label="Enable Motion" type="boolean" default="true">
+    <meta property="motionSpeed" label="Motion Speed" type="number" default="5" min="0" max="100">
+    <meta property="julia_c_real" label="Julia C (Real)" type="number" default="-80" min="-200" max="200">
+    <meta property="julia_c_imag" label="Julia C (Imaginary)" type="number" default="15" min="-200" max="200">
+
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="true">
+    <meta property="bassReact" label="Bass Reactivity (Zoom)" type="number" default="25" min="0" max="100">
+    <meta property="midsReact" label="Mids Reactivity (Shape)" type="number" default="40" min="0" max="100">
+    <meta property="trebleReact" label="Treble Reactivity (Color)" type="number" default="15" min="0" max="100">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <canvas id="fractal-canvas" width="320" height="200"></canvas>
+
+<script>
+    const canvas = document.getElementById('fractal-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set image smoothing to false for pixelated look
+    ctx.imageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+
+    let time = 0;
+    const imageData = ctx.createImageData(canvas.width, canvas.height);
+    const pixels = imageData.data;
+
+    const wledPalettes = {
+        "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+        "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+        "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+        "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+        "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+        "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+        "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+        "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+        "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+        "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+    };
+
+    function hexToRgb(hex) {
+        if (!hex) return { r: 0, g: 0, b: 0 };
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
+    }
+
+    function lerpColor(a, b, t) { return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t }; }
+
+    function getColorFromPalette(palette, amount) {
+        amount = Math.max(0, Math.min(1, amount));
+        const segment = 1 / (palette.length - 1);
+        const index = Math.floor(amount / segment);
+        const localAmount = (amount - (index * segment)) / segment;
+        const colorA = hexToRgb(palette[index]);
+        const colorB = hexToRgb(palette[Math.min(index + 1, palette.length - 1)]);
+        return lerpColor(colorA, colorB, localAmount);
+    }
+
+    function drawFractal(params) {
+        const {
+            fractal, iter, zoomVal, panXVal, panYVal,
+            paletteName, customC1, customC2, colorOffset,
+            c_real, c_imag, inverted, shouldPaintInside
+        } = params;
+
+        // You can change this value to get more or fewer color bands.
+        // Lower numbers = wider, chunkier bands. Higher numbers = more gradients.
+        const colorSteps = 20;
+
+        const width = canvas.width, height = canvas.height, aspect = width / height;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const p_real = (x / width * 3.5 * aspect - 1.75 * aspect) / zoomVal + panXVal;
+                const p_imag = (y / height * 3.5 - 1.75) / zoomVal + panYVal;
+
+                let zx, zy, cx, cy;
+                if (fractal === "Mandelbrot Set") {
+                    zx = 0; zy = 0; cx = p_real; cy = p_imag;
+                } else { // Julia Set
+                    zx = p_real; zy = p_imag; cx = c_real; cy = c_imag;
+                }
+                
+                let i = 0;
+                while (zx * zx + zy * zy < 4 && i < iter) {
+                    const xtemp = zx * zx - zy * zy + cx;
+                    zy = 2 * zx * zy + cy;
+                    zx = xtemp;
+                    i++;
+                }
+                
+                const pixelIndex = (y * width + x) * 4;
+                const isInside = (i === iter);
+                let colorAmount = 0;
+                let paintPixel = false;
+
+                if (!shouldPaintInside) {
+                    if (!isInside) {
+                        const log_zn = Math.log(zx * zx + zy * zy) / 2;
+                        const nu = Math.log(log_zn / Math.log(2)) / Math.log(2);
+                        colorAmount = ((i + 1 - nu) / iter + colorOffset);
+                        paintPixel = true;
+                    }
+                } else {
+                    if (isInside) {
+                        const angle = Math.atan2(zy, zx), radius = Math.sqrt(zx * zx + zy * zy);
+                        colorAmount = (angle / (2 * Math.PI) + radius * 0.5 + colorOffset);
+                        paintPixel = true;
+                    }
+                }
+
+                if (paintPixel) {
+                    // ================== QUANTIZATION LOGIC ==================
+                    // This snaps the smooth color value to one of N distinct steps.
+                    colorAmount = (Math.floor(colorAmount * colorSteps) / colorSteps) % 1.0;
+                    // ========================================================
+
+                    if (inverted) { colorAmount = 1.0 - colorAmount; }
+                    const color = paletteName === "Custom" 
+                        ? lerpColor(customC1, customC2, colorAmount) 
+                        : getColorFromPalette(wledPalettes[paletteName], colorAmount);
+                    
+                    pixels[pixelIndex]     = color.r;
+                    pixels[pixelIndex + 1] = color.g;
+                    pixels[pixelIndex + 2] = color.b;
+                } else {
+                    pixels[pixelIndex]     = 0;
+                    pixels[pixelIndex + 1] = 0;
+                    pixels[pixelIndex + 2] = 0;
+                }
+                pixels[pixelIndex + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    function renderLoop() {
+        // --- FIX: Removed the guard clause that blocked browser execution ---
+        /*
+        if (typeof fractalType === 'undefined') {
+             requestAnimationFrame(renderLoop);
+             return;
+        }
+        */
+
+        // This fallback logic is already correct and will handle browser execution
+        const isMotionEnabled = typeof enableMotion !== 'undefined' ? enableMotion : true;
+        const isSoundResponsive = typeof soundResponsive !== 'undefined' ? soundResponsive : true;
+        const currentInvert = typeof invertColors !== 'undefined' ? invertColors : false;
+        const shouldPaintInside = typeof paintInside !== 'undefined' ? paintInside : false;
+        const currentFractal = (typeof fractalType !== 'undefined' ? fractalType : "Julia Set");
+        const currentMaxIter = (typeof maxIterations !== 'undefined' ? maxIterations : 60);
+        const currentZoom = (typeof zoom !== 'undefined' ? zoom : 100) / 100;
+        const currentPanX = (typeof panX !== 'undefined' ? panX : 0) / 100;
+        const currentPanY = (typeof panY !== 'undefined' ? panY : 0) / 100;
+        const currentPalette = (typeof palette !== 'undefined' ? palette : "Technicolor");
+        const customColor1 = hexToRgb(typeof color1 !== 'undefined' ? color1 : "#ff0000");
+        const customColor2 = hexToRgb(typeof color2 !== 'undefined' ? color2 : "#00ffff");
+        const animSpeed = (typeof motionSpeed !== 'undefined' ? motionSpeed : 5) / 1000;
+        const colorAnimSpeed = (typeof colorSpeed !== 'undefined' ? colorSpeed : 10) / 1000;
+        const bassSensitivity = (typeof bassReact !== 'undefined' ? bassReact : 25) / 100;
+        const midsSensitivity = (typeof midsReact !== 'undefined' ? midsReact : 40) / 100;
+        const trebleSensitivity = (typeof trebleReact !== 'undefined' ? trebleReact : 15) / 100;
+        let c_r_base = (typeof julia_c_real !== 'undefined' ? julia_c_real : -80) / 100;
+        let c_i_base = (typeof julia_c_imag !== 'undefined' ? julia_c_imag : 15) / 100;
+
+        let dynamicZoom = currentZoom;
+        let dynamicPanX = currentPanX;
+        let dynamicPanY = currentPanY;
+        let dynamicColorOffset = time * colorAnimSpeed;
+        let dynamic_c_r = c_r_base;
+        let dynamic_c_i = c_i_base;
+
+        if (isMotionEnabled) {
+            dynamicPanX = currentPanX + (0.3 * Math.cos(time * animSpeed * 0.5) / currentZoom);
+            dynamicPanY = currentPanY + (0.3 * Math.sin(time * animSpeed * 0.5) / currentZoom);
+            dynamicZoom = currentZoom + (0.5 * Math.sin(time * animSpeed * 0.3));
+        }
+
+        // This check correctly protects the sound-reactive code from running in a browser
+        if (isSoundResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+            const freq = new Uint8Array(engine.audio.freq);
+            const bass = ((freq[1] || 0) + (freq[2] || 0) + (freq[3] || 0)) / 765;
+            const mids = ((freq[30] || 0) + (freq[40] || 0) + (freq[50] || 0)) / 765;
+            const treble = ((freq[100] || 0) + (freq[120] || 0) + (freq[140] || 0)) / 765;
+
+            dynamicZoom += bass * bassSensitivity * 3.0;
+            dynamicColorOffset += treble * trebleSensitivity * 5.0;
+            dynamic_c_r = c_r_base + (mids - 0.5) * midsSensitivity;
+            dynamic_c_i = c_i_base + (mids - 0.5) * midsSensitivity;
+        }
+        
+        const drawParams = {
+            fractal: currentFractal, iter: currentMaxIter, zoomVal: dynamicZoom,
+            panXVal: dynamicPanX, panYVal: dynamicPanY, paletteName: currentPalette,
+            customC1: customColor1, customC2: customColor2, colorOffset: dynamicColorOffset,
+            c_real: dynamic_c_r, c_imag: dynamic_c_i, inverted: currentInvert, shouldPaintInside: shouldPaintInside,
+        };
+
+        drawFractal(drawParams);
+        time++;
+        requestAnimationFrame(renderLoop);
+    }
+    
+    renderLoop();
+</script>
+</body>
+</html>

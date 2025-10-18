@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retro Wave</title>
+    <meta description="An abstract 80s effect with neon geometric shapes shooting across a starfield, reacting to your music like a classic MTV bumper." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Miami Vice,Arcade Fire,Trapper Keeper,Custom" default="Miami Vice">
+    <meta property="color1" label="Color 1 (Custom)" type="color" default="#FF007F">
+    <meta property="color2" label="Color 2 (Custom)" type="color" default="#00BFFF">
+    <meta property="color3" label="Color 3 (Custom)" type="color" default="#FFFF00">
+    
+    <meta property="shapeType" label="Shape Type" type="combobox" values="Lines,Triangles,Mixed" default="Mixed">
+    <meta property="shapeSpeed" label="Shape Speed" type="number" default="50" min="10" max="200">
+    <meta property="shapeSize" label="Shape Size" type="number" default="15" min="5" max="50">
+    <meta property="fireRate" label="Shape Fire Rate" type="number" default="20" min="1" max="100">
+    
+    <meta property="enableStarfield" label="Enable Starfield" type="boolean" default="true">
+    <meta property="starCount" label="Star Count" type="number" default="100" min="0" max="300">
+
+    <meta property="soundReactive" label="Sound Reactive" type="boolean" default="true">
+    <meta property="soundResponsiveness" label="Sound Responsiveness" type="number" default="60" min="1" max="100">
+
+</head>
+<body style="margin: 0; padding: 0; background-color: #000;">
+    <canvas id="effect-canvas"></canvas>
+
+    <script>
+        // --- Canvas & Context Setup ---
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width = 320;
+        const height = canvas.height = 200;
+
+        let particles = [];
+        let stars = [];
+
+        // --- Color Palettes ---
+        const predefinedPalettes = {
+            "Miami Vice": ["#FF007F", "#F7B5E4", "#00BFFF", "#FFFFFF"],
+            "Arcade Fire": ["#FF0000", "#FFFF00", "#00FFFF", "#FF00FF"],
+            "Trapper Keeper": ["#7F00FF", "#FF00FF", "#00FF00", "#00FFFF"]
+        };
+
+        // --- Particle Class ---
+        class Particle {
+            constructor() {
+                this.size = (typeof shapeSize !== 'undefined' ? shapeSize : 15) * (0.5 + Math.random());
+                this.speed = (typeof shapeSpeed !== 'undefined' ? shapeSpeed : 50) / 100 * (0.8 + Math.random() * 0.4);
+
+                // Start from a random edge
+                const edge = Math.floor(Math.random() * 4);
+                if (edge === 0) { // Top
+                    this.x = Math.random() * width;
+                    this.y = -this.size;
+                    this.vx = (Math.random() - 0.5) * this.speed;
+                    this.vy = this.speed;
+                } else if (edge === 1) { // Right
+                    this.x = width + this.size;
+                    this.y = Math.random() * height;
+                    this.vx = -this.speed;
+                    this.vy = (Math.random() - 0.5) * this.speed;
+                } else if (edge === 2) { // Bottom
+                    this.x = Math.random() * width;
+                    this.y = height + this.size;
+                    this.vx = (Math.random() - 0.5) * this.speed;
+                    this.vy = -this.speed;
+                } else { // Left
+                    this.x = -this.size;
+                    this.y = Math.random() * height;
+                    this.vx = this.speed;
+                    this.vy = (Math.random() - 0.5) * this.speed;
+                }
+
+                this.life = 1.0;
+                
+                // Assign color
+                const currentPaletteName = typeof palette !== 'undefined' ? palette : "Miami Vice";
+                let activePalette;
+                if (currentPaletteName === "Custom") {
+                    activePalette = [
+                        typeof color1 !== 'undefined' ? color1 : "#FF007F",
+                        typeof color2 !== 'undefined' ? color2 : "#00BFFF",
+                        typeof color3 !== 'undefined' ? color3 : "#FFFF00"
+                    ];
+                } else {
+                    activePalette = predefinedPalettes[currentPaletteName];
+                }
+                this.color = activePalette[Math.floor(Math.random() * activePalette.length)];
+
+                // Assign shape
+                const currentShapeType = typeof shapeType !== 'undefined' ? shapeType : "Mixed";
+                if (currentShapeType === "Mixed") {
+                    this.shape = Math.random() > 0.5 ? 'Line' : 'Triangle';
+                } else if (currentShapeType === "Triangles") {
+                    this.shape = 'Triangle';
+                } else {
+                    this.shape = 'Line';
+                }
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.005; // Fade out slowly
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+
+                if (this.shape === 'Line') {
+                    ctx.beginPath();
+                    // Draw line pointing in direction of velocity
+                    const lengthFactor = this.size * 0.5;
+                    ctx.moveTo(this.x - this.vx * lengthFactor, this.y - this.vy * lengthFactor);
+                    ctx.lineTo(this.x + this.vx * lengthFactor, this.y + this.vy * lengthFactor);
+                    ctx.stroke();
+                } else if (this.shape === 'Triangle') {
+                    const angle = Math.atan2(this.vy, this.vx);
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(this.size, 0);
+                    ctx.lineTo(-this.size / 2, this.size / 2);
+                    ctx.lineTo(-this.size / 2, -this.size / 2);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // --- Starfield ---
+        function createStars(count) {
+            stars = [];
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 1.5,
+                    alpha: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+
+        function drawStars() {
+            for (const star of stars) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // --- Main Animation Loop ---
+        let lastStarCount = -1;
+
+        function animate() {
+            // --- Get Properties ---
+            const isSoundReactive = typeof soundReactive !== 'undefined' ? soundReactive : true;
+            const currentResponsiveness = (typeof soundResponsiveness !== 'undefined' ? soundResponsiveness : 60);
+            const baseFireRate = (typeof fireRate !== 'undefined' ? fireRate : 20);
+            const isStarfieldEnabled = typeof enableStarfield !== 'undefined' ? enableStarfield : true;
+            const currentStarCount = (typeof starCount !== 'undefined' ? starCount : 100);
+
+            // --- Sound Reactivity ---
+            let dynamicFireRate = baseFireRate;
+            if (isSoundReactive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+                const audioData = new Uint8Array(engine.audio.freq);
+                let highMidSum = 0;
+                for (let i = 50; i < 150; i++) { // Mid-to-high frequencies for snare/synth sounds
+                    highMidSum += audioData[i];
+                }
+                const highMidImpact = (highMidSum / 100) / 255.0; // Normalize
+                dynamicFireRate += highMidImpact * currentResponsiveness;
+            }
+
+            // --- Drawing ---
+            // Fading background for trails
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Stars
+            if (isStarfieldEnabled) {
+                if (currentStarCount !== lastStarCount) {
+                    createStars(currentStarCount);
+                    lastStarCount = currentStarCount;
+                }
+                drawStars();
+            }
+
+            // --- Particle Management ---
+            // Create new particles
+            if (Math.random() < dynamicFireRate / 100.0) {
+                particles.push(new Particle());
+            }
+
+            // Update and draw existing particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start the effect
+        createStars(100);
+        animate();
+    </script>
+</body>
+</html>

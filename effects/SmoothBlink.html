@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ORGB: Smooth Blink</title>
+    <meta description="Create your own breathing sequences.">
+    <meta publisher="Jose Miranda (Conversion and improvements)">
+
+    <meta property="rendering_mode" label="Rendering" type="list" values="Solid,Circle" default="Solid">
+    <meta property="interval" label="Interval (s)" type="number" min="1" max="10" default="2">
+    <meta property="pulses" label="Pulses" type="number" min="1" max="200" default="2">
+    <meta property="pulse_duration" label="Pulse Duration (ms)" type="number" min="100" max="1000" step="1" default="100">
+    <meta property="strength" label="Strength (%)" type="number" min="0" max="100" default="50">
+    <meta property="center_x" label="X Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="center_y" label="Y Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+    <meta property="color1" label="Color 1 (Pulse)" type="color" default="#ff0000">
+    <meta property="color2" label="Color 2 (Base)" type="color" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="smoothblink-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('smoothblink-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables
+let time = 0.0;
+let random_fade_timer = 0.0;
+let random_color_1 = [255, 0, 0], next_color_1 = [0, 255, 0];
+let random_color_2 = [0, 0, 255], next_color_2 = [255, 255, 0];
+let current_color_1 = [255, 0, 0], current_color_2 = [0, 0, 255];
+// --- MODIFIED: Initialize with default ---
+let last_random_colors_state = typeof random_colors !== 'undefined' ? random_colors : false;
+let initialized = false; // Flag for initial setup
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [0, 0, 0];
+    try {
+        return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    } catch(e) {
+        console.error("Invalid hex:", hex, e);
+        return [0,0,0];
+    }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+function lerpColor(c1, c2, f) {
+    const factor = Math.max(0, Math.min(1, f));
+    return [
+        c1[0] * (1 - factor) + c2[0] * factor,
+        c1[1] * (1 - factor) + c2[1] * factor,
+        c1[2] * (1 - factor) + c2[2] * factor
+    ];
+}
+
+function clampColor(color) {
+    return [
+        Math.min(255, Math.max(0, Math.round(color[0]))),
+        Math.min(255, Math.max(0, Math.round(color[1]))),
+        Math.min(255, Math.max(0, Math.round(color[2])))
+    ];
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+     // --- ADDED: Fallbacks for meta properties ---
+    const currentRenderingMode = typeof rendering_mode !== 'undefined' ? rendering_mode : "Solid";
+    const currentInterval = typeof interval !== 'undefined' ? Math.max(0.1, interval) : 2; // Ensure interval > 0
+    const currentPulses = typeof pulses !== 'undefined' ? Math.max(1, pulses) : 2; // Ensure at least 1 pulse
+    const currentPulseDuration = typeof pulse_duration !== 'undefined' ? Math.max(1, pulse_duration) : 100; // Ensure > 0 ms
+    const currentStrength = typeof strength !== 'undefined' ? strength : 50;
+    const currentCenterX = typeof center_x !== 'undefined' ? center_x : 50;
+    const currentCenterY = typeof center_y !== 'undefined' ? center_y : 50;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+
+    // --- ADDED: Initialize on first run ---
+     if (!initialized) {
+        if (currentRandomColors) {
+            random_color_1 = randomRgb(); next_color_1 = randomRgb();
+            random_color_2 = randomRgb(); next_color_2 = randomRgb();
+        } else {
+            current_color_1 = hexToRgb(c1);
+            current_color_2 = hexToRgb(c2);
+        }
+        last_random_colors_state = currentRandomColors; // Sync initial state
+        initialized = true;
+    }
+
+
+    // --- Update State ---
+    const intervalSeconds = currentInterval;
+    const pulseDurationSeconds = currentPulseDuration / 1000.0;
+
+    // Check for random_colors state change
+    if (currentRandomColors && !last_random_colors_state) {
+        // Switching TO random: Capture current user colors, start fade
+        random_color_1 = hexToRgb(c1); next_color_1 = randomRgb();
+        random_color_2 = hexToRgb(c2); next_color_2 = randomRgb();
+        random_fade_timer = 0;
+    } else if (!currentRandomColors && last_random_colors_state) {
+         // Switching FROM random: Immediately set user colors
+         current_color_1 = hexToRgb(c1);
+         current_color_2 = hexToRgb(c2);
+    }
+    last_random_colors_state = currentRandomColors;
+
+    // Update colors
+    const fadeDuration = 0.5 * intervalSeconds; // Duration to fade between random colors
+    if (currentRandomColors) {
+        if (random_fade_timer < fadeDuration && fadeDuration > 0) {
+            const factor = random_fade_timer / fadeDuration;
+            current_color_1 = lerpColor(random_color_1, next_color_1, factor);
+            current_color_2 = lerpColor(random_color_2, next_color_2, factor);
+        } else {
+             // Hold the target colors or if fade duration is 0
+            current_color_1 = next_color_1;
+            current_color_2 = next_color_2;
+        }
+    } else {
+        current_color_1 = hexToRgb(c1);
+        current_color_2 = hexToRgb(c2);
+    }
+
+    // Calculate pulse state
+    const pulses_total_duration = currentPulses * pulseDurationSeconds;
+    const total_effect_duration = intervalSeconds + pulses_total_duration;
+
+    let pulse_value;
+
+    if (total_effect_duration <= 0) {
+        pulse_value = 0.5; // Prevent division by zero
+    } else {
+         const timeInCycle = time % total_effect_duration;
+         if (timeInCycle < intervalSeconds) {
+            pulse_value = 1.0; // Base color phase
+        } else {
+             // Pulse phase
+            const timeInPulsePhase = timeInCycle - intervalSeconds;
+            // Frequency calculation needs total duration of pulses
+            const pulse_frequency = currentPulses / pulses_total_duration;
+            // Sine wave for smooth pulse: 0.5 + 0.5 * sin(angle - PI/2) goes from 0 to 1
+            pulse_value = 0.5 + 0.5 * Math.sin(Math.PI * 2 * pulse_frequency * timeInPulsePhase - Math.PI * 0.5);
+            pulse_value = Math.max(0, Math.min(1, pulse_value)); // Clamp
+        }
+    }
+
+    time += deltaTime;
+    random_fade_timer += deltaTime;
+
+    // Cycle random colors when the full effect duration completes
+    if (total_effect_duration > 0 && random_fade_timer >= intervalSeconds) { // Use interval for random cycle timing
+        random_color_1 = next_color_1;
+        random_color_2 = next_color_2;
+        next_color_1 = randomRgb();
+        next_color_2 = randomRgb();
+        random_fade_timer %= intervalSeconds; // Reset timer smoothly
+    }
+
+
+    // --- Render ---
+    if (currentRenderingMode === "Solid") {
+        const final_color = clampColor(lerpColor(current_color_1, current_color_2, pulse_value));
+        ctx.fillStyle = `rgb(${final_color[0]}, ${final_color[1]}, ${final_color[2]})`;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    } else { // Circle mode
+        // Clear background efficiently
+        for (let i = 0; i < pixels.length; i += 4) {
+             const baseColor = clampColor(current_color_2); // Base color is color2
+            pixels[i] = baseColor[0];
+            pixels[i + 1] = baseColor[1];
+            pixels[i + 2] = baseColor[2];
+            pixels[i + 3] = 255;
+        }
+
+        const centerX = canvasWidth * (currentCenterX / 100.0);
+        const centerY = canvasHeight * (currentCenterY / 100.0);
+        const max_dist = Math.sqrt(Math.pow(canvasWidth/2, 2) + Math.pow(canvasHeight/2, 2)) || 1; // Avoid div by zero
+
+        for (let y = 0; y < canvasHeight; y++) {
+            for (let x = 0; x < canvasWidth; x++) {
+                const pixelIndex = (y * canvasWidth + x) * 4;
+
+                const distance = Math.sqrt(Math.pow(centerX - x, 2) + Math.pow(centerY - y, 2));
+                const distance_percent = distance / max_dist;
+
+                // Factor for lerp: closer to center = closer to pulse_value, further = closer to 1 (base color)
+                // Strength determines how much distance affects the blend
+                const strengthFactor = (100 - currentStrength) / 100.0; // 0=full pulse everywhere, 1=pulse only at center
+                const factor = Math.min(1.0, pulse_value + distance_percent * strengthFactor);
+
+                const final_color = clampColor(lerpColor(current_color_1, current_color_2, factor));
+
+                pixels[pixelIndex] = final_color[0];
+                pixels[pixelIndex + 1] = final_color[1];
+                pixels[pixelIndex + 2] = final_color[2];
+                // pixels[pixelIndex + 3] = 255; // Alpha is already set
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>

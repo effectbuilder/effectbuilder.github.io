@@ -1,0 +1,133 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Bloom</title>
+    <meta description="Flower blooming effect.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="10" max="200" default="100">
+    <meta property="saturation" label="Saturation" type="number" min="0" max="255" default="255">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="bloom-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('bloom-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+let flowers = []; // This will store the state for each "flower" (pixel)
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+/**
+ * Resets and initializes the state for every pixel.
+ * Each pixel gets a random starting hue and a random speed multiplier.
+ */
+function resetFlowers() {
+    flowers = []; // Clear the existing array
+    for (let i = 0; i < canvasWidth * canvasHeight; i++) {
+        flowers.push({
+            hue: Math.random() * 360, // Random starting hue (0-360)
+            speed_mult: Math.random() + 1, // Random speed multiplier (1.0-2.0)
+        });
+    }
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 100;
+    const currentSaturation = typeof saturation !== 'undefined' ? saturation : 255;
+
+    // This ensures that if the device layout changes, the effect resets properly.
+    if (flowers.length !== canvasWidth * canvasHeight) {
+        resetFlowers();
+    }
+    
+    const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+    const data = imageData.data;
+    
+    // Calculate the hue change for this frame
+    const hue_change = (currentSpeed / 10) * deltaTime;
+
+    // Update and draw each flower
+    for (let i = 0; i < flowers.length; i++) {
+        const flower = flowers[i];
+
+        // Update the hue based on its unique speed and the master speed control
+        flower.hue = (flower.hue + hue_change * flower.speed_mult) % 360;
+
+        // Set the color in the image buffer using HSL color space
+        const color = `hsl(${flower.hue}, ${currentSaturation / 2.55}%, 50%)`;
+        
+        // This is a simple way to convert CSS color to RGB for the canvas buffer
+        ctx.fillStyle = color; // Use the context to parse the color
+        const rgbMatch = ctx.fillStyle.match(/\d+/g); // Extract [r, g, b]
+
+        if (rgbMatch) {
+            const index = i * 4;
+            data[index] = rgbMatch[0];
+            data[index + 1] = rgbMatch[1];
+            data[index + 2] = rgbMatch[2];
+            data[index + 3] = 255; // Alpha
+        }
+    }
+
+    // Draw the completed frame to the canvas at once
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial setup and first call to start the animation
+resetFlowers();
+requestAnimationFrame(update);
+
+</script>
+</html>

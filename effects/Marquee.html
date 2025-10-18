@@ -1,0 +1,123 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Marquee</title>
+    <meta description="A simple marquee for your devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="50">
+    <meta property="spacing" label="Spacing" type="number" min="2" max="20" default="5">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+    <meta property="user_color" label="Color" type="color" default="#ffffff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="marquee-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('marquee-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Effect state variables
+let progress = 0.0;
+let random_hue = 0;
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColor(x) {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpacing = typeof spacing !== 'undefined' ? Math.max(1, spacing) : 5; // Ensure spacing >= 1
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const currentUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+
+    // Check if the current pixel should be lit based on spacing and progress
+    // Use modulo that handles negative progress correctly
+    if (((x + Math.floor(progress)) % currentSpacing + currentSpacing) % currentSpacing === 0) {
+        if (currentRandomColors) {
+            return `hsl(${random_hue}, 100%, 50%)`;
+        } else {
+            return currentUserColor; // Return hex color directly
+        }
+    }
+
+    return 'rgb(0,0,0)'; // Off pixel
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false; // Needed for hue update
+
+    // --- Update State ---
+
+    // Animate the scrolling progress, scaling by speed
+    progress += currentSpeed * deltaTime; // Speed 50 = ~1 full cycle / sec if spacing=5? Adjust multiplier if needed
+
+    // If random colors are enabled, cycle the hue
+    if (currentRandomColors) {
+         // Hue cycles based on speed, roughly one full cycle per few seconds at speed 50
+        random_hue = (random_hue + currentSpeed * deltaTime * 2) % 360;
+    }
+
+    // --- Render ---
+    // Calculate color per column and fill
+    for (let x = 0; x < canvasWidth; x++) {
+        const colColor = getColor(x); // Uses fallbacks internally
+        ctx.fillStyle = colColor;
+        ctx.fillRect(x, 0, 1, canvasHeight);
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>
