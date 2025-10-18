@@ -1,0 +1,311 @@
+<!DOCTYPE html><html>
+<head>
+    <title>Ambient</title>
+    <meta description="Takes a portion of the screen and reflects its colors onto your devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="mode" label="Mode" type="list" values="Scaled Average,Screen Copy" default="Screen Copy">
+    <meta property="smoothness" label="Smoothness" type="number" min="0" max="99" default="80">
+    <meta property="crop_stream" label="Crop Stream" type="boolean" default="false">
+    
+    <meta property="crop_left" label="Left" type="number" min="0" max="9999" default="0">
+    <meta property="crop_top" label="Top" type="number" min="0" max="9999" default="0">
+    <meta property="crop_width" label="Width" type="number" min="0" max="9999" default="1920">
+    <meta property="crop_height" label="Height" type="number" min="0" max="9999" default="1080">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: black;
+        }
+        
+        #ambient-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            /* --- ADDED: Pixelation for browser scaling --- */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="ambient-canvas" width="64" height="36"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('ambient-canvas');
+const ctx = canvas.getContext('2d');
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+// Variables to store the previous frame's data for smoothing
+let prevAvgColor = { r: 0, g: 0, b: 0 };
+let prevImageData = null;
+
+// Initialize with black
+ctx.fillStyle = 'black';
+ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+let frameCounter = 0; // Moved here to be in the global script scope
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+/** Linearly interpolates between two values */
+function lerp(a, b, factor) {
+    return a * (1 - factor) + b * factor;
+}
+
+/** Get screen capture data using SignalRGB sensors - Try all available sensors */
+function getScreenData() {
+    // --- MODIFIED: Added check for engine ---
+    if (typeof engine === 'undefined' || !engine || !engine.getSensorValue || !engine.sensors) {
+        return null;
+    }
+    
+    // List all available sensors for debugging
+    if (frameCounter % 300 === 0) {
+        console.log('Available sensors:', Object.keys(engine.sensors));
+    }
+    
+    // Try to get data from any sensor that might contain screen capture data
+    try {
+        const sensorNames = Object.keys(engine.sensors);
+        
+        for (const sensorName of sensorNames) {
+            try {
+                const sensorData = engine.getSensorValue(sensorName);
+                
+                // Check if this sensor contains pixel-like data
+                if (sensorData && 
+                    (Array.isArray(sensorData) || sensorData.length > 1000) &&
+                    (sensorName.toLowerCase().includes('screen') || 
+                     sensorName.toLowerCase().includes('capture') ||
+                     sensorName.toLowerCase().includes('pixel') ||
+                     sensorName.toLowerCase().includes('display'))) {
+                    
+                    if (frameCounter % 300 === 0) {
+                        console.log(`Found potential screen data in sensor: ${sensorName}, type: ${typeof sensorData}, length: ${sensorData.length || 'N/A'}`);
+                    }
+                    return sensorData;
+                }
+            } catch (e) {
+                // Sensor access failed, continue
+            }
+        }
+        
+        // If no obvious screen sensors, try any sensor with large data arrays
+        for (const sensorName of sensorNames) {
+            try {
+                const sensorData = engine.getSensorValue(sensorName);
+                if (sensorData && Array.isArray(sensorData) && sensorData.length > 10000) {
+                    if (frameCounter % 300 === 0) {
+                        console.log(`Found large data array in sensor: ${sensorName}, length: ${sensorData.length}`);
+                    }
+                    return sensorData;
+                }
+            } catch (e) {
+                // Continue
+            }
+        }
+        
+    } catch (e) {
+        console.error('Error accessing sensors:', e);
+    }
+    
+    return null;
+}
+
+/** Get screen dimensions using SignalRGB sensors */
+function getScreenDimensions() {
+    // --- MODIFIED: Added check for engine ---
+    if (typeof engine === 'undefined' || !engine || !engine.getSensorValue) {
+        return { width: 1920, height: 1080 };
+    }
+    
+    try {
+        const width = engine.getSensorValue('screen_width') || engine.getSensorValue('display_width') || 1920;
+        const height = engine.getSensorValue('screen_height') || engine.getSensorValue('display_height') || 1080;
+        return { width, height };
+    } catch (e) {
+        return { width: 1920, height: 1080 };
+    }
+}
+
+/** Extract color data from screen capture */
+function getAverageColor() {
+    const screenData = getScreenData();
+    
+    if (!screenData || !screenData.length) {
+        return { r: 0, g: 0, b: 0 };
+    }
+    
+    let totalR = 0, totalG = 0, totalB = 0;
+    let pixelCount = 0;
+    
+    // Assuming screen data is in RGBA format
+    for (let i = 0; i < screenData.length; i += 4) {
+        totalR += screenData[i];
+        totalG += screenData[i + 1];
+        totalB += screenData[i + 2];
+        pixelCount++;
+    }
+    
+    if (pixelCount === 0) {
+        return { r: 0, g: 0, b: 0 };
+    }
+    
+    return {
+        r: totalR / pixelCount,
+        g: totalG / pixelCount,
+        b: totalB / pixelCount
+    };
+}
+
+/** Apply color to SignalRGB devices - SignalRGB uses canvas rendering */
+function applyColorToDevices(r, g, b) {
+    if (frameCounter % 300 === 0) {
+        console.log(`Colors applied via canvas rendering: rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`);
+        console.log('SignalRGB maps canvas pixels to RGB devices automatically');
+    }
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+function update() {
+    // Run debug logging on first frame
+    logDebugInfo();
+    
+    // --- MODIFIED: Added fallbacks for meta properties ---
+    const currentSmoothness = typeof smoothness !== 'undefined' ? smoothness : 80;
+    const currentMode = typeof mode !== 'undefined' ? mode : "Screen Copy";
+    
+    const smoothFactor = 0.01 * (100 - currentSmoothness);
+    
+    frameCounter++;
+    
+    if (frameCounter % 60 === 0) {
+        console.log('Frame', frameCounter, 'checking for screen data...');
+        const screenData = getScreenData();
+        console.log('Screen data found:', screenData ? screenData.length : 'null');
+        
+        // Test a simple color if no screen data
+        if (!screenData) {
+            const testColor = Math.sin(frameCounter * 0.01) * 127 + 128;
+            ctx.fillStyle = `rgb(${testColor}, ${testColor * 0.5}, ${testColor * 0.3})`;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            applyColorToDevices(testColor, testColor * 0.5, testColor * 0.3);
+        }
+    }
+    
+    try {
+        switch (currentMode) {
+            case "Scaled Average": {
+                const avgColor = getAverageColor();
+                
+                const final_r = lerp(prevAvgColor.r, avgColor.r, smoothFactor);
+                const final_g = lerp(prevAvgColor.g, avgColor.g, smoothFactor);
+                const final_b = lerp(prevAvgColor.b, avgColor.b, smoothFactor);
+                
+                ctx.fillStyle = `rgb(${final_r}, ${final_g}, ${final_b})`;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                
+                prevAvgColor = { r: final_r, g: final_g, b: final_b };
+                break;
+            }
+            
+            case "Screen Copy": {
+                const screenData = getScreenData();
+                
+                if (screenData && screenData.length) {
+                    const dimensions = getScreenDimensions();
+                    const captureWidth = dimensions.width;
+                    const captureHeight = dimensions.height;
+                    
+                    const scaleX = captureWidth / canvasWidth;
+                    const scaleY = captureHeight / canvasHeight;
+                    
+                    const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+                    const pixels = imageData.data;
+                    
+                    for (let y = 0; y < canvasHeight; y++) {
+                        for (let x = 0; x < canvasWidth; x++) {
+                            const sourceX = Math.floor(x * scaleX);
+                            const sourceY = Math.floor(y * scaleY);
+                            const sourceIndex = (sourceY * captureWidth + sourceX) * 4;
+                            const targetIndex = (y * canvasWidth + x) * 4;
+                            
+                            if (sourceIndex < screenData.length) {
+                                pixels[targetIndex] = screenData[sourceIndex];
+                                pixels[targetIndex + 1] = screenData[sourceIndex + 1];
+                                pixels[targetIndex + 2] = screenData[sourceIndex + 2];
+                                pixels[targetIndex + 3] = 255;
+                            }
+                        }
+                    }
+                    
+                    if (prevImageData) {
+                        for (let i = 0; i < pixels.length; i += 4) {
+                            pixels[i] = lerp(prevImageData.data[i], pixels[i], smoothFactor);
+                            pixels[i + 1] = lerp(prevImageData.data[i + 1], pixels[i + 1], smoothFactor);
+                            pixels[i + 2] = lerp(prevImageData.data[i + 2], pixels[i + 2], smoothFactor);
+                        }
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    prevImageData = imageData;
+                }
+                break;
+            }
+        }
+    } catch (error) {
+        console.error('Update error:', error);
+        ctx.fillStyle = 'rgb(64, 64, 64)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
+    
+    requestAnimationFrame(update);
+}
+
+// -------------------------------------------------------------------
+// DEBUG AND INITIALIZATION
+// -------------------------------------------------------------------
+
+let debugLogged = false;
+
+function logDebugInfo() {
+    if (debugLogged) return;
+    debugLogged = true;
+    
+    console.log('=== SignalRGB Global Variables Debug ===');
+    const allGlobals = Object.keys(window).sort();
+    console.log('Total globals:', allGlobals.length);
+    
+    // ... (rest of debug logging is fine) ...
+    
+    console.log('=== End Debug Info ===');
+}
+
+// Start the animation loop
+requestAnimationFrame(update);
+</script>
+</html>

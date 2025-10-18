@@ -1,0 +1,106 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Rainbow Wave</title>
+    <meta description="A sliding Rainbow.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="40">
+    <meta property="frequency" label="Frequency" type="number" min="1" max="50" default="10">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="rainbowwave-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('rainbowwave-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Effect state variables
+let progress = 0.0;
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColor(x) {
+    // --- ADDED: Fallback for frequency ---
+    const currentFrequency = typeof frequency !== 'undefined' ? frequency : 10;
+
+    // Calculate the hue based on position, progress, and frequency
+    // Scaling frequency by 0.1 to match visual appearance of original effect better
+    const hue = (progress + x * (currentFrequency * 0.1)) % 360;
+
+    // Use HSL color which maps directly to the calculated hue
+    return `hsl(${hue}, 100%, 50%)`;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallback for speed ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 40;
+
+    // --- Update State ---
+    // Animate the scrolling progress, scaling speed
+    progress += currentSpeed * deltaTime * 10; // Adjust multiplier as needed for visual speed
+    progress %= 360; // Wrap around using modulo
+
+    // --- Render ---
+    // Fill each column based on its calculated color
+    for (let x = 0; x < canvasWidth; x++) {
+        const colColor = getColor(x); // getColor now uses fallback frequency
+        ctx.fillStyle = colColor;
+        ctx.fillRect(x, 0, 1, canvasHeight);
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

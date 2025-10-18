@@ -1,0 +1,217 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Random Spin</title>
+    <meta description="A simple Random Spin for your devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="50">
+    <meta property="color1" label="Color 1" type="color" min="0" max="360" default="#ff0000">
+    <meta property="color2" label="Color 2" type="color" min="0" max="360" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="randomspin-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('randomspin-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Gradient canvas for the spinner's colors
+const gradientCanvas = document.createElement('canvas');
+gradientCanvas.width = 256; // Gradient resolution
+gradientCanvas.height = 1;
+const gradientCtx = gradientCanvas.getContext('2d', { willReadFrequently: true });
+let gradientData = null; // Will hold the raw pixel data of the gradient
+
+// Effect state variables
+let progress = 0.0;
+// This effect simulates one spinner for the whole canvas
+let spinner = {
+    stop_progress: 0,
+    progress: 0,
+    speed_mult: 1.0,
+    dir: true, // true = left, false = right
+    stop: true,
+    next_time_point: 0
+};
+// --- MODIFIED: Initialize with defaults ---
+let lastColorSettings = (typeof color1 !== 'undefined' ? color1 : "#ff0000") +
+                        (typeof color2 !== 'undefined' ? color2 : "#0000ff");
+let lastSpeed = typeof speed !== 'undefined' ? speed : 50;
+let initialized = false; // Flag for initial gradient generation
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+/** Generates a random number within a range */
+function custom_rand(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+/** Pre-renders the specific gradient used by the spinner */
+function generateGradient() {
+    // --- ADDED: Fallbacks for colors ---
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+
+    const grad = gradientCtx.createLinearGradient(0, 0, gradientCanvas.width, 0);
+
+    grad.addColorStop(0.0, c1);
+    grad.addColorStop(0.15, c1);
+    grad.addColorStop(0.25, c2);
+    grad.addColorStop(0.35, c1);
+    grad.addColorStop(0.5, c1); // Midpoint for symmetry
+    grad.addColorStop(0.65, c1);
+    grad.addColorStop(0.75, c2);
+    grad.addColorStop(0.85, c1);
+    grad.addColorStop(1.0, c1);
+
+    gradientCtx.fillStyle = grad;
+    gradientCtx.fillRect(0, 0, gradientCanvas.width, 1);
+    try {
+        gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
+    } catch(e) {
+        console.error("Error generating gradient:", e);
+        gradientData = null; // Prevent errors if reading fails
+    }
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+
+    // --- ADDED: Initialize gradient on first run ---
+    if (!initialized) {
+        generateGradient(); // Uses fallbacks internally
+        lastColorSettings = c1 + c2; // Sync initial state
+        lastSpeed = currentSpeed;     // Sync initial state
+        initialized = true;
+    }
+
+
+    // --- Update State ---
+
+    // Regenerate gradient only if the user changes the colors
+    const currentSettings = c1 + c2;
+    if (currentSettings !== lastColorSettings) {
+        generateGradient(); // Uses fallbacks internally
+        lastColorSettings = currentSettings;
+    }
+     // Update lastSpeed if it changed
+    if (currentSpeed !== lastSpeed) {
+        lastSpeed = currentSpeed;
+    }
+
+
+    // Update master progress
+    progress += 0.01 * currentSpeed * deltaTime;
+
+    // Randomly decide whether to start or stop the spinner
+    if (spinner.next_time_point < progress) {
+        spinner.stop = !spinner.stop;
+        spinner.next_time_point = progress + custom_rand(1, spinner.stop ? 1.5 : 3.5);
+        spinner.speed_mult = custom_rand(1.0, 5.0);
+        spinner.dir = Math.random() < 0.5;
+        if (spinner.stop) { // Only store stop_progress when stopping
+             spinner.stop_progress = spinner.progress;
+        }
+    }
+
+    // Update the spinner's own progress if it's not stopped
+    if (!spinner.stop) {
+        const direction = spinner.dir ? -1 : 1;
+        // Scale spinner speed by the main speed control
+        spinner.progress += direction * spinner.speed_mult * 0.01 * currentSpeed * deltaTime;
+    }
+
+    // --- Render ---
+    // Ensure gradient data is available
+    if (!gradientData) {
+        requestAnimationFrame(update); // Skip render if gradient failed
+        return;
+    }
+
+    const current_progress_val = spinner.stop ? spinner.stop_progress : spinner.progress;
+
+    for (let x = 0; x < canvasWidth; x++) {
+        // Calculate percentage along the canvas width + spinner progress offset
+        let percent = (x / canvasWidth) + current_progress_val;
+        percent = (percent % 1.0 + 1.0) % 1.0; // Ensure percent is always between 0 and 1
+
+        // Map percent to gradient index
+        const gradIndex = Math.min(gradientCanvas.width - 1, Math.floor(percent * gradientCanvas.width)) * 4;
+
+        const r = gradientData[gradIndex];
+        const g = gradientData[gradIndex + 1];
+        const b = gradientData[gradIndex + 2];
+
+        // Apply color to the full vertical column
+        for(let y = 0; y < canvasHeight; y++) {
+            const index = (y * canvasWidth + x) * 4;
+            pixels[index] = r;
+            pixels[index + 1] = g;
+            pixels[index + 2] = b;
+            pixels[index + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// --- REMOVED: Initial generateGradient call moved inside update ---
+// generateGradient();
+requestAnimationFrame(update);
+</script>
+</html>

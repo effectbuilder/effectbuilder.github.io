@@ -1,0 +1,168 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Radial Rainbow</title>
+    <meta description="Dive into the RGB tunnel.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="100">
+    <meta property="frequency" label="Frequency" type="number" min="1" max="100" default="50">
+    <meta property="x_position" label="X Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="y_position" label="Y Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="shape" label="Shape" type="list" values="Circles,Squares" default="Circles">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="radialrainbow-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('radialrainbow-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables
+let progress = 0.0;
+// --- MODIFIED: Initialize with defaults ---
+let lastSpeed = typeof speed !== 'undefined' ? speed : 100;
+let lastFrequency = typeof frequency !== 'undefined' ? frequency : 50;
+let lastXPosition = typeof x_position !== 'undefined' ? x_position : 50;
+let lastYPosition = typeof y_position !== 'undefined' ? y_position : 50;
+let lastShape = typeof shape !== 'undefined' ? shape : "Circles";
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+/** Converts HSL values to an RGB array. h(0-1), s(0-1), l(0-1) */
+function hslToRgb(h, s, l) {
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l; // achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 100;
+    const currentFrequency = typeof frequency !== 'undefined' ? frequency : 50;
+    const currentXPosition = typeof x_position !== 'undefined' ? x_position : 50;
+    const currentYPosition = typeof y_position !== 'undefined' ? y_position : 50;
+    const currentShape = typeof shape !== 'undefined' ? shape : "Circles";
+
+    // Check for changes and restart animation if needed
+    if (currentSpeed !== lastSpeed || currentFrequency !== lastFrequency || currentXPosition !== lastXPosition ||
+        currentYPosition !== lastYPosition || currentShape !== lastShape) {
+        lastSpeed = currentSpeed;
+        lastFrequency = currentFrequency;
+        lastXPosition = currentXPosition;
+        lastYPosition = currentYPosition;
+        lastShape = currentShape;
+        progress = 0.0; // Reset progress on change
+    }
+
+    // Update progress, scaling by speed
+    progress = (progress + currentSpeed * deltaTime * 5) % 360; // Scale speed, wrap at 360
+
+    // --- Render with ImageData ---
+    const centerX = canvasWidth * (currentXPosition / 100.0);
+    const centerY = canvasHeight * (currentYPosition / 100.0);
+    const freqFactor = currentFrequency * 0.5; // Use fallback frequency
+
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            const pixelIndex = (y * canvasWidth + x) * 4;
+
+            let distance;
+            if (currentShape === "Circles") { // Use fallback shape
+                distance = Math.sqrt(Math.pow(centerX - x, 2) + Math.pow(centerY - y, 2));
+            } else { // Squares
+                distance = Math.max(Math.abs(centerY - y), Math.abs(centerX - x));
+            }
+
+            // Calculate hue based on distance, frequency, and progress
+            const hue = (distance * freqFactor - progress);
+            // Ensure hue wraps correctly within 0-360
+            const finalHue = (hue % 360 + 360) % 360;
+
+            const [r, g, b] = hslToRgb(finalHue / 360, 1.0, 0.5); // Convert HSL(0-1, 0-1, 0-1) to RGB
+
+            pixels[pixelIndex] = r;
+            pixels[pixelIndex + 1] = g;
+            pixels[pixelIndex + 2] = b;
+            pixels[pixelIndex + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Sunrise</title>
+    <meta description="Sunrise / Sunset effect.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Overall Speed" type="number" min="1" max="20" default="10">
+    <meta property="intensity" label="Intensity (%)" type="number" min="1" max="99" default="80">
+    <meta property="intensity_speed" label="Intensity Speed" type="number" min="1" max="100" default="10">
+    <meta property="radius" label="Radius" type="number" min="1" max="100" default="50">
+    <meta property="grow_speed" label="Grow Speed" type="number" min="1" max="50" default="10">
+    <meta property="motion" label="Motion" type="boolean" default="false">
+    <meta property="run_once" label="Run Only Once" type="boolean" default="false">
+
+    <meta property="color1" label="Color 1 (Sun)" type="color" default="#ffffff">
+    <meta property="color2" label="Color 2 (Corona)" type="color" default="#ffff00">
+    <meta property="color3" label="Color 3 (Atmosphere)" type="color" default="#ff0000">
+    <meta property="color4" label="Color 4 (Sky)" type="color" default="#000000">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="sunrise-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('sunrise-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+const gradientCanvas = document.createElement('canvas');
+gradientCanvas.width = 256;
+gradientCanvas.height = 1;
+const gradientCtx = gradientCanvas.getContext('2d', { willReadFrequently: true });
+// --- ADDED: Disable image smoothing ---
+gradientCtx.imageSmoothingEnabled = false;
+gradientCtx.mozImageSmoothingEnabled = false;
+gradientCtx.webkitImageSmoothingEnabled = false;
+
+let gradientData = null;
+
+// Effect state variables
+let time = 0.0;
+let progress = 0.0; // Normalized progress (0 to 1)
+let y_shift = -1.0; // For motion
+let has_run_once = false; // For run_once mode
+let lastRunOnce = false; // Track changes to run_once
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+// --- ADDED: hexToRgb ---
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [0, 0, 0];
+    try {
+        return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    } catch(e) { console.error("Invalid hex:", hex, e); return [0,0,0]; }
+}
+
+
+function generateGradient() {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentIntensity = typeof intensity !== 'undefined' ? intensity : 80;
+    const currentIntensitySpeed = typeof intensity_speed !== 'undefined' ? intensity_speed : 10;
+    const c1 = typeof color1 !== 'undefined' ? color1 : '#ffffff';
+    const c2 = typeof color2 !== 'undefined' ? color2 : '#ffff00';
+    const c3 = typeof color3 !== 'undefined' ? color3 : '#ff0000';
+    const c4 = typeof color4 !== 'undefined' ? color4 : '#000000';
+
+
+    // Calculate gradient stops based on progress and intensity
+    // Intensity affects the position of the first stop, simulating brightness change
+    const first_stop = Math.min(1.0, (currentIntensity / 100.0) * Math.pow(progress, 0.1 * currentIntensitySpeed));
+    const second_stop = Math.min(1.0, first_stop + (1.0 - first_stop) * 0.5); // Corona midpoint
+
+    const grad = gradientCtx.createLinearGradient(0, 0, gradientCanvas.width, 0);
+    grad.addColorStop(0, c1); // Sun
+    grad.addColorStop(first_stop, c2); // Corona start
+    grad.addColorStop(second_stop, c3); // Atmosphere start
+    grad.addColorStop(1, c4); // Sky
+
+    gradientCtx.fillStyle = grad;
+    gradientCtx.fillRect(0, 0, gradientCanvas.width, 1);
+    try {
+        gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
+    } catch (e) {
+        console.error("Error generating gradient:", e);
+        gradientData = null; // Prevent errors if reading fails
+    }
+}
+
+function getGradientColor(percent) {
+    if (!gradientData) return [0, 0, 0]; // Return black if gradient failed
+
+    percent = Math.min(1.0, Math.max(0.0, percent)); // Clamp 0-1
+    // Map percent to gradient index (0 to width-1)
+    const gradIndex = Math.min(gradientCanvas.width - 1, Math.floor(percent * gradientCanvas.width)) * 4;
+
+    const r = gradientData[gradIndex];
+    const g = gradientData[gradIndex + 1];
+    const b = gradientData[gradIndex + 2];
+
+    return [r, g, b];
+}
+
+function reset() {
+    time = 0.0;
+    progress = 0.0;
+    y_shift = -1.0;
+    has_run_once = false;
+    // Update lastRunOnce tracker
+    lastRunOnce = typeof run_once !== 'undefined' ? run_once : false;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentRunOnce = typeof run_once !== 'undefined' ? run_once : false;
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 10;
+    const currentRadius = typeof radius !== 'undefined' ? radius : 50;
+    const currentGrowSpeed = typeof grow_speed !== 'undefined' ? grow_speed : 10;
+    const currentMotion = typeof motion !== 'undefined' ? motion : false;
+    // Fallbacks for colors are handled inside generateGradient
+
+     // Check if run_once mode was toggled
+     if (currentRunOnce !== lastRunOnce) {
+        reset(); // Reset the effect fully
+        // No need to return here, let the update proceed with reset values
+     }
+
+    // Skip update if run_once completed
+    if (currentRunOnce && has_run_once) {
+        // Keep rendering the final frame in case settings change later
+        generateGradient(); // Ensure gradient is up-to-date
+        if (!gradientData) return; // Exit if gradient failed
+
+        const final_radius = (currentRadius / 100.0) * canvasWidth; // Use final progress=1
+        const final_centerX = canvasWidth * 0.5;
+        const final_centerY = canvasHeight * 0.5; // No motion offset in final frame
+
+        for (let y = 0; y < canvasHeight; y++) {
+            for (let x = 0; x < canvasWidth; x++) {
+                const pixelIndex = (y * canvasWidth + x) * 4;
+                const distance = Math.sqrt(Math.pow(x - final_centerX, 2) + Math.pow(y - final_centerY, 2));
+                let percent = 1.0;
+                if (final_radius > 0) percent = Math.min(1.0, distance / final_radius);
+                const [r,g,b] = getGradientColor(percent);
+                pixels[pixelIndex]=r; pixels[pixelIndex+1]=g; pixels[pixelIndex+2]=b; pixels[pixelIndex+3]=255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- Update time and progress ---
+    // Speed 1-20 -> Time increment adjust
+    time += (currentSpeed / 10.0) * deltaTime; // Adjust speed scaling
+
+    if (currentRunOnce) {
+        // In run_once, time directly maps to progress (0 to 1) over roughly 1 second at speed 10
+        progress = Math.min(1.0, time);
+        y_shift = 0; // No vertical motion in run_once
+        if (progress >= 1.0) has_run_once = true;
+    } else {
+        // In loop mode, use sine wave for progress (0 to 1) and y_shift (-1 to 1)
+        progress = 0.5 * (1 + Math.sin(time));
+        y_shift = Math.sin(time); // y_shift now matches progress sine wave
+    }
+
+    // Generate gradient based on current progress and intensity settings
+    generateGradient(); // Uses fallbacks internally
+    if (!gradientData) { // Check if gradient generation succeeded
+         requestAnimationFrame(update);
+         return; // Skip rendering if gradient data is missing
+    }
+
+    // --- Render ---
+    // Calculate current radius based on progress and grow speed
+    // Grow speed 1-50 -> Adjust exponent scaling
+    const radiusScale = Math.pow(progress, (currentGrowSpeed / 10.0)); // Grow speed affects exponent
+    const real_radius = Math.max(1, (currentRadius / 100.0) * canvasWidth * radiusScale); // Ensure radius >= 1
+
+    const centerX = canvasWidth * 0.5;
+    const centerY = canvasHeight * 0.5;
+    const motion_offset = currentMotion ? centerY * y_shift : 0; // Apply motion only if enabled
+
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            const pixelIndex = (y * canvasWidth + x) * 4;
+
+            // Distance from the potentially shifted center
+            const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY - motion_offset, 2));
+
+            // Percentage distance relative to current radius
+            const percent = Math.min(1.0, distance / real_radius);
+
+            const [r,g,b] = getGradientColor(percent);
+
+            pixels[pixelIndex] = r;
+            pixels[pixelIndex + 1] = g;
+            pixels[pixelIndex + 2] = b;
+            pixels[pixelIndex + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+requestAnimationFrame(update);
+</script>
+</html>

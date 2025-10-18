@@ -1,0 +1,245 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Custom Gradient Wave</title>
+    <meta description="Create your own gradient wave or use predefined color sets.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="25">
+    <meta property="preset" label="Color Preset" type="list" values="Custom,Unicorn Vomit,Borealis,Ocean,Pink/Blue,Pink/Gold,Pulse,Purple/Orange,LightBlue/Purple,Police Beacon,Seabed,Sunset,Vaporwave" default="Unicorn Vomit">
+    <meta property="direction" label="Direction" type="list" values="Horizontal,Vertical,Radial Out,Radial In" default="Horizontal">
+    <meta property="spread" label="Spread" type="number" min="0" max="100" default="100">
+    <meta property="center_x" label="Center X (%)" type="number" min="0" max="100" default="50">
+    <meta property="center_y" label="Center Y (%)" type="number" min="0" max="100" default="50">
+
+    <meta property="color1" label="Color 1" type="color" default="#ff0000">
+    <meta property="color2" label="Color 2" type="color" default="#ffff00">
+    <meta property="color3" label="Color 3" type="color" default="#00ff00">
+    <meta property="color4" label="Color 4" type="color" default="#00ffff">
+    <meta property="color5" label="Color 5" type="color" default="#0000ff">
+    <meta property="color6" label="Color 6" type="color" default="#ff00ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="gradientwave-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('gradientwave-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// A hidden canvas holds the pre-rendered gradient for quick color lookups
+const gradientCanvas = document.createElement('canvas');
+gradientCanvas.width = 256; // Gradient resolution
+gradientCanvas.height = 1;
+const gradientCtx = gradientCanvas.getContext('2d', { willReadFrequently: true });
+let gradientData = null; // Will hold the raw pixel data of the gradient
+
+let progress = 0.0;
+
+const presets = {
+    "Unicorn Vomit": ["#ff0000","#ff00e6","#0000ff","#00b3ff","#00ff51","#eaff00","#ffb300","#ff0000"],
+    "Borealis": ["#14e81e","#00ea8d","#017ed5","#b53dff","#8d00c4","#14e81e"],
+    "Ocean": ["#00007f","#0000ff","#00ffff","#00aaff","#00007f"],
+    "Pink/Blue": ["#fe00c5","#00c5ff","#00c5ff","#fe00c5"],
+    "Pink/Gold": ["#fee000","#fe00fe","#fe00fe","#fee000"],
+    "Pulse": ["#ff5500","#000000","#000000","#000000","#ff5500"],
+    "Purple/Orange": ["#ff2100","#aa00ff","#aa00ff","#ff2100","#ff2100","#ff2100"],
+    "LightBlue/Purple": ["#03fffa","#55007f","#55007f","#03fffa"],
+    "Police Beacon": ["#ff0000","#0000ff","#0000ff","#ff0000","#ff0000"],
+    "Seabed": ["#00ff00","#0032ff","#0032ff","#00ff00","#00ff00"],
+    "Sunset": ["#ff2100","#ab006d","#c01c52","#d53737","#ea531b","#ff6e00","#ff0000","#ff2100"],
+    "Vaporwave": ["#FF71CE","#B967FF","#01CDFE","#05FFA1","#FFFB96","#FF71CE"],
+};
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+function generateGradient() {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentPreset = typeof preset !== 'undefined' ? preset : "Unicorn Vomit";
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#ffff00";
+    const c3 = typeof color3 !== 'undefined' ? color3 : "#00ff00";
+    const c4 = typeof color4 !== 'undefined' ? color4 : "#00ffff";
+    const c5 = typeof color5 !== 'undefined' ? color5 : "#0000ff";
+    const c6 = typeof color6 !== 'undefined' ? color6 : "#ff00ff";
+
+    let colors;
+    if (currentPreset === "Custom") {
+        colors = [c1, c2, c3, c4, c5, c6].filter(c => c && c !== "#000000");
+        if (colors.length < 2) colors = ["#ff0000", "#0000ff"]; // Failsafe
+    } else {
+        colors = presets[currentPreset];
+    }
+
+    if (!colors || colors.length < 1) {
+         colors = ["#ff0000", "#0000ff"]; // Another failsafe
+         console.error("Error generating gradient: No valid colors found for preset", currentPreset);
+    }
+
+    const grad = gradientCtx.createLinearGradient(0, 0, gradientCanvas.width, 0);
+    // Ensure at least 2 stops for gradient
+    const numStops = Math.max(2, colors.length);
+    const step = 1.0 / (numStops - 1);
+    for (let i = 0; i < numStops; i++) {
+        // Repeat colors if needed to reach numStops
+        grad.addColorStop(i * step, colors[i % colors.length]);
+    }
+
+    gradientCtx.fillStyle = grad;
+    gradientCtx.fillRect(0, 0, gradientCanvas.width, 1);
+
+    gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
+}
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColor(x, y, w, h) {
+    if (!gradientData) return 'rgb(0,0,0)';
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentCenterX = typeof center_x !== 'undefined' ? center_x : 50;
+    const currentCenterY = typeof center_y !== 'undefined' ? center_y : 50;
+    const currentDirection = typeof direction !== 'undefined' ? direction : "Horizontal";
+    const currentSpread = typeof spread !== 'undefined' ? spread : 100;
+
+
+    let i = 0.0;
+    const centerX = w * (currentCenterX / 100.0);
+    const centerY = h * (currentCenterY / 100.0);
+    const spreadFactor = currentSpread / 100.0; // Correctly scale spread
+
+    switch(currentDirection) {
+        case "Horizontal":
+            i = spreadFactor * x / w + progress;
+            break;
+        case "Vertical":
+            i = spreadFactor * y / h + progress;
+            break;
+        case "Radial In": {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            // Normalize distance based on distance to farthest corner
+            const max_dist = Math.sqrt(Math.pow(Math.max(centerX, w - centerX), 2) + Math.pow(Math.max(centerY, h - centerY), 2));
+            if (max_dist === 0) i = progress; // Avoid division by zero
+            else i = spreadFactor * distance / max_dist + progress;
+            break;
+        }
+        case "Radial Out": {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+             // Normalize distance based on distance to farthest corner
+            const max_dist = Math.sqrt(Math.pow(Math.max(centerX, w - centerX), 2) + Math.pow(Math.max(centerY, h - centerY), 2));
+             if (max_dist === 0) i = progress; // Avoid division by zero
+            else i = spreadFactor * distance / max_dist - progress;
+            break;
+        }
+    }
+
+    // Wrap the coordinate using the fractional part, making the gradient repeat
+    i = (i % 1.0 + 1.0) % 1.0; // Ensure positive modulo result
+
+    const gradIndex = Math.floor(i * (gradientCanvas.width - 1)) * 4;
+
+    // Boundary check for safety
+    if (gradIndex < 0 || gradIndex >= gradientData.length) {
+         console.error("Gradient index out of bounds:", i, gradIndex);
+         return 'rgb(255,0,0)'; // Return red on error
+    }
+
+    const r = gradientData[gradIndex];
+    const g = gradientData[gradIndex + 1];
+    const b = gradientData[gradIndex + 2];
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+let lastSettings = "";
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties used in update ---
+    const currentPreset = typeof preset !== 'undefined' ? preset : "Unicorn Vomit";
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#ffff00";
+    const c3 = typeof color3 !== 'undefined' ? color3 : "#00ff00";
+    const c4 = typeof color4 !== 'undefined' ? color4 : "#00ffff";
+    const c5 = typeof color5 !== 'undefined' ? color5 : "#0000ff";
+    const c6 = typeof color6 !== 'undefined' ? color6 : "#ff00ff";
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 25;
+
+
+    // Regenerate gradient only if color settings have changed
+    const currentSettings = currentPreset + c1 + c2 + c3 + c4 + c5 + c6;
+    if (currentSettings !== lastSettings || !gradientData) { // Also generate if gradientData is null
+        generateGradient();
+        lastSettings = currentSettings;
+    }
+
+    // Animate the wave's progress
+    progress += 0.01 * currentSpeed * deltaTime;
+    progress = (progress % 1.0 + 1.0) % 1.0; // Ensure positive modulo
+
+    // Render
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            ctx.fillStyle = getColor(x, y, canvasWidth, canvasHeight);
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

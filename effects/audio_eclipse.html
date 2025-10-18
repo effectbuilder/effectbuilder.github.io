@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Audio Eclipse</title>
+    <meta title="Audio Eclipse">
+    <meta description="The audio spectrum forms a vibrant, rotating ring of light, with a bass-pulsing central void, creating a stunning eclipse effect." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="coloringMode" label="Coloring Mode" type="combobox" values="Palette,Amplitude Hue" default="Palette">
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor" default="Rainbow">
+    <meta property="color1" label="Primary Color (Custom)" type="color" default="#ffffff">
+    <meta property="color2" label="Secondary Color (Custom)" type="color" default="#ffc88a">
+
+    <meta property="voidSize" label="Void Size (Sun Radius)" type="number" default="33" min="10" max="200">
+    <meta property="ringThickness" label="Ring Thickness" type="number" default="19" min="5" max="100">
+    <meta property="innerBeamLength" label="Inner Beam Length" type="number" default="55" min="0" max="100">
+    <meta property="outerBeamLength" label="Outer Beam Length" type="number" default="81" min="1" max="100">
+    <meta property="ringCorona" label="Corona Brightness" type="number" default="73" min="0" max="100">
+    <meta property="masterBrightness" label="Master Brightness" type="number" default="200" min="20" max="200">
+    <meta property="beamContrast" label="Beam Contrast" type="number" default="21" min="0" max="100">
+    <meta property="spectrumSmoothing" label="Spectrum Smoothing" type="number" default="2" min="0" max="10">
+
+    <meta property="symmetryCycles" label="Symmetry Cycles" type="number" default="0" min="0" max="4">
+    <meta property="coronaDistortionMagnitude" label="Wavy Distortion Strength" type="number" default="0" min="0" max="300">
+    <meta property="sunMotionMagnitude" label="Sun Motion Magnitude" type="number" default="100" min="0" max="100">
+    <meta property="starSizeMagnitude" label="Star Size" type="number" default="82" min="0" max="200">
+    <meta property="starRotationSpeed" label="Star Field Rotation" type="number" default="5" min="-10" max="10">
+
+    <meta property="enableNormalization" label="Enable Normalization" type="boolean" default="true">
+    <meta property="soundLevelMultiplier" label="Sound Level Multiplier" type="number" default="113" min="0" max="200">
+    <meta property="trailAmount" label="Trail Amount" type="number" default="93" min="0" max="100">
+    <meta property="cometRate" label="Comet Rate" type="number" default="100" min="0" max="100">
+    <meta property="cometSpeed" label="Comet Speed" type="number" default="33" min="10" max="100">
+
+
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            /* These CSS rules stretch the canvas to fill the window */
+            width: 100%;
+            height: 100%;
+            
+            /* These rules keep it pixelated when stretched */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+    <script>
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+
+        // --- Core Constants and Global State ---
+        // These are now set in setupCanvas() by reading the canvas element
+        let width, height, centerX, centerY;
+        let time = 0;
+        let lastFrameTime = 0;
+        const PI = Math.PI;
+
+        // Physics/Audio Constants
+        const MIN_AMP_FLOOR = 20;
+        const NO_SOUND_THRESHOLD = 25;
+        const GRAVITY_STRENGTH = 400000;
+        const BEAT_THRESHOLD = 0.95;
+        const ROTATION_ACCEL_RATE = 2.0;
+        const ROTATION_DAMPING = 0.98;
+        const MIN_VELOCITY_FOR_TAIL_DRAW = 20;
+
+        // Rotation and History Variables
+        let totalRotation = 0;
+        let MAX_AMP_HISTORY = 0;
+        let currentRotationVelocity = 0;
+        let targetRotationDirection = 1;
+
+        // Star and Comet Globals
+        let stars = [];
+        const NUM_STARS = 300;
+        const STAR_FIELD_SCALE = 1.5;
+        let starTotalRotation = 0;
+        let comets = [];
+        const MAX_COMETS = 5;
+        let cometLastSpawnTime = 0;
+        let volumeNormalized = 0;
+
+        // Drawing Globals
+        const HEX_REGEX = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})[a-f\d]{0,2}$/i;
+        let pixelData = null;
+        let imageData = null;
+
+        const wledPalettes = {
+            "Rainbow": ["#FF0000", "#FF4000", "#FF8000", "#FFFF00", "#80FF00", "#00FF00", "#00FF80", "#00FFFF", "#0080FF", "#0000FF", "#8000FF", "#FF00FF", "#FF0000"],
+            "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FFD700", "#FFA500", "#FF4500", "#FF69B4", "#8A2BE2", "#4B0082", "#8A2BE2", "#FF69B4", "#FF4500"],
+            "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+            "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+            "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+            "Holiday": ["#D92626", "#0E5D2E", "#F2B705", "#F2F2F2"],
+            "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+            "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+            "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+            "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+            "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+            "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+        };
+
+        // --- Color Functions ---
+        function hexToRgb(hex) {
+            if (!hex) return { r: 0, g: 0, b: 0 };
+            const result = HEX_REGEX.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function hsvToRgb(h, s, v) {
+            let r, g, b, i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: r = v, g = t, b = p; break; case 1: r = q, g = v, b = p; break;
+                case 2: r = p, g = v, b = t; break; case 3: r = p, g = q, b = v; break;
+                case 4: r = t, g = p, b = v; break; case 5: r = v, g = p, b = q; break;
+            }
+            return { r: r * 255, g: g * 255, b: b * 255 };
+        }
+
+        function lerpColor(colorA, colorB, amount) {
+            return { r: colorA.r + (colorB.r - colorA.r) * amount, g: colorA.g + (colorB.g - colorA.g) * amount, b: colorA.b + (colorB.b - colorA.b) * amount };
+        }
+
+        function getColorFromPalette(paletteData, amount) {
+            amount = Math.max(0, Math.min(1, amount));
+            const len = paletteData.length - 1;
+            const segment = 1 / len;
+            const index = Math.floor(amount * len);
+            const localAmount = (amount - (index * segment)) / segment;
+            const colorA = hexToRgb(paletteData[index]);
+            const colorB = hexToRgb(paletteData[Math.min(index + 1, len)]);
+            return lerpColor(colorA, colorB, localAmount);
+        }
+
+        // This function now just reads the hardcoded values from the canvas
+        function setupCanvas() {
+            width = canvas.width;
+            height = canvas.height;
+            centerX = width / 2;
+            centerY = height / 2;
+
+            const currentStarSizeMagnitude = typeof starSizeMagnitude !== 'undefined' ? starSizeMagnitude : 82;
+
+            if (currentStarSizeMagnitude > 0) {
+                initializeStars();
+            }
+        }
+
+        function getSmoothedAmp(freqData, index, smoothing) {
+            if (smoothing === 0) return freqData[index] / 255.0;
+            let total = 0, count = 0;
+            for (let i = -smoothing; i <= smoothing; i++) {
+                const safeIndex = (index + i + 100) % 100;
+                total += freqData[safeIndex];
+                count++;
+            }
+            return (total / count) / 255.0;
+        }
+
+        function initializeStars() {
+            stars = [];
+            const scaledWidth = width * STAR_FIELD_SCALE;
+            const scaledHeight = height * STAR_FIELD_SCALE;
+            const startX = centerX - scaledWidth / 2;
+            const startY = centerY - scaledHeight / 2;
+
+            for (let i = 0; i < NUM_STARS; i++) {
+                stars.push({
+                    x: startX + Math.random() * scaledWidth,
+                    y: startY + Math.random() * scaledHeight,
+                    sizeSeed: Math.random(),
+                    baseOpacity: Math.random() * 0.5 + 0.5,
+                    twinkleSeed: Math.random() * 2 * PI
+                });
+            }
+        }
+
+        function drawStars(currentCenterX, currentCenterY) {
+            const currentStarSizeMagnitude = typeof starSizeMagnitude !== 'undefined' ? starSizeMagnitude : 82;
+            const currentVoidSize = typeof voidSize !== 'undefined' ? voidSize : 33;
+            
+            if (currentStarSizeMagnitude <= 0) return;
+
+            const scaledSizeFactor = (currentStarSizeMagnitude / 100.0) * 1.5;
+            const voidRadiusSquared = currentVoidSize * currentVoidSize;
+            const twinkleSpeed = 0.05;
+            const starRotation = starTotalRotation;
+
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = 'white';
+
+            stars.forEach(star => {
+                const dx = star.x - currentCenterX;
+                const dy = star.y - currentCenterY;
+
+                if ((dx * dx + dy * dy) > voidRadiusSquared) {
+                    const starSize = star.sizeSeed * scaledSizeFactor * 0.5 + 0.1;
+                    const twinkleFactor = (Math.sin(star.twinkleSeed + time * twinkleSpeed) + 1) / 2;
+
+                    const rotatedX = currentCenterX + dx * Math.cos(starRotation) - dy * Math.sin(starRotation);
+                    const rotatedY = currentCenterY + dx * Math.sin(starRotation) + dy * Math.cos(starRotation);
+
+                    ctx.globalAlpha = star.baseOpacity * (0.6 + twinkleFactor * 0.4);
+                    ctx.beginPath();
+                    ctx.arc(rotatedX, rotatedY, starSize, 0, PI * 2);
+                    ctx.fill();
+                }
+            });
+            ctx.globalAlpha = 1.0;
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function spawnComet() {
+            const currentCometSpeed = typeof cometSpeed !== 'undefined' ? cometSpeed : 33;
+            
+            if (comets.length >= MAX_COMETS) return;
+
+            const edge = Math.floor(Math.random() * 4);
+            let startX, startY, angle;
+
+            if (edge === 0) { // Left
+                startX = -width * 0.1; startY = Math.random() * height; angle = 0;
+            } else if (edge === 1) { // Right
+                startX = width * 1.1; startY = Math.random() * height; angle = PI;
+            } else if (edge === 2) { // Top
+                startX = Math.random() * width; startY = -height * 0.1; angle = PI * 0.5;
+            } else { // Bottom
+                startX = Math.random() * width; startY = height * 1.1; angle = PI * 1.5;
+            }
+
+            angle += (Math.random() - 0.5) * 0.5;
+
+            const speedFactor = 0.8;
+            const randomSpeedMultiplier = Math.random() * 0.5 + 0.5;
+            const maxBaseSpeed = (currentCometSpeed / 100.0) * (Math.random() * 150 + 50);
+            const speed = maxBaseSpeed * speedFactor * randomSpeedMultiplier;
+
+            comets.push({
+                x: startX,
+                y: startY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                lengthFactor: Math.random() * 0.5 + 0.5,
+                life: 1.0,
+                overSun: Math.random() > 0.5,
+                size: Math.random() * 2 + 1,
+                color: 'white'
+            });
+        }
+
+        function updateAndDrawComets(currentCenterX, currentCenterY, deltaTime, drawLayer) {
+            const currentCometRate = typeof cometRate !== 'undefined' ? cometRate : 100;
+            const currentCometSpeed = typeof cometSpeed !== 'undefined' ? cometSpeed : 33;
+
+            if (currentCometRate === 0 || currentCometSpeed === 0) return;
+
+            const CORE_DOT_SIZE_FACTOR = 0.75;
+            const BASE_TRAIL_VELOCITY_SCALE = 0.008;
+            const TRAIL_WIDTH_SCALE = 0.5;
+            const TAIL_FADE_LENGTH = 1.5;
+            const effectiveGravity = GRAVITY_STRENGTH;
+            const segments = 5;
+
+            for (let i = comets.length - 1; i >= 0; i--) {
+                const comet = comets[i];
+                if (comet.overSun !== drawLayer) continue;
+
+                const dx = currentCenterX - comet.x;
+                const dy = currentCenterY - comet.y;
+                const distSquared = dx * dx + dy * dy;
+                const dist = Math.sqrt(distSquared);
+
+                const gravityAccel = effectiveGravity / (distSquared + 10000);
+                const invDist = 1 / dist;
+
+                comet.vx += (dx * invDist * gravityAccel) * deltaTime;
+                comet.vy += (dy * invDist * gravityAccel) * deltaTime;
+                comet.x += comet.vx * deltaTime;
+                comet.y += comet.vy * deltaTime;
+
+                const velocityMagnitude = Math.sqrt(comet.vx * comet.vx + comet.vy * comet.vy);
+                const trailLength = velocityMagnitude * BASE_TRAIL_VELOCITY_SCALE * comet.lengthFactor;
+
+                const gradEndX = comet.x - comet.vx * trailLength * TAIL_FADE_LENGTH;
+                const gradEndY = comet.y - comet.vy * trailLength * TAIL_FADE_LENGTH;
+                const drawTrailLength = trailLength * 2.0;
+                const drawEndX = comet.x - comet.vx * drawTrailLength;
+                const drawEndY = comet.y - comet.vy * drawTrailLength;
+                const drawStartX = comet.x - comet.vx * (0.0001 * velocityMagnitude);
+                const drawStartY = comet.y - comet.vy * (0.0001 * velocityMagnitude);
+
+                ctx.globalCompositeOperation = 'lighter';
+
+                if (trailLength > 0.001 && velocityMagnitude > MIN_VELOCITY_FOR_TAIL_DRAW) {
+                    const gradient = ctx.createLinearGradient(comet.x, comet.y, gradEndX, gradEndY);
+                    gradient.addColorStop(0.0, `rgba(255, 255, 255, 0.8)`);
+                    gradient.addColorStop(0.5, `rgba(255, 255, 255, 0.2)`);
+                    gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+
+                    ctx.strokeStyle = gradient;
+                    ctx.globalAlpha = 1.0;
+                    ctx.lineCap = 'butt';
+
+                    for (let j = 1; j <= segments; j++) {
+                        const ratio = j / segments;
+                        const segmentX = drawStartX + (drawEndX - drawStartX) * ratio;
+                        const segmentY = drawStartY + (drawEndY - drawStartY) * ratio;
+                        const currentWidth = comet.size * 3.5 * TRAIL_WIDTH_SCALE * (1 - ratio);
+
+                        ctx.lineWidth = Math.max(0.1, currentWidth);
+
+                        ctx.beginPath();
+                        const previousX = drawStartX + (drawEndX - drawStartX) * ((j - 1) / segments);
+                        const previousY = drawStartY + (drawEndY - drawStartY) * ((j - 1) / segments);
+
+                        ctx.moveTo(previousX, previousY);
+                        ctx.lineTo(segmentX, segmentY);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.fillStyle = comet.color;
+                ctx.globalAlpha = 1.0;
+                ctx.beginPath();
+                ctx.arc(comet.x, comet.y, comet.size * CORE_DOT_SIZE_FACTOR, 0, PI * 2);
+                ctx.fill();
+
+                if (comet.x < -width / 4 || comet.x > width * 1.25 || comet.y < -height / 4 || comet.y > height * 1.25) {
+                    comets.splice(i, 1);
+                }
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function animate(currentTime) {
+            const deltaTime = (currentTime - lastFrameTime) / 1000 || 0;
+            lastFrameTime = currentTime;
+
+            const currentCometRate = typeof cometRate !== 'undefined' ? cometRate : 100;
+            const currentCometSpeed = typeof cometSpeed !== 'undefined' ? cometSpeed : 33;
+            const currentTrailAmount = typeof trailAmount !== 'undefined' ? trailAmount : 93;
+            const currentSoundLevelMultiplier = typeof soundLevelMultiplier !== 'undefined' ? soundLevelMultiplier : 113;
+            const currentSunMotionMagnitude = typeof sunMotionMagnitude !== 'undefined' ? sunMotionMagnitude : 100;
+            const currentColor1 = typeof color1 !== 'undefined' ? color1 : "#ffffff";
+            const currentColor2 = typeof color2 !== 'undefined' ? color2 : "#ffc88a";
+            const currentColoringMode = typeof coloringMode !== 'undefined' ? coloringMode : "Palette";
+            const currentPalette = typeof palette !== 'undefined' ? palette : "Rainbow";
+            const currentBeamContrast = typeof beamContrast !== 'undefined' ? beamContrast : 21;
+            const currentSymmetryCycles = typeof symmetryCycles !== 'undefined' ? symmetryCycles : 0;
+            const currentSpectrumSmoothing = typeof spectrumSmoothing !== 'undefined' ? spectrumSmoothing : 2;
+            const currentCoronaDistortionMagnitude = typeof coronaDistortionMagnitude !== 'undefined' ? coronaDistortionMagnitude : 0;
+            const currentMasterBrightness = typeof masterBrightness !== 'undefined' ? masterBrightness : 200;
+            const currentRingCorona = typeof ringCorona !== 'undefined' ? ringCorona : 73;
+            const currentOuterBeamLength = typeof outerBeamLength !== 'undefined' ? outerBeamLength : 81;
+            const currentInnerBeamLength = typeof innerBeamLength !== 'undefined' ? innerBeamLength : 55;
+            const currentVoidSize = typeof voidSize !== 'undefined' ? voidSize : 33;
+            const currentRingThickness = typeof ringThickness !== 'undefined' ? ringThickness : 19;
+            const currentStarSizeMagnitude = typeof starSizeMagnitude !== 'undefined' ? starSizeMagnitude : 82;
+            const currentStarRotationSpeed = typeof starRotationSpeed !== 'undefined' ? starRotationSpeed : 5;
+            const currentEnableNormalization = typeof enableNormalization !== 'undefined' ? enableNormalization : true;
+
+            const rawFrequency = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq) 
+                                 ? new Uint8Array(engine.audio.freq) 
+                                 : new Uint8Array(200).fill(30);
+
+            const levelScale = currentSoundLevelMultiplier / 100.0;
+            const MAX_AMP_CLAMP = 0.8;
+            const contrastExponent = 1.0 - (currentBeamContrast / 101.0);
+            const symCyclesVal = Math.max(0, currentSymmetryCycles);
+            const symmetryCycleAngle = (symCyclesVal === 0) ? (2 * PI) : (PI / symCyclesVal);
+            const masterBrightnessFactor = currentMasterBrightness / 100;
+            const ringCoronaFactor = currentRingCorona / 100.0;
+            const ringCoronaIntensity = currentRingCorona / 25.0;
+            const timeMotion = time * 0.04;
+            const distortionMagnitudeScaled = (0.8 * currentCoronaDistortionMagnitude) / 100.0;
+            const distortionChaosSpeed = 0.003;
+            const outerPower = 1 + (101 - currentOuterBeamLength) / 25.0;
+            const innerPower = 1 + (101 - currentInnerBeamLength) / 25.0;
+
+            let currentCenterX = centerX;
+            let currentCenterY = centerY;
+            if (currentSunMotionMagnitude > 0) {
+                const magnitude = currentSunMotionMagnitude / 100.0;
+                currentCenterX = centerX + Math.sin(time * 0.005) * 15 * magnitude;
+                currentCenterY = centerY + Math.sin(time * 0.007) * 20 * magnitude;
+            }
+
+            const C1 = hexToRgb(currentColor1);
+            const C2 = hexToRgb(currentColor2);
+
+            let frequency = rawFrequency;
+            let maxAmpGlobal = 0;
+
+            let rawMax = 0;
+            for (let i = 0; i < 100; i++) {
+                if (rawFrequency[i] > rawMax) rawMax = rawFrequency[i];
+            }
+            let normalizationActive = currentEnableNormalization;
+
+            if (rawMax < NO_SOUND_THRESHOLD) {
+                normalizationActive = false;
+            }
+
+            if (normalizationActive) {
+                let maxAmp = 0;
+                for (let i = 0; i < 100; i++) {
+                    let currentAmp = Math.max(rawFrequency[i], MIN_AMP_FLOOR);
+                    if (currentAmp > maxAmp) maxAmp = currentAmp;
+                }
+                maxAmp = Math.max(MIN_AMP_FLOOR, maxAmp);
+
+                const normalized = new Uint8Array(100);
+                for (let i = 0; i < 100; i++) {
+                    normalized[i] = (Math.max(rawFrequency[i], MIN_AMP_FLOOR) / maxAmp) * 255;
+                }
+                frequency = normalized;
+                maxAmpGlobal = maxAmp;
+            } else {
+                const floored = new Uint8Array(100);
+                let currentMax = 0;
+                for (let i = 0; i < 100; i++) {
+                    floored[i] = Math.max(rawFrequency[i], MIN_AMP_FLOOR);
+                    if (floored[i] > currentMax) currentMax = floored[i];
+                }
+                frequency = floored;
+                maxAmpGlobal = currentMax;
+            }
+
+            volumeNormalized = Math.min(1.0, maxAmpGlobal / 255.0);
+
+            if (volumeNormalized > BEAT_THRESHOLD) {
+                if (Math.random() < 0.5) {
+                    targetRotationDirection *= -1;
+                }
+            }
+            MAX_AMP_HISTORY = MAX_AMP_HISTORY * 0.9 + volumeNormalized * 0.1;
+
+            const rotationAcceleration = (ROTATION_ACCEL_RATE * targetRotationDirection) - currentRotationVelocity;
+            currentRotationVelocity += rotationAcceleration * deltaTime;
+            currentRotationVelocity *= ROTATION_DAMPING;
+            totalRotation += currentRotationVelocity * deltaTime;
+
+            starTotalRotation += (currentStarRotationSpeed / 100.0) * deltaTime;
+ 
+            if (currentCometRate > 0 && currentCometSpeed > 0) {
+                const cometSpawnInterval = 1000 / currentCometRate;
+                if (currentTime > cometLastSpawnTime + cometSpawnInterval) {
+                    spawnComet();
+                    cometLastSpawnTime = currentTime;
+                }
+            } else {
+                comets = [];
+            }
+
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'black';
+            ctx.globalAlpha = 1 - (currentTrailAmount / 100.0);
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalAlpha = 1.0;
+
+            drawStars(currentCenterX, currentCenterY);
+
+            updateAndDrawComets(currentCenterX, currentCenterY, deltaTime, false);
+
+            // This check is now robust. It compares against the canvas's hardcoded width/height.
+            if (!imageData || imageData.width !== width || imageData.height !== height) {
+                setupCanvas();
+                imageData = ctx.getImageData(0, 0, width, height);
+                pixelData = imageData.data;
+            } else {
+                imageData = ctx.getImageData(0, 0, width, height);
+                pixelData = imageData.data;
+            }
+
+            const smoothedAmps = new Float32Array(100);
+            const smoothingValue = parseInt(currentSpectrumSmoothing);
+            for (let i = 0; i < 100; i++) {
+                smoothedAmps[i] = getSmoothedAmp(frequency, i, smoothingValue);
+            }
+
+            const totalPixels = width * height;
+            for (let i = 0; i < totalPixels; i++) {
+                const pixelIndex = i * 4;
+
+                const x = i % width;
+                const y = Math.floor(i / width);
+                const dx = x - currentCenterX;
+                const dy = y - currentCenterY;
+
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                let angle = Math.atan2(dy, dx);
+
+                angle -= totalRotation;
+
+                if (currentCoronaDistortionMagnitude > 0) {
+                    let distortion = Math.sin(dist * distortionChaosSpeed + timeMotion);
+                    distortion += Math.sin(dist * distortionChaosSpeed * 0.5 + timeMotion * 2) * 0.5;
+                    distortion += Math.sin(dist * distortionChaosSpeed * 2.0 + timeMotion * 0.5) * 0.2;
+                    angle += distortion * distortionMagnitudeScaled;
+                }
+
+                const cyclicAngle = (angle % symmetryCycleAngle + symmetryCycleAngle) % symmetryCycleAngle;
+                const normalizedAngle = cyclicAngle / symmetryCycleAngle;
+                const freqIndex = Math.floor(normalizedAngle * 99);
+
+                let amp = smoothedAmps[freqIndex];
+
+                amp = Math.min(MAX_AMP_CLAMP, amp * levelScale);
+
+                const finalAmp = Math.pow(amp, contrastExponent);
+
+                let brightness = 0;
+                let baseColor;
+
+                if (currentColoringMode === 'Amplitude Hue') {
+                    baseColor = hsvToRgb(finalAmp % 1.0, 1, 1);
+                } else {
+                    baseColor = currentPalette === "Custom" ? lerpColor(C1, C2, normalizedAngle) : getColorFromPalette(wledPalettes[currentPalette], normalizedAngle);
+                }
+
+                if (dist >= currentVoidSize && dist <= currentVoidSize + currentRingThickness) {
+                    const ringPos = (dist - currentVoidSize) / currentRingThickness;
+                    const coronaFactor = Math.pow(1 - ringPos, 2.0);
+                    brightness = finalAmp * (1 + coronaFactor * ringCoronaIntensity);
+
+                    const blendAmount = Math.min(1.0, coronaFactor * finalAmp * ringCoronaFactor * 1.5);
+                    baseColor = lerpColor(baseColor, { r: 255, g: 255, b: 255 }, blendAmount);
+                } else if (dist > currentVoidSize + currentRingThickness) {
+                    brightness = finalAmp * Math.pow((currentVoidSize + currentRingThickness) / dist, outerPower - (finalAmp * (outerPower - 1.0)));
+                } else if (currentInnerBeamLength > 0 && dist < currentVoidSize) {
+                    brightness = finalAmp * Math.pow(dist / currentVoidSize, innerPower);
+                }
+
+                if (brightness > 0.001) {
+                    const lightR = baseColor.r * brightness * masterBrightnessFactor;
+                    const lightG = baseColor.g * brightness * masterBrightnessFactor;
+                    const lightB = baseColor.b * brightness * masterBrightnessFactor;
+
+                    pixelData[pixelIndex] = Math.min(255, pixelData[pixelIndex] + lightR);
+                    pixelData[pixelIndex + 1] = Math.min(255, pixelData[pixelIndex + 1] + lightG);
+                    pixelData[pixelIndex + 2] = Math.min(255, pixelData[pixelIndex + 2] + lightB);
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            updateAndDrawComets(currentCenterX, currentCenterY, deltaTime, true);
+
+            time++;
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = () => {
+            lastFrameTime = performance.now();
+            setupCanvas();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+
+</html>

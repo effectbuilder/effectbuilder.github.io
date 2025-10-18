@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NeonHex</title>
+    <meta description="A network of glowing, geometric lines grows and fades, creating a dynamic, futuristic light show with customizable colors, shapes, and sparks. Based on Neon Hexagon - Forming Particles, by Matel Copot (https://codepen.io/towc/pen/mJzOWJ)" />
+    <meta publisher="Jose Miranda" />
+    
+    <meta property="shape" label="Shape" type="combobox" values="Triangle,Square,Hexagon" default="Hexagon"/>
+
+    <meta property="colorProfile" label="Color Profile" type="combobox" values="Rainbow,Vaporwave,Synthwave,Fire and Ice,Forest,Ocean,Lava,Cloud,Party,Pastel,America,Bumblebee,Sakura,C9" default="Rainbow"/>
+    <meta property="colorSpeed" label="Color Cycle Speed (Rainbow)" type="number" default="20" min="0" max="100"/>
+
+    <meta property="lineLength" label="Cell Size" type="number" default="20" min="5" max="50"/>
+    <meta property="particleSize" label="Particle Size" type="number" default="2" min="1" max="10"/>
+
+    <meta property="lineCount" label="Line Count" type="number" default="50" min="10" max="200"/>
+    <meta property="trailAmount" label="Trail Amount" type="number" default="96" min="0" max="99"/>
+    <meta property="resetChance" label="Reset Chance" type="number" default="5" min="0" max="100"/>
+    
+    <meta property="sparkChance" label="Spark Chance" type="number" default="10" min="0" max="100"/>
+    <meta property="sparkSize" label="Spark Size" type="number" default="2" min="1" max="10"/>
+
+    <meta property="brightness" label="Base Brightness" type="number" default="50" min="0" max="100"/>
+    <meta property="pulseAmount" label="Pulse Amount" type="number" default="10" min="0" max="50"/>
+
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="false"/>
+    <meta property="soundResponsiveness" label="Sound Responsiveness" type="number" default="50" min="0" max="100"/>
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #000;">
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+    // --- Setup ---
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- MODIFIED: Read size from canvas element ---
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    let tick = 0;
+    const lines = [];
+    let dieX, dieY;
+    
+    let baseRad = Math.PI * 2 / 6; // Default to hexagon, will be updated in loop
+    const baseTime = 10;
+    const addedTime = 10;
+
+    const palettes = {
+        "Vaporwave": [ {h: 328, s: 100}, {h: 278, s: 100}, {h: 193, s: 99}, {h: 156, s: 100} ],
+        "Synthwave": [ {h: 300, s: 100}, {h: 180, s: 100}, {h: 320, s: 100} ],
+        "Fire and Ice": [ {h: 0, s: 100}, {h: 30, s: 100}, {h: 200, s: 100}, {h: 240, s: 100} ],
+        "Ocean":     [ {h: 240, s: 100}, {h: 210, s: 100}, {h: 180, s: 100}, {h: 195, s: 100} ],
+        "Lava":      [ {h: 0, s: 100}, {h: 15, s: 100}, {h: 30, s: 100}, {h: 55, s: 100} ],
+        "Forest":    [ {h: 120, s: 100}, {h: 130, s: 80}, {h: 90, s: 60}, {h: 45, s: 50} ],
+        "Cloud":     [ {h: 240, s: 20}, {h: 220, s: 30}, {h: 200, s: 40}, {h: 0, s: 0} ],
+        "Party":     [ {h: 0, s: 100}, {h: 120, s: 100}, {h: 240, s: 100}, {h: 60, s: 100}, {h: 300, s: 100}, {h: 180, s: 100} ],
+        "Pastel":    [ {h: 35, s: 100}, {h: 0, s: 100}, {h: 25, s: 100}, {h: 350, s: 100} ],
+        "America":   [ {h: 0, s: 100}, {h: 225, s: 100}, {h: 0, s: 0} ],
+        "Bumblebee": [ {h: 55, s: 100} ],
+        "Sakura":    [ {h: 350, s: 100}, {h: 345, s: 100}, {h: 330, s: 100}, {h: 0, s: 0} ],
+        "C9":        [ {h: 0, s: 100}, {h: 120, s: 100}, {h: 240, s: 100}, {h: 39, s: 100}, {h: 0, s: 0} ]
+    };
+    
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+    
+    // --- Line Class Definition ---
+    class Line {
+        constructor() {
+            this.reset();
+        }
+    
+        reset() {
+            this.x = 0;
+            this.y = 0;
+            this.addedX = 0;
+            this.addedY = 0;
+            this.rad = 0;
+            
+            // --- ADDED: Fallbacks for meta properties ---
+            const currentColorProfile = typeof colorProfile !== 'undefined' ? colorProfile : "Rainbow";
+            const currentColorSpeed = typeof colorSpeed !== 'undefined' ? colorSpeed : 20;
+
+            if (currentColorProfile === 'Rainbow') {
+                this.hue = (tick * (currentColorSpeed / 200)) % 360;
+                this.saturation = 100;
+            } else {
+                const palette = palettes[currentColorProfile] || palettes["Vaporwave"];
+                const color = palette[Math.floor(Math.random() * palette.length)];
+                this.hue = color.h;
+                this.saturation = color.s;
+            }
+
+            this.cumulativeTime = 0;
+            this.lightInputMultiplier = 0.01 + 0.02 * Math.random();
+            this.beginPhase();
+        }
+    
+        beginPhase() {
+            this.x += this.addedX;
+            this.y += this.addedY;
+            this.time = 0;
+            this.targetTime = (baseTime + addedTime * Math.random()) | 0;
+
+            this.rad += baseRad * (Math.random() < 0.5 ? 1 : -1);
+            
+            this.addedX = Math.cos(this.rad);
+            this.addedY = Math.sin(this.rad);
+    
+            // --- ADDED: Fallback for meta property ---
+            const currentResetChance = typeof resetChance !== 'undefined' ? resetChance : 5;
+
+            if (Math.random() < (currentResetChance / 100) || this.x > dieX || this.x < -dieX || this.y > dieY || this.y < -dieY) {
+                this.reset();
+            }
+        }
+    
+        step(drawCtx, dynamicBrightness, currentPulseAmount) {
+            this.time++;
+            this.cumulativeTime++;
+    
+            if (this.time >= this.targetTime) {
+                this.beginPhase();
+            }
+    
+            const prop = this.time / this.targetTime;
+            const wave = Math.sin(prop * Math.PI / 2);
+            const x = this.addedX * wave;
+            const y = this.addedY * wave;
+            
+            const light = dynamicBrightness + currentPulseAmount * Math.sin(this.cumulativeTime * this.lightInputMultiplier);
+            const color = `hsl(${this.hue}, ${this.saturation}%, ${light}%)`;
+    
+            // --- ADDED: Fallbacks for meta properties ---
+            const currentLineLength = typeof lineLength !== 'undefined' ? lineLength : 20;
+            const currentParticleSize = typeof particleSize !== 'undefined' ? particleSize : 2;
+            const currentSparkChance = typeof sparkChance !== 'undefined' ? sparkChance : 10;
+            const currentSparkSize = typeof sparkSize !== 'undefined' ? sparkSize : 2;
+
+            drawCtx.shadowBlur = prop * 6;
+            drawCtx.fillStyle = drawCtx.shadowColor = color;
+            drawCtx.fillRect(width / 2 + (this.x + x) * currentLineLength, height / 2 + (this.y + y) * currentLineLength, currentParticleSize, currentParticleSize);
+    
+            if (Math.random() < (currentSparkChance / 100)) {
+                drawCtx.fillRect(
+                    width / 2 + (this.x + x) * currentLineLength + Math.random() * 10 * (Math.random() < 0.5 ? 1 : -1) - currentSparkSize / 2,
+                    height / 2 + (this.y + y) * currentLineLength + Math.random() * 10 * (Math.random() < 0.5 ? 1 : -1) - currentSparkSize / 2,
+                    currentSparkSize,
+                    currentSparkSize
+                );
+            }
+        }
+    }
+    
+    // --- Main Animation Loop ---
+    function loop() {
+        // --- REMOVED: Guard clause that broke browser execution ---
+        // if (typeof lineLength === 'undefined' || ... ) { ... }
+
+        // --- ADDED: Fallbacks for meta properties ---
+        const currentShape = typeof shape !== 'undefined' ? shape : 'Hexagon';
+        const currentLineLength = typeof lineLength !== 'undefined' ? lineLength : 20;
+        const currentBrightness = typeof brightness !== 'undefined' ? brightness : 50;
+        const currentSoundResponsive = typeof soundResponsive !== 'undefined' ? soundResponsive : false;
+        const currentSoundResponsiveness = typeof soundResponsiveness !== 'undefined' ? soundResponsiveness : 50;
+        const currentTrailAmount = typeof trailAmount !== 'undefined' ? trailAmount : 96;
+        const currentLineCount = typeof lineCount !== 'undefined' ? lineCount : 50;
+        const currentPulseAmount = typeof pulseAmount !== 'undefined' ? pulseAmount : 10;
+
+
+        // Set geometry based on shape selection
+        if (currentShape === 'Triangle') {
+            baseRad = Math.PI * 2 / 3;
+        } else if (currentShape === 'Square') {
+            baseRad = Math.PI * 2 / 4;
+        } else { // Hexagon
+            baseRad = Math.PI * 2 / 6;
+        }
+
+        dieX = width / 2 / currentLineLength;
+        dieY = height / 2 / currentLineLength;
+
+        tick++;
+    
+        let dynamicBrightness = currentBrightness;
+        if (currentSoundResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+            const audioData = new Int8Array(engine.audio.freq);
+            const bassImpact = (Math.abs(audioData[2]) + Math.abs(audioData[3])) / 2 / 128.0;
+            dynamicBrightness += bassImpact * currentSoundResponsiveness;
+        }
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        const maxFade = 50;
+        const minFade = 1;
+        const fadeStep = maxFade - Math.floor((currentTrailAmount / 99) * (maxFade - minFade));
+
+        if (fadeStep > 0) {
+            for (let i = 0; i < data.length; i += 4) {
+                data[i]   = Math.max(0, data[i]   - fadeStep);
+                data[i+1] = Math.max(0, data[i+1] - fadeStep);
+                data[i+2] = Math.max(0, data[i+2] - fadeStep);
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        
+        if (lines.length < currentLineCount) {
+            lines.push(new Line());
+        } else if (lines.length > currentLineCount) {
+            lines.length = currentLineCount;
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+        for(const line of lines) {
+            line.step(ctx, dynamicBrightness, currentPulseAmount);
+        }
+    
+        requestAnimationFrame(loop);
+    }
+    
+    loop();
+
+</script>
+</html>

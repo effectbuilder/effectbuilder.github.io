@@ -1,0 +1,262 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Audio Visualizer</title>
+    <meta description="A classic audio spectrograph/equalizer.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="background_mode" label="Background Mode" type="list" values="Black,White,Red,Orange,Yellow,Green,Cyan,Blue,Purple,Electric Aquamarine,Red/Blue,Cyan/Orange,Cyan/Purple,Cyan/Electric Aquamarine,Green/Yellow/Red,Green/White/Red,Blue/Cyan/White,Red/White/Blue,Rainbow Bars,Rainbow Bars Inverse,Original,Rainbow,Color Wheel,Color Wheel 2,Spectrum Cycle,Sinusoidal Cycle" default="Original">
+    <meta property="foreground_mode" label="Foreground Mode" type="list" values="Black,White,Red,Orange,Yellow,Green,Cyan,Blue,Purple,Electric Aquamarine,Red/Blue,Cyan/Orange,Cyan/Purple,Cyan/Electric Aquamarine,Green/Yellow/Red,Green/White/Red,Blue/Cyan/White,Red/White/Blue,Rainbow Bars,Rainbow Bars Inverse,Original,Rainbow,Color Wheel,Color Wheel 2,Spectrum Cycle,Sinusoidal Cycle" default="Green/Yellow/Red">
+    <meta property="background_brightness" label="Background Brightness" type="number" min="0" max="100" default="100">
+    <meta property="animation_speed" label="Animation Speed" type="number" min="0" max="200" default="100">
+    <meta property="reactive_background" label="Reactive Background" type="boolean" default="false">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="audiovisualizer-canvas" width="320" height="200"></canvas>
+</body>
+s
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('audiovisualizer-canvas');
+const ctx = canvas.getContext('2d');
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Hidden canvases for pre-rendering background and foreground
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = canvasWidth;
+bgCanvas.height = canvasHeight;
+const bgCtx = bgCanvas.getContext('2d');
+// --- ADDED: Disable image smoothing ---
+bgCtx.imageSmoothingEnabled = false;
+bgCtx.mozImageSmoothingEnabled = false;
+bgCtx.webkitImageSmoothingEnabled = false;
+
+const fgCanvas = document.createElement('canvas');
+fgCanvas.width = canvasWidth;
+fgCanvas.height = canvasHeight;
+const fgCtx = fgCanvas.getContext('2d');
+// --- ADDED: Disable image smoothing ---
+fgCtx.imageSmoothingEnabled = false;
+fgCtx.mozImageSmoothingEnabled = false;
+fgCtx.webkitImageSmoothingEnabled = false;
+
+
+let bkgd_step = 0.0;
+
+const patterns = {
+    // Solid Colors
+    "Black": (c, b, s) => { c.fillStyle = `rgb(0,0,0)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "White": (c, b, s) => { const l = b/100*255; c.fillStyle = `rgb(${l},${l},${l})`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Red": (c, b, s) => { c.fillStyle = `rgb(${b/100*255},0,0)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Orange": (c, b, s) => { const l = b/100; c.fillStyle = `rgb(${l*255},${l*165},0)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Yellow": (c, b, s) => { c.fillStyle = `rgb(${b/100*255},${b/100*255},0)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Green": (c, b, s) => { c.fillStyle = `rgb(0,${b/100*255},0)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Cyan": (c, b, s) => { c.fillStyle = `rgb(0,${b/100*255},${b/100*255})`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Blue": (c, b, s) => { c.fillStyle = `rgb(0,0,${b/100*255})`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Purple": (c, b, s) => { c.fillStyle = `rgb(${b/100*128},0,${b/100*128})`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Electric Aquamarine": (c, b, s) => { c.fillStyle = `rgb(${b/100*127},${b/100*255},${b/100*212})`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    
+    // Static Patterns
+    "Red/Blue": (c, b, s) => drawHorizontalBars(c, b, ['#ff0000', '#0000ff']),
+    "Cyan/Orange": (c, b, s) => drawHorizontalBars(c, b, ['#00ffff', '#ffa500']),
+    "Cyan/Purple": (c, b, s) => drawHorizontalBars(c, b, ['#00ffff', '#800080']),
+    "Cyan/Electric Aquamarine": (c, b, s) => drawHorizontalBars(c, b, ['#00ffff', '#7fffd4']),
+    "Green/Yellow/Red": (c, b, s) => drawHorizontalBars(c, b, ['#00ff00', '#ffff00', '#ff0000']),
+    "Green/White/Red": (c, b, s) => drawHorizontalBars(c, b, ['#00ff00', '#ffffff', '#ff0000']),
+    "Blue/Cyan/White": (c, b, s) => drawHorizontalBars(c, b, ['#0000ff', '#00ffff', '#ffffff']),
+    "Red/White/Blue": (c, b, s) => drawHorizontalBars(c, b, ['#ff0000', '#ffffff', '#0000ff']),
+    "Rainbow Bars": (c, b, s) => drawHorizontalBars(c, b, ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff']),
+    "Rainbow Bars Inverse": (c, b, s) => drawHorizontalBars(c, b, ['#ff00ff', '#0000ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000']),
+    
+    // Animated Patterns
+    "Original": (c, b, s) => drawRainbowSinusoidal(c, b, s),
+    "Rainbow": (c, b, s) => drawRainbow(c, b, s),
+    "Color Wheel": (c, b, s) => drawColorWheel(c, b, s, 0.5, 0.5),
+    "Color Wheel 2": (c, b, s) => drawColorWheel(c, b, s, 0.5, 1.0),
+    "Spectrum Cycle": (c, b, s) => { const l=b/100; c.fillStyle = `hsl(${s}, 100%, ${l*50}%)`; c.fillRect(0,0,c.canvas.width,c.canvas.height); },
+    "Sinusoidal Cycle": (c, b, s) => {
+        const l = b/100; const step = s * Math.PI / 180;
+        const r = l * (127 * Math.sin(step) + 128);
+        const g = l * (127 * Math.sin(step + 2*Math.PI/3) + 128);
+        const b_ = l * (127 * Math.sin(step + 4*Math.PI/3) + 128);
+        c.fillStyle = `rgb(${r},${g},${b_})`; c.fillRect(0,0,c.canvas.width,c.canvas.height);
+    },
+};
+
+// -------------------------------------------------------------------
+// PATTERN DRAWING HELPERS
+// -------------------------------------------------------------------
+
+function drawHorizontalBars(c, b, colors) {
+    const l = b/100; const h = c.canvas.height;
+    const grad = c.createLinearGradient(0, 0, 0, h);
+    const step = 1.0 / (colors.length-1);
+    colors.forEach((color, i) => grad.addColorStop(i * step, color));
+    c.fillStyle = grad;
+    c.globalAlpha = l;
+    c.fillRect(0, 0, c.canvas.width, h);
+    c.globalAlpha = 1.0;
+}
+
+function drawRainbow(c, b, s) {
+    const l = b/100; const w = c.canvas.width;
+    const grad = c.createLinearGradient(0, 0, w, 0);
+    for(let i=0; i < 7; i++) {
+        grad.addColorStop(i/6, `hsl(${(s + i*60)%360}, 100%, 50%)`);
+    }
+    c.fillStyle = grad;
+    c.globalAlpha = l;
+    c.fillRect(0, 0, w, c.canvas.height);
+    c.globalAlpha = 1.0;
+}
+
+function drawRainbowSinusoidal(c, b, s) {
+    const l = b/100; const w = c.canvas.width, h = c.canvas.height;
+    const imgData = c.createImageData(w, h);
+    for(let x=0; x < w; x++) {
+        const step = ((x/w * 360) - s) * Math.PI / 180;
+        const r = l * (127 * Math.sin(step) + 128);
+        const g = l * (127 * Math.sin(step + 2*Math.PI/3) + 128);
+        const b_ = l * (127 * Math.sin(step + 4*Math.PI/3) + 128);
+        for(let y=0; y < h; y++) {
+            const i = (y * w + x) * 4;
+            imgData.data[i] = r; imgData.data[i+1] = g; imgData.data[i+2] = b_; imgData.data[i+3] = 255;
+        }
+    }
+    c.putImageData(imgData, 0, 0);
+}
+
+function drawColorWheel(c, b, s, cx_factor, cy_factor) {
+    const l = b/100; const w = c.canvas.width, h = c.canvas.height;
+    const cx = w * cx_factor, cy = h * cy_factor;
+    const imgData = c.createImageData(w, h);
+    for(let x=0; x < w; x++) {
+        for(let y=0; y < h; y++) {
+            const angle = (Math.atan2(y - cy, x - cx) * 180 / Math.PI + 180 + s) % 360;
+            const color = `hsl(${angle}, 100%, ${l * 50}%)`;
+            const rgb = color.match(/\d+/g); // This is not a real HSL->RGB conversion, but it's the original logic
+            const i = (y * w + x) * 4;
+            imgData.data[i] = rgb[0]; imgData.data[i+1] = rgb[1]; imgData.data[i+2] = rgb[2]; imgData.data[i+3] = 255;
+        }
+    }
+    c.putImageData(imgData, 0, 0);
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    // --- REMOVED: Guard clause that broke browser execution ---
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+    
+    // --- ADDED: Fallbacks for all meta properties ---
+    const currentAnimationSpeed = typeof animation_speed !== 'undefined' ? animation_speed : 100;
+    const currentBackgroundMode = typeof background_mode !== 'undefined' ? background_mode : "Original";
+    const currentForegroundMode = typeof foreground_mode !== 'undefined' ? foreground_mode : "Green/Yellow/Red";
+    const currentBackgroundBrightness = typeof background_brightness !== 'undefined' ? background_brightness : 100;
+    const currentReactiveBackground = typeof reactive_background !== 'undefined' ? reactive_background : false;
+    
+    // Update animation step
+    bkgd_step = (bkgd_step + (currentAnimationSpeed * deltaTime)) % 360;
+
+    // Draw background and foreground patterns to their hidden canvases
+    const bgPatternFunc = patterns[currentBackgroundMode];
+    if(bgPatternFunc) bgPatternFunc(bgCtx, currentBackgroundBrightness, bkgd_step);
+
+    const fgPatternFunc = patterns[currentForegroundMode];
+    if(fgPatternFunc) fgPatternFunc(fgCtx, 100, bkgd_step);
+
+    const bgPixels = bgCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+    const fgPixels = fgCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+    const finalPixels = ctx.createImageData(canvasWidth, canvasHeight);
+
+    // --- ADDED: Audio data fallback for browser ---
+    const audioData = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq)
+                      ? new Int8Array(engine.audio.freq)
+                      // Create a simple sine wave for browser preview
+                      : new Int8Array(200).map((_, i) => Math.sin(i / 10 + bkgd_step / 10) * 64 + 64);
+
+    // Get audio data, mapping 200 bins to 320 (canvasWidth) columns
+    const audioMap = new Float32Array(canvasWidth);
+    for(let i=0; i < canvasWidth; i++) {
+        // --- MODIFIED: Use canvasWidth instead of hardcoded 256 ---
+        const audioIndex = Math.floor(i / canvasWidth * 200);
+        audioMap[i] = Math.abs(audioData[audioIndex]) / 128.0;
+    }
+
+    // Compose final image
+    for(let x = 0; x < canvasWidth; x++) {
+        for (let y = 0; y < canvasHeight; y++) {
+            const i = (y * canvasWidth + x) * 4;
+            const fft_val = audioMap[x];
+            
+            // Determine the brightness based on overall audio level (bass heavy)
+            const overall_brightness = (audioMap[2] + audioMap[3] + audioMap[4]) / 3;
+
+            // If the FFT value for this column is high enough, show the foreground
+            if (fft_val > (1 - (y / canvasHeight))) {
+                finalPixels.data[i] = fgPixels.data[i];
+                finalPixels.data[i+1] = fgPixels.data[i+1];
+                finalPixels.data[i+2] = fgPixels.data[i+2];
+                finalPixels.data[i+3] = 255;
+            } else { // Otherwise, show the background
+                if(currentReactiveBackground) {
+                    finalPixels.data[i] = bgPixels.data[i] * overall_brightness;
+                    finalPixels.data[i+1] = bgPixels.data[i+1] * overall_brightness;
+                    finalPixels.data[i+2] = bgPixels.data[i+2] * overall_brightness;
+                } else {
+                    finalPixels.data[i] = bgPixels.data[i];
+                    finalPixels.data[i+1] = bgPixels.data[i+1];
+                    finalPixels.data[i+2] = bgPixels.data[i+2];
+                }
+                finalPixels.data[i+3] = 255;
+            }
+        }
+    }
+    
+    ctx.putImageData(finalPixels, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

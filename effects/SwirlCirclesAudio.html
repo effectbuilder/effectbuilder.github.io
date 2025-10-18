@@ -1,0 +1,281 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Swirl Circles Audio</title>
+    <meta description="Rotating circles reacting to audio.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="50">
+    <meta property="glow" label="Glow" type="number" min="1" max="100" default="50">
+    <meta property="radius" label="Radius" type="number" min="0" max="100" default="10"> <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+    <meta property="color1" label="Color 1" type="color" default="#ff0000">
+    <meta property="color2" label="Color 2" type="color" default="#0000ff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="swirlcirclesaudio-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('swirlcirclesaudio-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables
+let progress = 0.0; // Angle for rotation
+let hsv1 = { h: 0, s: 1, v: 1 }; // HSV for circle 1 (H is 0-1)
+let hsv2 = { h: 0.666, s: 1, v: 1 }; // HSV for circle 2 (H is 0-1)
+let circle1_pos = { x: 0, y: 0 }; // Position in pixels
+let circle2_pos = { x: 0, y: 0 }; // Position in pixels
+// --- MODIFIED: Initialize with defaults ---
+let lastColor1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+let lastColor2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+let lastRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+let initialized = false; // Flag for initial setup
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToHsv(hex) {
+    if (!hex || hex.length < 7) return { h: 0, s: 0, v: 1 };
+    try {
+        let r = parseInt(hex.slice(1, 3), 16) / 255;
+        let g = parseInt(hex.slice(3, 5), 16) / 255;
+        let b = parseInt(hex.slice(5, 7), 16) / 255;
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, v = max;
+        let d = max - min;
+        s = max === 0 ? 0 : d / max;
+        if (max === min) { h = 0; }
+        else {
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6; // Normalize H to 0-1
+        }
+        return { h: h, s: s, v: v };
+     } catch(e) {
+         console.error("Invalid hex:", hex, e);
+         return { h: 0, s: 0, v: 1}; // White fallback
+     }
+}
+
+function hsvToRgb(h, s, v) { // h(0-1), s(0-1), v(0-1)
+    let r, g, b;
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function screenBlend(c1, c2) {
+    // Clamp input values before calculation
+    const r1 = Math.max(0, Math.min(255, c1[0]));
+    const g1 = Math.max(0, Math.min(255, c1[1]));
+    const b1 = Math.max(0, Math.min(255, c1[2]));
+    const r2 = Math.max(0, Math.min(255, c2[0]));
+    const g2 = Math.max(0, Math.min(255, c2[1]));
+    const b2 = Math.max(0, Math.min(255, c2[2]));
+
+    // Perform screen blend
+    const r = 255 - ((255 - r1) * (255 - r2) / 255);
+    const g = 255 - ((255 - g1) * (255 - g2) / 255);
+    const b = 255 - ((255 - b1) * (255 - b2) / 255);
+
+    // Return clamped result
+    return [
+        Math.max(0, Math.min(255, r)),
+        Math.max(0, Math.min(255, g)),
+        Math.max(0, Math.min(255, b))
+    ];
+}
+
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- REMOVED: Guard clause that broke browser ---
+    // if (!engine || !engine.audio || !engine.audio.freq) { ... }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const currentGlow = typeof glow !== 'undefined' ? glow : 50;
+    const currentRadius = typeof radius !== 'undefined' ? radius : 10; // This is % of half-width/height
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff0000";
+    const c2 = typeof color2 !== 'undefined' ? color2 : "#0000ff";
+
+     // --- ADDED: Initialize colors on first run ---
+     if (!initialized) {
+        if (currentRandomColors) {
+            hsv1 = { h: Math.random(), s: 1, v: 1 };
+            hsv2 = { h: Math.random(), s: 1, v: 1 };
+        } else {
+            hsv1 = hexToHsv(c1);
+            hsv2 = hexToHsv(c2);
+        }
+        lastRandomColors = currentRandomColors; // Sync initial state
+        lastColor1 = c1;                         // Sync initial state
+        lastColor2 = c2;                         // Sync initial state
+        initialized = true;
+    }
+
+
+    // --- ADDED: Audio data fallback for browser ---
+    let current_level = 0.5; // Default level for browser
+    if (typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+        const audioData = new Int8Array(engine.audio.freq);
+        let total_amp = 0.0;
+        for(let i = 0; i < audioData.length; i++) {
+            total_amp += Math.abs(audioData[i]); // Sum absolute values
+        }
+         // Normalize average amplitude (0 to 1) and scale
+        current_level = (total_amp / (audioData.length * 128.0)) * 20; // Scale factor from original
+        current_level = Math.min(5.0, Math.max(0.1, current_level)); // Clamp level for stability
+    }
+
+
+    // --- Update State ---
+    // Update progress (angle) based on speed
+    progress = (progress + (currentSpeed / 50.0) * deltaTime * Math.PI) % (Math.PI * 2); // Speed 50 = 1 rotation/sec
+
+    // Update colors
+     if (currentRandomColors !== lastRandomColors) { // Handle toggle change
+        if (currentRandomColors) {
+             // Switching TO random: Start with current colors? Or new random? Let's start new.
+             hsv1 = { h: Math.random(), s: 1, v: 1 };
+             hsv2 = { h: Math.random(), s: 1, v: 1 };
+        } else {
+             // Switching FROM random: Set user colors
+             hsv1 = hexToHsv(c1);
+             hsv2 = hexToHsv(c2);
+        }
+        lastRandomColors = currentRandomColors;
+    }
+
+    if (currentRandomColors) {
+        hsv1.h = (hsv1.h + 0.001 * currentSpeed * deltaTime) % 1.0; // Slow hue cycle
+        hsv2.h = (hsv2.h + 0.001 * currentSpeed * deltaTime * 1.3) % 1.0;
+    } else {
+        // Update user colors only if they change
+        if(c1 !== lastColor1) { hsv1 = hexToHsv(c1); lastColor1 = c1; }
+        if(c2 !== lastColor2) { hsv2 = hexToHsv(c2); lastColor2 = c2; }
+    }
+
+
+    // Calculate circle positions
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+    // Radius of the path the circle centers follow, relative to center
+    // Use smaller dimension to keep circles within bounds
+    const pathRadius = Math.min(centerX, centerY) * (currentRadius / 100.0);
+
+    circle1_pos.x = centerX + pathRadius * Math.cos(progress);
+    circle1_pos.y = centerY + pathRadius * Math.sin(progress);
+    circle2_pos.x = centerX - pathRadius * Math.cos(progress); // Opposite side
+    circle2_pos.y = centerY - pathRadius * Math.sin(progress); // Opposite side
+
+    // --- Render with ImageData ---
+    // Glow affects the exponent in the distance calculation
+    const glow_exponent = 1.0 / (currentGlow / 10.0 + 1.0); // Map glow 1-100 -> ~0.9 to ~0.09
+    const max_canvas_dist = Math.sqrt(centerX*centerX + centerY*centerY); // Max possible distance
+
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            const pixelIndex = (y * canvasWidth + x) * 4;
+
+            // --- Circle 1 Brightness ---
+            const dx1 = circle1_pos.x - x;
+            const dy1 = circle1_pos.y - y;
+            const distance1 = Math.sqrt(dx1*dx1 + dy1*dy1);
+            // Normalize distance relative to max possible distance
+            const distance1_norm = distance1 / max_canvas_dist;
+             // Apply glow exponent and audio level
+            const value1 = hsv1.v * (1.0 - Math.pow(distance1_norm, glow_exponent * current_level));
+            const color1_rgb = hsvToRgb(hsv1.h, hsv1.s, Math.max(0, value1)); // Clamp value
+
+            // --- Circle 2 Brightness ---
+            const dx2 = circle2_pos.x - x;
+            const dy2 = circle2_pos.y - y;
+            const distance2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+            const distance2_norm = distance2 / max_canvas_dist;
+            const value2 = hsv2.v * (1.0 - Math.pow(distance2_norm, glow_exponent * current_level));
+            const color2_rgb = hsvToRgb(hsv2.h, hsv2.s, Math.max(0, value2)); // Clamp value
+
+            // Blend the two circles
+            const final_color = screenBlend(color1_rgb, color2_rgb);
+
+            pixels[pixelIndex] = Math.round(final_color[0]);
+            pixels[pixelIndex + 1] = Math.round(final_color[1]);
+            pixels[pixelIndex + 2] = Math.round(final_color[2]);
+            pixels[pixelIndex + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>

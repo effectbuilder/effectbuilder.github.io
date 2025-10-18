@@ -1,0 +1,159 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Color Wheel</title>
+    <meta description="A rotating rainbow.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="10" max="200" default="100">
+    <meta property="x_position" label="X Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="y_position" label="Y Position (%)" type="number" min="0" max="100" default="50">
+    <meta property="direction" label="Direction" type="list" values="Clockwise,Counter-clockwise" default="Clockwise">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="colorwheel-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('colorwheel-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Create the ImageData object once for performance
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const data = imageData.data;
+
+// Effect state variables
+let progress = 0.0;
+// --- REMOVED: Unused last setting variables ---
+// let lastSpeed = speed;
+// let lastXPosition = x_position;
+// let lastYPosition = y_position;
+// let lastDirection = direction;
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+/** Converts HSL color values to an RGB array. h(0-1), s(0-1), l(0-1) */
+function hslToRgb(h, s, l) {
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l; // achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 100;
+    const currentXPosition = typeof x_position !== 'undefined' ? x_position : 50;
+    const currentYPosition = typeof y_position !== 'undefined' ? y_position : 50;
+    const currentDirection = typeof direction !== 'undefined' ? direction : "Clockwise";
+
+
+    // --- REMOVED: Unnecessary settings check ---
+    // if (currentSpeed !== lastSpeed || ...) { ... }
+
+    // Update the progress variable for continuous rotation
+    progress = (progress + currentSpeed * deltaTime) % 360;
+
+    // Determine the center point and direction based on the meta properties
+    const centerX = canvasWidth * (currentXPosition / 100.0);
+    const centerY = canvasHeight * (currentYPosition / 100.0);
+    const direction_mult = (currentDirection === "Clockwise") ? 1.0 : -1.0;
+
+    // Render each pixel on the canvas
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            // Calculate the angle of the pixel relative to the center point
+            const angle = Math.atan2(y - centerY, x - centerX); // Returns -PI to PI
+
+            // Calculate the hue by combining the pixel's angle (converted to degrees) with the rotating progress
+            // Add 180 to angle to shift range from -180..180 to 0..360
+            let hue = (progress + (direction_mult * (angle * 180 / Math.PI + 180)));
+
+            // Ensure hue wraps correctly within 0-360 range
+            hue = (hue % 360 + 360) % 360;
+
+            // Convert HSL (Hue 0-360, Sat 100%, Lightness 50%) to RGB
+            const [r, g, b] = hslToRgb(hue / 360, 1, 0.5); // hslToRgb expects hue in 0-1 range
+
+            const index = (y * canvasWidth + x) * 4;
+            data[index] = r;
+            data[index + 1] = g;
+            data[index + 2] = b;
+            data[index + 3] = 255; // Alpha
+        }
+    }
+
+    // Draw the completed frame to the canvas at once
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>
