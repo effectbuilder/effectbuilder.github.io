@@ -1,0 +1,211 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Random Marquee</title>
+    <meta description="A simple Random Marquee for your devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="200" default="50">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="true">
+    <meta property="user_color" label="Color" type="color" min="0" max="360" default="#ffffff">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="randommarquee-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('randommarquee-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables that get randomized each cycle
+let spacing = 1;
+let speed_mult = 0.5;
+let progress_mult = 0.5;
+let direction = false; // false = right, true = left
+let activeColor = [0, 0, 0];
+
+let progress = 0.0;
+let last_progress_int = 0;
+// --- MODIFIED: Initialize with defaults ---
+let lastUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+let lastRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+let initialized = false; // Flag for initial setup
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [0, 0, 0];
+     try {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+     } catch(e) {
+         console.error("Invalid hex:", hex, e);
+         return [0,0,0];
+     }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+
+// -------------------------------------------------------------------
+// HELPER FUNCTIONS
+// -------------------------------------------------------------------
+
+/** Generates a random number within a range */
+function custom_rand(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+/** Randomizes all effect parameters for a new cycle */
+function randomizeParameters() {
+    // --- ADDED: Fallbacks for colors ---
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+    const currentUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+
+    speed_mult = custom_rand(0.5, 1.5);
+    progress_mult = custom_rand(0.5, 1.5);
+    direction = Math.random() < 0.5;
+    spacing = 1 + Math.floor(Math.random() * 3);
+
+    if (currentRandomColors) {
+        activeColor = randomRgb();
+    } else {
+        activeColor = hexToRgb(currentUserColor);
+    }
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+
+    if (isNaN(deltaTime)) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+    const currentUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+
+    // --- ADDED: Initialize parameters on first run ---
+    if (!initialized) {
+        randomizeParameters(); // Uses fallbacks internally
+        lastRandomColors = currentRandomColors; // Sync initial state
+        lastUserColor = currentUserColor;     // Sync initial state
+        initialized = true;
+    }
+
+    // --- Update State ---
+
+    // Animate the scrolling progress, scaling speed
+    progress += 0.05 * (currentSpeed / 10) * progress_mult * deltaTime * 60; // Use fallback speed
+    const current_progress_int = Math.floor(progress);
+
+    // Check if a full cycle marker has passed
+    if (last_progress_int !== current_progress_int) {
+        last_progress_int = current_progress_int;
+        // Randomize parameters for the new cycle
+        randomizeParameters(); // Uses fallbacks internally
+        lastRandomColors = currentRandomColors; // Update state after randomizing
+        lastUserColor = currentUserColor;
+    }
+
+    // Update colors based on user input changes mid-cycle
+    if (currentRandomColors !== lastRandomColors || currentUserColor !== lastUserColor) {
+         if (currentRandomColors && !lastRandomColors) { // If switching to random
+             randomizeParameters(); // Get a new random color immediately
+         } else if (!currentRandomColors) { // If switching to user color or changing user color
+             activeColor = hexToRgb(currentUserColor);
+         }
+        lastRandomColors = currentRandomColors;
+        lastUserColor = currentUserColor;
+    }
+
+
+    // --- Render with ImageData ---
+    const dir_mult = direction ? -1 : 1;
+    // Calculate integer position based on scaled progress and speed multiplier
+    const position = Math.floor(dir_mult * 20.0 * progress * speed_mult);
+
+    for (let x = 0; x < canvasWidth; x++) {
+        let r, g, b;
+
+        // Check if the pixel's effective position falls on a lit spacing interval
+        // Use modulo arithmetic that handles negative numbers correctly
+        const effectivePosition = (x + position);
+        const spacingInterval = 2 * spacing;
+        if ((effectivePosition % spacingInterval + spacingInterval) % spacingInterval === 0) {
+            r = Math.round(activeColor[0]);
+            g = Math.round(activeColor[1]);
+            b = Math.round(activeColor[2]);
+        } else {
+            r = 0;
+            g = 0;
+            b = 0;
+        }
+
+        // Apply color to the full vertical column
+        for (let y = 0; y < canvasHeight; y++) {
+            const index = (y * canvasWidth + x) * 4;
+            pixels[index] = r;
+            pixels[index + 1] = g;
+            pixels[index + 2] = b;
+            pixels[index + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// --- REMOVED: Initial randomize call moved inside update ---
+// randomizeParameters();
+requestAnimationFrame(update);
+</script>
+</html>

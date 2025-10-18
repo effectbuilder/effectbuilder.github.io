@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ORGB: ZigZag</title>
+    <meta description="A snake moving on your matrix typed devices.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="10">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="true">
+    <meta property="user_color" label="Color" type="color" default="#ffffff" min="0" max="360">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="zigzag-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('zigzag-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+// Effect state variables
+let time = 0.0; // Represents position in the back-and-forth cycle (0 to 1)
+// --- MODIFIED: Initialize with defaults ---
+let userColorHsv = hexToHsv(typeof user_color !== 'undefined' ? user_color : '#ffffff');
+let lastUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+let lastRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+let initialized = false; // Flag for initial setup
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+/** Converts a hex color string to an HSV object. h(0-1), s(0-1), v(0-1) */
+function hexToHsv(hex) {
+    if (!hex || hex.length < 7) return { h: 0, s: 0, v: 1 };
+     try {
+        let r = parseInt(hex.slice(1, 3), 16) / 255;
+        let g = parseInt(hex.slice(3, 5), 16) / 255;
+        let b = parseInt(hex.slice(5, 7), 16) / 255;
+
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, v = max;
+        let d = max - min;
+        s = max === 0 ? 0 : d / max;
+
+        if (max === min) {
+            h = 0; // achromatic
+        } else {
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6; // Normalize h to 0-1
+        }
+        return { h: h, s: s, v: v };
+     } catch(e) {
+         console.error("Invalid hex:", hex, e);
+         return { h: 0, s: 0, v: 1 }; // White fallback
+     }
+}
+
+/** Converts HSL values to an RGB array. h(0-1), s(0-1), l(0-1) */
+function hslToRgb(h, s, l) {
+    let r, g, b;
+    if (s === 0) {
+        r = g = b = l; // achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getPixelColor(x, y, w, h, progress) {
+     // --- ADDED: Fallbacks for colors ---
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+
+    const total_pixels = w * h;
+
+    // Convert 2D (x,y) to 1D zigzag position
+    // Even columns go down (0 to h-1), odd columns go up (h-1 to 0)
+    const y_pos = (x % 2 === 0) ? y : (h - 1 - y);
+    const current_pixel_pos = y_pos + x * h;
+    const current_pixel_percent = current_pixel_pos / (total_pixels - 1); // Normalize 0 to 1
+
+    // 'progress' is the head position (0 to 1)
+    if (current_pixel_percent < progress) {
+        // Distance from head (0 to 1), closer to head = higher value
+        const distance_from_head = 1.0 - (progress - current_pixel_percent);
+        // Apply power curve for faster fade at the tail
+        const brightnessFactor = Math.pow(distance_from_head, 3);
+
+        let hue, saturation, lightness;
+
+        if (currentRandomColors) {
+            // Hue shifts along the snake body, cycles with time
+            hue = (current_pixel_percent * 360 - time * 100) % 360; // Use time directly for color cycle
+            saturation = 100;
+            lightness = brightnessFactor * 50; // HSL Lightness 0-50%
+        } else {
+            hue = userColorHsv.h * 360; // User hue (0-360)
+            saturation = userColorHsv.s * 100; // User saturation (0-100)
+            // User value scales the brightness factor
+            lightness = userColorHsv.v * brightnessFactor * 50; // HSL Lightness
+        }
+
+        // Return RGB array
+        return hslToRgb(hue / 360, saturation / 100, lightness / 100); // Convert HSL to RGB
+    }
+
+    // Pixel is ahead of the snake head
+    return [0,0,0];
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+     // --- ADDED: Fallbacks for meta properties ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 10;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : true;
+    const currentUserColor = typeof user_color !== 'undefined' ? user_color : '#ffffff';
+
+     // --- ADDED: Initialize on first run ---
+     if (!initialized) {
+        userColorHsv = hexToHsv(currentUserColor);
+        lastRandomColors = currentRandomColors; // Sync initial state
+        lastUserColor = currentUserColor;     // Sync initial state
+        initialized = true;
+    }
+
+    // --- Update State ---
+    // Time cycles 0 -> 1 -> 0 ...
+    time = (time + 0.01 * currentSpeed * deltaTime * 2) % 2; // Adjusted speed scaling
+    // Progress follows time in a triangle wave (0 -> 1 -> 0)
+    const progress = time < 1 ? time : 2 - time;
+
+    // Update the stored user color in HSV format if settings change
+    if (currentUserColor !== lastUserColor || currentRandomColors !== lastRandomColors) {
+        userColorHsv = hexToHsv(currentUserColor); // Use fallback color
+        lastUserColor = currentUserColor;
+        lastRandomColors = currentRandomColors;
+    }
+
+    // --- Render with ImageData ---
+    for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+            const index = (y * canvasWidth + x) * 4;
+            // getColor uses fallbacks internally now
+            const [r, g, b] = getPixelColor(x, y, canvasWidth, canvasHeight, progress);
+            pixels[index] = r;
+            pixels[index + 1] = g;
+            pixels[index + 2] = b;
+            pixels[index + 3] = 255; // Alpha
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+</script>
+</html>

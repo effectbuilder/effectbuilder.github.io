@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Infinity Spiral</title>
+    <meta description="Infinity Spiral" />
+    <meta publisher="Jose Miranda" />
+    <!-- SignalRGB Effect Properties -->
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Rainbow,Sakura,Sunset,Technicolor" default="Rainbow">
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="true">
+    <meta property="color1" label="Primary Color (Custom)" type="color" default="#00aaff">
+    <meta property="color2" label="Secondary Color (Custom)" type="color" default="#ff8800">
+    <meta property="speed" label="Rotation Speed" type="number" default="2" min="0" max="50">
+    <meta property="spiralArms" label="Spiral Arms" type="number" default="8" min="1" max="12">
+    <meta property="lineWidth" label="Line Width" type="number" default="10" min="2" max="20">
+    <meta property="zoom" label="Zoom" type="number" default="3" min="1" max="30">
+    <meta property="waveAmount" label="Wave Amount" type="number" default="60" min="0" max="100">
+    <meta property="shimmerDensity" label="Shimmer Density" type="number" default="100" min="0" max="500">
+    <meta property="shimmerSize" label="Shimmer Size" type="number" default="5" min="1" max="10">
+    <meta property="trailAmount" label="Trail Amount" type="number" default="93" min="0" max="100">
+    <meta property="soundResponsiveness" label="Sound Responsiveness" type="number" default="20" min="1" max="20">
+
+
+    <style>
+        /* Basic CSS to make the canvas fill the entire view */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="effect-canvas"></canvas>
+
+    <script>
+        // --- Effect Logic ---
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        const particles = [];
+        let time = 0;
+
+        const wledPalettes = {
+            "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+            "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+            "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+            "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+            "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+            "Holiday": ["#D92626", "#0E592D", "#F2B705", "#F2F2F2"],
+            "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+            "Fairy Light": ["#FF000080", "#00FF0080", "#0000FF80", "#FFFF0080"],
+            "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+            "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+            "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+            "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+        };
+
+
+        // Utility function to parse hex color string to an {r, g, b} object
+        function hexToRgb(hex) {
+            if (!hex) return { r: 0, g: 0, b: 0 };
+            // Remove the '#' if it exists and handle 8-digit hex (RGBA) by ignoring the alpha channel
+            const hexString = hex.startsWith('#') ? hex.slice(1) : hex;
+            const rgbString = hexString.length >= 8 ? hexString.slice(0, 6) : hexString;
+            const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(rgbString);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // Utility function to interpolate between two colors
+        function lerpColor(colorA, colorB, amount) {
+            const ar = colorA.r, ag = colorA.g, ab = colorA.b;
+            const br = colorB.r, bg = colorB.g, bb = colorB.b;
+            const r = ar + (br - ar) * amount;
+            const g = ag + (bg - ag) * amount;
+            const b = ab + (bb - ab) * amount;
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function getColorFromPalette(palette, amount) {
+            amount = Math.max(0, Math.min(1, amount));
+            const segment = 1 / (palette.length - 1);
+            const index = Math.floor(amount / segment);
+            const localAmount = (amount - (index * segment)) / segment;
+
+            const colorA = hexToRgb(palette[index]);
+            const colorB = hexToRgb(palette[Math.min(index + 1, palette.length - 1)]);
+
+            return lerpColor(colorA, colorB, localAmount);
+        }
+
+        // Function to set canvas size
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // Main animation loop
+        function animate() {
+            // Add fallbacks to prevent errors if properties are not loaded instantly
+            const currentPaletteName = typeof palette !== 'undefined' ? palette : "Custom";
+            const currentDrawShimmer = typeof drawShimmer !== 'undefined' ? drawShimmer : false;
+            const C1 = hexToRgb(typeof color1 !== 'undefined' ? color1 : "#00aaff");
+            const C2 = hexToRgb(typeof color2 !== 'undefined' ? color2 : "#ff8800");
+            const currentSpeed = (typeof speed !== 'undefined' ? speed : 5) / 10;
+            const currentSpiralArms = typeof spiralArms !== 'undefined' ? spiralArms : 4;
+            const currentLineWidth = (typeof lineWidth !== 'undefined' ? lineWidth : 4) / 2;
+            const currentZoom = typeof zoom !== 'undefined' ? zoom : 12;
+            const currentWaveAmount = (typeof waveAmount !== 'undefined' ? waveAmount : 0) / 100;
+            const currentShimmerDensity = typeof shimmerDensity !== 'undefined' ? shimmerDensity : 100;
+            const currentShimmerSize = (typeof shimmerSize !== 'undefined' ? shimmerSize : 4) / 2;
+            const currentTrailAmount = (typeof trailAmount !== 'undefined' ? trailAmount : 10) / 100;
+            const isSoundResponsive = typeof soundResponsive !== 'undefined' ? soundResponsive : false;
+            const currentSoundResponsiveness = typeof soundResponsiveness !== 'undefined' ? soundResponsiveness : 5;
+
+
+            // --- Sound Reactive Logic ---
+            let dynamicLineWidth = currentLineWidth;
+            let dynamicShimmerSize = currentShimmerSize;
+            let dynamicWaveAmount = currentWaveAmount;
+            if (isSoundResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+                const frequency = new Uint8Array(engine.audio.freq); // Use Uint8Array to ensure positive values
+                const bassImpact = (frequency[4] || 0) / 255; // Normalize to 0-1 range
+                // Adjust properties based on bass and responsiveness setting
+                // dynamicLineWidth = currentLineWidth + (bassImpact * currentSoundResponsiveness * 0.5);
+                dynamicShimmerSize = currentShimmerSize + (bassImpact * currentSoundResponsiveness);
+                dynamicWaveAmount = currentWaveAmount + (bassImpact * (currentSoundResponsiveness / 5));
+            }
+
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - currentTrailAmount})`;
+            ctx.fillRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+
+            const pointsPerArm = 500;
+            ctx.lineWidth = dynamicLineWidth; // Use dynamic line width
+            ctx.lineCap = 'round';
+
+            for (let arm = 0; arm < currentSpiralArms; arm++) {
+                const rotationOffset = time * currentSpeed * 0.01;
+                const armOffset = (arm / currentSpiralArms) * Math.PI * 2;
+
+                let prevX = centerX;
+                let prevY = centerY;
+
+                for (let i = 1; i < pointsPerArm; i++) {
+                    const angle = (i / pointsPerArm) * Math.PI * 4;
+                    let radius = (i / pointsPerArm) * maxRadius * currentZoom;
+                    
+                    // --- Wave Effect Logic ---
+                    if (dynamicWaveAmount > 0) {
+                        const waveFrequency = 10; // Controls the number of waves along the arm
+                        const waveAmplitude = radius * 0.2 * dynamicWaveAmount; // Wave amplitude is proportional to the radius and the dynamic wave amount
+                        const wave = Math.sin(angle * waveFrequency + rotationOffset) * waveAmplitude;
+                        radius += wave;
+                    }
+
+                    const x = centerX + Math.cos(angle + rotationOffset + armOffset) * radius;
+                    const y = centerY + Math.sin(angle + rotationOffset + armOffset) * radius;
+
+                    let strokeColor;
+                    const colorAmount = (Math.sin(angle * 2 + rotationOffset) + 1) / 2;
+
+                    if (currentPaletteName === "Custom") {
+                        strokeColor = lerpColor(C1, C2, colorAmount);
+                    } else {
+                        strokeColor = getColorFromPalette(wledPalettes[currentPaletteName], colorAmount);
+                    }
+                    ctx.strokeStyle = strokeColor;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    
+                    prevX = x;
+                    prevY = y;
+                }
+            }
+
+            if (currentDrawShimmer) {
+                if (particles.length < currentShimmerDensity && Math.random() > 0.5) {
+                    let particleColorRgb;
+                    if (currentPaletteName === "Custom") {
+                        particleColorRgb = Math.random() > 0.5 ? C1 : C2;
+                    } else {
+                        const selectedPalette = wledPalettes[currentPaletteName];
+                        const randomColorHex = selectedPalette[Math.floor(Math.random() * selectedPalette.length)];
+                        particleColorRgb = hexToRgb(randomColorHex);
+                    }
+                    particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        life: 1,
+                        color: particleColorRgb,
+                    });
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.life -= 0.02;
+
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                    } else {
+                        ctx.beginPath();
+                        ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.life})`;
+                        ctx.arc(p.x, p.y, Math.random() * dynamicShimmerSize, 0, Math.PI * 2); // Use dynamic shimmer size
+                        ctx.fill();
+                    }
+                }
+            }
+
+            time++;
+            requestAnimationFrame(animate);
+        }
+
+        // Initial setup
+        window.onload = () => {
+            resize();
+            window.addEventListener('resize', resize);
+            animate();
+        };
+
+    </script>
+</body>
+</html>
+

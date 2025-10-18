@@ -1,0 +1,339 @@
+<!DOCTYPE html><html>
+<head>
+    <title>Audio Bubbles</title>
+    <meta description="Expanding bubbles of light are triggered by your audio.">
+    <meta publisher="Jose Miranda (Port and improvements)">
+
+    <meta property="trigger" label="Volume Trigger (%)" type="number" min="1" max="100" default="30"> <meta property="max_bubbles" label="Max Bubbles" type="number" min="1" max="32" default="8">
+    <meta property="speed" label="Speed" type="number" min="1" max="1000" default="50">
+    <meta property="max_expansion" label="Max Expansion (%)" type="number" min="1" max="1000" default="100"> <meta property="bubbles_thickness" label="Bubbles Thickness" type="number" min="1" max="200" default="10">
+    <meta property="spawnMode" label="Bubbles Spawn" type="list" values="Random XY,Random X,Random Y,Center" default="Random XY">
+    <meta property="preset" label="Color Preset" type="list" values="Unicorn Vomit,Borealis,Ocean,Pink/Blue,Pink/Gold,Pulse,Purple/Orange,LightBlue/Purple,Police Beacon,Seabed,Sunset,Vaporwave" default="Unicorn Vomit">
+
+     <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="audiobubbles-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('audiobubbles-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- ADDED: Disable image smoothing ---
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const imageData = ctx.createImageData(canvasWidth, canvasHeight);
+const pixels = imageData.data;
+
+const gradientCanvas = document.createElement('canvas');
+gradientCanvas.width = 200; // Match audio data length for direct mapping
+gradientCanvas.height = 1;
+const gradientCtx = gradientCanvas.getContext('2d', { willReadFrequently: true });
+
+let bubbles = [];
+let gradientData = null;
+let lastPreset = "";
+let initialized = false; // Flag for initial gradient generation
+
+const presets = {
+    "Unicorn Vomit": ["#ff0000","#ff00e6","#0000ff","#00b3ff","#00ff51","#eaff00","#ffb300","#ff0000"],
+    "Borealis": ["#14e81e","#00ea8d","#017ed5","#b53dff","#8d00c4","#14e81e"],
+    "Ocean": ["#00007f","#0000ff","#00ffff","#00aaff","#00007f"],
+    "Pink/Blue": ["#fe00c5","#00c5ff","#00c5ff","#fe00c5"],
+    "Pink/Gold": ["#fee000","#fe00fe","#fe00fe","#fee000"],
+    "Pulse": ["#ff5500","#000000","#000000","#000000","#ff5500"],
+    "Purple/Orange": ["#ff2100","#aa00ff","#aa00ff","#ff2100","#ff2100","#ff2100"],
+    "LightBlue/Purple": ["#03fffa","#55007f","#55007f","#03fffa"],
+    "Police Beacon": ["#ff0000","#0000ff","#0000ff","#ff0000","#ff0000"],
+    "Seabed": ["#00ff00","#0032ff","#0032ff","#00ff00","#00ff00"],
+    "Sunset": ["#ff2100","#ab006d","#c01c52","#d53737","#ea531b","#ff6e00","#ff0000","#ff2100"],
+    "Vaporwave": ["#FF71CE","#B967FF","#01CDFE","#05FFA1","#FFFB96","#FF71CE"],
+};
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES & HELPERS
+// -------------------------------------------------------------------
+
+// Optimized screen blend using bitwise operations (faster)
+function screenBlend(destIndex, r, g, b) {
+    const rDest = pixels[destIndex];
+    const gDest = pixels[destIndex + 1];
+    const bDest = pixels[destIndex + 2];
+
+    // Ensure values are integers before bitwise shift
+    r = Math.round(r); g = Math.round(g); b = Math.round(b);
+
+    pixels[destIndex]     = 255 - (((255 - rDest) * (255 - r)) >> 8);
+    pixels[destIndex + 1] = 255 - (((255 - gDest) * (255 - g)) >> 8);
+    pixels[destIndex + 2] = 255 - (((255 - bDest) * (255 - b)) >> 8);
+    // Alpha remains 255
+}
+
+
+function generateGradient(presetName) {
+    const colors = presets[presetName];
+    if (!colors) return;
+
+    const grad = gradientCtx.createLinearGradient(0, 0, gradientCanvas.width, 0);
+    const step = 1.0 / (colors.length - 1);
+    for (let i = 0; i < colors.length; i++) {
+        grad.addColorStop(i * step, colors[i]);
+    }
+
+    gradientCtx.fillStyle = grad;
+    gradientCtx.fillRect(0, 0, gradientCanvas.width, 1);
+    try {
+        gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
+    } catch (e) {
+        console.error("Error generating gradient:", e);
+        gradientData = null; // Prevent errors if reading fails
+    }
+}
+
+// -------------------------------------------------------------------
+// BUBBLE LOGIC
+// -------------------------------------------------------------------
+
+function triggerBubbles(audioData) {
+    // --- ADDED: Fallbacks for meta properties ---
+    const currentTrigger = typeof trigger !== 'undefined' ? trigger : 30;
+    const currentMaxBubbles = typeof max_bubbles !== 'undefined' ? max_bubbles : 8;
+    const currentSpawnMode = typeof spawnMode !== 'undefined' ? spawnMode : "Random XY";
+
+    const triggerValue = currentTrigger / 100.0;
+    const occupiedFrequencies = new Set(bubbles.map(b => b.freq_id));
+
+    const activeFrequencies = [];
+    let minFreq = gradientCanvas.width; // Initialize min high
+    let maxFreq = 0;                  // Initialize max low
+
+    // Find active frequencies and the range
+    for (let i = 0; i < audioData.length; i++) { // Use full audio data length (200)
+        const amp = Math.abs(audioData[i]) / 128.0;
+        if (amp >= triggerValue && !occupiedFrequencies.has(i)) {
+            activeFrequencies.push({ amp: amp, freq_id: i });
+             if (i < minFreq) minFreq = i;
+             if (i > maxFreq) maxFreq = i;
+        }
+    }
+
+    activeFrequencies.sort((a, b) => b.amp - a.amp); // Sort by highest amplitude
+
+    for (const candidate of activeFrequencies) {
+        if (bubbles.length >= currentMaxBubbles) {
+            break; // Stop if max bubbles reached
+        }
+
+        const amp = Math.max(0.2, Math.min(0.8, candidate.amp)); // Clamp amplitude for size/speed
+        let center = { x: 0.5, y: 0.5 }; // Default center
+
+        // Map the frequency ID (0-199) to gradient index (0-199 for direct mapping)
+        let gradientIndex = candidate.freq_id;
+
+        // Optionally normalize gradient index based on active range (can create interesting effects)
+        /*
+        if (maxFreq > minFreq) {
+             gradientIndex = Math.floor(((candidate.freq_id - minFreq) / (maxFreq - minFreq)) * (gradientCanvas.width - 1));
+        } else if (activeFrequencies.length > 0) { // Only one active freq
+             gradientIndex = Math.floor(gradientCanvas.width / 2); // Map to middle
+        }
+        */
+        gradientIndex = Math.min(gradientCanvas.width - 1, gradientIndex); // Ensure index is valid
+
+        // Determine spawn location based on mode
+        switch(currentSpawnMode) {
+            case "Random XY": center = { x: Math.random(), y: Math.random() }; break;
+            case "Random X":  center = { x: Math.random(), y: 1.0 - (gradientIndex / (gradientCanvas.width - 1)) }; break; // Map Y to freq
+            case "Random Y":  center = { x: gradientIndex / (gradientCanvas.width - 1), y: Math.random() }; break; // Map X to freq
+            case "Center":    /* Use default center */ break;
+        }
+
+        bubbles.push({
+            amp: amp,                     // Store original amplitude (0.2-0.8)
+            center: center,               // Spawn location (0-1 range)
+            progress: 0,                  // Expansion progress (radius)
+            speed: 1.0 / Math.max(0.1, amp), // Speed inversely proportional to amplitude
+            freq_id: gradientIndex        // Store gradient index for color lookup
+        });
+        occupiedFrequencies.add(candidate.freq_id); // Mark original freq ID as used
+    }
+}
+
+
+function expandBubbles(deltaTime) {
+    // --- ADDED: Fallback for speed ---
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+
+    // Scale speed factor: Higher speed value = faster expansion
+    const speedFactor = 0.1 * (currentSpeed / 10) * deltaTime * 60;
+
+    for (const bubble of bubbles) {
+        bubble.progress += speedFactor * bubble.speed;
+    }
+}
+
+function cleanupBubbles() {
+     // --- ADDED: Fallback for max expansion ---
+    const currentMaxExpansion = typeof max_expansion !== 'undefined' ? max_expansion : 100;
+    // Scale max expansion based on canvas size (diagonal is max possible radius)
+    const maxRadius = Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) / 2;
+    const expansionLimit = (currentMaxExpansion / 100) * maxRadius; // Expansion limit in pixels
+
+    bubbles = bubbles.filter(bubble => bubble.progress < expansionLimit * bubble.amp); // Remove if radius exceeds scaled limit
+}
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let lastTime = 0;
+
+function update(currentTime) {
+    // --- MODIFIED: Use performance.now() ---
+    const now = performance.now();
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        requestAnimationFrame(update);
+        return;
+    }
+
+     // --- ADDED: Fallbacks for meta properties ---
+     const currentPreset = typeof preset !== 'undefined' ? preset : "Unicorn Vomit";
+     const currentTrigger = typeof trigger !== 'undefined' ? trigger : 30; // Needed for triggerBubbles
+     const currentMaxBubbles = typeof max_bubbles !== 'undefined' ? max_bubbles : 8; // Needed for triggerBubbles
+     const currentSpawnMode = typeof spawnMode !== 'undefined' ? spawnMode : "Random XY"; // Needed for triggerBubbles
+     const currentBubblesThickness = typeof bubbles_thickness !== 'undefined' ? bubbles_thickness : 10;
+     const currentMaxExpansion = typeof max_expansion !== 'undefined' ? max_expansion : 100; // Needed for cleanupBubbles
+     const currentSpeed = typeof speed !== 'undefined' ? speed : 50; // Needed for expandBubbles
+
+     // --- ADDED: Initialize gradient on first run ---
+     if (!initialized) {
+        generateGradient(currentPreset); // Use fallback preset
+        lastPreset = currentPreset; // Sync initial state
+        initialized = true;
+    }
+
+
+    // Regenerate gradient if preset changes
+    if (currentPreset !== lastPreset) {
+        generateGradient(currentPreset); // Use fallback preset
+        lastPreset = currentPreset;
+    }
+
+    // Ensure gradient data is available
+    if (!gradientData) {
+        console.warn("Gradient data not ready, skipping frame.");
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // --- ADDED: Audio data fallback for browser ---
+    const audioData = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq)
+                      ? new Int8Array(engine.audio.freq)
+                      // Simple sine wave for browser preview
+                      : new Int8Array(200).map((_, i) => Math.sin(i * 0.1 + now / 500) * (currentTrigger * 1.5) + currentTrigger/2 );
+
+
+    expandBubbles(deltaTime); // Uses fallback speed internally
+    triggerBubbles(audioData); // Uses fallbacks internally
+    cleanupBubbles(); // Uses fallback max expansion internally
+
+    // Clear the pixel data (background is black)
+    for (let i = 0; i < pixels.length; i += 4) {
+        pixels[i] = 0; pixels[i + 1] = 0; pixels[i + 2] = 0; pixels[i + 3] = 255;
+    }
+
+    // Render bubbles using additive blend (screen)
+    for (const bubble of bubbles) {
+        const cx = canvasWidth * bubble.center.x;
+        const cy = canvasHeight * bubble.center.y;
+
+        const bubbleR = bubble.progress; // Current radius in pixels
+        // Scale thickness based on bubble size and amplitude, ensure minimum thickness
+        const bubbleThickness = Math.max(1, (currentBubblesThickness / 10) * bubble.amp);
+
+        // Calculate brightness falloff based on expansion progress
+        const maxRadiusLimit = (currentMaxExpansion / 100) * (Math.sqrt(canvasWidth*canvasWidth + canvasHeight*canvasHeight) / 2) * bubble.amp;
+        const progress_norm = Math.min(1.0, bubbleR / Math.max(1, maxRadiusLimit)); // Avoid div by zero
+        const brightnessFactor = Math.pow(1.0 - progress_norm, 0.5); // Sqrt falloff
+
+        // Get base color from gradient using freq_id (gradient index)
+        const gradIndex = Math.min(gradientCanvas.width - 1, bubble.freq_id) * 4; // Ensure valid index
+        const r_base = gradientData[gradIndex];
+        const g_base = gradientData[gradIndex + 1];
+        const b_base = gradientData[gradIndex + 2];
+
+        // Determine bounding box for optimization
+        const startY = Math.max(0, Math.floor(cy - bubbleR - bubbleThickness));
+        const endY = Math.min(canvasHeight, Math.ceil(cy + bubbleR + bubbleThickness));
+        const startX = Math.max(0, Math.floor(cx - bubbleR - bubbleThickness));
+        const endX = Math.min(canvasWidth, Math.ceil(cx + bubbleR + bubbleThickness));
+
+
+        // Iterate through bounding box pixels
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+                const distance = Math.sqrt(Math.pow(cx - x - 0.5, 2) + Math.pow(cy - y - 0.5, 2)); // Distance to pixel center
+
+                // Calculate intensity based on distance from the bubble's expanding edge
+                const distFromEdge = Math.abs(distance - bubbleR);
+
+                if (distFromEdge <= bubbleThickness) {
+                     // Intensity falls off sharply away from the edge (e.g., cubic)
+                    const shallow = distFromEdge / bubbleThickness;
+                    const value = Math.pow(1.0 - shallow, 3); // Cubic falloff (0 to 1)
+
+                    if (value > 0.01) { // Only calculate if significant brightness
+                        const brightness = value * brightnessFactor * 255; // Scale final brightness
+
+                        const r = Math.min(255, r_base * (brightness / 255));
+                        const g = Math.min(255, g_base * (brightness / 255));
+                        const b = Math.min(255, b_base * (brightness / 255));
+
+                        const pixelIndex = (y * canvasWidth + x) * 4;
+                        screenBlend(pixelIndex, r, g, b); // Additively blend the color
+                    }
+                }
+            }
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    requestAnimationFrame(update);
+}
+
+// Initial call
+requestAnimationFrame(update);
+
+</script>
+</html>

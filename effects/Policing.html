@@ -1,0 +1,198 @@
+<!DOCTYPE html><html>
+<head>
+    <title>ORGB: Policing</title>
+    <meta description="A back and forth effect motion with a flash before changing direction.">
+    <meta publisher="testJose Miranda (Port and improvements)">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="100" default="50">
+    <meta property="width" label="Width" type="number" min="1" max="100" default="20">
+    <meta property="random_colors" label="Random Colors" type="boolean" default="false">
+    <meta property="user_color" label="Color" type="color" default="#ff0000">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="policing-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+console.log("ORGB: Policing - Script started.");
+
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('policing-canvas');
+const ctx = canvas.getContext('2d');
+
+if (!ctx) {
+    console.error("ORGB: Policing - Failed to get 2D context.");
+} else {
+    console.log("ORGB: Policing - Canvas context obtained.");
+}
+
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+
+// Effect state variables
+let progress = 0.0;
+let last_step = false;
+let activeColor = [255, 0, 0];
+let initialized = false;
+let lastTime = 0;
+let last_random_colors = false; 
+
+// -------------------------------------------------------------------
+// COLOR UTILITIES
+// -------------------------------------------------------------------
+
+function hexToRgb(hex) {
+    if (!hex || hex.length < 7) return [255, 0, 0];
+    try {
+        return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    } catch(e) { console.error("Invalid hex:", hex, e); return [255,0,0]; }
+}
+
+function randomRgb() {
+    return [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+}
+
+function lerpColor(c1, c2, factor) {
+    const f = Math.max(0, Math.min(1, factor));
+    const r = c1[0] * (1 - f) + c2[0] * f;
+    const g = c1[1] * (1 - f) + c2[1] * f;
+    const b = c1[2] * (1 - f) + c2[2] * f;
+    return [r, g, b];
+}
+
+// -------------------------------------------------------------------
+// EFFECT LOGIC
+// -------------------------------------------------------------------
+
+function getColumnColor(x, w, p_step, step) {
+    const currentScannerWidthPercent = typeof width !== 'undefined' ? width : 20;
+    const scanner_width_pixels = Math.max(1, (currentScannerWidthPercent / 100.0) * w);
+    const scanner_center_x = p_step * (w - 1);
+    const dist = scanner_center_x - x;
+    const off = [0, 0, 0];
+    let brightness = 0;
+    const halfWidth = scanner_width_pixels / 2.0;
+
+    if (Math.abs(dist) <= halfWidth) {
+        brightness = 1.0 - (Math.abs(dist) / halfWidth);
+    }
+   
+    const finalColor = lerpColor(off, activeColor, brightness * brightness); 
+    return `rgb(${Math.round(finalColor[0])}, ${Math.round(finalColor[1])}, ${Math.round(finalColor[2])})`;
+}
+
+
+// -------------------------------------------------------------------
+// MAIN ANIMATION LOOP
+// -------------------------------------------------------------------
+
+let frameCount = 0; // Frame counter for debugging
+
+function update(currentTime) {
+    frameCount++;
+    if (frameCount === 1) {
+        console.log("ORGB: Policing - First update() call received.");
+    }
+    
+    // Use Date.now() for compatibility
+    const now = Date.now(); 
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    lastTime = now;
+
+    if (frameCount % 100 === 0) { // Log every 100 frames
+        console.log(`ORGB: Policing - Frame: ${frameCount}, DeltaTime: ${deltaTime}s`);
+    }
+
+    if (isNaN(deltaTime) || deltaTime <= 0) {
+        if (frameCount < 10) console.warn(`ORGB: Policing - Skipping frame due to invalid deltaTime: ${deltaTime}`);
+        requestAnimationFrame(update);
+        return;
+    }
+
+    // Check if meta properties are being injected
+    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
+    const currentRandomColors = typeof random_colors !== 'undefined' ? random_colors : false;
+    const currentUserColor = typeof user_color !== 'undefined' ? user_color : '#ff0000';
+
+    if (!initialized) {
+        console.log("ORGB: Policing - Initializing effect...");
+        console.log(`ORGB: Policing - Initial Speed: ${currentSpeed}, Random: ${currentRandomColors}, Color: ${currentUserColor}`);
+        activeColor = currentRandomColors ? randomRgb() : hexToRgb(currentUserColor);
+        console.log(`ORGB: Policing - Initial Active Color: rgb(${activeColor.join(',')})`);
+        last_step = true;
+        initialized = true;
+        last_random_colors = currentRandomColors; 
+    }
+
+    // --- Update State ---
+    progress = (progress + (currentSpeed / 50.0) * deltaTime) % 1.0; 
+    const step = progress < 0.5;
+    const p_step = step ? progress * 2.0 : (1.0 - progress) * 2.0;
+    const is_flipping = (last_step !== step);
+
+    if (is_flipping) {
+        if (currentRandomColors) {
+            activeColor = randomRgb();
+        } else {
+            activeColor = hexToRgb(currentUserColor);
+        }
+    } else {
+         if (!currentRandomColors && hexToRgb(currentUserColor).join(',') !== activeColor.join(',')) {
+              activeColor = hexToRgb(currentUserColor);
+         } else if (currentRandomColors !== last_random_colors) { 
+              activeColor = currentRandomColors ? randomRgb() : hexToRgb(currentUserColor);
+         }
+    }
+    last_step = step;
+    last_random_colors = currentRandomColors;
+
+
+    // --- Render ---
+    if (is_flipping) {
+        if (frameCount % 100 === 0) console.log("ORGB: Policing - Rendering: FLIP");
+        ctx.fillStyle = `rgb(${Math.round(activeColor[0])}, ${Math.round(activeColor[1])}, ${Math.round(activeColor[2])})`;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    } else {
+        if (frameCount % 100 === 0) console.log("ORGB: Policing - Rendering: SCAN");
+        for (let x = 0; x < canvasWidth; x++) {
+            const colColor = getColumnColor(x, canvasWidth, p_step, step); 
+            ctx.fillStyle = colColor;
+            ctx.fillRect(x, 0, 1, canvasHeight); 
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+console.log("ORGB: Policing - Requesting first animation frame...");
+requestAnimationFrame(update);
+
+</script>
+</html>
