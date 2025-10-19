@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalRGB Component Editor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script type="module" src="firebase.js"></script>
+    <style>
+        body {
+            background-color: var(--bs-body-bg);
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #333;
+            /* Dark background for component preview */
+        }
+
+        #componentCanvas {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            max-height: 100%;
+            transition: width 0.3s, height 0.3s;
+            /* Smooth transitions for size changes */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: crosshair;
+        }
+
+        /* Styles for the LED dots */
+        .led-dot {
+            position: absolute;
+            background-color: red;
+            border-radius: 50%;
+            border: 1px solid white;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+            transition: background-color 0.1s;
+            cursor: move;
+            z-index: 10;
+            user-select: none;
+            text-align: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: black;
+            line-height: 12px;
+        }
+
+        .led-dot.selected {
+            border: 2px solid #00f6ff;
+            box-shadow: 0 0 8px #00f6ff;
+        }
+
+        .dot-number {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: yellow;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column vh-100">
+    <!-- Navigation Bar (Reused Structure) -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="./">
+                <i class="bi bi-gear-fill me-2 text-info"></i>
+                SignalRGB Component Editor
+            </a>
+
+            <div class="ms-auto d-flex align-items-center">
+                <div class="btn-group me-3" role="group" aria-label="Project management actions">
+                    <button class="btn btn-primary" id="new-comp-btn" title="New Component"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
+                    <button class="btn btn-success" id="save-comp-btn" title="Save Component to Cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
+                    <button class="btn btn-info" id="open-gallery-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Open Component Gallery"><i class="bi bi-folder2-open me-1"></i> Gallery</button>
+                    <button class="btn btn-secondary" id="export-json-btn" title="Download Component JSON File"><i class="bi bi-download me-1"></i> Export JSON</button>
+                </div>
+                <div class="btn-group" role="group" id="auth-notification-block">
+                    <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
+                    <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
+                        <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
+                            <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
+                            <span id="user-display"></span>
+                        </span>
+                        <button class="btn btn-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid flex-grow-1 overflow-hidden p-0">
+        <div class="d-flex h-100" id="main-split">
+            <!-- Left Panel: Controls -->
+            <div id="left-panel" class="p-3 border-end bg-body-tertiary" style="width: 350px; overflow-y: auto;">
+                <h4 class="text-body-emphasis border-bottom pb-2">Component Settings</h4>
+                <form id="component-form">
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">Product Name (Internal ID)</label>
+                        <input type="text" class="form-control" id="productName" name="productName" value="Custom_Component" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="displayName" class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="displayName" name="displayName" value="My Custom Component">
+                    </div>
+                    <div class="mb-3">
+                        <label for="brand" class="form-label">Brand</label>
+                        <input type="text" class="form-control" id="brand" name="brand" value="CustomBrand">
+                    </div>
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Component Type</label>
+                        <select class="form-select" id="type" name="type">
+                            <option value="Strip">Strip</option>
+                            <option value="Fan">Fan</option>
+                            <option value="AIO Tube">AIO Tube</option>
+                            <option value="Strimer">Strimer</option>
+                            <option value="Led Matrix">LED Matrix</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label for="ledCount" class="form-label">LED Count</label>
+                            <input type="number" class="form-control" id="ledCount" name="ledCount" value="16" min="1" max="512">
+                        </div>
+                        <div class="col">
+                            <label for="width" class="form-label">Pixel Buffer Width</label>
+                            <input type="number" class="form-control" id="width" name="width" value="16" min="1" max="100">
+                        </div>
+                        <div class="col">
+                            <label for="height" class="form-label">Pixel Buffer Height</label>
+                            <input type="number" class="form-control" id="height" name="height" value="16" min="1" max="100">
+                        </div>
+                    </div>
+                </form>
+
+                <h5 class="mt-4 border-bottom pb-1">Visualizer & Image</h5>
+                <div class="mb-3">
+                    <label for="imageUpload" class="form-label">Background Image (Optional)</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="imageUpload" accept="image/*">
+                        <button class="btn btn-danger" type="button" id="clearImageBtn" title="Clear Background Image"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <small class="form-text text-body-secondary">Max 500KB image for optimal size.</small>
+                </div>
+                <div class="mb-3">
+                    <label for="ledSize" class="form-label">LED Dot Size (px)</label>
+                    <input type="range" class="form-range" id="ledSize" name="ledSize" min="4" max="20" step="1" value="12">
+                </div>
+
+                <h5 class="mt-4 border-bottom pb-1">LED Mapping Tools</h5>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-primary flex-grow-1" id="autoMapBtn" title="Automatically place LEDs in a line or circle based on Width/Height"><i class="bi bi-magic me-1"></i> Auto-Map</button>
+                    <button class="btn btn-success flex-grow-1" id="addLedBtn" title="Click on the canvas to add an LED"><i class="bi bi-plus-circle me-1"></i> Add LED</button>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-secondary flex-grow-1" id="toggleLedNumbersBtn" title="Toggle display of LED numbers"><i class="bi bi-hash me-1"></i> Toggle Numbers</button>
+                    <button class="btn btn-danger flex-grow-1" id="clearAllLedsBtn" title="Remove all LEDs"><i class="bi bi-trash me-1"></i> Clear All</button>
+                </div>
+                <div id="selected-led-info" class="alert alert-secondary d-none mt-3">
+                    <small class="fw-bold">Selected LED (<span id="selected-led-index">--</span>)</small>
+                    <div class="input-group input-group-sm mt-1">
+                        <span class="input-group-text">X/Y</span>
+                        <input type="number" class="form-control" id="selected-led-x" min="0" max="100">
+                        <input type="number" class="form-control" id="selected-led-y" min="0" max="100">
+                    </div>
+                    <button class="btn btn-sm btn-danger w-100 mt-2" id="deleteSelectedLedBtn"><i class="bi bi-trash me-1"></i> Delete Selected</button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Canvas & LED Preview -->
+            <div id="right-panel" class="d-flex flex-column flex-grow-1 h-100 overflow-hidden">
+                <div id="canvas-container" class="position-relative">
+                    <canvas id="componentCanvas" width="512" height="512"></canvas>
+                    <div id="leds-overlay" class="position-absolute top-0 start-0" style="width: 100%; height: 100%; pointer-events: none;">
+                        <!-- LED dots will be drawn here -->
+                    </div>
+                </div>
+                <div id="status-bar" class="d-flex justify-content-between p-2 bg-body-tertiary border-top">
+                    <span id="led-count-status" class="text-body-secondary small">Total LEDs: 0 / Buffer: 16x16</span>
+                    <span id="canvas-coords" class="text-body-secondary small">X: -- Y: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="gallery-offcanvas" aria-labelledby="galleryOffcanvasLabel" style="width: 700px;">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Component Gallery</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <div class="mb-3 d-flex gap-2">
+                <input type="text" id="gallery-search-input" class="form-control" placeholder="Search components...">
+            </div>
+            <div id="gallery-list-container" class="flex-grow-1 overflow-auto pe-2">
+                <div id="gallery-project-list" class="row row-cols-1 row-cols-lg-2 g-3">
+                    <!-- Gallery items will be loaded here -->
+                    <div class="col-12 text-center text-body-secondary mt-4"><div class="spinner-border spinner-border-sm"></div><p class="mt-2">Loading Components...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 99999">
+        <div id="app-toast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000" style="width: 350px; font-size: 1.1rem;">
+            <div id="app-toast-header" class="toast-header text-white d-flex align-items-center">
+                <i id="app-toast-icon" class="bi me-2"></i>
+                <strong class="me-auto" id="app-toast-title">Notification</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-dark" id="app-toast-body"></div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="confirm-overwrite-modal" tabindex="-1" aria-labelledby="confirmOverwriteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmOverwriteModalLabel">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirm-overwrite-modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-overwrite-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="util.js"></script>
+    <script src="component_editor.js"></script>
+</body>
+
+</html>
