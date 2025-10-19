@@ -27,6 +27,9 @@
                 SRGB Interactive Effect Builder
             </a>
             <div class="ms-auto d-flex align-items-center">
+                <a href="#" class="btn btn-outline-success me-3" data-bs-toggle="modal" data-bs-target="#installation-modal">
+                    <i class="bi bi-download me-2"></i>How to Install
+                </a>
                 <a href="#" class="btn btn-outline-info me-3" data-bs-toggle="modal" data-bs-target="#disclaimer-modal">Disclaimer</a>
                 <a href="./" class="btn btn-primary"><i class="bi bi-pencil-square me-2"></i>Back to Editor</a>
             </div>
@@ -85,6 +88,62 @@
       </div>
     </div>
 
+    <div class="modal fade" id="installation-modal" tabindex="-1" aria-labelledby="installationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="installationModalLabel"><i class="bi bi-box-arrow-in-down me-2"></i>How to Install Custom Effects in SignalRGB</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="lead">Installing a custom effect is easy, but it requires placing the files into a specific directory on your computer.</p>
+                    <ol class="list-group list-group-numbered">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Download the Effect Files</div>
+                                Click the <span class="badge text-bg-success py-2"><i class="bi bi-download me-1"></i> Zip</span> button for the effect you want to install and download the archive file. Inside, you'll find the <code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code> file and its <code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code> preview.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Locate the Custom Effects Folder</div>
+                                Navigate to the correct folder on your PC. <strong>The path depends on your setup (especially if you use OneDrive or a custom installation).</strong> You may need to enable "Show hidden files" in your Windows Explorer settings.
+
+                                <h6 class="mt-3 mb-1">Common Locations (try these in order):</h6>
+                                <p class="mb-1 fw-medium text-warning">1. Standard Documents Location:</p>
+                                <code class="d-block p-2 bg-dark rounded text-white small">%userprofile%\Documents\WhirlwindFX\Effects\</code>
+                                
+                                <p class="mb-1 fw-medium text-warning mt-2">2. OneDrive Sync Location (for users with OneDrive):</p>
+                                <code class="d-block p-2 bg-dark rounded text-white small">C:\Users\<span class="text-warning">&lt;YOUR_USERNAME&gt;</span>\OneDrive\Documents\WhirlwindFX\Effects\</code>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Copy the Files</div>
+                                Place both the <code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code> effect file and the <code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code> preview image directly into the correct effects folder.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Restart SignalRGB</div>
+                                The SignalRGB application must be restarted to detect the new effect file.
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Apply the Effect</div>
+                                The new effect will now appear in the <strong>Installed Free Effects</strong> section of the SignalRGB Library, ready for you to use!
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close Instructions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="disclaimer-modal" tabindex="-1" aria-labelledby="disclaimerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-md modal-dialog-centered">
             <div class="modal-content">
@@ -94,11 +153,11 @@
                 </div>
                 <div class="modal-body small bg-dark-subtle text-body">
                     <p class="mb-3">
-                        This website and its contents are <strong>NOT affiliated with, endorsed by, or in any way officially connected to SignalRGB</strong> or its parent company, Whirlwind FX. The effects showcased here are created independently by community members.
+                        This website and its contents are **NOT affiliated with, endorsed by, or in any way officially connected to SignalRGB** or its parent company, Whirlwind FX. The effects showcased here are created independently by community members.
                     </p>
                     <hr>
                     <p class="mb-0">
-                        <strong>Limitation of Liability:</strong> Use all code at your own risk. The author(s) of this showcase claim <strong>no responsibility for any issues, damages, or unintended consequences</strong> that may arise from using or modifying the effects provided.
+                        **Limitation of Liability:** Use all code at your own risk. The author(s) of this showcase claim **no responsibility for any issues, damages, or unintended consequences** that may arise from using or modifying the effects provided.
                     </p>
                 </div>
                 <div class="modal-footer">
