@@ -70,8 +70,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Path Configuration ---
     const effectsFolder = "effects";
-
     const projectListContainer = document.getElementById('showcase-project-list');
+    
+    // NEW: Variable to store all effects for filtering
+    let allEffects = [];
+
+    // NEW: Search Input Element
+    const searchInput = document.getElementById('effect-search-input');
+
 
     // --- MODAL VARIABLES (CODE PREVIEW) ---
     const codePreviewModalEl = document.getElementById('code-preview-modal');
@@ -185,11 +191,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!effects || effects.length === 0) {
             projectListContainer.innerHTML = `
-                <div class="col">
+                <div class="col-12">
                     <div class="card h-100">
                         <div class="card-body text-center text-body-secondary">
-                           <p class="mb-1">No effects to display.</p>
-                           <p class="small">Please add effect filenames to <strong>showcase.js</strong>.</p>
+                           <p class="mb-1">No effects match your search criteria.</p>
+                           <p class="small">Try a different keyword.</p>
                         </div>
                     </div>
                 </div>`;
@@ -468,15 +474,47 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
+    /**
+     * Filters the global list of effects based on the search input value
+     * and re-renders the showcase with the filtered list.
+     */
+    function handleSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        if (searchTerm.length === 0) {
+            // If the search is cleared, show all effects
+            populateShowcase(allEffects);
+            return;
+        }
+
+        const filteredEffects = allEffects.filter(effect => {
+            // Check title, description, and author for the search term
+            return effect.title.toLowerCase().includes(searchTerm) ||
+                   effect.description.toLowerCase().includes(searchTerm) ||
+                   effect.author.toLowerCase().includes(searchTerm);
+        });
+
+        populateShowcase(filteredEffects);
+    }
+
+
     // --- INITIALIZATION ---
     buildEffectsList(effectFilenames)
         .then(manualEffects => {
             // Sort the effects alphabetically by title before displaying
             manualEffects.sort((a, b) => a.title.localeCompare(b.title));
-            populateShowcase(manualEffects);
+            // Store the full list
+            allEffects = manualEffects;
+            // Populate with all effects initially
+            populateShowcase(allEffects);
         })
         .catch(error => {
             console.error("Failed to build effects list:", error);
             populateShowcase([]);
         });
+
+    // NEW: Attach keyup listener for filtering
+    if (searchInput) {
+        searchInput.addEventListener('keyup', handleSearch);
+    }
 });
