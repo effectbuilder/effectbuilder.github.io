@@ -3907,7 +3907,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 generalColorPickerModal.show();
             };
 
-            swatch.addEventListener('click', openPicker);
+            swatch.addEventListener('dblclick', openPicker);
+            hexInput.addEventListener('dblclick', openPicker);
             hexInput.addEventListener('input', () => {
                 if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
                     swatch.style.backgroundColor = hexInput.value;
@@ -4051,7 +4052,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             };
 
-            activeHexInput.addEventListener('click', openColorPickerForActiveStop);
+            activeHexInput.addEventListener('dblclick', openColorPickerForActiveStop);
             activeHexInput.addEventListener('input', () => { if (/^#[0-9A-F]{6}$/i.test(activeHexInput.value)) { updateActiveStopProperty('color', activeHexInput.value); updateActiveControls(); } });
             activePosInput.addEventListener('input', () => { updateActiveStopProperty('position', Math.max(0, Math.min(1, parseFloat(activePosInput.value) / 100))); });
 
@@ -4375,13 +4376,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (forceJsVarProps.includes(propName) || !exposedProperties.includes(conf.property)) {
                     let finalJsValue = liveValue;
+                    
+                    // *** FIX: Apply scaling for unexposed properties here. ***
+                    // We only scale properties that were saved to the original config store (c.default) in UI units (0-100).
+                    
+                    if (propName.includes('Position_') && typeof finalJsValue === 'number') {
+                        // Position properties are scaled from 0-100 to 0.0-1.0 for the JS variable.
+                        finalJsValue /= 100.0;
+                    } else if (propsToScale.includes(propName) && typeof finalJsValue === 'number') {
+                        // Rescale X, Y, Width, Height, etc. from Canvas Units (x4) down to UI units (x1)
+                        // Then also scale down by 4 for the exported JS value
+                        finalJsValue /= 4; 
+                        
+                    } else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
+                        // Rescale Speed (x10) down to normalized (x1) for the JS variable.
+                        finalJsValue /= 10.0;
+                    } else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') {
+                        // Rescale Cycle Speed (x50) down to normalized (x1) for the JS variable.
+                        finalJsValue /= 50.0;
+                    }
+                    // *** END FIX ***
+
                     if (propName === 'polylineNodes' && Array.isArray(liveValue)) {
                         const scaledNodes = liveValue.map(node => ({ x: Math.round(node.x / 4), y: Math.round(node.y / 4) }));
                         finalJsValue = JSON.stringify(scaledNodes);
                     }
-                    jsVars += `window.${conf.property} = ${JSON.stringify(valueForExport)};\n`;
+                    jsVars += `window.${conf.property} = ${JSON.stringify(finalJsValue)};\n`;
                     jsVarKeys.push(conf.property);
                 } else {
+                    // This block handles EXPOSED properties (Meta Tags)
                     metaTags += createMetaTag(conf, valueForExport);
                 }
             });
@@ -4470,44 +4493,74 @@ document.addEventListener('DOMContentLoaded', function () {
                 const idToCopy = parseInt(duplicateBtn.dataset.id, 10);
                 const objectToCopy = objects.find(o => o.id === idToCopy);
                 if (!objectToCopy) return;
+
+                // *** CRITICAL FIX: Use the existing state clone (newState) and map to the new configs ***
                 const newState = JSON.parse(JSON.stringify(objectToCopy, (key, value) => {
-                    if (key === 'ctx') return undefined;
+                    if (key === 'ctx' || typeof value === 'function') return undefined;
                     return value;
                 }));
-                const newId = (objects.reduce((maxId, o) => Math.max(maxId, o.id), 0)) + 1;
+
+                const newId = (objects.length > 0 ? (Math.max(...objects.map(o => o.id))) : 0) + 1;
+                
                 newState.id = newId;
                 newState.name = `${objectToCopy.name} Copy`;
                 newState.x += 20;
                 newState.y += 20;
-                const newShape = new Shape({ ...newState, ctx, canvasWidth: canvas.width });
-                objects.push(newShape);
+
+                // 1. Get ALL old configuration blocks
                 const oldConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${idToCopy}_`));
                 const newConfigs = oldConfigs.map(oldConf => {
                     const newConf = { ...oldConf };
-                    const propName = oldConf.property.substring(oldConf.property.indexOf('_') + 1);
-                    newConf.property = `obj${newId}_${propName}`;
-                    newConf.label = `${newState.name}:${oldConf.label.split(':')[1]}`;
-                    let liveValue = newShape[propName];
-                    if (propName.startsWith('gradColor')) {
-                        liveValue = newShape.gradient[propName.replace('gradColor', 'color')];
-                    } else if (propName === 'scrollDir') {
-                        liveValue = newShape.scrollDirection;
-                    }
-                    const propsToScale = ['x', 'y', 'width', 'height', 'innerDiameter', 'fontSize'];
-                    if (propsToScale.includes(propName)) {
-                        liveValue /= 4;
-                    } else if (propName === 'animationSpeed') {
+                    const prefix = `obj${idToCopy}_`;
+                    const newPrefix = `obj${newId}_`;
+                    const propName = oldConf.property.substring(prefix.length);
+                    
+                    newConf.property = newPrefix + propName;
+                    newConf.label = `${newState.name}:${oldConf.label.split(':').slice(1).join(':')}`;
+
+                    let liveValue = newState[propName];
+
+                    // *** FIX: If the property is directly on the Shape object (e.g., rotationSpeed, animationSpeed), 
+                    // and it needs to be unscaled for the UI (like 0.5 -> 25), apply the scaling here. 
+                    // All other properties (x,y,width,height) are already scaled to canvas units (x4) in newState. ***
+                    
+                    if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
                         liveValue *= 10;
-                    } else if (propName === 'cycleSpeed') {
+                    } else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') {
                         liveValue *= 50;
+                    } else if (propName === 'x' || propName === 'y' || propName === 'width' || propName === 'height') {
+                        // The value in 'newState' is in canvas units (x4). We must scale it back down to UI units (x1) for the config default.
+                        liveValue /= 4;
                     }
-                    newConf.default = liveValue;
+
+                    if (liveValue !== undefined) {
+                        if (typeof liveValue === 'boolean') { liveValue = String(liveValue); }
+                        newConf.default = liveValue;
+                    }
+                    
+                    // Gradient stops/frames are already handled by keeping the oldConf.default (which is a string)
+                    // If the original was a string, the default is already correct.
+
                     return newConf;
                 });
-                configStore.push(...newConfigs);
+                
+                // 2. Re-create the object and update configStore
+                const newShape = new Shape({ 
+                    ...newState, 
+                    id: newId, 
+                    ctx: ctx, 
+                }); 
+                
+                // Add new configs to store
+                configStore.push(...newConfigs); 
+                
+                // Add to objects array and select
+                objects.unshift(newShape); 
                 selectedObjectIds = [newId];
-                renderForm();
-                syncPanelsWithSelection();
+                
+                // Finalize state update
+                renderForm(); 
+                updateFormValuesFromObjects(); 
                 drawFrame();
                 recordHistory();
             }
