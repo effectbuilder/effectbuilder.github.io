@@ -728,7 +728,7 @@ class Shape {
             const isVertical = scrollDirection === 'up' || scrollDirection === 'down';
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            const patternSize = 256;
+            const patternSize = (typeof engine !== 'undefined') ? (256 / 4) : 256;
             tempCanvas.width = isVertical ? 1 : patternSize;
             tempCanvas.height = isVertical ? patternSize : 1;
             const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
@@ -746,7 +746,7 @@ class Shape {
             const pattern = this.ctx.createPattern(tempCanvas, 'repeat');
             const matrix = new DOMMatrix();
             const directionMultiplier = (scrollDirection === 'left' || scrollDirection === 'up') ? 1 : -1;
-            const scrollDistance = isVertical ? height : width;
+            const scrollDistance = isVertical ? (height / 4) : (width / 4);
             const scrollOffset = effectiveProgress * scrollDistance * directionMultiplier;
             matrix.translateSelf(-width / 2, -height / 2);
             if (isVertical) { matrix.translateSelf(0, scrollOffset); } else { matrix.translateSelf(scrollOffset, 0); }
@@ -1818,7 +1818,7 @@ class Shape {
             if (!this._linearPatternCache || this._linearPatternCache.sourceHash !== sourceHash) {
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
-                const patternSize = 256;
+                const patternSize = (typeof engine !== 'undefined') ? (256 / 4) : 256;
                 tempCanvas.width = isVertical ? 1 : patternSize;
                 tempCanvas.height = isVertical ? patternSize : 1;
                 const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
