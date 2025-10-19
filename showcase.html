@@ -12,9 +12,9 @@
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    
+
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -42,7 +42,7 @@
                 <h2 class="mb-3"><i class="bi bi-stars me-2"></i>SignalRGB Effects Showcase</h2>
                 <p class="text-body-secondary">A curated collection of SignalRGB effects, coded manually. Hover over each effect to preview its animation. Click "View Code" to see the source or "Download" to get the files.</p>
                 <hr>
-                
+
                 <div class="input-group mb-4">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text" class="form-control" id="effect-search-input" placeholder="Search by title, description, or author...">
@@ -63,34 +63,30 @@
     </div>
 
     <div class="modal fade" id="effect-view-modal" tabindex="-1" aria-labelledby="effectViewModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" style="max-width: 640px; width: 640px;"> 
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="effect-view-title">View Effect</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body p-0 d-flex justify-content-center align-items-center" id="effect-iframe-container" style="background-color: #000; width: 320px; height: 200px;">
-            <iframe id="effect-iframe" style="width: 320px; height: 200px; border: none; flex-shrink: 0;" title="Effect Preview" scrolling="no"></iframe>
-          </div>
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 640px; width: 640px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="effect-view-title">View Effect</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 d-flex justify-content-center align-items-center" id="effect-iframe-container" style="background-color: #000; width: 320px; height: 200px;">
+                    <iframe id="effect-iframe" style="width: 320px; height: 200px; border: none; flex-shrink: 0;" title="Effect Preview" scrolling="no"></iframe>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-outline-info" id="effect-share-btn">
+                            <i class="bi bi-link-45deg me-1"></i> Copy Share Link
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-success" id="effect-download-btn">
+                            <i class="bi bi-download me-1"></i> Download Effect (Zip)
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="modal fade" id="code-preview-modal" tabindex="-1" aria-labelledby="codePreviewModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="code-preview-title">Effect Source Code</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body bg-dark p-0">
-            <pre class="p-3 m-0" style="max-height: 70vh; overflow-y: auto;"><code id="code-preview-content" class="language-html" style="white-space: pre-wrap; word-break: break-all;">Loading code...</code></pre>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="copy-code-btn"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="modal fade" id="installation-modal" tabindex="-1" aria-labelledby="installationModalLabel" aria-hidden="true">
@@ -117,7 +113,7 @@
                                 <h6 class="mt-3 mb-1">Common Locations (try these in order):</h6>
                                 <p class="mb-1 fw-medium text-warning">1. Standard Documents Location:</p>
                                 <code class="d-block p-2 bg-dark rounded text-white small">%userprofile%\Documents\WhirlwindFX\Effects\</code>
-                                
+
                                 <p class="mb-1 fw-medium text-warning mt-2">2. OneDrive Sync Location (for users with OneDrive):</p>
                                 <code class="d-block p-2 bg-dark rounded text-white small">C:\Users\<span class="text-warning">&lt;YOUR_USERNAME&gt;</span>\OneDrive\Documents\WhirlwindFX\Effects\</code>
                             </div>
@@ -173,10 +169,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-    
+
     <script src="showcase.js"></script>
 </body>
 
