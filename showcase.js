@@ -72,28 +72,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
     
-    // NEW: Variable to store all effects for filtering
+    // Variable to store all effects for filtering
     let allEffects = [];
 
-    // NEW: Search Input Element
+    // Search Input Element
     const searchInput = document.getElementById('effect-search-input');
 
 
     // --- MODAL VARIABLES (CODE PREVIEW) ---
     const codePreviewModalEl = document.getElementById('code-preview-modal');
-    const codePreviewModal = new bootstrap.Modal(codePreviewModalEl);
+    // FIX: Check if element exists before initialization
+    const codePreviewModal = codePreviewModalEl ? new bootstrap.Modal(codePreviewModalEl) : null;
     const codePreviewTitle = document.getElementById('code-preview-title');
     const codePreviewContent = document.getElementById('code-preview-content');
     const copyCodeBtn = document.getElementById('copy-code-btn');
 
     // --- MODAL VARIABLES (EFFECT VIEW) ---
     const effectViewModalEl = document.getElementById('effect-view-modal');
-    const effectViewModal = new bootstrap.Modal(effectViewModalEl);
+    // FIX: Check if element exists before initialization
+    const effectViewModal = effectViewModalEl ? new bootstrap.Modal(effectViewModalEl) : null;
     const effectViewTitle = document.getElementById('effect-view-title');
     const effectIframe = document.getElementById('effect-iframe');
-    // GET THE PARENT DIV OF THE IFRAME TO ADJUST ITS SIZE
     const effectIframeContainer = document.getElementById('effect-iframe-container');
-
+    
+    // Download and Share Buttons in View Modal
+    const effectDownloadBtn = document.getElementById('effect-download-btn');
+    const effectShareBtn = document.getElementById('effect-share-btn');
 
     /**
      * Fetches an individual effect's HTML file and parses it to extract metadata.
@@ -156,7 +160,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 description,
                 author,
                 effectUrl,
-                staticUrl
+                staticUrl,
+                // NEW: Store the raw filename for lookup/deep linking
+                filename: filename
             };
 
         } catch (error) {
@@ -177,6 +183,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const effectPromises = filenames.map(fetchEffectMetadata);
         const effects = await Promise.all(effectPromises);
         return effects.filter(effect => effect !== null);
+    }
+    
+    /**
+     * Finds a single effect object in the global list by its filename.
+     * @param {string} filename - The filename to search for (e.g., "RetroWave.html").
+     * @returns {object | undefined} The effect object or undefined.
+     */
+    function getEffectByFilename(filename) {
+        return allEffects.find(effect => effect.filename === filename);
     }
 
     /**
@@ -261,6 +276,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // ADD CLICK HANDLER TO OPEN MODAL HERE
             previewContainer.addEventListener('click', () => {
                 handleViewEffect(effect);
+                // Update URL hash for sharing
+                window.location.hash = effect.filename;
             });
 
             const cardBody = document.createElement('div');
@@ -282,10 +299,12 @@ document.addEventListener('DOMContentLoaded', function () {
             viewButton.type = 'button';
             viewButton.className = 'btn btn-primary';
             viewButton.innerHTML = '<i class="bi bi-eye-fill me-1"></i> View';
+            
+            // Add click handler and use window.location.hash for shareable link
             viewButton.addEventListener('click', (e) => {
-                // Prevent click on the button from bubbling up and triggering the canvas click
                 e.stopPropagation(); 
                 handleViewEffect(effect);
+                window.location.hash = effect.filename; // Set the hash on button click
             });
 
             const codeButton = document.createElement('button');
@@ -327,6 +346,29 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleViewEffect(effect) {
         effectViewTitle.textContent = effect.title;
         effectIframe.src = effect.effectUrl;
+        
+        // --- Dynamic Download Button Handler ---
+        // 1. Clone the node to remove all previous click listeners
+        if (effectDownloadBtn) {
+            effectDownloadBtn.replaceWith(effectDownloadBtn.cloneNode(true));
+            const newDownloadBtn = document.getElementById('effect-download-btn');
+            // 2. Add the listener for the current effect
+            newDownloadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleDownloadZip(effect, newDownloadBtn);
+            });
+        }
+        
+        // --- Share Button Handler ---
+        if (effectShareBtn) {
+            effectShareBtn.replaceWith(effectShareBtn.cloneNode(true));
+            const newShareBtn = document.getElementById('effect-share-btn');
+            newShareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleShareLink(newShareBtn, effect.filename);
+            });
+        }
+        // ------------------------------------------
 
         // --- CODE FOR SCALING ---
         const SCALE_FACTOR = 2.0;
@@ -345,7 +387,10 @@ document.addEventListener('DOMContentLoaded', function () {
         effectIframeContainer.style.height = `${BASE_HEIGHT * SCALE_FACTOR}px`;
         effectIframeContainer.style.width = `${BASE_WIDTH * SCALE_FACTOR}px`;
 
-        effectViewModal.show();
+        // FIX: Check instance before calling show()
+        if (effectViewModal) {
+            effectViewModal.show();
+        }
     }
 
     /**
@@ -361,7 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
             Prism.highlightElement(codePreviewContent);
         }
 
-        codePreviewModal.show();
+        // FIX: Check instance before calling show()
+        if (codePreviewModal) {
+            codePreviewModal.show();
+        }
 
         try {
             const response = await fetch(effect.effectUrl);
@@ -437,41 +485,80 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * Attaches a click listener to the "Copy Code" button inside the code modal.
-     * Copies the modal's text content to the clipboard.
+     * Copies the full deep link URL to the clipboard.
+     *
+     * @param {HTMLElement} button - The share button that was clicked.
+     * @param {string} filename - The filename of the effect to include in the hash.
      */
-    copyCodeBtn.addEventListener('click', async () => {
-        const code = codePreviewContent.textContent;
-        const originalText = copyCodeBtn.innerHTML;
+    async function handleShareLink(button, filename) {
+        const shareLink = window.location.origin + window.location.pathname + '#' + filename;
+        const originalText = button.innerHTML;
+        
         try {
-            await navigator.clipboard.writeText(code);
-            copyCodeBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i> Copied!';
+            // Write the link to clipboard
+            await navigator.clipboard.writeText(shareLink);
+            button.innerHTML = '<i class="bi bi-check-lg me-1"></i> Link Copied!';
+            button.classList.remove('btn-outline-info');
+            button.classList.add('btn-info');
         } catch (err) {
-            console.error('Failed to copy code: ', err);
-            copyCodeBtn.innerHTML = 'Error Copying';
+            console.error('Failed to copy link: ', err);
+            button.innerHTML = '<i class="bi bi-x-lg me-1"></i> Copy Error';
+            button.classList.remove('btn-outline-info');
+            button.classList.add('btn-danger');
         }
 
         setTimeout(() => {
-            copyCodeBtn.innerHTML = originalText;
-        }, 2000);
-    });
+            button.innerHTML = originalText;
+            button.classList.remove('btn-info', 'btn-danger');
+            button.classList.add('btn-outline-info');
+        }, 2500);
+    }
+
+    /**
+     * Attaches a click listener to the "Copy Code" button inside the code modal.
+     * Copies the modal's text content to the clipboard.
+     */
+    if (copyCodeBtn) {
+        copyCodeBtn.addEventListener('click', async () => {
+            const code = codePreviewContent.textContent;
+            const originalText = copyCodeBtn.innerHTML;
+            try {
+                await navigator.clipboard.writeText(code);
+                copyCodeBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i> Copied!';
+            } catch (err) {
+                console.error('Failed to copy code: ', err);
+                copyCodeBtn.innerHTML = 'Error Copying';
+            }
+
+            setTimeout(() => {
+                copyCodeBtn.innerHTML = originalText;
+            }, 2000);
+        });
+    }
 
     /**
      * Attaches a listener to the Effect View modal. When the modal is fully hidden,
      * it resets the iframe's source to 'about:blank'. This is crucial to stop
      * any running animations or audio from the effect.
      */
-    effectViewModalEl.addEventListener('hidden.bs.modal', () => {
-        // Clear the iframe to stop the effect from running in the background
-        effectIframe.src = 'about:blank';
-        
-        // Reset the iframe and its container styles
-        effectIframe.style.transform = 'none';
-        effectIframe.style.width = '320px';
-        effectIframe.style.height = '200px';
-        effectIframeContainer.style.height = '200px';
-        effectIframeContainer.style.width = '100%'; // Reset to fill parent for centering
-    });
+    if (effectViewModalEl) {
+        effectViewModalEl.addEventListener('hidden.bs.modal', () => {
+            // Clear the iframe to stop the effect from running in the background
+            effectIframe.src = 'about:blank';
+            
+            // Reset the iframe and its container styles
+            effectIframe.style.transform = 'none';
+            effectIframe.style.width = '320px';
+            effectIframe.style.height = '200px';
+            effectIframeContainer.style.height = '200px';
+            effectIframeContainer.style.width = '100%'; // Reset to fill parent for centering
+
+            // Clear the URL hash when closing the modal
+            if (window.location.hash) {
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+            }
+        });
+    }
 
 
     /**
@@ -497,6 +584,25 @@ document.addEventListener('DOMContentLoaded', function () {
         populateShowcase(filteredEffects);
     }
 
+    /**
+     * Checks the URL hash on page load and opens the Effect View modal
+     * for the corresponding effect if a valid filename is found.
+     */
+    function handleDeepLink() {
+        // Get the hash (e.g., "#RetroWave.html") and remove the leading '#'
+        const filename = window.location.hash.substring(1); 
+        
+        if (filename) {
+            const effect = getEffectByFilename(filename);
+            if (effect) {
+                // Wait briefly to ensure the modal object is ready, then show it
+                setTimeout(() => {
+                    handleViewEffect(effect);
+                }, 100); 
+            } 
+        }
+    }
+
 
     // --- INITIALIZATION ---
     buildEffectsList(effectFilenames)
@@ -507,13 +613,19 @@ document.addEventListener('DOMContentLoaded', function () {
             allEffects = manualEffects;
             // Populate with all effects initially
             populateShowcase(allEffects);
+            
+            // 1. Handle deep link on page load
+            handleDeepLink();
         })
         .catch(error => {
             console.error("Failed to build effects list:", error);
             populateShowcase([]);
         });
 
-    // NEW: Attach keyup listener for filtering
+    // 2. Handle deep link when the hash changes (e.g., when clicking 'View' on a loaded page)
+    window.addEventListener('hashchange', handleDeepLink);
+
+    // Attach keyup listener for filtering
     if (searchInput) {
         searchInput.addEventListener('keyup', handleSearch);
     }
