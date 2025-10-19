@@ -6765,6 +6765,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 renderForm();
                 updateFormValuesFromObjects();
 
+                newShape.update({ polylineNodes: newShape.polylineNodes });
+
                 previewLine.startX = x;
                 previewLine.startY = y;
                 previewLine.endX = x;
@@ -7820,6 +7822,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Add the new shape to the beginning of the objects array to place it on the top layer.
         objects.unshift(newShape);
+
+        if (newShape.shape === 'polyline') {
+            // Force the polyline to calculate its real bounding box from the initial nodes
+            newShape.update({ polylineNodes: newShape.polylineNodes });
+        }
 
         isRestoring = true;
         renderForm();
