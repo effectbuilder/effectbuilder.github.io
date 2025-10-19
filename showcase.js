@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "infinity_spiral.html",
         "PRFlag.html",
         "SolarSystem.html",
-        "tunnel.html"
+        "tunnel.html",
+        "particle_eq_bars.html"
     ];
 
     // --- Path Configuration ---
