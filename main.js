@@ -574,6 +574,12 @@ function updateColorControls() {
         const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
         if (!fieldset) return;
 
+        updateField('x', Math.round(obj.x / 4));
+        updateField('y', Math.round(obj.y / 4));
+        updateField('width', Math.round(obj.width / 4));
+        updateField('height', Math.round(obj.height / 4));
+        updateField('rotation', Math.round(obj.rotation));
+
         controlsToToggle.forEach(controlName => {
             const control = fieldset.querySelector(`[name$="_${controlName}"]`);
             if (control) {
@@ -4376,18 +4382,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (forceJsVarProps.includes(propName) || !exposedProperties.includes(conf.property)) {
                     let finalJsValue = liveValue;
-                    
+
                     // *** FIX: Apply scaling for unexposed properties here. ***
                     // We only scale properties that were saved to the original config store (c.default) in UI units (0-100).
-                    
+
                     if (propName.includes('Position_') && typeof finalJsValue === 'number') {
                         // Position properties are scaled from 0-100 to 0.0-1.0 for the JS variable.
                         finalJsValue /= 100.0;
                     } else if (propsToScale.includes(propName) && typeof finalJsValue === 'number') {
                         // Rescale X, Y, Width, Height, etc. from Canvas Units (x4) down to UI units (x1)
                         // Then also scale down by 4 for the exported JS value
-                        finalJsValue /= 4; 
-                        
+                        finalJsValue /= 4;
+
                     } else if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
                         // Rescale Speed (x10) down to normalized (x1) for the JS variable.
                         finalJsValue /= 10.0;
@@ -4501,7 +4507,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }));
 
                 const newId = (objects.length > 0 ? (Math.max(...objects.map(o => o.id))) : 0) + 1;
-                
+
                 newState.id = newId;
                 newState.name = `${objectToCopy.name} Copy`;
                 newState.x += 20;
@@ -4514,7 +4520,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const prefix = `obj${idToCopy}_`;
                     const newPrefix = `obj${newId}_`;
                     const propName = oldConf.property.substring(prefix.length);
-                    
+
                     newConf.property = newPrefix + propName;
                     newConf.label = `${newState.name}:${oldConf.label.split(':').slice(1).join(':')}`;
 
@@ -4523,7 +4529,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // *** FIX: If the property is directly on the Shape object (e.g., rotationSpeed, animationSpeed), 
                     // and it needs to be unscaled for the UI (like 0.5 -> 25), apply the scaling here. 
                     // All other properties (x,y,width,height) are already scaled to canvas units (x4) in newState. ***
-                    
+
                     if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
                         liveValue *= 10;
                     } else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') {
@@ -4537,30 +4543,30 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (typeof liveValue === 'boolean') { liveValue = String(liveValue); }
                         newConf.default = liveValue;
                     }
-                    
+
                     // Gradient stops/frames are already handled by keeping the oldConf.default (which is a string)
                     // If the original was a string, the default is already correct.
 
                     return newConf;
                 });
-                
+
                 // 2. Re-create the object and update configStore
-                const newShape = new Shape({ 
-                    ...newState, 
-                    id: newId, 
-                    ctx: ctx, 
-                }); 
-                
+                const newShape = new Shape({
+                    ...newState,
+                    id: newId,
+                    ctx: ctx,
+                });
+
                 // Add new configs to store
-                configStore.push(...newConfigs); 
-                
+                configStore.push(...newConfigs);
+
                 // Add to objects array and select
-                objects.unshift(newShape); 
+                objects.unshift(newShape);
                 selectedObjectIds = [newId];
-                
+
                 // Finalize state update
-                renderForm(); 
-                updateFormValuesFromObjects(); 
+                renderForm();
+                updateFormValuesFromObjects();
                 drawFrame();
                 recordHistory();
             }
@@ -6424,9 +6430,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const shape = objects.find(o => o.id === currentlyDrawingShapeId);
         if (shape) {
-            // Final update to recalculate bounding box correctly
-            shape.update({ polylineNodes: shape.polylineNodes });
-            updateFormValuesFromObjects();
+            let nodes = shape.polylineNodes;
+
+            if (Array.isArray(nodes) && nodes.length > 1) {
+
+                // 1. Calculate Bounding Box from RELATIVE coordinates.
+                // Nodes are relative to shape.x/y. Bounding box gives offset.
+                const minX = Math.min(...nodes.map(n => n.x));
+                const minY = Math.min(...nodes.map(n => n.y));
+                const maxX = Math.max(...nodes.map(n => n.x));
+                const maxY = Math.max(...nodes.map(n => n.y));
+
+                // 2. Adjust shape's ABSOLUTE position and dimensions.
+                // New position is the old position plus the offset of the min node.
+                const newWorldX = shape.x + minX;
+                const newWorldY = shape.y + minY;
+                const newWidth = maxX - minX;
+                const newHeight = maxY - minY;
+
+                // 3. Normalize nodes: Shift all points so the top-left corner is (0, 0) relative to the new bounds.
+                const normalizedNodes = nodes.map(n => ({
+                    x: n.x - minX,
+                    y: n.y - minY,
+                }));
+
+                // 4. Update the shape object with the final world position and normalized nodes.
+                shape.x = newWorldX;
+                shape.y = newWorldY;
+                shape.width = newWidth;
+                shape.height = newHeight;
+
+                // CRITICAL: Update the polylineNodes property with the normalized set.
+                shape.update({ polylineNodes: normalizedNodes });
+
+                // 5. Update Form and Selection.
+                // This is critical to correctly scale shape.x/y/width/height back to UI units (x1) for the form fields.
+                updateFormValuesFromObjects();
+                selectedObjectIds = [shape.id];
+
+            } else {
+                // If creation failed or only one node exists, delete the object.
+                deleteObjects([shape.id]);
+                showToast("Polyline creation failed (too few nodes).", "danger");
+            }
         }
 
         isDrawingPolyline = false;
@@ -6435,9 +6481,11 @@ document.addEventListener('DOMContentLoaded', function () {
         activeTool = 'select';
         canvasContainer.style.cursor = 'default';
 
-        recordHistory();
-        drawFrame();
-        showToast("Polyline created!", "success");
+        if (shape) {
+            recordHistory();
+            drawFrame();
+            showToast("Polyline created!", "success");
+        }
     }
 
     canvasContainer.addEventListener('dblclick', e => {
@@ -6796,51 +6844,69 @@ document.addEventListener('DOMContentLoaded', function () {
             const { x, y } = getCanvasCoordinates(e);
 
             if (!isDrawingPolyline) {
+                // STARTING NEW POLYLINE
                 isDrawingPolyline = true;
                 const newId = objects.length > 0 ? (Math.max(...objects.map(o => o.id))) + 1 : 1;
                 currentlyDrawingShapeId = newId;
 
+                // CRITICAL FIX 1: Set the shape's anchor to the click point.
+                // This ensures the object starts at the correct world position.
+                const anchorX = x;
+                const anchorY = y;
+
                 const newShape = new Shape({
                     id: newId, shape: 'polyline', name: `Polyline ${newId}`,
-                    x: x, y: y, width: 1, height: 1,
+                    // Set the shape's position to the click point
+                    x: anchorX,
+                    y: anchorY,
+                    width: 1, height: 1,
+                    // The first node is always (0, 0) relative to its container's anchor (x,y).
+                    // All future node additions (in the 'else' block) will be calculated relative to this anchor.
                     polylineNodes: [{ x: 0, y: 0 }],
                     ctx: ctx, enableStroke: true, strokeWidth: 8
                 });
                 objects.unshift(newShape);
 
-                const newObjectConfigs = getDefaultObjectConfig(newId);
-                const firstObjectConfigIndex = configStore.findIndex(c => (c.property || '').startsWith('obj'));
-
-                if (firstObjectConfigIndex === -1) { configStore.push(...newObjectConfigs); }
-                else { configStore.splice(firstObjectConfigIndex, 0, ...newObjectConfigs); }
+                // Find the insertion point (after general settings, before existing object settings).
+                const newConfigs = getDefaultObjectConfig(newId);
+                const firstObjectConfigIndex = configStore.findIndex(c => (c.property || c.name || '').startsWith('obj'));
+                if (firstObjectConfigIndex === -1) { configStore.push(...newConfigs); }
+                else { configStore.splice(firstObjectConfigIndex, 0, ...newConfigs); }
 
                 selectedObjectIds = [newId];
+
+                // CRITICAL: We need to update the form values for X and Y with the correct scaled value
+                // that matches the current click position.
                 renderForm();
                 updateFormValuesFromObjects();
 
-                newShape.update({ polylineNodes: newShape.polylineNodes });
-
-                previewLine.startX = x;
-                previewLine.startY = y;
+                previewLine.startX = anchorX;
+                previewLine.startY = anchorY;
                 previewLine.endX = x;
                 previewLine.endY = y;
                 previewLine.active = true;
                 needsRedraw = true;
+
             } else {
+                // ADDING SUBSEQUENT NODE (The 'else' block from the previous response)
                 const shape = objects.find(o => o.id === currentlyDrawingShapeId);
                 if (!shape) return;
 
-                const center = { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
-                const angle = -shape.rotation * Math.PI / 180;
-                const localClickX = (x - center.x) * Math.cos(angle) - (y - center.y) * Math.sin(angle);
-                const localClickY = (x - center.x) * Math.sin(angle) + (y - center.y) * Math.cos(angle);
+                // CRITICAL FIX: Add the new node relative to the shape's current top-left (shape.x, shape.y)
+                const newNodeX = x - shape.x;
+                const newNodeY = y - shape.y;
 
-                const nodeX = localClickX + shape.width / 2;
-                const nodeY = localClickY + shape.height / 2;
+                const newNodes = [...shape.polylineNodes, { x: newNodeX, y: newNodeY }];
 
-                const newNodes = [...shape.polylineNodes, { x: nodeX, y: nodeY }];
-                shape.update({ polylineNodes: newNodes });
-                updateFormValuesFromObjects();
+                // Temporarily update shape's nodes. Let finalizePolyline handle the bounds calculation.
+                shape.polylineNodes = newNodes;
+
+                // Manually update the hidden form field for the next save/history state.
+                const fieldset = form.querySelector(`fieldset[data-object-id="${shape.id}"]`);
+                const hiddenTextarea = fieldset?.querySelector('textarea[name$="_polylineNodes"]');
+                if (hiddenTextarea) {
+                    hiddenTextarea.value = JSON.stringify(newNodes);
+                }
 
                 previewLine.startX = x;
                 previewLine.startY = y;
@@ -6929,9 +6995,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     isResizing = true;
                     activeResizeHandle = handle.name;
+
                     const oppositeHandleName = getOppositeHandle(handle.name);
                     const anchorPoint = activeObjectForAction.getWorldCoordsOfCorner(oppositeHandleName);
-                    initialDragState = [{ id: activeObjectForAction.id, initialX: activeObjectForAction.x, initialY: activeObjectForAction.y, initialWidth: activeObjectForAction.width, initialHeight: activeObjectForAction.height, anchorPoint: anchorPoint }];
+
+                    // *** CRITICAL FIX 1: Store the initial (x, y) if it's a polyline.
+                    // This ensures we can calculate the final world position based on the fixed anchor.
+                    const initialX = activeObjectForAction.x;
+                    const initialY = activeObjectForAction.y;
+                    // *** END CRITICAL FIX 1 ***
+
+                    initialDragState = [{
+                        id: activeObjectForAction.id,
+                        initialX: initialX, // Storing original x
+                        initialY: initialY, // Storing original y
+                        initialWidth: activeObjectForAction.width,
+                        initialHeight: activeObjectForAction.height,
+                        anchorPoint: anchorPoint
+                    }];
                 }
             }
         }
@@ -7072,13 +7153,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         newHeight = initial.initialHeight;
                     }
 
-                    // --- START FIX for object moving during resize ---
+                    // --- POSITION CALCULATION ---
                     let newCenterX, newCenterY;
-                    const isCardinal = activeResizeHandle === 'top' || activeResizeHandle === 'bottom' || activeResizeHandle === 'left' || activeResizeHandle === 'right';
+                    const isCardinal = activeResizeHandle.length <= 5; // e.g., 'top', 'left'
 
                     if (isCardinal) {
                         // For side handles, calculate the new center by offsetting from the stationary anchor.
-                        // This prevents the object from moving with the mouse on the non-resizing axis.
                         const localAnchorX = activeResizeHandle === 'left' ? newWidth / 2 : activeResizeHandle === 'right' ? -newWidth / 2 : 0;
                         const localAnchorY = activeResizeHandle === 'top' ? newHeight / 2 : activeResizeHandle === 'bottom' ? -newHeight / 2 : 0;
 
@@ -7093,15 +7173,52 @@ document.addEventListener('DOMContentLoaded', function () {
                         newCenterX = (anchorPoint.x + x) / 2;
                         newCenterY = (anchorPoint.y + y) / 2;
                     }
-                    // --- END FIX ---
 
-                    // Update the object with the correctly calculated center and dimensions
-                    obj.update({
-                        x: newCenterX - newWidth / 2,
-                        y: newCenterY - newHeight / 2,
-                        width: newWidth,
-                        height: newHeight
-                    });
+                    // Calculate the new top-left corner
+                    const newX = newCenterX - newWidth / 2;
+                    const newY = newCenterY - newHeight / 2;
+
+                    // --- SCALING AND UPDATE APPLICATION ---
+                    if (obj.shape === 'polyline' && !obj.locked) {
+                        const oldWidth = obj.width;
+                        const oldHeight = obj.height;
+
+                        if (oldWidth > 0 && oldHeight > 0) {
+                            const scaleX = newWidth / oldWidth;
+                            const scaleY = newHeight / oldHeight;
+
+                            // 1. Scale the polyline's internal nodes
+                            const newNodes = obj.polylineNodes.map(node => {
+                                // Scale the node based on handle movement
+                                const scaledX = activeResizeHandle.includes('left') || activeResizeHandle.includes('right') || !activeResizeHandle.includes('-')
+                                    ? node.x * scaleX
+                                    : node.x;
+                                const scaledY = activeResizeHandle.includes('top') || activeResizeHandle.includes('bottom') || !activeResizeHandle.includes('-')
+                                    ? node.y * scaleY
+                                    : node.y;
+
+                                return { x: scaledX, y: scaledY };
+                            });
+
+                            // 2. Apply the manually calculated position and dimensions, and update the nodes array.
+                            // This overwrites the old values and updates the nodes cache.
+                            obj.update({
+                                x: newX,
+                                y: newY,
+                                width: newWidth,
+                                height: newHeight,
+                                polylineNodes: newNodes
+                            });
+                        }
+
+                    } else { // Apply the general update for all standard shapes.
+                        obj.update({
+                            x: newX,
+                            y: newY,
+                            width: newWidth,
+                            height: newHeight
+                        });
+                    }
                 }
                 needsRedraw = true;
             } else if (isRotating) {
@@ -7117,21 +7234,60 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (isDraggingNode) {
                 const { id, nodeIndex } = activeNodeDragState;
                 const shape = objects.find(o => o.id === id);
-                if (!shape) return;
+                if (!shape || shape.locked) return;
 
+                // 1. Calculate the local mouse position relative to the shape's *center*
                 const center = shape.getCenter();
                 const staticAngle = -shape.getRenderAngle();
                 const s = Math.sin(staticAngle);
                 const c = Math.cos(staticAngle);
                 const dx = x - center.x;
                 const dy = y - center.y;
-                const localX = dx * c - dy * s;
-                const localY = dx * s + dy * c;
+                const localX_center = dx * c - dy * s;
+                const localY_center = dx * s + dy * c;
+
+                // 2. Convert to node position (relative to the shape's bounding box top-left corner)
+                const nodeX = localX_center + shape.width / 2;
+                const nodeY = localY_center + shape.height / 2;
 
                 let nodes = (typeof shape.polylineNodes === 'string') ? JSON.parse(shape.polylineNodes) : shape.polylineNodes;
-                nodes[nodeIndex].x = localX + shape.width / 2;
-                nodes[nodeIndex].y = localY + shape.height / 2;
-                shape.update({ polylineNodes: nodes });
+
+                // Manually set the new coordinate for the dragged node
+                nodes[nodeIndex].x = nodeX;
+                nodes[nodeIndex].y = nodeY;
+
+                // 3. Recalculate Bounding Box
+                const minX = Math.min(...nodes.map(n => n.x));
+                const minY = Math.min(...nodes.map(n => n.y));
+                const maxX = Math.max(...nodes.map(n => n.x));
+                const maxY = Math.max(...nodes.map(n => n.y));
+
+                // New Bounding Box Properties
+                const newWidth = maxX - minX;
+                const newHeight = maxY - minY;
+
+                // Calculate the required shift (the min offset, which tells us how much the shape needs to move)
+                const shiftX = minX;
+                const shiftY = minY;
+
+                // **FIX:** Adjust the shape's anchor (x, y) by the shift amount.
+                // This keeps the nodes stable relative to the canvas.
+                shape.x += shiftX;
+                shape.y += shiftY;
+                shape.width = newWidth;
+                shape.height = newHeight;
+
+                // 4. Normalize the nodes back to (0, 0) relative to the new anchor
+                const normalizedNodes = nodes.map(n => ({
+                    x: n.x - shiftX,
+                    y: n.y - shiftY,
+                }));
+
+                // 5. Update the shape object with the final, corrected state
+                shape.update({ polylineNodes: normalizedNodes });
+
+                // 6. Manually update the hidden nodes list for the form/history.
+                shape.polylineNodes = normalizedNodes;
                 needsRedraw = true;
             }
         };
