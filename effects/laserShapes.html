@@ -3,7 +3,7 @@
 
 <head>
     <title>Laser Shapes</title>
-    <meta description="A customizable laser light show that draws geometric shapes in sync with your music." />
+    <meta description="A customizable laser light show that draws geometric shapes in sync with your music, now with sparkles." />
     <meta publisher="Jose Miranda" />
 
     <meta property="laserCount" label="Max Shapes" type="number" default="40" min="1" max="40">
@@ -13,6 +13,7 @@
 
     <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,Party,Ocean,Lava,Forest,Sunset,Aurora,Vaporwave" default="Rainbow">
     <meta property="colorSpeed" label="Color Cycle Speed" type="number" default="10" min="0" max="50">
+    <meta property="drawSparkles" label="Sparkles" type="boolean" default="true">
     <meta property="customColor1" label="Custom Color 1" type="color" default="#00ff00">
     <meta property="customColor2" label="Custom Color 2" type="color" default="#ff00ff">
 
@@ -59,6 +60,7 @@
 
         // --- State for Drawing Modes (Array for multiple shapes) ---
         let activeShapes = [];
+        let sparkles = []; // For sparkle effect
 
 
         const wledPalettes = {
@@ -230,6 +232,7 @@
                 isResponsive: typeof soundResponsive !== 'undefined' ? soundResponsive : true,
                 bassSens: (typeof bassSensitivity !== 'undefined' ? Math.round(bassSensitivity) : 50) / 100,
                 bassFill: typeof bassFillFlash !== 'undefined' ? bassFillFlash : true,
+                sparkles: typeof drawSparkles !== 'undefined' ? drawSparkles : true,
             };
 
             // --- Audio Reactivity Logic ---
@@ -566,6 +569,26 @@
                             ctx.lineTo(transformedX, transformedY);
                             ctx.stroke();
                         }
+                        
+                        // --- (SPAWNING) WHITE LINE SPARKLE LOGIC ---
+                        const spawnChance = 1; // Chance to spawn each frame
+                        
+                        if (p.sparkles) {
+                            if (Math.random() < spawnChance) {
+                                const angle = Math.random() * Math.PI * 2;
+                                // Reduced speed to keep sparkles "tighter"
+                                const speed = Math.random() +0.5; // Slower speed (was 1.5 + 0.5)
+                                sparkles.push({
+                                    x: transformedX, // Spawn at the exact laser point
+                                    y: transformedY,
+                                    vx: Math.cos(angle) * speed,
+                                    vy: Math.sin(angle) * speed,
+                                    life: 1.0,
+                                });
+                            }
+                        }
+                        // --- END SPAWNING LOGIC ---
+
                     }
                 } // End if(isActiveDrawing) for lasers
 
@@ -578,9 +601,40 @@
                         activeShapes[j].isActiveDrawing = true;
                         break;
                     }
-                    _
                 }
             }
+
+            // --- (DRAWING) WHITE LINE SPARKLE LOGIC ---
+            ctx.shadowBlur = 0; // Sparkles don't need glow
+            ctx.globalCompositeOperation = 'lighter'; // Make sparkles additive
+            ctx.lineWidth = 3; // Set line width for sparkles
+            for (let i = sparkles.length - 1; i >= 0; i--) {
+                const s = sparkles[i];
+                s.life -= 0.02; // Fade speed
+
+                // Update position
+                s.x += s.vx;
+                s.y += s.vy;
+
+                if (s.life <= 0) {
+                    sparkles.splice(i, 1);
+                } else {
+                    // Draw the sparkle line
+                    const alpha = s.life; // Fade out
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    
+                    // Calculate a short tail
+                    const tailLength = 10.0;
+                    const prevX = s.x - s.vx * tailLength;
+                    const prevY = s.y - s.vy * tailLength;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(s.x, s.y);
+                    ctx.lineTo(prevX, prevY);
+                    ctx.stroke();
+                }
+            }
+            // --- END DRAWING LOGIC ---
 
             ctx.shadowBlur = 0; // Reset shadow for next frame
             time++;
