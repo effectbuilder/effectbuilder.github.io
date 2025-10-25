@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Laser Shapes</title>
+    <meta description="A customizable laser light show that draws geometric shapes in sync with your music." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="laserCount" label="Max Shapes" type="number" default="40" min="1" max="40">
+    <meta property="baseLaserWidth" label="Base Laser Width" type="number" default="5" min="1" max="10">
+    <meta property="trailAmount" label="Laser Trail Amount" type="number" default="70" min="0" max="99">
+    <meta property="glowAmount" label="Glow Amount" type="number" default="25" min="0" max="50">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,Party,Ocean,Lava,Forest,Sunset,Aurora,Vaporwave" default="Rainbow">
+    <meta property="colorSpeed" label="Color Cycle Speed" type="number" default="10" min="0" max="50">
+    <meta property="customColor1" label="Custom Color 1" type="color" default="#00ff00">
+    <meta property="customColor2" label="Custom Color 2" type="color" default="#ff00ff">
+
+    <meta property="motionMode" label="Shape" type="combobox" values="Polygon,Spiral,Star,Heart,Card Suits,Mixed Shapes" default="Mixed Shapes">
+    <meta property="originMode" label="Laser Origin" type="combobox" values="Center,Top,Bottom,Corners" default="Corners">
+    <meta property="rotationSpeed" label="Rotation Speed" type="number" default="50" min="-50" max="50">
+    <meta property="sweepSpeed" label="Drawing Speed" type="number" default="100" min="1" max="100">
+    <meta property="maxPolygonSides" label="Max Polygon Sides" type="number" default="8" min="3" max="12">
+
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="true">
+    <meta property="bassSensitivity" label="Bass Reactivity (Thickness/Brightness/Size)" type="number" default="60" min="0" max="100">
+    <meta property="bassFillFlash" label="Bass Fill Flash" type="boolean" default="true">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+
+    <script>
+        // --- Effect Logic ---
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const width = canvas.width;
+        const height = canvas.height;
+
+        let time = 0;
+        let lastBassImpact = 0;
+        let bassHitMomentum = 0;
+
+        // --- State for Drawing Modes (Array for multiple shapes) ---
+        let activeShapes = [];
+
+
+        const wledPalettes = {
+            "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FF69B4", "#8A2BE2", "#4B0082"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"],
+            "Vaporwave": ["#FF71CE", "#01CDFE", "#05FFA1", "#FFFB96", "#FF71CE"]
+        };
+
+        // --- Utility Functions ---
+        function hexToRgb(hex) {
+            if (!hex) return { r: 0, g: 0, b: 0 };
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function lerp(a, b, f) { return a + (b - a) * f; }
+
+        function lerpColor(colorA, colorB, amount) {
+            amount = Math.max(0, Math.min(1, amount));
+            const r = colorA.r + (colorB.r - colorA.r) * amount;
+            const g = colorA.g + (colorB.g - colorA.g) * amount;
+            const b = colorA.b + (colorB.b - colorA.b) * amount;
+            return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+        }
+
+        function getColorFromPalette(palette, amount) {
+            amount = (amount % 1 + 1) % 1; // Ensure amount is [0, 1)
+            const segment = 1 / (palette.length - 1);
+            const index = Math.floor(amount / segment);
+            const localAmount = (amount - (index * segment)) / segment;
+            const colorA = hexToRgb(palette[index]);
+            const colorB = hexToRgb(palette[Math.min(index + 1, palette.length - 1)]);
+            return lerpColor(colorA, colorB, localAmount);
+        }
+
+        // Helper to scale predefined shape points
+        function scalePoints(points, scale) {
+            return points.map(p => ({ x: p.x * scale, y: p.y * scale }));
+        }
+
+        // --- Shape Generation ---
+        function generateNewShape(p, currentBassImpact) {
+            const isAnyActive = activeShapes.some(s => s.isActiveDrawing);
+            let shapeType = p.motion;
+            const drawingModes = ["Polygon", "Spiral", "Star", "Heart", "Card Suits"];
+            if (p.motion === "Mixed Shapes") {
+                shapeType = drawingModes[Math.floor(Math.random() * drawingModes.length)];
+            }
+
+            const shape = {
+                type: shapeType, specificType: shapeType, // Initialize specificType
+                points: [], pointIndex: 0, progress: 0, life: 1.0,
+                cx: Math.random() * width * 0.8 + width * 0.1, // Wider spawn
+                cy: Math.random() * height * 0.8 + height * 0.1,
+                colorProgressOffset: Math.random(), completedLoops: 0,
+                finishedDrawing: false, isActiveDrawing: !isAnyActive,
+                rotation: Math.random() * Math.PI * 2,
+                spinDirection: (Math.random() < 0.5) ? 1 : -1,
+                spinSpeedMultiplier: Math.random() * 0.3 + 0.1
+            };
+
+            if (shape.isActiveDrawing) activeShapes.forEach(s => s.isActiveDrawing = false);
+            const sizeMultiplier = 0.8 + currentBassImpact * p.bassSens * 1.2;
+            const baseRadius = (Math.random() * 0.2 + 0.15) * Math.min(width, height);
+            const r = baseRadius * sizeMultiplier;
+
+            // Predefined relative points (normalized around 0,0 - scale later)
+            const starPoints = [{ x: 0, y: -1 }, { x: 0.22, y: -0.31 }, { x: 0.95, y: -0.31 }, { x: 0.36, y: 0.12 }, { x: 0.59, y: 0.81 }, { x: 0, y: 0.38 }, { x: -0.59, y: 0.81 }, { x: -0.36, y: 0.12 }, { x: -0.95, y: -0.31 }, { x: -0.22, y: -0.31 }];
+            const heartPoints = [{ x: 0, y: -0.3 }, { x: -0.3, y: -0.7 }, { x: -0.7, y: -0.7 }, { x: -0.9, y: -0.4 }, { x: -0.9, y: 0.1 }, { x: 0, y: 0.9 }, { x: 0.9, y: 0.1 }, { x: 0.9, y: -0.4 }, { x: 0.7, y: -0.7 }, { x: 0.3, y: -0.7 }, { x: 0, y: -0.3 }];
+            const clubPoints = [
+                { x: 0, y: -0.9727891104561942 }, { x: -0.18, y: -0.977 }, { x: -0.11428571428571428, y: -0.5768707431092555 },
+                { x: -0.3346938775510204, y: -0.6585033961704799 }, { x: -0.6530612244897959, y: -0.6013605390276228 },
+                { x: -0.889795918367347, y: -0.1931972737215003 }, { x: -0.6938775510204082, y: 0.24761905280911192 },
+                { x: -0.2816326530612245, y: 0.5414966038295201 }, { x: 0, y: 0.9 }, { x: 0.2816326530612245, y: 0.5414966038295201 },
+                { x: 0.6938775510204082, y: 0.24761905280911192 }, { x: 0.889795918367347, y: -0.1931972737215003 },
+                { x: 0.6530612244897959, y: -0.6013605390276228 }, { x: 0.3346938775510204, y: -0.6585033961704799 },
+                { x: 0.11428571428571428, y: -0.5768707431092555 }, { x: 0.18, y: -0.977 }, { x: 0, y: -0.9727891104561942 }
+            ];
+            const diamondPoints = [{ x: 0, y: -1 }, { x: -0.7, y: 0 }, { x: 0, y: 1 }, { x: 0.7, y: 0 }, { x: 0, y: -1 }];
+            const spadePoints = [{ x: 0, y: -1 }, { x: -0.6, y: -0.3 }, { x: -0.9, y: 0.3 }, { x: -0.4, y: 0.7 }, { x: -0.2, y: 0.6 }, { x: -0.2, y: 1 }, { x: 0.2, y: 1 }, { x: 0.2, y: 0.6 }, { x: 0.4, y: 0.7 }, { x: 0.9, y: 0.3 }, { x: 0.6, y: -0.3 }, { x: 0, y: -1 }];
+
+            let generatedShapeType = shape.type;
+
+            if (shape.type === "Polygon") {
+                const sides = Math.floor(Math.random() * (p.maxSides - 3 + 1)) + 3;
+                const a0 = Math.random() * 2 * Math.PI;
+                for (let i = 0; i < sides; i++) {
+                    const angle = a0 + (i / sides) * 2 * Math.PI;
+                    const v_r = r + (Math.random() - 0.5) * r * 0.4;
+                    shape.points.push({ x: Math.cos(angle) * v_r, y: Math.sin(angle) * v_r });
+                }
+                shape.points.push(shape.points[0]);
+                generatedShapeType = "Polygon";
+
+            } else if (shape.type === "Spiral") {
+                const b = 1 + Math.random() * 0.4; // Expansion rate (1.0 to 1.4)
+                const maxR = ((Math.random() * 0.5 + 0.4) * Math.min(width, height)) * sizeMultiplier; // Max size (40% to 90%)
+                const minR = 0; // Start from center
+                let angle = Math.random() * 2 * Math.PI; // Random start angle
+                let currentR = Math.max(minR, b * angle); // Start radius
+                const pointsNeeded = 90 + Math.random() * 200; // More points (90 to 290)
+                const angleInc = 0.1 + Math.random() * 0.15; // Angle step (0.1 to 0.25)
+
+                if (currentR >= minR && shape.points.length === 0) { // Add first point if valid
+                    shape.points.push({ x: Math.cos(angle) * currentR, y: Math.sin(angle) * currentR });
+                }
+                angle += angleInc;
+
+                for (let i = 0; i < pointsNeeded; i++) {
+                    currentR = b * angle;
+                    if (currentR > maxR) break;
+                    shape.points.push({ x: Math.cos(angle) * currentR, y: Math.sin(angle) * currentR });
+                    angle += angleInc;
+                }
+                generatedShapeType = "Spiral";
+
+            } else if (shape.type === "Star") {
+                shape.points = scalePoints(starPoints, r);
+                shape.points.push(shape.points[0]); // Close star
+                generatedShapeType = "Star";
+
+            } else if (shape.type === "Heart") {
+                shape.points = scalePoints(heartPoints, r);
+                generatedShapeType = "Heart";
+
+            } else if (shape.type === "Card Suits") {
+                const suits = [clubPoints, diamondPoints, spadePoints, heartPoints];
+                const suitNames = ["Club", "Diamond", "Spade", "Heart"];
+                const chosenSuitIndex = Math.floor(Math.random() * suits.length);
+                shape.points = scalePoints(suits[chosenSuitIndex], r * 0.8);
+                generatedShapeType = suitNames[chosenSuitIndex];
+                if (shape.points.length > 0 && (shape.points[0].x !== shape.points[shape.points.length - 1].x || shape.points[0].y !== shape.points[shape.points.length - 1].y)) {
+                    shape.points.push(shape.points[0]);
+                }
+            }
+
+            shape.specificType = generatedShapeType; // Store the actual shape type
+
+            if (shape.points.length >= 2) activeShapes.push(shape);
+        }
+
+
+        // --- Main Animation Loop ---
+        function animate() {
+            // Read properties with defaults
+            const p = {
+                count: typeof laserCount !== 'undefined' ? Math.round(laserCount) : 12, // Now also maxShapes
+                baseWidth: typeof baseLaserWidth !== 'undefined' ? Math.round(baseLaserWidth) : 2,
+                trail: (typeof trailAmount !== 'undefined' ? Math.round(trailAmount) : 90) / 100,
+                glow: typeof glowAmount !== 'undefined' ? Math.round(glowAmount) : 15,
+                paletteName: typeof palette !== 'undefined' ? palette : "Rainbow",
+                colorSpeed: (typeof colorSpeed !== 'undefined' ? Math.round(colorSpeed) : 5) / 1000,
+                c1: hexToRgb(typeof customColor1 !== 'undefined' ? customColor1 : "#00ff00"),
+                c2: hexToRgb(typeof customColor2 !== 'undefined' ? customColor2 : "#ff00ff"),
+                motion: typeof motionMode !== 'undefined' ? motionMode : "Mixed Shapes", // Use new default
+                origin: typeof originMode !== 'undefined' ? originMode : "Center",
+                rotSpeed: (typeof rotationSpeed !== 'undefined' ? Math.round(rotationSpeed) : 15) / 1000,
+                sweepSpeed: (typeof sweepSpeed !== 'undefined' ? Math.round(sweepSpeed) : 50) / 100, // Normalized 0-1
+                maxSides: typeof maxPolygonSides !== 'undefined' ? Math.round(maxPolygonSides) : 7,
+                isResponsive: typeof soundResponsive !== 'undefined' ? soundResponsive : true,
+                bassSens: (typeof bassSensitivity !== 'undefined' ? Math.round(bassSensitivity) : 50) / 100,
+                bassFill: typeof bassFillFlash !== 'undefined' ? bassFillFlash : true,
+            };
+
+            // --- Audio Reactivity Logic ---
+            let bassImpact = 0;
+            if (p.isResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+                const freq = new Uint8Array(engine.audio.freq);
+                bassImpact = ((freq[2] || 0) + (freq[3] || 0) + (freq[4] || 0)) / 3 / 255;
+            }
+
+            const justHitBass = p.isResponsive && (bassImpact > ((1.0 - p.bassSens) * 0.5 + 0.1) && lastBassImpact <= ((1.0 - p.bassSens) * 0.5 + 0.1));
+
+            if (justHitBass) bassHitMomentum = 1.0;
+            bassHitMomentum *= 0.9; // Apply decay every frame
+
+            // --- Core Dynamic Variables ---
+            const t = time * 0.01;
+
+            // --- Drawing Logic ---
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - p.trail})`;
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+
+            const laserBrightness = (0.5 + 0.5 * (bassImpact * p.bassSens)) + bassHitMomentum * 0.5;
+            const laserThickness = p.baseWidth + 4 * (bassImpact * p.bassSens);
+            const drawingLaserThickness = Math.max(1, laserThickness * 0.5);
+            const drawingLaserBrightnessFactor = 0.6;
+
+
+            // --- Determine Origins (Used by all modes) ---
+            const origins = [];
+            switch (p.origin) {
+                case "Top": origins.push({ x: width / 2, y: 0 }); break;
+                case "Bottom": origins.push({ x: width / 2, y: height }); break;
+                case "Corners":
+                    origins.push({ x: 0, y: 0 }); origins.push({ x: width, y: 0 });
+                    origins.push({ x: width, y: height }); origins.push({ x: 0, y: height });
+                    break;
+                case "Center":
+                default: origins.push({ x: width / 2, y: height / 2 }); break;
+            }
+
+
+            // === Main logic is now ONLY drawing modes ===
+
+            // 1. Spawning Logic - Use p.count as maxShapes
+            const maxShapesLimit = p.count;
+            const baseSpawnChance = 0.01 + p.sweepSpeed * 0.03;
+            const scarcityFactor = Math.max(0.1, 1.0 - (activeShapes.length / maxShapesLimit));
+            const shouldSpawnRandomly = activeShapes.length < maxShapesLimit && Math.random() < baseSpawnChance * scarcityFactor;
+            const shouldSpawn = justHitBass || shouldSpawnRandomly;
+
+
+            if (shouldSpawn) {
+                if (activeShapes.length >= maxShapesLimit && activeShapes.length > 0 && justHitBass) {
+                    // Replace oldest shape on bass hit when full
+                    activeShapes.shift();
+                    generateNewShape(p, bassImpact);
+                } else if (activeShapes.length < maxShapesLimit) {
+                    // Add new shape if not full
+                    generateNewShape(p, bassImpact);
+                }
+            }
+
+            // 2. Update and Draw Active Shapes
+            let activeDrawingShapeFound = false;
+            const closedTypes = ["Polygon", "Star", "Diamond", "Heart", "Club", "Spade"]; // Moved here
+            for (let i = activeShapes.length - 1; i >= 0; i--) {
+                const shape = activeShapes[i];
+
+                // --- LENGTH-ADJUSTED DRAW SPEED ---
+                let drawSpeedIncrement = 0;
+                let pointsInShape = shape.points.length;
+                let p1_idx = shape.pointIndex;
+                let p2_idx = shape.pointIndex + 1;
+                p2_idx = Math.min(p2_idx, pointsInShape - 1);
+
+                let p1 = shape.points[p1_idx];
+                let p2 = shape.points[p2_idx];
+
+                if (shape.isActiveDrawing && !shape.finishedDrawing && p1 && p2) {
+                    const speedMultiplier = p.sweepSpeed * p.sweepSpeed;
+                    // Base speed + responsive boost
+                    const targetSpeedPx = (speedMultiplier * 2.0) + 1.0;
+                    const bassSpeedBoost = targetSpeedPx * bassImpact * p.bassSens * 2.0;
+                    const finalTargetSpeed = targetSpeedPx + bassSpeedBoost;
+
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+                    if (segmentLength > 0.1) {
+                        // Normalized progress increment for this segment
+                        drawSpeedIncrement = finalTargetSpeed / segmentLength;
+                    } else {
+                        drawSpeedIncrement = 1.0; // Auto-complete tiny segments
+                    }
+                    shape.progress += drawSpeedIncrement;
+                    activeDrawingShapeFound = true;
+                } else if (shape.finishedDrawing && shape.specificType === 'Spiral') {
+                    // Keep spiral at full progress
+                    shape.progress = 1.0;
+                }
+
+
+                // Apply random rotation
+                shape.rotation += shape.spinDirection * p.rotSpeed * shape.spinSpeedMultiplier;
+
+                // Decay life
+                const lifeDecay = 0.0015 + 0.003 * (activeShapes.length / maxShapesLimit);
+                shape.life -= lifeDecay;
+
+                // --- Index Logic & Finished Flag ---
+                let endPointIndex = pointsInShape - 1;
+
+                let justFinished = false;
+                if (shape.isActiveDrawing && !shape.finishedDrawing) {
+                    let isFinished = false;
+                    if (closedTypes.includes(shape.specificType)) {
+                        // Finished if at the start of the *last* segment and progress is >= 1
+                        isFinished = shape.pointIndex >= pointsInShape - 2 && shape.progress >= 1.0;
+                    } else { // Spiral
+                        isFinished = shape.pointIndex >= pointsInShape - 2 && shape.progress >= 1.0;
+                    }
+
+                    if (isFinished) {
+                        shape.finishedDrawing = true;
+                        shape.isActiveDrawing = false;
+                        justFinished = true;
+                        if (shape.specificType === "Spiral") shape.progress = 1.0;
+                        else shape.progress = 0; // Reset progress for closed shapes
+                    }
+
+                    // Handle progress overflow
+                    while (shape.progress >= 1.0 && shape.isActiveDrawing && !shape.finishedDrawing) {
+                        shape.progress -= 1.0;
+                        shape.pointIndex++;
+
+                        if (closedTypes.includes(shape.specificType) && shape.pointIndex >= pointsInShape - 1) {
+                            // Reached end of closed shape
+                            shape.pointIndex = 0; // Loop back
+                            shape.completedLoops++;
+
+                            // FINISH DRAWING (for closed shapes)
+                            shape.finishedDrawing = true;
+                            shape.isActiveDrawing = false;
+                            justFinished = true;
+                            shape.progress = 0; // Set to 0 for a "complete" loop
+                            break;
+                        }
+                        else if (shape.specificType === "Spiral" && shape.pointIndex >= pointsInShape - 1) {
+                            // Reached end of spiral
+                            shape.pointIndex = pointsInShape - 2; // Stay on last segment
+                            shape.progress = 1.0; // Stay at end
+                            shape.finishedDrawing = true;
+                            shape.isActiveDrawing = false;
+                            justFinished = true;
+                            break;
+                        }
+                    }
+                    // Ensure index is valid after adjustments
+                    shape.pointIndex = Math.min(shape.pointIndex, Math.max(0, pointsInShape - 2));
+                }
+
+
+                // Remove dead shapes
+                if (shape.life <= 0 || pointsInShape < 2) {
+                    const wasActive = shape.isActiveDrawing;
+                    activeShapes.splice(i, 1);
+                    if (wasActive && activeShapes.length > 0) {
+                        // Pass drawing torch to the next newest non-finished shape
+                        let foundNext = false;
+                        for (let j = activeShapes.length - 1; j >= 0; j--) {
+                            if (!activeShapes[j].finishedDrawing && !activeShapes[j].isActiveDrawing) {
+                                activeShapes[j].isActiveDrawing = true;
+                                foundNext = true;
+                                break;
+                            }
+                        }
+                        if (!foundNext) activeDrawingShapeFound = false;
+                    }
+                    continue; // Go to next shape in loop
+                }
+
+                // --- If a shape just finished, activate the next newest ---
+                if (justFinished) {
+                    let foundNext = false;
+                    for (let j = activeShapes.length - 1; j >= 0; j--) {
+                        // Find a shape that isn't this one, isn't finished, and isn't active
+                        if (i !== j && !activeShapes[j].finishedDrawing && !activeShapes[j].isActiveDrawing) {
+                            activeShapes[j].isActiveDrawing = true;
+                            foundNext = true;
+                            activeDrawingShapeFound = true;
+                            break;
+                        }
+                    }
+                    if (!foundNext) activeDrawingShapeFound = false;
+                }
+
+
+                // 3. Determine color and style for the *traced path*
+                const colorProgress = (t * p.colorSpeed + shape.colorProgressOffset) % 1;
+                let shapeColor;
+                if (p.paletteName === "Custom") {
+                    shapeColor = lerpColor(p.c1, p.c2, colorProgress);
+                } else {
+                    shapeColor = getColorFromPalette(wledPalettes[p.paletteName], colorProgress);
+                }
+                // Brightness includes life decay
+                const currentBrightness = laserBrightness * Math.max(0, Math.min(1.0, shape.life));
+                const tracedPathColor = shapeColor.replace('rgb', 'rgba').replace(')', `, ${currentBrightness})`);
+
+                ctx.strokeStyle = tracedPathColor;
+                ctx.lineWidth = laserThickness;
+                ctx.shadowBlur = p.glow;
+                ctx.shadowColor = tracedPathColor;
+
+                // 4. Draw the shape history (traced path)
+                ctx.save();
+                ctx.translate(shape.cx, shape.cy);
+                ctx.rotate(shape.rotation);
+                ctx.beginPath();
+
+                if (pointsInShape > 0 && shape.points[0]) {
+                    ctx.moveTo(shape.points[0].x, shape.points[0].y);
+                }
+
+                let drawUntilIndex = shape.pointIndex;
+                let drawPartialSegment = shape.isActiveDrawing && !shape.finishedDrawing;
+
+                // Determine the final point index based on shape type
+                let finalDrawIndex = pointsInShape - 1; // Default for open/spiral
+                if (closedTypes.includes(shape.specificType)) {
+                    finalDrawIndex = pointsInShape - 1; // Draw up to the last point (which is the first point)
+                }
+
+                // If the shape is done or inactive, draw the whole thing
+                if (shape.finishedDrawing || !shape.isActiveDrawing) {
+                    drawUntilIndex = finalDrawIndex;
+                    drawPartialSegment = false;
+                }
+
+                // Draw completed segments
+                for (let j = 1; j <= drawUntilIndex; j++) {
+                    if (j < pointsInShape && shape.points[j]) {
+                        ctx.lineTo(shape.points[j].x, shape.points[j].y);
+                    }
+                }
+
+                // Draw the currently active segment partially
+                if (drawPartialSegment) {
+                    let p1_active_idx = shape.pointIndex;
+                    let p2_active_idx = shape.pointIndex + 1;
+                    p2_active_idx = Math.min(p2_active_idx, pointsInShape - 1);
+
+                    let p1_active = shape.points[p1_active_idx];
+                    let p2_active = shape.points[p2_active_idx];
+
+                    if (p1_active && p2_active) {
+                        let currentX = lerp(p1_active.x, p2_active.x, shape.progress);
+                        let currentY = lerp(p1_active.y, p2_active.y, shape.progress);
+                        // Ensure we lineTo from the *actual* previous point
+                        if (shape.pointIndex > 0 && shape.points[shape.pointIndex]) {
+                            ctx.lineTo(shape.points[shape.pointIndex].x, shape.points[shape.pointIndex].y);
+                        } else if (shape.pointIndex === 0) {
+                            // If we are on the first segment, we just moveTo
+                            ctx.moveTo(p1_active.x, p1_active.y);
+                        }
+                        ctx.lineTo(currentX, currentY);
+                    }
+                }
+
+                const isClosedType = closedTypes.includes(shape.specificType); // Check this before closing path
+
+                // **FIX: Only closePath for specific finished/inactive types**
+                if (isClosedType && (shape.finishedDrawing || !shape.isActiveDrawing)) {
+                    ctx.closePath();
+                }
+                ctx.stroke();
+
+                // --- NEW BASS FILL LOGIC ---
+                if (p.bassFill && isClosedType && (shape.finishedDrawing || !shape.isActiveDrawing) && bassHitMomentum > 0.1) {
+                    // We only fill shapes that are "complete" (finishedDrawing or inactive)
+                    // and are a closed type, and the bass just hit.
+                    // The path was already closed above (if applicable).
+
+                    const fillAlpha = bassHitMomentum * 0.7; // 70% max alpha on hit, fades with momentum
+                    ctx.fillStyle = `rgba(255, 255, 255, ${fillAlpha})`;
+
+                    // Disable shadows for the fill, otherwise it looks weird
+                    ctx.shadowBlur = 0;
+
+                    ctx.fill();
+                }
+                // --- END NEW LOGIC ---
+
+                ctx.restore();
+
+
+                // 5. Draw Lasers from Origins - ONLY FOR THE ACTIVELY DRAWING SHAPE
+                if (shape.isActiveDrawing && !shape.finishedDrawing) {
+                    let p1_laser_idx = shape.pointIndex;
+                    let p2_laser_idx = shape.pointIndex + 1;
+                    p2_laser_idx = Math.min(p2_laser_idx, pointsInShape - 1);
+
+                    let p1_laser = shape.points[p1_laser_idx];
+                    let p2_laser = shape.points[p2_laser_idx];
+
+                    if (p1_laser && p2_laser) {
+                        // Find the laser's target point in relative (0,0) space
+                        let liveLaserX_relative = lerp(p1_laser.x, p2_laser.x, shape.progress);
+                        let liveLaserY_relative = lerp(p1_laser.y, p2_laser.y, shape.progress);
+
+                        // Rotate and translate to world space
+                        const cos_r = Math.cos(shape.rotation);
+                        const sin_r = Math.sin(shape.rotation);
+                        let transformedX = cos_r * liveLaserX_relative - sin_r * liveLaserY_relative + shape.cx;
+                        let transformedY = sin_r * liveLaserX_relative + cos_r * liveLaserY_relative + shape.cy;
+
+                        // Get color and style for the "live" drawing laser
+                        const drawingLaserAlpha = currentBrightness * drawingLaserBrightnessFactor;
+                        const drawingLaserColor = shapeColor.replace('rgb', 'rgba').replace(')', `, ${drawingLaserAlpha})`);
+
+                        ctx.strokeStyle = drawingLaserColor;
+                        ctx.lineWidth = drawingLaserThickness;
+                        ctx.shadowBlur = p.glow * 0.5;
+                        ctx.shadowColor = drawingLaserColor;
+
+
+                        // Draw a line from each origin to the live point
+                        for (const origin of origins) {
+                            ctx.beginPath();
+                            ctx.moveTo(origin.x, origin.y);
+                            ctx.lineTo(transformedX, transformedY);
+                            ctx.stroke();
+                        }
+                    }
+                } // End if(isActiveDrawing) for lasers
+
+            } // End loop through activeShapes
+
+            // --- Activate a shape if none are currently drawing ---
+            if (!activeDrawingShapeFound && activeShapes.length > 0) {
+                for (let j = activeShapes.length - 1; j >= 0; j--) {
+                    if (!activeShapes[j].finishedDrawing) {
+                        activeShapes[j].isActiveDrawing = true;
+                        break;
+                    }
+                    _
+                }
+            }
+
+            ctx.shadowBlur = 0; // Reset shadow for next frame
+            time++;
+            lastBassImpact = bassImpact;
+            window.requestAnimationFrame(animate);
+        }
+
+        // Initial setup
+        const initialMotionMode = typeof motionMode !== 'undefined' ? motionMode : "Mixed Shapes";
+        // Check if it's any drawing mode
+        const isDrawingMode = ["Polygon", "Spiral", "Star", "Heart", "Card Suits", "Mixed Shapes"].includes(initialMotionMode);
+
+        if (isDrawingMode) {
+            const initialParams = {
+                motion: initialMotionMode,
+                maxSides: typeof maxPolygonSides !== 'undefined' ? Math.round(maxPolygonSides) : 7,
+                sweepSpeed: (typeof sweepSpeed !== 'undefined' ? Math.round(sweepSpeed) : 50) / 100,
+                bassSens: (typeof bassSensitivity !== 'undefined' ? Math.round(bassSensitivity) : 50) / 100,
+                count: typeof laserCount !== 'undefined' ? Math.round(laserCount) : 12
+            };
+            generateNewShape(initialParams, 0); // Generate one shape at the start
+        }
+        window.requestAnimationFrame(animate);
+    </script>
+</body>
+
+</html>

@@ -8,7 +8,7 @@ from PIL import Image
 
 # --- Configuration ---
 # Use r'...' for raw strings to handle backslashes correctly on Windows
-HTML_FOLDER = r'C:\Program Files\Ampps\www\effects' # <-- Path to your HTML files
+HTML_FOLDER = r'C:\wamp64\www\effects' # <-- Path to your HTML files
 OUTPUT_FOLDER = HTML_FOLDER # Thumbnails saved in the same folder
 THUMBNAIL_WIDTH = 320
 THUMBNAIL_HEIGHT = 200
