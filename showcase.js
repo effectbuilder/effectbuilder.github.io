@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "SolarSystem.html",
         "tunnel.html",
         "particle_eq_bars.html",
-        "lasersShapes.html"
+        "lasersShapes.html",
+        "concertLasers.html"
     ];
 
     // --- Path Configuration ---
