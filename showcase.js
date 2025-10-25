@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Path Configuration ---
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
-    
+
     // Variable to store all effects for filtering
     let allEffects = [];
 
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const effectViewTitle = document.getElementById('effect-view-title');
     const effectIframe = document.getElementById('effect-iframe');
     const effectIframeContainer = document.getElementById('effect-iframe-container');
-    
+
     // Download and Share Buttons in View Modal
     const effectDownloadBtn = document.getElementById('effect-download-btn');
     const effectShareBtn = document.getElementById('effect-share-btn');
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const effects = await Promise.all(effectPromises);
         return effects.filter(effect => effect !== null);
     }
-    
+
     /**
      * Finds a single effect object in the global list by its filename.
      * @param {string} filename - The filename to search for (e.g., "RetroWave.html").
@@ -297,14 +297,15 @@ document.addEventListener('DOMContentLoaded', function () {
             btnGroup.className = 'btn-group w-100';
             btnGroup.role = 'group';
 
-            const viewButton = document.createElement('button');
-            viewButton.type = 'button';
+            const viewButton = document.createElement('a'); // CHANGED to <a>
             viewButton.className = 'btn btn-primary';
             viewButton.innerHTML = '<i class="bi bi-eye-fill me-1"></i> View';
-            
+            viewButton.href = '#' + effect.filename; // SET the href to the hash
+            viewButton.role = 'button'; // Good for accessibility
+
             // Add click handler and use window.location.hash for shareable link
             viewButton.addEventListener('click', (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation();
                 handleViewEffect(effect);
                 window.location.hash = effect.filename; // Set the hash on button click
             });
@@ -348,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleViewEffect(effect) {
         effectViewTitle.textContent = effect.title;
         effectIframe.src = effect.effectUrl;
-        
+
         // --- Dynamic Download Button Handler ---
         // 1. Clone the node to remove all previous click listeners
         if (effectDownloadBtn) {
@@ -360,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 handleDownloadZip(effect, newDownloadBtn);
             });
         }
-        
+
         // --- Share Button Handler ---
         if (effectShareBtn) {
             effectShareBtn.replaceWith(effectShareBtn.cloneNode(true));
@@ -380,11 +381,11 @@ document.addEventListener('DOMContentLoaded', function () {
         // 1. Set the iframe to its original dimensions (320x200)
         effectIframe.style.width = `${BASE_WIDTH}px`;
         effectIframe.style.height = `${BASE_HEIGHT}px`;
-        
+
         // 2. Apply the scale transformation (2x)
         effectIframe.style.transform = `scale(${SCALE_FACTOR})`;
         effectIframe.style.transformOrigin = 'center center';
-        
+
         // 3. Resize the iframe's container to match the scaled size (320*2 x 200*2 = 640x400)
         effectIframeContainer.style.height = `${BASE_HEIGHT * SCALE_FACTOR}px`;
         effectIframeContainer.style.width = `${BASE_WIDTH * SCALE_FACTOR}px`;
@@ -495,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleShareLink(button, filename) {
         const shareLink = window.location.origin + window.location.pathname + '#' + filename;
         const originalText = button.innerHTML;
-        
+
         try {
             // Write the link to clipboard
             await navigator.clipboard.writeText(shareLink);
@@ -547,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function () {
         effectViewModalEl.addEventListener('hidden.bs.modal', () => {
             // Clear the iframe to stop the effect from running in the background
             effectIframe.src = 'about:blank';
-            
+
             // Reset the iframe and its container styles
             effectIframe.style.transform = 'none';
             effectIframe.style.width = '320px';
@@ -579,8 +580,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const filteredEffects = allEffects.filter(effect => {
             // Check title, description, and author for the search term
             return effect.title.toLowerCase().includes(searchTerm) ||
-                   effect.description.toLowerCase().includes(searchTerm) ||
-                   effect.author.toLowerCase().includes(searchTerm);
+                effect.description.toLowerCase().includes(searchTerm) ||
+                effect.author.toLowerCase().includes(searchTerm);
         });
 
         populateShowcase(filteredEffects);
@@ -592,16 +593,16 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function handleDeepLink() {
         // Get the hash (e.g., "#RetroWave.html") and remove the leading '#'
-        const filename = window.location.hash.substring(1); 
-        
+        const filename = window.location.hash.substring(1);
+
         if (filename) {
             const effect = getEffectByFilename(filename);
             if (effect) {
                 // Wait briefly to ensure the modal object is ready, then show it
                 setTimeout(() => {
                     handleViewEffect(effect);
-                }, 100); 
-            } 
+                }, 100);
+            }
         }
     }
 
@@ -615,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function () {
             allEffects = manualEffects;
             // Populate with all effects initially
             populateShowcase(allEffects);
-            
+
             // 1. Handle deep link on page load
             handleDeepLink();
         })
