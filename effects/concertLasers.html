@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Concert Lasers</title>
+    <meta description="A customizable laser light show that sweeps, rotates, and pulses to your music." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="laserCount" label="Number of Lasers" type="number" default="12" min="1" max="40">
+    <meta property="trailAmount" label="Laser Trail Amount" type="number" default="90" min="0" max="99">
+    <meta property="glowAmount" label="Glow Amount" type="number" default="15" min="0" max="50">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,Party,Ocean,Lava,Forest,Sunset,Aurora,Vaporwave" default="Rainbow">
+    <meta property="colorSpeed" label="Color Cycle Speed" type="number" default="5" min="0" max="50">
+    <meta property="customColor1" label="Custom Color 1" type="color" default="#00ff00">
+    <meta property="customColor2" label="Custom Color 2" type="color" default="#ff00ff">
+
+    <meta property="originMode" label="Laser Origin" type="combobox" values="Center,Top,Bottom,Corners" default="Center">
+    <meta property="rotationSpeed" label="Rotation Speed" type="number" default="5" min="-50" max="50">
+    <meta property="sweepSpeed" label="Sweep Speed" type="number" default="15" min="0" max="100">
+    <meta property="sweepRange" label="Sweep Range (Degrees)" type="number" default="45" min="0" max="180">
+    
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="true">
+    <meta property="bassSensitivity" label="Bass Reactivity (Thickness/Brightness)" type="number" default="50" min="0" max="100">
+    <meta property="trebleSensitivity" label="Treble Reactivity (Wiggle)" type="number" default="30" min="0" max="100">
+
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <canvas id="effect-canvas"></canvas>
+
+    <script>
+        // --- Effect Logic ---
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let time = 0;
+
+        const wledPalettes = {
+            "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FF69B4", "#8A2BE2", "#4B0082"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"],
+            "Vaporwave": ["#FF71CE", "#01CDFE", "#05FFA1", "#FFFB96", "#FF71CE"]
+        };
+
+        // --- Utility Functions (Color Conversion & Interpolation) ---
+        function hexToRgb(hex) {
+            if (!hex) return { r: 0, g: 0, b: 0 };
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function lerpColor(colorA, colorB, amount) {
+            const r = colorA.r + (colorB.r - colorA.r) * amount;
+            const g = colorA.g + (colorB.g - colorA.g) * amount;
+            const b = colorA.b + (colorB.b - colorA.b) * amount;
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function getColorFromPalette(palette, amount) {
+            amount = Math.max(0, Math.min(1, amount));
+            const segment = 1 / (palette.length - 1);
+            const index = Math.floor(amount / segment);
+            const localAmount = (amount - (index * segment)) / segment;
+            const colorA = hexToRgb(palette[index]);
+            const colorB = hexToRgb(palette[Math.min(index + 1, palette.length - 1)]);
+            return lerpColor(colorA, colorB, localAmount);
+        }
+        
+        // --- Canvas Setup ---
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // --- Main Animation Loop ---
+        function animate() {
+            // Read properties with defaults
+            const p = {
+                count: typeof laserCount !== 'undefined' ? laserCount : 12,
+                trail: (typeof trailAmount !== 'undefined' ? trailAmount : 90) / 100,
+                glow: typeof glowAmount !== 'undefined' ? glowAmount : 15,
+                paletteName: typeof palette !== 'undefined' ? palette : "Rainbow",
+                colorSpeed: (typeof colorSpeed !== 'undefined' ? colorSpeed : 5) / 1000,
+                c1: hexToRgb(typeof customColor1 !== 'undefined' ? customColor1 : "#00ff00"),
+                c2: hexToRgb(typeof customColor2 !== 'undefined' ? customColor2 : "#ff00ff"),
+                origin: typeof originMode !== 'undefined' ? originMode : "Center",
+                rotSpeed: (typeof rotationSpeed !== 'undefined' ? rotationSpeed : 5) / 1000,
+                sweepSpeed: (typeof sweepSpeed !== 'undefined' ? sweepSpeed : 15) / 1000,
+                sweepRange: (typeof sweepRange !== 'undefined' ? sweepRange : 45) * (Math.PI / 180),
+                isResponsive: typeof soundResponsive !== 'undefined' ? soundResponsive : true,
+                bassSens: (typeof bassSensitivity !== 'undefined' ? bassSensitivity : 50) / 100,
+                trebleSens: (typeof trebleSensitivity !== 'undefined' ? trebleSensitivity : 30) / 100
+            };
+
+            // --- Audio Reactivity Logic ---
+            let bassImpact = 0;
+            let trebleImpact = 0;
+            if (p.isResponsive && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+                const freq = new Uint8Array(engine.audio.freq);
+                // Bass is usually in the first few frequency bins
+                bassImpact = ((freq[2] || 0) + (freq[3] || 0) + (freq[4] || 0)) / 3 / 255;
+                // Treble is in the higher frequency bins
+                trebleImpact = ((freq[100] || 0) + (freq[120] || 0) + (freq[150] || 0)) / 3 / 255;
+            }
+
+            // --- Drawing Logic ---
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - p.trail})`;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Additive blending makes lasers look bright when they overlap
+            ctx.globalCompositeOperation = 'lighter'; 
+
+            const origins = [];
+            switch (p.origin) {
+                case "Top":     origins.push({ x: width / 2, y: 0 }); break;
+                case "Bottom":  origins.push({ x: width / 2, y: height }); break;
+                case "Corners":
+                    origins.push({ x: 0, y: 0 });
+                    origins.push({ x: width, y: 0 });
+                    origins.push({ x: 0, y: height });
+                    origins.push({ x: width, y: height });
+                    break;
+                case "Center":
+                default:
+                    origins.push({ x: width / 2, y: height / 2 }); break;
+            }
+
+            const laserBrightness = 0.5 + 0.5 * (bassImpact * p.bassSens);
+            const laserThickness = 1 + 4 * (bassImpact * p.bassSens);
+            const longLine = Math.max(width, height) * 1.5;
+
+            for (const origin of origins) {
+                for (let i = 0; i < p.count / origins.length; i++) {
+                    const baseAngle = (i / (p.count / origins.length)) * Math.PI * 2;
+                    const rotation = time * p.rotSpeed;
+                    const sweep = Math.sin(time * p.sweepSpeed + i) * (p.sweepRange / 2);
+                    const wiggle = (Math.random() - 0.5) * trebleImpact * p.trebleSens;
+                    
+                    const finalAngle = baseAngle + rotation + sweep + wiggle;
+
+                    const endX = origin.x + Math.cos(finalAngle) * longLine;
+                    const endY = origin.y + Math.sin(finalAngle) * longLine;
+
+                    // Determine color
+                    let strokeColor;
+                    const colorProgress = (time * p.colorSpeed + i / p.count) % 1;
+                    if (p.paletteName === "Custom") {
+                        strokeColor = lerpColor(p.c1, p.c2, colorProgress);
+                    } else {
+                        strokeColor = getColorFromPalette(wledPalettes[p.paletteName], colorProgress);
+                    }
+                    
+                    // Make color brighter based on bass
+                    const finalColor = strokeColor.replace('rgb', 'rgba').replace(')', `, ${laserBrightness})`);
+
+                    // Draw the laser with glow
+                    ctx.beginPath();
+                    ctx.moveTo(origin.x, origin.y);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = finalColor;
+                    ctx.lineWidth = laserThickness;
+                    ctx.shadowBlur = p.glow;
+                    ctx.shadowColor = finalColor;
+                    ctx.stroke();
+                }
+            }
+            
+            // Reset shadow for next frame's background clear
+            ctx.shadowBlur = 0;
+
+            time++;
+            requestAnimationFrame(animate);
+        }
+
+        // Initial setup
+        window.onload = () => {
+            resize();
+            window.addEventListener('resize', resize);
+            animate();
+        };
+    </script>
+</body>
+</html>
