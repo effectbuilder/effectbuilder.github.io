@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
         "SolarSystem.html",
         "tunnel.html",
         "particle_eq_bars.html",
-        "lasersShapes.html",
+        "laserShapes.html",
         "concertLasers.html"
     ];
 
