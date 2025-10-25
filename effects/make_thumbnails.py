@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from PIL import Image
+from selenium.webdriver.common.by import By # <-- ADDED THIS IMPORT
 
 # --- Configuration ---
 # Use r'...' for raw strings to handle backslashes correctly on Windows
@@ -12,15 +13,14 @@ HTML_FOLDER = r'C:\wamp64\www\effects' # <-- Path to your HTML files
 OUTPUT_FOLDER = HTML_FOLDER # Thumbnails saved in the same folder
 THUMBNAIL_WIDTH = 320
 THUMBNAIL_HEIGHT = 200
-WAIT_SECONDS = 2  # Adjust based on how long animations take to look good
-USE_HEADLESS = False # Set to True to run Chrome without a visible window (faster)
+WAIT_SECONDS = 5  # Adjust based on how long animations take to look good
+USE_HEADLESS = False # <-- CRITICAL: Must be False for animations/WebGL to render
 # --- End Configuration ---
 
 def create_thumbnails(html_dir, output_dir, width, height, wait_time, headless=False):
     """
-    Opens HTML files in a browser, waits, and saves thumbnails
-    in the same directory with a .png extension, only if the
-    thumbnail doesn't already exist.
+    Opens HTML files in a browser, waits, finds the main content element,
+    screenshots it, and saves the thumbnail.
     """
     if not os.path.isdir(html_dir):
         print(f"Error: HTML folder not found at '{html_dir}'")
@@ -35,8 +35,11 @@ def create_thumbnails(html_dir, output_dir, width, height, wait_time, headless=F
         service = Service(ChromeDriverManager().install())
         options = webdriver.ChromeOptions()
         if headless:
+            print("WARNING: Headless mode is enabled. If animations are black,")
+            print("         set USE_HEADLESS = False in the script.")
             options.add_argument('--headless')
-            options.add_argument('--disable-gpu')
+            options.add_argument('--disable-gpu') # Often causes black screens
+            
         options.add_argument(f'--window-size={width + 50},{height + 150}')
         options.add_argument('--hide-scrollbars')
         options.add_argument("--force-device-scale-factor=1")
@@ -68,34 +71,57 @@ def create_thumbnails(html_dir, output_dir, width, height, wait_time, headless=F
         thumb_filename = f"{base_name}.png"
         thumb_path = os.path.join(output_dir, thumb_filename)
 
-        # --- MODIFIED: Check if thumbnail already exists ---
         if os.path.exists(thumb_path):
-            print(f"  Skipping: {filename} (Thumbnail already exists at {thumb_path})")
+            print(f"  Skipping: {filename} (Thumbnail already exists)")
             files_skipped += 1
-            continue # Move to the next HTML file
-        # --- END MODIFICATION ---
+            continue 
 
         try:
             file_path = os.path.abspath(os.path.join(html_dir, filename))
             file_url = f'file:///{file_path.replace(os.sep, "/")}'
 
             print(f"  Processing: {filename}")
-
             driver.get(file_url)
 
             print(f"    Waiting {wait_time} seconds...")
             time.sleep(wait_time)
 
-            print("    Capturing screenshot...")
-            png_data = driver.get_screenshot_as_png()
+            print("    Finding element and capturing screenshot...")
 
-            print("    Resizing and saving...")
-            img = Image.open(io.BytesIO(png_data))
-            thumbnail = img.resize((width, height), Image.Resampling.LANCZOS)
+            # --- !!! THIS IS THE NEW, MODIFIED BLOCK !!! ---
+            try:
+                # We will try to find the element to screenshot.
+                # By default, this looks for a <canvas> tag.
+                # If your effects don't use a canvas, comment out
+                # the line below and uncomment one of the other options.
+                
+                # OPTION 1: (Default) Find the <canvas> element
+                element = driver.find_element(By.TAG_NAME, 'canvas')
 
-            thumbnail.save(thumb_path)
-            print(f"    Saved: {thumb_path}")
-            files_processed += 1
+                # OPTION 2: Find the <body> element (good fallback)
+                # element = driver.find_element(By.TAG_NAME, 'body')
+                
+                # OPTION 3: Find an element by its ID (e.g., <div id="container">)
+                # element = driver.find_element(By.ID, 'container')
+
+                # Now, screenshot just that element
+                png_data = element.screenshot_as_png
+                
+                print("    Resizing and saving...")
+                img = Image.open(io.BytesIO(png_data))
+                
+                # Resize the element screenshot to the exact thumbnail size
+                # This handles any minor size differences
+                thumbnail = img.resize((width, height), Image.Resampling.LANCZOS)
+                
+                thumbnail.save(thumb_path)
+                print(f"    Saved: {thumb_path}")
+                files_processed += 1
+                
+            except Exception as e:
+                print(f"    Error finding element in {filename}: {e}")
+                print("    (Could not find 'canvas' tag? Try editing the script to find 'body'.)")
+            # --- !!! END OF MODIFIED BLOCK !!! ---
 
         except Exception as e:
             print(f"  Error processing {filename}: {e}")
