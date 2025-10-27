@@ -2900,20 +2900,19 @@ class Shape {
                 if (this.tetrisBlocks.length === 0) {
                     const colorIndex1 = 0;
                     const colorIndex2 = this.gradient.stops.length > 1 ? 1 : 0;
-
+                    // Start in holding_offscreen state to immediately transition to approaching
                     this.tetrisBlocks.push({
                         w: this.width, h: blockHeight, x: 0, y: -blockHeight, vy: speed,
-                        state: 'approaching', holdTimer: 0, mixProgress: 0,
+                        state: 'holding_offscreen', holdTimer: 0, // Start immediately
                         originalColorIndex: colorIndex1,
-                        targetColorIndex: colorIndex2
                     });
                     this.tetrisBlocks.push({
                         w: this.width, h: blockHeight, x: 0, y: this.height, vy: -speed,
-                        state: 'approaching', holdTimer: 0, mixProgress: 0,
+                        state: 'holding_offscreen', holdTimer: 0, // Start immediately
                         originalColorIndex: colorIndex2,
-                        targetColorIndex: colorIndex1
                     });
                 }
+
 
                 if (this.tetrisBlocks.length < 2) return; // Safeguard
 
@@ -2922,7 +2921,24 @@ class Shape {
                 const gravity = 0.1 * speed * deltaTime * 60;
 
                 this.tetrisBlocks.forEach(block => {
-                    switch(block.state) {
+                    const holdDuration = this.tetrisHoldTime || 50;
+
+                    switch (block.state) {
+                        case 'holding_offscreen':
+                            block.holdTimer -= deltaTime * 60;
+                            if (block.holdTimer <= 0) {
+                                block.state = 'approaching';
+                                // Reset positions and velocities for approach
+                                if (block.vy > 0) { // Was top block, now needs to move down
+                                    block.y = -block.h;
+                                    block.vy = speed;
+                                } else { // Was bottom block, now needs to move up
+                                    block.y = this.height;
+                                    block.vy = -speed;
+                                }
+                            }
+                            break;
+
                         case 'approaching':
                             if (this.tetrisAnimation === 'mix-gravity') {
                                 block.vy += (block.vy > 0 ? gravity : -gravity);
@@ -3481,20 +3497,10 @@ class Shape {
                     if (['comet', 'comet-gravity', 'comet-gravity-reversed'].includes(this.tetrisAnimation)) {
                         blockColor = this.gradient.stops[block.colorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
                     } else if (['mix', 'mix-gravity', 'mix-gravity-reversed'].includes(this.tetrisAnimation)) {
-                        const originalColor = this.gradient.stops[block.originalColorIndex]?.color || '#FFFFFF';
-                        const targetColor = this.gradient.stops[block.targetColorIndex]?.color || '#FFFFFF';
-                        if (block.state === 'holding') {
-                            if (block.mixProgress < 0.5) { // unmixing
-                                const mixColor = lerpColor(originalColor, targetColor, 0.5);
-                                blockColor = lerpColor(mixColor, targetColor, 1 - (block.mixProgress * 2));
-                            } else { // mixing
-                                blockColor = lerpColor(originalColor, targetColor, (block.mixProgress - 0.5) * 2);
-                            }
-                        } else if (block.state === 'exiting') {
-                            blockColor = targetColor;
-                        }
-                        else {
-                            blockColor = originalColor;
+                        if (block.state === 'holding_center') {
+                            blockColor = this.tetrisMixColor || '#FFFFFF';
+                        } else {
+                            blockColor = this.gradient.stops[block.originalColorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
                         }
                     }
                     else {
