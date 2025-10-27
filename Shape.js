@@ -2797,7 +2797,7 @@ class Shape {
         if (this.shape === 'tetris') {
             const baseSpeed = tetrisSpeed;
             if (this.tetrisAnimation === 'fade-in-out') {
-                const fadeSpeed = baseSpeed * 0.01;
+                const fadeSpeed = baseSpeed * 0.005;
                 if (this.tetrisBlocks.length === 0 && this.tetrisFadeState !== 'out') {
                     const blockHeight = this.height / this.tetrisBlockCount;
                     for (let i = 0; i < this.tetrisBlockCount; i++) {
@@ -2840,7 +2840,7 @@ class Shape {
                     }
                 }
             } else if (this.tetrisAnimation === 'fade-in-stack') {
-                const fadeSpeed = baseSpeed * 0.01;
+                const fadeSpeed = baseSpeed * 0.005;
                 if (this.tetrisBlocks.length === 0) {
                     const blockHeight = this.height / this.tetrisBlockCount;
                     for (let i = 0; i < this.tetrisBlockCount; i++) {
@@ -2880,14 +2880,14 @@ class Shape {
                     newBlock.w = this.width; newBlock.h = blockHeight;
                     newBlock.x = 0; newBlock.y = -newBlock.h;
                     this.tetrisBlocks.push(newBlock);
-                    if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
-                        this.tetrisSpawnTimer = 10;
+                    if (this.tetrisAnimation === 'linear' || this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
+                        this.tetrisSpawnTimer = 30 / this.tetrisSpeed + 10;
                     }
                 }
                 if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
                     this.tetrisBlocks.forEach((block, index) => {
                         if (block.settled) return;
-                        const gravity = baseSpeed * 0.01 * window.tetrisGravityMultiplier * deltaTime * 60;
+                        const gravity = baseSpeed * 0.1 * window.tetrisGravityMultiplier * deltaTime ** 2 * 60;                        
                         const bounceFactor = this.tetrisBounce / 100.0;
                         let bounceBoundaryTop = this.height;
                         this.tetrisBlocks.forEach((other, i) => {
@@ -2915,7 +2915,7 @@ class Shape {
                     if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
                         const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
                         if (!activeBlock.settled) {
-                            const speed = baseSpeed * 0.05 * deltaTime * 60;
+                            const speed = baseSpeed * 0.5 * deltaTime * 60;
                             let boundary = (this.tetrisActiveBlockIndex > 0) ? this.tetrisBlocks[this.tetrisActiveBlockIndex - 1].y : this.height;
                             activeBlock.y += speed;
                             if (activeBlock.y + activeBlock.h >= boundary) {
