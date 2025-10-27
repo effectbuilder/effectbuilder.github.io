@@ -2898,18 +2898,14 @@ class Shape {
                 const speed = (baseSpeed / 100) * (this.height / 60); // Scale speed
 
                 if (this.tetrisBlocks.length === 0) {
-                    const colorIndex1 = 0;
-                    const colorIndex2 = this.gradient.stops.length > 1 ? 1 : 0;
                     // Start in holding_offscreen state to immediately transition to approaching
                     this.tetrisBlocks.push({
                         w: this.width, h: blockHeight, x: 0, y: -blockHeight, vy: speed,
-                        state: 'holding_offscreen', holdTimer: 0, // Start immediately
-                        originalColorIndex: colorIndex1,
+                        state: 'holding_offscreen', holdTimer: 0 // Start immediately
                     });
                     this.tetrisBlocks.push({
                         w: this.width, h: blockHeight, x: 0, y: this.height, vy: -speed,
-                        state: 'holding_offscreen', holdTimer: 0, // Start immediately
-                        originalColorIndex: colorIndex2,
+                        state: 'holding_offscreen', holdTimer: 0 // Start immediately
                     });
                 }
 
@@ -2921,8 +2917,6 @@ class Shape {
                 const gravity = 0.1 * speed * deltaTime * 60;
 
                 this.tetrisBlocks.forEach(block => {
-                    const holdDuration = this.tetrisHoldTime || 50;
-
                     switch (block.state) {
                         case 'holding_offscreen':
                             block.holdTimer -= deltaTime * 60;
@@ -2948,21 +2942,20 @@ class Shape {
                             }
                             block.y += block.vy * deltaTime * 60;
                             break;
-                        case 'holding':
+
+                        case 'holding_center':
                             block.holdTimer -= deltaTime * 60;
                             if (block.holdTimer <= 0) {
                                 block.state = 'exiting';
-                                block.vy = (block.y < this.height / 2) ? speed : -speed; // Reset to initial speed
-                            } else {
-                                const holdDuration = this.tetrisHoldTime || 50;
-                                const halfHold = holdDuration / 2;
-                                if (block.holdTimer > halfHold) { // First half: mix
-                                    block.mixProgress = 1 - ((block.holdTimer - halfHold) / halfHold);
-                                } else { // Second half: unmix to target color
-                                    block.mixProgress = block.holdTimer / halfHold;
+                                // Set velocities for exiting
+                                if (block.y < this.height / 2) { // Top block
+                                    block.vy = -speed;
+                                } else { // Bottom block
+                                    block.vy = speed;
                                 }
                             }
                             break;
+
                         case 'exiting':
                              if (this.tetrisAnimation === 'mix-gravity') {
                                 block.vy += (block.vy > 0 ? gravity : -gravity);
@@ -2975,19 +2968,28 @@ class Shape {
                     }
                 });
 
+                // Check for collision and transition to holding_center
                 if (block1.state === 'approaching' && block1.y + block1.h >= block2.y) {
                     const centerLine = this.height / 2;
                     block1.y = centerLine - block1.h;
                     block2.y = centerLine;
-                    block1.state = 'holding';
-                    block2.state = 'holding';
+
+                    // Both blocks transition to holding_center
+                    block1.state = 'holding_center';
+                    block2.state = 'holding_center';
+
+                    // Set hold timer for both
                     const holdDuration = this.tetrisHoldTime || 50;
                     block1.holdTimer = holdDuration;
                     block2.holdTimer = holdDuration;
                 }
 
                 if (block1.state === 'exiting' && block2.state === 'exiting' && block1.y > this.height && block2.y < -block2.h) {
-                    this.tetrisBlocks = [];
+                    block1.state = 'holding_offscreen';
+                    block2.state = 'holding_offscreen';
+                    const holdDuration = this.tetrisHoldTime || 50;
+                    block1.holdTimer = holdDuration;
+                    block2.holdTimer = holdDuration;
                 }
             } else if (this.tetrisAnimation === 'fade-in-stack') {
                 const fadeSpeed = baseSpeed * 0.01;
@@ -3497,10 +3499,13 @@ class Shape {
                     if (['comet', 'comet-gravity', 'comet-gravity-reversed'].includes(this.tetrisAnimation)) {
                         blockColor = this.gradient.stops[block.colorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
                     } else if (['mix', 'mix-gravity', 'mix-gravity-reversed'].includes(this.tetrisAnimation)) {
-                        if (block.state === 'holding_center') {
-                            blockColor = this.tetrisMixColor || '#FFFFFF';
+                        if (block.state === 'holding_center' || block.state === 'exiting') {
+                            const color1 = this.gradient.stops[0]?.color || '#FFFFFF';
+                            const color2 = this.gradient.stops[1]?.color || '#FFFFFF';
+                            blockColor = lerpColor(color1, color2, 0.5);
                         } else {
-                            blockColor = this.gradient.stops[block.originalColorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
+                            const colorIndex = this.tetrisBlocks.indexOf(block);
+                            blockColor = this.gradient.stops[colorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
                         }
                     }
                     else {
