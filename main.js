@@ -85,7 +85,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
     <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
 
-    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="text" />
     <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
     <meta property="obj1_y" label="Small Clock: Y Position" type="number" min="0" max="200" default="35" />
     <meta property="obj1_width" label="Small Clock: Width/Outer Diameter" type="number" min="2" max="320" default="130" />
@@ -121,7 +121,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_audioSensitivity" label="Small Clock: Sensitivity" min="0" max="200" type="number" default="50" />
     <meta property="obj1_audioSmoothing" label="Small Clock: Smoothing" min="0" max="99" type="number" default="50" />
 
-    <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="text" />
     <meta property="obj2_x" label="Large Text: X Position" type="number" min="0" max="320" default="-3" />
     <meta property="obj2_y" label="Large Text: Y Position" type="number" min="0" max="200" default="0" />
     <meta property="obj2_width" label="Large Text: Width/Outer Diameter" type="number" min="2" max="320" default="237" />
@@ -5964,7 +5964,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
             { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
             { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed,mix,mix-gravity,mix-gravity-reversed', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
             { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
             { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
@@ -7279,13 +7279,13 @@ document.addEventListener('DOMContentLoaded', function () {
             constrainBtn.classList.add('btn-secondary');
         }
 
-        const effectLoaded = await loadSharedEffect();
+        // const effectLoaded = await loadSharedEffect();
 
-        if (!effectLoaded) {
-            // Attempt to load a single featured effect if no shared effect was loaded.
-            const featuredEffectLoaded = await loadFeaturedEffect();
+        // if (!effectLoaded) {
+        //     // Attempt to load a single featured effect if no shared effect was loaded.
+        //     const featuredEffectLoaded = await loadFeaturedEffect();
 
-            if (!featuredEffectLoaded) {
+        //     if (!featuredEffectLoaded) {
                 // Fall back to the default template if neither a shared nor a featured effect was found.
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
@@ -7295,8 +7295,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 createInitialObjects();
                 renderForm();
                 generateOutputScript(); // Generate script after setup
-            }
-        }
+        //     }
+        // }
 
         // updateObjectsFromForm();
         updateToolbarState();
@@ -7432,7 +7432,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const params = new URLSearchParams(window.location.search);
         const effectId = params.get('effectId');
 
-        if (effectId) {
+        if (effectId && window.db) {
             try {
                 const effectDocRef = window.doc(window.db, "projects", effectId);
                 const effectDoc = await window.getDoc(effectDocRef);
@@ -8537,6 +8537,7 @@ document.addEventListener('DOMContentLoaded', function () {
     * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
     */
     async function loadFeaturedEffect() {
+        if (!window.db) return false;
         try {
             const projectsRef = window.collection(window.db, "projects");
             const q = window.query(projectsRef, window.where("featured", "==", true), window.limit(1));
