@@ -724,35 +724,40 @@ class Shape {
 
         // This is for LINEAR rainbow
         if (SUPPORTS_SET_TRANSFORM) {
-            // --- ORIGINAL HIGH-PERFORMANCE LOGIC (for QT WebEngine) ---
             const isVertical = scrollDirection === 'up' || scrollDirection === 'down';
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            const patternSize = (typeof engine !== 'undefined') ? (256 / 4) : 256;
-            tempCanvas.width = isVertical ? 1 : patternSize;
-            tempCanvas.height = isVertical ? patternSize : 1;
-            const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
+            const patternSize = isVertical ? height : width;
+            if (patternSize < 1) return 'black';
+
+        tempCanvas.width = isVertical ? 1 : Math.round(patternSize);
+        tempCanvas.height = isVertical ? Math.round(patternSize) : 1;
+
+        const tempGrad = isVertical ?
+            tempCtx.createLinearGradient(0, 0, 0, patternSize) :
+            tempCtx.createLinearGradient(0, 0, patternSize, 0);
+
             const numStops = useSharpGradient ? 12 : 60;
             for (let i = 0; i <= numStops; i++) {
                 const position = i / numStops;
                 const color = `hsl(${(position * 360) % 360}, 100%, 50%)`;
                 if (useSharpGradient && i > 0) {
-                    tempGrad.addColorStop(position - 0.0001, `hsl(${(((i - 1) / numStops) * 360) % 360}, 100%, 50%)`);
+                const prevColor = `hsl(${(((i - 1) / numStops) * 360) % 360}, 100%, 50%)`;
+                tempGrad.addColorStop(position - 0.0001, prevColor);
                 }
                 tempGrad.addColorStop(position, color);
             }
             tempCtx.fillStyle = tempGrad;
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            const pattern = this.ctx.createPattern(tempCanvas, 'repeat');
+        const pattern = this.ctx.createPattern(tempCanvas, 'no-repeat');
             const matrix = new DOMMatrix();
             const directionMultiplier = (scrollDirection === 'left' || scrollDirection === 'up') ? 1 : -1;
-            const scrollDistance = isVertical ? (height / 4) : (width / 4);
-            const scrollOffset = effectiveProgress * scrollDistance * directionMultiplier;
-            matrix.translateSelf(-width / 2, -height / 2);
-            if (isVertical) { matrix.translateSelf(0, scrollOffset); } else { matrix.translateSelf(scrollOffset, 0); }
+        const scrollOffset = effectiveProgress * patternSize * directionMultiplier;
+        const xOffset = isVertical ? -width / 2 : -width / 2 + scrollOffset;
+        const yOffset = isVertical ? -height / 2 + scrollOffset : -height / 2;
+        matrix.translateSelf(xOffset, yOffset);
             pattern.setTransform(matrix);
             return pattern;
-
         } else {
             // --- NEW UNIVERSALLY COMPATIBLE FALLBACK (for Ultralight) ---
             const isVertical = scrollDirection === 'up' || scrollDirection === 'down';
@@ -1818,10 +1823,16 @@ class Shape {
             if (!this._linearPatternCache || this._linearPatternCache.sourceHash !== sourceHash) {
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
-                const patternSize = (typeof engine !== 'undefined') ? (256 / 4) : 256;
-                tempCanvas.width = isVertical ? 1 : patternSize;
-                tempCanvas.height = isVertical ? patternSize : 1;
-                const tempGrad = isVertical ? tempCtx.createLinearGradient(0, 0, 0, patternSize) : tempCtx.createLinearGradient(0, 0, patternSize, 0);
+                const patternSize = isVertical ? height : width;
+                if (patternSize < 1) return 'black';
+
+                tempCanvas.width = isVertical ? 1 : Math.round(patternSize);
+                tempCanvas.height = isVertical ? Math.round(patternSize) : 1;
+
+                const tempGrad = isVertical ?
+                    tempCtx.createLinearGradient(0, 0, 0, patternSize) :
+                    tempCtx.createLinearGradient(0, 0, patternSize, 0);
+
                 if (useSharpGradient) {
                     tempGrad.addColorStop(0, sortedStops[0].color);
                     for (let i = 1; i < sortedStops.length; i++) {

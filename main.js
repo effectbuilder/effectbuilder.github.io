@@ -7153,30 +7153,32 @@ document.addEventListener('DOMContentLoaded', function () {
                         newHeight = initial.initialHeight;
                     }
 
-                    // --- POSITION CALCULATION ---
-                    let newCenterX, newCenterY;
-                    const isCardinal = activeResizeHandle.length <= 5; // e.g., 'top', 'left'
+                    // --- POSITION CALCULATION (REVISED) ---
+                    // The new center is calculated by finding the midpoint of the anchor and the transformed mouse position.
+                    // This is more robust than the previous separate logic for cardinal/corner handles.
+                    const newHalfWidth = newWidth / 2;
+                    const newHalfHeight = newHeight / 2;
 
-                    if (isCardinal) {
-                        // For side handles, calculate the new center by offsetting from the stationary anchor.
-                        const localAnchorX = activeResizeHandle === 'left' ? newWidth / 2 : activeResizeHandle === 'right' ? -newWidth / 2 : 0;
-                        const localAnchorY = activeResizeHandle === 'top' ? newHeight / 2 : activeResizeHandle === 'bottom' ? -newHeight / 2 : 0;
+                    // 1. Determine the local vector from the new corner (defined by localVec) to the new center.
+                    // The signs depend on which direction from the anchor we are dragging.
+                    const localCenterOffsetX = localVecX > 0 ? -newHalfWidth : newHalfWidth;
+                    const localCenterOffsetY = localVecY > 0 ? -newHalfHeight : newHalfHeight;
 
-                        const worldOffsetX = localAnchorX * cosA - localAnchorY * sinA;
-                        const worldOffsetY = localAnchorX * sinA + localAnchorY * cosA;
+                    // 2. Rotate this local offset vector back into world space.
+                    const worldOffsetX = localCenterOffsetX * cosA - localCenterOffsetY * sinA;
+                    const worldOffsetY = localCenterOffsetX * sinA + localCenterOffsetY * cosA;
 
-                        newCenterX = anchorPoint.x - worldOffsetX;
-                        newCenterY = anchorPoint.y - worldOffsetY;
+                    // 3. The new center is the original anchor point, plus the world-space vector from the anchor to the new corner,
+                    // plus the offset from that corner back to the center.
+                    const newCornerX = anchorPoint.x + (localVecX * cosA - localVecY * sinA);
+                    const newCornerY = anchorPoint.y + (localVecX * sinA + localVecY * cosA);
 
-                    } else {
-                        // For corner handles, the center is the midpoint of the diagonal (anchor to mouse).
-                        newCenterX = (anchorPoint.x + x) / 2;
-                        newCenterY = (anchorPoint.y + y) / 2;
-                    }
+                    const newCenterX = newCornerX + worldOffsetX;
+                    const newCenterY = newCornerY + worldOffsetY;
 
-                    // Calculate the new top-left corner
-                    const newX = newCenterX - newWidth / 2;
-                    const newY = newCenterY - newHeight / 2;
+                    // Calculate the final top-left position from the new center and dimensions.
+                    const newX = newCenterX - newHalfWidth;
+                    const newY = newCenterY - newHalfHeight;
 
                     // --- SCALING AND UPDATE APPLICATION ---
                     if (obj.shape === 'polyline' && !obj.locked) {
