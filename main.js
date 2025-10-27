@@ -7133,94 +7133,44 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sinA = Math.sin(resizeAngle);
                     const anchorPoint = initial.anchorPoint;
 
-                    // Vector from anchor to mouse in world space
+                    // Vector from anchor to the current mouse position in world space
                     const worldVecX = x - anchorPoint.x;
                     const worldVecY = y - anchorPoint.y;
 
-                    // Rotate vector into object's local space
+                    // Rotate this vector into the object's local coordinate system.
+                    // This tells us the dimensions of the bounding box in the object's orientation.
                     const localVecX = worldVecX * cosA + worldVecY * sinA;
                     const localVecY = -worldVecX * sinA + worldVecY * cosA;
 
-                    // Calculate new dimensions (always positive)
+                    // The new width and height are the absolute values of the local vector components.
                     let newWidth = Math.abs(localVecX);
                     let newHeight = Math.abs(localVecY);
 
-                    // Preserve one dimension for cardinal handles
-                    if (activeResizeHandle === 'top' || activeResizeHandle === 'bottom') {
-                        newWidth = initial.initialWidth;
-                    }
-                    if (activeResizeHandle === 'left' || activeResizeHandle === 'right') {
-                        newHeight = initial.initialHeight;
-                    }
-
-                    // --- POSITION CALCULATION (REVISED) ---
-                    // The new center is calculated by finding the midpoint of the anchor and the transformed mouse position.
-                    // This is more robust than the previous separate logic for cardinal/corner handles.
-                    const newHalfWidth = newWidth / 2;
-                    const newHalfHeight = newHeight / 2;
-
-                    // 1. Determine the local vector from the new corner (defined by localVec) to the new center.
-                    // The signs depend on which direction from the anchor we are dragging.
-                    const localCenterOffsetX = localVecX > 0 ? -newHalfWidth : newHalfWidth;
-                    const localCenterOffsetY = localVecY > 0 ? -newHalfHeight : newHalfHeight;
-
-                    // 2. Rotate this local offset vector back into world space.
-                    const worldOffsetX = localCenterOffsetX * cosA - localCenterOffsetY * sinA;
-                    const worldOffsetY = localCenterOffsetX * sinA + localCenterOffsetY * cosA;
-
-                    // 3. The new center is the original anchor point, plus the world-space vector from the anchor to the new corner,
-                    // plus the offset from that corner back to the center.
-                    const newCornerX = anchorPoint.x + (localVecX * cosA - localVecY * sinA);
-                    const newCornerY = anchorPoint.y + (localVecX * sinA + localVecY * cosA);
-
-                    const newCenterX = newCornerX + worldOffsetX;
-                    const newCenterY = newCornerY + worldOffsetY;
-
-                    // Calculate the final top-left position from the new center and dimensions.
-                    const newX = newCenterX - newHalfWidth;
-                    const newY = newCenterY - newHalfHeight;
-
-                    // --- SCALING AND UPDATE APPLICATION ---
-                    if (obj.shape === 'polyline' && !obj.locked) {
-                        const oldWidth = obj.width;
-                        const oldHeight = obj.height;
-
-                        if (oldWidth > 0 && oldHeight > 0) {
-                            const scaleX = newWidth / oldWidth;
-                            const scaleY = newHeight / oldHeight;
-
-                            // 1. Scale the polyline's internal nodes
-                            const newNodes = obj.polylineNodes.map(node => {
-                                // Scale the node based on handle movement
-                                const scaledX = activeResizeHandle.includes('left') || activeResizeHandle.includes('right') || !activeResizeHandle.includes('-')
-                                    ? node.x * scaleX
-                                    : node.x;
-                                const scaledY = activeResizeHandle.includes('top') || activeResizeHandle.includes('bottom') || !activeResizeHandle.includes('-')
-                                    ? node.y * scaleY
-                                    : node.y;
-
-                                return { x: scaledX, y: scaledY };
-                            });
-
-                            // 2. Apply the manually calculated position and dimensions, and update the nodes array.
-                            // This overwrites the old values and updates the nodes cache.
-                            obj.update({
-                                x: newX,
-                                y: newY,
-                                width: newWidth,
-                                height: newHeight,
-                                polylineNodes: newNodes
-                            });
+                    // --- Aspect Ratio Lock (Shift Key) ---
+                    if (moveEvent.shiftKey && initial.initialWidth > 0 && initial.initialHeight > 0) {
+                        const aspectRatio = initial.initialWidth / initial.initialHeight;
+                        if (newWidth / newHeight > aspectRatio) {
+                            newHeight = newWidth / aspectRatio;
+                        } else {
+                            newWidth = newHeight * aspectRatio;
                         }
-
-                    } else { // Apply the general update for all standard shapes.
-                        obj.update({
-                            x: newX,
-                            y: newY,
-                            width: newWidth,
-                            height: newHeight
-                        });
                     }
+
+                    // The center of the new bounding box is the midpoint between the anchor and the mouse.
+                    const newCenterX = (anchorPoint.x + x) / 2;
+                    const newCenterY = (anchorPoint.y + y) / 2;
+
+                    // Calculate the new top-left corner (x, y) from the new center and dimensions.
+                    const newX = newCenterX - newWidth / 2;
+                    const newY = newCenterY - newHeight / 2;
+
+                    // Apply the new properties to the object.
+                    obj.update({
+                        x: newX,
+                        y: newY,
+                        width: newWidth,
+                        height: newHeight
+                    });
                 }
                 needsRedraw = true;
             } else if (isRotating) {

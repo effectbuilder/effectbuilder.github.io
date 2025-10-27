@@ -357,7 +357,7 @@ class Shape {
         innerDiameter, angularWidth, numberOfSegments, rotationSpeed, useSharpGradient, locked, numberOfRows, numberOfColumns, phaseOffset,
         animationMode, text, fontSize, textAlign, pixelFont, textAnimation, textAnimationSpeed, showTime, showDate, autoWidth, lineWidth, waveType,
         frequency, oscDisplayMode, pulseDepth, fillShape, enableWaveAnimation, waveStyle, waveCount, tetrisBlockCount, tetrisAnimation, tetrisSpeed,
-        tetrisBounce, tetrisHoldTime, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeGradientStops, strokeScrollDir,
+        tetrisBounce, tetrisHoldTime, tetrisBlurEdges, tetrisHold, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeGradientStops, strokeScrollDir,
         strokeCycleColors, strokeCycleSpeed, strokeAnimationSpeed, strokeAnimationMode, strokeUseSharpGradient, strokeRotationSpeed,
         strokePhaseOffset, fireSpread, pixelArtFrames, enableAudioReactivity, audioTarget, audioMetric, audioSensitivity, audioSmoothing = 50, beatThreshold,
         vizBarCount, vizBarSpacing, vizSmoothing, vizStyle, vizLayout, vizDrawStyle, vizUseSegments, vizSegmentCount, vizSegmentSpacing, vizLineWidth, vizBarWidth,
@@ -491,6 +491,8 @@ class Shape {
         this.tetrisSpeed = tetrisSpeed || 5;
         this.tetrisBounce = tetrisBounce || 50;
         this.tetrisHoldTime = tetrisHoldTime || 50;
+        this.tetrisBlurEdges = tetrisBlurEdges || false;
+        this.tetrisHold = tetrisHold || false;
         this.tetrisHoldTimer = 0;
         this.tetrisSpeedDivisor = 10.0;
         this.tetrisBlocks = [];
@@ -2797,7 +2799,7 @@ class Shape {
         if (this.shape === 'tetris') {
             const baseSpeed = tetrisSpeed;
             if (this.tetrisAnimation === 'fade-in-out') {
-                const fadeSpeed = baseSpeed * 0.005;
+                const fadeSpeed = baseSpeed * 0.01;
                 if (this.tetrisBlocks.length === 0 && this.tetrisFadeState !== 'out') {
                     const blockHeight = this.height / this.tetrisBlockCount;
                     for (let i = 0; i < this.tetrisBlockCount; i++) {
@@ -2839,8 +2841,60 @@ class Shape {
                         this.tetrisFadeState = 'in';
                     }
                 }
+            } else if (['comet', 'comet-gravity', 'comet-gravity-reversed'].includes(this.tetrisAnimation)) {
+                const blockHeight = this.height / this.tetrisBlockCount;
+                const speed = (baseSpeed / 100) * (this.height / 60); // Scale speed to canvas height and a 60fps frame rate
+
+                if (this.tetrisBlocks.length === 0) {
+                    this.tetrisBlocks.push({
+                        w: this.width, h: blockHeight,
+                        x: 0, y: -blockHeight,
+                        vy: this.tetrisAnimation === 'comet-gravity-reversed' ? speed * 5 : speed,
+                        life: 1.0, settled: false, fading: false,
+                        direction: 'down', colorIndex: 0,
+                        holdTimer: 0
+                    });
+                }
+
+                const block = this.tetrisBlocks[0];
+                const gravity = 0.1 * speed * deltaTime * 60;
+
+                if (block.holdTimer > 0) {
+                    block.holdTimer -= deltaTime * 60;
+                    return;
+                }
+
+                if (block.direction === 'down') {
+                    if (this.tetrisAnimation === 'comet-gravity') block.vy += gravity;
+                    if (this.tetrisAnimation === 'comet-gravity-reversed') block.vy = Math.max(speed, block.vy * (1 - 0.05 * deltaTime * 60));
+                    block.y += block.vy * deltaTime * 60;
+
+                    if (block.y > this.height) {
+                        if (this.tetrisHold) {
+                            block.holdTimer = this.tetrisHoldTime;
+                        }
+                        block.direction = 'up';
+                        block.y = this.height;
+                        block.vy = this.tetrisAnimation === 'comet-gravity-reversed' ? speed * 5 : speed; // Reset speed
+                        block.colorIndex = (block.colorIndex + 1) % (this.gradient.stops.length || 1);
+                    }
+                } else { // 'up'
+                    if (this.tetrisAnimation === 'comet-gravity') block.vy += gravity;
+                    if (this.tetrisAnimation === 'comet-gravity-reversed') block.vy = Math.max(speed, block.vy * (1 - 0.05 * deltaTime * 60));
+                    block.y -= block.vy * deltaTime * 60;
+
+                    if (block.y + block.h < 0) {
+                        if (this.tetrisHold) {
+                            block.holdTimer = this.tetrisHoldTime;
+                        }
+                        block.direction = 'down';
+                        block.y = -block.h;
+                        block.vy = this.tetrisAnimation === 'comet-gravity-reversed' ? speed * 5 : speed; // Reset speed
+                        block.colorIndex = (block.colorIndex + 1) % (this.gradient.stops.length || 1);
+                    }
+                }
             } else if (this.tetrisAnimation === 'fade-in-stack') {
-                const fadeSpeed = baseSpeed * 0.005;
+                const fadeSpeed = baseSpeed * 0.01;
                 if (this.tetrisBlocks.length === 0) {
                     const blockHeight = this.height / this.tetrisBlockCount;
                     for (let i = 0; i < this.tetrisBlockCount; i++) {
@@ -2880,14 +2934,14 @@ class Shape {
                     newBlock.w = this.width; newBlock.h = blockHeight;
                     newBlock.x = 0; newBlock.y = -newBlock.h;
                     this.tetrisBlocks.push(newBlock);
-                    if (this.tetrisAnimation === 'linear' || this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
-                        this.tetrisSpawnTimer = 30 / this.tetrisSpeed + 10;
+                    if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
+                        this.tetrisSpawnTimer = 10;
                     }
                 }
                 if (this.tetrisAnimation === 'gravity' || this.tetrisAnimation === 'gravity-fade') {
                     this.tetrisBlocks.forEach((block, index) => {
                         if (block.settled) return;
-                        const gravity = baseSpeed * 0.1 * window.tetrisGravityMultiplier * deltaTime ** 2 * 60;                        
+                        const gravity = baseSpeed * 0.01 * window.tetrisGravityMultiplier * deltaTime * 60;
                         const bounceFactor = this.tetrisBounce / 100.0;
                         let bounceBoundaryTop = this.height;
                         this.tetrisBlocks.forEach((other, i) => {
@@ -2915,7 +2969,7 @@ class Shape {
                     if (this.tetrisActiveBlockIndex < this.tetrisBlocks.length) {
                         const activeBlock = this.tetrisBlocks[this.tetrisActiveBlockIndex];
                         if (!activeBlock.settled) {
-                            const speed = baseSpeed * 0.5 * deltaTime * 60;
+                            const speed = baseSpeed * 0.05 * deltaTime * 60;
                             let boundary = (this.tetrisActiveBlockIndex > 0) ? this.tetrisBlocks[this.tetrisActiveBlockIndex - 1].y : this.height;
                             activeBlock.y += speed;
                             if (activeBlock.y + activeBlock.h >= boundary) {
@@ -3343,7 +3397,24 @@ class Shape {
                 this.ctx.rect(-this.width / 2, -this.height / 2, this.width, this.height);
                 this.ctx.clip();
                 this.tetrisBlocks.forEach((block, index) => {
-                    this.ctx.fillStyle = this.gradType === 'random' ? this._getRandomColorForElement(index) : this._createLocalFillStyle(index);
+                    let blockColor;
+                    if (['comet', 'comet-gravity', 'comet-gravity-reversed'].includes(this.tetrisAnimation)) {
+                        blockColor = this.gradient.stops[block.colorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
+                    } else {
+                        blockColor = this.gradType === 'random' ? this._getRandomColorForElement(index) : this._createLocalFillStyle(index);
+                    }
+
+                    if (this.tetrisBlurEdges) {
+                        const grad = this.ctx.createLinearGradient(0, block.y - this.height / 2, 0, block.y + block.h - this.height / 2);
+                        const transparentColor = parseColorToRgba(blockColor);
+                        grad.addColorStop(0, `rgba(${transparentColor.r}, ${transparentColor.g}, ${transparentColor.b}, 0)`);
+                        grad.addColorStop(0.5, blockColor);
+                        grad.addColorStop(1, `rgba(${transparentColor.r}, ${transparentColor.g}, ${transparentColor.b}, 0)`);
+                        this.ctx.fillStyle = grad;
+                    } else {
+                        this.ctx.fillStyle = blockColor;
+                    }
+
                     this.ctx.globalAlpha = block.life;
                     const drawX = block.x - (this.width / 2);
                     const drawY = block.y - (this.height / 2);
