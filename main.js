@@ -63,7 +63,7 @@ const controlGroupMap = {
     'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
     'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
     'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold'], icon: 'bi-grid-3x3-gap-fill' },
     'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
     'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
     'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
@@ -562,6 +562,8 @@ function handleURLParameters() {
 }
 
 function updateColorControls() {
+    const form = document.getElementById('controls-form');
+    if (!form) return;
     const paletteEnabled = document.getElementById('enablePalette')?.checked;
 
     // A list of all control types that should be disabled when the global palette is on
@@ -573,12 +575,6 @@ function updateColorControls() {
     objects.forEach(obj => {
         const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
         if (!fieldset) return;
-
-        updateField('x', Math.round(obj.x / 4));
-        updateField('y', Math.round(obj.y / 4));
-        updateField('width', Math.round(obj.width / 4));
-        updateField('height', Math.round(obj.height / 4));
-        updateField('rotation', Math.round(obj.rotation));
 
         controlsToToggle.forEach(controlName => {
             const control = fieldset.querySelector(`[name$="_${controlName}"]`);
@@ -2847,7 +2843,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'tetris': [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
-            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
@@ -5968,10 +5964,12 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
             { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
             { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
             { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
             { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
+            { property: `obj${newId}_tetrisBlurEdges`, label: `Object ${newId}: Blur Edges`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.' },
+            { property: `obj${newId}_tetrisHold`, label: `Object ${newId}: Hold at Ends`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Pauses the comet at the start and end of its path.' },
             { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
             { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
 
