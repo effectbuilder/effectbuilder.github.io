@@ -2893,6 +2893,86 @@ class Shape {
                         block.colorIndex = (block.colorIndex + 1) % (this.gradient.stops.length || 1);
                     }
                 }
+            } else if (['mix', 'mix-gravity', 'mix-gravity-reversed'].includes(this.tetrisAnimation)) {
+                const blockHeight = this.height / this.tetrisBlockCount;
+                const speed = (baseSpeed / 100) * (this.height / 60); // Scale speed
+
+                if (this.tetrisBlocks.length === 0) {
+                    const colorIndex1 = 0;
+                    const colorIndex2 = this.gradient.stops.length > 1 ? 1 : 0;
+
+                    this.tetrisBlocks.push({
+                        w: this.width, h: blockHeight, x: 0, y: -blockHeight, vy: speed,
+                        state: 'approaching', holdTimer: 0, mixProgress: 0,
+                        originalColorIndex: colorIndex1,
+                        targetColorIndex: colorIndex2
+                    });
+                    this.tetrisBlocks.push({
+                        w: this.width, h: blockHeight, x: 0, y: this.height, vy: -speed,
+                        state: 'approaching', holdTimer: 0, mixProgress: 0,
+                        originalColorIndex: colorIndex2,
+                        targetColorIndex: colorIndex1
+                    });
+                }
+
+                if (this.tetrisBlocks.length < 2) return; // Safeguard
+
+                const block1 = this.tetrisBlocks[0];
+                const block2 = this.tetrisBlocks[1];
+                const gravity = 0.1 * speed * deltaTime * 60;
+
+                this.tetrisBlocks.forEach(block => {
+                    switch(block.state) {
+                        case 'approaching':
+                            if (this.tetrisAnimation === 'mix-gravity') {
+                                block.vy += (block.vy > 0 ? gravity : -gravity);
+                            } else if (this.tetrisAnimation === 'mix-gravity-reversed') {
+                                const direction = Math.sign(block.vy);
+                                block.vy = Math.max(speed, block.vy - (direction * gravity));
+                            }
+                            block.y += block.vy * deltaTime * 60;
+                            break;
+                        case 'holding':
+                            block.holdTimer -= deltaTime * 60;
+                            if (block.holdTimer <= 0) {
+                                block.state = 'exiting';
+                                block.vy = (block.y < this.height / 2) ? speed : -speed; // Reset to initial speed
+                            } else {
+                                const holdDuration = this.tetrisHoldTime || 50;
+                                const halfHold = holdDuration / 2;
+                                if (block.holdTimer > halfHold) { // First half: mix
+                                    block.mixProgress = 1 - ((block.holdTimer - halfHold) / halfHold);
+                                } else { // Second half: unmix to target color
+                                    block.mixProgress = block.holdTimer / halfHold;
+                                }
+                            }
+                            break;
+                        case 'exiting':
+                             if (this.tetrisAnimation === 'mix-gravity') {
+                                block.vy += (block.vy > 0 ? gravity : -gravity);
+                            } else if (this.tetrisAnimation === 'mix-gravity-reversed') {
+                                 const direction = Math.sign(block.vy);
+                                 block.vy = Math.max(speed, block.vy + (direction * gravity * 2));
+                            }
+                            block.y += block.vy * deltaTime * 60;
+                            break;
+                    }
+                });
+
+                if (block1.state === 'approaching' && block1.y + block1.h >= block2.y) {
+                    const centerLine = this.height / 2;
+                    block1.y = centerLine - block1.h;
+                    block2.y = centerLine;
+                    block1.state = 'holding';
+                    block2.state = 'holding';
+                    const holdDuration = this.tetrisHoldTime || 50;
+                    block1.holdTimer = holdDuration;
+                    block2.holdTimer = holdDuration;
+                }
+
+                if (block1.state === 'exiting' && block2.state === 'exiting' && block1.y > this.height && block2.y < -block2.h) {
+                    this.tetrisBlocks = [];
+                }
             } else if (this.tetrisAnimation === 'fade-in-stack') {
                 const fadeSpeed = baseSpeed * 0.01;
                 if (this.tetrisBlocks.length === 0) {
@@ -3400,7 +3480,24 @@ class Shape {
                     let blockColor;
                     if (['comet', 'comet-gravity', 'comet-gravity-reversed'].includes(this.tetrisAnimation)) {
                         blockColor = this.gradient.stops[block.colorIndex % this.gradient.stops.length]?.color || '#FFFFFF';
-                    } else {
+                    } else if (['mix', 'mix-gravity', 'mix-gravity-reversed'].includes(this.tetrisAnimation)) {
+                        const originalColor = this.gradient.stops[block.originalColorIndex]?.color || '#FFFFFF';
+                        const targetColor = this.gradient.stops[block.targetColorIndex]?.color || '#FFFFFF';
+                        if (block.state === 'holding') {
+                            if (block.mixProgress < 0.5) { // unmixing
+                                const mixColor = lerpColor(originalColor, targetColor, 0.5);
+                                blockColor = lerpColor(mixColor, targetColor, 1 - (block.mixProgress * 2));
+                            } else { // mixing
+                                blockColor = lerpColor(originalColor, targetColor, (block.mixProgress - 0.5) * 2);
+                            }
+                        } else if (block.state === 'exiting') {
+                            blockColor = targetColor;
+                        }
+                        else {
+                            blockColor = originalColor;
+                        }
+                    }
+                    else {
                         blockColor = this.gradType === 'random' ? this._getRandomColorForElement(index) : this._createLocalFillStyle(index);
                     }
 
