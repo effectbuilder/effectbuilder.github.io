@@ -63,7 +63,7 @@ const controlGroupMap = {
     'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
     'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
     'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold'], icon: 'bi-grid-3x3-gap-fill' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold', 'tetrisMixColor'], icon: 'bi-grid-3x3-gap-fill' },
     'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
     'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
     'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
@@ -85,7 +85,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
     <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
 
-    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="text" />
+    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="tetris" />
     <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
     <meta property="obj1_y" label="Small Clock: Y Position" type="number" min="0" max="200" default="35" />
     <meta property="obj1_width" label="Small Clock: Width/Outer Diameter" type="number" min="2" max="320" default="130" />
@@ -2843,7 +2843,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'tetris': [
             'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
-            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold',
+            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold', 'tetrisMixColor',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
@@ -5970,6 +5970,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
             { property: `obj${newId}_tetrisBlurEdges`, label: `Object ${newId}: Blur Edges`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.' },
             { property: `obj${newId}_tetrisHold`, label: `Object ${newId}: Hold at Ends`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Pauses the comet at the start and end of its path.' },
+            { property: `obj${newId}_tetrisMixColor`, label: `Object ${newId}: Mix Color`, type: 'color', default: '#FFFFFF', description: '(Tetris/Mix) The color the blocks turn into when they mix.' },
             { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
             { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
 
@@ -7279,24 +7280,36 @@ document.addEventListener('DOMContentLoaded', function () {
             constrainBtn.classList.add('btn-secondary');
         }
 
-        // const effectLoaded = await loadSharedEffect();
+        if (window.db) {
+            const effectLoaded = await loadSharedEffect();
 
-        // if (!effectLoaded) {
-        //     // Attempt to load a single featured effect if no shared effect was loaded.
-        //     const featuredEffectLoaded = await loadFeaturedEffect();
+            if (!effectLoaded) {
+                // Attempt to load a single featured effect if no shared effect was loaded.
+                const featuredEffectLoaded = await loadFeaturedEffect();
 
-        //     if (!featuredEffectLoaded) {
-                // Fall back to the default template if neither a shared nor a featured effect was found.
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
-                const metaElements = Array.from(doc.querySelectorAll('meta'));
+                if (!featuredEffectLoaded) {
+                    // Fall back to the default template if neither a shared nor a featured effect was found.
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+                    const metaElements = Array.from(doc.querySelectorAll('meta'));
 
-                configStore = metaElements.map(parseMetaToConfig);
-                createInitialObjects();
-                renderForm();
-                generateOutputScript(); // Generate script after setup
-        //     }
-        // }
+                    configStore = metaElements.map(parseMetaToConfig);
+                    createInitialObjects();
+                    renderForm();
+                    generateOutputScript(); // Generate script after setup
+                }
+            }
+        } else {
+            // Fall back to the default template if neither a shared nor a featured effect was found.
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            const metaElements = Array.from(doc.querySelectorAll('meta'));
+
+            configStore = metaElements.map(parseMetaToConfig);
+            createInitialObjects();
+            renderForm();
+            generateOutputScript(); // Generate script after setup
+        }
 
         // updateObjectsFromForm();
         updateToolbarState();
@@ -7432,7 +7445,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const params = new URLSearchParams(window.location.search);
         const effectId = params.get('effectId');
 
-        if (effectId && window.db) {
+        if (effectId && window.db) { // Check if window.db exists
             try {
                 const effectDocRef = window.doc(window.db, "projects", effectId);
                 const effectDoc = await window.getDoc(effectDocRef);
@@ -7442,7 +7455,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (projectData.isPublic) {
                         loadWorkspace(projectData);
 
-                        // This is the new logic that checks for the action parameter
                         if (params.get('action') === 'regenThumbnail') {
                             regenerateAndSaveThumbnail(effectId);
                         } else {
@@ -7462,7 +7474,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // If no effectId was in the URL or the loading failed, return false.
         return false;
     }
 
@@ -8537,7 +8548,7 @@ document.addEventListener('DOMContentLoaded', function () {
     * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
     */
     async function loadFeaturedEffect() {
-        if (!window.db) return false;
+        if (!window.db) return false; // Check if window.db exists
         try {
             const projectsRef = window.collection(window.db, "projects");
             const q = window.query(projectsRef, window.where("featured", "==", true), window.limit(1));
