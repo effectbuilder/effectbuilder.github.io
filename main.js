@@ -63,7 +63,7 @@ const controlGroupMap = {
     'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
     'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
     'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold'], icon: 'bi-grid-3x3-gap-fill' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold', 'tetrisMixColorMode', 'tetrisCustomMixColor'], icon: 'bi-grid-3x3-gap-fill' },
     'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
     'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
     'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
@@ -2841,9 +2841,11 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
+            'shape', 'x', 'y', 'width', 'height', 'rotation',
+            'gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'scrollDir', 'phaseOffset', 'animationSpeed', 'cycleSpeed',
             'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold',
+            'tetrisMixColorMode',
+            'tetrisCustomMixColor',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
@@ -3890,6 +3892,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const swatch = document.createElement('div');
             swatch.className = 'color-picker-swatch';
             swatch.style.backgroundColor = defaultValue;
+            swatch.title = "Double-click to open color picker"; // Add tooltip hint
             const hexInput = document.createElement('input');
             hexInput.type = 'text';
             hexInput.className = 'form-control';
@@ -3897,20 +3900,44 @@ document.addEventListener('DOMContentLoaded', function () {
             hexInput.value = defaultValue;
             hexInput.id = controlId;
             hexInput.name = controlId;
+            hexInput.title = "Double-click to open color picker"; // Add tooltip hint
 
+            // --- MODIFIED openPicker FUNCTION ---
             const openPicker = () => {
-                if (!iroColorPicker || !generalColorPickerModal) return;
-                onColorChangeCallback = (newColor) => {
+                // *** Debugging Check ***
+                if (!window.globalIroColorPicker || !window.globalGeneralColorPickerModal) {
+                    console.error("Error: Global color picker instances not found or not initialized when trying to open picker for:", controlId);
+                    showToast("Color picker components failed to load.", "danger"); // Inform user
+                    return; // Stop if instances are missing
+                }
+
+                // Set the callback function for when the color changes in the modal
+                window.globalOnColorChangeCallback = (newColor) => {
                     swatch.style.backgroundColor = newColor;
                     hexInput.value = newColor;
+                    // Trigger an 'input' event so the application recognizes the change
                     hexInput.dispatchEvent(new Event('input', { bubbles: true }));
                 };
-                iroColorPicker.color.hexString = hexInput.value;
-                generalColorPickerModal.show();
+                const currentHex = hexInput.value;
+                if (/^#[0-9A-F]{6}$/i.test(currentHex)) {
+                    window.globalIroColorPicker.color.hexString = currentHex; // Use valid hex
+                } else {
+                    // If input is empty or invalid, set picker to white
+                    window.globalIroColorPicker.color.hexString = '#FFFFFF';
+                    // Optionally, update the input field itself to white if it was invalid
+                    // hexInput.value = '#FFFFFF';
+                    // swatch.style.backgroundColor = '#FFFFFF';
+                    // hexInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger update if changed
+                }
+                window.globalGeneralColorPickerModal.show();
             };
+            // --- END MODIFICATION ---
 
+            // Attach double-click listeners
             swatch.addEventListener('dblclick', openPicker);
             hexInput.addEventListener('dblclick', openPicker);
+
+            // Update swatch if hex input changes manually
             hexInput.addEventListener('input', () => {
                 if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
                     swatch.style.backgroundColor = hexInput.value;
@@ -3920,6 +3947,10 @@ document.addEventListener('DOMContentLoaded', function () {
             colorGroup.appendChild(swatch);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
+
+            // Re-initialize tooltips for the new elements
+            new bootstrap.Tooltip(swatch);
+            new bootstrap.Tooltip(hexInput);
         } else if (type === 'gradientpicker') {
             const container = document.createElement('div');
             container.className = 'gradient-picker-container';
@@ -4814,24 +4845,26 @@ document.addEventListener('DOMContentLoaded', function () {
             const fieldset = createObjectPanel(obj, grouped.objects[obj.id] || [], activeCollapseStates, activeTabStates);
             if (fieldset) {
                 form.appendChild(fieldset);
+                const mixModeSelect = fieldset.querySelector(`[name="obj${obj.id}_tetrisMixColorMode"]`);
+                const customColorControl = fieldset.querySelector(`[name="obj${obj.id}_tetrisCustomMixColor"]`);
+
+                const toggleCustomColorVisibility = () => {
+                    if (customColorControl) {
+                        const formGroup = customColorControl.closest('.mb-3');
+                        if (formGroup) {
+                            formGroup.style.display = (mixModeSelect && mixModeSelect.value === 'Custom') ? '' : 'none';
+                        }
+                    }
+                };
+
+                if (mixModeSelect) {
+                    // Initial visibility check
+                    toggleCustomColorVisibility();
+                    // Add event listener for changes
+                    mixModeSelect.addEventListener('change', toggleCustomColorVisibility);
+                }
             }
         });
-
-        // --- 5. FINALIZATION ---
-        // if (!isRestoring) {
-        //     for (const key in generalSettingsValues) {
-        //         const el = form.elements[key];
-        //         if (el) {
-        //             if (el.type === 'checkbox') {
-        //                 el.checked = generalSettingsValues[key];
-        //             } else {
-        //                 el.value = generalSettingsValues[key];
-        //             }
-        //         }
-        //     }
-        // }
-
-        // updateFormValuesFromObjects();
 
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
@@ -5926,7 +5959,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
-            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
+            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic,cycle-all-blocks', description: 'The type of color fill or gradient to use.' },
             { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]', description: 'The colors and positions of the gradient. The default is a fiery gradient.' },
             { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
             { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
@@ -5968,6 +6001,8 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
             { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
             { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
+            { property: `obj${newId}_tetrisMixColorMode`, label: `Object ${newId}: Mix Color Mode`, type: 'combobox', values: 'Average,Custom', default: 'Average', description: '(Tetris Mix) Color used when blocks meet/exit center.' },
+            { property: `obj${newId}_tetrisCustomMixColor`, label: `Object ${newId}: Custom Mix Color`, type: 'color', default: '#FFFFFF', description: '(Tetris Mix) The specific color to use if Mode is Custom.' },
             { property: `obj${newId}_tetrisBlurEdges`, label: `Object ${newId}: Blur Edges`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.' },
             { property: `obj${newId}_tetrisHold`, label: `Object ${newId}: Hold at Ends`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Pauses the comet at the start and end of its path.' },
             { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
@@ -7280,38 +7315,38 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (window.db) {
-        try {
-            const effectLoaded = await loadSharedEffect();
+            try {
+                const effectLoaded = await loadSharedEffect();
 
-            if (!effectLoaded) {
-                // Attempt to load a single featured effect if no shared effect was loaded.
-                const featuredEffectLoaded = await loadFeaturedEffect();
+                if (!effectLoaded) {
+                    // Attempt to load a single featured effect if no shared effect was loaded.
+                    const featuredEffectLoaded = await loadFeaturedEffect();
 
-                if (!featuredEffectLoaded) {
-                    // Fall back to the default template if neither a shared nor a featured effect was found.
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
-                    const metaElements = Array.from(doc.querySelectorAll('meta'));
+                    if (!featuredEffectLoaded) {
+                        // Fall back to the default template if neither a shared nor a featured effect was found.
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+                        const metaElements = Array.from(doc.querySelectorAll('meta'));
 
-                    configStore = metaElements.map(parseMetaToConfig);
-                    createInitialObjects();
-                    renderForm();
-                    generateOutputScript(); // Generate script after setup
+                        configStore = metaElements.map(parseMetaToConfig);
+                        createInitialObjects();
+                        renderForm();
+                        generateOutputScript(); // Generate script after setup
+                    }
                 }
-                }
-        } catch (e) {
-            console.warn("Firebase features disabled due to error:", e);
-            // Fall back to the default template if Firebase fails
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
-            const metaElements = Array.from(doc.querySelectorAll('meta'));
-            configStore = metaElements.map(parseMetaToConfig);
-            createInitialObjects();
-            renderForm();
-            generateOutputScript();
+            } catch (e) {
+                console.warn("Firebase features disabled due to error:", e);
+                // Fall back to the default template if Firebase fails
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+                const metaElements = Array.from(doc.querySelectorAll('meta'));
+                configStore = metaElements.map(parseMetaToConfig);
+                createInitialObjects();
+                renderForm();
+                generateOutputScript();
             }
         } else {
-        // Fall back to the default template if firebase is not available
+            // Fall back to the default template if firebase is not available
             const parser = new DOMParser();
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
             const metaElements = Array.from(doc.querySelectorAll('meta'));
