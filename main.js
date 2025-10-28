@@ -63,7 +63,7 @@ const controlGroupMap = {
     'Fill-Animation': { props: ['gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'animationMode', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns', 'animationSpeed', 'cycleSpeed', 'fillShape'], icon: 'bi-palette-fill' },
     'Text': { props: ['text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation', 'textAnimationSpeed', 'showTime', 'showDate'], icon: 'bi-fonts' },
     'Oscilloscope': { props: ['lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'enableWaveAnimation', 'oscAnimationSpeed', 'waveStyle', 'waveCount'], icon: 'bi-graph-up-arrow' },
-    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime'], icon: 'bi-grid-3x3-gap-fill' },
+    'Tetris': { props: ['tetrisBlockCount', 'tetrisAnimation', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold', 'tetrisMixColorMode', 'tetrisCustomMixColor'], icon: 'bi-grid-3x3-gap-fill' },
     'Fire': { props: ['fireSpread'], icon: 'bi-fire' },
     'Pixel Art': { props: ['pixelArtFrames'], icon: 'bi-image-fill' },
     'Visualizer': { props: ['vizLayout', 'vizDrawStyle', 'vizStyle', 'vizLineWidth', 'vizAutoScale', 'vizMaxBarHeight', 'vizBarCount', 'vizBarSpacing', 'vizSmoothing', 'vizUseSegments', 'vizSegmentCount', 'vizSegmentSpacing', 'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'], icon: 'bi-bar-chart-line-fill' },
@@ -85,7 +85,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
     <meta property="globalCycleSpeed" label="Global Color Cycle Speed" type="number" default="10" min="0" max="100" />
 
-    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj1_shape" label="Small Clock: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="tetris" />
     <meta property="obj1_x" label="Small Clock: X Position" type="number" min="0" max="320" default="0" />
     <meta property="obj1_y" label="Small Clock: Y Position" type="number" min="0" max="200" default="35" />
     <meta property="obj1_width" label="Small Clock: Width/Outer Diameter" type="number" min="2" max="320" default="130" />
@@ -121,7 +121,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_audioSensitivity" label="Small Clock: Sensitivity" min="0" max="200" type="number" default="50" />
     <meta property="obj1_audioSmoothing" label="Small Clock: Smoothing" min="0" max="99" type="number" default="50" />
 
-    <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text" default="text" />
+    <meta property="obj2_shape" label="Large Text: Shape" type="combobox" values="rectangle,circle,ring,text,tetris" default="text" />
     <meta property="obj2_x" label="Large Text: X Position" type="number" min="0" max="320" default="-3" />
     <meta property="obj2_y" label="Large Text: Y Position" type="number" min="0" max="200" default="0" />
     <meta property="obj2_width" label="Large Text: Width/Outer Diameter" type="number" min="2" max="320" default="237" />
@@ -562,6 +562,8 @@ function handleURLParameters() {
 }
 
 function updateColorControls() {
+    const form = document.getElementById('controls-form');
+    if (!form) return;
     const paletteEnabled = document.getElementById('enablePalette')?.checked;
 
     // A list of all control types that should be disabled when the global palette is on
@@ -573,12 +575,6 @@ function updateColorControls() {
     objects.forEach(obj => {
         const fieldset = form.querySelector(`fieldset[data-object-id="${obj.id}"]`);
         if (!fieldset) return;
-
-        updateField('x', Math.round(obj.x / 4));
-        updateField('y', Math.round(obj.y / 4));
-        updateField('width', Math.round(obj.width / 4));
-        updateField('height', Math.round(obj.height / 4));
-        updateField('rotation', Math.round(obj.rotation));
 
         controlsToToggle.forEach(controlName => {
             const control = fieldset.querySelector(`[name$="_${controlName}"]`);
@@ -2845,9 +2841,11 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'cycleSpeed', 'animationSpeed', 'phaseOffset',
-            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime',
+            'shape', 'x', 'y', 'width', 'height', 'rotation',
+            'gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'scrollDir', 'phaseOffset', 'animationSpeed', 'cycleSpeed',
+            'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold',
+            'tetrisMixColorMode',
+            'tetrisCustomMixColor',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
@@ -3894,6 +3892,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const swatch = document.createElement('div');
             swatch.className = 'color-picker-swatch';
             swatch.style.backgroundColor = defaultValue;
+            swatch.title = "Double-click to open color picker"; // Add tooltip hint
             const hexInput = document.createElement('input');
             hexInput.type = 'text';
             hexInput.className = 'form-control';
@@ -3901,20 +3900,44 @@ document.addEventListener('DOMContentLoaded', function () {
             hexInput.value = defaultValue;
             hexInput.id = controlId;
             hexInput.name = controlId;
+            hexInput.title = "Double-click to open color picker"; // Add tooltip hint
 
+            // --- MODIFIED openPicker FUNCTION ---
             const openPicker = () => {
-                if (!iroColorPicker || !generalColorPickerModal) return;
-                onColorChangeCallback = (newColor) => {
+                // *** Debugging Check ***
+                if (!window.globalIroColorPicker || !window.globalGeneralColorPickerModal) {
+                    console.error("Error: Global color picker instances not found or not initialized when trying to open picker for:", controlId);
+                    showToast("Color picker components failed to load.", "danger"); // Inform user
+                    return; // Stop if instances are missing
+                }
+
+                // Set the callback function for when the color changes in the modal
+                window.globalOnColorChangeCallback = (newColor) => {
                     swatch.style.backgroundColor = newColor;
                     hexInput.value = newColor;
+                    // Trigger an 'input' event so the application recognizes the change
                     hexInput.dispatchEvent(new Event('input', { bubbles: true }));
                 };
-                iroColorPicker.color.hexString = hexInput.value;
-                generalColorPickerModal.show();
+                const currentHex = hexInput.value;
+                if (/^#[0-9A-F]{6}$/i.test(currentHex)) {
+                    window.globalIroColorPicker.color.hexString = currentHex; // Use valid hex
+                } else {
+                    // If input is empty or invalid, set picker to white
+                    window.globalIroColorPicker.color.hexString = '#FFFFFF';
+                    // Optionally, update the input field itself to white if it was invalid
+                    // hexInput.value = '#FFFFFF';
+                    // swatch.style.backgroundColor = '#FFFFFF';
+                    // hexInput.dispatchEvent(new Event('input', { bubbles: true })); // Trigger update if changed
+                }
+                window.globalGeneralColorPickerModal.show();
             };
+            // --- END MODIFICATION ---
 
+            // Attach double-click listeners
             swatch.addEventListener('dblclick', openPicker);
             hexInput.addEventListener('dblclick', openPicker);
+
+            // Update swatch if hex input changes manually
             hexInput.addEventListener('input', () => {
                 if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
                     swatch.style.backgroundColor = hexInput.value;
@@ -3924,6 +3947,10 @@ document.addEventListener('DOMContentLoaded', function () {
             colorGroup.appendChild(swatch);
             colorGroup.appendChild(hexInput);
             formGroup.appendChild(colorGroup);
+
+            // Re-initialize tooltips for the new elements
+            new bootstrap.Tooltip(swatch);
+            new bootstrap.Tooltip(hexInput);
         } else if (type === 'gradientpicker') {
             const container = document.createElement('div');
             container.className = 'gradient-picker-container';
@@ -4818,24 +4845,26 @@ document.addEventListener('DOMContentLoaded', function () {
             const fieldset = createObjectPanel(obj, grouped.objects[obj.id] || [], activeCollapseStates, activeTabStates);
             if (fieldset) {
                 form.appendChild(fieldset);
+                const mixModeSelect = fieldset.querySelector(`[name="obj${obj.id}_tetrisMixColorMode"]`);
+                const customColorControl = fieldset.querySelector(`[name="obj${obj.id}_tetrisCustomMixColor"]`);
+
+                const toggleCustomColorVisibility = () => {
+                    if (customColorControl) {
+                        const formGroup = customColorControl.closest('.mb-3');
+                        if (formGroup) {
+                            formGroup.style.display = (mixModeSelect && mixModeSelect.value === 'Custom') ? '' : 'none';
+                        }
+                    }
+                };
+
+                if (mixModeSelect) {
+                    // Initial visibility check
+                    toggleCustomColorVisibility();
+                    // Add event listener for changes
+                    mixModeSelect.addEventListener('change', toggleCustomColorVisibility);
+                }
             }
         });
-
-        // --- 5. FINALIZATION ---
-        // if (!isRestoring) {
-        //     for (const key in generalSettingsValues) {
-        //         const el = form.elements[key];
-        //         if (el) {
-        //             if (el.type === 'checkbox') {
-        //                 el.checked = generalSettingsValues[key];
-        //             } else {
-        //                 el.value = generalSettingsValues[key];
-        //             }
-        //         }
-        //     }
-        // }
-
-        // updateFormValuesFromObjects();
 
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateDependentControls);
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateStrokeDependentControls);
@@ -5930,7 +5959,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
-            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use.' },
+            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic,cycle-all-blocks', description: 'The type of color fill or gradient to use.' },
             { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]', description: 'The colors and positions of the gradient. The default is a fiery gradient.' },
             { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
             { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
@@ -5968,10 +5997,14 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
             { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
             { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
+            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed,mix,mix-gravity,mix-gravity-reversed', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
             { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
             { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
             { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
+            { property: `obj${newId}_tetrisMixColorMode`, label: `Object ${newId}: Mix Color Mode`, type: 'combobox', values: 'Average,Custom', default: 'Average', description: '(Tetris Mix) Color used when blocks meet/exit center.' },
+            { property: `obj${newId}_tetrisCustomMixColor`, label: `Object ${newId}: Custom Mix Color`, type: 'color', default: '#FFFFFF', description: '(Tetris Mix) The specific color to use if Mode is Custom.' },
+            { property: `obj${newId}_tetrisBlurEdges`, label: `Object ${newId}: Blur Edges`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.' },
+            { property: `obj${newId}_tetrisHold`, label: `Object ${newId}: Hold at Ends`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Pauses the comet at the start and end of its path.' },
             { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
             { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
 
@@ -7133,92 +7166,44 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sinA = Math.sin(resizeAngle);
                     const anchorPoint = initial.anchorPoint;
 
-                    // Vector from anchor to mouse in world space
+                    // Vector from anchor to the current mouse position in world space
                     const worldVecX = x - anchorPoint.x;
                     const worldVecY = y - anchorPoint.y;
 
-                    // Rotate vector into object's local space
+                    // Rotate this vector into the object's local coordinate system.
+                    // This tells us the dimensions of the bounding box in the object's orientation.
                     const localVecX = worldVecX * cosA + worldVecY * sinA;
                     const localVecY = -worldVecX * sinA + worldVecY * cosA;
 
-                    // Calculate new dimensions (always positive)
+                    // The new width and height are the absolute values of the local vector components.
                     let newWidth = Math.abs(localVecX);
                     let newHeight = Math.abs(localVecY);
 
-                    // Preserve one dimension for cardinal handles
-                    if (activeResizeHandle === 'top' || activeResizeHandle === 'bottom') {
-                        newWidth = initial.initialWidth;
-                    }
-                    if (activeResizeHandle === 'left' || activeResizeHandle === 'right') {
-                        newHeight = initial.initialHeight;
-                    }
-
-                    // --- POSITION CALCULATION ---
-                    let newCenterX, newCenterY;
-                    const isCardinal = activeResizeHandle.length <= 5; // e.g., 'top', 'left'
-
-                    if (isCardinal) {
-                        // For side handles, calculate the new center by offsetting from the stationary anchor.
-                        const localAnchorX = activeResizeHandle === 'left' ? newWidth / 2 : activeResizeHandle === 'right' ? -newWidth / 2 : 0;
-                        const localAnchorY = activeResizeHandle === 'top' ? newHeight / 2 : activeResizeHandle === 'bottom' ? -newHeight / 2 : 0;
-
-                        const worldOffsetX = localAnchorX * cosA - localAnchorY * sinA;
-                        const worldOffsetY = localAnchorX * sinA + localAnchorY * cosA;
-
-                        newCenterX = anchorPoint.x - worldOffsetX;
-                        newCenterY = anchorPoint.y - worldOffsetY;
-
-                    } else {
-                        // For corner handles, the center is the midpoint of the diagonal (anchor to mouse).
-                        newCenterX = (anchorPoint.x + x) / 2;
-                        newCenterY = (anchorPoint.y + y) / 2;
+                    // --- Aspect Ratio Lock (Shift Key) ---
+                    if (moveEvent.shiftKey && initial.initialWidth > 0 && initial.initialHeight > 0) {
+                        const aspectRatio = initial.initialWidth / initial.initialHeight;
+                        if (newWidth / newHeight > aspectRatio) {
+                            newHeight = newWidth / aspectRatio;
+                        } else {
+                            newWidth = newHeight * aspectRatio;
+                        }
                     }
 
-                    // Calculate the new top-left corner
+                    // The center of the new bounding box is the midpoint between the anchor and the mouse.
+                    const newCenterX = (anchorPoint.x + x) / 2;
+                    const newCenterY = (anchorPoint.y + y) / 2;
+
+                    // Calculate the new top-left corner (x, y) from the new center and dimensions.
                     const newX = newCenterX - newWidth / 2;
                     const newY = newCenterY - newHeight / 2;
 
-                    // --- SCALING AND UPDATE APPLICATION ---
-                    if (obj.shape === 'polyline' && !obj.locked) {
-                        const oldWidth = obj.width;
-                        const oldHeight = obj.height;
-
-                        if (oldWidth > 0 && oldHeight > 0) {
-                            const scaleX = newWidth / oldWidth;
-                            const scaleY = newHeight / oldHeight;
-
-                            // 1. Scale the polyline's internal nodes
-                            const newNodes = obj.polylineNodes.map(node => {
-                                // Scale the node based on handle movement
-                                const scaledX = activeResizeHandle.includes('left') || activeResizeHandle.includes('right') || !activeResizeHandle.includes('-')
-                                    ? node.x * scaleX
-                                    : node.x;
-                                const scaledY = activeResizeHandle.includes('top') || activeResizeHandle.includes('bottom') || !activeResizeHandle.includes('-')
-                                    ? node.y * scaleY
-                                    : node.y;
-
-                                return { x: scaledX, y: scaledY };
-                            });
-
-                            // 2. Apply the manually calculated position and dimensions, and update the nodes array.
-                            // This overwrites the old values and updates the nodes cache.
-                            obj.update({
-                                x: newX,
-                                y: newY,
-                                width: newWidth,
-                                height: newHeight,
-                                polylineNodes: newNodes
-                            });
-                        }
-
-                    } else { // Apply the general update for all standard shapes.
-                        obj.update({
-                            x: newX,
-                            y: newY,
-                            width: newWidth,
-                            height: newHeight
-                        });
-                    }
+                    // Apply the new properties to the object.
+                    obj.update({
+                        x: newX,
+                        y: newY,
+                        width: newWidth,
+                        height: newHeight
+                    });
                 }
                 needsRedraw = true;
             } else if (isRotating) {
@@ -7329,23 +7314,47 @@ document.addEventListener('DOMContentLoaded', function () {
             constrainBtn.classList.add('btn-secondary');
         }
 
-        const effectLoaded = await loadSharedEffect();
+        if (window.db) {
+            try {
+                const effectLoaded = await loadSharedEffect();
 
-        if (!effectLoaded) {
-            // Attempt to load a single featured effect if no shared effect was loaded.
-            const featuredEffectLoaded = await loadFeaturedEffect();
+                if (!effectLoaded) {
+                    // Attempt to load a single featured effect if no shared effect was loaded.
+                    const featuredEffectLoaded = await loadFeaturedEffect();
 
-            if (!featuredEffectLoaded) {
-                // Fall back to the default template if neither a shared nor a featured effect was found.
+                    if (!featuredEffectLoaded) {
+                        // Fall back to the default template if neither a shared nor a featured effect was found.
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+                        const metaElements = Array.from(doc.querySelectorAll('meta'));
+
+                        configStore = metaElements.map(parseMetaToConfig);
+                        createInitialObjects();
+                        renderForm();
+                        generateOutputScript(); // Generate script after setup
+                    }
+                }
+            } catch (e) {
+                console.warn("Firebase features disabled due to error:", e);
+                // Fall back to the default template if Firebase fails
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
                 const metaElements = Array.from(doc.querySelectorAll('meta'));
-
                 configStore = metaElements.map(parseMetaToConfig);
                 createInitialObjects();
                 renderForm();
-                generateOutputScript(); // Generate script after setup
+                generateOutputScript();
             }
+        } else {
+            // Fall back to the default template if firebase is not available
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
+            const metaElements = Array.from(doc.querySelectorAll('meta'));
+
+            configStore = metaElements.map(parseMetaToConfig);
+            createInitialObjects();
+            renderForm();
+            generateOutputScript(); // Generate script after setup
         }
 
         // updateObjectsFromForm();
@@ -7482,7 +7491,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const params = new URLSearchParams(window.location.search);
         const effectId = params.get('effectId');
 
-        if (effectId) {
+        if (effectId && window.db) {
             try {
                 const effectDocRef = window.doc(window.db, "projects", effectId);
                 const effectDoc = await window.getDoc(effectDocRef);
@@ -7492,7 +7501,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (projectData.isPublic) {
                         loadWorkspace(projectData);
 
-                        // This is the new logic that checks for the action parameter
                         if (params.get('action') === 'regenThumbnail') {
                             regenerateAndSaveThumbnail(effectId);
                         } else {
@@ -7512,7 +7520,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // If no effectId was in the URL or the loading failed, return false.
         return false;
     }
 
@@ -8587,6 +8594,7 @@ document.addEventListener('DOMContentLoaded', function () {
     * @returns {Promise<boolean>} A promise that resolves to true if a featured effect was loaded, false otherwise.
     */
     async function loadFeaturedEffect() {
+        if (!window.db) return false; // Check if window.db exists
         try {
             const projectsRef = window.collection(window.db, "projects");
             const q = window.query(projectsRef, window.where("featured", "==", true), window.limit(1));
