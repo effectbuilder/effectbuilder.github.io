@@ -72,6 +72,13 @@ let addTriangleModal = null;
 const addTriangleBtn = document.getElementById('add-triangle-empty-btn');
 const confirmAddTriangleBtn = document.getElementById('confirm-add-triangle-empty-btn');
 
+const rotateSelectedBtn = document.getElementById('rotate-selected-btn');
+
+const scaleSelectedBtn = document.getElementById('scale-selected-btn');
+const confirmScaleBtn = document.getElementById('confirm-scale-btn');
+const scaleFactorInput = document.getElementById('scale-factor-input');
+let scaleModal = null;
+
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
 // ---
@@ -274,10 +281,11 @@ async function handleSaveComponent() {
     } catch (error) { console.error("Error saving component: ", error); showToast('Error Saving', error.message, 'danger'); }
 }
 
+// --- MODIFIED FUNCTION: handleExport (Ensures Wired Order in JSON) ---
 function handleExport() {
     console.log("handleExport triggered.");
     const exportModalElement = document.getElementById('export-component-modal');
-    if (!exportModalElement) { console.error("Export modal element not found!"); showToast('Export Error', 'Modal element is missing.', 'danger'); return; }
+    if (!exportModalElement) { showToast('Export Error', 'Modal element is missing.', 'danger'); return; }
     const exportModal = bootstrap.Modal.getInstance(exportModalElement) || new bootstrap.Modal(exportModalElement);
 
     if (!componentState || !Array.isArray(componentState.leds)) { showToast('Export Error', 'No component data.', 'danger'); return; }
@@ -300,40 +308,48 @@ function handleExport() {
         minX = (minX === Infinity) ? 0 : minX; minY = (minY === Infinity) ? 0 : minY;
         console.log(`Calculated offset: minX=${minX}, minY=${minY}`);
 
+        // --- 1. Create a map for quick access to LED data (including offset coords) ---
         const ledDataMap = new Map();
         let maxX = 0, maxY = 0;
         currentLeds.forEach(led => {
             if (led) {
+                // Calculate export coordinates (offset and converted to grid units)
                 const offsetX = Math.round((led.x - minX) / GRID_SIZE);
                 const offsetY = Math.round((led.y - minY) / GRID_SIZE);
+                
                 ledDataMap.set(led.id, { id: led.id, x: offsetX, y: offsetY });
-                maxX = Math.max(maxX, offsetX); maxY = Math.max(maxY, offsetY);
+                maxX = Math.max(maxX, offsetX); 
+                maxY = Math.max(maxY, offsetY);
             }
         });
         console.log(`Created ledDataMap. Max offset coords: maxX=${maxX}, maxY=${maxY}`);
 
-        const ledMapping = Array.from({ length: ledCount }, (_, i) => i);
         let ledCoordinates = [];
         const exportedLedIds = new Set();
-
-        // --- UPDATED: Flatten the [][] wiring array for export ---
+        
+        // --- 2. Build LedCoordinates array based strictly on wiring order ---
         if (Array.isArray(currentWiring)) {
             console.log("Using defined wiring order (flattening circuits) for coordinates.");
-            // Flatten all circuits into one list
+            
+            // Flatten all circuits into one list of IDs (maintaining order)
             const flatWiring = currentWiring.flat().filter(id => id != null);
 
             flatWiring.forEach(ledId => {
                 const ledData = ledDataMap.get(ledId);
-                if (ledData && !exportedLedIds.has(ledId)) { // Check for duplicates
+                // ONLY add if the LED exists and has not been added yet (handles multi-circuit overlaps, though less common now)
+                if (ledData && !exportedLedIds.has(ledId)) { 
+                    // Push the [x, y] coordinate pair
                     ledCoordinates.push([ledData.x, ledData.y]);
                     exportedLedIds.add(ledId);
-                } else if (!ledData) { console.warn(`Wiring Error: LED ID ${ledId} not found.`); }
+                } else if (!ledData) { 
+                    console.warn(`Wiring Error: LED ID ${ledId} not found in LED list.`); 
+                }
             });
         } else {
             console.warn("Wiring data is invalid. Exporting unwired.");
         }
 
-        // Add any unwired LEDs
+        // --- 3. Append any UNWIRED LEDs (order of unwired doesn't strictly matter) ---
         currentLeds.forEach(led => {
             if (led && !exportedLedIds.has(led.id)) {
                 const ledData = ledDataMap.get(led.id);
@@ -345,20 +361,17 @@ function handleExport() {
             }
         });
 
-        // Pad/Truncate
-        if (ledCoordinates.length < ledCount) {
-            console.error(`Coordinate count (${ledCoordinates.length}) mismatches LED count (${ledCount}). Padding.`);
+        // --- 4. Final Sanity Check ---
+        if (ledCoordinates.length !== ledCount) {
+             console.error(`Coordinate count (${ledCoordinates.length}) mismatches LED count (${ledCount}). Padding/Truncating.`);
+            // Pad/Truncate for safety, though it shouldn't be needed with the new logic
             while (ledCoordinates.length < ledCount) { ledCoordinates.push([0, 0]); }
-        }
-        if (ledCoordinates.length > ledCount) {
-            console.error(`Coordinate count (${ledCoordinates.length}) exceeds LED count (${ledCount}). Truncating.`);
-            ledCoordinates = ledCoordinates.slice(0, ledCount);
+            if (ledCoordinates.length > ledCount) { ledCoordinates = ledCoordinates.slice(0, ledCount); }
         }
         console.log("Generated LedCoordinates:", ledCoordinates.length);
 
-        const ledNames = Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`);
+        const ledMapping = Array.from({ length: ledCount }, (_, i) => i);
         const width = maxX + 1; const height = maxY + 1;
-        console.log(`Calculated Width=${width}, Height=${height}`);
 
         let base64ImageData = "";
         if (imageDataUrl && imageDataUrl.startsWith('data:image')) {
@@ -368,7 +381,7 @@ function handleExport() {
 
         const exportObject = {
             ProductName: productName, DisplayName: displayName, Brand: brand, Type: currentType, LedCount: ledCount,
-            Width: width, Height: height, LedMapping: ledMapping, LedCoordinates: ledCoordinates, LedNames: ledNames,
+            Width: width, Height: height, LedMapping: ledMapping, LedCoordinates: ledCoordinates, LedNames: Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`),
             Image: base64ImageData, ImageUrl: ""
         };
 
@@ -387,16 +400,13 @@ function handleExport() {
         downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
 
         newDownloadBtn.onclick = () => {
-            console.log("Download button clicked.");
             try {
                 const a = document.createElement('a'); a.href = url; a.download = filename;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                console.log("Download triggered for:", filename);
                 exportModal.hide();
             } catch (downloadError) { console.error("Error triggering download:", downloadError); showToast('Download Error', 'Could not trigger file download.', 'danger'); }
         };
-        console.log("Download button event listener attached.");
         exportModal.show();
     } catch (error) {
         console.error("Error during handleExport:", error);
@@ -600,6 +610,34 @@ function setupToolbarListeners() {
     document.getElementById('zoom-out-btn').addEventListener('click', () => zoomAtPoint(canvas.width / 2, canvas.height / 2, 1 / 1.2));
     document.getElementById('zoom-reset-btn').addEventListener('click', resetView);
     document.getElementById('toggle-grid-btn').addEventListener('click', () => { toggleGrid(); });
+
+    if (rotateSelectedBtn) {
+        rotateSelectedBtn.addEventListener('click', (e) => {
+            if (selectedLedIds.size === 0) {
+                showToast('Action Blocked', 'Select one or more LEDs to rotate.', 'warning');
+            } else {
+                // Check for Shift key to determine direction:
+                // Shift key down = -90° (Clockwise)
+                // Shift key up = +90° (Counter-Clockwise)
+                const angle = e.shiftKey ? -90 : 90;
+                handleRotateSelected(angle);
+            }
+        });
+    } else { console.warn("Rotate button not found."); }
+    // --- END MODIFIED ROTATION LISTENER ---
+
+    // Keep scale modal initialization here (it still uses a modal for factor input)
+    scaleModal = new bootstrap.Modal(document.getElementById('scale-selected-modal'));
+    if (scaleSelectedBtn && confirmScaleBtn) {
+        scaleSelectedBtn.addEventListener('click', () => {
+            if (selectedLedIds.size === 0) {
+                showToast('Action Blocked', 'Select one or more LEDs to scale.', 'warning');
+            } else {
+                scaleModal.show();
+            }
+        });
+        confirmScaleBtn.addEventListener('click', handleScaleSelected);
+    } else { console.warn("Scale buttons not found."); }
 }
 
 function setTool(toolName) {
@@ -812,67 +850,104 @@ function handleAddStrip() {
     updateLedCount();
 }
 
+// --- MODIFIED FUNCTION: handleAddCircle (Calculates Required Radius) ---
 function handleAddCircle() {
-    const ledCount = parseInt(document.getElementById('circle-led-count').value) || 8;
-    const radiusUnits = parseInt(document.getElementById('circle-radius').value) || 5;
+    // We now rely solely on the LED Count input
+    const ledCount = parseInt(document.getElementById('circle-led-count').value) || 12;
 
-    if (ledCount <= 0 || radiusUnits <= 0) { showToast('Invalid Input', 'LED Count and Radius must be > 0.', 'danger'); return; }
+    if (ledCount <= 2) { showToast('Invalid Input', 'LED Count must be greater than 2 to form a circle.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
+    // --- 1. CALCULATE MINIMAL GRID-ALIGNED RADIUS ---
+    // Minimal Circumference (C) needed is LED_COUNT * GRID_SIZE to ensure non-overlap
+    // C = 2 * PI * R  =>  R = C / (2 * PI)
+    const minCircumference = ledCount * GRID_SIZE;
+    const requiredRadiusFloat = minCircumference / (2 * Math.PI);
+
+    // Round UP to the nearest multiple of GRID_SIZE to guarantee spacing
+    const radiusUnits = Math.ceil(requiredRadiusFloat / GRID_SIZE);
     const radiusPx = radiusUnits * GRID_SIZE;
+
+    console.log(`Calculated Radius: ${radiusUnits} grid units (${radiusPx}px) for ${ledCount} LEDs.`);
+
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
+
     // Bounding box of the circle
     const shapeWidth = radiusPx * 2;
     const shapeHeight = radiusPx * 2;
 
-    // Generator function assumes sx/sy is the TOP-LEFT of the bounding box
-    const getCirclePositions = (sx, sy) => {
-        const positions = [];
-        const addedCoords = new Set(); // For de-duping snapped circle points
-        const currentCenterX = sx + radiusPx;
-        const currentCenterY = sy + radiusPx;
+    // Calculate the snapped center and bounding box start
+    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
+    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
+    const baseStartX = finalCenterX - radiusPx;
+    const baseStartY = finalCenterY - radiusPx;
+
+
+    // --- 2. DEFINE FLOATING-POINT VERTICES (Each LED position acts as a vertex) ---
+    const getVertices = (centerX, centerY) => {
+        const V = [];
         for (let i = 0; i < ledCount; i++) {
             const angle = (i / ledCount) * 2 * Math.PI;
-            const x = Math.round((currentCenterX + radiusPx * Math.cos(angle)) / GRID_SIZE) * GRID_SIZE;
-            const y = Math.round((currentCenterY + radiusPx * Math.sin(angle)) / GRID_SIZE) * GRID_SIZE;
-            const coordKey = `${x},${y}`;
-            if (!addedCoords.has(coordKey)) {
-                positions.push({ x, y });
-                addedCoords.add(coordKey);
-            }
+            V.push({
+                x: centerX + radiusPx * Math.cos(angle),
+                y: centerY + radiusPx * Math.sin(angle)
+            });
         }
-        return positions;
+        return V;
     };
 
-    const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getCirclePositions);
 
-    if (!foundSpot) {
-        showToast('No Empty Space', `Could not find an empty space for the circle.`, 'warning');
-        return;
-    }
+    // --- 3. NON-OVERLAP SEARCH ---
+    // The complexity of Bresenham's is not strictly necessary here, but we use the
+    // existing robust snapping and deduplication logic inside getPointsForPolygon.
+
+    // We rely on simple snapping of the vertices for overlap checking
+    const getPositionsForSearch = (sx, sy) => getVertices(sx + radiusPx, sy + radiusPx).map(v => ({
+        x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
+        y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
+    }));
+
+    const { foundSpot, startX, startY } = findEmptySpotForShape(
+        viewCenter,
+        shapeWidth,
+        shapeHeight,
+        getPositionsForSearch
+    );
+
+    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the circle.`, 'warning'); return; }
+
+
+    // --- 4. GENERATE PRECISE LED POINTS ---
+    const finalVertices = getVertices(startX + radiusPx, startY + radiusPx);
+
+    // Use getPointsForPolygon (which uses Bresenham's) to place points accurately.
+    // NOTE: For a perfect circle, Bresenham's isn't ideal, but since we are placing
+    // *discrete* LEDs at the calculated vertex locations, we only need the snapping/dedupe.
+    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
 
     const newLeds = [];
     const newWireIds = [];
-    const addedCoords = new Set(); // Re-use for final generation
-    const finalCenterX = startX + radiusPx;
-    const finalCenterY = startY + radiusPx;
+    let ledCountFinal = 0;
 
-    for (let i = 0; i < ledCount; i++) {
-        const angle = (i / ledCount) * 2 * Math.PI;
-        const x = Math.round((finalCenterX + radiusPx * Math.cos(angle)) / GRID_SIZE) * GRID_SIZE;
-        const y = Math.round((finalCenterY + radiusPx * Math.sin(angle)) / GRID_SIZE) * GRID_SIZE;
-        const coordKey = `${x},${y}`;
+    // Use only the first 'ledCount' points, as Bresenham's might add intermediate points
+    // that we don't want for a discrete circle. We should use the raw snapped vertices.
+    const addedCoords = new Set();
 
-        if (!addedCoords.has(coordKey)) { // De-duplicate snapped LEDs
-            const id = `${Date.now()}-c-${i}`;
-            const newLed = { id, x, y };
+    for (const rawLed of newLedsRaw) {
+        // We only want the *snapped* vertex points, which are all contained in newLedsRaw.
+        const key = `${rawLed.x},${rawLed.y}`;
+        if (!addedCoords.has(key)) {
+            const id = `${Date.now()}-circ-${ledCountFinal++}`;
+            const newLed = { id, x: rawLed.x, y: rawLed.y };
             newLeds.push(newLed);
             newWireIds.push(id);
-            addedCoords.add(coordKey);
+            addedCoords.add(key);
         }
     }
 
+
+    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
@@ -882,6 +957,7 @@ function handleAddCircle() {
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
+    document.getElementById('add-circle-modal').classList.remove('show');
     addCircleModal.hide(); drawCanvas(); autoSaveState();
     updateLedCount();
 }
@@ -1172,222 +1248,260 @@ function handleAddLiLi() {
     updateLedCount();
 }
 
-// --- NEW FUNCTION: handleAddHexagon ---
+// --- MODIFIED FUNCTION: handleAddHexagon (Reset to True Regular Hexagon) ---
 function handleAddHexagon() {
-    const ledsPerSide = parseInt(document.getElementById('hexagon-leds-per-side').value) || 2;
+    // The input defines the segments along one side
+    const ledsPerSideInput = parseInt(document.getElementById('hexagon-leds-per-side').value) || 4;
+    const SIDES = 6;
 
-    if (ledsPerSide <= 1) { showToast('Invalid Input', 'LEDs per Side must be > 1.', 'danger'); return; }
+    if (ledsPerSideInput <= 1) { showToast('Invalid Input', 'LEDs per Side must be greater than 1.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+
+    // --- GEOMETRY SETUP ---
+    const numSegments = ledsPerSideInput - 1;
+    const s = numSegments * GRID_SIZE; // Side length (s = radius of circumcircle)
+    const R = s;
+    const a = R * (Math.sqrt(3) / 2); // Apothem (half height)
+
+    // Bounding Box dimensions (for a flat-top hexagon)
+    const shapeWidth = 2 * R;
+    const shapeHeight = Math.round(2 * a / GRID_SIZE) * GRID_SIZE; // Snapped height
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
-    // "Flat-top" hexagon
-    const s = (ledsPerSide - 1) * GRID_SIZE; // side length in pixels
-    const h = s * 0.866025; // height of equilateral triangle component
-    const shapeWidth = s * 2;
-    const shapeHeight = h * 2;
+    // Calculate the snapped center and bounding box start
+    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
+    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-    const getHexPositions = (sx, sy) => {
-        const positions = [];
-        const addedCoords = new Set();
-        const addPos = (x, y) => {
-            const rX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-            const rY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            const key = `${rX},${rY}`;
-            if (!addedCoords.has(key)) {
-                positions.push({ x: rX, y: rY });
-                addedCoords.add(key);
-            }
-        };
+    const baseStartX = finalCenterX - R;
+    const baseStartY = finalCenterY - (shapeHeight / 2);
 
-        const s_half = s * 0.5;
-        // sx, sy is top-left of bounding box
-        const centerX = sx + s;
-        const centerY = sy + h;
+    // --- 1. DEFINE FLOATING-POINT VERTICES ---
+    const getVertices = (centerX, centerY) => {
+        const V = [];
+        const startAngle = Math.PI / 6; // Start at 30 degrees for flat top/bottom
+        const angleStep = 2 * Math.PI / SIDES;
 
-        // Vertices
-        const V = [
-            { x: centerX - s_half, y: centerY + h }, // Top-Left
-            { x: centerX + s_half, y: centerY + h }, // Top-Right
-            { x: centerX + s, y: centerY },     // Right
-            { x: centerX + s_half, y: centerY - h }, // Bottom-Right
-            { x: centerX - s_half, y: centerY - h }, // Bottom-Left
-            { x: centerX - s, y: centerY }      // Left
-        ];
-
-        // Add points for each side
-        for (let i = 0; i < 6; i++) {
-            const p1 = V[i];
-            const p2 = V[(i + 1) % 6];
-            // Don't re-add the start point of the next segment
-            const numPoints = (i === 5) ? ledsPerSide : (ledsPerSide - 1);
-            for (let j = 0; j < numPoints; j++) {
-                const t = j / (ledsPerSide - 1);
-                addPos(lerp(p1.x, p2.x, t), lerp(p1.y, p2.y, t));
-            }
+        for (let i = 0; i < SIDES; i++) {
+            const angle = startAngle + i * angleStep;
+            V.push({
+                x: centerX + R * Math.cos(angle),
+                y: centerY - R * Math.sin(angle)
+            });
         }
-        return positions;
+        return V;
     };
 
-    const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getHexPositions);
+    // --- 2. NON-OVERLAP SEARCH ---
+    const { foundSpot, startX, startY } = findEmptySpotForShape(
+        viewCenter,
+        shapeWidth,
+        shapeHeight,
+        // Use snapped vertices for the overlap check
+        (sx, sy) => getVertices(sx + R, sy + shapeHeight / 2).map(v => ({
+            x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
+            y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
+        }))
+    );
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the hexagon.`, 'warning'); return; }
 
+    // --- 3. GENERATE PRECISE LED POINTS ---
+    const finalVertices = getVertices(startX + R, startY + shapeHeight / 2);
+    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
+
     const newLeds = [];
     const newWireIds = [];
-    const addedCoords = new Set();
-    const addLed = (x, y, idSuffix) => {
-        const rX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-        const rY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-        const key = `${rX},${rY}`;
-        if (!addedCoords.has(key)) {
-            const id = `${Date.now()}-hex-${idSuffix}`;
-            const newLed = { id, x: rX, y: rY };
-            newLeds.push(newLed);
-            newWireIds.push(id);
-            addedCoords.add(key);
-            return true;
-        }
-        return false;
-    };
+    let ledCount = 0;
 
-    const s_half = s * 0.5;
-    const centerX = startX + s;
-    const centerY = startY + h;
-    const V = [
-        { x: centerX - s_half, y: centerY + h }, // Top-Left
-        { x: centerX + s_half, y: centerY + h }, // Top-Right
-        { x: centerX + s, y: centerY },     // Right
-        { x: centerX + s_half, y: centerY - h }, // Bottom-Right
-        { x: centerX - s_half, y: centerY - h }, // Bottom-Left
-        { x: centerX - s, y: centerY }      // Left
-    ];
-
-    // Add LEDs, starting from Top-Left (V0)
-    for (let i = 0; i < 6; i++) {
-        const p1 = V[i];
-        const p2 = V[(i + 1) % 6];
-        // Don't re-add the start point
-        for (let j = 0; j < (ledsPerSide - 1); j++) {
-            const t = j / (ledsPerSide - 1);
-            addLed(lerp(p1.x, p2.x, t), lerp(p1.y, p2.y, t), `${i}-${j}`);
-        }
+    for (const rawLed of newLedsRaw) {
+        const id = `${Date.now()}-hex-${ledCount++}`;
+        const newLed = { id, x: rawLed.x, y: rawLed.y };
+        newLeds.push(newLed);
+        newWireIds.push(id);
     }
 
+    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
-    componentState.wiring.push(newWireIds); // Push as one circuit
+    componentState.wiring.push(newWireIds);
 
-    const shapeCenterX = startX + shapeWidth / 2;
-    const shapeCenterY = startY + shapeHeight / 2;
-    viewTransform.panX = canvas.width / 2 - (shapeCenterX * viewTransform.zoom);
-    viewTransform.panY = canvas.height / 2 - (shapeCenterY * viewTransform.zoom);
+    viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
+    viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addHexagonModal.hide(); drawCanvas(); autoSaveState();
     updateLedCount();
 }
 
-// --- NEW FUNCTION: handleAddTriangle ---
+// --- MODIFIED FUNCTION: handleAddTriangle (Uses getPointsForPolygon) ---
 function handleAddTriangle() {
-    const ledsPerSide = parseInt(document.getElementById('triangle-leds-per-side').value) || 2;
+    const ledsPerSide = parseInt(document.getElementById('triangle-leds-per-side').value) || 5;
 
     if (ledsPerSide <= 1) { showToast('Invalid Input', 'LEDs per Side must be > 1.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
-    // Pointing-up triangle
-    const s = (ledsPerSide - 1) * GRID_SIZE; // side length in pixels
-    const h = s * 0.866025;
+    // --- GEOMETRY SETUP ---
+    // The side length 's' in pixels is a multiple of GRID_SIZE
+    const numSegments = ledsPerSide - 1;
+    const s = numSegments * GRID_SIZE;
+    const h = s * 0.866025; // Height of an equilateral triangle
+
+    // Bounding Box dimensions 
     const shapeWidth = s;
-    const shapeHeight = h;
+    const shapeHeight = Math.round(h / GRID_SIZE) * GRID_SIZE; // Ensure bounding box height is snapped
 
-    const getTrianglePositions = (sx, sy) => {
-        const positions = [];
-        const addedCoords = new Set();
-        const addPos = (x, y) => {
-            const rX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-            const rY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            const key = `${rX},${rY}`;
-            if (!addedCoords.has(key)) {
-                positions.push({ x: rX, y: rY });
-                addedCoords.add(key);
-            }
-        };
+    // Calculate the snapped center and bounding box start
+    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
+    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-        // sx, sy is top-left of bounding box
-        const V = [
-            { x: sx, y: sy }, // Bottom-Left
-            { x: sx + s, y: sy }, // Bottom-Right
-            { x: sx + s / 2, y: sy + h }  // Top
-        ];
+    const baseStartX = finalCenterX - (shapeWidth / 2);
+    const baseStartY = finalCenterY - (shapeHeight / 2);
 
-        for (let i = 0; i < 3; i++) {
-            const p1 = V[i];
-            const p2 = V[(i + 1) % 3];
-            const numPoints = (i === 2) ? ledsPerSide : (ledsPerSide - 1);
-            for (let j = 0; j < numPoints; j++) {
-                const t = j / (ledsPerSide - 1);
-                addPos(lerp(p1.x, p2.x, t), lerp(p1.y, p2.y, t));
-            }
-        }
-        return positions;
-    };
+    // --- 1. DEFINE FLOATING-POINT VERTICES ---
+    // Vertices for a pointing-up equilateral triangle, anchored to the bounding box (sx, sy)
+    const getVertices = (sx, sy) => [
+        { x: sx, y: sy + shapeHeight },         // V1: Bottom-Left
+        { x: sx + shapeWidth, y: sy + shapeHeight }, // V2: Bottom-Right
+        { x: sx + shapeWidth / 2, y: sy }            // V3: Top
+    ];
 
-    const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getTrianglePositions);
+    // --- 2. NON-OVERLAP SEARCH ---
+    const { foundSpot, startX, startY } = findEmptySpotForShape(
+        viewCenter,
+        shapeWidth,
+        shapeHeight,
+        // Use snapped vertices for the overlap check
+        (sx, sy) => getVertices(sx, sy).map(v => ({
+            x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
+            y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
+        }))
+    );
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the triangle.`, 'warning'); return; }
 
+    // --- 3. GENERATE PRECISE LED POINTS ---
+    const finalVertices = getVertices(startX, startY);
+
+    // Use Bresenham's to trace the line between the 3 vertices
+    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
+
     const newLeds = [];
     const newWireIds = [];
-    const addedCoords = new Set();
-    const addLed = (x, y, idSuffix) => {
-        const rX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-        const rY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-        const key = `${rX},${rY}`;
-        if (!addedCoords.has(key)) {
-            const id = `${Date.now()}-tri-${idSuffix}`;
-            const newLed = { id, x: rX, y: rY };
-            newLeds.push(newLed);
-            newWireIds.push(id);
-            addedCoords.add(key);
-            return true;
-        }
-        return false;
-    };
+    let ledCount = 0;
 
-    const V = [
-        { x: startX, y: startY }, // Bottom-Left
-        { x: startX + s, y: startY }, // Bottom-Right
-        { x: startX + s / 2, y: startY + h }  // Top
-    ];
-
-    // Add LEDs, starting from Bottom-Left (V0)
-    for (let i = 0; i < 3; i++) {
-        const p1 = V[i];
-        const p2 = V[(i + 1) % 3];
-        // Don't re-add the start point
-        for (let j = 0; j < (ledsPerSide - 1); j++) {
-            const t = j / (ledsPerSide - 1);
-            addLed(lerp(p1.x, p2.x, t), lerp(p1.y, p2.y, t), `${i}-${j}`);
-        }
+    for (const rawLed of newLedsRaw) {
+        const id = `${Date.now()}-tri-${ledCount++}`;
+        const newLed = { id, x: rawLed.x, y: rawLed.y };
+        newLeds.push(newLed);
+        newWireIds.push(id);
     }
 
+    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
-    componentState.wiring.push(newWireIds); // Push as one circuit
+    componentState.wiring.push(newWireIds);
 
-    const shapeCenterX = startX + shapeWidth / 2;
-    const shapeCenterY = startY + shapeHeight / 2;
-    viewTransform.panX = canvas.width / 2 - (shapeCenterX * viewTransform.zoom);
-    viewTransform.panY = canvas.height / 2 - (shapeCenterY * viewTransform.zoom);
+    viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
+    viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addTriangleModal.hide(); drawCanvas(); autoSaveState();
     updateLedCount();
+}
+
+// --- MODIFIED FUNCTION: handleRotateSelected (Fixed 90° increments) ---
+function handleRotateSelected(angleDeg) {
+    if (selectedLedIds.size === 0) return;
+
+    const center = getSelectionCenter();
+    if (!center) return;
+
+    let stateChanged = false;
+    let rotationType = '';
+
+    if (angleDeg === 90) {
+        rotationType = '+90° (CCW)';
+    } else if (angleDeg === -90) {
+        rotationType = '-90° (CW)';
+    } else {
+        console.error("handleRotateSelected called with non-90° angle.");
+        return;
+    }
+
+    componentState.leds.forEach(led => {
+        if (led && selectedLedIds.has(led.id)) {
+            // Translate point to origin
+            const x = led.x - center.centerX;
+            const y = led.y - center.centerY;
+
+            let xPrime, yPrime;
+
+            // Simplified 90-degree rotation matrix:
+            if (angleDeg === 90) {
+                xPrime = -y; // x' = -y
+                yPrime = x;  // y' = x
+            } else { // angleDeg === -90
+                xPrime = y;  // x' = y
+                yPrime = -x; // y' = -x
+            }
+
+            // Translate back and snap to nearest grid point
+            led.x = Math.round((xPrime + center.centerX) / GRID_SIZE) * GRID_SIZE;
+            led.y = Math.round((yPrime + center.centerY) / GRID_SIZE) * GRID_SIZE;
+            
+            stateChanged = true;
+        }
+    });
+
+    if (stateChanged) {
+        showToast('Rotation Complete', `Rotated ${selectedLedIds.size} LEDs by ${rotationType}. Hold Shift for other direction.`, 'success');
+        autoSaveState();
+        drawCanvas();
+    }
+}
+
+// --- NEW FUNCTION: handleScaleSelected ---
+function handleScaleSelected() {
+    const factor = parseFloat(scaleFactorInput.value);
+    if (isNaN(factor) || factor <= 0 || selectedLedIds.size === 0) {
+        showToast('Invalid Input', 'Invalid scale factor (must be > 0) or no LEDs selected.', 'danger');
+        return;
+    }
+
+    const center = getSelectionCenter();
+    if (!center) return;
+    
+    let stateChanged = false;
+
+    componentState.leds.forEach(led => {
+        if (led && selectedLedIds.has(led.id)) {
+            // Translate point to origin
+            const x = led.x - center.centerX;
+            const y = led.y - center.centerY;
+
+            // Scale
+            const xPrime = x * factor;
+            const yPrime = y * factor;
+
+            // Translate back and snap to grid
+            led.x = Math.round((xPrime + center.centerX) / GRID_SIZE) * GRID_SIZE;
+            led.y = Math.round((yPrime + center.centerY) / GRID_SIZE) * GRID_SIZE;
+            
+            stateChanged = true;
+        }
+    });
+
+    if (stateChanged) {
+        showToast('Scaling Complete', `Scaled ${selectedLedIds.size} LEDs by x${factor}`, 'success');
+        autoSaveState();
+        drawCanvas();
+    }
+    scaleModal.hide();
 }
 
 // --- Gallery Functions ---
@@ -1449,6 +1563,124 @@ function setupGalleryListener() {
         galleryOffcanvasElement.addEventListener('show.bs.offcanvas', loadUserComponents);
     } else { console.error("Gallery offcanvas element (#gallery-offcanvas) not found."); }
 }
+
+// --- NEW HELPER FUNCTIONS FOR GRID PRECISION ---
+
+/**
+ * Calculates the geometric center of all currently selected LEDs.
+ * @returns {object|null} - {centerX, centerY} or null if no LEDs are selected.
+ */
+function getSelectionCenter() {
+    if (selectedLedIds.size === 0 || !componentState || !Array.isArray(componentState.leds)) return null;
+
+    let sumX = 0;
+    let sumY = 0;
+    let count = 0;
+
+    componentState.leds.forEach(led => {
+        if (led && selectedLedIds.has(led.id)) {
+            sumX += led.x;
+            sumY += led.y;
+            count++;
+        }
+    });
+
+    if (count === 0) return null;
+
+    return {
+        centerX: sumX / count,
+        centerY: sumY / count
+    };
+}
+
+/**
+ * Bresenham's Line Algorithm (Integer Grid Traversal).
+ * Determines the set of integer coordinates that best approximates a straight line
+ * between two given integer points (x0, y0) and (x1, y1).
+ * @param {number} x0 - Start X (must be an integer, rounded prior to calling).
+ * @param {number} y0 - Start Y (must be an integer, rounded prior to calling).
+ * @param {number} x1 - End X (must be an integer, rounded prior to calling).
+ * @param {number} y1 - End Y (must be an integer, rounded prior to calling).
+ * @returns {Array<object>} - Array of {x, y} integer coordinates.
+ */
+function bresenhamLine(x0, y0, x1, y1) {
+    const points = [];
+    let dx = Math.abs(x1 - x0);
+    let dy = Math.abs(y1 - y0);
+    const sx = (x0 < x1) ? 1 : -1;
+    const sy = (y0 < y1) ? 1 : -1;
+    let err = dx - dy;
+
+    while (true) {
+        points.push({ x: x0, y: y0 });
+        if (x0 === x1 && y0 === y1) {
+            break;
+        }
+        const e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+    return points;
+}
+
+
+/**
+ * Converts a list of floating-point shape vertices into an ordered list of snapped
+ * LED coordinates using Bresenham's algorithm for precise grid placement.
+ * @param {Array<object>} vertices - Array of floating-point {x, y} vertices defining the shape perimeter.
+ * @param {number} gridSize - The global GRID_SIZE constant.
+ * @returns {Array<object>} - Ordered array of {x, y} LED positions, snapped and deduplicated.
+ */
+function getPointsForPolygon(vertices, gridSize) {
+    let gridPoints = [];
+
+    for (let i = 0; i < vertices.length; i++) {
+        const p1 = vertices[i];
+        const p2 = vertices[(i + 1) % vertices.length];
+
+        // 1. Calculate the intended coordinates in Grid Units (floating point)
+        const x0_f = p1.x / gridSize;
+        const y0_f = p1.y / gridSize;
+        const x1_f = p2.x / gridSize;
+        const y1_f = p2.y / gridSize;
+
+        // 2. Round/Snap the coordinates to the nearest INTEGER Grid Unit for Bresenham's
+        const x0 = Math.round(x0_f);
+        const y0 = Math.round(y0_f);
+        const x1 = Math.round(x1_f);
+        const y1 = Math.round(y1_f);
+
+        // 3. Use Bresenham's to trace the line path across the integer grid
+        const segmentPoints = bresenhamLine(x0, y0, x1, y1);
+
+        // 4. Convert integer grid units back to World Pixels and store
+        for (const point of segmentPoints) {
+            gridPoints.push({
+                x: point.x * gridSize,
+                y: point.y * gridSize
+            });
+        }
+    }
+
+    // Remove duplicates while preserving order
+    const seen = new Set();
+    const uniquePoints = [];
+    for (const point of gridPoints) {
+        const key = `${point.x},${point.y}`;
+        if (!seen.has(key)) {
+            uniquePoints.push(point);
+            seen.add(key);
+        }
+    }
+    return uniquePoints;
+}
+// --- END NEW HELPER FUNCTIONS ---
 
 
 // ---
