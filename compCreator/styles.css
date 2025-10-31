@@ -1,0 +1,185 @@
+/* Make the main split work using CSS Grid */
+#main-split {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    /* Left panel 350px, right panel takes rest */
+    height: 100%;
+}
+
+/* Ensure panels can scroll independently if content overflows */
+#left-panel,
+#right-panel {
+    height: 100%;
+    overflow: auto;
+}
+
+/* Make the right panel's top area (canvas + toolbar) fill the space */
+#right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#right-panel-top {
+    flex-grow: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    background-color: #2b3035;
+    /* This is the main background */
+}
+
+/* --- UPDATED SECTION --- */
+/* This forces the container from your HTML to fill the panel */
+#component-canvas-container {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    border: none !important;
+    background-color: transparent; /* CHANGED - removed !important */
+    overflow: hidden !important;
+    position: relative;
+}
+
+/* The canvas now fills its container */
+#componentCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    /* No background, so we see the panel's bg */
+}
+
+/* --- END UPDATED SECTION --- */
+
+
+/* SortableJS helper classes */
+.sortable-ghost {
+    opacity: 0.4;
+    background: #555;
+}
+
+.sortable-drag {
+    opacity: 0.9;
+}
+
+/* Custom styling for element list items */
+.element-item {
+    cursor: grab;
+}
+
+.element-item:active {
+    cursor: grabbing;
+}
+
+/* Smaller form labels */
+.form-label-sm {
+    font-size: 0.875em;
+    margin-bottom: 0.25rem;
+}
+
+/* Add these rules to your styles.css */
+#json-preview {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    user-select: all;
+    /* Add this line */
+    -webkit-user-select: all;
+    /* For Safari/iOS */
+    -moz-user-select: all;
+    /* For Firefox */
+    -ms-user-select: all;
+    /* For IE/Edge */
+}
+
+/* Optional: Make the code block inside scroll if needed */
+#json-preview code {
+    display: block;
+    /* Ensures the code block respects the pre tag's width */
+    max-height: 300px;
+    /* Keep the existing max-height */
+    overflow: auto;
+    /* Add scrollbars if content still overflows vertically */
+}
+
+/* --- Shape Gallery --- */
+.shape-gallery {
+    display: grid;
+    /* Create columns at least 80px wide, fitting as many as possible */
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+    /* Space between buttons */
+}
+
+.shape-gallery-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    text-align: center;
+    height: 80px;
+    /* Give buttons a consistent height */
+}
+
+.shape-gallery-item small {
+    line-height: 1;
+    /* Make text compact */
+    font-size: 0.75rem;
+}
+
+/* Make the icon non-clickable so it doesn't interfere with the button click */
+.shape-gallery-item i {
+    pointer-events: none;
+}
+
+:root {
+    /* Define a custom variable for the canvas background, initially set to a default dark color */
+    --srgb-canvas-bg: #343a40;
+}
+
+/* Set the default container background */
+#component-canvas-container {
+    /* Ensure the container uses the custom variable */
+    background-color: var(--srgb-canvas-bg);
+}
+
+/* Ensure the tertiary background is defined by Bootstrap or your custom theme */
+[data-bs-theme="dark"] {
+    /* (This should be set by Bootstrap, often a darker shade of primary background) */
+    --bs-tertiary-bg: #2b3035; 
+}
+[data-bs-theme="light"] {
+    /* (A lighter shade for panel/card backgrounds) */
+    --bs-tertiary-bg: #f8f9fa; 
+}
+
+#component-canvas-container {
+    /* Uses the main body background color (light or dark) */
+    background-color: var(--bs-body-bg);
+}
+
+.gallery-image-container {
+    cursor: pointer;
+    transition: filter 0.2s ease-in-out;
+}
+
+.gallery-image-container:hover {
+    filter: brightness(1.2);
+}
+
+/* --- Image Paste Zone --- */
+#image-paste-zone {
+    outline: none; /* Remove focus ring from contenteditable */
+    caret-color: transparent; /* Hide cursor */
+}
+
+/* Hide placeholder when image is shown */
+#image-paste-zone img:not([style*="display: none"]) + #image-paste-placeholder {
+    display: none;
+}
+/* Show placeholder when image is hidden */
+#image-paste-zone img[style*="display: none"] + #image-paste-placeholder {
+    display: block;
+}
