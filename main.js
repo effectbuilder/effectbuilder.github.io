@@ -1234,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const id = obj.id;
                         const newProps = {};
                         const fillStops = [];
-                        for (let i = 1; i <= 10; i++) {
+                        for (let i = 1; i <= 32; i++) { // <-- FIX #1
                             // Correctly escaped template literals
                             const fcKey = \`obj\${id}_gradColor_\${i}\`;
                             const fpKey = \`obj\${id}_gradPosition_\${i}\`;
@@ -1245,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (fillStops.length > 0) newProps.gradient = { stops: fillStops.sort((a, b) => a.position - b.position) };
 
                         const strokeStops = [];
-                        for (let i = 1; i <= 10; i++) {
+                        for (let i = 1; i <= 32; i++) { // <-- FIX #2
                             // Correctly escaped template literals
                             const scKey = \`obj\${id}_strokeColor_\${i}\`;
                             const spKey = \`obj\${id}_strokePosition_\${i}\`;
@@ -1288,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const prefix = 'obj' + id + '_';
                             
                             const fillStops = [];
-                            for (let i = 1; i <= 10; i++) {
+                            for (let i = 1; i <= 32; i++) { // <-- FIX #3
                                 const fcKey = prefix + 'gradColor_' + i;
                                 const fpKey = prefix + 'gradPosition_' + i;
                                 if (typeof window[fcKey] !== 'undefined' && typeof window[fpKey] !== 'undefined') {
@@ -1298,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (fillStops.length > 0) config.gradientStops = fillStops.sort((a,b) => a.position - b.position);
                             
                             const strokeStops = [];
-                            for (let i = 1; i <= 10; i++) {
+                            for (let i = 1; i <= 32; i++) { // <-- FIX #4
                                 const scKey = prefix + 'strokeColor_' + i;
                                 const spKey = prefix + 'strokePosition_' + i;
                                 if (typeof window[scKey] !== 'undefined' && typeof window[spKey] !== 'undefined') {
@@ -1350,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const gCycleSpeed = typeof globalCycleSpeed !== 'undefined' ? globalCycleSpeed : 10;
                         let gStops = [];
                         if (useGlobalPalette) {
-                            for (let i = 1; i <= 10; i++) {
+                            for (let i = 1; i <= 32; i++) { // <-- FIX #5
                                 if (typeof window['globalColor_' + i] !== 'undefined' && typeof window['globalPosition_' + i] !== 'undefined') {
                                     gStops.push({ color: window['globalColor_' + i], position: parseFloat(window['globalPosition_' + i]) / 100.0 });
                                 }
