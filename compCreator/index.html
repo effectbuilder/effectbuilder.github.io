@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="./">
-                <i class="bi bi-tools me-2"></i> SRGB Custom Component Creator
+                <img src="../logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;"> SRGB Custom Component Creator
             </a>
 
             <div class="ms-auto d-flex align-items-center">
@@ -29,6 +29,7 @@
                     <button class="btn btn-primary" id="save-component-btn" data-bs-toggle="tooltip" title="Save current component to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
                     <button class="btn btn-primary" id="load-component-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved components" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-secondary" id="share-component-btn" data-bs-toggle="tooltip" title="Get a shareable link to this component" disabled><i class="bi bi-share me-1"></i> Share</button>
+                    <button class="btn btn-secondary" id="import-json-btn" data-bs-toggle="tooltip" title="Import Component from JSON file"> <i class="bi bi-upload me-1"></i> Import JSON</button>
                     <button class="btn btn-secondary" id="export-component-btn" data-bs-toggle="modal" data-bs-target="#export-component-modal" title="Download Component JSON file"> <i class="bi bi-download me-1"></i> Export JSON</button>
                 </div>
 
@@ -99,11 +100,26 @@
                             <div class="col">
                                 <label for="component-type" class="form-label form-label-sm">Component Type</label>
                                 <select id="component-type" class="form-select form-select-sm">
-                                    <option>Strip</option>
-                                    <option>Matrix</option>
+                                    <option>AIO Liquid Cooler</option>
+                                    <option>Air Cooler</option>
+                                    <option>Case</option>
+                                    <option>Desk</option>
                                     <option>Fan</option>
+                                    <option>GPU</option>
+                                    <option>Headset</option>
+                                    <option>Headset Stand</option>
                                     <option>Keyboard</option>
+                                    <option>Matrix</option>
+                                    <option>Motherboard</option>
+                                    <option>Monitor</option>
                                     <option>Mouse</option>
+                                    <option>Mousepad</option>
+                                    <option>PSU</option>
+                                    <option>RAM</option>
+                                    <option>Speaker</option>
+                                    <option>Storage</option>
+                                    <option>Strimer</option>
+                                    <option>Strip</option>
                                     <option>Other</option>
                                 </select>
                             </div>
@@ -111,8 +127,18 @@
                         <div class="mb-2">
                             <label for="component-image" class="form-label form-label-sm">Device Image (Optional)</label>
                             <input type="file" id="component-image" class="form-control form-control-sm" accept="image/png, image/webp">
-                            <div class="form-text">Max 800x400 recommended.</div>
-                            <img id="image-preview" src="#" alt="Image Preview" class="img-fluid mt-2 rounded" style="max-width: 100%; display: none; border: 1px solid var(--bs-border-color);">
+                            <div class="form-text mb-1">Max 800x400 recommended.</div>
+
+                            <div id="image-paste-zone" class="p-3 text-center text-muted border border-dashed rounded-3" style="cursor: copy; min-height: 100px; display: flex; align-items: center; justify-content: center; background-color: var(--bs-body-bg);" contenteditable="true" title="Click here and press Ctrl+V to paste an image">
+
+                                <img id="image-preview" src="#" alt="Image Preview" class="img-fluid rounded" style="max-width: 100%; display: none;">
+
+                                <span id="image-paste-placeholder" style="pointer-events: none;">
+                                    <i class="bi bi-clipboard-plus fs-3"></i>
+                                    <br>
+                                    Click to paste image
+                                </span>
+                            </div>
                         </div>
                         <hr>
                     </div>
@@ -190,59 +216,6 @@
                                     <small>U-Shape</small>
                                 </button>
 
-                                <!-- <button class="btn btn-outline-secondary shape-gallery-item" id="add-lili-btn" data-bs-toggle="tooltip" title="LiLi (Coming Soon)">
-                                    <svg viewBox="0 0 48 32" fill="currentColor" width="48" height="32" class="d-block mb-1">
-                                        <circle cx="6" cy="6" r="3" />
-                                        <circle cx="6" cy="16" r="3" />
-                                        <circle cx="6" cy="26" r="3" />
-                                        <circle cx="34" cy="16" r="3" />
-                                        <circle cx="31" cy="23" r="3" />
-                                        <circle cx="24" cy="26" r="3" />
-                                        <circle cx="17" cy="23" r="3" />
-                                        <circle cx="14" cy="16" r="3" />
-                                        <circle cx="17" cy="9" r="3" />
-                                        <circle cx="24" cy="6" r="3" />
-                                        <circle cx="31" cy="9" r="3" />
-                                        <circle cx="42" cy="6" r="3" />
-                                        <circle cx="42" cy="16" r="3" />
-                                        <circle cx="42" cy="26" r="3" />
-                                    </svg>
-                                    <small>LiLi</small>
-                                </button>
-
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-hexagon-btn" data-bs-toggle="tooltip" title="Hexagon (Coming Soon)">
-                                    <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
-                                        <circle cx="12" cy="6" r="2.5" />
-                                        <circle cx="16" cy="6" r="2.5" />
-                                        <circle cx="20" cy="6" r="2.5" />
-                                        <circle cx="12" cy="26" r="2.5" />
-                                        <circle cx="16" cy="26" r="2.5" />
-                                        <circle cx="20" cy="26" r="2.5" />
-                                        <circle cx="6" cy="16" r="2.5" />
-                                        <circle cx="26" cy="16" r="2.5" />
-                                        <circle cx="9" cy="11" r="2.5" />
-                                        <circle cx="23" cy="11" r="2.5" />
-                                        <circle cx="9" cy="21" r="2.5" />
-                                        <circle cx="23" cy="21" r="2.5" />
-                                    </svg>
-                                    <small>Hexagon</small>
-                                </button>
-
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-triangle-empty-btn" data-bs-toggle="tooltip" title="Empty Triangle (Coming Soon)">
-                                    <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
-                                        <circle cx="16" cy="6" r="2.5" />
-                                        <circle cx="12" cy="12" r="2.5" />
-                                        <circle cx="8" cy="19" r="2.5" />
-                                        <circle cx="4" cy="26" r="2.5" />
-                                        <circle cx="12" cy="26" r="2.5" />
-                                        <circle cx="20" cy="26" r="2.5" />
-                                        <circle cx="28" cy="26" r="2.5" />
-                                        <circle cx="24" cy="19" r="2.5" />
-                                        <circle cx="20" cy="12" r="2.5" />
-                                    </svg>
-                                    <small>Triangle</small>
-                                </button> -->
-
                             </div>
                         </div>
 
@@ -269,6 +242,8 @@
                         <button class="btn btn-secondary" id="zoom-in-btn" data-bs-toggle="tooltip" title="Zoom In (+)"><i class="bi bi-zoom-in"></i></button>
                         <button class="btn btn-secondary" id="zoom-out-btn" data-bs-toggle="tooltip" title="Zoom Out (-)"><i class="bi bi-zoom-out"></i></button>
                         <button class="btn btn-secondary" id="zoom-reset-btn" data-bs-toggle="tooltip" title="Reset Zoom (0)"><i class="bi bi-aspect-ratio"></i></button>
+                    </div>
+                    <div class="btn-group me-2 mb-1" role="group">
                         <button class="btn btn-secondary" id="rotate-selected-btn" title="Rotate Selected LEDs (+90° Counter-Clockwise)"><i class="bi bi-arrow-counterclockwise"></i></button>
                         <button class="btn btn-secondary" id="scale-selected-btn" data-bs-toggle="modal" data-bs-target="#scale-selected-modal" title="Scale Selected LEDs (S)"><i class="bi bi-arrows-angle-expand"></i></button>
                     </div>
@@ -279,7 +254,7 @@
                 </div>
 
                 <div id="right-panel-top" class="d-flex flex-column" style="overflow: hidden; background-color: #2b3035;">
-                    <div id="component-canvas-container" class="m-auto position-relative" style="width: 500px; height: 300px; border: 1px dashed grey; overflow: auto; background-color: #343a40;">
+                    <div id="component-canvas-container" class="m-auto position-relative bg-body-tertiary" style="width: 500px; height: 300px; border: 1px dashed grey; overflow: auto; background-color: #343a40;">
                         <canvas id="componentCanvas" width="1000" height="600"></canvas>
                     </div>
                 </div>
@@ -293,12 +268,12 @@
 
         <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 99999">
             <div id="app-toast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000" style="width: 350px; font-size: 1.1rem;">
-                <div id="app-toast-header" class="toast-header text-white d-flex align-items-center">
+                <div id="app-toast-header" class="toast-header d-flex align-items-center">
                     <i id="app-toast-icon" class="bi me-2"></i>
                     <strong class="me-auto" id="app-toast-title">Notification</strong>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
-                <div class="toast-body bg-dark" id="app-toast-body">
+                <div class="toast-body" id="app-toast-body">
                 </div>
             </div>
         </div>
@@ -307,7 +282,142 @@
         <div class="modal fade" id="save-project-modal" tabindex="-1">...</div>
         <div class="modal fade" id="notification-modal" tabindex="-1">...</div>
         <div class="modal fade" id="confirm-overwrite-modal" tabindex="-1">...</div>
-        <div class="modal fade" id="help-modal" tabindex="-1">...</div>
+
+        <div class="modal fade" id="help-modal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i>Help & Quick Guide</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Welcome to the SRGB Custom Component Creator. Here are the basics to get you started.</p>
+
+                        <div class="accordion" id="help-accordion">
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#help-canvas-controls" aria-expanded="true">
+                                        <i class="bi bi-arrows-move me-2"></i><strong>Canvas Controls</strong>
+                                    </button>
+                                </h2>
+                                <div id="help-canvas-controls" class="accordion-collapse collapse show" data-bs-parent="#help-accordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-group">
+                                            <li class="list-group-item"><strong>Pan Canvas:</strong> Hold the <strong>Middle Mouse Button</strong> and drag.</li>
+                                            <li class="list-group-item"><strong>Zoom Canvas:</strong> Use the <strong>Mouse Wheel</strong> to zoom in and out.</li>
+                                            <li class="list-group-item"><strong>Reset View:</strong> Click the <i class="bi bi-aspect-ratio"></i> (Reset Zoom) button or press `0`.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-toolbar" aria-expanded="false">
+                                        <i class="bi bi-tools me-2"></i><strong>Toolbar Explained</strong>
+                                    </button>
+                                </h2>
+                                <div id="help-toolbar" class="accordion-collapse collapse" data-bs-parent="#help-accordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-group">
+                                            <li class="list-group-item">
+                                                <strong><i class="bi bi-cursor-fill me-2"></i>Select Tool (V):</strong>
+                                                Used to select LEDs.
+                                                <ul>
+                                                    <li>Click an LED to select it.</li>
+                                                    <li>Hold **Shift** while clicking to add/remove LEDs from your selection.</li>
+                                                    <li>Click and drag on an empty area to create a selection box.</li>
+                                                    <li>Click and drag a selected LED to move the entire selection.</li>
+                                                </ul>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong><i class="bi bi-circle-fill me-2"></i>Place LED Tool (P):</strong>
+                                                Click on the grid to place an LED. Each subsequent click will place a new LED and automatically wire it to the previous one in a chain.
+                                                <ul>
+                                                    <li><strong>Right-click</strong> to stop the current chain.</li>
+                                                </ul>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong><i class="bi bi-vector-pen me-2"></i>Wiring Tool (W):</strong>
+                                                Used to manually connect LEDs.
+                                                <ul>
+                                                    <li>Click an unwired LED or the end-point of a chain to start a wire.</li>
+                                                    <li>Click another valid LED (unwired or an end-point) to complete the connection.</li>
+                                                    <li><strong>Right-click an LED</strong> to remove it from its wire chain.</li>
+                                                    <li><strong>Right-click a wire segment</strong> to break the circuit in two at that point.</li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-shortcuts" aria-expanded="false">
+                                        <i class="bi bi-keyboard me-2"></i><strong>Keyboard Shortcuts</strong>
+                                    </button>
+                                </h2>
+                                <div id="help-shortcuts" class="accordion-collapse collapse" data-bs-parent="#help-accordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-group">
+                                                    <li class="list-group-item">`V` - Activate Select Tool</li>
+                                                    <li class="list-group-item">`P` - Activate Place LED Tool</li>
+                                                    <li class="list-group-item">`W` - Activate Wiring Tool</li>
+                                                    <li class="list-group-item">`G` - Toggle Grid</li>
+                                                    <li class="list-group-item">`S` - Scale Selected LEDs</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-group">
+                                                    <li class="list-group-item">`Delete` / `Backspace` - Delete Selected</li>
+                                                    <li class="list-group-item">`+` (Numpad) - Zoom In</li>
+                                                    <li class="list-group-item">`-` (Numpad) - Zoom Out</li>
+                                                    <li class="list-group-item">`0` (Numpad) - Reset Zoom</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <h6 class="mt-3">Actions</h6>
+                                        <ul class="list-group">
+                                            <li class="list-group-item"><strong>Click <i class="bi bi-arrow-counterclockwise"></i> Button:</strong> Rotate selected 90° counter-clockwise.</li>
+                                            <li class="list-group-item"><strong>Shift + Click <i class="bi bi-arrow-counterclockwise"></i> Button:</strong> Rotate selected 90° clockwise.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-saving" aria-expanded="false">
+                                        <i class="bi bi-cloud-arrow-up me-2"></i><strong>Saving & Loading</strong>
+                                    </button>
+                                </h2>
+                                <div id="help-saving" class="accordion-collapse collapse" data-bs-parent="#help-accordion">
+                                    <div class="accordion-body">
+                                        <div class="alert alert-info"><i class="bi bi-exclamation-circle-fill me-2"></i>You must be <strong>signed in</strong> to save components to the cloud.</div>
+                                        <ul class="list-group">
+                                            <li class="list-group-item"><strong>New:</strong> Clears the canvas. It will ask for confirmation if you have unsaved changes.</li>
+                                            <li class="list-group-item"><strong>Save:</strong> Saves your current component to the cloud under your account. If you loaded a community component, this will "fork" it and save a new copy for you.</li>
+                                            <li class="list-group-item"><strong>Open:</strong> Opens the Community Gallery, where you can load your own components or those made by others.</li>
+                                            <li class="list-group-item"><strong>Import JSON:</strong> Lets you load a component from a `.json` file from your computer.</li>
+                                            <li class="list-group-item"><strong>Export JSON:</strong> Generates a `.json` file for use in SignalRGB. <strong>All LEDs must be wired</strong> for the export to be valid.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="about-modal" tabindex="-1">...</div>
         <div class="modal fade" id="terms-modal" tabindex="-1">...</div>
         <div class="modal fade" id="privacy-policy-modal" tabindex="-1">...</div>
@@ -319,10 +429,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
-                {/* --- ADD THIS DIV --- */}
                 <div id="user-component-list" class="list-group">
                 </div>
-                {/* --- END ADDED DIV --- */}
             </div>
         </div>
 
@@ -616,6 +724,8 @@
     <script src="firebase.js" type="module"></script>
     <script src="canvas.js" type="module"></script>
     <script src="main.js" type="module"></script>
+
+    <input type="file" id="import-file-input" class="d-none" accept=".json,application/json">
 </body>
 
 </html>

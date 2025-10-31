@@ -1,102 +1,104 @@
-/**
- * Initializes all Bootstrap tooltips.
- */
-export function initializeTooltips() {
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl, {
-      container: 'body'
-    });
-  });
-}
+// --- util.js ---
 
-/**
- * Shows a Bootstrap toast notification.
- */
-export function showToast(title, message, type = 'info') {
-  const toastEl = document.getElementById('app-toast');
-  const toastHeader = document.getElementById('app-toast-header');
-  const toastIcon = document.getElementById('app-toast-icon');
-  const toastTitle = document.getElementById('app-toast-title');
-  const toastBody = document.getElementById('app-toast-body');
+const storedTheme = localStorage.getItem('theme');
 
-  if (!toastEl) return;
-
-  toastTitle.textContent = title;
-  toastBody.innerHTML = message; 
-
-  // Reset classes
-  toastHeader.className = 'toast-header text-white d-flex align-items-center';
-  toastIcon.className = 'bi me-2';
-
-  // Apply new classes based on type
-  switch (type) {
-    case 'success':
-      toastHeader.classList.add('bg-success');
-      toastIcon.classList.add('bi-check-circle-fill');
-      break;
-    case 'danger':
-      toastHeader.classList.add('bg-danger');
-      toastIcon.classList.add('bi-exclamation-triangle-fill');
-      break;
-    case 'warning':
-      toastHeader.classList.add('bg-warning');
-      toastIcon.classList.add('bi-exclamation-triangle-fill');
-      break;
-    case 'info':
-    default:
-      toastHeader.classList.add('bg-info');
-      toastIcon.classList.add('bi-info-circle-fill');
-      break;
-  }
-
-  const toast = new bootstrap.Toast(toastEl);
-  toast.show();
-}
-
-
-/**
- * Manages the light/dark theme switcher.
- */
-export function setupThemeSwitcher() {
-  const getPreferredTheme = () => {
-    const storedTheme = localStorage.getItem('theme');
+const getPreferredTheme = () => {
     if (storedTheme) {
-      return storedTheme;
+        return storedTheme;
     }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
+}
 
-  const setTheme = (theme) => {
-    if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.setAttribute('data-bs-theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-bs-theme', theme);
-    }
+const getStoredTheme = () => localStorage.getItem('theme');
+
+const setTheme = (theme) => {
     localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-bs-theme', theme);
     updateThemeIcon(theme);
-  };
+}
 
-  const updateThemeIcon = (theme) => {
+const updateThemeIcon = (theme) => {
     const themeIcon = document.getElementById('theme-icon');
-    if (themeIcon) {
-      themeIcon.className = 'bi'; // Clear existing icon
-      if (theme === 'dark') {
-        themeIcon.classList.add('bi-sun-fill');
-      } else {
+    if (!themeIcon) return;
+    
+    if (theme === 'dark') {
+        themeIcon.classList.remove('bi-sun-fill');
         themeIcon.classList.add('bi-moon-stars-fill');
-      }
+    } else {
+        themeIcon.classList.remove('bi-moon-stars-fill');
+        themeIcon.classList.add('bi-sun-fill');
     }
-  };
+}
 
-  const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
-  let currentTheme = getPreferredTheme();
-  setTheme(currentTheme); 
+// Set initial theme
+setTheme(getPreferredTheme());
 
-  if (themeSwitcherBtn) {
-    themeSwitcherBtn.addEventListener('click', () => {
-      currentTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-      setTheme(currentTheme);
+// --- MODIFIED: setupThemeSwitcher now accepts a redraw callback ---
+export function setupThemeSwitcher(canvasRedrawCallback = null) {
+    const themeSwitcher = document.getElementById('theme-switcher-btn');
+    if (!themeSwitcher) return;
+
+    themeSwitcher.addEventListener('click', () => {
+        const currentTheme = getStoredTheme();
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        // Call the canvas redraw function if provided
+        if (canvasRedrawCallback && typeof canvasRedrawCallback === 'function') {
+            canvasRedrawCallback();
+        }
     });
-  }
+    updateThemeIcon(getStoredTheme());
+}
+
+// Utility for showing tooltips
+export function initializeTooltips() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+}
+
+// Utility for showing toasts
+export function showToast(title, message, type = 'info') {
+    const toastEl = document.getElementById('app-toast');
+    const toastTitleEl = document.getElementById('app-toast-title');
+    const toastBodyEl = document.getElementById('app-toast-body');
+    const toastHeaderEl = document.getElementById('app-toast-header');
+    const toastIconEl = document.getElementById('app-toast-icon');
+
+    if (!toastEl || !toastTitleEl || !toastBodyEl || !toastHeaderEl || !toastIconEl) {
+        console.error("Toast elements not found.");
+        return;
+    }
+
+    const colorMap = {
+        'success': 'text-bg-success',
+        'danger': 'text-bg-danger',
+        'info': 'text-bg-info',
+        'warning': 'text-bg-warning',
+        'default': 'text-bg-secondary'
+    };
+    const iconMap = {
+        'success': 'bi-check-circle-fill',
+        'danger': 'bi-x-octagon-fill',
+        'info': 'bi-info-circle-fill',
+        'warning': 'bi-exclamation-triangle-fill',
+        'default': 'bi-bell-fill'
+    };
+
+    // Reset classes
+    Object.values(colorMap).forEach(c => toastHeaderEl.classList.remove(c));
+    toastIconEl.className = 'bi me-2'; // Reset icon classes
+
+    // Apply new classes
+    const colorClass = colorMap[type] || colorMap.default;
+    const iconClass = iconMap[type] || iconMap.default;
+    
+    toastHeaderEl.classList.add(colorClass);
+    toastIconEl.classList.add(iconClass);
+
+    toastTitleEl.textContent = title;
+    toastBodyEl.textContent = message;
+
+    const toast = bootstrap.Toast.getInstance(toastEl) || new bootstrap.Toast(toastEl);
+    toast.show();
 }
