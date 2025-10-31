@@ -3,6 +3,8 @@ import { showToast } from './util.js';
 
 // --- CANVAS-SPECIFIC STATE ---
 let canvas, ctx;
+let canvasBgColor = '#343a40'; // Default dark background
+let gridStrokeColor = 'rgba(255, 255, 255, 0.07)'; // Default dark grid
 let componentState = null;
 let viewTransform = null;
 let selectedLedIds = null;
@@ -47,6 +49,29 @@ export function setupCanvas(appState) {
 }
 
 // --- HELPER FUNCTIONS ---
+
+/**
+ * Reads colors from the document root based on the active theme and updates canvas variables.
+ */
+function getCanvasStyles() {
+    const rootStyle = getComputedStyle(document.documentElement);
+    const theme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
+
+    // 1. Read Canvas Background Color
+    // Get the *actual computed color* of the container (which we set in styles.css)
+    const container = document.getElementById('component-canvas-container');
+    canvasBgColor = container ? getComputedStyle(container).backgroundColor : '#212529'; // Fallback
+
+    // 2. Set Grid Stroke Color
+    if (theme === 'light') {
+        // Light theme: Use dark, semi-transparent line
+        gridStrokeColor = 'rgba(0, 0, 0, 0.2)';
+    } else { // dark theme
+        // Dark theme: Use light, low-transparency line
+        gridStrokeColor = 'rgba(255, 255, 255, 0.07)';
+    }
+}
+
 function findHitLed(worldPos) {
     if (!componentState || !Array.isArray(componentState.leds) || !viewTransform) return null;
     const hitRadius = LED_RADIUS / viewTransform.zoom;
@@ -357,18 +382,69 @@ function handleCanvasMouseDown(e) {
 
         if (currentToolGetter() === 'select') {
             if (hitLed) {
-                console.log(`Select Tool: Hit LED ${hitLed.id}. Shift: ${e.shiftKey}`); console.log("Selection BEFORE:", Array.from(selectedLedIds));
-                isDragging = true; canvas.style.cursor = 'grabbing'; let selectionChanged = false;
-                if (!e.shiftKey) { if (!selectedLedIds.has(hitLed.id) || selectedLedIds.size > 1) { selectedLedIds.clear(); selectedLedIds.add(hitLed.id); selectionChanged = true; } }
-                else { if (selectedLedIds.has(hitLed.id)) { selectedLedIds.delete(hitLed.id); } else { selectedLedIds.add(hitLed.id); } selectionChanged = true; }
-                console.log("Selection AFTER:", Array.from(selectedLedIds)); if (selectionChanged) { drawCanvas(); }
-                ledDragOffsets = []; componentState.leds.forEach(led => { if (!led) return; if (selectedLedIds.has(led.id)) { ledDragOffsets.push({ led: led, offsetX: led.x - worldPos.x, offsetY: led.y - worldPos.y }); } });
-                console.log(`Prepared ${ledDragOffsets.length} LEDs for dragging.`);
+                console.log(`Select Tool: Hit LED ${hitLed.id}. Shift: ${e.shiftKey}`);
+
+                isDragging = true;
+                canvas.style.cursor = 'grabbing';
+                let selectionChanged = false;
+
+                // --- MODIFIED LOGIC START ---
+                if (e.shiftKey) {
+                    // SHIFT: Add or remove from existing selection
+                    if (selectedLedIds.has(hitLed.id)) {
+                        selectedLedIds.delete(hitLed.id);
+                    } else {
+                        selectedLedIds.add(hitLed.id);
+                    }
+                    selectionChanged = true;
+                    // If selection changed, we should NOT start dragging the new set until mouse up
+                    // Setting isDragging=false here forces the user to re-click after modifying the selection
+                    isDragging = false;
+                    canvas.style.cursor = 'default';
+                } else if (!selectedLedIds.has(hitLed.id)) {
+                    // NO SHIFT, clicked an UNSELECTED LED: Clear current selection and start a new one
+                    selectedLedIds.clear();
+                    selectedLedIds.add(hitLed.id);
+                    selectionChanged = true;
+                }
+                // NO SHIFT, clicked an ALREADY SELECTED LED: Do nothing, preserve the selection, and proceed to drag.
+
+                if (selectionChanged) { drawCanvas(); }
+
+                // Only prepare for drag if the hit LED is currently part of the selection
+                if (selectedLedIds.has(hitLed.id)) {
+                    // Set isDragging true and prepare offsets for the entire group
+                    isDragging = true;
+                    canvas.style.cursor = 'grabbing';
+                    ledDragOffsets = [];
+                    componentState.leds.forEach(led => {
+                        if (!led) return;
+                        if (selectedLedIds.has(led.id)) {
+                            ledDragOffsets.push({
+                                led: led,
+                                offsetX: led.x - worldPos.x,
+                                offsetY: led.y - worldPos.y
+                            });
+                        }
+                    });
+                    console.log(`Prepared ${ledDragOffsets.length} LEDs for dragging.`);
+                } else {
+                    // If Shift was used to deselect the last LED, prevent drag
+                    isDragging = false;
+                    canvas.style.cursor = 'default';
+                }
+                // --- MODIFIED LOGIC END ---
+
             } else {
-                console.log("Select Tool: Clicked empty space. Starting Marquee."); isMarqueeSelecting = true;
-                marqueeStartPos = { x: worldPos.x, y: worldPos.y }; marqueeEndPos = { x: worldPos.x, y: worldPos.y };
-                console.log("Marquee Start Pos (World):", marqueeStartPos);
-                if (!e.shiftKey) { if (selectedLedIds.size > 0) { selectedLedIds.clear(); } }
+                console.log("Select Tool: Clicked empty space. Starting Marquee.");
+                isMarqueeSelecting = true;
+                marqueeStartPos = { x: worldPos.x, y: worldPos.y };
+                marqueeEndPos = { x: worldPos.x, y: worldPos.y };
+                if (!e.shiftKey) {
+                    if (selectedLedIds.size > 0) {
+                        selectedLedIds.clear();
+                    }
+                }
                 requestAnimationFrame(drawCanvas);
             }
         } // End Select Tool
@@ -534,7 +610,11 @@ function handleCanvasMouseMove(e) {
     if (!viewTransform) return;
     const worldPos = screenToWorld(e.offsetX, e.offsetY);
     const coordsDisplay = document.getElementById('coords-display');
-    if (coordsDisplay) { coordsDisplay.textContent = `${Math.round(worldPos.x)}, ${Math.round(worldPos.y)}`; }
+    if (coordsDisplay) {
+        const gridX = Math.round(worldPos.x / GRID_SIZE);
+        const gridY = -Math.round(worldPos.y / GRID_SIZE);
+        coordsDisplay.textContent = `${gridX}, ${gridY}`;
+    }
     if (isPanning) {
         viewTransform.panX += e.movementX; viewTransform.panY += e.movementY;
         drawCanvas();
@@ -671,14 +751,58 @@ export function toggleGrid() {
 function snap(n) { return Math.floor(n) + 0.5; }
 function drawGrid() {
     if (!ctx || !viewTransform || !canvas) return;
-    const scaledGrid = GRID_SIZE * viewTransform.zoom; if (scaledGrid < 5) return;
-    ctx.beginPath(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)'; ctx.lineWidth = 1;
-    const originScreen = worldToScreen(0, 0); const worldTopLeft = screenToWorld(0, 0); const worldBotRight = screenToWorld(canvas.width, canvas.height);
-    const xStepsLeft = Math.floor(worldTopLeft.x / GRID_SIZE); const xStepsRight = Math.ceil(worldBotRight.x / GRID_SIZE);
-    const yStepsTop = Math.floor(worldTopLeft.y / GRID_SIZE); const yStepsBottom = Math.ceil(worldBotRight.y / GRID_SIZE);
-    for (let i = xStepsLeft; i <= xStepsRight; i++) { const screenX = snap(originScreen.x + (i * scaledGrid)); ctx.moveTo(screenX, 0); ctx.lineTo(screenX, canvas.height); }
-    for (let i = yStepsTop; i <= yStepsBottom; i++) { const screenY = snap(originScreen.y + (i * scaledGrid)); ctx.moveTo(0, screenY); ctx.lineTo(canvas.width, screenY); }
+    const scaledGrid = GRID_SIZE * viewTransform.zoom;
+
+    // --- Draw Grid Lines ---
+    if (scaledGrid >= 5) {
+        ctx.beginPath();
+        ctx.strokeStyle = gridStrokeColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        const originScreen = worldToScreen(0, 0);
+        const worldTopLeft = screenToWorld(0, 0);
+        const worldBotRight = screenToWorld(canvas.width, canvas.height);
+        const xStepsLeft = Math.floor(worldTopLeft.x / GRID_SIZE);
+        const xStepsRight = Math.ceil(worldBotRight.x / GRID_SIZE);
+        const yStepsTop = Math.floor(worldTopLeft.y / GRID_SIZE);
+        const yStepsBottom = Math.ceil(worldBotRight.y / GRID_SIZE);
+        for (let i = xStepsLeft; i <= xStepsRight; i++) {
+            const screenX = snap(originScreen.x + (i * scaledGrid));
+            ctx.moveTo(screenX, 0);
+            ctx.lineTo(screenX, canvas.height);
+        }
+        for (let i = yStepsTop; i <= yStepsBottom; i++) {
+            const screenY = snap(originScreen.y + (i * scaledGrid));
+            ctx.moveTo(0, screenY);
+            ctx.lineTo(canvas.width, screenY);
+        }
+        ctx.stroke();
+    }
+
+    // --- NEW: Draw Origin (0,0) Crosshair ---
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to screen space
+    ctx.setLineDash([]); // Ensure solid line
+
+    const originScreen = worldToScreen(0, 0);
+    const originX = snap(originScreen.x);
+    const originY = snap(originScreen.y);
+    const crosshairSize = 8; // Screen pixels
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'; // Red color
+    ctx.lineWidth = 2; // Thicker line
+
+    // Horizontal line
+    ctx.moveTo(originX - crosshairSize, originY);
+    ctx.lineTo(originX + crosshairSize, originY);
+
+    // Vertical line
+    ctx.moveTo(originX, originY - crosshairSize);
+    ctx.lineTo(originX, originY + crosshairSize);
+
     ctx.stroke();
+    ctx.restore(); // Restore grid transform/settings (though we're at the end)
 }
 function drawMarqueeBox() {
     if (!ctx || !isMarqueeSelecting || !viewTransform) return;
@@ -699,7 +823,11 @@ function drawWiringNumbers() {
     const numberedLedIds = new Set();
 
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+    const theme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
+    ctx.fillStyle = (theme === 'light') ? '#000000' : '#ffffff'; // Black text on light, white on dark
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const fontSize = Math.max(6, Math.min(12, (LED_RADIUS * viewTransform.zoom) * 0.5)); // Smaller font
     ctx.font = `bold ${fontSize}px sans-serif`;
 
@@ -733,11 +861,28 @@ export function drawCanvas() {
         componentState.wiring = [];
     }
 
+    getCanvasStyles();
+
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore();
     if (isGridVisible) drawGrid();
     ctx.save(); ctx.translate(viewTransform.panX, viewTransform.panY); ctx.scale(viewTransform.zoom, viewTransform.zoom);
 
-    const lineWidth = 1 / viewTransform.zoom; const ledRadius = LED_RADIUS * lineWidth;
+    // --- MODIFICATION: Define colors based on theme ---
+    const theme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
+
+    const greenFill = 'rgba(0, 200, 0, 0.7)';
+    const redFill = 'rgba(255, 0, 0, 0.7)';
+    const orangeFill = 'rgba(255, 165, 0, 0.7)';
+    const dimRedFill = 'rgba(100, 0, 0, 0.3)';
+
+    const whiteStroke = (theme === 'light') ? '#000000' : '#ffffff'; // Black for light, White for dark
+    const dimStroke = (theme === 'light') ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+    const highlightStroke = '#FFFF00'; // Yellow highlight works on both
+
+    const lineWidth = 1 / viewTransform.zoom;
+    const ledRadius = LED_RADIUS * lineWidth;
+    // --- END MODIFICATION ---
+
     const ledsToDraw = componentState.leds;
     const allWiredLedIds = new Set();
     (componentState.wiring || []).forEach(circuit => { if (Array.isArray(circuit)) circuit.forEach(id => allWiredLedIds.add(id)); });
@@ -773,12 +918,23 @@ export function drawCanvas() {
     }
     // --- END LOGIC ---
 
-    const greenFill = 'rgba(0, 200, 0, 0.7)'; const redFill = 'rgba(255, 0, 0, 0.7)';
-    const orangeFill = 'rgba(255, 165, 0, 0.7)';
-    const dimGreenFill = 'rgba(0, 100, 0, 0.3)'; const dimRedFill = 'rgba(100, 0, 0, 0.3)';
-    const whiteStroke = '#ffffff'; const dimStroke = 'rgba(255, 255, 255, 0.4)';
-    const highlightStroke = '#FFFF00';
     ctx.lineWidth = lineWidth;
+
+    if (componentState.wiring && componentState.wiring.length > 0) {
+        ctx.strokeStyle = '#0d6efd'; ctx.lineWidth = 2 * lineWidth;
+        ctx.setLineDash([5 * lineWidth, 5 * lineWidth]);
+        (componentState.wiring || []).forEach(circuit => {
+            if (!Array.isArray(circuit) || circuit.length < 2) return;
+            ctx.beginPath(); let lastLed = null;
+            for (const id of circuit) {
+                const led = ledsToDraw.find(l => l && l.id === id); if (!led) continue;
+                if (lastLed) { ctx.moveTo(lastLed.x, lastLed.y); ctx.lineTo(led.x, led.y); }
+                lastLed = led;
+            }
+            ctx.stroke();
+        });
+        ctx.setLineDash([]);
+    }
 
     for (const led of ledsToDraw) {
         if (!led) continue;
@@ -810,22 +966,6 @@ export function drawCanvas() {
         ctx.beginPath(); ctx.arc(led.x, led.y, ledRadius, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
         ctx.lineWidth = lineWidth; // Reset for next loop
         // --- END MODIFIED ---
-    }
-
-    if (componentState.wiring && componentState.wiring.length > 0) {
-        ctx.strokeStyle = '#0d6efd'; ctx.lineWidth = 2 * lineWidth;
-        ctx.setLineDash([5 * lineWidth, 5 * lineWidth]);
-        (componentState.wiring || []).forEach(circuit => {
-            if (!Array.isArray(circuit) || circuit.length < 2) return;
-            ctx.beginPath(); let lastLed = null;
-            for (const id of circuit) {
-                const led = ledsToDraw.find(l => l && l.id === id); if (!led) continue;
-                if (lastLed) { ctx.moveTo(lastLed.x, lastLed.y); ctx.lineTo(led.x, led.y); }
-                lastLed = led;
-            }
-            ctx.stroke();
-        });
-        ctx.setLineDash([]);
     }
 
     if (currentToolGetter() === 'select' && selectedLedIds && selectedLedIds.size > 0) {

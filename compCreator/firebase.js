@@ -2,7 +2,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-// Note: We are not importing getStorage, ref, etc. yet, but can add them here.
+// ---
+// --- THIS IS THE MISSING IMPORT ---
+// ---
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,6 +24,7 @@ const app = initializeApp(firebaseConfig);
 // Export services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app); // <-- Also export the storage service
 
 // Export functions and constants for convenience
 export {
@@ -48,5 +52,10 @@ export {
     increment,
     serverTimestamp,
     setDoc,
-    writeBatch
+    writeBatch,
+    getStorage,
+    ref,
+    uploadString,
+    getDownloadURL,
+    deleteObject
 };

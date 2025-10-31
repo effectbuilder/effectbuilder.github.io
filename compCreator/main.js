@@ -1,6 +1,11 @@
 // --- IMPORT ---
 import { initializeTooltips, showToast, setupThemeSwitcher } from './util.js';
-import { auth, db, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, doc, setDoc, addDoc, collection, serverTimestamp, updateDoc, query, where, getDocs, orderBy } from './firebase.js';
+import {
+    auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
+    GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
+    query, where, getDocs, orderBy
+} from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount } from './canvas.js';
 
 // --- GLOBAL SHARED STATE ---
@@ -9,10 +14,12 @@ let viewTransform = { panX: 0, panY: 0, zoom: 1 };
 let selectedLedIds = new Set();
 let currentTool = 'select';
 let currentComponentId = null;
+let isDirty = false;
 const GRID_SIZE = 10;
 
 // --- APP-LEVEL STATE ---
 const AUTOSAVE_KEY = 'srgbComponentCreator_autoSave';
+const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
 
 // --- DOM Elements ---
 const loginBtn = document.getElementById('login-btn');
@@ -43,6 +50,10 @@ const galleryComponentList = document.getElementById('user-component-list');
 let galleryOffcanvas = null;
 const compImageInput = document.getElementById('component-image');
 const imagePreview = document.getElementById('image-preview');
+const imagePasteZone = document.getElementById('image-paste-zone');
+
+const importJsonBtn = document.getElementById('import-json-btn');
+const importFileInput = document.getElementById('import-file-input');
 
 let addStripModal = null;
 const addStripBtn = document.getElementById('add-strip-btn');
@@ -85,6 +96,7 @@ let scaleModal = null;
 
 // --- Local Storage Functions ---
 function autoSaveState() {
+    isDirty = true; // <-- ADD THIS
     console.log('Attempting to autosave state...');
     if (componentState && Array.isArray(componentState.leds) && Array.isArray(componentState.wiring)) {
         try {
@@ -98,10 +110,91 @@ function autoSaveState() {
         console.warn('Skipping autosave, componentState seems invalid:', componentState);
     }
 }
+
+/**
+ * Checks if the state is dirty. If it is, asks the user for confirmation.
+ * @returns {boolean} - True if it's safe to proceed, false if the user cancelled.
+ */
+function checkDirtyState() {
+    if (!isDirty) {
+        return true; // Not dirty, safe to proceed
+    }
+    // Is dirty, ask for confirmation
+    return confirm("You have unsaved changes. Are you sure you want to proceed? All unsaved changes will be lost.");
+}
+
 function clearAutoSave() {
     console.log('Clearing autosave data.');
     localStorage.removeItem(AUTOSAVE_KEY);
 }
+
+// ---
+// --- NEW HELPER FUNCTION: loadComponentState ---
+// ---
+/**
+ * Central function to load any valid component state object into the app.
+ * It handles state assignment, wiring validation/fixing, and UI updates.
+ * @param {object} stateToLoad - A component state object.
+ * @returns {boolean} - True if successful, false if data was invalid.
+ */
+function loadComponentState(stateToLoad) {
+    if (!stateToLoad || typeof stateToLoad !== 'object' || !Array.isArray(stateToLoad.leds)) {
+        showToast('Load Error', 'Invalid component data object.', 'danger');
+        return false;
+    }
+
+    // Clear old state
+    clearAutoSave();
+    Object.assign(componentState, createDefaultComponentState()); // Reset to default first
+    Object.assign(componentState, stateToLoad); // Then apply new state
+
+    // --- VALIDATE AND FIX WIRING ---
+    componentState.leds = componentState.leds || [];
+    let loadedWiring = componentState.wiring || [];
+    let appWiring = []; // This will be the string[][]
+
+    if (Array.isArray(loadedWiring) && loadedWiring.length > 0) {
+        if (typeof loadedWiring[0] === 'object' && loadedWiring[0] !== null && Array.isArray(loadedWiring[0].circuit)) {
+            // Firestore format: [{circuit: [...]}]
+            appWiring = loadedWiring.map(item => item.circuit || []).filter(circuit => Array.isArray(circuit));
+        } else if (!Array.isArray(loadedWiring[0])) {
+            // OLD flat array format: ['id1', 'id2']
+            const validOldWiring = loadedWiring.filter(id => id != null && componentState.leds.some(led => led && led.id === id));
+            appWiring = validOldWiring.length > 0 ? [validOldWiring] : [];
+        } else {
+            // Correct app format: [['id1'], ['id2']]
+            appWiring = loadedWiring;
+        }
+    }
+    componentState.wiring = appWiring;
+    // --- END WIRING FIX ---
+
+    currentComponentId = stateToLoad.dbId || null; // Reset DB id if it's not in the new state
+
+    updateUIFromState();
+    selectedLedIds.clear();
+    resetView(); // This will also call drawCanvas()
+
+    // Re-validate image state after updateUIFromState
+    if (componentState.imageUrl && componentState.imageUrl.startsWith('data:')) {
+        imagePreview.src = componentState.imageUrl;
+        imagePreview.style.display = 'block';
+    } else if (componentState.imageUrl) {
+        // It's a URL, but we need to handle the preview
+        imagePreview.src = componentState.imageUrl;
+        imagePreview.style.display = 'block';
+    } else {
+        imagePreview.src = '#';
+        imagePreview.style.display = 'none';
+        if (compImageInput) compImageInput.value = ''; // Clear file input
+    }
+
+    // --- MODIFICATION: Removed isDirty = false ---
+    // The *caller* is responsible for setting the dirty state.
+    return true;
+}
+// --- END NEW HELPER FUNCTION ---
+
 
 // --- Auth & Project Management ---
 async function handleLogin() {
@@ -158,6 +251,17 @@ function setupProjectListeners() {
     newBtn.addEventListener('click', () => handleNewComponent(true));
     saveBtn.addEventListener('click', handleSaveComponent);
     exportBtn.addEventListener('click', handleExport);
+
+    // --- MODIFICATION: Add guard to import ---
+    if (importJsonBtn && importFileInput) {
+        importJsonBtn.addEventListener('click', () => {
+            if (!checkDirtyState()) return; // <-- ADD GUARD
+            importFileInput.click();
+        });
+        importFileInput.addEventListener('change', handleImportJson);
+    } else {
+        console.warn("Import JSON buttons not found.");
+    }
 }
 
 function createDefaultComponentState() {
@@ -175,7 +279,8 @@ function createDefaultComponentState() {
 }
 
 function handleNewComponent(showNotification = true) {
-    let loadedSuccessfully = false;
+    if (!checkDirtyState()) return;
+
     let stateToLoad = createDefaultComponentState();
     console.log('handleNewComponent called. showNotification:', showNotification);
 
@@ -183,56 +288,120 @@ function handleNewComponent(showNotification = true) {
         const savedState = localStorage.getItem(AUTOSAVE_KEY);
         console.log('Checking localStorage...');
         if (savedState) {
-            console.log('Found saved state:', savedState);
             try {
                 const parsedState = JSON.parse(savedState);
-                console.log('Parsed state:', parsedState);
                 if (parsedState && typeof parsedState === 'object' && Array.isArray(parsedState.leds)) {
-                    stateToLoad = parsedState;
-                    // --- CONVERT OLD WIRING FORMAT TO NEW ---
-                    if (Array.isArray(stateToLoad.wiring) && stateToLoad.wiring.length > 0 && !Array.isArray(stateToLoad.wiring[0])) {
-                        console.warn("handleNewComponent: Converting loaded wiring from [] to [[]].");
-                        // Filter out any bad IDs that might be in the old array
-                        const validOldWiring = stateToLoad.wiring.filter(id => id != null && stateToLoad.leds.some(led => led && led.id === id));
-                        stateToLoad.wiring = validOldWiring.length > 0 ? [validOldWiring] : [];
-                    } else if (!Array.isArray(stateToLoad.wiring)) {
-                        console.warn("handleNewComponent: Loaded wiring was invalid, resetting.");
-                        stateToLoad.wiring = []; // Ensure it's at least an empty array
+                    if (loadComponentState(parsedState)) {
+                        showToast('Welcome Back!', 'Your unsaved work has been restored.', 'info');
+                        // --- MODIFICATION: Set dirty flag for autosave ---
+                        isDirty = true;
+                    } else {
+                        loadComponentState(createDefaultComponentState()); // Fallback
+                        isDirty = false; // Fresh state is not dirty
                     }
-                    // --- END CONVERSION ---
-                    loadedSuccessfully = true;
-                    console.log('Autosave loaded successfully.');
-                    showToast('Welcome Back!', 'Your unsaved work has been restored.', 'info');
+                    return; // We are done
                 } else {
-                    console.warn("Autosave data was invalid, creating new project."); clearAutoSave();
+                    console.warn("Autosave data was invalid, creating new project.");
+                    clearAutoSave();
                 }
             } catch (e) { console.error("Failed to parse autosave data:", e); clearAutoSave(); }
         } else { console.log('No autosave data found in localStorage.'); }
     }
 
-    if (showNotification || !loadedSuccessfully) {
-        if (showNotification) {
-            console.log('Clearing autosave because showNotification is true.'); clearAutoSave();
-            if (loadedSuccessfully) stateToLoad = createDefaultComponentState();
-            showToast('New Project', 'Cleared the canvas and properties.', 'info');
-        } else { console.log('Proceeding with default state.'); }
-        if (!loadedSuccessfully) stateToLoad = createDefaultComponentState();
+    // Standard "New" click or failed autosave
+    clearAutoSave();
+    loadComponentState(createDefaultComponentState()); // Load a fresh state
+    isDirty = false; // --- MODIFICATION: A new project is not dirty ---
+    if (showNotification) {
+        showToast('New Project', 'Cleared the canvas and properties.', 'info');
     }
+}
 
-    Object.assign(componentState, stateToLoad); // Update the existing global state object
-    // Final safety check
-    if (!Array.isArray(componentState.wiring)) {
-        console.error("handleNewComponent: wiring still invalid! Forcing empty array.");
-        componentState.wiring = [];
-    }
+/**
+ * Handles the file input 'change' event to read, parse, and load a JSON file.
+ * @param {Event} e - The file input change event.
+ */
+function handleImportJson(e) {
+    const file = e.target.files[0];
+    if (!file) return; // User cancelled
 
-    console.log('Final componentState:', JSON.parse(JSON.stringify(componentState)));
-    currentComponentId = componentState.dbId || null;
-    updateUIFromState();
-    if (canvas) { viewTransform.panX = (canvas.width / 2); viewTransform.panY = (canvas.height / 2); }
-    viewTransform.zoom = 5;
-    selectedLedIds.clear();
-    requestAnimationFrame(drawCanvas);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            let stateToLoad = null;
+
+            if (data.leds && Array.isArray(data.leds)) {
+                // --- 1. It's an INTERNAL format (from autosave, or a friend's state) ---
+                console.log('Importing internal component format.');
+                stateToLoad = data; // Directly use the data object
+
+            } else if (data.LedCoordinates && Array.isArray(data.LedCoordinates)) {
+                // --- 2. It's an EXPORTED format (ProductName, LedCoordinates, etc.) ---
+                console.log('Importing exported .json format.');
+                stateToLoad = createDefaultComponentState(); // Start with defaults
+
+                stateToLoad.name = data.ProductName || 'Imported Component';
+                stateToLoad.displayName = data.DisplayName || stateToLoad.name;
+                stateToLoad.brand = data.Brand || 'Custom';
+                stateToLoad.type = data.Type || 'Other';
+
+                // ---
+                // --- MODIFICATION: Robust check for image data ---
+                // ---
+                // Check if data.Image exists and is a non-empty string
+                if (data.Image && data.Image.length > 0) {
+                    // FIX: The app exports images as webp, so we must import them as webp.
+                    stateToLoad.imageUrl = `data:image/webp;base64,${data.Image}`;
+                } else {
+                    stateToLoad.imageUrl = null;
+                }
+                // --- END MODIFICATION ---
+
+                // Re-create LEDs from normalized coordinates
+                const newLeds = [];
+                const newWireIds = [];
+                data.LedCoordinates.forEach((coord, index) => {
+                    const newId = `imported-${Date.now()}-${index}`;
+                    newLeds.push({
+                        id: newId,
+                        x: coord[0] * GRID_SIZE, // Apply grid scaling
+                        y: coord[1] * GRID_SIZE  // Apply grid scaling
+                    });
+                    newWireIds.push(newId);
+                });
+
+                stateToLoad.leds = newLeds;
+                // The exported format implies a single, ordered circuit
+                stateToLoad.wiring = [newWireIds];
+
+            } else {
+                // --- 3. It's an UNKNOWN format ---
+                showToast('Import Error', 'Invalid or unrecognized JSON file format.', 'danger');
+                e.target.value = null; // Reset input
+                return;
+            }
+
+            // --- Load the prepared state ---
+            if (loadComponentState(stateToLoad)) {
+                showToast('Import Successful', `Loaded "${stateToLoad.name}" from file.`, 'success');
+                // --- MODIFICATION: Set dirty flag after successful import ---
+                isDirty = true;
+            }
+
+        } catch (err) {
+            console.error("Error parsing JSON file:", err);
+            showToast('Import Error', 'Could not parse JSON file. It may be corrupt.', 'danger');
+        } finally {
+            // Reset the file input to allow loading the same file again
+            e.target.value = null;
+        }
+    };
+    reader.onerror = () => {
+        showToast('File Error', 'Could not read the selected file.', 'danger');
+        e.target.value = null;
+    };
+    reader.readAsText(file);
 }
 
 
@@ -240,48 +409,94 @@ async function handleSaveComponent() {
     const user = auth.currentUser;
     if (!user) { showToast('Error', 'You must be logged in to save.', 'danger'); return; }
     showToast('Saving...', 'Saving component to the cloud.', 'info');
+
     componentState.name = compNameInput.value;
-    componentState.displayName = compDisplayNameInput.value; // ADDED
-    componentState.brand = compBrandInput.value; // ADDED
+    componentState.displayName = compDisplayNameInput.value;
+    componentState.brand = compBrandInput.value;
     componentState.type = compTypeInput.value;
 
-    // Ensure wiring is saved in the correct array-of-arrays format
+    // --- Firestore wiring conversion ---
     let wiringToSave = componentState.wiring;
-    if (!Array.isArray(wiringToSave)) {
-        wiringToSave = []; // Ensure it's an array
-    }
-    // Filter out any potential non-array circuits (shouldn't happen, but good check)
+    if (!Array.isArray(wiringToSave)) { wiringToSave = []; }
     wiringToSave = wiringToSave.filter(circuit => Array.isArray(circuit));
+    const firestoreWiring = wiringToSave.map(circuit => {
+        return { circuit: circuit };
+    });
+    // --- End wiring conversion ---
+
+    // --- Check permissions before saving ---
+    let isOwnerOrAdmin = false;
+    let isNewComponent = (currentComponentId === null); // Is this a brand-new component?
+
+    if (!isNewComponent) {
+        // This is an existing component, check ownership
+        if (user.uid === componentState.ownerId || user.uid === ADMIN_UID) {
+            isOwnerOrAdmin = true; // User is allowed to overwrite
+            console.log("Save allowed: User is owner or admin.");
+        } else {
+            // User is NOT the owner. Fork the component.
+            currentComponentId = null;
+            componentState.dbId = null;
+            isNewComponent = true; // Treat it as a new component
+
+            // If forking, check if the old imageUrl was a URL
+            // and clear it. If it's a new 'data:' string, keep it.
+            if (componentState.imageUrl && !componentState.imageUrl.startsWith('data:')) {
+                componentState.imageUrl = null;
+            }
+
+            showToast('Forking Component...', 'Saving your version as a new component.', 'info');
+            console.log("Save forking: User is not owner. Creating new component.");
+        }
+    }
+    // --- END MODIFICATION ---
+
 
     const dataToSave = {
         ...componentState,
-        wiring: wiringToSave, // Save the [][] format
+        wiring: firestoreWiring,
+        // --- THIS IS THE KEY CHANGE ---
+        // Save the componentState.imageUrl directly.
+        // This will be the full 'data:image/webp;base64,...' string or null.
+        imageUrl: componentState.imageUrl,
+        // --- END CHANGE ---
         ownerId: user.uid,
         ownerName: user.displayName,
         lastUpdated: serverTimestamp()
     };
-    delete dataToSave.dbId;
+    delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
     try {
         let docRef;
         const componentsCollection = collection(db, 'srgb-components');
-        if (currentComponentId) {
+
+        if (currentComponentId && isOwnerOrAdmin) {
+            // --- OVERWRITE PATH ---
             docRef = doc(componentsCollection, currentComponentId);
             dataToSave.createdAt = componentState.createdAt || serverTimestamp();
             await updateDoc(docRef, dataToSave);
         } else {
+            // --- NEW COMPONENT (or FORK) PATH ---
             dataToSave.createdAt = serverTimestamp();
             docRef = await addDoc(componentsCollection, dataToSave);
-            currentComponentId = docRef.id; componentState.dbId = currentComponentId;
+            currentComponentId = docRef.id;
+            componentState.dbId = currentComponentId;
         }
+
         componentState.createdAt = dataToSave.createdAt;
+
+        // --- Image Upload Logic (Part 2) has been removed ---
+
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
         clearAutoSave();
-    } catch (error) { console.error("Error saving component: ", error); showToast('Error Saving', error.message, 'danger'); }
+        isDirty = false;
+    } catch (error) {
+        console.error("Error saving component: ", error);
+        showToast('Error Saving', error.message, 'danger');
+    }
 }
 
-// --- MODIFIED FUNCTION: handleExport (Ensures Wired Order in JSON) ---
 function handleExport() {
     console.log("handleExport triggered.");
     const exportModalElement = document.getElementById('export-component-modal');
@@ -297,76 +512,79 @@ function handleExport() {
         const currentType = compTypeInput.value || 'Other';
         const currentLeds = componentState.leds || [];
         const currentWiring = componentState.wiring || []; // This is string[][]
-        const imageDataUrl = componentState.imageUrl || null;
+
+        // Check if image is Base64
+        const imageDataUrl = (componentState.imageUrl && componentState.imageUrl.startsWith('data:'))
+            ? componentState.imageUrl
+            : null;
+
         const ledCount = currentLeds.length;
-        console.log(`Exporting: ${productName}, Display: ${displayName}, Brand: ${brand}, Type: ${currentType}, LEDs: ${ledCount}`);
 
         if (ledCount === 0) { showToast('Export Error', 'Cannot export empty component.', 'warning'); return; }
 
+        // Determine offset for normalized 0,0 export coordinates
         let minX = Infinity, minY = Infinity;
         currentLeds.forEach(led => { if (led) { minX = Math.min(minX, led.x); minY = Math.min(minY, led.y); } });
         minX = (minX === Infinity) ? 0 : minX; minY = (minY === Infinity) ? 0 : minY;
-        console.log(`Calculated offset: minX=${minX}, minY=${minY}`);
 
-        // --- 1. Create a map for quick access to LED data (including offset coords) ---
+        // --- 1. Create map for quick access to LED data ---
         const ledDataMap = new Map();
         let maxX = 0, maxY = 0;
         currentLeds.forEach(led => {
             if (led) {
-                // Calculate export coordinates (offset and converted to grid units)
                 const offsetX = Math.round((led.x - minX) / GRID_SIZE);
                 const offsetY = Math.round((led.y - minY) / GRID_SIZE);
-                
-                ledDataMap.set(led.id, { id: led.id, x: offsetX, y: offsetY });
-                maxX = Math.max(maxX, offsetX); 
+                ledDataMap.set(led.id, { id: led.id, x: offsetX, y: offsetY, worldX: led.x, worldY: led.y });
+                maxX = Math.max(maxX, offsetX);
                 maxY = Math.max(maxY, offsetY);
             }
         });
-        console.log(`Created ledDataMap. Max offset coords: maxX=${maxX}, maxY=${maxY}`);
 
-        let ledCoordinates = [];
-        const exportedLedIds = new Set();
-        
-        // --- 2. Build LedCoordinates array based strictly on wiring order ---
+        // --- 2. Build Set of All Wired IDs ---
+        const wiredLedIds = new Set();
         if (Array.isArray(currentWiring)) {
-            console.log("Using defined wiring order (flattening circuits) for coordinates.");
-            
-            // Flatten all circuits into one list of IDs (maintaining order)
-            const flatWiring = currentWiring.flat().filter(id => id != null);
-
-            flatWiring.forEach(ledId => {
-                const ledData = ledDataMap.get(ledId);
-                // ONLY add if the LED exists and has not been added yet (handles multi-circuit overlaps, though less common now)
-                if (ledData && !exportedLedIds.has(ledId)) { 
-                    // Push the [x, y] coordinate pair
-                    ledCoordinates.push([ledData.x, ledData.y]);
-                    exportedLedIds.add(ledId);
-                } else if (!ledData) { 
-                    console.warn(`Wiring Error: LED ID ${ledId} not found in LED list.`); 
+            currentWiring.forEach(circuit => {
+                if (Array.isArray(circuit)) {
+                    circuit.forEach(id => wiredLedIds.add(id));
                 }
             });
-        } else {
-            console.warn("Wiring data is invalid. Exporting unwired.");
         }
 
-        // --- 3. Append any UNWIRED LEDs (order of unwired doesn't strictly matter) ---
-        currentLeds.forEach(led => {
-            if (led && !exportedLedIds.has(led.id)) {
-                const ledData = ledDataMap.get(led.id);
-                if (ledData) {
-                    console.warn(`Export: Appending unwired LED ID ${led.id} to coordinates.`);
-                    ledCoordinates.push([ledData.x, ledData.y]);
-                    exportedLedIds.add(led.id);
-                }
+        // --- 3. CHECK FOR UNWIRED LEDs (BLOCK EXPORT) ---
+        const unwiredLedsExist = currentLeds.some(led => led && !wiredLedIds.has(led.id));
+
+        if (unwiredLedsExist) {
+            const unwiredCount = currentLeds.filter(led => led && !wiredLedIds.has(led.id)).length;
+            showToast(
+                'Export Blocked',
+                `Cannot export: ${unwiredCount} LED${unwiredCount === 1 ? ' is' : 's are'} unwired. All LEDs must be part of a circuit.`,
+                'danger'
+            );
+            console.error(`Export Blocked: ${unwiredCount} unwired LEDs detected.`);
+            return; // EXIT the function, blocking the export
+        }
+        // --- END UNWIRED LED CHECK ---
+
+
+        // --- 4. Build LedCoordinates array based strictly on wiring order ---
+        let ledCoordinates = [];
+        const exportedLedIds = new Set();
+
+        const flatWiring = currentWiring.flat().filter(id => id != null);
+
+        flatWiring.forEach(ledId => {
+            const ledData = ledDataMap.get(ledId);
+            if (ledData && !exportedLedIds.has(ledId)) {
+                ledCoordinates.push([ledData.x, ledData.y]);
+                exportedLedIds.add(ledId);
             }
         });
 
-        // --- 4. Final Sanity Check ---
+        // --- 5. Final Sanity Check (Should match if all are wired) ---
         if (ledCoordinates.length !== ledCount) {
-             console.error(`Coordinate count (${ledCoordinates.length}) mismatches LED count (${ledCount}). Padding/Truncating.`);
-            // Pad/Truncate for safety, though it shouldn't be needed with the new logic
-            while (ledCoordinates.length < ledCount) { ledCoordinates.push([0, 0]); }
-            if (ledCoordinates.length > ledCount) { ledCoordinates = ledCoordinates.slice(0, ledCount); }
+            console.error(`Coordinate count (${ledCoordinates.length}) mismatches LED count (${ledCount}). This indicates a wiring issue.`);
+            showToast('Internal Error', 'Export aborted due to mismatched LED count after wiring check.', 'danger');
+            return;
         }
         console.log("Generated LedCoordinates:", ledCoordinates.length);
 
@@ -374,7 +592,7 @@ function handleExport() {
         const width = maxX + 1; const height = maxY + 1;
 
         let base64ImageData = "";
-        if (imageDataUrl && imageDataUrl.startsWith('data:image')) {
+        if (imageDataUrl) {
             const commaIndex = imageDataUrl.indexOf(',');
             if (commaIndex !== -1) { base64ImageData = imageDataUrl.substring(commaIndex + 1); }
         }
@@ -382,7 +600,8 @@ function handleExport() {
         const exportObject = {
             ProductName: productName, DisplayName: displayName, Brand: brand, Type: currentType, LedCount: ledCount,
             Width: width, Height: height, LedMapping: ledMapping, LedCoordinates: ledCoordinates, LedNames: Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`),
-            Image: base64ImageData, ImageUrl: ""
+            Image: base64ImageData,
+            ImageUrl: "" // Deprecated, but part of the old format
         };
 
         const jsonString = JSON.stringify(exportObject, null, 2);
@@ -407,6 +626,7 @@ function handleExport() {
                 exportModal.hide();
             } catch (downloadError) { console.error("Error triggering download:", downloadError); showToast('Download Error', 'Could not trigger file download.', 'danger'); }
         };
+        showToast('Saving...', 'Component is valid and ready for export.', 'info');
         exportModal.show();
     } catch (error) {
         console.error("Error during handleExport:", error);
@@ -414,6 +634,78 @@ function handleExport() {
         const preview = document.getElementById('json-preview');
         if (preview) preview.textContent = `Error: ${error.message}`;
         exportModal.show();
+    }
+}
+
+/**
+ * Processes a File object (from paste or input), resizes it,
+ * and updates the component state.
+ * @param {File} file - The image file to process.
+ */
+function handleImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        showToast('Image Error', 'Pasted item was not a valid image.', 'warning');
+        return;
+    }
+
+    if (file && componentState) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const img = new Image();
+            img.onload = () => {
+                // --- Resize Image logic ---
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 400;
+                let width = img.naturalWidth;
+                let height = img.naturalHeight;
+
+                // Check if resizing is needed
+                if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                    const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                // Create an off-screen canvas to draw the resized image
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                // Draw the image onto the canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Get the new image as a WebP data URL (more efficient than PNG)
+                const resizedDataUrl = canvas.toDataURL('image/webp', 0.85); // 85% quality
+
+                // Save the RESIZED dataUrl to the state
+                componentState.imageUrl = resizedDataUrl;
+                componentState.imageWidth = width;
+                componentState.imageHeight = height;
+
+                console.log(`Device image resized to: ${width}x${height}`);
+                imagePreview.src = resizedDataUrl; // Show the resized preview
+                imagePreview.style.display = 'block';
+                autoSaveState();
+
+                // Clear the file input field
+                if (compImageInput) compImageInput.value = '';
+
+            };
+            img.onerror = () => {
+                showToast('Image Error', 'Could not load image file.', 'danger');
+                componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
+                imagePreview.src = '#'; imagePreview.style.display = 'none';
+                autoSaveState();
+            };
+            img.src = event.target.result;
+        }
+        reader.onerror = () => {
+            showToast('File Read Error', 'Could not read file.', 'danger');
+            if (compImageInput) compImageInput.value = '';
+            imagePreview.src = '#'; imagePreview.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
     }
 }
 
@@ -453,39 +745,71 @@ function setupPropertyListeners() {
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
-    if (compImageInput && imagePreview) {
+    // --- Image File Handling ---
+    if (compImageInput && imagePreview && imagePasteZone) {
+
+        console.log('Image Handling: Attaching file, click, and paste listeners.');
+
+        // --- 1. File Input 'change' listener ---
         compImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file && componentState) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const img = new Image();
-                    img.onload = () => {
-                        componentState.imageUrl = event.target.result; componentState.imageWidth = img.naturalWidth; componentState.imageHeight = img.naturalHeight;
-                        console.log('Device image loaded:', componentState.imageWidth, 'x', componentState.imageHeight);
-                        imagePreview.src = event.target.result; imagePreview.style.display = 'block';
-                        autoSaveState();
-                    };
-                    img.onerror = () => {
-                        showToast('Image Error', 'Could not load image file.', 'danger');
-                        componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
-                        imagePreview.src = '#'; imagePreview.style.display = 'none';
-                        autoSaveState();
-                    };
-                    img.src = event.target.result;
-                }
-                reader.onerror = () => {
-                    showToast('File Read Error', 'Could not read file.', 'danger');
-                    compImageInput.value = ''; imagePreview.src = '#'; imagePreview.style.display = 'none';
-                };
-                reader.readAsDataURL(file);
+            if (file) {
+                handleImageFile(file); // Use the new handler
             } else if (componentState) {
+                // This logic runs if the user cancels the file dialog
                 componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
                 imagePreview.src = '#'; imagePreview.style.display = 'none';
                 autoSaveState();
             }
         });
-    } else { console.warn("Image input or preview element not found."); }
+
+        // --- 2. NEW: Click listener to ensure focus ---
+        imagePasteZone.addEventListener('click', () => {
+            console.log('Image Handling: Paste zone clicked, setting focus.');
+            imagePasteZone.focus();
+        });
+
+        // --- 3. NEW: Image Paste Zone 'paste' listener (with DEBUGGING) ---
+        imagePasteZone.addEventListener('paste', (e) => {
+            console.log('Image Handling: Paste event detected.');
+            e.preventDefault(); // Stop browser from pasting image as a broken element
+
+            const items = e.clipboardData ? e.clipboardData.items : null;
+            if (!items) {
+                console.error('Image Handling: Browser does not support clipboard items.');
+                showToast('Paste Error', 'Browser does not support clipboard items.', 'danger');
+                return;
+            }
+
+            console.log(`Image Handling: Found ${items.length} clipboard items.`);
+            let foundFile = null;
+
+            // Loop through all items to find the *actual* file
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                console.log(`Item ${i}:`, { kind: item.kind, type: item.type });
+
+                // This is the key: check *kind* is 'file' first.
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    console.log(`Image Handling: Item ${i} is an image file. Grabbing it.`);
+                    foundFile = item.getAsFile();
+                    break; // Found it, stop looking
+                }
+            }
+
+            if (foundFile) {
+                console.log('Image Handling: File successfully retrieved from clipboard.');
+                handleImageFile(foundFile); // Use the same handler
+            } else {
+                console.log('Image Handling: No usable file found in clipboard items.');
+                showToast('Paste Error', 'No image file found in clipboard.', 'warning');
+            }
+        });
+
+    } else {
+        console.warn("Image input, preview, or paste zone element not found.");
+    }
+    // --- End Image File Handling ---
 
 
     // --- MODAL LISTENERS ---
@@ -674,28 +998,91 @@ window.setAppCursor = setAppCursor;
 function setupKeyboardListeners() {
     window.addEventListener('keydown', (e) => {
         if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            if (selectedLedIds.size > 0) {
-                console.log('Keyboard Listener: Delete triggered'); e.preventDefault();
-                componentState.leds = componentState.leds.filter(led => led && !selectedLedIds.has(led.id));
 
-                // --- UPDATED: Remove deleted LEDs from all wiring circuits ---
-                const newWiring = [];
-                componentState.wiring.forEach((circuit, index) => {
-                    if (Array.isArray(circuit)) { // Check if it's an array
-                        const filteredCircuit = circuit.filter(id => id != null && !selectedLedIds.has(id));
-                        if (filteredCircuit.length > 0) {
-                            newWiring.push(filteredCircuit);
-                        }
-                    } else { console.warn(`Keyboard Delete: Invalid circuit format at index ${index}`); }
-                });
-                componentState.wiring = newWiring;
-                // --- END UPDATED ---
+        // This guard is very important! It prevents shortcuts while typing in text fields.
+        if (e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'SELECT' ||
+            e.target.isContentEditable) { // <-- This new line is the fix
+            return;
+        }
 
-                selectedLedIds.clear(); drawCanvas(); autoSaveState();
-            }
-            updateLedCount();
+        // Use a boolean to see if we should prevent default browser actions
+        let shortcutHandled = true;
+
+        switch (e.key) {
+            // Tool Selection
+            case 'v':
+            case 'V':
+                setTool('select');
+                break;
+            case 'p':
+            case 'P':
+                setTool('place-led');
+                break;
+            case 'w':
+            case 'W':
+                setTool('wiring');
+                break;
+
+            // Canvas/View Actions
+            case 'g':
+            case 'G':
+                toggleGrid();
+                break;
+            case '+':
+            case '=': // '=' is the same key as '+' without shift
+                zoomAtPoint(canvas.width / 2, canvas.height / 2, 1.2);
+                break;
+            case '-':
+            case '_': // '_' is the same key as '-' without shift
+                zoomAtPoint(canvas.width / 2, canvas.height / 2, 1 / 1.2);
+                break;
+            case '0':
+                resetView();
+                break;
+
+            // Selection Actions
+            case 's':
+            case 'S':
+                if (selectedLedIds.size > 0) {
+                    scaleModal.show();
+                } else {
+                    showToast('Action Blocked', 'Select one or more LEDs to scale.', 'warning');
+                }
+                break;
+            case 'Delete':
+            case 'Backspace':
+                if (selectedLedIds.size > 0) {
+                    console.log('Keyboard Listener: Delete triggered');
+                    componentState.leds = componentState.leds.filter(led => led && !selectedLedIds.has(led.id));
+
+                    const newWiring = [];
+                    componentState.wiring.forEach((circuit, index) => {
+                        if (Array.isArray(circuit)) {
+                            const filteredCircuit = circuit.filter(id => id != null && !selectedLedIds.has(id));
+                            if (filteredCircuit.length > 0) {
+                                newWiring.push(filteredCircuit);
+                            }
+                        } else { console.warn(`Keyboard Delete: Invalid circuit format at index ${index}`); }
+                    });
+                    componentState.wiring = newWiring;
+
+                    selectedLedIds.clear();
+                    drawCanvas();
+                    autoSaveState();
+                    updateLedCount(); // Moved this inside the 'if'
+                }
+                break;
+
+            default:
+                // If no shortcut was matched, don't prevent default
+                shortcutHandled = false;
+                break;
+        }
+
+        if (shortcutHandled) {
+            e.preventDefault(); // Prevent browser from zooming on '+' or '-'
         }
     });
 }
@@ -850,21 +1237,14 @@ function handleAddStrip() {
     updateLedCount();
 }
 
-// --- MODIFIED FUNCTION: handleAddCircle (Calculates Required Radius) ---
 function handleAddCircle() {
-    // We now rely solely on the LED Count input
     const ledCount = parseInt(document.getElementById('circle-led-count').value) || 12;
 
     if (ledCount <= 2) { showToast('Invalid Input', 'LED Count must be greater than 2 to form a circle.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
-    // --- 1. CALCULATE MINIMAL GRID-ALIGNED RADIUS ---
-    // Minimal Circumference (C) needed is LED_COUNT * GRID_SIZE to ensure non-overlap
-    // C = 2 * PI * R  =>  R = C / (2 * PI)
     const minCircumference = ledCount * GRID_SIZE;
     const requiredRadiusFloat = minCircumference / (2 * Math.PI);
-
-    // Round UP to the nearest multiple of GRID_SIZE to guarantee spacing
     const radiusUnits = Math.ceil(requiredRadiusFloat / GRID_SIZE);
     const radiusPx = radiusUnits * GRID_SIZE;
 
@@ -872,19 +1252,11 @@ function handleAddCircle() {
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
-    // Bounding box of the circle
     const shapeWidth = radiusPx * 2;
     const shapeHeight = radiusPx * 2;
-
-    // Calculate the snapped center and bounding box start
     const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
     const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-    const baseStartX = finalCenterX - radiusPx;
-    const baseStartY = finalCenterY - radiusPx;
-
-
-    // --- 2. DEFINE FLOATING-POINT VERTICES (Each LED position acts as a vertex) ---
     const getVertices = (centerX, centerY) => {
         const V = [];
         for (let i = 0; i < ledCount; i++) {
@@ -897,12 +1269,6 @@ function handleAddCircle() {
         return V;
     };
 
-
-    // --- 3. NON-OVERLAP SEARCH ---
-    // The complexity of Bresenham's is not strictly necessary here, but we use the
-    // existing robust snapping and deduplication logic inside getPointsForPolygon.
-
-    // We rely on simple snapping of the vertices for overlap checking
     const getPositionsForSearch = (sx, sy) => getVertices(sx + radiusPx, sy + radiusPx).map(v => ({
         x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
         y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
@@ -917,25 +1283,15 @@ function handleAddCircle() {
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the circle.`, 'warning'); return; }
 
-
-    // --- 4. GENERATE PRECISE LED POINTS ---
     const finalVertices = getVertices(startX + radiusPx, startY + radiusPx);
-
-    // Use getPointsForPolygon (which uses Bresenham's) to place points accurately.
-    // NOTE: For a perfect circle, Bresenham's isn't ideal, but since we are placing
-    // *discrete* LEDs at the calculated vertex locations, we only need the snapping/dedupe.
     const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
 
     const newLeds = [];
     const newWireIds = [];
     let ledCountFinal = 0;
-
-    // Use only the first 'ledCount' points, as Bresenham's might add intermediate points
-    // that we don't want for a discrete circle. We should use the raw snapped vertices.
     const addedCoords = new Set();
 
     for (const rawLed of newLedsRaw) {
-        // We only want the *snapped* vertex points, which are all contained in newLedsRaw.
         const key = `${rawLed.x},${rawLed.y}`;
         if (!addedCoords.has(key)) {
             const id = `${Date.now()}-circ-${ledCountFinal++}`;
@@ -946,8 +1302,6 @@ function handleAddCircle() {
         }
     }
 
-
-    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
@@ -970,19 +1324,15 @@ function handleAddLShape() {
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
-    // L-shape with corner at bottom-left
     const shapeWidth = (bLeds - 1) * GRID_SIZE;
     const shapeHeight = (aLeds - 1) * GRID_SIZE;
 
-    // sx/sy is the TOP-LEFT corner of the shape (top of vertical bar)
     const getLShapePositions = (sx, sy) => {
         const positions = [];
         const cornerY = sy + shapeHeight; // Y-coord of the corner
-        // Side A (Vertical)
         for (let i = 0; i < aLeds; i++) {
             positions.push({ x: sx, y: sy + i * GRID_SIZE });
         }
-        // Side B (Horizontal), skipping corner
         for (let i = 1; i < bLeds; i++) {
             positions.push({ x: sx + i * GRID_SIZE, y: cornerY });
         }
@@ -1000,14 +1350,12 @@ function handleAddLShape() {
     const newWireIds = [];
     const cornerY = startY + shapeHeight;
 
-    // Side A (Vertical) - Top to Bottom
     for (let i = 0; i < aLeds; i++) {
         const id = `${Date.now()}-la-${i}`;
         const newLed = { id, x: startX, y: startY + i * GRID_SIZE };
         newLeds.push(newLed);
         newWireIds.push(id);
     }
-    // Side B (Horizontal) - Left to Right, skipping corner
     for (let i = 1; i < bLeds; i++) {
         const id = `${Date.now()}-lb-${i}`;
         const newLed = { id, x: startX + i * GRID_SIZE, y: cornerY };
@@ -1040,7 +1388,6 @@ function handleAddUShape() {
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
-    // Shape dimensions (U-shape, starts top-left)
     const shapeWidth = (bLeds - 1) * GRID_SIZE;
     const shapeHeight = Math.max(aLeds - 1, cLeds - 1) * GRID_SIZE;
 
@@ -1057,13 +1404,9 @@ function handleAddUShape() {
 
         const corner_BL_y = sy + (aLeds - 1) * GRID_SIZE;
         const corner_BR_x = sx + (bLeds - 1) * GRID_SIZE;
-        const corner_TR_y = corner_BL_y - (cLeds - 1) * GRID_SIZE;
 
-        // Side A (Left, Top-to-Bottom)
         for (let i = 0; i < aLeds; i++) addPos(sx, sy + i * GRID_SIZE);
-        // Side B (Bottom, Left-to-Right)
         for (let i = 0; i < bLeds; i++) addPos(sx + i * GRID_SIZE, corner_BL_y);
-        // Side C (Right, Bottom-to-Top)
         for (let i = 0; i < cLeds; i++) addPos(corner_BR_x, corner_BL_y - i * GRID_SIZE);
 
         return positions;
@@ -1091,11 +1434,8 @@ function handleAddUShape() {
     const corner_BL_y = startY + (aLeds - 1) * GRID_SIZE;
     const corner_BR_x = startX + (bLeds - 1) * GRID_SIZE;
 
-    // Side A (Left, Top-to-Bottom)
     for (let i = 0; i < aLeds; i++) addLed(startX, startY + i * GRID_SIZE, `${Date.now()}-ua-${i}`);
-    // Side B (Bottom, Left-to-Right, skip corner)
     for (let i = 1; i < bLeds; i++) addLed(startX + i * GRID_SIZE, corner_BL_y, `${Date.now()}-ub-${i}`);
-    // Side C (Right, Bottom-to-Top, skip corner)
     for (let i = 1; i < cLeds; i++) addLed(corner_BR_x, corner_BL_y - i * GRID_SIZE, `${Date.now()}-uc-${i}`);
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -1104,7 +1444,7 @@ function handleAddUShape() {
     componentState.wiring.push(newWireIds); // Push as one circuit
 
     const shapeCenterX = startX + shapeWidth / 2;
-    const shapeCenterY = startY + shapeHeight / 2; // This might be off-center depending on A/C, but good enough
+    const shapeCenterY = startY + shapeHeight / 2;
     viewTransform.panX = canvas.width / 2 - (shapeCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (shapeCenterY * viewTransform.zoom);
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
@@ -1113,7 +1453,6 @@ function handleAddUShape() {
     updateLedCount();
 }
 
-// --- NEW FUNCTION: handleAddLiLi ---
 function handleAddLiLi() {
     const stripLeds = parseInt(document.getElementById('lili-strip-leds').value) || 3;
     const circleLeds = parseInt(document.getElementById('lili-circle-leds').value) || 8;
@@ -1130,7 +1469,6 @@ function handleAddLiLi() {
     const circleWidth = radiusPx * 2;
     const stripHeight = (stripLeds - 1) * GRID_SIZE;
     const circleHeight = radiusPx * 2;
-
     const shapeWidth = (spacingPx * 2) + circleWidth;
     const shapeHeight = Math.max(stripHeight, circleHeight);
 
@@ -1149,20 +1487,16 @@ function handleAddLiLi() {
 
         const stripYOffset = (shapeHeight - stripHeight) / 2;
         const circleYOffset = (shapeHeight - circleHeight) / 2;
-
         const leftStripX = sx;
         const circleCenterX = sx + spacingPx + radiusPx;
         const circleCenterY = sy + circleYOffset + radiusPx;
         const rightStripX = sx + spacingPx * 2 + circleWidth;
 
-        // Left Strip
         for (let i = 0; i < stripLeds; i++) addPos(leftStripX, sy + stripYOffset + i * GRID_SIZE);
-        // Circle
         for (let i = 0; i < circleLeds; i++) {
             const angle = (i / circleLeds) * 2 * Math.PI;
             addPos(circleCenterX + radiusPx * Math.cos(angle), circleCenterY + radiusPx * Math.sin(angle));
         }
-        // Right Strip
         for (let i = 0; i < stripLeds; i++) addPos(rightStripX, sy + stripYOffset + i * GRID_SIZE);
 
         return positions;
@@ -1183,10 +1517,8 @@ function handleAddLiLi() {
     const circleCenterX = startX + spacingPx + radiusPx;
     const circleCenterY = startY + circleYOffset + radiusPx;
     const rightStripX = startX + spacingPx * 2 + circleWidth;
-
     const addedCoords = new Set();
 
-    // Left Strip
     for (let i = 0; i < stripLeds; i++) {
         const x = leftStripX;
         const y = startY + stripYOffset + i * GRID_SIZE;
@@ -1200,7 +1532,6 @@ function handleAddLiLi() {
             addedCoords.add(key);
         }
     }
-    // Circle
     for (let i = 0; i < circleLeds; i++) {
         const angle = (i / circleLeds) * 2 * Math.PI;
         const x = Math.round((circleCenterX + radiusPx * Math.cos(angle)) / GRID_SIZE) * GRID_SIZE;
@@ -1215,7 +1546,6 @@ function handleAddLiLi() {
             addedCoords.add(key);
         }
     }
-    // Right Strip
     for (let i = 0; i < stripLeds; i++) {
         const x = rightStripX;
         const y = startY + stripYOffset + i * GRID_SIZE;
@@ -1233,7 +1563,6 @@ function handleAddLiLi() {
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...allNewLeds);
-    // Add as THREE separate circuits
     if (strip1_Wires.length > 0) componentState.wiring.push(strip1_Wires);
     if (circle_Wires.length > 0) componentState.wiring.push(circle_Wires);
     if (strip2_Wires.length > 0) componentState.wiring.push(strip2_Wires);
@@ -1248,40 +1577,27 @@ function handleAddLiLi() {
     updateLedCount();
 }
 
-// --- MODIFIED FUNCTION: handleAddHexagon (Reset to True Regular Hexagon) ---
 function handleAddHexagon() {
-    // The input defines the segments along one side
     const ledsPerSideInput = parseInt(document.getElementById('hexagon-leds-per-side').value) || 4;
     const SIDES = 6;
 
     if (ledsPerSideInput <= 1) { showToast('Invalid Input', 'LEDs per Side must be greater than 1.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
-    // --- GEOMETRY SETUP ---
     const numSegments = ledsPerSideInput - 1;
-    const s = numSegments * GRID_SIZE; // Side length (s = radius of circumcircle)
+    const s = numSegments * GRID_SIZE;
     const R = s;
-    const a = R * (Math.sqrt(3) / 2); // Apothem (half height)
-
-    // Bounding Box dimensions (for a flat-top hexagon)
+    const a = R * (Math.sqrt(3) / 2);
     const shapeWidth = 2 * R;
-    const shapeHeight = Math.round(2 * a / GRID_SIZE) * GRID_SIZE; // Snapped height
-
+    const shapeHeight = Math.round(2 * a / GRID_SIZE) * GRID_SIZE;
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
-
-    // Calculate the snapped center and bounding box start
     const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
     const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-    const baseStartX = finalCenterX - R;
-    const baseStartY = finalCenterY - (shapeHeight / 2);
-
-    // --- 1. DEFINE FLOATING-POINT VERTICES ---
     const getVertices = (centerX, centerY) => {
         const V = [];
-        const startAngle = Math.PI / 6; // Start at 30 degrees for flat top/bottom
+        const startAngle = Math.PI / 6;
         const angleStep = 2 * Math.PI / SIDES;
-
         for (let i = 0; i < SIDES; i++) {
             const angle = startAngle + i * angleStep;
             V.push({
@@ -1292,12 +1608,10 @@ function handleAddHexagon() {
         return V;
     };
 
-    // --- 2. NON-OVERLAP SEARCH ---
     const { foundSpot, startX, startY } = findEmptySpotForShape(
         viewCenter,
         shapeWidth,
         shapeHeight,
-        // Use snapped vertices for the overlap check
         (sx, sy) => getVertices(sx + R, sy + shapeHeight / 2).map(v => ({
             x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
             y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
@@ -1306,7 +1620,6 @@ function handleAddHexagon() {
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the hexagon.`, 'warning'); return; }
 
-    // --- 3. GENERATE PRECISE LED POINTS ---
     const finalVertices = getVertices(startX + R, startY + shapeHeight / 2);
     const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
 
@@ -1321,7 +1634,6 @@ function handleAddHexagon() {
         newWireIds.push(id);
     }
 
-    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
@@ -1335,7 +1647,6 @@ function handleAddHexagon() {
     updateLedCount();
 }
 
-// --- MODIFIED FUNCTION: handleAddTriangle (Uses getPointsForPolygon) ---
 function handleAddTriangle() {
     const ledsPerSide = parseInt(document.getElementById('triangle-leds-per-side').value) || 5;
 
@@ -1343,38 +1654,24 @@ function handleAddTriangle() {
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
-
-    // --- GEOMETRY SETUP ---
-    // The side length 's' in pixels is a multiple of GRID_SIZE
     const numSegments = ledsPerSide - 1;
     const s = numSegments * GRID_SIZE;
-    const h = s * 0.866025; // Height of an equilateral triangle
-
-    // Bounding Box dimensions 
+    const h = s * 0.866025;
     const shapeWidth = s;
-    const shapeHeight = Math.round(h / GRID_SIZE) * GRID_SIZE; // Ensure bounding box height is snapped
-
-    // Calculate the snapped center and bounding box start
+    const shapeHeight = Math.round(h / GRID_SIZE) * GRID_SIZE;
     const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
     const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-    const baseStartX = finalCenterX - (shapeWidth / 2);
-    const baseStartY = finalCenterY - (shapeHeight / 2);
-
-    // --- 1. DEFINE FLOATING-POINT VERTICES ---
-    // Vertices for a pointing-up equilateral triangle, anchored to the bounding box (sx, sy)
     const getVertices = (sx, sy) => [
         { x: sx, y: sy + shapeHeight },         // V1: Bottom-Left
         { x: sx + shapeWidth, y: sy + shapeHeight }, // V2: Bottom-Right
         { x: sx + shapeWidth / 2, y: sy }            // V3: Top
     ];
 
-    // --- 2. NON-OVERLAP SEARCH ---
     const { foundSpot, startX, startY } = findEmptySpotForShape(
         viewCenter,
         shapeWidth,
         shapeHeight,
-        // Use snapped vertices for the overlap check
         (sx, sy) => getVertices(sx, sy).map(v => ({
             x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
             y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
@@ -1383,10 +1680,7 @@ function handleAddTriangle() {
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the triangle.`, 'warning'); return; }
 
-    // --- 3. GENERATE PRECISE LED POINTS ---
     const finalVertices = getVertices(startX, startY);
-
-    // Use Bresenham's to trace the line between the 3 vertices
     const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
 
     const newLeds = [];
@@ -1400,7 +1694,6 @@ function handleAddTriangle() {
         newWireIds.push(id);
     }
 
-    // --- Final steps ---
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
@@ -1414,7 +1707,6 @@ function handleAddTriangle() {
     updateLedCount();
 }
 
-// --- MODIFIED FUNCTION: handleRotateSelected (Fixed 90° increments) ---
 function handleRotateSelected(angleDeg) {
     if (selectedLedIds.size === 0) return;
 
@@ -1435,25 +1727,16 @@ function handleRotateSelected(angleDeg) {
 
     componentState.leds.forEach(led => {
         if (led && selectedLedIds.has(led.id)) {
-            // Translate point to origin
             const x = led.x - center.centerX;
             const y = led.y - center.centerY;
-
             let xPrime, yPrime;
-
-            // Simplified 90-degree rotation matrix:
             if (angleDeg === 90) {
-                xPrime = -y; // x' = -y
-                yPrime = x;  // y' = x
-            } else { // angleDeg === -90
-                xPrime = y;  // x' = y
-                yPrime = -x; // y' = -x
+                xPrime = -y; yPrime = x;
+            } else {
+                xPrime = y; yPrime = -x;
             }
-
-            // Translate back and snap to nearest grid point
             led.x = Math.round((xPrime + center.centerX) / GRID_SIZE) * GRID_SIZE;
             led.y = Math.round((yPrime + center.centerY) / GRID_SIZE) * GRID_SIZE;
-            
             stateChanged = true;
         }
     });
@@ -1465,7 +1748,6 @@ function handleRotateSelected(angleDeg) {
     }
 }
 
-// --- NEW FUNCTION: handleScaleSelected ---
 function handleScaleSelected() {
     const factor = parseFloat(scaleFactorInput.value);
     if (isNaN(factor) || factor <= 0 || selectedLedIds.size === 0) {
@@ -1475,23 +1757,17 @@ function handleScaleSelected() {
 
     const center = getSelectionCenter();
     if (!center) return;
-    
+
     let stateChanged = false;
 
     componentState.leds.forEach(led => {
         if (led && selectedLedIds.has(led.id)) {
-            // Translate point to origin
             const x = led.x - center.centerX;
             const y = led.y - center.centerY;
-
-            // Scale
             const xPrime = x * factor;
             const yPrime = y * factor;
-
-            // Translate back and snap to grid
             led.x = Math.round((xPrime + center.centerX) / GRID_SIZE) * GRID_SIZE;
             led.y = Math.round((yPrime + center.centerY) / GRID_SIZE) * GRID_SIZE;
-            
             stateChanged = true;
         }
     });
@@ -1506,54 +1782,176 @@ function handleScaleSelected() {
 
 // --- Gallery Functions ---
 async function loadUserComponents() {
-    const user = auth.currentUser;
+    const user = auth.currentUser; // Still needed for owner/admin checks
     if (!galleryComponentList) { console.error("Gallery list element not found."); return; }
     galleryComponentList.innerHTML = '';
-    if (!user) { galleryComponentList.innerHTML = '<li class="list-group-item">Please sign in...</li>'; return; }
-    galleryComponentList.innerHTML = '<li class="list-group-item">Loading...</li>';
+
+    // Show spinner while loading
+    galleryComponentList.innerHTML = `
+        <div class="d-flex justify-content-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>`;
 
     try {
-        const q = query(collection(db, 'srgb-components'), where('ownerId', '==', user.uid), orderBy('lastUpdated', 'desc'));
+        // --- Query all components ---
+        const q = query(collection(db, 'srgb-components'), orderBy('lastUpdated', 'desc'));
         const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) { galleryComponentList.innerHTML = '<li class="list-group-item">No saved components.</li>'; return; }
 
-        galleryComponentList.innerHTML = '';
+        if (querySnapshot.empty) {
+            galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components found in the community gallery.</div>';
+            return;
+        }
+
+        galleryComponentList.innerHTML = ''; // Clear spinner
+
         querySnapshot.forEach((docSnap) => {
             const componentData = docSnap.data();
-            const listItem = document.createElement('button');
-            listItem.type = 'button'; listItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-            const nameSpan = document.createElement('span'); nameSpan.textContent = componentData.name || 'Untitled';
-            const dateSpan = document.createElement('small'); dateSpan.classList.add('text-muted');
-            dateSpan.textContent = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
-            listItem.appendChild(nameSpan); listItem.appendChild(dateSpan);
-            listItem.addEventListener('click', () => {
-                clearAutoSave();
-                Object.assign(componentState, componentData); // Load data
+            const componentId = docSnap.id;
 
-                // --- FORCE WIRING FORMAT CHECK ON LOAD ---
-                componentState.leds = componentState.leds || []; // Ensure leds array exists
-                if (Array.isArray(componentState.wiring) && componentState.wiring.length > 0 && !Array.isArray(componentState.wiring[0])) {
-                    console.warn("loadUserComponents: Converting loaded wiring from [] to [[]].");
-                    // Filter invalid IDs
-                    const validOldWiring = componentState.wiring.filter(id => id != null && componentState.leds.some(led => led && led.id === id));
-                    componentState.wiring = validOldWiring.length > 0 ? [validOldWiring] : [];
-                } else if (!Array.isArray(componentState.wiring)) {
-                    console.warn("loadUserComponents: Loaded wiring invalid, resetting."); componentState.wiring = [];
+            const doLoadComponent = () => {
+                if (!checkDirtyState()) return; // <-- Guard
+
+                // --- MODIFICATION: Manually add dbId *before* loading ---
+                componentData.dbId = componentId;
+                if (loadComponentState(componentData)) {
+                    currentComponentId = docSnap.id;
+                    // componentState.dbId = docSnap.id; // Already set by loadComponentState
+
+                    if (galleryOffcanvas) galleryOffcanvas.hide();
+                    showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
+                    // --- MODIFICATION: A loaded DB component is NOT dirty ---
+                    isDirty = false;
                 }
-                // --- END FORCE ---
+            };
 
-                currentComponentId = docSnap.id; componentState.dbId = docSnap.id;
-                updateUIFromState(); selectedLedIds.clear();
-                resetView(); drawCanvas();
-                if (galleryOffcanvas) galleryOffcanvas.hide();
-                showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
-            });
-            galleryComponentList.appendChild(listItem);
+            // --- Card Layout ---
+            const card = document.createElement('div');
+            card.className = 'card bg-body-secondary mb-3';
+
+            const ledCount = Array.isArray(componentData.leds) ? componentData.leds.length : 0;
+            const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
+            const ownerName = componentData.ownerName || 'Anonymous';
+            const componentName = componentData.name || 'Untitled';
+            const imageUrl = componentData.imageUrl;
+            const ownerId = componentData.ownerId; // <-- Get the ownerId
+
+            let imageHtml = `
+                <div class="col-md-4 d-flex align-items-center justify-content-center gallery-image-container" 
+                     data-component-id="${componentId}-img"
+                     style="background-color: #212529; min-height: 170px; color: #6c757d;">
+                    <svg viewBox="0 0 32 32" fill="currentColor" width="64" height="64">
+                        <circle cx="26" cy="16" r="3" />
+                        <circle cx="23" cy="23" r="3" />
+                        <circle cx="16" cy="26" r="3" />
+                        <circle cx="9" cy="23" r="3" />
+                        <circle cx="6" cy="16" r="3" />
+                        <circle cx="9" cy="9" r="3" />
+                        <circle cx="16" cy="6" r="3" />
+                        <circle cx="23" cy="9" r="3" />
+                    </svg>
+                </div>`;
+
+            if (imageUrl) {
+                imageHtml = `
+                    <div class="col-md-4 d-flex align-items-center justify-content-center gallery-image-container" 
+                         data-component-id="${componentId}-img"
+                         style="background-color: #212529; padding: 0.5rem;">
+                        <img src="${imageUrl}" class="img-fluid rounded" alt="${componentName} preview" 
+                             style="max-height: 170px; object-fit: contain;">
+                    </div>`;
+            }
+
+            const bodyHtml = `
+                <div class="col-md-8">
+                    <div class="card-body d-flex flex-column h-100">
+                        <h5 class="card-title">${componentName}</h5>
+                        <small class="card-subtitle text-muted mb-2">
+                            By: ${ownerName} on ${lastUpdated}
+                        </small>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
+                            <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
+                            <span class="badge bg-secondary">${ledCount} LEDs</span>
+                        </div>
+
+                        <div class="flex-grow-1"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-primary btn-sm" data-component-id="${componentId}-load">
+                                <i class="bi bi-folder2-open me-1"></i> Load
+                            </button>
+                            
+                            <button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            card.innerHTML = `<div class="row g-0">${imageHtml}${bodyHtml}</div>`;
+            galleryComponentList.appendChild(card);
+
+            // --- Attach Listeners ---
+            const loadButton = card.querySelector(`[data-component-id="${componentId}-load"]`);
+            const imageContainer = card.querySelector(`[data-component-id="${componentId}-img"]`);
+
+            if (loadButton) {
+                loadButton.addEventListener('click', doLoadComponent); // Use helper
+            }
+
+            if (imageContainer) {
+                imageContainer.addEventListener('click', doLoadComponent); // Use same helper
+            }
+
+            const deleteButton = card.querySelector(`[data-component-id="${componentId}-delete"]`);
+            if (deleteButton) {
+                if (user && (user.uid === ownerId || user.uid === ADMIN_UID)) {
+                    deleteButton.addEventListener('click', () => {
+                        handleDeleteComponent(componentId, componentName, imageUrl, ownerId);
+                    });
+                } else {
+                    deleteButton.remove();
+                }
+            }
+
         });
     } catch (error) {
         console.error("Error loading user components:", error);
-        galleryComponentList.innerHTML = '<li class="list-group-item text-danger">Error loading components.</li>';
+        galleryComponentList.innerHTML = '<div class="alert alert-danger">Error loading components.</div>';
         showToast('Load Error', 'Could not fetch components.', 'danger');
+    }
+}
+
+async function handleDeleteComponent(docId, componentName, imageUrl, ownerId) {
+    const user = auth.currentUser;
+    if (!user) return; // Should not happen if button is visible
+
+    // Confirm with the user
+    if (!confirm(`Are you sure you want to delete "${componentName || 'Untitled'}"? This cannot be undone.`)) {
+        return;
+    }
+
+    showToast('Deleting...', `Deleting ${componentName}...`, 'info');
+
+    try {
+        // 1. Delete the Firestore document (and the Base64 data inside it)
+        const docRef = doc(db, 'srgb-components', docId);
+        await deleteDoc(docRef);
+
+        // 2. (No-op) No need to delete from Storage
+
+        showToast('Success', `Successfully deleted "${componentName}".`, 'success');
+
+        // 3. Refresh the gallery list
+        loadUserComponents();
+
+    } catch (error) {
+        console.error("Error deleting component:", error);
+        showToast('Error', `Failed to delete component: ${error.message}`, 'danger');
     }
 }
 
@@ -1598,6 +1996,9 @@ function getSelectionCenter() {
  * Determines the set of integer coordinates that best approximates a straight line
  * between two given integer points (x0, y0) and (x1, y1).
  * @param {number} x0 - Start X (must be an integer, rounded prior to calling).
+ *img.src = event.target.result;
+                }
+                reader.onerror = () => {
  * @param {number} y0 - Start Y (must be an integer, rounded prior to calling).
  * @param {number} x1 - End X (must be an integer, rounded prior to calling).
  * @param {number} y1 - End Y (must be an integer, rounded prior to calling).
@@ -1688,7 +2089,6 @@ function getPointsForPolygon(vertices, gridSize) {
 // ---
 document.addEventListener('DOMContentLoaded', () => {
     initializeTooltips();
-    setupThemeSwitcher();
 
     if (!ctx) {
         console.error("Failed to get 2D context for canvas. Aborting initialization.");
@@ -1701,6 +2101,8 @@ document.addEventListener('DOMContentLoaded', () => {
         getCurrentTool: () => currentTool,
         updateLedCount: updateLedCount
     };
+
+    setupThemeSwitcher(drawCanvas);
     setupCanvas(appState); // Initialize canvas engine FIRST
 
     // Setup all other app listeners
@@ -1714,4 +2116,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial component (tries autosave first)
     handleNewComponent(false);
 });
-
