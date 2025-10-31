@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRGB Custom Component Creator</title>
-    <meta property="og:title" content="SRGB Custom Component Creator">
+    <title>SRGB Component Builder</title>
+    <meta property="og:title" content="SRGB Component Builder">
     <meta property="og:description" content="A tool for creating custom LED component layouts for SignalRGB.">
     <meta property="og:type" content="website">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,11 +19,10 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="./">
-                <img src="../logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;"> SRGB Custom Component Creator
+                <img src="../logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;"> SRGB Component Builder
             </a>
 
             <div class="ms-auto d-flex align-items-center">
-
                 <div class="btn-group me-3" role="group" aria-label="Project management actions">
                     <button class="btn btn-primary" id="new-component-btn" data-bs-toggle="tooltip" title="New Component"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
                     <button class="btn btn-primary" id="save-component-btn" data-bs-toggle="tooltip" title="Save current component to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
@@ -34,6 +33,9 @@
 
                 <div class="btn-group me-3" role="group" aria-label="Community">
                     <button class="btn btn-primary" id="browse-gallery-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Browse the Community Component Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</button>
+                </div>
+                <div class="btn-group me-3" role="group" aria-label="Editor">
+                    <a href="../" class="btn btn-primary" title="Return to SRGB Effect Builder"><i class="bi bi-view-list me-1"></i> Return to Editor</a>
                 </div>
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
@@ -50,17 +52,6 @@
                 <div id="auth-notification-block" class="d-flex align-items-center">
                     <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
                     <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-bell"></i>
-                                <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
-                                    0
-                                    <span class="visually-hidden">new notifications</span>
-                                </span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
-                            </ul>
-                        </div>
                         <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
                             <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
                             <span id="user-display"></span>
@@ -290,7 +281,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Welcome to the SRGB Custom Component Creator. Here are the basics to get you started.</p>
+                        <p>Welcome to the SRGB Component Builder. Here are the basics to get you started.</p>
 
                         <div class="accordion" id="help-accordion">
 
@@ -420,11 +411,11 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="aboutModalLabel">About SRGB Component Creator</h5>
+                        <h5 class="modal-title" id="aboutModalLabel">About SRGB Component Builder</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p><strong>SRGB Component Creator</strong> is a web-based visual tool designed to simplify the creation of custom component <code>.json</code> files for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
+                        <p><strong>SRGB Component Builder</strong> is a web-based visual tool designed to simplify the creation of custom component <code>.json</code> files for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
                         <p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, grid-based interface for designers and enthusiasts to map out LEDs for their custom devices.</p>
                         <ul class="list-group">
                             <li class="list-group-item">
