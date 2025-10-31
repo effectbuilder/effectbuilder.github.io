@@ -27,7 +27,6 @@
                 <div class="btn-group me-3" role="group" aria-label="Project management actions">
                     <button class="btn btn-primary" id="new-component-btn" data-bs-toggle="tooltip" title="New Component"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
                     <button class="btn btn-primary" id="save-component-btn" data-bs-toggle="tooltip" title="Save current component to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
-                    <button class="btn btn-primary" id="load-component-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved components" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-secondary" id="share-component-btn" data-bs-toggle="tooltip" title="Get a shareable link to this component" disabled><i class="bi bi-share me-1"></i> Share</button>
                     <button class="btn btn-secondary" id="import-json-btn" data-bs-toggle="tooltip" title="Import Component from JSON file"> <i class="bi bi-upload me-1"></i> Import JSON</button>
                     <button class="btn btn-secondary" id="export-component-btn" data-bs-toggle="modal" data-bs-target="#export-component-modal" title="Download Component JSON file"> <i class="bi bi-download me-1"></i> Export JSON</button>
@@ -401,7 +400,6 @@
                                         <ul class="list-group">
                                             <li class="list-group-item"><strong>New:</strong> Clears the canvas. It will ask for confirmation if you have unsaved changes.</li>
                                             <li class="list-group-item"><strong>Save:</strong> Saves your current component to the cloud under your account. If you loaded a community component, this will "fork" it and save a new copy for you.</li>
-                                            <li class="list-group-item"><strong>Open:</strong> Opens the Community Gallery, where you can load your own components or those made by others.</li>
                                             <li class="list-group-item"><strong>Import JSON:</strong> Lets you load a component from a `.json` file from your computer.</li>
                                             <li class="list-group-item"><strong>Export JSON:</strong> Generates a `.json` file for use in SignalRGB. <strong>All LEDs must be wired</strong> for the export to be valid.</li>
                                         </ul>
@@ -418,7 +416,40 @@
             </div>
         </div>
 
-        <div class="modal fade" id="about-modal" tabindex="-1">...</div>
+        <div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="aboutModalLabel">About SRGB Component Creator</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>SRGB Component Creator</strong> is a web-based visual tool designed to simplify the creation of custom component <code>.json</code> files for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
+                        <p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, grid-based interface for designers and enthusiasts to map out LEDs for their custom devices.</p>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Version:</strong> <span id="version-display">1.0</span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Project Home:</strong> <a href="https://github.com/joseamirandavelez" target="_blank">View on GitHub</a>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Terms & Privacy:</strong>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> |
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>
+                            </li>
+                        </ul>
+                        <h6 class="mt-4">Credits & Technology</h6>
+                        <p>This tool is built using <a href="https://firebase.google.com/" target="_blank">Firebase</a> for cloud storage and authentication, and <a href="https://getbootstrap.com/" target="_blank">Bootstrap</a> for the user interface.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="text-muted small me-auto">© 2025 José A. Miranda Vélez. All Rights Reserved.</div>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="terms-modal" tabindex="-1">...</div>
         <div class="modal fade" id="privacy-policy-modal" tabindex="-1">...</div>
         <div class="modal fade" id="accept-terms-modal" tabindex="-1">...</div>
