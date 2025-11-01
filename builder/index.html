@@ -118,7 +118,7 @@
                         <div class="mb-2">
                             <label for="component-image" class="form-label form-label-sm">Device Image (Optional)</label>
                             <input type="file" id="component-image" class="form-control form-control-sm" accept="image/png, image/webp">
-                            <div class="form-text mb-1">Max 800x400 recommended.</div>
+                            <div class="form-text mb-1">Max 400x400 pixels.</div>
 
                             <div id="image-paste-zone" class="p-3 text-center text-muted border border-dashed rounded-3" style="cursor: copy; min-height: 100px; display: flex; align-items: center; justify-content: center; background-color: var(--bs-body-bg);" contenteditable="true" title="Click here and press Ctrl+V to paste an image">
 
@@ -129,6 +129,9 @@
                                     <br>
                                     Click to paste image
                                 </span>
+                            </div>
+                            <div class="form-text mb-1">
+                                Click on image and use <span class="badge bg-secondary">Ctrl</span> + <span class="badge bg-secondary">V</span> to paste, or press <span class="badge bg-secondary">Delete</span> to remove.
                             </div>
                         </div>
                         <hr>
