@@ -821,6 +821,28 @@ function setupPropertyListeners() {
             }
         });
 
+        // --- 4. NEW: Delete key listener for image paste zone ---
+        imagePasteZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault(); // Stop browser from trying to delete content
+
+                // Check if there is an image to delete
+                if (componentState && componentState.imageUrl) {
+                    console.log('Image delete key pressed.');
+                    componentState.imageUrl = null;
+                    componentState.imageWidth = 500; // Reset to default
+                    componentState.imageHeight = 300; // Reset to default
+
+                    imagePreview.src = '#';
+                    imagePreview.style.display = 'none';
+                    if (compImageInput) compImageInput.value = ''; // Clear the file input
+
+                    autoSaveState(); // Save the cleared state
+                    showToast('Image Removed', 'The device image has been cleared.', 'info');
+                }
+            }
+        });
+
     } else {
         console.warn("Image input, preview, or paste zone element not found.");
     }
