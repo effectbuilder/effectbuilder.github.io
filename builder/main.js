@@ -6,7 +6,7 @@ import {
     doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
     query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue
 } from './firebase.js';
-import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount } from './canvas.js';
+import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
 // --- GLOBAL SHARED STATE ---
 let componentState = createDefaultComponentState(); // Initialize immediately
@@ -27,6 +27,17 @@ let allComponentsLoaded = false; // <-- ADDED FOR LAZY LOADING
 // --- APP-LEVEL STATE ---
 const AUTOSAVE_KEY = 'srgbComponentCreator_autoSave';
 const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
+
+// --- NEW IMAGE GUIDE STATE ---
+let imageGuideState = {
+    // Current position and scale relative to canvas (before viewTransform)
+    x: 0, y: 0, scale: 1, rotation: 0,
+    // Whether the guide image can be moved/scaled/rotated
+    isLocked: true,
+    // Whether the guide image is currently visible on the canvas
+    isVisible: true
+};
+// --- END NEW IMAGE GUIDE STATE ---
 
 // --- DOM Elements ---
 const loginBtn = document.getElementById('login-btn');
@@ -105,9 +116,55 @@ const confirmScaleBtn = document.getElementById('confirm-scale-btn');
 const scaleFactorInput = document.getElementById('scale-factor-input');
 let scaleModal = null;
 
+// --- NEW IMAGE GUIDE DOM ELEMENTS ---
+const imageUploadInput = document.getElementById('image-upload-input');
+const toolImageBtn = document.getElementById('tool-image-btn');
+const toggleImageLockBtn = document.getElementById('toggle-image-lock-btn');
+const toggleImageVisibleBtn = document.getElementById('toggle-image-visible-btn');
+const imageUploadTriggerBtn = document.getElementById('image-upload-trigger-btn');
+const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
+// --- END NEW IMAGE GUIDE DOM ELEMENTS ---
+
+const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side (e.g., 1500px)
+
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
 // ---
+
+function handleClearImageGuide() {
+    if (!componentState.guideImageUrl) {
+        showToast('Info', 'No image guide is currently loaded.', 'info');
+        return;
+    }
+
+    if (!confirm("Are you sure you want to remove the image guide?")) {
+        return;
+    }
+
+    // 1. Clear the image data in component state
+    componentState.guideImageUrl = null;
+    componentState.guideImageWidth = 500;
+    componentState.guideImageHeight = 300;
+
+    // 2. Reset the image guide's transformation state
+    imageGuideState.x = 0;
+    imageGuideState.y = 0;
+    imageGuideState.scale = 1;
+    imageGuideState.rotation = 0;
+    imageGuideState.isLocked = true;
+    imageGuideState.isVisible = true;
+
+    // 3. Inform the canvas object to clear its source
+    if (window.setImageGuideSrc) {
+        window.setImageGuideSrc(null);
+    }
+    
+    // 4. Update UI, Redraw, and Save
+    updateImageGuideUI();
+    window.drawCanvas();
+    autoSaveState(); // Persist the cleared state to localStorage
+    showToast('Image Guide', 'The image guide has been removed.', 'success');
+}
 
 // --- Local Storage Functions ---
 function autoSaveState() {
@@ -115,11 +172,32 @@ function autoSaveState() {
     console.log('Attempting to autosave state...');
     if (componentState && Array.isArray(componentState.leds) && Array.isArray(componentState.wiring)) {
         try {
-            const stateString = JSON.stringify(componentState);
+            // Create a temporary object for saving to local storage
+            const stateToSave = {
+                ...componentState,
+                // --- EXCLUDE LARGE DEVICE IMAGE (componentState.imageUrl) ---
+                imageUrl: null,
+                // --- INCLUDE RESIZED GUIDE IMAGE (componentState.guideImageUrl) ---
+                guideImageUrl: componentState.guideImageUrl || null, // <-- CRITICAL: Now included
+                // --- Re-include Guide State Metadata (which is small) ---
+                imageGuideX: imageGuideState.x,
+                imageGuideY: imageGuideState.y,
+                imageGuideScale: imageGuideState.scale,
+                imageGuideRotation: imageGuideState.rotation,
+                imageGuideIsLocked: imageGuideState.isLocked,
+                imageGuideIsVisible: imageGuideState.isVisible,
+                // --- END MODIFICATION ---
+            };
+
+            const stateString = JSON.stringify(stateToSave);
             localStorage.setItem(AUTOSAVE_KEY, stateString);
             console.log('Autosave successful. Saved LEDs:', componentState.leds.length, 'Circuits:', componentState.wiring.length);
         } catch (e) {
             console.error('Error stringifying componentState for autosave:', e);
+            if (e.name === 'QuotaExceededError') {
+                // Even after resizing, if quota is low, show a warning but continue.
+                showToast('Autosave Failed', 'Storage quota exceeded. Image may be lost on refresh.', 'danger');
+            }
         }
     } else {
         console.warn('Skipping autosave, componentState seems invalid:', componentState);
@@ -144,7 +222,7 @@ function clearAutoSave() {
 }
 
 // ---
-// --- NEW HELPER FUNCTION: loadComponentState ---
+// --- NEW HELPER FUNCTION: loadComponentState (MODIFIED) ---
 // ---
 /**
  * Central function to load any valid component state object into the app.
@@ -162,6 +240,15 @@ function loadComponentState(stateToLoad) {
     clearAutoSave();
     Object.assign(componentState, createDefaultComponentState()); // Reset to default first
     Object.assign(componentState, stateToLoad); // Then apply new state
+
+    // --- NEW: Load imageGuideState from stateToLoad or use defaults ---
+    imageGuideState.x = stateToLoad.imageGuideX ?? 0;
+    imageGuideState.y = stateToLoad.imageGuideY ?? 0;
+    imageGuideState.scale = stateToLoad.imageGuideScale ?? 1;
+    imageGuideState.rotation = stateToLoad.imageGuideRotation ?? 0;
+    imageGuideState.isLocked = stateToLoad.imageGuideIsLocked ?? true;
+    imageGuideState.isVisible = stateToLoad.imageGuideIsVisible ?? true;
+    // --- END NEW ---
 
     // --- VALIDATE AND FIX WIRING ---
     componentState.leds = componentState.leds || [];
@@ -184,6 +271,20 @@ function loadComponentState(stateToLoad) {
     componentState.wiring = appWiring;
     // --- END WIRING FIX ---
 
+    componentState.guideImageUrl = stateToLoad.guideImageUrl || null;
+    if (componentState.guideImageUrl) {
+        // Use a slight deferral (setTimeout) to ensure all canvas modules are registered globally
+        // before attempting to set the image source.
+        setTimeout(() => {
+            if (window.setImageGuideSrc) {
+                // This re-sends the saved URL to the canvas Image object, triggering its reload.
+                window.setImageGuideSrc(componentState.guideImageUrl);
+            } else {
+                console.warn("Deferred image load failed: window.setImageGuideSrc not yet defined.");
+            }
+        }, 50); // 50ms delay
+    }
+
     currentComponentId = stateToLoad.dbId || null; // Reset DB id if it's not in the new state
 
     updateUIFromState();
@@ -204,7 +305,10 @@ function loadComponentState(stateToLoad) {
         if (compImageInput) compImageInput.value = ''; // Clear file input
     }
 
-    // --- MODIFICATION: Removed isDirty = false ---
+    // --- NEW: Update the Image Guide UI on load ---
+    updateImageGuideUI();
+    // --- END NEW ---
+
     // The *caller* is responsible for setting the dirty state.
     return true;
 }
@@ -279,6 +383,7 @@ function setupProjectListeners() {
     }
 }
 
+// MODIFIED: Added image guide default properties
 function createDefaultComponentState() {
     return {
         name: "My Custom Component",
@@ -290,14 +395,29 @@ function createDefaultComponentState() {
         imageUrl: null,
         imageWidth: 500,
         imageHeight: 300,
+        // --- NEW Guide Image Properties ---
+        guideImageUrl: null,
+        guideImageWidth: 500,
+        guideImageHeight: 300
+        // --- END NEW ---
     };
 }
 
 function handleNewComponent(showNotification = true) {
+    // Check if the current canvas work is dirty and requires a confirmation dialog
     if (!checkDirtyState()) return;
 
     let stateToLoad = createDefaultComponentState();
     console.log('handleNewComponent called. showNotification:', showNotification);
+
+    // --- CRITICAL MODIFICATION: Preserve Image Guide URL and Dimensions ---
+    // Extract the guide image details from the current component state *before*
+    // checking autosave or resetting to defaults.
+    let preservedGuideUrl = componentState.guideImageUrl;
+    let preservedGuideWidth = componentState.guideImageWidth;
+    let preservedGuideHeight = componentState.guideImageHeight;
+    // --- END CRITICAL MODIFICATION ---
+
 
     if (!showNotification) {
         const savedState = localStorage.getItem(AUTOSAVE_KEY);
@@ -308,25 +428,33 @@ function handleNewComponent(showNotification = true) {
                 if (parsedState && typeof parsedState === 'object' && Array.isArray(parsedState.leds)) {
                     if (loadComponentState(parsedState)) {
                         showToast('Welcome Back!', 'Your unsaved work has been restored.', 'info');
-                        // --- MODIFICATION: Set dirty flag for autosave ---
                         isDirty = true;
-                    } else {
-                        loadComponentState(createDefaultComponentState()); // Fallback
-                        isDirty = false; // Fresh state is not dirty
+                        return; // Successfully restored and exited
                     }
-                    return; // We are done
-                } else {
-                    console.warn("Autosave data was invalid, creating new project.");
-                    clearAutoSave();
                 }
-            } catch (e) { console.error("Failed to parse autosave data:", e); clearAutoSave(); }
-        } else { console.log('No autosave data found in localStorage.'); }
+            } catch (e) {
+                console.error("Failed to parse autosave data:", e);
+                clearAutoSave();
+            }
+        } else {
+            console.log('No autosave data found in localStorage.');
+        }
     }
 
-    // Standard "New" click or failed autosave
+    // --- Standard "New" click or failed autosave fallback path ---
     clearAutoSave();
-    loadComponentState(createDefaultComponentState()); // Load a fresh state
-    isDirty = false; // --- MODIFICATION: A new project is not dirty ---
+
+    // If the image was preserved from the previous session's memory, inject it back
+    // into the default state that is about to be loaded.
+    if (preservedGuideUrl) {
+        stateToLoad.guideImageUrl = preservedGuideUrl;
+        stateToLoad.guideImageWidth = preservedGuideWidth;
+        stateToLoad.guideImageHeight = preservedGuideHeight;
+    }
+
+    loadComponentState(stateToLoad); // Will load the default state but keep the image guide URL/dims
+
+    isDirty = false;
     if (showNotification) {
         showToast('New Project', 'Cleared the canvas and properties.', 'info');
     }
@@ -420,7 +548,7 @@ function handleImportJson(e) {
 }
 
 
-// [File: main.js] - REVISED FUNCTION
+// [File: main.js] - REVISED FUNCTION (MODIFIED to save guide state)
 
 async function handleSaveComponent() {
     const user = auth.currentUser;
@@ -471,8 +599,17 @@ async function handleSaveComponent() {
         ownerId: user.uid,
         ownerName: user.displayName,
         lastUpdated: serverTimestamp(),
-        // We are now explicitly saving the imageUrl (which is base64)
-        imageUrl: componentState.imageUrl || null
+        // We are now explicitly saving the device imageUrl (which is base64)
+        imageUrl: componentState.imageUrl || null,
+        // --- MODIFIED: Save image guide state to Firebase (using the resized image) ---
+        guideImageUrl: componentState.guideImageUrl || null, // Stored to Firebase for cloud backup/sharing
+        imageGuideX: imageGuideState.x,
+        imageGuideY: imageGuideState.y,
+        imageGuideScale: imageGuideState.scale,
+        imageGuideRotation: imageGuideState.rotation,
+        imageGuideIsLocked: imageGuideState.isLocked,
+        imageGuideIsVisible: imageGuideState.isVisible,
+        // --- END MODIFIED ---
     };
     delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
@@ -721,6 +858,150 @@ function handleImageFile(file) {
         reader.readAsDataURL(file);
     }
 }
+
+// --- NEW IMAGE GUIDE FUNCTIONS ---
+
+/**
+ * Triggers the hidden file input for the image guide.
+ */
+function handleImageUploadTrigger() {
+    imageUploadInput.click();
+}
+
+/**
+ * Handles the selected image file for the canvas guide.
+ * @param {Event} e - The file input change event.
+ */
+function handleImageGuideFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const img = new Image();
+        img.onload = () => {
+            let width = img.naturalWidth;
+            let height = img.naturalHeight;
+
+            // 1. Calculate new dimensions for resizing
+            if (width > MAX_GUIDE_IMAGE_DIMENSION || height > MAX_GUIDE_IMAGE_DIMENSION) {
+                const ratio = MAX_GUIDE_IMAGE_DIMENSION / Math.max(width, height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+                console.log(`Image Guide resized to: ${width}x${height}`);
+            }
+
+            // 2. Draw resized image to canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 3. Get the new image as a WebP data URL
+            const resizedDataUrl = canvas.toDataURL('image/webp', 0.85); // 85% quality
+
+            // 4. Update component state and image guide state
+            componentState.guideImageUrl = resizedDataUrl;
+            componentState.guideImageWidth = width;
+            componentState.guideImageHeight = height;
+
+            // Reset the guide's transform to be centered
+            imageGuideState.x = 0;
+            imageGuideState.y = 0;
+            imageGuideState.scale = 1;
+            imageGuideState.rotation = 0;
+            imageGuideState.isLocked = false; // Unlock it immediately for positioning
+            imageGuideState.isVisible = true;
+
+            // 5. Apply new source and trigger save/redraw
+            if (window.setImageGuideSrc) {
+                window.setImageGuideSrc(componentState.guideImageUrl);
+            } else {
+                window.drawCanvas(); // Fallback redraw
+            }
+            updateImageGuideUI();
+            autoSaveState(); // CRITICAL: Save the resized image to localStorage
+            showToast('Image Guide Loaded', `Image resized to ${width}x${height} and loaded.`, 'success');
+        };
+        img.onerror = () => {
+            showToast('Image Load Error', 'Could not load guide image file.', 'danger');
+        };
+        img.src = event.target.result;
+    };
+    reader.onerror = () => {
+        showToast('File Read Error', 'Could not read image file for guide.', 'danger');
+    };
+    reader.readAsDataURL(file);
+
+    // Reset the file input to allow loading the same file again
+    e.target.value = null;
+}
+
+/**
+ * Updates the Image Guide toolbar buttons based on the current state.
+ * Needs to be exported/available globally for canvas.js right-click events.
+ */
+function updateImageGuideUI() {
+    if (!imageGuideState || !toggleImageLockBtn || !toggleImageVisibleBtn) return;
+    const isImageLoaded = !!componentState.guideImageUrl;
+
+    toggleImageLockBtn.disabled = !isImageLoaded;
+    toggleImageVisibleBtn.disabled = !isImageLoaded;
+
+    if (!isImageLoaded) {
+        toggleImageLockBtn.innerHTML = '<i class="bi bi-unlock-fill"></i>';
+        toggleImageLockBtn.title = 'Unlock Image (L)';
+        toggleImageVisibleBtn.innerHTML = '<i class="bi bi-eye-slash-fill"></i>';
+        toggleImageVisibleBtn.title = 'Hide Image (H)';
+        return;
+    }
+
+    // Update Lock Button
+    if (imageGuideState.isLocked) {
+        toggleImageLockBtn.innerHTML = '<i class="bi bi-lock-fill"></i>';
+        toggleImageLockBtn.title = 'Unlock Image (L)';
+    } else {
+        toggleImageLockBtn.innerHTML = '<i class="bi bi-unlock-fill"></i>';
+        toggleImageLockBtn.title = 'Lock Image (L)';
+    }
+
+    // Update Visibility Button
+    if (imageGuideState.isVisible) {
+        toggleImageVisibleBtn.innerHTML = '<i class="bi bi-eye-fill"></i>';
+        toggleImageVisibleBtn.title = 'Hide Image (H)';
+    } else {
+        toggleImageVisibleBtn.innerHTML = '<i class="bi bi-eye-slash-fill"></i>';
+        toggleImageVisibleBtn.title = 'Show Image (H)';
+    }
+}
+window.updateImageGuideUI = updateImageGuideUI;
+
+/**
+ * Toggles the Image Guide lock state.
+ */
+function toggleImageLock() {
+    if (!componentState.guideImageUrl) return;
+    imageGuideState.isLocked = !imageGuideState.isLocked;
+    updateImageGuideUI();
+    window.setAppCursor(); // Update cursor based on new lock state
+    autoSaveState();
+    showToast('Image Guide', imageGuideState.isLocked ? 'Image Guide Locked' : 'Image Guide Unlocked', 'info');
+}
+
+/**
+ * Toggles the Image Guide visibility.
+ */
+function toggleImageVisibility() {
+    if (!componentState.guideImageUrl) return;
+    imageGuideState.isVisible = !imageGuideState.isVisible;
+    updateImageGuideUI();
+    window.drawCanvas(); // Redraw immediately
+    autoSaveState();
+    showToast('Image Guide', imageGuideState.isVisible ? 'Image Guide Visible' : 'Image Guide Hidden', 'info');
+}
+
+// --- END NEW IMAGE GUIDE FUNCTIONS ---
 
 // --- UI & Tool Listeners ---
 function setupPropertyListeners() {
@@ -1001,6 +1282,11 @@ function findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, positionGene
 
 function setupToolbarListeners() {
     document.getElementById('tool-select-btn').addEventListener('click', () => setTool('select'));
+    // --- NEW IMAGE GUIDE TOOL LISTENER ---
+    if (toolImageBtn) {
+        toolImageBtn.addEventListener('click', () => setTool('image'));
+    } else { console.warn("Image Tool button not found."); }
+    // --- END NEW ---
     document.getElementById('tool-place-led-btn').addEventListener('click', () => setTool('place-led'));
     document.getElementById('tool-wiring-btn').addEventListener('click', () => setTool('wiring'));
     document.getElementById('zoom-in-btn').addEventListener('click', () => zoomAtPoint(canvas.width / 2, canvas.height / 2, 1.2));
@@ -1035,8 +1321,28 @@ function setupToolbarListeners() {
         });
         confirmScaleBtn.addEventListener('click', handleScaleSelected);
     } else { console.warn("Scale buttons not found."); }
+
+    if (clearImageGuideBtn) {
+        clearImageGuideBtn.addEventListener('click', handleClearImageGuide);
+    } else { console.warn("Clear Image Guide button not found."); }
+
+    // --- NEW IMAGE GUIDE LISTENERS ---
+    if (imageUploadTriggerBtn && imageUploadInput) {
+        imageUploadTriggerBtn.addEventListener('click', handleImageUploadTrigger);
+        imageUploadInput.addEventListener('change', handleImageGuideFile);
+    } else { console.warn("Image Upload buttons not found."); }
+
+    if (toggleImageLockBtn) {
+        toggleImageLockBtn.addEventListener('click', toggleImageLock);
+    } else { console.warn("Image Lock button not found."); }
+
+    if (toggleImageVisibleBtn) {
+        toggleImageVisibleBtn.addEventListener('click', toggleImageVisibility);
+    } else { console.warn("Image Visibility button not found."); }
+    // --- END NEW IMAGE GUIDE LISTENERS ---
 }
 
+// MODIFIED: Added 'image' tool logic
 function setTool(toolName) {
     // Clear any pending connection from 'wiring' or 'place-led' tools
     clearPendingConnection();
@@ -1054,20 +1360,35 @@ function setTool(toolName) {
     document.querySelectorAll('#toolbar .btn-group[role="group"] .btn').forEach(btn => btn.classList.remove('active'));
     const toolBtn = document.getElementById(`tool-${toolName}-btn`);
     if (toolBtn) toolBtn.classList.add('active');
-    if (toolName !== 'select') selectedLedIds.clear();
+
+    // Clear LED selection if not in select/image mode
+    if (toolName !== 'select' && toolName !== 'image') selectedLedIds.clear();
+
     setAppCursor();
     drawCanvas();
 }
 window.setAppTool = setTool;
 
+// MODIFIED: Added 'image' tool cursor logic
 function setAppCursor() {
     if (!canvas) return;
     if (currentTool === 'wiring') { canvas.style.cursor = 'crosshair'; }
     else if (currentTool === 'place-led') { canvas.style.cursor = 'crosshair'; }
+    // --- NEW: Image Tool Cursor ---
+    else if (currentTool === 'image') {
+        if (!componentState.guideImageUrl || imageGuideState.isLocked || !imageGuideState.isVisible) {
+            canvas.style.cursor = 'default';
+        } else {
+            // Let mousemove handle the specific handle cursor change
+            canvas.style.cursor = 'default';
+        }
+    }
+    // --- END NEW ---
     else { canvas.style.cursor = 'default'; }
 }
 window.setAppCursor = setAppCursor;
 
+// MODIFIED: Added 'image', 'L', and 'H' shortcuts
 function setupKeyboardListeners() {
     window.addEventListener('keydown', (e) => {
         if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
@@ -1089,6 +1410,12 @@ function setupKeyboardListeners() {
             case 'V':
                 setTool('select');
                 break;
+            // --- NEW: Image Tool Shortcut ---
+            case 'i':
+            case 'I':
+                setTool('image');
+                break;
+            // --- END NEW ---
             case 'p':
             case 'P':
                 setTool('place-led');
@@ -1147,6 +1474,17 @@ function setupKeyboardListeners() {
                     updateLedCount(); // Moved this inside the 'if'
                 }
                 break;
+
+            // --- NEW: Image Guide Shortcuts ---
+            case 'l':
+            case 'L':
+                toggleImageLock();
+                break;
+            case 'h':
+            case 'H':
+                toggleImageVisibility();
+                break;
+            // --- END NEW ---
 
             default:
                 // If no shortcut was matched, don't prevent default
@@ -2303,9 +2641,6 @@ function getSelectionCenter() {
  * Determines the set of integer coordinates that best approximates a straight line
  * between two given integer points (x0, y0) and (x1, y1).
  * @param {number} x0 - Start X (must be an integer, rounded prior to calling).
- *img.src = event.target.result;
-                }
-                reader.onerror = () => {
  * @param {number} y0 - Start Y (must be an integer, rounded prior to calling).
  * @param {number} x1 - End X (must be an integer, rounded prior to calling).
  * @param {number} y1 - End Y (must be an integer, rounded prior to calling).
@@ -2406,7 +2741,10 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas: canvas, ctx: ctx, componentState: componentState, viewTransform: viewTransform,
         selectedLedIds: selectedLedIds, rightPanelTop: rightPanelTop, autoSave: autoSaveState,
         getCurrentTool: () => currentTool,
-        updateLedCount: updateLedCount
+        updateLedCount: updateLedCount,
+        // --- NEW: Export new state variables to canvas.js ---
+        imageGuideState: imageGuideState
+        // --- END NEW ---
     };
 
     setupThemeSwitcher(drawCanvas);
@@ -2423,4 +2761,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial component (tries autosave first)
     handleNewComponent(false);
 });
-
