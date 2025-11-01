@@ -194,3 +194,10 @@
 #image-paste-zone > *:not(#image-preview):not(#image-paste-placeholder) {
     display: none !important;
 }
+
+/* --- Drag and Drop Feedback --- */
+#image-paste-zone.drag-over {
+    border-color: var(--bs-primary) !important;
+    border-width: 2px !important;
+    background-color: var(--bs-primary-bg-subtle) !important;
+}
