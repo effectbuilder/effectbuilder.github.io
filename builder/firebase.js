@@ -1,10 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-// ---
-// --- THIS IS THE MISSING IMPORT ---
-// ---
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, FieldValue, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
@@ -24,7 +21,7 @@ const app = initializeApp(firebaseConfig);
 // Export services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app); // <-- Also export the storage service
+export const storage = getStorage(app); // <-- We must export the storage service
 
 // Export functions and constants for convenience
 export {
@@ -51,9 +48,11 @@ export {
     updateDoc,
     increment,
     serverTimestamp,
+    FieldValue,
     setDoc,
     writeBatch,
-    getStorage,
+
+    // Storage <-- We must export the storage functions
     ref,
     uploadString,
     getDownloadURL,

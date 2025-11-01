@@ -4,7 +4,7 @@ import {
     auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
     doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
-    query, where, getDocs, orderBy
+    query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount } from './canvas.js';
 
@@ -16,6 +16,13 @@ let currentTool = 'select';
 let currentComponentId = null;
 let isDirty = false;
 const GRID_SIZE = 10;
+
+// --- NEW GALLERY/PAGINATION STATE ---
+let lastVisibleComponent = null; // Tracks the last doc for pagination
+let isGalleryLoading = false; // Prevents loading more while already loading
+const GALLERY_PAGE_SIZE = 9; // How many components to load at a time
+let allComponentsLoaded = false; // <-- ADDED FOR LAZY LOADING
+// --- END NEW ---
 
 // --- APP-LEVEL STATE ---
 const AUTOSAVE_KEY = 'srgbComponentCreator_autoSave';
@@ -46,6 +53,14 @@ const matrixColsInput = document.getElementById('matrix-cols');
 const matrixRowsInput = document.getElementById('matrix-rows');
 const galleryOffcanvasElement = document.getElementById('gallery-offcanvas');
 const galleryComponentList = document.getElementById('user-component-list');
+
+const gallerySearchInput = document.getElementById('gallery-search-input');
+const galleryFilterType = document.getElementById('gallery-filter-type');
+const galleryFilterBrand = document.getElementById('gallery-filter-brand');
+const galleryFilterLeds = document.getElementById('gallery-filter-leds');
+const galleryLoadingSpinner = document.getElementById('gallery-loading-spinner');
+const galleryFooter = document.getElementById('gallery-footer');
+// const galleryLoadMoreBtn = document.getElementById('gallery-load-more-btn'); // <-- REMOVED FOR LAZY LOAD
 
 let galleryOffcanvas = null;
 const compImageInput = document.getElementById('component-image');
@@ -455,11 +470,7 @@ async function handleSaveComponent() {
     const dataToSave = {
         ...componentState,
         wiring: firestoreWiring,
-        // --- THIS IS THE KEY CHANGE ---
-        // Save the componentState.imageUrl directly.
-        // This will be the full 'data:image/webp;base64,...' string or null.
-        imageUrl: componentState.imageUrl,
-        // --- END CHANGE ---
+        ledCount: (componentState.leds || []).length,
         ownerId: user.uid,
         ownerName: user.displayName,
         lastUpdated: serverTimestamp()
@@ -470,6 +481,31 @@ async function handleSaveComponent() {
         let docRef;
         const componentsCollection = collection(db, 'srgb-components');
 
+        // --- NEW: Image Upload (Part 1) ---
+        // Check if the imageUrl is a *new* Base64 string
+        const isNewImage = componentState.imageUrl && componentState.imageUrl.startsWith('data:');
+        let newDownloadUrl = null;
+
+        // Use currentComponentId if it exists, or generate a new one if it's a new doc
+        // This is CRITICAL so the image path matches the doc ID
+        const imageDocId = (currentComponentId && isOwnerOrAdmin) ? currentComponentId : doc(componentsCollection).id;
+
+        if (isNewImage) {
+            // We have a new image to upload.
+            showToast('Uploading Image...', 'Please wait.', 'info');
+            const storageRef = ref(storage, `component-images/${user.uid}/${imageDocId}/device-image.webp`);
+
+            // Get the raw Base64 data (without the 'data:image/webp;base64,' prefix)
+            const dataUrl = componentState.imageUrl.split(',')[1];
+
+            // Upload as 'base64'
+            const uploadResult = await uploadString(storageRef, dataUrl, 'base64');
+            newDownloadUrl = await getDownloadURL(uploadResult.ref);
+            console.log('Image uploaded successfully:', newDownloadUrl);
+        }
+        // --- END NEW BLOCK ---
+
+
         if (currentComponentId && isOwnerOrAdmin) {
             // --- OVERWRITE PATH ---
             docRef = doc(componentsCollection, currentComponentId);
@@ -478,14 +514,27 @@ async function handleSaveComponent() {
         } else {
             // --- NEW COMPONENT (or FORK) PATH ---
             dataToSave.createdAt = serverTimestamp();
-            docRef = await addDoc(componentsCollection, dataToSave);
+
+            // --- MODIFIED: Use the ID we generated for the image ---
+            docRef = doc(componentsCollection, imageDocId);
+            await setDoc(docRef, dataToSave); // Use setDoc to set with a specific ID
             currentComponentId = docRef.id;
             componentState.dbId = currentComponentId;
         }
 
         componentState.createdAt = dataToSave.createdAt;
 
-        // --- Image Upload Logic (Part 2) has been removed ---
+        // --- NEW: Image Upload (Part 2) ---
+        // Now that the doc is saved, update it with the new image URL if we have one
+        if (isNewImage && newDownloadUrl) {
+            await updateDoc(docRef, { imageUrl: newDownloadUrl });
+            componentState.imageUrl = newDownloadUrl; // Update local state
+        } else if (!isNewImage && currentComponentId) {
+            // This is an update, but not a *new* image.
+            // Ensure we save the old URL if one existed (or null if it was removed).
+            await updateDoc(docRef, { imageUrl: componentState.imageUrl || null });
+        }
+        // --- END NEW BLOCK ---
 
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
@@ -654,7 +703,7 @@ function handleImageFile(file) {
             const img = new Image();
             img.onload = () => {
                 // --- Resize Image logic ---
-                const MAX_WIDTH = 800;
+                const MAX_WIDTH = 400;
                 const MAX_HEIGHT = 400;
                 let width = img.naturalWidth;
                 let height = img.naturalHeight;
@@ -764,6 +813,8 @@ function setupPropertyListeners() {
         });
 
         // --- 2. NEW: Click listener to ensure focus ---
+        // A contenteditable element must be focused to receive a paste event.
+        // This makes sure that clicking the box makes it ready to paste.
         imagePasteZone.addEventListener('click', () => {
             console.log('Image Handling: Paste zone clicked, setting focus.');
             imagePasteZone.focus();
@@ -1781,52 +1832,106 @@ function handleScaleSelected() {
 }
 
 // --- Gallery Functions ---
-async function loadUserComponents() {
-    const user = auth.currentUser; // Still needed for owner/admin checks
-    if (!galleryComponentList) { console.error("Gallery list element not found."); return; }
-    galleryComponentList.innerHTML = '';
 
-    // Show spinner while loading
-    galleryComponentList.innerHTML = `
-        <div class="d-flex justify-content-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>`;
+/**
+ * Loads components from Firestore with pagination and server-side filtering.
+ * @param {boolean} reset - If true, clears the list and starts from the beginning.
+ */
+async function loadUserComponents(reset = false) {
+    if (isGalleryLoading) return; // Don't load if already loading
+    isGalleryLoading = true;
+
+    if (!galleryComponentList) {
+        console.error("Gallery list element not found.");
+        isGalleryLoading = false;
+        return;
+    }
+
+    const user = auth.currentUser; // For delete button logic
+
+    // --- 1. Show appropriate loading UI ---
+    if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'block';
+    // if (galleryLoadMoreBtn) galleryLoadMoreBtn.style.display = 'none'; // <-- REMOVED
+
+    if (reset) {
+        galleryComponentList.innerHTML = '';
+        lastVisibleComponent = null;
+        allComponentsLoaded = false; // <-- ADDED
+        // Re-populate filters only on a full reset
+        await populateGalleryFilters();
+    }
 
     try {
-        // --- Query all components ---
-        const q = query(collection(db, 'srgb-components'), orderBy('lastUpdated', 'desc'));
-        const querySnapshot = await getDocs(q);
+        // --- 2. Build the Firebase Query ---
+        const componentsCollection = collection(db, 'srgb-components');
+        const queryConstraints = [
+            orderBy('lastUpdated', 'desc'),
+            limit(GALLERY_PAGE_SIZE)
+        ];
 
-        if (querySnapshot.empty) {
-            galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components found in the community gallery.</div>';
-            return;
+        // --- 3. Get Filter Values ---
+        // --- MODIFIED: Use toLowerCase() for client-side search ---
+        const searchTerm = gallerySearchInput ? gallerySearchInput.value.toLowerCase() : '';
+        const filterType = galleryFilterType ? galleryFilterType.value : 'all';
+        const filterBrand = galleryFilterBrand ? galleryFilterBrand.value : 'all';
+        const filterLeds = galleryFilterLeds ? galleryFilterLeds.value : 'all';
+
+        // --- 4. Add Server-Side Constraints (Equality and ONE Range) ---
+
+        // Equality filters (always OK)
+        if (filterType !== 'all') {
+            queryConstraints.push(where('type', '==', filterType));
+        }
+        if (filterBrand !== 'all') {
+            queryConstraints.push(where('brand', '==', filterBrand));
         }
 
-        galleryComponentList.innerHTML = ''; // Clear spinner
+        // --- MODIFIED: We will ONLY apply the ledCount range filter on the server ---
+        if (filterLeds !== 'all') {
+            // Convert the value from the dropdown (which is a string) to a number
+            const ledCount = parseInt(filterLeds, 10);
+            if (!isNaN(ledCount)) {
+                // Use an equality (==) filter
+                queryConstraints.push(where('ledCount', '==', ledCount));
+            }
+        }
+        // --- We NO LONGER add the 'name' filter to the server query ---
 
-        querySnapshot.forEach((docSnap) => {
+        // --- 5. Add Pagination Constraint ---
+        if (lastVisibleComponent) {
+            queryConstraints.push(startAfter(lastVisibleComponent));
+        }
+
+        // --- 6. Execute the Query ---
+        const q = query(componentsCollection, ...queryConstraints);
+        const querySnapshot = await getDocs(q);
+
+        // --- 7. NEW: Apply Client-Side Name Filtering ---
+        let finalDocs = querySnapshot.docs; // Get all docs from the server
+        if (searchTerm) {
+            // Filter this page's results in the browser
+            finalDocs = finalDocs.filter(doc => {
+                const componentName = (doc.data().name || 'untitled').toLowerCase();
+                return componentName.includes(searchTerm);
+            });
+        }
+
+        // --- 8. Handle "No Results" ---
+        if (reset && finalDocs.length === 0) {
+            if (querySnapshot.empty) {
+                // Server found nothing
+                galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components match your filters.</div>';
+            } else {
+                // Server found things, but client search filtered them all
+                galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components on this page match your search term.</div>';
+            }
+        }
+
+        // --- 9. Render Component Cards (using finalDocs) ---
+        finalDocs.forEach((docSnap) => {
             const componentData = docSnap.data();
             const componentId = docSnap.id;
 
-            const doLoadComponent = () => {
-                if (!checkDirtyState()) return; // <-- Guard
-
-                // --- MODIFICATION: Manually add dbId *before* loading ---
-                componentData.dbId = componentId;
-                if (loadComponentState(componentData)) {
-                    currentComponentId = docSnap.id;
-                    // componentState.dbId = docSnap.id; // Already set by loadComponentState
-
-                    if (galleryOffcanvas) galleryOffcanvas.hide();
-                    showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
-                    // --- MODIFICATION: A loaded DB component is NOT dirty ---
-                    isDirty = false;
-                }
-            };
-
-            // --- Card Layout ---
             const card = document.createElement('div');
             card.className = 'card bg-body-secondary mb-3';
 
@@ -1835,21 +1940,16 @@ async function loadUserComponents() {
             const ownerName = componentData.ownerName || 'Anonymous';
             const componentName = componentData.name || 'Untitled';
             const imageUrl = componentData.imageUrl;
-            const ownerId = componentData.ownerId; // <-- Get the ownerId
+            const ownerId = componentData.ownerId;
 
             let imageHtml = `
                 <div class="col-md-4 d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
                      style="background-color: #212529; min-height: 170px; color: #6c757d;">
                     <svg viewBox="0 0 32 32" fill="currentColor" width="64" height="64">
-                        <circle cx="26" cy="16" r="3" />
-                        <circle cx="23" cy="23" r="3" />
-                        <circle cx="16" cy="26" r="3" />
-                        <circle cx="9" cy="23" r="3" />
-                        <circle cx="6" cy="16" r="3" />
-                        <circle cx="9" cy="9" r="3" />
-                        <circle cx="16" cy="6" r="3" />
-                        <circle cx="23" cy="9" r="3" />
+                        <circle cx="26" cy="16" r="3" /> <circle cx="23" cy="23" r="3" /> <circle cx="16" cy="26" r="3" />
+                        <circle cx="9" cy="23" r="3" /> <circle cx="6" cy="16" r="3" /> <circle cx="9" cy="9" r="3" />
+                        <circle cx="16" cy="6" r="3" /> <circle cx="23" cy="9" r="3" />
                     </svg>
                 </div>`;
 
@@ -1867,66 +1967,193 @@ async function loadUserComponents() {
                 <div class="col-md-8">
                     <div class="card-body d-flex flex-column h-100">
                         <h5 class="card-title">${componentName}</h5>
-                        <small class="card-subtitle text-muted mb-2">
-                            By: ${ownerName} on ${lastUpdated}
-                        </small>
-                        
+                        <small class="card-subtitle text-muted mb-2"> By: ${ownerName} on ${lastUpdated} </small>
                         <div class="mb-3">
                             <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
                             <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
                             <span class="badge bg-secondary">${ledCount} LEDs</span>
                         </div>
-
                         <div class="flex-grow-1"></div>
-
                         <div class="d-flex justify-content-between">
-                            <button class="btn btn-primary btn-sm" data-component-id="${componentId}-load">
-                                <i class="bi bi-folder2-open me-1"></i> Load
-                            </button>
-                            
-                            <button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete">
-                                <i class="bi bi-trash me-1"></i> Delete
-                            </button>
+                            <button class="btn btn-primary btn-sm" data-component-id="${componentId}-load"> <i class="bi bi-folder2-open me-1"></i> Load </button>
+                            <button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete"> <i class="bi bi-trash me-1"></i> Delete </button>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
 
             card.innerHTML = `<div class="row g-0">${imageHtml}${bodyHtml}</div>`;
             galleryComponentList.appendChild(card);
 
             // --- Attach Listeners ---
-            const loadButton = card.querySelector(`[data-component-id="${componentId}-load"]`);
-            const imageContainer = card.querySelector(`[data-component-id="${componentId}-img"]`);
+            const doLoadComponent = () => {
+                if (!checkDirtyState()) return;
+                componentData.dbId = componentId;
+                if (loadComponentState(componentData)) {
+                    currentComponentId = componentId;
+                    if (galleryOffcanvas) galleryOffcanvas.hide();
+                    showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
+                    isDirty = false;
+                }
+            };
 
-            if (loadButton) {
-                loadButton.addEventListener('click', doLoadComponent); // Use helper
-            }
-
-            if (imageContainer) {
-                imageContainer.addEventListener('click', doLoadComponent); // Use same helper
-            }
+            card.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', doLoadComponent);
+            card.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', doLoadComponent);
 
             const deleteButton = card.querySelector(`[data-component-id="${componentId}-delete"]`);
             if (deleteButton) {
                 if (user && (user.uid === ownerId || user.uid === ADMIN_UID)) {
-                    deleteButton.addEventListener('click', () => {
-                        handleDeleteComponent(componentId, componentName, imageUrl, ownerId);
+                    deleteButton.addEventListener('click', (e) => {
+                        handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId);
                     });
                 } else {
                     deleteButton.remove();
                 }
             }
-
         });
+
+        // --- 10. Update Pagination State ---
+        if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
+
+        // --- MODIFIED: Pagination is based on the original server query ---
+        if (querySnapshot.docs.length > 0) {
+            lastVisibleComponent = querySnapshot.docs[querySnapshot.docs.length - 1];
+        }
+
+        // --- MODIFIED: Set flag for lazy loading ---
+        // Check if we've reached the end of the components
+        if (querySnapshot.size < GALLERY_PAGE_SIZE) {
+            allComponentsLoaded = true;
+            console.log("All components loaded.");
+        }
+
     } catch (error) {
         console.error("Error loading user components:", error);
-        galleryComponentList.innerHTML = '<div class="alert alert-danger">Error loading components.</div>';
+        galleryComponentList.innerHTML = '<div class="alert alert-danger">Error loading components. See console for details.</div>';
         showToast('Load Error', 'Could not fetch components.', 'danger');
+
+        if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
+
+        // --- THIS IS THE FIREBASE INDEX WARNING ---
+        if (error.code === 'failed-precondition') {
+            const indexErrorMsg = `This query requires a composite index. Click the link in the console error message (it looks like: ${error.message.substring(error.message.indexOf('https://'))}) to create it in Firebase, then wait a few minutes.`;
+            galleryComponentList.innerHTML = `<div class="alert alert-warning">${indexErrorMsg}</div>`;
+        }
+    } finally {
+        isGalleryLoading = false;
     }
 }
 
-async function handleDeleteComponent(docId, componentName, imageUrl, ownerId) {
+/**
+ * Populates all 3 filter dropdowns by fetching the metadata document from Firestore.
+ * If the document doesn't exist, it performs a one-time scan of all components
+ * to build and save the filter list for future use.
+ */
+async function populateGalleryFilters() {
+    // Check for all 3 dropdowns
+    if (!galleryFilterType || !galleryFilterBrand || !galleryFilterLeds) return;
+
+    // --- 1. Preserve current user selection ---
+    const currentType = galleryFilterType.value;
+    const currentBrand = galleryFilterBrand.value;
+    const currentLeds = galleryFilterLeds.value;
+
+    // --- 2. Clear dropdowns (except for the 'All' option) ---
+    galleryFilterType.innerHTML = '<option value="all" selected>All Types</option>';
+    galleryFilterBrand.innerHTML = '<option value="all" selected>All Brands</option>';
+    galleryFilterLeds.innerHTML = '<option value="all" selected>All Counts</option>';
+
+    try {
+        const filterDocRef = doc(db, "srgb-components-metadata", "filters");
+        const docSnap = await getDoc(filterDocRef);
+
+        let typesToUse = [];
+        let brandsToUse = [];
+        let ledCountsToUse = []; // <-- ADDED
+
+        // --- 3. FAST PATH: Try to use the existing filters doc ---
+        // --- MODIFIED: Simplified this 'if' to be more robust ---
+        if (docSnap.exists() && docSnap.data()) {
+            console.log("Populating filters from fast-load metadata doc.");
+            const data = docSnap.data();
+            if (data.allTypes) typesToUse = data.allTypes;
+            if (data.allBrands) brandsToUse = data.allBrands;
+            if (data.allLedCounts) ledCountsToUse = data.allLedCounts; // <-- This was the missing part of the "fast" logic
+
+        } else {
+            // --- 4. SLOW PATH: One-time scan to build the filters doc ---
+            console.warn("Filters doc empty or missing. Performing one-time scan...");
+            showToast("Gallery Init", "Building filter list for the first time...", "info");
+
+            const allTypes = new Set();
+            const allBrands = new Set();
+            const allLedCounts = new Set();
+
+            const componentsCollection = collection(db, 'srgb-components');
+            const scanQuery = query(componentsCollection); // Query for *all* docs
+            const querySnapshot = await getDocs(scanQuery);
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.type) allTypes.add(data.type);
+                if (data.brand) allBrands.add(data.brand);
+
+                // --- MODIFIED: Robust LED count check ---
+                // Try to get the pre-calculated count
+                let count = data.ledCount;
+                // If it's missing (old component), calculate it from the leds array
+                if (typeof count !== 'number' && Array.isArray(data.leds)) {
+                    count = data.leds.length;
+                }
+                // If we have a valid count, add it
+                if (typeof count === 'number' && count > 0) {
+                    allLedCounts.add(count);
+                }
+                // --- END MODIFIED ---
+            });
+
+            typesToUse = Array.from(allTypes);
+            brandsToUse = Array.from(allBrands);
+            ledCountsToUse = Array.from(allLedCounts);
+
+            // --- 5. Save the results back to the doc for next time ---
+            if (typesToUse.length > 0 || brandsToUse.length > 0 || ledCountsToUse.length > 0) {
+                await setDoc(filterDocRef, {
+                    allTypes: typesToUse,
+                    allBrands: brandsToUse,
+                    allLedCounts: ledCountsToUse
+                }, { merge: true }); // Use merge to be safe
+                console.log("One-time scan complete. Saved results to metadata doc.");
+            }
+        }
+
+        // --- 6. Populate Dropdowns ---
+        typesToUse.sort().forEach(type => {
+            galleryFilterType.innerHTML += `<option value="${type}">${type}</option>`;
+        });
+        brandsToUse.sort().forEach(brand => {
+            galleryFilterBrand.innerHTML += `<option value="${brand}">${brand}</option>`;
+        });
+
+        // --- 7. NEW: Populate LED Dropdown with exact counts ---
+        // Sort the numbers numerically (e.g., 8, 12, 64, 120)
+        ledCountsToUse.sort((a, b) => a - b).forEach(count => {
+            galleryFilterLeds.innerHTML += `<option value="${count}">${count} LEDs</option>`;
+        });
+        // --- END NEW LED LOGIC ---
+
+
+    } catch (error) {
+        console.error("Error fetching gallery filters:", error);
+        showToast("Filter Error", "Could not load filter options.", "danger");
+    }
+
+    // --- 8. Restore user selection ---
+    galleryFilterType.value = currentType;
+    galleryFilterBrand.value = currentBrand;
+    galleryFilterLeds.value = currentLeds;
+}
+
+async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId) {
     const user = auth.currentUser;
     if (!user) return; // Should not happen if button is visible
 
@@ -1938,16 +2165,34 @@ async function handleDeleteComponent(docId, componentName, imageUrl, ownerId) {
     showToast('Deleting...', `Deleting ${componentName}...`, 'info');
 
     try {
-        // 1. Delete the Firestore document (and the Base64 data inside it)
+        // --- (Storage deletion logic is the same) ---
+        if (imageUrl && (imageUrl.startsWith('gs://') || imageUrl.startsWith('https://firebasestorage.googleapis.com'))) {
+            try {
+                const imageRef = ref(storage, imageUrl); // Get ref from URL
+                await deleteObject(imageRef);
+                console.log("Deleted component image from Storage.");
+            } catch (storageError) {
+                console.warn("Could not delete component image from Storage:", storageError.code);
+            }
+        }
+
+        // 1. Delete the Firestore document
         const docRef = doc(db, 'srgb-components', docId);
         await deleteDoc(docRef);
 
-        // 2. (No-op) No need to delete from Storage
-
         showToast('Success', `Successfully deleted "${componentName}".`, 'success');
 
-        // 3. Refresh the gallery list
-        loadUserComponents();
+        // 3. --- MODIFIED: Remove the card from the UI directly ---
+        if (e && e.target) {
+            // e.target is the button. Find the closest parent '.card' and remove it.
+            const cardToRemove = e.target.closest('.card');
+            if (cardToRemove) {
+                cardToRemove.remove();
+            }
+        } else {
+            // Fallback just in case, to refresh the whole list
+            loadUserComponents(true);
+        }
 
     } catch (error) {
         console.error("Error deleting component:", error);
@@ -1955,11 +2200,51 @@ async function handleDeleteComponent(docId, componentName, imageUrl, ownerId) {
     }
 }
 
+/**
+ * Triggers loading the next page when the user scrolls near the bottom.
+ */
+function handleGalleryScroll() {
+    // Stop if we're already loading or if all components are loaded
+    if (isGalleryLoading || allComponentsLoaded) return;
+
+    const list = galleryComponentList;
+
+    // Check if user is ~200px from the bottom
+    if (list.scrollTop + list.clientHeight >= list.scrollHeight - 200) {
+        console.log("Lazy load triggered...");
+        loadUserComponents(false); // false = append next page
+    }
+}
+
 function setupGalleryListener() {
     if (galleryOffcanvasElement) {
         galleryOffcanvas = new bootstrap.Offcanvas(galleryOffcanvasElement);
-        galleryOffcanvasElement.addEventListener('show.bs.offcanvas', loadUserComponents);
-    } else { console.error("Gallery offcanvas element (#gallery-offcanvas) not found."); }
+        // Load (or reload) components when the offcanvas is shown
+        galleryOffcanvasElement.addEventListener('show.bs.offcanvas', () => {
+            loadUserComponents(true); // true = reset/reload
+        });
+    } else {
+        console.error("Gallery offcanvas element (#gallery-offcanvas) not found.");
+    }
+
+    // Add listeners for the filter controls
+    if (gallerySearchInput) {
+        gallerySearchInput.addEventListener('change', () => loadUserComponents(true));
+    }
+    if (galleryFilterType) {
+        galleryFilterType.addEventListener('change', () => loadUserComponents(true));
+    }
+    if (galleryFilterBrand) {
+        galleryFilterBrand.addEventListener('change', () => loadUserComponents(true));
+    }
+    if (galleryFilterLeds) {
+        galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
+    }
+
+    // --- NEW: Add scroll listener for lazy loading ---
+    if (galleryComponentList) {
+        galleryComponentList.addEventListener('scroll', handleGalleryScroll);
+    }
 }
 
 // --- NEW HELPER FUNCTIONS FOR GRID PRECISION ---
@@ -2116,3 +2401,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial component (tries autosave first)
     handleNewComponent(false);
 });
+
