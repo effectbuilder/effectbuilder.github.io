@@ -821,6 +821,9 @@ function setupPropertyListeners() {
             }
         });
 
+        // [File: main.js]
+        // ... (inside setupPropertyListeners, after the 'paste' listener)
+
         // --- 4. NEW: Delete key listener for image paste zone ---
         imagePasteZone.addEventListener('keydown', (e) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -842,6 +845,39 @@ function setupPropertyListeners() {
                 }
             }
         });
+
+        // --- 5. NEW: DRAG-AND-DROP LISTENERS ---
+        imagePasteZone.addEventListener('dragover', (e) => {
+            e.preventDefault(); // REQUIRED: Prevents browser from opening file
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy'; // Show 'copy' cursor
+            imagePasteZone.classList.add('drag-over');
+        });
+
+        imagePasteZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            imagePasteZone.classList.remove('drag-over');
+        });
+
+        imagePasteZone.addEventListener('drop', (e) => {
+            e.preventDefault(); // REQUIRED: Prevents browser from opening file
+            e.stopPropagation();
+            imagePasteZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                const file = files[0]; // Get the first file
+                // Check if it's an image
+                if (file.type.startsWith('image/')) {
+                    handleImageFile(file); // Use our existing function
+                } else {
+                    showToast('File Error', 'Only image files can be dropped.', 'warning');
+                }
+            }
+        });
+        // --- END DRAG-AND-DROP ---
+
 
     } else {
         console.warn("Image input, preview, or paste zone element not found.");
