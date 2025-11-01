@@ -183,3 +183,14 @@
 #image-paste-zone img[style*="display: none"] + #image-paste-placeholder {
     display: block;
 }
+
+/* --- Image Paste Zone Fix --- */
+/*
+  This rule hides any direct child of the paste zone that is NOT
+  our official image preview OR our official placeholder.
+  This prevents the browser from inserting its own pasted
+  image and messing up the layout.
+*/
+#image-paste-zone > *:not(#image-preview):not(#image-paste-placeholder) {
+    display: none !important;
+}

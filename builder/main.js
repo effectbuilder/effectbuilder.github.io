@@ -420,6 +420,8 @@ function handleImportJson(e) {
 }
 
 
+// [File: main.js] - REVISED FUNCTION
+
 async function handleSaveComponent() {
     const user = auth.currentUser;
     if (!user) { showToast('Error', 'You must be logged in to save.', 'danger'); return; }
@@ -454,12 +456,7 @@ async function handleSaveComponent() {
             componentState.dbId = null;
             isNewComponent = true; // Treat it as a new component
 
-            // If forking, check if the old imageUrl was a URL
-            // and clear it. If it's a new 'data:' string, keep it.
-            if (componentState.imageUrl && !componentState.imageUrl.startsWith('data:')) {
-                componentState.imageUrl = null;
-            }
-
+            // If forking, we keep the base64 'data:' string
             showToast('Forking Component...', 'Saving your version as a new component.', 'info');
             console.log("Save forking: User is not owner. Creating new component.");
         }
@@ -473,7 +470,9 @@ async function handleSaveComponent() {
         ledCount: (componentState.leds || []).length,
         ownerId: user.uid,
         ownerName: user.displayName,
-        lastUpdated: serverTimestamp()
+        lastUpdated: serverTimestamp(),
+        // We are now explicitly saving the imageUrl (which is base64)
+        imageUrl: componentState.imageUrl || null
     };
     delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
@@ -481,30 +480,7 @@ async function handleSaveComponent() {
         let docRef;
         const componentsCollection = collection(db, 'srgb-components');
 
-        // --- NEW: Image Upload (Part 1) ---
-        // Check if the imageUrl is a *new* Base64 string
-        const isNewImage = componentState.imageUrl && componentState.imageUrl.startsWith('data:');
-        let newDownloadUrl = null;
-
-        // Use currentComponentId if it exists, or generate a new one if it's a new doc
-        // This is CRITICAL so the image path matches the doc ID
-        const imageDocId = (currentComponentId && isOwnerOrAdmin) ? currentComponentId : doc(componentsCollection).id;
-
-        if (isNewImage) {
-            // We have a new image to upload.
-            showToast('Uploading Image...', 'Please wait.', 'info');
-            const storageRef = ref(storage, `component-images/${user.uid}/${imageDocId}/device-image.webp`);
-
-            // Get the raw Base64 data (without the 'data:image/webp;base64,' prefix)
-            const dataUrl = componentState.imageUrl.split(',')[1];
-
-            // Upload as 'base64'
-            const uploadResult = await uploadString(storageRef, dataUrl, 'base64');
-            newDownloadUrl = await getDownloadURL(uploadResult.ref);
-            console.log('Image uploaded successfully:', newDownloadUrl);
-        }
-        // --- END NEW BLOCK ---
-
+        // --- ALL IMAGE UPLOAD LOGIC HAS BEEN REMOVED ---
 
         if (currentComponentId && isOwnerOrAdmin) {
             // --- OVERWRITE PATH ---
@@ -514,27 +490,15 @@ async function handleSaveComponent() {
         } else {
             // --- NEW COMPONENT (or FORK) PATH ---
             dataToSave.createdAt = serverTimestamp();
-
-            // --- MODIFIED: Use the ID we generated for the image ---
-            docRef = doc(componentsCollection, imageDocId);
-            await setDoc(docRef, dataToSave); // Use setDoc to set with a specific ID
+            docRef = doc(componentsCollection); // Let Firestore generate a new ID
+            await setDoc(docRef, dataToSave);
             currentComponentId = docRef.id;
             componentState.dbId = currentComponentId;
         }
 
         componentState.createdAt = dataToSave.createdAt;
 
-        // --- NEW: Image Upload (Part 2) ---
-        // Now that the doc is saved, update it with the new image URL if we have one
-        if (isNewImage && newDownloadUrl) {
-            await updateDoc(docRef, { imageUrl: newDownloadUrl });
-            componentState.imageUrl = newDownloadUrl; // Update local state
-        } else if (!isNewImage && currentComponentId) {
-            // This is an update, but not a *new* image.
-            // Ensure we save the old URL if one existed (or null if it was removed).
-            await updateDoc(docRef, { imageUrl: componentState.imageUrl || null });
-        }
-        // --- END NEW BLOCK ---
+        // --- ALL IMAGE UPLOAD LOGIC (PART 2) HAS BEEN REMOVED ---
 
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
@@ -854,6 +818,28 @@ function setupPropertyListeners() {
             } else {
                 console.log('Image Handling: No usable file found in clipboard items.');
                 showToast('Paste Error', 'No image file found in clipboard.', 'warning');
+            }
+        });
+
+        // --- 4. NEW: Delete key listener for image paste zone ---
+        imagePasteZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault(); // Stop browser from trying to delete content
+
+                // Check if there is an image to delete
+                if (componentState && componentState.imageUrl) {
+                    console.log('Image delete key pressed.');
+                    componentState.imageUrl = null;
+                    componentState.imageWidth = 500; // Reset to default
+                    componentState.imageHeight = 300; // Reset to default
+
+                    imagePreview.src = '#';
+                    imagePreview.style.display = 'none';
+                    if (compImageInput) compImageInput.value = ''; // Clear the file input
+
+                    autoSaveState(); // Save the cleared state
+                    showToast('Image Removed', 'The device image has been cleared.', 'info');
+                }
             }
         });
 
