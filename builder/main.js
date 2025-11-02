@@ -1578,6 +1578,7 @@ function handleAddMatrix() {
     const cols = parseInt(document.getElementById('matrix-cols').value) || 1;
     const rows = parseInt(document.getElementById('matrix-rows').value) || 1;
     const wiringDirection = document.getElementById('matrix-wiring').value;
+    const isSerpentine = document.getElementById('matrix-serpentine').checked;
     // GRID_SIZE is globally defined
 
     if (cols <= 0 || rows <= 0) { showToast('Invalid Input', 'Columns and Rows must be > 0.', 'danger'); return; }
@@ -1614,7 +1615,9 @@ function handleAddMatrix() {
         for (let r = 0; r < rows; r++) {
             const isEvenRow = r % 2 === 0;
             for (let c = 0; c < cols; c++) {
-                const colIndex = isEvenRow ? c : (cols - 1 - c); const x = startX + (colIndex * GRID_SIZE); const y = startY + (r * GRID_SIZE);
+                const colIndex = (isSerpentine && !isEvenRow) ? (cols - 1 - c) : c;
+                const x = startX + (colIndex * GRID_SIZE);
+                const y = startY + (r * GRID_SIZE);
                 const id = `${Date.now()}-h-${r}-${c}`; const newLed = { id, x, y }; newLeds.push(newLed); newWireIds.push(id);
             }
         }
@@ -1622,7 +1625,9 @@ function handleAddMatrix() {
         for (let c = 0; c < cols; c++) {
             const isEvenCol = c % 2 === 0;
             for (let r = 0; r < rows; r++) {
-                const rowIndex = isEvenCol ? r : (rows - 1 - r); const x = startX + (c * GRID_SIZE); const y = startY + (rowIndex * GRID_SIZE);
+                const rowIndex = (isSerpentine && !isEvenCol) ? (rows - 1 - r) : r;
+                const x = startX + (c * GRID_SIZE);
+                const y = startY + (rowIndex * GRID_SIZE);
                 const id = `${Date.now()}-v-${c}-${r}`; const newLed = { id, x, y }; newLeds.push(newLed); newWireIds.push(id);
             }
         }
