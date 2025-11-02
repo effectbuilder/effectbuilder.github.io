@@ -71,7 +71,6 @@ const galleryFilterBrand = document.getElementById('gallery-filter-brand');
 const galleryFilterLeds = document.getElementById('gallery-filter-leds');
 const galleryLoadingSpinner = document.getElementById('gallery-loading-spinner');
 const galleryFooter = document.getElementById('gallery-footer');
-// const galleryLoadMoreBtn = document.getElementById('gallery-load-more-btn'); // <-- REMOVED FOR LAZY LOAD
 
 let galleryOffcanvas = null;
 const compImageInput = document.getElementById('component-image');
@@ -127,7 +126,7 @@ let shareModal = null;
 const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
 const shareUrlInput = document.getElementById('share-url-input');
 
-const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side (e.g., 1500px)
+const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side
 
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
@@ -260,7 +259,7 @@ function handleClearImageGuide() {
 
 // --- Local Storage Functions ---
 function autoSaveState() {
-    isDirty = true; // <-- ADD THIS
+    isDirty = true;
     console.log('Attempting to autosave state...');
     if (componentState && Array.isArray(componentState.leds) && Array.isArray(componentState.wiring)) {
         try {
@@ -270,7 +269,7 @@ function autoSaveState() {
                 // --- EXCLUDE LARGE DEVICE IMAGE (componentState.imageUrl) ---
                 imageUrl: null,
                 // --- INCLUDE RESIZED GUIDE IMAGE (componentState.guideImageUrl) ---
-                guideImageUrl: componentState.guideImageUrl || null, // <-- CRITICAL: Now included
+                guideImageUrl: componentState.guideImageUrl || null,
                 // --- Re-include Guide State Metadata (which is small) ---
                 imageGuideX: imageGuideState.x,
                 imageGuideY: imageGuideState.y,
@@ -333,19 +332,18 @@ function loadComponentState(stateToLoad) {
     Object.assign(componentState, createDefaultComponentState()); // Reset to default first
     Object.assign(componentState, stateToLoad); // Then apply new state
 
-    // --- NEW: Load imageGuideState from stateToLoad or use defaults ---
+    // --- Load imageGuideState from stateToLoad or use defaults ---
     imageGuideState.x = stateToLoad.imageGuideX ?? 0;
     imageGuideState.y = stateToLoad.imageGuideY ?? 0;
     imageGuideState.scale = stateToLoad.imageGuideScale ?? 1;
     imageGuideState.rotation = stateToLoad.imageGuideRotation ?? 0;
     imageGuideState.isLocked = stateToLoad.imageGuideIsLocked ?? true;
     imageGuideState.isVisible = stateToLoad.imageGuideIsVisible ?? true;
-    // --- END NEW ---
 
     // --- VALIDATE AND FIX WIRING ---
     componentState.leds = componentState.leds || [];
     let loadedWiring = componentState.wiring || [];
-    let appWiring = []; // This will be the string[][]
+    let appWiring = [];
 
     if (Array.isArray(loadedWiring) && loadedWiring.length > 0) {
         if (typeof loadedWiring[0] === 'object' && loadedWiring[0] !== null && Array.isArray(loadedWiring[0].circuit)) {
@@ -397,9 +395,8 @@ function loadComponentState(stateToLoad) {
         if (compImageInput) compImageInput.value = ''; // Clear file input
     }
 
-    // --- NEW: Update the Image Guide UI on load ---
+    // --- Update the Image Guide UI on load ---
     updateImageGuideUI();
-    // --- END NEW ---
 
     // The *caller* is responsible for setting the dirty state.
     return true;
@@ -477,10 +474,10 @@ function setupProjectListeners() {
         console.warn("Copy Share URL button not found.");
     }
 
-    // --- MODIFICATION: Add guard to import ---
+    // --- Add guard to import ---
     if (importJsonBtn && importFileInput) {
         importJsonBtn.addEventListener('click', () => {
-            if (!checkDirtyState()) return; // <-- ADD GUARD
+            if (!checkDirtyState()) return;
             importFileInput.click();
         });
         importFileInput.addEventListener('change', handleImportJson);
@@ -489,7 +486,7 @@ function setupProjectListeners() {
     }
 }
 
-// MODIFIED: Added image guide default properties
+// Added image guide default properties
 function createDefaultComponentState() {
     return {
         name: "My Custom Component",
@@ -501,11 +498,10 @@ function createDefaultComponentState() {
         imageUrl: null,
         imageWidth: 500,
         imageHeight: 300,
-        // --- NEW Guide Image Properties ---
+        // --- Guide Image Properties ---
         guideImageUrl: null,
         guideImageWidth: 500,
         guideImageHeight: 300
-        // --- END NEW ---
     };
 }
 
@@ -516,14 +512,11 @@ function handleNewComponent(showNotification = true) {
     let stateToLoad = createDefaultComponentState();
     console.log('handleNewComponent called. showNotification:', showNotification);
 
-    // --- CRITICAL MODIFICATION: Preserve Image Guide URL and Dimensions ---
-    // Extract the guide image details from the current component state *before*
-    // checking autosave or resetting to defaults.
+    // Preserve Image Guide URL and Dimensions
+    // Extract the guide image details from the current component state before checking autosave or resetting to defaults.
     let preservedGuideUrl = componentState.guideImageUrl;
     let preservedGuideWidth = componentState.guideImageWidth;
     let preservedGuideHeight = componentState.guideImageHeight;
-    // --- END CRITICAL MODIFICATION ---
-
 
     if (!showNotification) {
         const savedState = localStorage.getItem(AUTOSAVE_KEY);
@@ -596,16 +589,15 @@ function handleImportJson(e) {
                 stateToLoad.type = data.Type || 'Other';
 
                 // ---
-                // --- MODIFICATION: Robust check for image data ---
+                // --- Robust check for image data ---
                 // ---
                 // Check if data.Image exists and is a non-empty string
                 if (data.Image && data.Image.length > 0) {
-                    // FIX: The app exports images as webp, so we must import them as webp.
+                    // The app exports images as webp, so we must import them as webp.
                     stateToLoad.imageUrl = `data:image/webp;base64,${data.Image}`;
                 } else {
                     stateToLoad.imageUrl = null;
                 }
-                // --- END MODIFICATION ---
 
                 // Re-create LEDs from normalized coordinates
                 const newLeds = [];
@@ -634,7 +626,7 @@ function handleImportJson(e) {
             // --- Load the prepared state ---
             if (loadComponentState(stateToLoad)) {
                 showToast('Import Successful', `Loaded "${stateToLoad.name}" from file.`, 'success');
-                // --- MODIFICATION: Set dirty flag after successful import ---
+                // --- Set dirty flag after successful import ---
                 isDirty = true;
             }
 
@@ -652,9 +644,6 @@ function handleImportJson(e) {
     };
     reader.readAsText(file);
 }
-
-
-// [File: main.js] - REVISED FUNCTION (MODIFIED to save guide state)
 
 async function handleSaveComponent() {
     const user = auth.currentUser;
@@ -683,7 +672,7 @@ async function handleSaveComponent() {
         // This is an existing component, check ownership
         if (user.uid === componentState.ownerId || user.uid === ADMIN_UID) {
             isOwnerOrAdmin = true; // User is allowed to overwrite
-            console.log("Save allowed: User is owner or admin.");
+            // console.log("Save allowed: User is owner or admin.");
         } else {
             // User is NOT the owner. Fork the component.
             currentComponentId = null;
@@ -695,8 +684,6 @@ async function handleSaveComponent() {
             console.log("Save forking: User is not owner. Creating new component.");
         }
     }
-    // --- END MODIFICATION ---
-
 
     const dataToSave = {
         ...componentState,
@@ -707,7 +694,7 @@ async function handleSaveComponent() {
         lastUpdated: serverTimestamp(),
         // We are now explicitly saving the device imageUrl (which is base64)
         imageUrl: componentState.imageUrl || null,
-        // --- MODIFIED: Save image guide state to Firebase (using the resized image) ---
+        // Save image guide state to Firebase (using the resized image) ---
         guideImageUrl: componentState.guideImageUrl || null, // Stored to Firebase for cloud backup/sharing
         imageGuideX: imageGuideState.x,
         imageGuideY: imageGuideState.y,
@@ -715,15 +702,12 @@ async function handleSaveComponent() {
         imageGuideRotation: imageGuideState.rotation,
         imageGuideIsLocked: imageGuideState.isLocked,
         imageGuideIsVisible: imageGuideState.isVisible,
-        // --- END MODIFIED ---
     };
     delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
     try {
         let docRef;
         const componentsCollection = collection(db, 'srgb-components');
-
-        // --- ALL IMAGE UPLOAD LOGIC HAS BEEN REMOVED ---
 
         if (currentComponentId && isOwnerOrAdmin) {
             // --- OVERWRITE PATH ---
@@ -740,8 +724,6 @@ async function handleSaveComponent() {
         }
 
         componentState.createdAt = dataToSave.createdAt;
-
-        // --- ALL IMAGE UPLOAD LOGIC (PART 2) HAS BEEN REMOVED ---
 
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
@@ -819,8 +801,6 @@ function handleExport() {
             console.error(`Export Blocked: ${unwiredCount} unwired LEDs detected.`);
             return; // EXIT the function, blocking the export
         }
-        // --- END UNWIRED LED CHECK ---
-
 
         // --- 4. Build LedCoordinates array based strictly on wiring order ---
         let ledCoordinates = [];
@@ -939,7 +919,7 @@ function handleImageFile(file) {
                 componentState.imageWidth = width;
                 componentState.imageHeight = height;
 
-                console.log(`Device image resized to: ${width}x${height}`);
+                // console.log(`Device image resized to: ${width}x${height}`);
                 imagePreview.src = resizedDataUrl; // Show the resized preview
                 imagePreview.style.display = 'block';
                 autoSaveState();
@@ -1027,7 +1007,7 @@ function handleImageGuideFile(e) {
                 window.drawCanvas(); // Fallback redraw
             }
             updateImageGuideUI();
-            autoSaveState(); // CRITICAL: Save the resized image to localStorage
+            autoSaveState(); // Save the resized image to localStorage
             showToast('Image Guide Loaded', `Image resized to ${width}x${height} and loaded.`, 'success');
         };
         img.onerror = () => {
@@ -1146,131 +1126,119 @@ function setupPropertyListeners() {
     });
 
     // --- Image File Handling ---
-    if (compImageInput && imagePreview && imagePasteZone) {
+    console.log('Image Handling: Attaching file, click, and paste listeners.');
 
-        console.log('Image Handling: Attaching file, click, and paste listeners.');
+    // --- 1. File Input 'change' listener ---
+    compImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleImageFile(file); // Use the new handler
+        } else if (componentState) {
+            // This logic runs if the user cancels the file dialog
+            componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
+            imagePreview.src = '#'; imagePreview.style.display = 'none';
+            autoSaveState();
+        }
+    });
 
-        // --- 1. File Input 'change' listener ---
-        compImageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleImageFile(file); // Use the new handler
-            } else if (componentState) {
-                // This logic runs if the user cancels the file dialog
-                componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
-                imagePreview.src = '#'; imagePreview.style.display = 'none';
-                autoSaveState();
+    // --- 2. NEW: Click listener to ensure focus ---
+    // A contenteditable element must be focused to receive a paste event.
+    // This makes sure that clicking the box makes it ready to paste.
+    imagePasteZone.addEventListener('click', () => {
+        console.log('Image Handling: Paste zone clicked, setting focus.');
+        imagePasteZone.focus();
+    });
+
+    // --- 3. NEW: Image Paste Zone 'paste' listener (with DEBUGGING) ---
+    imagePasteZone.addEventListener('paste', (e) => {
+        console.log('Image Handling: Paste event detected.');
+        e.preventDefault(); // Stop browser from pasting image as a broken element
+
+        const items = e.clipboardData ? e.clipboardData.items : null;
+        if (!items) {
+            console.error('Image Handling: Browser does not support clipboard items.');
+            showToast('Paste Error', 'Browser does not support clipboard items.', 'danger');
+            return;
+        }
+
+        console.log(`Image Handling: Found ${items.length} clipboard items.`);
+        let foundFile = null;
+
+        // Loop through all items to find the *actual* file
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            console.log(`Item ${i}:`, { kind: item.kind, type: item.type });
+
+            // This is the key: check *kind* is 'file' first.
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                console.log(`Image Handling: Item ${i} is an image file. Grabbing it.`);
+                foundFile = item.getAsFile();
+                break; // Found it, stop looking
             }
-        });
+        }
 
-        // --- 2. NEW: Click listener to ensure focus ---
-        // A contenteditable element must be focused to receive a paste event.
-        // This makes sure that clicking the box makes it ready to paste.
-        imagePasteZone.addEventListener('click', () => {
-            console.log('Image Handling: Paste zone clicked, setting focus.');
-            imagePasteZone.focus();
-        });
+        if (foundFile) {
+            console.log('Image Handling: File successfully retrieved from clipboard.');
+            handleImageFile(foundFile); // Use the same handler
+        } else {
+            console.log('Image Handling: No usable file found in clipboard items.');
+            showToast('Paste Error', 'No image file found in clipboard.', 'warning');
+        }
+    });
 
-        // --- 3. NEW: Image Paste Zone 'paste' listener (with DEBUGGING) ---
-        imagePasteZone.addEventListener('paste', (e) => {
-            console.log('Image Handling: Paste event detected.');
-            e.preventDefault(); // Stop browser from pasting image as a broken element
+    // --- 4. NEW: Delete key listener for image paste zone ---
+    imagePasteZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault(); // Stop browser from trying to delete content
 
-            const items = e.clipboardData ? e.clipboardData.items : null;
-            if (!items) {
-                console.error('Image Handling: Browser does not support clipboard items.');
-                showToast('Paste Error', 'Browser does not support clipboard items.', 'danger');
-                return;
+            // Check if there is an image to delete
+            if (componentState && componentState.imageUrl) {
+                console.log('Image delete key pressed.');
+                componentState.imageUrl = null;
+                componentState.imageWidth = 500; // Reset to default
+                componentState.imageHeight = 300; // Reset to default
+
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+                if (compImageInput) compImageInput.value = ''; // Clear the file input
+
+                autoSaveState(); // Save the cleared state
+                showToast('Image Removed', 'The device image has been cleared.', 'info');
             }
+        }
+    });
 
-            console.log(`Image Handling: Found ${items.length} clipboard items.`);
-            let foundFile = null;
+    // --- 5. DRAG-AND-DROP LISTENERS ---
+    imagePasteZone.addEventListener('dragover', (e) => {
+        e.preventDefault(); //Prevents browser from opening file
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy'; // Show 'copy' cursor
+        imagePasteZone.classList.add('drag-over');
+    });
 
-            // Loop through all items to find the *actual* file
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                console.log(`Item ${i}:`, { kind: item.kind, type: item.type });
+    imagePasteZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        imagePasteZone.classList.remove('drag-over');
+    });
 
-                // This is the key: check *kind* is 'file' first.
-                if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    console.log(`Image Handling: Item ${i} is an image file. Grabbing it.`);
-                    foundFile = item.getAsFile();
-                    break; // Found it, stop looking
-                }
-            }
+    imagePasteZone.addEventListener('drop', (e) => {
+        e.preventDefault(); // Prevents browser from opening file
+        e.stopPropagation();
+        imagePasteZone.classList.remove('drag-over');
 
-            if (foundFile) {
-                console.log('Image Handling: File successfully retrieved from clipboard.');
-                handleImageFile(foundFile); // Use the same handler
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            const file = files[0]; // Get the first file
+            // Check if it's an image
+            if (file.type.startsWith('image/')) {
+                handleImageFile(file); // Use our existing function
             } else {
-                console.log('Image Handling: No usable file found in clipboard items.');
-                showToast('Paste Error', 'No image file found in clipboard.', 'warning');
+                showToast('File Error', 'Only image files can be dropped.', 'warning');
             }
-        });
-
-        // [File: main.js]
-        // ... (inside setupPropertyListeners, after the 'paste' listener)
-
-        // --- 4. NEW: Delete key listener for image paste zone ---
-        imagePasteZone.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                e.preventDefault(); // Stop browser from trying to delete content
-
-                // Check if there is an image to delete
-                if (componentState && componentState.imageUrl) {
-                    console.log('Image delete key pressed.');
-                    componentState.imageUrl = null;
-                    componentState.imageWidth = 500; // Reset to default
-                    componentState.imageHeight = 300; // Reset to default
-
-                    imagePreview.src = '#';
-                    imagePreview.style.display = 'none';
-                    if (compImageInput) compImageInput.value = ''; // Clear the file input
-
-                    autoSaveState(); // Save the cleared state
-                    showToast('Image Removed', 'The device image has been cleared.', 'info');
-                }
-            }
-        });
-
-        // --- 5. NEW: DRAG-AND-DROP LISTENERS ---
-        imagePasteZone.addEventListener('dragover', (e) => {
-            e.preventDefault(); // REQUIRED: Prevents browser from opening file
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'copy'; // Show 'copy' cursor
-            imagePasteZone.classList.add('drag-over');
-        });
-
-        imagePasteZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            imagePasteZone.classList.remove('drag-over');
-        });
-
-        imagePasteZone.addEventListener('drop', (e) => {
-            e.preventDefault(); // REQUIRED: Prevents browser from opening file
-            e.stopPropagation();
-            imagePasteZone.classList.remove('drag-over');
-
-            const files = e.dataTransfer.files;
-            if (files && files.length > 0) {
-                const file = files[0]; // Get the first file
-                // Check if it's an image
-                if (file.type.startsWith('image/')) {
-                    handleImageFile(file); // Use our existing function
-                } else {
-                    showToast('File Error', 'Only image files can be dropped.', 'warning');
-                }
-            }
-        });
-        // --- END DRAG-AND-DROP ---
-
-
-    } else {
-        console.warn("Image input, preview, or paste zone element not found.");
-    }
-    // --- End Image File Handling ---
-
+        }
+    });
+    // --- END DRAG-AND-DROP ---
 
     // --- MODAL LISTENERS ---
     addMatrixModal = new bootstrap.Modal(document.getElementById('add-matrix-modal'));
@@ -1388,11 +1356,12 @@ function findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, positionGene
 
 function setupToolbarListeners() {
     document.getElementById('tool-select-btn').addEventListener('click', () => setTool('select'));
-    // --- NEW IMAGE GUIDE TOOL LISTENER ---
+
+    // --- IMAGE GUIDE TOOL LISTENER ---
     if (toolImageBtn) {
         toolImageBtn.addEventListener('click', () => setTool('image'));
     } else { console.warn("Image Tool button not found."); }
-    // --- END NEW ---
+
     document.getElementById('tool-place-led-btn').addEventListener('click', () => setTool('place-led'));
     document.getElementById('tool-wiring-btn').addEventListener('click', () => setTool('wiring'));
     document.getElementById('zoom-in-btn').addEventListener('click', () => zoomAtPoint(canvas.width / 2, canvas.height / 2, 1.2));
@@ -1413,7 +1382,6 @@ function setupToolbarListeners() {
             }
         });
     } else { console.warn("Rotate button not found."); }
-    // --- END MODIFIED ROTATION LISTENER ---
 
     // Keep scale modal initialization here (it still uses a modal for factor input)
     scaleModal = new bootstrap.Modal(document.getElementById('scale-selected-modal'));
@@ -1432,7 +1400,7 @@ function setupToolbarListeners() {
         clearImageGuideBtn.addEventListener('click', handleClearImageGuide);
     } else { console.warn("Clear Image Guide button not found."); }
 
-    // --- NEW IMAGE GUIDE LISTENERS ---
+    // --- IMAGE GUIDE LISTENERS ---
     if (imageUploadTriggerBtn && imageUploadInput) {
         imageUploadTriggerBtn.addEventListener('click', handleImageUploadTrigger);
         imageUploadInput.addEventListener('change', handleImageGuideFile);
@@ -1445,10 +1413,9 @@ function setupToolbarListeners() {
     if (toggleImageVisibleBtn) {
         toggleImageVisibleBtn.addEventListener('click', toggleImageVisibility);
     } else { console.warn("Image Visibility button not found."); }
-    // --- END NEW IMAGE GUIDE LISTENERS ---
+    // --- END IMAGE GUIDE LISTENERS ---
 }
 
-// MODIFIED: Added 'image' tool logic
 function setTool(toolName) {
     // Clear any pending connection from 'wiring' or 'place-led' tools
     clearPendingConnection();
@@ -1475,12 +1442,12 @@ function setTool(toolName) {
 }
 window.setAppTool = setTool;
 
-// MODIFIED: Added 'image' tool cursor logic
+// Added 'image' tool cursor logic
 function setAppCursor() {
     if (!canvas) return;
     if (currentTool === 'wiring') { canvas.style.cursor = 'crosshair'; }
     else if (currentTool === 'place-led') { canvas.style.cursor = 'crosshair'; }
-    // --- NEW: Image Tool Cursor ---
+    // --- Image Tool Cursor ---
     else if (currentTool === 'image') {
         if (!componentState.guideImageUrl || imageGuideState.isLocked || !imageGuideState.isVisible) {
             canvas.style.cursor = 'default';
@@ -1489,21 +1456,17 @@ function setAppCursor() {
             canvas.style.cursor = 'default';
         }
     }
-    // --- END NEW ---
     else { canvas.style.cursor = 'default'; }
 }
 window.setAppCursor = setAppCursor;
 
-// MODIFIED: Added 'image', 'L', and 'H' shortcuts
+// Added 'image', 'L', and 'H' shortcuts
 function setupKeyboardListeners() {
     window.addEventListener('keydown', (e) => {
         if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
 
         // This guard is very important! It prevents shortcuts while typing in text fields.
-        if (e.target.tagName === 'INPUT' ||
-            e.target.tagName === 'TEXTAREA' ||
-            e.target.tagName === 'SELECT' ||
-            e.target.isContentEditable) { // <-- This new line is the fix
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) { 
             return;
         }
 
@@ -1516,12 +1479,10 @@ function setupKeyboardListeners() {
             case 'V':
                 setTool('select');
                 break;
-            // --- NEW: Image Tool Shortcut ---
             case 'i':
             case 'I':
                 setTool('image');
                 break;
-            // --- END NEW ---
             case 'p':
             case 'P':
                 setTool('place-led');
@@ -1530,7 +1491,6 @@ function setupKeyboardListeners() {
             case 'W':
                 setTool('wiring');
                 break;
-
             // Canvas/View Actions
             case 'g':
             case 'G':
@@ -1577,11 +1537,11 @@ function setupKeyboardListeners() {
                     selectedLedIds.clear();
                     drawCanvas();
                     autoSaveState();
-                    updateLedCount(); // Moved this inside the 'if'
+                    updateLedCount();
                 }
                 break;
 
-            // --- NEW: Image Guide Shortcuts ---
+            // --- Image Guide Shortcuts ---
             case 'l':
             case 'L':
                 toggleImageLock();
@@ -1590,7 +1550,6 @@ function setupKeyboardListeners() {
             case 'H':
                 toggleImageVisibility();
                 break;
-            // --- END NEW ---
 
             default:
                 // If no shortcut was matched, don't prevent default
@@ -1628,7 +1587,7 @@ function handleAddMatrix() {
     const matrixWidth = (cols - 1) * GRID_SIZE;
     const matrixHeight = (rows - 1) * GRID_SIZE;
 
-    // --- NEW: Define the position generator function ---
+    // --- Define the position generator function ---
     const getMatrixPositions = (sx, sy) => {
         const positions = [];
         for (let r = 0; r < rows; r++) {
@@ -1646,7 +1605,6 @@ function handleAddMatrix() {
         return;
     }
 
-    // --- This part remains the same ---
     const newLeds = [];
     const newWireIds = [];
     const finalMatrixWidth = (cols - 1) * GRID_SIZE;
@@ -2317,7 +2275,6 @@ async function loadUserComponents(reset = false) {
 
     // --- 1. Show appropriate loading UI ---
     if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'block';
-    // if (galleryLoadMoreBtn) galleryLoadMoreBtn.style.display = 'none'; // <-- REMOVED
 
     if (reset) {
         galleryComponentList.innerHTML = '';
@@ -2336,7 +2293,7 @@ async function loadUserComponents(reset = false) {
         ];
 
         // --- 3. Get Filter Values ---
-        // --- MODIFIED: Use toLowerCase() for client-side search ---
+        // --- Use toLowerCase() for client-side search ---
         const searchTerm = gallerySearchInput ? gallerySearchInput.value.toLowerCase() : '';
         const filterType = galleryFilterType ? galleryFilterType.value : 'all';
         const filterBrand = galleryFilterBrand ? galleryFilterBrand.value : 'all';
@@ -2352,16 +2309,14 @@ async function loadUserComponents(reset = false) {
             queryConstraints.push(where('brand', '==', filterBrand));
         }
 
-        // --- MODIFIED: We will ONLY apply the ledCount range filter on the server ---
+        // --- We will ONLY apply the ledCount range filter on the server ---
         if (filterLeds !== 'all') {
             // Convert the value from the dropdown (which is a string) to a number
             const ledCount = parseInt(filterLeds, 10);
             if (!isNaN(ledCount)) {
-                // Use an equality (==) filter
                 queryConstraints.push(where('ledCount', '==', ledCount));
             }
         }
-        // --- We NO LONGER add the 'name' filter to the server query ---
 
         // --- 5. Add Pagination Constraint ---
         if (lastVisibleComponent) {
@@ -2481,12 +2436,12 @@ async function loadUserComponents(reset = false) {
         // --- 10. Update Pagination State ---
         if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
 
-        // --- MODIFIED: Pagination is based on the original server query ---
+        // --- Pagination is based on the original server query ---
         if (querySnapshot.docs.length > 0) {
             lastVisibleComponent = querySnapshot.docs[querySnapshot.docs.length - 1];
         }
 
-        // --- MODIFIED: Set flag for lazy loading ---
+        // --- Set flag for lazy loading ---
         // Check if we've reached the end of the components
         if (querySnapshot.size < GALLERY_PAGE_SIZE) {
             allComponentsLoaded = true;
@@ -2535,19 +2490,18 @@ async function populateGalleryFilters() {
 
         let typesToUse = [];
         let brandsToUse = [];
-        let ledCountsToUse = []; // <-- ADDED
-
+        let ledCountsToUse = []; 
         // --- 3. FAST PATH: Try to use the existing filters doc ---
-        // --- MODIFIED: Simplified this 'if' to be more robust ---
+        // --- Simplified this 'if' to be more robust ---
         if (docSnap.exists() && docSnap.data()) {
             console.log("Populating filters from fast-load metadata doc.");
             const data = docSnap.data();
             if (data.allTypes) typesToUse = data.allTypes;
             if (data.allBrands) brandsToUse = data.allBrands;
-            if (data.allLedCounts) ledCountsToUse = data.allLedCounts; // <-- This was the missing part of the "fast" logic
+            if (data.allLedCounts) ledCountsToUse = data.allLedCounts;
 
         } else {
-            // --- 4. SLOW PATH: One-time scan to build the filters doc ---
+            // --- 4. One-time scan to build the filters doc ---
             console.warn("Filters doc empty or missing. Performing one-time scan...");
             showToast("Gallery Init", "Building filter list for the first time...", "info");
 
@@ -2564,7 +2518,7 @@ async function populateGalleryFilters() {
                 if (data.type) allTypes.add(data.type);
                 if (data.brand) allBrands.add(data.brand);
 
-                // --- MODIFIED: Robust LED count check ---
+                // --- Robust LED count check ---
                 // Try to get the pre-calculated count
                 let count = data.ledCount;
                 // If it's missing (old component), calculate it from the leds array
@@ -2575,7 +2529,6 @@ async function populateGalleryFilters() {
                 if (typeof count === 'number' && count > 0) {
                     allLedCounts.add(count);
                 }
-                // --- END MODIFIED ---
             });
 
             typesToUse = Array.from(allTypes);
@@ -2632,12 +2585,11 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
     showToast('Deleting...', `Deleting ${componentName}...`, 'info');
 
     try {
-        // --- (Storage deletion logic is the same) ---
         if (imageUrl && (imageUrl.startsWith('gs://') || imageUrl.startsWith('https://firebasestorage.googleapis.com'))) {
             try {
                 const imageRef = ref(storage, imageUrl); // Get ref from URL
                 await deleteObject(imageRef);
-                console.log("Deleted component image from Storage.");
+                // console.log("Deleted component image from Storage.");
             } catch (storageError) {
                 console.warn("Could not delete component image from Storage:", storageError.code);
             }
@@ -2649,9 +2601,9 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
 
         showToast('Success', `Successfully deleted "${componentName}".`, 'success');
 
-        // 3. --- MODIFIED: Remove the card from the UI directly ---
+        // 3. --- Remove the card from the UI directly ---
         if (e && e.target) {
-            // e.target is the button. Find the closest parent '.card' and remove it.
+            // Remove closest parent .card to e
             const cardToRemove = e.target.closest('.card');
             if (cardToRemove) {
                 cardToRemove.remove();
@@ -2708,13 +2660,13 @@ function setupGalleryListener() {
         galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
     }
 
-    // --- NEW: Add scroll listener for lazy loading ---
+    // --- Add scroll listener for lazy loading ---
     if (galleryComponentList) {
         galleryComponentList.addEventListener('scroll', handleGalleryScroll);
     }
 }
 
-// --- NEW HELPER FUNCTIONS FOR GRID PRECISION ---
+// --- HELPER FUNCTIONS FOR GRID PRECISION ---
 
 /**
  * Calculates the geometric center of all currently selected LEDs.
@@ -2863,16 +2815,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPropertyListeners();
     setupGalleryListener();
 
-    // --- NEW: Check for URL parameter ---
+    // --- Check for URL parameter ---
     const urlParams = new URLSearchParams(window.location.search);
     const componentIdFromUrl = urlParams.get('id');
 
-    if (componentIdFromUrl) { // <-- This was the line causing the error
+    if (componentIdFromUrl) {
         // If an ID is in the URL, try to load it
         loadComponentFromUrl(componentIdFromUrl);
     } else {
         // Otherwise, load from autosave or start new
         handleNewComponent(false);
     }
-    // --- END NEW ---
 });
