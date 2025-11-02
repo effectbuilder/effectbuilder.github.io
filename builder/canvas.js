@@ -1174,7 +1174,7 @@ export function drawCanvas() {
         if (ctx && canvas) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); }
         return;
     }
-    // This check is now crucial
+    
     if (!Array.isArray(componentState.wiring)) {
         console.error("drawCanvas: wiring state is not an array! Resetting.");
         componentState.wiring = [];
@@ -1201,25 +1201,17 @@ export function drawCanvas() {
     ctx.save(); ctx.translate(viewTransform.panX, viewTransform.panY); ctx.scale(viewTransform.zoom, viewTransform.zoom);
 
     // 7. Drawing of LEDs and Wires (World space)
-
-    // ... (All existing LED/Wire drawing logic follows here)
-
-    // --- MODIFICATION: Define colors based on theme ---
     const theme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
-
     const greenFill = 'rgba(0, 200, 0, 0.7)';
     const redFill = 'rgba(255, 0, 0, 0.7)';
     const orangeFill = 'rgba(255, 165, 0, 0.7)';
     const dimRedFill = 'rgba(100, 0, 0, 0.3)';
-
     const whiteStroke = (theme === 'light') ? '#000000' : '#ffffff'; // Black for light, White for dark
     const dimStroke = (theme === 'light') ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
-    const highlightStroke = '#FFFF00'; // Yellow highlight works on both
-
+    const highlightStroke = (theme === 'light') ? '#0d6efd' : '#FFFF00'; // Blue on light, Yellow on dark
+    const highlightGlow = (theme === 'light') ? 'rgba(13, 110, 253, 0.7)' : 'rgba(255, 255, 0, 0.7)'; // Matching glows
     const lineWidth = 1 / viewTransform.zoom;
     const ledRadius = LED_RADIUS * lineWidth;
-    // --- END MODIFICATION ---
-
     const ledsToDraw = componentState.leds;
     const allWiredLedIds = new Set();
     (componentState.wiring || []).forEach(circuit => { if (Array.isArray(circuit)) circuit.forEach(id => allWiredLedIds.add(id)); });
@@ -1253,7 +1245,6 @@ export function drawCanvas() {
         if (overallFirstLedId) orangeLedIds.delete(overallFirstLedId);
         if (overallLastLedId) orangeLedIds.delete(overallLastLedId);
     }
-    // --- END LOGIC ---
 
     ctx.lineWidth = lineWidth;
 
@@ -1273,36 +1264,53 @@ export function drawCanvas() {
         ctx.setLineDash([]);
     }
 
-    for (const led of ledsToDraw) {
+for (const led of ledsToDraw) {
         if (!led) continue;
         const isWired = allWiredLedIds.has(led.id);
         const isPendingStart = pendingConnectionStartLed && pendingConnectionStartLed.ledId === led.id;
         const isOrange = orangeLedIds.has(led.id);
         const isWiringToolActive = currentToolGetter() === 'wiring' || currentToolGetter() === 'place-led';
+        const isSelected = selectedLedIds.has(led.id); // <-- ADDED
 
-        // --- MODIFIED: Re-ordered logic to prioritize highlights and orange ---
+        // --- Re-ordered logic to prioritize highlights and orange ---
         if (isPendingStart) {
             // Pending highlight overrides everything
             ctx.fillStyle = isWired ? greenFill : dimRedFill;
             ctx.strokeStyle = highlightStroke;
+            ctx.lineWidth = lineWidth * 3; // Set width
         } else if (isOrange) {
             // Orange overrides standard green/red
             ctx.fillStyle = orangeFill;
             ctx.strokeStyle = isWiringToolActive ? (isWired ? whiteStroke : dimStroke) : whiteStroke;
+            ctx.lineWidth = lineWidth; // Reset width
         } else if (isWiringToolActive) {
             // Standard wiring tool colors
             ctx.fillStyle = isWired ? greenFill : dimRedFill;
             ctx.strokeStyle = isWired ? whiteStroke : dimStroke;
+            ctx.lineWidth = lineWidth; // Reset width
         } else {
             // Standard select tool colors
             ctx.fillStyle = isWired ? greenFill : redFill;
-            ctx.strokeStyle = whiteStroke;
+            ctx.strokeStyle = isSelected ? highlightStroke : whiteStroke;
+            ctx.lineWidth = isSelected ? lineWidth * 2 : lineWidth;
         }
 
-        ctx.lineWidth = isPendingStart ? lineWidth * 3 : lineWidth; // Set width
+        // <-- GLOW LOGIC -->
+        // Apply glow for selected, but not for pending (which has its own thick highlight)
+        if (isSelected && !isPendingStart) {
+            ctx.shadowBlur = 15 * lineWidth; // Glow effect
+            ctx.shadowColor = highlightGlow; // Glow color
+        }
+
         ctx.beginPath(); ctx.arc(led.x, led.y, ledRadius, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+        
+        // <-- GLOW RESET -->
+        if (isSelected && !isPendingStart) {
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+        }
+        
         ctx.lineWidth = lineWidth; // Reset for next loop
-        // --- END MODIFIED ---
     }
 
     // 8. Restore the final main canvas transform
@@ -1316,4 +1324,5 @@ export function drawCanvas() {
     }
     drawMarqueeBox();
 }
+
 window.drawCanvas = drawCanvas;

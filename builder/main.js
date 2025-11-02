@@ -4,7 +4,7 @@ import {
     auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
     doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
-    query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue
+    query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue, arrayUnion
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
@@ -725,6 +725,23 @@ async function handleSaveComponent() {
 
         componentState.createdAt = dataToSave.createdAt;
 
+        try {
+            const filterDocRef = doc(db, "srgb-components-metadata", "filters");
+            const metadataUpdate = {
+                allTypes: arrayUnion(dataToSave.type),
+                allBrands: arrayUnion(dataToSave.brand),
+                allLedCounts: arrayUnion(dataToSave.ledCount)
+            };
+            // Use setDoc with merge:true to create or update the doc
+            // We MUST wait for this to complete to avoid a race condition
+            // where the user opens the gallery before the filters are updated.
+            await setDoc(filterDocRef, metadataUpdate, { merge: true });
+            console.log("Gallery filters metadata updated successfully.");
+        } catch (filterError) {
+            console.warn("Could not update gallery filters metadata:", filterError);
+            // Don't block the user; just log a warning
+        }
+
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
         clearAutoSave();
@@ -1275,26 +1292,26 @@ function setupPropertyListeners() {
         confirmAddUShapeBtn.addEventListener('click', handleAddUShape);
     } else { console.warn("Add U-Shape modal buttons not found."); }
 
-    // --- ADDED FOR LILI ---
-    addLiLiModal = new bootstrap.Modal(document.getElementById('add-lili-modal'));
-    if (addLiLiBtn && confirmAddLiLiBtn) {
-        addLiLiBtn.addEventListener('click', () => { addLiLiModal.show(); });
-        confirmAddLiLiBtn.addEventListener('click', handleAddLiLi);
-    } else { console.warn("Add LiLi modal buttons not found."); }
+    // // --- ADDED FOR LILI ---
+    // addLiLiModal = new bootstrap.Modal(document.getElementById('add-lili-modal'));
+    // if (addLiLiBtn && confirmAddLiLiBtn) {
+    //     addLiLiBtn.addEventListener('click', () => { addLiLiModal.show(); });
+    //     confirmAddLiLiBtn.addEventListener('click', handleAddLiLi);
+    // } else { console.warn("Add LiLi modal buttons not found."); }
 
-    // --- ADDED FOR HEXAGON ---
-    addHexagonModal = new bootstrap.Modal(document.getElementById('add-hexagon-modal'));
-    if (addHexagonBtn && confirmAddHexagonBtn) {
-        addHexagonBtn.addEventListener('click', () => { addHexagonModal.show(); });
-        confirmAddHexagonBtn.addEventListener('click', handleAddHexagon);
-    } else { console.warn("Add Hexagon modal buttons not found."); }
+    // // --- ADDED FOR HEXAGON ---
+    // addHexagonModal = new bootstrap.Modal(document.getElementById('add-hexagon-modal'));
+    // if (addHexagonBtn && confirmAddHexagonBtn) {
+    //     addHexagonBtn.addEventListener('click', () => { addHexagonModal.show(); });
+    //     confirmAddHexagonBtn.addEventListener('click', handleAddHexagon);
+    // } else { console.warn("Add Hexagon modal buttons not found."); }
 
-    // --- ADDED FOR TRIANGLE ---
-    addTriangleModal = new bootstrap.Modal(document.getElementById('add-triangle-empty-modal'));
-    if (addTriangleBtn && confirmAddTriangleBtn) {
-        addTriangleBtn.addEventListener('click', () => { addTriangleModal.show(); });
-        confirmAddTriangleBtn.addEventListener('click', handleAddTriangle);
-    } else { console.warn("Add Triangle modal buttons not found."); }
+    // // --- ADDED FOR TRIANGLE ---
+    // addTriangleModal = new bootstrap.Modal(document.getElementById('add-triangle-empty-modal'));
+    // if (addTriangleBtn && confirmAddTriangleBtn) {
+    //     addTriangleBtn.addEventListener('click', () => { addTriangleModal.show(); });
+    //     confirmAddTriangleBtn.addEventListener('click', handleAddTriangle);
+    // } else { console.warn("Add Triangle modal buttons not found."); }
 }
 
 /**
@@ -1466,7 +1483,7 @@ function setupKeyboardListeners() {
         if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
 
         // This guard is very important! It prevents shortcuts while typing in text fields.
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) { 
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable) {
             return;
         }
 
@@ -1578,6 +1595,7 @@ function handleAddMatrix() {
     const cols = parseInt(document.getElementById('matrix-cols').value) || 1;
     const rows = parseInt(document.getElementById('matrix-rows').value) || 1;
     const wiringDirection = document.getElementById('matrix-wiring').value;
+    const isSerpentine = document.getElementById('matrix-serpentine').checked;
     // GRID_SIZE is globally defined
 
     if (cols <= 0 || rows <= 0) { showToast('Invalid Input', 'Columns and Rows must be > 0.', 'danger'); return; }
@@ -1614,7 +1632,9 @@ function handleAddMatrix() {
         for (let r = 0; r < rows; r++) {
             const isEvenRow = r % 2 === 0;
             for (let c = 0; c < cols; c++) {
-                const colIndex = isEvenRow ? c : (cols - 1 - c); const x = startX + (colIndex * GRID_SIZE); const y = startY + (r * GRID_SIZE);
+                const colIndex = (isSerpentine && !isEvenRow) ? (cols - 1 - c) : c;
+                const x = startX + (colIndex * GRID_SIZE);
+                const y = startY + (r * GRID_SIZE);
                 const id = `${Date.now()}-h-${r}-${c}`; const newLed = { id, x, y }; newLeds.push(newLed); newWireIds.push(id);
             }
         }
@@ -1622,7 +1642,9 @@ function handleAddMatrix() {
         for (let c = 0; c < cols; c++) {
             const isEvenCol = c % 2 === 0;
             for (let r = 0; r < rows; r++) {
-                const rowIndex = isEvenCol ? r : (rows - 1 - r); const x = startX + (c * GRID_SIZE); const y = startY + (rowIndex * GRID_SIZE);
+                const rowIndex = (isSerpentine && !isEvenCol) ? (rows - 1 - r) : r;
+                const x = startX + (c * GRID_SIZE);
+                const y = startY + (rowIndex * GRID_SIZE);
                 const id = `${Date.now()}-v-${c}-${r}`; const newLed = { id, x, y }; newLeds.push(newLed); newWireIds.push(id);
             }
         }
@@ -2490,7 +2512,7 @@ async function populateGalleryFilters() {
 
         let typesToUse = [];
         let brandsToUse = [];
-        let ledCountsToUse = []; 
+        let ledCountsToUse = [];
         // --- 3. FAST PATH: Try to use the existing filters doc ---
         // --- Simplified this 'if' to be more robust ---
         if (docSnap.exists() && docSnap.data()) {
