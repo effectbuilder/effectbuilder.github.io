@@ -581,10 +581,18 @@
                             <div class="col">
                                 <label for="matrix-wiring" class="form-label">Wiring Direction</label>
                                 <select id="matrix-wiring" class="form-select">
-                                    <option value="horizontal" selected>Horizontal Serpentine (Left-to-Right)</option>
-                                    <option value="vertical">Vertical Serpentine (Top-to-Bottom)</option>
+                                    <option value="horizontal" selected>Horizontal (Left-to-Right)</option>
+                                    <option value="vertical">Vertical (Top-to-Bottom)</option>
                                 </select>
-                                <div class="form-text">Determines the auto-wiring path.</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="matrix-serpentine" checked>
+                                    <label class="form-check-label" for="matrix-serpentine">Serpentine Wiring</label>
+                                </div>
+                                <div class="form-text">If checked, wiring snakes back and forth. If unchecked, each line starts from the beginning.</div>
                             </div>
                         </div>
                     </div>
