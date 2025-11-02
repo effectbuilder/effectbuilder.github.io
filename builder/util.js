@@ -33,7 +33,7 @@ const updateThemeIcon = (theme) => {
 // Set initial theme
 setTheme(getPreferredTheme());
 
-// --- MODIFIED: setupThemeSwitcher now accepts a redraw callback ---
+// Theme switcher setup
 export function setupThemeSwitcher(canvasRedrawCallback = null) {
     const themeSwitcher = document.getElementById('theme-switcher-btn');
     if (!themeSwitcher) return;
