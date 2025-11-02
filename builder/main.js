@@ -116,20 +116,112 @@ const confirmScaleBtn = document.getElementById('confirm-scale-btn');
 const scaleFactorInput = document.getElementById('scale-factor-input');
 let scaleModal = null;
 
-// --- NEW IMAGE GUIDE DOM ELEMENTS ---
 const imageUploadInput = document.getElementById('image-upload-input');
 const toolImageBtn = document.getElementById('tool-image-btn');
 const toggleImageLockBtn = document.getElementById('toggle-image-lock-btn');
 const toggleImageVisibleBtn = document.getElementById('toggle-image-visible-btn');
 const imageUploadTriggerBtn = document.getElementById('image-upload-trigger-btn');
 const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
-// --- END NEW IMAGE GUIDE DOM ELEMENTS ---
+
+let shareModal = null;
+const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
+const shareUrlInput = document.getElementById('share-url-input');
 
 const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side (e.g., 1500px)
 
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
 // ---
+
+/**
+ * Loads a specific component from Firestore based on a URL parameter.
+ * This is called on initial page load if an 'id' is found.
+ * @param {string} componentId - The document ID from Firebase.
+ */
+async function loadComponentFromUrl(componentId) {
+    showToast('Loading Share', 'Loading component from URL...', 'info');
+    try {
+        const docRef = doc(db, 'srgb-components', componentId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const componentData = docSnap.data();
+            componentData.dbId = docSnap.id; // Add the dbId to the state
+
+            if (loadComponentState(componentData)) {
+                currentComponentId = docSnap.id;
+                showToast('Load Successful', `Loaded shared component: ${componentData.name}`, 'success');
+                isDirty = false;
+                clearAutoSave(); // Clear any local autosave to not overwrite the loaded one
+
+                // Enable share button so the user can re-share this link
+                document.getElementById('share-component-btn').disabled = false;
+            } else {
+                throw new Error("Failed to parse component data.");
+            }
+        } else {
+            showToast('Load Error', 'Component ID from URL was not found.', 'danger');
+            handleNewComponent(false); // Fall back to normal load
+        }
+    } catch (error) {
+        console.error("Error loading component from URL:", error);
+        showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
+        handleNewComponent(false); // Fall back to normal load
+    } finally {
+        // Clean the URL (remove the ?id=...) so a refresh doesn't trigger another load
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+/**
+ * Generates the share link and shows the share modal.
+ */
+function handleShareComponent() {
+    if (!currentComponentId) {
+        showToast('Share Error', 'Please save the component to the cloud first.', 'warning');
+        return;
+    }
+
+    // Get the base URL (e.g., "https://user.github.io/MyRepo/index.html")
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?id=${currentComponentId}`;
+
+    const shareUrlInput = document.getElementById('share-url-input');
+    if (shareUrlInput) {
+        shareUrlInput.value = shareUrl;
+    }
+
+    if (shareModal) {
+        shareModal.show();
+        // Automatically select the text for easy copying
+        if (shareUrlInput) {
+            shareUrlInput.select();
+        }
+    }
+}
+
+/**
+ * Copies the share URL to the clipboard.
+ */
+function handleCopyShareUrl() {
+    const shareUrlInput = document.getElementById('share-url-input');
+    if (!shareUrlInput) return;
+
+    try {
+        navigator.clipboard.writeText(shareUrlInput.value).then(() => {
+            showToast('Copied!', 'Share link copied to clipboard.', 'success');
+            if (shareModal) {
+                shareModal.hide();
+            }
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            showToast('Copy Error', 'Could not copy link. Please copy it manually.', 'danger');
+        });
+    } catch (err) {
+        console.error('Clipboard API error: ', err);
+        showToast('Copy Error', 'Could not copy link. Please copy it manually.', 'danger');
+    }
+}
 
 function handleClearImageGuide() {
     if (!componentState.guideImageUrl) {
@@ -158,7 +250,7 @@ function handleClearImageGuide() {
     if (window.setImageGuideSrc) {
         window.setImageGuideSrc(null);
     }
-    
+
     // 4. Update UI, Redraw, and Save
     updateImageGuideUI();
     window.drawCanvas();
@@ -370,6 +462,20 @@ function setupProjectListeners() {
     newBtn.addEventListener('click', () => handleNewComponent(true));
     saveBtn.addEventListener('click', handleSaveComponent);
     exportBtn.addEventListener('click', handleExport);
+
+    shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
+    const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
+
+    if (shareBtn) {
+        shareBtn.addEventListener('click', handleShareComponent);
+    } else {
+        console.warn("Share button not found.");
+    }
+    if (copyShareUrlBtn) {
+        copyShareUrlBtn.addEventListener('click', handleCopyShareUrl);
+    } else {
+        console.warn("Copy Share URL button not found.");
+    }
 
     // --- MODIFICATION: Add guard to import ---
     if (importJsonBtn && importFileInput) {
@@ -2350,6 +2456,7 @@ async function loadUserComponents(reset = false) {
                 componentData.dbId = componentId;
                 if (loadComponentState(componentData)) {
                     currentComponentId = componentId;
+                    document.getElementById('share-component-btn').disabled = false;
                     if (galleryOffcanvas) galleryOffcanvas.hide();
                     showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
                     isDirty = false;
@@ -2742,9 +2849,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedLedIds: selectedLedIds, rightPanelTop: rightPanelTop, autoSave: autoSaveState,
         getCurrentTool: () => currentTool,
         updateLedCount: updateLedCount,
-        // --- NEW: Export new state variables to canvas.js ---
         imageGuideState: imageGuideState
-        // --- END NEW ---
     };
 
     setupThemeSwitcher(drawCanvas);
@@ -2758,6 +2863,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPropertyListeners();
     setupGalleryListener();
 
-    // Load initial component (tries autosave first)
-    handleNewComponent(false);
+    // --- NEW: Check for URL parameter ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const componentIdFromUrl = urlParams.get('id');
+
+    if (componentIdFromUrl) { // <-- This was the line causing the error
+        // If an ID is in the URL, try to load it
+        loadComponentFromUrl(componentIdFromUrl);
+    } else {
+        // Otherwise, load from autosave or start new
+        handleNewComponent(false);
+    }
+    // --- END NEW ---
 });
