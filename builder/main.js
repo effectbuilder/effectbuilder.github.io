@@ -731,7 +731,6 @@ async function handleSaveComponent() {
                 allTypes: arrayUnion(dataToSave.type),
                 allBrands: arrayUnion(dataToSave.brand),
                 allLedCounts: arrayUnion(dataToSave.ledCount)
-                
             };
             // Use setDoc with merge:true to create or update the doc
             // We MUST wait for this to complete to avoid a race condition
