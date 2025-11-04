@@ -149,7 +149,7 @@
                         <div class="mb-3">
                             <div class="shape-gallery">
 
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-matrix-btn" data-bs-toggle="tooltip" title="Add Matrix (Rectangle)">
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-matrix-btn" data-bs-toggle="tooltip" title="Add Matrix Shape">
                                     <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
                                         <circle cx="8" cy="8" r="3" />
                                         <circle cx="16" cy="8" r="3" />
@@ -164,7 +164,7 @@
                                     <small>Matrix</small>
                                 </button>
 
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-strip-btn" data-bs-toggle="tooltip" title="Add Strip (Coming Soon)">
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-strip-btn" data-bs-toggle="tooltip" title="Add Strip Shape">
                                     <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
                                         <circle cx="8" cy="16" r="3" />
                                         <circle cx="16" cy="16" r="3" />
@@ -173,7 +173,7 @@
                                     <small>Strip</small>
                                 </button>
 
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-circle-btn" data-bs-toggle="tooltip" title="Add Circle (Coming Soon)">
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-circle-btn" data-bs-toggle="tooltip" title="Add Circle Shape">
                                     <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
                                         <circle cx="26" cy="16" r="3" />
                                         <circle cx="23" cy="23" r="3" />
@@ -187,17 +187,17 @@
                                     <small>Circle</small>
                                 </button>
 
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-l-shape-btn" data-bs-toggle="tooltip" title="L-Shape (Coming Soon)">
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-l-shape-btn" data-bs-toggle="tooltip" title="L Shape">
                                     <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
                                         <circle cx="8" cy="8" r="3" />
                                         <circle cx="8" cy="16" r="3" />
                                         <circle cx="8" cy="24" r="3" />
                                         <circle cx="16" cy="24" r="3" />
                                     </svg>
-                                    <small>L-Shape</small>
+                                    <small>L Shape</small>
                                 </button>
 
-                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-u-shape-btn" data-bs-toggle="tooltip" title="U-Shape (Coming Soon)">
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-u-shape-btn" data-bs-toggle="tooltip" title="U Shape">
                                     <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
                                         <circle cx="8" cy="8" r="3" />
                                         <circle cx="24" cy="8" r="3" />
@@ -207,7 +207,31 @@
                                         <circle cx="16" cy="24" r="3" />
                                         <circle cx="24" cy="24" r="3" />
                                     </svg>
-                                    <small>U-Shape</small>
+                                    <small>U Shape</small>
+                                </button>
+
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-triangle-btn" data-bs-toggle="tooltip" title="Triangle Shape">
+                                    <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
+                                        <circle cx="16" cy="8" r="3" />
+                                        <circle cx="8" cy="24" r="3" />
+                                        <circle cx="24" cy="24" r="3" />
+                                        <circle cx="20" cy="16" r="3" />
+                                        <circle cx="12" cy="16" r="3" />
+                                        <circle cx="16" cy="24" r="3" />
+                                    </svg>
+                                    <small>Triangle</small>
+                                </button>
+
+                                <button class="btn btn-outline-secondary shape-gallery-item" id="add-hexagon-btn" data-bs-toggle="tooltip" title="Hexagon Shape">
+                                    <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" class="d-block mb-1">
+                                        <circle cx="16" cy="6" r="3" />
+                                        <circle cx="25" cy="11" r="3" />
+                                        <circle cx="25" cy="21" r="3" />
+                                        <circle cx="16" cy="26" r="3" />
+                                        <circle cx="7" cy="21" r="3" />
+                                        <circle cx="7" cy="11" r="3" />
+                                    </svg>
+                                    <small>Hexagon</small>
                                 </button>
 
                             </div>
@@ -228,8 +252,27 @@
 
                     <div class="btn-group me-2 mb-1" role="group">
                         <button class="btn btn-secondary" id="tool-select-btn" data-bs-toggle="tooltip" title="Select Tool (V)"><i class="bi bi-cursor-fill"></i></button>
-                        <button class="btn btn-secondary" id="tool-place-led-btn" data-bs-toggle="tooltip" title="Place LED Tool (P)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M 8 12 L 8 7 A 4 4 0 0 1 16 7 L 16 12"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="10" y1="12" x2="10" y2="21"/><line x1="14" y1="12" x2="14" y2="18"/></svg></button>
-                        <button class="btn btn-secondary"data-bs-toggle="tooltip"id="tool-wiring-btn"title="Wiring Tool (W)"><svg fill="none"height="24"stroke="currentColor"stroke-linecap="round"stroke-linejoin="round"stroke-miterlimit="100"stroke-width="0.4"version="1.1"viewBox="0 0 6.3499999 6.3499999"width="24"xmlns="http://www.w3.org/2000/svg"><g transform="translate(-46.037502,-98.02813)"><g transform="translate(0.02893145,-0.22444121)"><path d="m 50.761393,100.55879 -1.608372,-1.630871 c 0,0 -0.569756,-0.561802 -1.147231,0.01125 -0.577475,0.573052 -0.101226,1.158471 -0.101226,1.158471 l 2.418182,2.48567 c 0,0 0.621202,0.6338 0.06282,1.29152 -0.558378,0.65772 -1.198809,0.0244 -1.198809,0.0244 l -1.552136,-1.58588"/><g><path d="m 50.907609,101.42483 -0.393658,-0.39365 c 0,0 -0.109013,-0.11396 0.02249,-0.24745 0.131503,-0.13349 0.447323,-0.45396 0.494884,-0.49488 0.04756,-0.0409 0.163606,-0.0475 0.236195,0.0225 0.07259,0.07 0.371162,0.37117 0.371162,0.37117 z"/><path d="m 51.496063,100.82733 0.271904,0.24306 -0.452161,0.45944 -0.265579,-0.24981 z"/></g><g transform="rotate(180,49.264943,101.27615)"><path d="m 51.070354,101.14683 -0.393658,-0.39365 c 0,0 -0.109013,-0.11396 0.02249,-0.24745 0.131503,-0.13349 0.447323,-0.45396 0.494884,-0.49488 0.04756,-0.0409 0.163606,-0.0475 0.236195,0.0225 0.07259,0.07 0.371162,0.37117 0.371162,0.37117 z"/><path d="m 51.658808,100.54933 0.271904,0.24306 -0.452161,0.45944 -0.265579,-0.24981 z"/></g></g></g></svg></button>
+                        <button class="btn btn-secondary" id="tool-place-led-btn" data-bs-toggle="tooltip" title="Place LED Tool (P)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M 8 12 L 8 7 A 4 4 0 0 1 16 7 L 16 12" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                                <line x1="10" y1="12" x2="10" y2="21" />
+                                <line x1="14" y1="12" x2="14" y2="18" />
+                            </svg></button>
+                        <button class="btn btn-secondary" data-bs-toggle="tooltip" id="tool-wiring-btn" title="Wiring Tool (W)"><svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="100" stroke-width="0.4" version="1.1" viewBox="0 0 6.3499999 6.3499999" width="24" xmlns="http://www.w3.org/2000/svg">
+                                <g transform="translate(-46.037502,-98.02813)">
+                                    <g transform="translate(0.02893145,-0.22444121)">
+                                        <path d="m 50.761393,100.55879 -1.608372,-1.630871 c 0,0 -0.569756,-0.561802 -1.147231,0.01125 -0.577475,0.573052 -0.101226,1.158471 -0.101226,1.158471 l 2.418182,2.48567 c 0,0 0.621202,0.6338 0.06282,1.29152 -0.558378,0.65772 -1.198809,0.0244 -1.198809,0.0244 l -1.552136,-1.58588" />
+                                        <g>
+                                            <path d="m 50.907609,101.42483 -0.393658,-0.39365 c 0,0 -0.109013,-0.11396 0.02249,-0.24745 0.131503,-0.13349 0.447323,-0.45396 0.494884,-0.49488 0.04756,-0.0409 0.163606,-0.0475 0.236195,0.0225 0.07259,0.07 0.371162,0.37117 0.371162,0.37117 z" />
+                                            <path d="m 51.496063,100.82733 0.271904,0.24306 -0.452161,0.45944 -0.265579,-0.24981 z" />
+                                        </g>
+                                        <g transform="rotate(180,49.264943,101.27615)">
+                                            <path d="m 51.070354,101.14683 -0.393658,-0.39365 c 0,0 -0.109013,-0.11396 0.02249,-0.24745 0.131503,-0.13349 0.447323,-0.45396 0.494884,-0.49488 0.04756,-0.0409 0.163606,-0.0475 0.236195,0.0225 0.07259,0.07 0.371162,0.37117 0.371162,0.37117 z" />
+                                            <path d="m 51.658808,100.54933 0.271904,0.24306 -0.452161,0.45944 -0.265579,-0.24981 z" />
+                                        </g>
+                                    </g>
+                                </g>
+                            </svg></button>
                     </div>
 
                     <div class="btn-group me-2 mb-1" role="group">
