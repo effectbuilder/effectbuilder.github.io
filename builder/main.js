@@ -105,7 +105,7 @@ const addHexagonBtn = document.getElementById('add-hexagon-btn');
 const confirmAddHexagonBtn = document.getElementById('confirm-add-hexagon-btn');
 
 let addTriangleModal = null;
-const addTriangleBtn = document.getElementById('add-triangle-empty-btn');
+const addTriangleBtn = document.getElementById('add-triangle-btn');
 const confirmAddTriangleBtn = document.getElementById('confirm-add-triangle-empty-btn');
 
 const rotateSelectedBtn = document.getElementById('rotate-selected-btn');
@@ -1299,19 +1299,19 @@ function setupPropertyListeners() {
     //     confirmAddLiLiBtn.addEventListener('click', handleAddLiLi);
     // } else { console.warn("Add LiLi modal buttons not found."); }
 
-    // // --- ADDED FOR HEXAGON ---
-    // addHexagonModal = new bootstrap.Modal(document.getElementById('add-hexagon-modal'));
-    // if (addHexagonBtn && confirmAddHexagonBtn) {
-    //     addHexagonBtn.addEventListener('click', () => { addHexagonModal.show(); });
-    //     confirmAddHexagonBtn.addEventListener('click', handleAddHexagon);
-    // } else { console.warn("Add Hexagon modal buttons not found."); }
+    // --- ADDED FOR HEXAGON ---
+    addHexagonModal = new bootstrap.Modal(document.getElementById('add-hexagon-modal'));
+    if (addHexagonBtn && confirmAddHexagonBtn) {
+        addHexagonBtn.addEventListener('click', () => { addHexagonModal.show(); });
+        confirmAddHexagonBtn.addEventListener('click', handleAddHexagon);
+    } else { console.warn("Add Hexagon modal buttons not found."); }
 
-    // // --- ADDED FOR TRIANGLE ---
-    // addTriangleModal = new bootstrap.Modal(document.getElementById('add-triangle-empty-modal'));
-    // if (addTriangleBtn && confirmAddTriangleBtn) {
-    //     addTriangleBtn.addEventListener('click', () => { addTriangleModal.show(); });
-    //     confirmAddTriangleBtn.addEventListener('click', handleAddTriangle);
-    // } else { console.warn("Add Triangle modal buttons not found."); }
+    // --- ADDED FOR TRIANGLE ---
+    addTriangleModal = new bootstrap.Modal(document.getElementById('add-triangle-empty-modal'));
+    if (addTriangleBtn && confirmAddTriangleBtn) {
+        addTriangleBtn.addEventListener('click', () => { addTriangleModal.show(); });
+        confirmAddTriangleBtn.addEventListener('click', handleAddTriangle);
+    } else { console.warn("Add Triangle modal buttons not found."); }
 }
 
 /**
@@ -1736,40 +1736,56 @@ function handleAddStrip() {
 
 function handleAddCircle() {
     const ledCount = parseInt(document.getElementById('circle-led-count').value) || 12;
+    // --- FIX 1: Respect the user's radius input ---
+    const radiusUnits = parseInt(document.getElementById('circle-radius').value) || 5;
 
-    if (ledCount <= 2) { showToast('Invalid Input', 'LED Count must be greater than 2 to form a circle.', 'danger'); return; }
+    if (ledCount <= 1) { showToast('Invalid Input', 'LED Count must be greater than 1.', 'danger'); return; }
+    if (radiusUnits <= 0) { showToast('Invalid Input', 'Radius must be > 0.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
-    const minCircumference = ledCount * GRID_SIZE;
-    const requiredRadiusFloat = minCircumference / (2 * Math.PI);
-    const radiusUnits = Math.ceil(requiredRadiusFloat / GRID_SIZE);
+    // --- Use the user's radius ---
     const radiusPx = radiusUnits * GRID_SIZE;
 
-    console.log(`Calculated Radius: ${radiusUnits} grid units (${radiusPx}px) for ${ledCount} LEDs.`);
+    console.log(`Creating circle: ${ledCount} LEDs, ${radiusUnits} unit radius (${radiusPx}px).`);
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
     const shapeWidth = radiusPx * 2;
     const shapeHeight = radiusPx * 2;
-    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
-    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
-    const getVertices = (centerX, centerY) => {
-        const V = [];
+    // --- FIX 2: Create a new position generator that returns the *actual LED positions*, not polygon edges ---
+    /**
+     * Calculates the grid-snapped (x, y) coordinates for each LED on the circle's circumference.
+     * @param {number} centerX - The world X coordinate of the circle's center.
+     * @param {number} centerY - The world Y coordinate of the circle's center.
+     * @returns {Array<object>} - Array of {x, y} grid-snapped coordinates.
+     */
+    const getCircleLedPositions = (centerX, centerY) => {
+        const positions = [];
         for (let i = 0; i < ledCount; i++) {
+            // Calculate the angle for this LED
             const angle = (i / ledCount) * 2 * Math.PI;
-            V.push({
-                x: centerX + radiusPx * Math.cos(angle),
-                y: centerY + radiusPx * Math.sin(angle)
+            // Calculate the precise (x, y)
+            const rawX = centerX + radiusPx * Math.cos(angle);
+            const rawY = centerY + radiusPx * Math.sin(angle);
+            // Snap to the grid
+            positions.push({
+                x: Math.round(rawX / GRID_SIZE) * GRID_SIZE,
+                y: Math.round(rawY / GRID_SIZE) * GRID_SIZE
             });
         }
-        return V;
+        return positions;
     };
 
-    const getPositionsForSearch = (sx, sy) => getVertices(sx + radiusPx, sy + radiusPx).map(v => ({
-        x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
-        y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
-    }));
+    // --- Use this new function for the overlap search ---
+    // The search function findEmptySpotForShape needs a top-left (sx, sy) anchor.
+    // We calculate the center from that.
+    const getPositionsForSearch = (sx, sy) => {
+        const centerX = sx + radiusPx;
+        const centerY = sy + radiusPx;
+        return getCircleLedPositions(centerX, centerY);
+    };
+    // --- End FIX 2 ---
 
     const { foundSpot, startX, startY } = findEmptySpotForShape(
         viewCenter,
@@ -1780,16 +1796,21 @@ function handleAddCircle() {
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the circle.`, 'warning'); return; }
 
-    const finalVertices = getVertices(startX + radiusPx, startY + radiusPx);
-    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
+    // --- FIX 3: Use the new position generator for *final* LED creation ---
+    // Calculate the actual center based on where the shape was placed
+    const finalCenterX = startX + radiusPx;
+    const finalCenterY = startY + radiusPx;
+    const newLedsRaw = getCircleLedPositions(finalCenterX, finalCenterY);
+    // --- End FIX 3 ---
 
     const newLeds = [];
     const newWireIds = [];
     let ledCountFinal = 0;
-    const addedCoords = new Set();
+    const addedCoords = new Set(); // To prevent overlap from grid snapping
 
     for (const rawLed of newLedsRaw) {
         const key = `${rawLed.x},${rawLed.y}`;
+        // Add LED only if another LED doesn't already exist at this snapped coordinate
         if (!addedCoords.has(key)) {
             const id = `${Date.now()}-circ-${ledCountFinal++}`;
             const newLed = { id, x: rawLed.x, y: rawLed.y };
@@ -1799,17 +1820,30 @@ function handleAddCircle() {
         }
     }
 
+    // --- Check if grid snapping collapsed all points ---
+    if (newLeds.length === 0) {
+        showToast('Error', 'Could not create circle. Radius might be too small.', 'danger');
+        return;
+    }
+
+    if (newLeds.length < ledCount) {
+        showToast('Warning', `Note: ${ledCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+    }
+
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
-    componentState.wiring.push(newWireIds);
+    componentState.wiring.push(newWireIds); // Add as one continuous circuit
 
+    // --- FIX 4: Pan the view to the *actual* center of the new shape ---
     viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
+
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
-    document.getElementById('add-circle-modal').classList.remove('show');
-    addCircleModal.hide(); drawCanvas(); autoSaveState();
+    addCircleModal.hide();
+    drawCanvas();
+    autoSaveState();
     updateLedCount();
 }
 
@@ -2081,44 +2115,57 @@ function handleAddHexagon() {
     if (ledsPerSideInput <= 1) { showToast('Invalid Input', 'LEDs per Side must be greater than 1.', 'danger'); return; }
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
-    const numSegments = ledsPerSideInput - 1;
-    const s = numSegments * GRID_SIZE;
-    const R = s;
-    const a = R * (Math.sqrt(3) / 2);
+    // 'numSegments' is the number of gaps between LEDs.
+    // If user wants 4 LEDs per side, there are 3 gaps.
+    const numSegments = ledsPerSideInput - 1; 
+    
+    // Base the radius on the number of segments to make it scale
+    const R = numSegments * GRID_SIZE * 2; // Scaled radius
+    
+    const a = R * (Math.sqrt(3) / 2); // Apothem (for height calculation)
     const shapeWidth = 2 * R;
-    const shapeHeight = Math.round(2 * a / GRID_SIZE) * GRID_SIZE;
+    const shapeHeight = 2 * a;
+    
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
-    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
-    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
 
     const getVertices = (centerX, centerY) => {
         const V = [];
-        const startAngle = Math.PI / 6;
+        // Use 30 degrees (PI/6) to get a flat-top hexagon
+        const startAngle = Math.PI / 6; 
         const angleStep = 2 * Math.PI / SIDES;
         for (let i = 0; i < SIDES; i++) {
             const angle = startAngle + i * angleStep;
             V.push({
                 x: centerX + R * Math.cos(angle),
-                y: centerY - R * Math.sin(angle)
+                y: centerY - R * Math.sin(angle)  // negative sin because canvas Y is inverted
             });
         }
         return V;
+    };
+
+    // findEmptySpotForShape's generator needs to return snapped points for collision checking.
+    const getPositionsForSearch = (sx, sy) => {
+         // sx, sy is top-left. Center is (sx + R, sy + a)
+        const vertices = getVertices(sx + R, sy + a);
+        return getInterpolatedPointsForPolygon(vertices, ledsPerSideInput, GRID_SIZE);
     };
 
     const { foundSpot, startX, startY } = findEmptySpotForShape(
         viewCenter,
         shapeWidth,
         shapeHeight,
-        (sx, sy) => getVertices(sx + R, sy + shapeHeight / 2).map(v => ({
-            x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
-            y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
-        }))
+        getPositionsForSearch
     );
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the hexagon.`, 'warning'); return; }
 
-    const finalVertices = getVertices(startX + R, startY + shapeHeight / 2);
-    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
+    // --- FINAL CREATION ---
+    const finalCenterX = startX + R;
+    const finalCenterY = startY + a; // 'a' is half the height
+    const finalVertices = getVertices(finalCenterX, finalCenterY);
+    
+    // Use the new, correct interpolation function
+    const newLedsRaw = getInterpolatedPointsForPolygon(finalVertices, ledsPerSideInput, GRID_SIZE);
 
     const newLeds = [];
     const newWireIds = [];
@@ -2130,6 +2177,12 @@ function handleAddHexagon() {
         newLeds.push(newLed);
         newWireIds.push(id);
     }
+    
+    // Check if snapping caused too many LEDs to merge
+    const expectedLedCount = (ledsPerSideInput - 1) * SIDES;
+    if (newLeds.length < expectedLedCount * 0.9) { // Allow for some merging
+         showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+    }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
@@ -2138,6 +2191,7 @@ function handleAddHexagon() {
 
     viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
+    
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addHexagonModal.hide(); drawCanvas(); autoSaveState();
@@ -2151,34 +2205,41 @@ function handleAddTriangle() {
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
+    
     const numSegments = ledsPerSide - 1;
-    const s = numSegments * GRID_SIZE;
-    const h = s * 0.866025;
+    // Base the side length on the number of segments
+    const s = numSegments * GRID_SIZE * 2; // Scaled side length
+    const h = s * 0.866025; // Equilateral triangle height
     const shapeWidth = s;
-    const shapeHeight = Math.round(h / GRID_SIZE) * GRID_SIZE;
-    const finalCenterX = Math.round(viewCenter.x / GRID_SIZE) * GRID_SIZE;
-    const finalCenterY = Math.round(viewCenter.y / GRID_SIZE) * GRID_SIZE;
+    const shapeHeight = Math.round(h / GRID_SIZE) * GRID_SIZE; // Use snapped height
 
     const getVertices = (sx, sy) => [
         { x: sx, y: sy + shapeHeight },         // V1: Bottom-Left
         { x: sx + shapeWidth, y: sy + shapeHeight }, // V2: Bottom-Right
         { x: sx + shapeWidth / 2, y: sy }            // V3: Top
     ];
+    
+    // Use the new interpolation function for collision checking
+    const getPositionsForSearch = (sx, sy) => {
+        const vertices = getVertices(sx, sy);
+        return getInterpolatedPointsForPolygon(vertices, ledsPerSide, GRID_SIZE);
+    };
 
     const { foundSpot, startX, startY } = findEmptySpotForShape(
         viewCenter,
         shapeWidth,
         shapeHeight,
-        (sx, sy) => getVertices(sx, sy).map(v => ({
-            x: Math.round(v.x / GRID_SIZE) * GRID_SIZE,
-            y: Math.round(v.y / GRID_SIZE) * GRID_SIZE
-        }))
+        getPositionsForSearch
     );
 
     if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the triangle.`, 'warning'); return; }
 
+    const finalCenterX = startX + shapeWidth / 2;
+    const finalCenterY = startY + shapeHeight / 2;
     const finalVertices = getVertices(startX, startY);
-    const newLedsRaw = getPointsForPolygon(finalVertices, GRID_SIZE);
+    
+    // Use the new, correct interpolation function
+    const newLedsRaw = getInterpolatedPointsForPolygon(finalVertices, ledsPerSide, GRID_SIZE);
 
     const newLeds = [];
     const newWireIds = [];
@@ -2191,6 +2252,11 @@ function handleAddTriangle() {
         newWireIds.push(id);
     }
 
+    const expectedLedCount = (ledsPerSide - 1) * 3;
+    if (newLeds.length < expectedLedCount * 0.9) {
+         showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+    }
+
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
     if (!Array.isArray(componentState.wiring)) componentState.wiring = [];
     componentState.leds.push(...newLeds);
@@ -2198,6 +2264,7 @@ function handleAddTriangle() {
 
     viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
+    
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addTriangleModal.hide(); drawCanvas(); autoSaveState();
@@ -2753,6 +2820,47 @@ function bresenhamLine(x0, y0, x1, y1) {
     return points;
 }
 
+/**
+ * Generates grid-snapped LED positions by interpolating points along polygon edges.
+ * @param {Array<object>} vertices - Array of floating-point {x, y} vertices.
+ * @param {number} ledsPerSide - The number of LEDs to place on *each* side (including vertices).
+ * @param {number} gridSize - The global GRID_SIZE.
+ * @returns {Array<object>} - Ordered array of {x, y} LED positions, snapped and deduplicated.
+ */
+function getInterpolatedPointsForPolygon(vertices, ledsPerSide, gridSize) {
+    const allPoints = [];
+    const addedCoords = new Set();
+    // e.g., 4 LEDs per side = 3 segments/gaps
+    const numSegments = ledsPerSide - 1;
+
+    if (numSegments <= 0) return []; // Invalid
+
+    for (let i = 0; i < vertices.length; i++) {
+        const p1 = vertices[i];
+        const p2 = vertices[(i + 1) % vertices.length];
+
+        // We only add points *before* the end vertex of the segment.
+        // The *next* segment will add that vertex, handling the corner.
+        for (let j = 0; j < numSegments; j++) {
+            // t goes from 0 up to (numSegments-1)/numSegments
+            const t = j / numSegments;
+
+            const rawX = lerp(p1.x, p2.x, t);
+            const rawY = lerp(p1.y, p2.y, t);
+
+            // Snap the *interpolated point* to the grid
+            const snappedX = Math.round(rawX / gridSize) * gridSize;
+            const snappedY = Math.round(rawY / gridSize) * gridSize;
+
+            const key = `${snappedX},${snappedY}`;
+            if (!addedCoords.has(key)) {
+                allPoints.push({ x: snappedX, y: snappedY });
+                addedCoords.add(key);
+            }
+        }
+    }
+    return allPoints;
+}
 
 /**
  * Converts a list of floating-point shape vertices into an ordered list of snapped
