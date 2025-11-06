@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ink Drops</title>
+    <meta description="An automatic ink marbling effect.">
+    <meta publisher="Jose Miranda">
+    
+    <meta property="palette" label="Color Profile" type="combobox" values="Custom,Rainbow,Pastel Rainbow,Ocean,Forest,Sunset,Vaporwave,Fire,Ice,Monochrome,Coffee,Sakura,Synthwave,Halloween,Christmas,Patriotic,Spring,Summer,Autumn,Winter,NVIDIA,AMD,Intel" default="Rainbow">
+    <meta property="spawnRate" label="Spawn Rate" type="number" min="1" max="100" default="20">
+    <meta property="dropSize" label="Drop Size" type="number" min="5" max="50" default="12">
+    <meta property="growthSpeed" label="Growth Speed (%/sec)" type="number" min="10" max="500" default="100">
+    
+    <meta property="backgroundColor" label="Custom Background" type="color" default="#FCEE21">
+    <meta property="color1" label="Custom Color 1" type="color" default="#0B6A88">
+    <meta property="color2" label="Custom Color 2" type="color" default="#2DC5F4">
+    <meta property="color3" label="Custom Color 3" type="color" default="#70327E">
+    <meta property="color4" label="Custom Color 4" type="color" default="#9253A1">
+    <meta property="color5" label="Custom Color 5" type="color" default="#A42963">
+    <meta property="color6" label="Custom Color 6" type="color" default="#EC015A">
+    <meta property="color7" label="Custom Color 7" type="color" default="#F063A4">
+    <meta property="color8" label="Custom Color 8" type="color" default="#F16164">
+    <meta property="color9" label="Custom Color 9" type="color" default="#F89E4F">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="effect-canvas"></canvas>
+    
+    <script>
+    // -------------------------------------------------------------------
+    // BROWSER-MODE VARIABLE DEFINITIONS
+    // -------------------------------------------------------------------
+    // This block defines variables *only if* they don't already exist
+    // (i.e., when not running inside SignalRGB)
+    
+    // We use 'var' so they are globally scoped, mimicking SignalRGB
+    if (typeof palette === 'undefined')         var palette = "Rainbow";
+    if (typeof spawnRate === 'undefined')       var spawnRate = 20;
+    if (typeof dropSize === 'undefined')        var dropSize = 12;
+    if (typeof growthSpeed === 'undefined')     var growthSpeed = 100;
+    if (typeof backgroundColor === 'undefined') var backgroundColor = "#FCEE21";
+    if (typeof color1 === 'undefined')          var color1 = "#0B6A88";
+    if (typeof color2 === 'undefined')          var color2 = "#2DC5F4";
+    if (typeof color3 === 'undefined')          var color3 = "#70327E";
+    if (typeof color4 === 'undefined')          var color4 = "#9253A1";
+    if (typeof color5 === 'undefined')          var color5 = "#A42963";
+    if (typeof color6 === 'undefined')          var color6 = "#EC015A";
+    if (typeof color7 === 'undefined')          var color7 = "#F063A4";
+    if (typeof color8 === 'undefined')          var color8 = "#F16164";
+    if (typeof color9 === 'undefined')          var color9 = "#F89E4F";
+
+
+    // -------------------------------------------------------------------
+    // SETUP
+    // -------------------------------------------------------------------
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Default size for SignalRGB. Will be updated by browser resize.
+    let canvasWidth = canvas.width = 320;
+    let canvasHeight = canvas.height = 200;
+
+    // Effect state
+    let drops = [];
+    let activePaletteColors = [];
+    let bk = [252, 238, 33];
+    let counter = 1;
+    let timeSinceLastDrop = 0;
+    let lastTime = 0;
+    let lastPalette = ""; // Used to detect palette changes
+
+    // -------------------------------------------------------------------
+    // COLOR PALETTES OBJECT
+    // -------------------------------------------------------------------
+    const colorPalettes = {
+        "Rainbow": {
+            "bg": "#000000",
+            "colors": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF0000", "#FF7F00"]
+        },
+        "Pastel Rainbow": {
+            "bg": "#E6E6FA",
+            "colors": ["#FFB6C1", "#FFD699", "#FFFFB3", "#CCFFCC", "#B3E0FF", "#D1C4E9", "#FFCCE5", "#FFB6C1", "#FFD699"]
+        },
+        "Ocean": {
+            "bg": "#000030",
+            "colors": ["#00BFFF", "#1E90FF", "#00CED1", "#20B2AA", "#AFEEEE", "#F0FFFF", "#87CEEB", "#00BFFF", "#1E90FF"]
+        },
+        "Forest": {
+            "bg": "#021A02",
+            "colors": ["#228B22", "#006400", "#556B2F", "#8FBC8F", "#2E8B57", "#3CB371", "#8B4513", "#228B22", "#006400"]
+        },
+        "Sunset": {
+            "bg": "#000020",
+            "colors": ["#FF4500", "#FFA500", "#FF6347", "#FF8C00", "#FFD700", "#DA70D6", "#8A2BE2", "#FF4500", "#FFA500"]
+        },
+        "Vaporwave": {
+            "bg": "#0D0221",
+            "colors": ["#FF00FF", "#00FFFF", "#FF69B4", "#FFD700", "#00FF00", "#FF00FF", "#00FFFF", "#FF69B4", "#FFD700"]
+        },
+        "Fire": {
+            "bg": "#400000",
+            "colors": ["#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#FFFF00", "#FF4500", "#FF0000", "#FF8C00"]
+        },
+        "Ice": {
+            "bg": "#00001A",
+            "colors": ["#B0E0E6", "#ADD8E6", "#87CEEB", "#AFEEEE", "#F0FFFF", "#FFFFFF", "#B0E0E6", "#ADD8E6", "#87CEEB"]
+        },
+        "Monochrome": {
+            "bg": "#202020",
+            "colors": ["#000000", "#333333", "#666666", "#999999", "#CCCCCC", "#FFFFFF", "#999999", "#666666", "#333333"]
+        },
+        "Coffee": {
+            "bg": "#211710",
+            "colors": ["#6F4E37", "#8B4513", "#A0522D", "#D2B48C", "#F5F5DC", "#FFF8DC", "#6F4E37", "#8B4513", "#A0522D"]
+        },
+        "Sakura": {
+            "bg": "#FFF0F5",
+            "colors": ["#FFC0CB", "#FFB6C1", "#FF69B4", "#DB7093", "#FFFFFF", "#FFFAFA", "#FFC0CB", "#FFB6C1", "#FF69B4"]
+        },
+        "Synthwave": {
+            "bg": "#00002F",
+            "colors": ["#FF007F", "#F800FF", "#8A00FF", "#0080FF", "#00FF80", "#FFFF00", "#FF007F", "#F800FF", "#8A00FF"]
+        },
+        "Halloween": {
+            "bg": "#1A1A1A",
+            "colors": ["#FFA500", "#FF8C00", "#000000", "#800080", "#4B0082", "#7FFF00", "#FFA500", "#000000", "#800080"]
+        },
+        "Christmas": {
+            "bg": "#013220",
+            "colors": ["#FF0000", "#DC143C", "#008000", "#006400", "#FFFFFF", "#FFD700", "#FF0000", "#008000", "#FFFFFF"]
+        },
+        "Patriotic": {
+            "bg": "#000040",
+            "colors": ["#B22234", "#FFFFFF", "#3C3B6E", "#B22234", "#FFFFFF", "#3C3B6E", "#B22234", "#FFFFFF", "#3C3B6E"]
+        },
+        "Spring": {
+            "bg": "#F0FFF0",
+            "colors": ["#98FB98", "#FFB6C1", "#FFFFE0", "#ADD8E6", "#FAFAD2", "#FFDAB9", "#98FB98", "#FFB6C1", "#FFFFE0"]
+        },
+        "Summer": {
+            "bg": "#E0FFFF",
+            "colors": ["#FFFF00", "#FFD700", "#00BFFF", "#1E90FF", "#F0E68C", "#FF4500", "#FFFF00", "#00BFFF", "#F0E68C"]
+        },
+        "Autumn": {
+            "bg": "#2F1B0C",
+            "colors": ["#A0522D", "#CD853F", "#D2691E", "#FF4500", "#FF8C00", "#B8860B", "#A0522D", "#CD853F", "#D2691E"]
+        },
+        "Winter": {
+            "bg": "#191970",
+            "colors": ["#F0F8FF", "#E6E6FA", "#B0C4DE", "#FFFFFF", "#808080", "#A9A9A9", "#F0F8FF", "#E6E6FA", "#B0C4DE"]
+        },
+        "NVIDIA": {
+            "bg": "#000000",
+            "colors": ["#76B900", "#FFFFFF", "#333333", "#76B900", "#000000", "#999999", "#76B900", "#FFFFFF", "#333333"]
+        },
+        "AMD": {
+            "bg": "#111111",
+            "colors": ["#FF0000", "#CC0000", "#FFFFFF", "#000000", "#999999", "#FF0000", "#CC0000", "#FFFFFF", "#000000"]
+        },
+        "Intel": {
+            "bg": "#F0F0F5",
+            "colors": ["#0071C5", "#00AFFF", "#FFFFFF", "#808080", "#0071C5", "#00AFFF", "#FFFFFF", "#808080", "#0071C5"]
+        }
+    };
+    
+    // -------------------------------------------------------------------
+    // P5.JS EMULATION HELPERS
+    // -------------------------------------------------------------------
+    class PVector {
+        constructor(x = 0, y = 0) {
+            this.x = x;
+            this.y = y;
+        }
+        set(v) {
+            this.x = v.x;
+            this.y = v.y;
+        }
+        copy() {
+            return new PVector(this.x, this.y);
+        }
+        add(v) {
+            this.x += v.x;
+            this.y += v.y;
+            return this;
+        }
+        sub(v) {
+            this.x -= v.x;
+            this.y -= v.y;
+            return this;
+        }
+        mult(n) {
+            this.x *= n;
+            this.y *= n;
+            return this;
+        }
+        mag() {
+            return Math.sqrt(this.x * this.x + this.y * this.y);
+        }
+        dot(v) {
+            return this.x * v.x + this.y * v.y;
+        }
+        rotate(angle) {
+            let newX = this.x * Math.cos(angle) - this.y * Math.sin(angle);
+            let newY = this.x * Math.sin(angle) + this.y * Math.cos(angle);
+            this.x = newX;
+            this.y = newY;
+            return this;
+        }
+    }
+    PVector.sub = (v1, v2) => new PVector(v1.x - v2.x, v1.y - v2.y);
+
+    const TWO_PI = Math.PI * 2;
+    const HALF_PI = Math.PI / 2;
+
+    function map(value, start1, stop1, start2, stop2) {
+        return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
+    }
+
+    function hexToRgb(hex) {
+        if (!hex) return [0, 0, 0];
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+    }
+
+    // -------------------------------------------------------------------
+    // DROP CLASS
+    // -------------------------------------------------------------------
+    class Drop {
+        constructor(x, y, r, col) {
+            this.center = new PVector(x, y);
+            this.targetR = r; // The final, max size
+            this.r = 0; // The current size, starts at 0
+            this.growthSpeed = (growthSpeed || 100);
+            this.col = col;
+            this.circleDetail = 100;
+            
+            this.baseVertices = []; 
+            this.vertices = [];
+            
+            this.isGrowing = true;
+            this.isShrinking = false;
+            this.isDead = false;
+            this.updateBaseVertices(); // Initial vertex calculation (at size 0)
+        }
+
+        updateBaseVertices() {
+            if (this.baseVertices.length !== this.circleDetail) {
+                 this.baseVertices = [];
+                 this.vertices = [];
+                 for (let i = 0; i < this.circleDetail; i++) {
+                    this.baseVertices[i] = new PVector();
+                    this.vertices[i] = new PVector();
+                 }
+            }
+            
+            for (let i = 0; i < this.circleDetail; i++) {
+                let angle = map(i, 0, this.circleDetail, 0, TWO_PI);
+                let v = this.baseVertices[i];
+                v.x = Math.cos(angle);
+                v.y = Math.sin(angle);
+                v.mult(this.r);
+                v.add(this.center);
+            }
+        }
+        
+        resetDeformedVertices() {
+            for (let i = 0; i < this.circleDetail; i++) {
+                this.vertices[i].set(this.baseVertices[i]);
+            }
+        }
+
+        update(deltaTime) {
+            // Use the global 'growthSpeed' variable
+            let growthAmount = this.targetR * (growthSpeed / 100) * (deltaTime / 1000);
+
+            if (this.isGrowing) {
+                this.r += growthAmount;
+                if (this.r >= this.targetR) {
+                    this.r = this.targetR;
+                    this.isGrowing = false;
+                }
+            } else if (this.isShrinking) {
+                this.r -= growthAmount;
+                if (this.r <= 0) {
+                    this.r = 0;
+                    this.isDead = true;
+                }
+            }
+            
+            this.updateBaseVertices();
+        }
+
+        marble(other) {
+            let c = other.center;
+            let r = other.r; 
+            if (r === 0) return;
+            
+            for (let v of this.vertices) {
+                let p = v.copy();
+                p.sub(c);
+                let m = p.mag();
+                if (m === 0) continue; 
+                
+                let root = Math.sqrt(1 + (r * r) / (m * m));
+                p.mult(root);
+                p.add(c);
+                v.set(p);
+            }
+        }
+
+        show() {
+            if (this.r <= 0.1) return;
+            
+            ctx.fillStyle = `rgb(${this.col[0]}, ${this.col[1]}, ${this.col[2]})`;
+            ctx.beginPath();
+            ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
+            for (let i = 1; i < this.vertices.length; i++) {
+                ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+    
+    // -------------------------------------------------------------------
+    // MAIN EFFECT LOGIC
+    // -------------------------------------------------------------------
+    
+    function addInk(x, y, r, col) {
+        let drop = new Drop(x, y, r, col);
+        drops.push(drop);
+    }
+    
+    function updatePalette() {
+        // 'palette' is the global variable (from <meta> or defined above)
+        const selectedPalette = palette || "Rainbow"; 
+        
+        if (selectedPalette === "Custom") {
+            // Load colors from global custom color variables
+            activePaletteColors = [
+                hexToRgb(color1), hexToRgb(color2), hexToRgb(color3),
+                hexToRgb(color4), hexToRgb(color5), hexToRgb(color6),
+                hexToRgb(color7), hexToRgb(color8), hexToRgb(color9)
+            ];
+            bk = hexToRgb(backgroundColor);
+        } else {
+            // Load colors from the colorPalettes object
+            const profile = colorPalettes[selectedPalette];
+            if (profile) {
+                activePaletteColors = profile.colors.map(hex => hexToRgb(hex));
+                bk = hexToRgb(profile.bg);
+            }
+        }
+        
+        lastPalette = selectedPalette; // Store the currently loaded palette name
+    }
+    
+    function draw(deltaTime) {
+        // Draw background
+        ctx.fillStyle = `rgb(${bk[0]}, ${bk[1]}, ${bk[2]})`;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // --- Automatic Spawning ---
+        // Use global 'spawnRate' and 'dropSize'
+        timeSinceLastDrop += deltaTime;
+        const spawnInterval = 1000 / (spawnRate || 20); 
+
+        if (timeSinceLastDrop > spawnInterval) {
+            timeSinceLastDrop = 0;
+            let currentColor = activePaletteColors[counter % activePaletteColors.length];
+            counter++;
+            let x = Math.random() * canvasWidth;
+            let y = Math.random() * canvasHeight;
+            addInk(x, y, (dropSize || 12), currentColor);
+        }
+
+        // --- Main Effect Logic ---
+
+        // 1. Update growth, shrink, and base vertices
+        for (let drop of drops) {
+            drop.update(deltaTime);
+        }
+        
+        // 2. Reset all drops to their un-marbled (but grown/shrunk) state
+        for (let drop of drops) {
+            drop.resetDeformedVertices();
+        }
+
+        // 3. Apply marbling
+        for (let i = 0; i < drops.length; i++) {
+            for (let j = i + 1; j < drops.length; j++) {
+                drops[i].marble(drops[j]);
+            }
+        }
+
+        // 4. Show the final deformed drops
+        for (let drop of drops) {
+            drop.show();
+        }
+        
+        // 5. Check limit and trigger shrinking
+        const maxDrops = 50;
+        let activeDropCount = 0;
+        for (let drop of drops) {
+            if (!drop.isShrinking && !drop.isDead) {
+                activeDropCount++;
+            }
+        }
+
+        if (activeDropCount > maxDrops) {
+            for (let drop of drops) {
+                if (!drop.isGrowing && !drop.isShrinking && !drop.isDead) {
+                    drop.isShrinking = true;
+                    break;
+                }
+            }
+        }
+        
+        // 6. Remove fully shrunken (dead) drops
+        drops = drops.filter(drop => !drop.isDead);
+    }
+    
+    // -------------------------------------------------------------------
+    // ANIMATION LOOP & BROWSER RESIZE
+    // -------------------------------------------------------------------
+    
+    function animate(currentTime) {
+        if (lastTime === 0) lastTime = currentTime;
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        // Check if palette selection has changed
+        // 'palette' is the global variable, 'lastPalette' is internal
+        if ((palette || "Rainbow") !== lastPalette) {
+            updatePalette();
+        }
+        
+        draw(deltaTime);
+        
+        requestAnimationFrame(animate);
+    }
+    
+    // --- Browser-only Resize Handler ---
+    function onResize() {
+        // This check makes it *only* run in a browser
+        if (typeof engine === 'undefined') {
+            canvasWidth = canvas.width = window.innerWidth;
+            canvasHeight = canvas.height = window.innerHeight;
+            // Clear drops, as their positions would be wrong
+            drops = [];
+        }
+    }
+    
+    // Initial setup
+    window.onresize = onResize;
+    onResize(); // Call once to set initial browser size
+    updatePalette();
+    requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>
