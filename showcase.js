@@ -68,7 +68,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "particle_eq_bars.html",
         "laserShapes.html",
         "concertLasers.html",
-        "ink_drops.html"
+        "ink_drops.html",
+        "starfield.html"
     ];
 
     // --- Path Configuration ---
