@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Starfield</title>
+    <meta description="A starfield effect with customizable speed and colors.">
+    <meta publisher="Jose Miranda">
+
+    <meta property="speed" label="Speed" type="number" min="1" max="50" default="10">
+    <meta property="numStars" label="Number of Stars" type="number" min="50" max="1000" step="50" default="400">
+    <meta property="starSize" label="Star Max Size" type="number" min="1" max="10" default="4">
+    <meta property="colorProfile" label="Color Profile" type="list" values="White,Rainbow,Custom,NVIDIA,AMD,INTEL,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor" default="White">
+    <meta property="starColor1" label="Star Color 1 (Custom)" type="color" default="#FFFFFF">
+    <meta property="starColor2" label="Star Color 2 (Custom)" type="color" default="#00BFFF">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <div id="p5-container" style="width: 320px; height: 200px; margin: 0; padding: 0;"></div>
+</body>
+
+<script>
+    // -----------------------------------------------------------------
+    // Browser Fallback (for testing outside SignalRGB)
+    // -----------------------------------------------------------------
+    if (typeof speed === 'undefined') {
+        var speed = 10;
+    }
+    if (typeof numStars === 'undefined') {
+        var numStars = 400;
+    }
+    if (typeof starSize === 'undefined') {
+        var starSize = 4;
+    }
+    if (typeof colorProfile === 'undefined') {
+        var colorProfile = "White";
+    }
+    if (typeof starColor1 === 'undefined') {
+        var starColor1 = "#FFFFFF";
+    }
+    if (typeof starColor2 === 'undefined') {
+        var starColor2 = "#00BFFF";
+    }
+
+    // -----------------------------------------------------------------
+    // Starfield Effect Code
+    // -----------------------------------------------------------------
+
+    let stars = [];
+
+    // Color palettes
+    const wledPalettes = {
+        "NVIDIA": ["#000000", "#333333", "#76B900", "#FFFFFF", "#76B900"],
+        "AMD": ["#000000", "#333333", "#ED1C24", "#FFFFFF", "#ED1C24"],
+        "INTEL": ["#FFFFFF", "#0071C5", "#003E7E", "#0071C5", "#FFFFFF"],
+        "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+        "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+        "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+        "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+        "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+        "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+        "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+        "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+        "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+        "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+        "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+        "Holiday": ["#D92626", "#0E592D", "#F2B705", "#F2F2F2"],
+        "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+        "Fairy Light": ["#FF000080", "#00FF0080", "#0000FF80", "#FFFF0080"],
+        "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+        "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+        "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+        "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+        "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+    };
+
+    /**
+     * p5.js setup function, runs once at the start.
+     */
+    function setup() {
+        // Create the canvas and parent it to our div container
+        const canvas = createCanvas(320, 200);
+        canvas.parent('p5-container');
+        
+        // Use HSB color mode for easier rainbow colors
+        colorMode(HSB, 360, 100, 100);
+
+        // Initialize stars based on the meta property
+        let num = parseInt(numStars) || 400;
+        for (let i = 0; i < num; i++) {
+            stars[i] = new Star();
+        }
+    }
+
+    /**
+     * p5.js draw function, runs every frame.
+     */
+    function draw() {
+        // Get current values from meta properties
+        let currentSpeed = parseFloat(speed) || 10;
+        let currentNumStars = parseInt(numStars) || 400;
+        
+        // Adjust star count if the user changed the slider
+        if (stars.length < currentNumStars) {
+            // Add new stars
+            for (let i = 0; i < (currentNumStars - stars.length); i++) {
+                stars.push(new Star());
+            }
+        } else if (stars.length > currentNumStars) {
+            // Remove excess stars
+            stars.splice(0, stars.length - currentNumStars);
+        }
+
+        // Set background to black
+        background(0);
+        
+        // Move the origin to the center of the canvas
+        translate(width / 2, height / 2);
+        
+        // Update and draw all stars
+        for (let i = 0; i < stars.length; i++) {
+            stars[i].update(currentSpeed);
+            stars[i].show();
+        }
+    }
+
+    /**
+     * Star class
+     */
+    class Star {
+        constructor() {
+            this.x = random(-width, width);
+            this.y = random(-height, height);
+            this.z = random(width);
+            this.pz = this.z;
+            this.color = this.getStarColor();
+        }
+
+        update(currentSpeed) {
+            this.z = this.z - currentSpeed;
+            if (this.z < 1) {
+                // Reset the star
+                this.z = width;
+                this.x = random(-width, width);
+                this.y = random(-height, height);
+                this.pz = this.z;
+                this.color = this.getStarColor(); // Get a new color on reset
+            }
+        }
+
+        show() {
+            // Use the star's assigned color
+            fill(this.color);
+            stroke(this.color);
+
+            let sx = map(this.x / this.z, 0, 1, 0, width);
+            let sy = map(this.y / this.z, 0, 1, 0, height);
+
+            // Use starSize meta property
+            let r = map(this.z, 0, width, (parseInt(starSize) || 4), 0);
+
+            let px = map(this.x / this.pz, 0, 1, 0, width);
+            let py = map(this.y / this.pz, 0, 1, 0, height);
+
+            this.pz = this.z;
+
+            strokeWeight(r);
+            line(px, py, sx, sy);
+        }
+
+        getStarColor() {
+            // Meta properties are global variables
+            let profile = (typeof colorProfile !== 'undefined') ? colorProfile : "White";
+            
+            switch (profile) {
+                case "White":
+                    return color(0, 0, 100); // HSB: (any, 0, 100) is white
+                
+                case "Rainbow":
+                    return color(random(360), 90, 100); // Random HSB hue
+                
+                case "Custom":
+                    let c1 = color((typeof starColor1 !== 'undefined') ? starColor1 : "#FFFFFF");
+                    let c2 = color((typeof starColor2 !== 'undefined') ? starColor2 : "#00BFFF");
+                    return lerpColor(c1, c2, random(1));
+                
+                default:
+                    // Check if the profile exists in the WLED palettes
+                    if (wledPalettes[profile]) {
+                        const palette = wledPalettes[profile];
+                        
+                        // Pick a random spot in the palette gradient
+                        const amount = random(1);
+                        const segment = 1 / (palette.length - 1);
+                        const index = floor(amount / segment);
+                        const localAmount = (amount - (index * segment)) / segment;
+                        
+                        const colorA = color(palette[index]);
+                        const colorB = color(palette[min(index + 1, palette.length - 1)]);
+                        
+                        return lerpColor(colorA, colorB, localAmount);
+                    } else {
+                        // Fallback to white if profile is somehow invalid
+                        return color(0, 0, 100);
+                    }
+            }
+        }
+    }
+
+</script>
+</html>
