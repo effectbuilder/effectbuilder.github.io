@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Digital Noiseform</title>
+    <meta publisher="Jose Miranda" />
+    <meta property="scrollSpeed" label="Bar Scroll Speed" type="number" min="-100" max="100" default="33">
+    <meta property="verticalSpeed" label="Bar Wave Speed" type="number" min="0" max="100" default="14">
+    <meta property="movementRange" label="Bar Wave Range (%)" type="number" min="0" max="100" default="10">
+    
+    <meta property="soundReactive" label="React to Audio" type="boolean" default="true">
+    <meta property="barHeightControl" label="Bar Height Control" type="combobox" values="Fixed,Overall Volume,Bass Volume,Mid Volume,Treble Volume,Frequency" default="Frequency">
+    <meta property="maxBarHeightCells" label="Max Bar Height (Cells)" type="number" min="1" max="20" default="9">
+    <meta property="barResponsiveness" label="Bar Reactivity (%)" type="number" min="0" max="100" default="100">
+    <meta property="audioHeightSensitivity" label="Audio Height Sensitivity (%)" type="number" min="0" max="100" default="0">
+    <meta property="heightSmoothing" label="Bar Height Smoothing (%)" type="number" min="0" max="99" default="50">
+    <meta property="normalizeFrequencyHeight" label="Balance Frequency Heights" type="boolean" default="true">
+    
+    <meta property="colorPalette" label="Color Theme" type="combobox" values="Forest,Ocean,Desert,Volcano,Night,Glacier,Rainbow,Sunset,Cityscape,Jungle,Aurora,Twilight,Meadow,Canyon,Starfield,Coral,Urban,Fossil,Savanna,Arctic,Neon,Orchard,Mirage,DeepSea" default="Urban">
+    <meta property="customBackgroundColor" label="Custom Background Color" type="color" default="#000000">
+    <meta property="barColorMode" label="Bar Color Mode" type="combobox" values="Theme,Frequency Glow,Pulse,Wave,Spectrum,Dynamic" default="Frequency Glow">
+    
+    <meta property="barStyle" label="Bar Style" type="combobox" values="Solid,Vertical Fade,Horizontal Fade,Glow" default="Solid">
+    <meta property="barOutlines" label="Bar Outlines (Top/Bottom)" type="boolean" default="false">
+    <meta property="barOutlineColor" label="Bar Outline Color" type="color" default="#FFFFFF">
+    <meta property="barOutlineWidth" label="Bar Outline Width" type="number" min="1" max="10" default="1">
+    <meta property="overlayColor" label="Overlay Color" type="color" default="#000000">
+    <meta property="overlayOpacityVariation" label="Overlay Fade Variation (%)" type="number" min="0" max="100" default="100">
+    <meta property="overlayNoiseFrequency" label="Overlay Noise Density" type="number" min="1" max="50" default="20">
+    <meta property="audioDensityEffect" label="Audio Density Effect" type="combobox" values="None,Bar Color Shift,Overlay Noise Density" default="None">
+    <meta property="gridSize" label="Grid Size" type="number" min="2" max="100" default="20">
+    <meta property="gridLineWidth" label="Grid Line Width" type="number" min="1" max="10" default="3">
+    <meta property="backgroundRectHeight" label="Background Rectangle Height (Cells)" type="number" min="2" max="50" step="2" default="50">
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+</body>
+
+<script>
+    if (typeof window.engine === 'undefined') {
+        console.log('Creating dummy engine and properties for browser mode.');
+        
+        // 1. Create Fake Engine
+        window.engine = {
+            audio: {
+                freq: new Int8Array(200),
+                level: -50,
+                density: 0.5
+            }
+        };
+
+        // 2. Create Fake Meta Properties
+        window.scrollSpeed = 33;
+        window.verticalSpeed = 14;
+        window.movementRange = 10;
+        
+        window.soundReactive = true;
+        window.barHeightControl = "Frequency";
+        window.maxBarHeightCells = 9;
+        window.barResponsiveness = 100;
+        window.audioHeightSensitivity = 0;
+        window.heightSmoothing = 50;
+        window.normalizeFrequencyHeight = true;
+        
+        window.colorPalette = "Urban";
+        window.customBackgroundColor = "#000000";
+        window.barColorMode = "Frequency Glow";
+        
+        window.barStyle = "Solid";
+        window.barOutlines = false;
+        window.barOutlineColor = "#FFFFFF";
+        window.barOutlineWidth = 1;
+        
+        window.overlayColor = "#000000";
+        window.overlayOpacityVariation = 100;
+        window.overlayNoiseFrequency = 20;
+        window.audioDensityEffect = "None";
+        
+        window.gridSize = 20;
+        window.gridLineWidth = 3;
+        window.backgroundRectHeight = 50;
+    }
+</script>
+
+
+<script>
+    // -------------------------------------------------------------------
+    // SETUP & HELPERS
+    // -------------------------------------------------------------------
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false; 
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    let previousBarPixelHeight = 0;
+    const previousFreqHeights = new Array(200).fill(0); 
+
+    function hexToRgb(hex) {
+        if (!hex) return [0, 0, 0];
+        const hexString = hex.startsWith('#') ? hex.slice(1) : hex;
+        const r = parseInt(hexString.slice(0, 2), 16);
+        const g = parseInt(hexString.slice(2, 4), 16);
+        const b = parseInt(hexString.slice(4, 6), 16);
+        return [r, g, b];
+    }
+    function rgbaToString(rgb, alpha) {
+        const clampedAlpha = Math.max(0, Math.min(1, alpha));
+        return `rgba(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])}, ${clampedAlpha})`;
+    }
+    function lerp(a, b, factor) {
+        return a * (1 - factor) + b * factor;
+    }
+    function rgbToHsv(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, v = max;
+        let d = max - min;
+        s = max === 0 ? 0 : d / max;
+        if (max === min) { h = 0; }
+        else {
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return [h * 360, s * 100, v * 100];
+    }
+    function hsvToRgb(h, s, v) {
+        h /= 360; s /= 100; v /= 100;
+        let r, g, b;
+        let i = Math.floor(h * 6);
+        let f = h * 6 - i;
+        let p = v * (1 - s);
+        let q = v * (1 - f * s);
+        let t = v * (1 - (1 - f) * s);
+        switch (i % 6) {
+            case 0: r = v; g = t; b = p; break;
+            case 1: r = q; g = v; b = p; break;
+            case 2: r = p; g = v; b = t; break;
+            case 3: r = p; g = q; b = v; break;
+            case 4: r = t; g = p; b = v; break;
+            case 5: r = v; g = p; b = q; break;
+        }
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+    function seededRandom(seed) {
+        let x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+    }
+    // Palette Generator
+    function getPaletteColors(paletteName, customBackgroundColor) {
+        let baseHue, backgroundColor, rectColor, barColor;
+        if (customBackgroundColor && customBackgroundColor !== "" && customBackgroundColor !== "#000000") {
+            backgroundColor = hexToRgb(customBackgroundColor);
+        }
+        switch (paletteName) {
+             case 'Forest':
+                baseHue = 140; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 80, 10);
+                rectColor = hsvToRgb(baseHue, 60, 20);
+                barColor = hsvToRgb(baseHue, 90, 60);
+                break;
+            case 'Ocean':
+                baseHue = 210; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 90, 12);
+                rectColor = hsvToRgb(baseHue, 70, 22);
+                barColor = hsvToRgb(baseHue, 100, 70);
+                break;
+            case 'Desert':
+                baseHue = 40; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 80, 65);
+                break;
+            case 'Volcano':
+                baseHue = 10; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 90, 10);
+                rectColor = hsvToRgb(baseHue, 70, 20);
+                barColor = hsvToRgb(baseHue, 100, 65);
+                break;
+            case 'Night':
+                baseHue = 260; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 8);
+                rectColor = hsvToRgb(baseHue, 40, 18);
+                barColor = hsvToRgb(baseHue, 70, 55);
+                break;
+            case 'Glacier':
+                baseHue = 190; 
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 50, 20);
+                rectColor = hsvToRgb(baseHue, 40, 30);
+                barColor = hsvToRgb(baseHue, 60, 75);
+                break;
+            case 'Rainbow':
+                baseHue = 0; // Not used, special case
+                backgroundColor = backgroundColor || hsvToRgb(0, 0, 10);
+                rectColor = hsvToRgb(0, 0, 20);
+                barColor = hsvToRgb(0, 100, 100); // Placeholder, will be overridden
+                break;
+            case 'Sunset':
+                baseHue = 15; // Warm orange-pink
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 12);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 80, 70);
+                break;
+            case 'Cityscape':
+                baseHue = 220; // Cool blue-gray
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 10);
+                rectColor = hsvToRgb(baseHue, 50, 20);
+                barColor = hsvToRgb(baseHue, 70, 60);
+                break;
+            case 'Jungle':
+                baseHue = 160; // Deep green
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 80, 15);
+                rectColor = hsvToRgb(baseHue, 60, 25);
+                barColor = hsvToRgb(baseHue, 90, 65);
+                break;
+            case 'Aurora':
+                baseHue = 180; // Cyan-green
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 10);
+                rectColor = hsvToRgb(baseHue, 50, 20);
+                barColor = hsvToRgb(baseHue, 80, 70);
+                break;
+            case 'Twilight':
+                baseHue = 260; // Purple-blue
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 8);
+                rectColor = hsvToRgb(baseHue, 50, 18);
+                barColor = hsvToRgb(baseHue, 80, 55);
+                break;
+            case 'Meadow':
+                baseHue = 120; // Bright green
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 70, 65);
+                break;
+            case 'Canyon':
+                baseHue = 25; // Reddish-brown
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 80, 60);
+                break;
+            case 'Starfield':
+                baseHue = 270; // Deep indigo
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 80, 5);
+                rectColor = hsvToRgb(baseHue, 60, 15);
+                barColor = hsvToRgb(baseHue, 90, 50);
+                break;
+            case 'Coral':
+                baseHue = 340; // Coral pink
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 70, 65);
+                break;
+            case 'Urban':
+                baseHue = 200; // Slate blue
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 50, 10);
+                rectColor = hsvToRgb(baseHue, 40, 20);
+                barColor = hsvToRgb(baseHue, 60, 60);
+                break;
+            case 'Fossil':
+                baseHue = 50; // Earthy beige
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 50, 15);
+                rectColor = hsvToRgb(baseHue, 40, 25);
+                barColor = hsvToRgb(baseHue, 60, 60);
+                break;
+            case 'Savanna':
+                baseHue = 40; // Golden brown
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 70, 65);
+                break;
+            case 'Arctic':
+                baseHue = 210; // Pale blue
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 40, 20);
+                rectColor = hsvToRgb(baseHue, 30, 30);
+                barColor = hsvToRgb(baseHue, 50, 70);
+                break;
+            case 'Neon':
+                baseHue = 300; // Vibrant magenta
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 10);
+                rectColor = hsvToRgb(baseHue, 60, 20);
+                barColor = hsvToRgb(baseHue, 80, 70);
+                break;
+            case 'Orchard':
+                baseHue = 130; // Olive green
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 60, 15);
+                rectColor = hsvToRgb(baseHue, 50, 25);
+                barColor = hsvToRgb(baseHue, 70, 65);
+                break;
+            case 'Mirage':
+                baseHue = 330; // Dusty rose
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 50, 15);
+                rectColor = hsvToRgb(baseHue, 40, 25);
+                barColor = hsvToRgb(baseHue, 60, 65);
+                break;
+            case 'DeepSea':
+                baseHue = 195; // Deep teal
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 70, 10);
+                rectColor = hsvToRgb(baseHue, 60, 20);
+                barColor = hsvToRgb(baseHue, 80, 60);
+                break;
+            default:
+                baseHue = 140; // Fallback to Forest
+                backgroundColor = backgroundColor || hsvToRgb(baseHue, 80, 10);
+                rectColor = hsvToRgb(baseHue, 60, 20);
+                barColor = hsvToRgb(baseHue, 90, 60);
+        }
+        return { backgroundColor, rectColor, barColor };
+    }
+    // Simplex Noise for Overlay
+    const SimplexNoise = (function () {
+        const F3 = 1.0 / 3.0, G3 = 1.0 / 6.0;
+        const grad3 = new Float32Array([1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0, 1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1]);
+        const p = new Uint8Array(256);
+        for (let i = 0; i < 256; i++) p[i] = i;
+        for (let i = 255; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [p[i], p[j]] = [p[j], p[i]];
+        }
+        const perm = new Uint8Array(512);
+        const permMod12 = new Uint8Array(512);
+        for (let i = 0; i < 512; i++) {
+            perm[i] = p[i & 255];
+            permMod12[i] = perm[i] % 12;
+        }
+        return {
+            noise3D: function (xin, yin, zin) {
+                let n0, n1, n2, n3;
+                const s = (xin + yin + zin) * F3;
+                const i = Math.floor(xin + s), j = Math.floor(yin + s), k = Math.floor(zin + s);
+                const t = (i + j + k) * G3;
+                const X0 = i - t, Y0 = j - t, Z0 = k - t;
+                const x0 = xin - X0, y0 = yin - Y0, z0 = zin - Z0;
+                let i1, j1, k1, i2, j2, k2;
+                if (x0 >= y0) {
+                    if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+                    else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+                    else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
+                } else {
+                    if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1, k2 = 1; }
+                    else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1, k2 = 1; }
+                    else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1, k2 = 0; }
+                }
+                const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
+                const x2 = x0 - i2 + 2.0 * G3, y2 = y0 - j2 + 2.0 * G3, z2 = z0 - k2 + 2.0 * G3;
+                const x3 = x0 - 1.0 + 3.0 * G3, y3 = y0 - 1.0 + 3.0 * G3, z3 = z0 - 1.0 + 3.0 * G3;
+                const ii = i & 255, jj = j & 255, kk = k & 255;
+                const gi0 = permMod12[ii + perm[jj + perm[kk]]];
+                const gi1 = permMod12[ii + i1 + perm[jj + j1 + perm[kk + k1]]];
+                const gi2 = permMod12[ii + i2 + perm[jj + j2 + perm[kk + k2]]];
+                const gi3 = permMod12[ii + 1 + perm[jj + 1 + perm[kk + 1]]];
+                let t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+                if (t0 < 0) n0 = 0.0;
+                else { t0 *= t0; n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0 + grad3[gi0 + 2] * z0); }
+                let t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+                if (t1 < 0) n1 = 0.0;
+                else { t1 *= t1; n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1 + grad3[gi1 + 2] * z1); }
+                let t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+                if (t2 < 0) n2 = 0.0;
+                else { t2 *= t2; n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 2] * y2 + grad3[gi2 + 2] * z2); }
+                let t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+                if (t3 < 0) n3 = 0.0;
+                else { t3 *= t3; n3 = t3 * t3 * (grad3[gi3] * x3 + grad3[gi3 + 1] * y3 + grad3[gi3 + 2] * z3); }
+                return Math.max(-1.0, Math.min(1.0, 32.0 * (n0 + n1 + n2 + n3)));
+            },
+            noise2DStatic: function (xin, yin) { return this.noise3D(xin, yin, 0.0); }
+        };
+    })();
+    // -------------------------------------------------------------------
+    // MAIN ANIMATION LOOP
+    // -------------------------------------------------------------------
+    function update(currentTime) {
+        
+        // --- FAKE AUDIO DATA FOR BROWSER ---
+        // Create fake audio data if running in browser (no real engine.getSensorValue)
+        if (typeof engine.getSensorValue === 'undefined') { 
+            const timeSeconds = currentTime / 1000.0;
+            
+            // Fake Level and Density
+            const beat = Math.pow((1 + Math.sin(timeSeconds * Math.PI * 2)) / 2, 8); // Strong beat pulse
+            engine.audio.level = -60 + beat * 50; // Varies from -60 to -10
+            engine.audio.density = (Math.sin(timeSeconds * 0.5) + 1) / 2; // Varies from 0 to 1
+            
+            // Fake Frequencies
+            for (let i = 0; i < 200; i++) {
+                // Bass pulse (stronger, fades out by i=50)
+                const bass = beat * Math.max(0, 1 - i / 50) * 127;
+                // Mid-range sine (active between i=40 and i=120)
+                const mid = (1 + Math.sin(timeSeconds * 20.0 + i * 0.5)) / 2 * (i > 40 && i < 120 ? 1 : 0) * 40;
+                // Treble noise (active after i=100)
+                const treble = Math.random() * (i > 100 ? 1 : 0) * 30;
+                
+                let amp = (bass + mid + treble) * ((engine.audio.density + 0.5) / 1.5); // Apply density
+                engine.audio.freq[i] = Math.max(-128, Math.min(127, Math.floor(amp)));
+            }
+        }
+        // --- END FAKE AUDIO DATA ---
+
+        const timeSeconds = currentTime / 1000.0;
+        // Check if audio data is available
+        const audioReady = typeof engine !== 'undefined' && engine.audio && engine.audio.freq && engine.audio.freq.length >= 200 && typeof engine.audio.level !== 'undefined' && typeof engine.audio.density !== 'undefined';
+        if (!audioReady) {
+            const paletteColors = getPaletteColors(window.colorPalette || 'Forest', window.customBackgroundColor);
+            ctx.fillStyle = `rgb(${paletteColors.backgroundColor[0]}, ${paletteColors.backgroundColor[1]}, ${paletteColors.backgroundColor[2]})`;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            requestAnimationFrame(update);
+            return;
+        }
+        // Get user settings
+        const scrollSpeed = (window.scrollSpeed !== undefined ? window.scrollSpeed : 10);
+        const verticalSpeed = (window.verticalSpeed !== undefined ? window.verticalSpeed : 30) / 10.0;
+        const movementRange = (window.movementRange !== undefined ? window.movementRange : 50) / 100.0;
+        const soundReactive = window.soundReactive !== undefined ? window.soundReactive : true;
+        const barHeightControl = window.barHeightControl || 'Frequency';
+        const maxBarHeightCells = window.maxBarHeightCells || 8;
+        
+        const barResponsiveness = (window.barResponsiveness !== undefined ? window.barResponsiveness : 100) / 100.0;
+        const audioHeightSensitivity = (window.audioHeightSensitivity !== undefined ? window.audioHeightSensitivity : 0) / 100.0; 
+        
+        const heightSmoothing = (window.heightSmoothing !== undefined ? window.heightSmoothing : 70) / 100.0;
+        const normalizeFrequencyHeight = window.normalizeFrequencyHeight !== undefined ? window.normalizeFrequencyHeight : true;
+        const colorPalette = window.colorPalette || 'Forest';
+        const customBackgroundColor = window.customBackgroundColor || '';
+        const barColorMode = window.barColorMode || 'Frequency Glow';
+        
+        const barStyle = window.barStyle || 'Solid';
+        const barOutlines = window.barOutlines !== undefined ? window.barOutlines : false;
+        const barOutlineColor = window.barOutlineColor || '#FFFFFF';
+        const barOutlineWidth = (window.barOutlineWidth !== undefined ? window.barOutlineWidth : 1);
+
+        const overlayColor = window.overlayColor || '#000000';
+        const overlayOpacityVariation = (window.overlayOpacityVariation !== undefined ? window.overlayOpacityVariation : 75) / 100.0;
+        const overlayNoiseFrequency = window.overlayNoiseFrequency || 5;
+        const audioDensityEffect = window.audioDensityEffect || 'None';
+        const gridSize = Math.max(2, window.gridSize || 20);
+        const gridLineWidth = Math.max(1, window.gridLineWidth || 1);
+        const backgroundRectHeight = window.backgroundRectHeight || 6;
+
+        // Grid setup
+        const cellWidth = canvasWidth / gridSize;
+        const cellHeight = cellWidth;
+        const numHorizontalCells = Math.floor(canvasHeight / cellHeight);
+        const totalGridHeight = numHorizontalCells * cellHeight;
+        const verticalMargin = (canvasHeight - totalGridHeight) / 2;
+        // Scroll calculation
+        const totalScrollDistance = timeSeconds * scrollSpeed;
+        let currentCellOffset = totalScrollDistance % cellWidth;
+        if (currentCellOffset < 0) currentCellOffset += cellWidth;
+        const firstLineX = currentCellOffset - cellWidth;
+        // Audio data processing
+        const audioData = new Int8Array(engine.audio.freq);
+        const overallLevelDB = engine.audio.level;
+        const density = engine.audio.density;
+        let bassSum = 0;
+        for (let i = 2; i < 15; i++) bassSum += Math.abs(audioData[i]);
+        const bassLevel = Math.min(1.0, (bassSum / (13 * 128.0)) * 2.0);
+        let midSum = 0;
+        for (let i = 16; i < 60; i++) midSum += Math.abs(audioData[i]);
+        const midLevel = Math.min(1.0, (midSum / (44 * 128.0)) * 2.5);
+        let trebleSum = 0;
+        for (let i = 61; i < 200; i++) trebleSum += Math.abs(audioData[i]);
+        const trebleLevel = Math.min(1.0, (trebleSum / (139 * 128.0)) * 3.0);
+        // Normalize frequency amplitudes
+        let minFreqAbs = 0, maxFreqAbs = 0;
+        if (barHeightControl === 'Frequency' && normalizeFrequencyHeight) {
+            maxFreqAbs = 0; minFreqAbs = 128;
+            for (let i = 0; i < 200; i++) {
+                const absVal = Math.abs(audioData[i]);
+                if (absVal > maxFreqAbs) maxFreqAbs = absVal;
+                if (absVal < minFreqAbs) minFreqAbs = absVal;
+            }
+            if (maxFreqAbs <= minFreqAbs) maxFreqAbs = minFreqAbs + 1;
+        }
+        // Audio-reactive effects
+        let targetAudioLevel = -1;
+        let finalOverlayFreq = overlayNoiseFrequency;
+        const paletteColors = getPaletteColors(colorPalette, customBackgroundColor);
+        let barColorRgb = paletteColors.barColor;
+        if (soundReactive) {
+            switch (barHeightControl) {
+                case 'Overall Volume': targetAudioLevel = (overallLevelDB + 100.0) / 100.0; break;
+                case 'Bass Volume': targetAudioLevel = bassLevel; break;
+                case 'Mid Volume': targetAudioLevel = midLevel; break;
+                case 'Treble Volume': targetAudioLevel = trebleLevel; break;
+                case 'Frequency': targetAudioLevel = 0; break; // Indicates frequency mode
+                case 'Fixed': default: targetAudioLevel = -1; break; // No audio level target needed
+            }
+            switch (audioDensityEffect) {
+                case 'Bar Color Shift':
+                    if (barColorMode !== 'Frequency Glow' && colorPalette !== 'Rainbow') {
+                        const baseHsv = rgbToHsv(barColorRgb[0], barColorRgb[1], barColorRgb[2]);
+                        const hueShift = density * 180;
+                        const newHue = (baseHsv[0] + hueShift) % 360;
+                        barColorRgb = hsvToRgb(newHue, baseHsv[1], baseHsv[2]);
+                    }
+                    break;
+                case 'Overlay Noise Density':
+                    finalOverlayFreq = overlayNoiseFrequency * lerp(0.5, 2.0, density);
+                    break;
+                case 'None': default: break;
+            }
+        }
+        // Calculate bar height
+        let generalTargetBarPixelHeight = maxBarHeightCells * cellHeight; // Start with max height for Fixed mode
+        const minBarPixelHeight = cellHeight * 0.5;
+        const maxBarPixelHeight = maxBarHeightCells * cellHeight;
+        if (targetAudioLevel >= 0 && barHeightControl !== 'Fixed') { // Only calculate reactive height if needed
+             const reactiveLevel = Math.pow(targetAudioLevel, 0.7 / (1.0 + (1.0 - audioHeightSensitivity) * 2.0));
+             const finalReactiveLevel = reactiveLevel * barResponsiveness;
+             generalTargetBarPixelHeight = lerp(minBarPixelHeight, maxBarPixelHeight, finalReactiveLevel);
+        } else if (barHeightControl === 'Fixed') {
+             generalTargetBarPixelHeight = maxBarPixelHeight; // Ensure fixed is always max
+        }
+        
+        const smoothFactor = 1.0 - heightSmoothing;
+        // Use previous height only if not in Frequency mode or Fixed mode
+        const usePreviousGeneralHeight = barHeightControl !== 'Frequency' && barHeightControl !== 'Fixed';
+        const smoothedGeneralHeight = usePreviousGeneralHeight 
+            ? lerp(previousBarPixelHeight, generalTargetBarPixelHeight, smoothFactor)
+            : generalTargetBarPixelHeight; // Use target directly for Frequency/Fixed
+        
+        if (usePreviousGeneralHeight) {
+            previousBarPixelHeight = smoothedGeneralHeight;
+        }
+
+        const c_overlay = hexToRgb(overlayColor);
+        const gridRgbStr = `rgb(${paletteColors.backgroundColor[0]}, ${paletteColors.backgroundColor[1]}, ${paletteColors.backgroundColor[2]})`;
+        // Background rectangle setup
+        const halfRectCells = backgroundRectHeight / 2;
+        const midPointCells = numHorizontalCells / 2;
+        const topCellIndex = Math.max(0, Math.floor(midPointCells - halfRectCells));
+        const bottomCellIndex = Math.min(numHorizontalCells, Math.ceil(midPointCells + halfRectCells));
+        const rectTopY_float = verticalMargin + topCellIndex * cellHeight;
+        const rectBottomY_float = verticalMargin + bottomCellIndex * cellHeight;
+        const rectPixelHeight_float = rectBottomY_float - rectTopY_float;
+        // Draw background and rectangle
+        ctx.fillStyle = `rgb(${paletteColors.backgroundColor[0]}, ${paletteColors.backgroundColor[1]}, ${paletteColors.backgroundColor[2]})`;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.fillStyle = `rgb(${paletteColors.rectColor[0]}, ${paletteColors.rectColor[1]}, ${paletteColors.rectColor[2]})`;
+        ctx.fillRect(0, rectTopY_float, canvasWidth, rectPixelHeight_float);
+        // Draw overlay within rectangle bounds (excluding bottom row)
+        ctx.globalCompositeOperation = 'source-over'; 
+        const startRow = Math.max(0, topCellIndex);
+        const endRow = Math.min(numHorizontalCells, bottomCellIndex - 1);
+        for (let drawCol = -1; drawCol <= gridSize; drawCol++) {
+            const screenX = firstLineX + drawCol * cellWidth;
+            for (let drawRow = startRow; drawRow <= endRow; drawRow++) {
+                const screenY = verticalMargin + drawRow * cellHeight;
+                const conceptualColIndex = Math.floor((screenX - totalScrollDistance) / cellWidth + 10000.0);
+                const conceptualRowIndex = drawRow;
+                const noiseX = conceptualColIndex * finalOverlayFreq * 0.1;
+                const noiseY = conceptualRowIndex * finalOverlayFreq * 0.1;
+                const noise_opacity_raw = SimplexNoise.noise3D(noiseX, noiseY, 0.0);
+                const noiseOpacity = (noise_opacity_raw + 1.0) * 0.5;
+                const cellAlpha = lerp(0.3, noiseOpacity, overlayOpacityVariation);
+                ctx.fillStyle = rgbaToString(c_overlay, cellAlpha);
+                ctx.fillRect(screenX, screenY, cellWidth, cellHeight);
+            }
+        }
+        ctx.globalCompositeOperation = 'source-over'; 
+        
+        // --- Draw moving bars ---
+        for (let col = -1; col <= gridSize; col++) {
+            const columnX = firstLineX + col * cellWidth;
+            const columnMidX = columnX + cellWidth / 2;
+            const conceptualColIndex = Math.floor((columnX - totalScrollDistance) / cellWidth + 10000.0);
+            
+            // Calculate bar height based on control mode
+            let currentBarPixelHeight;
+            if (barHeightControl === 'Frequency') {
+                const screenU = Math.max(0, Math.min(1, columnMidX / canvasWidth));
+                const freqBinIndex = Math.floor(screenU * 199);
+                const currentFreqAmpAbs = Math.abs(audioData[freqBinIndex]);
+                let freqAmplitudeNormalized = 0;
+                if (normalizeFrequencyHeight) {
+                    freqAmplitudeNormalized = (maxFreqAbs > minFreqAbs) ? (currentFreqAmpAbs - minFreqAbs) / (maxFreqAbs - minFreqAbs) : 0;
+                    const k = 10;
+                    const freqWeight = freqBinIndex / 199;
+                    freqAmplitudeNormalized = Math.log(1 + k * freqAmplitudeNormalized) / Math.log(1 + k);
+                    freqAmplitudeNormalized = lerp(freqAmplitudeNormalized, freqAmplitudeNormalized * freqWeight, 0.5);
+                } else {
+                    freqAmplitudeNormalized = currentFreqAmpAbs / 128.0;
+                }
+                freqAmplitudeNormalized = Math.max(0, Math.min(1, freqAmplitudeNormalized));
+                const reactiveFreqLevel = Math.pow(freqAmplitudeNormalized, 0.7 / (1.0 + (1.0 - audioHeightSensitivity) * 2.0));
+                
+                const finalReactiveFreqLevel = reactiveFreqLevel * barResponsiveness;
+                const freqTargetHeight = lerp(minBarPixelHeight, maxBarPixelHeight, finalReactiveFreqLevel);
+
+                currentBarPixelHeight = lerp(previousFreqHeights[freqBinIndex] || minBarPixelHeight, freqTargetHeight, smoothFactor);
+                previousFreqHeights[freqBinIndex] = currentBarPixelHeight;
+            } else { // Handles 'Fixed', 'Overall Volume', 'Bass Volume', etc.
+                currentBarPixelHeight = smoothedGeneralHeight; 
+            }
+            
+            // Calculate bar position
+            const randomPhaseOffset = seededRandom(conceptualColIndex * 1.234) * Math.PI * 2;
+            const baseAmplitude = movementRange * 0.5;
+            let sineValue = Math.sin(timeSeconds * verticalSpeed * Math.PI + randomPhaseOffset) * baseAmplitude;
+            if (Math.abs(verticalSpeed) < 0.001) {
+                sineValue = 0;
+            }
+            const barPositionNormalized = sineValue + 0.5;
+            const barCenterY = barPositionNormalized * canvasHeight;
+            let barTopY = barCenterY - currentBarPixelHeight / 2;
+            barTopY = Math.max(0, Math.min(canvasHeight - currentBarPixelHeight, barTopY));
+            
+            // Apply bar color (Brightness is now always 100%)
+            let finalBarColorRgb = barColorRgb;
+            const fullBrightnessValue = 100; // Use 100% brightness
+
+            if (barColorMode === 'Frequency Glow' || colorPalette === 'Rainbow') {
+                const screenU = Math.max(0, Math.min(1, columnMidX / canvasWidth));
+                const freqBinIndex = Math.floor(screenU * 199);
+                const hue = (freqBinIndex / 199) * 360;
+                finalBarColorRgb = hsvToRgb(hue, 100, fullBrightnessValue); // Use full brightness
+            } else if (barColorMode === 'Pulse') {
+                const baseHsv = rgbToHsv(barColorRgb[0], barColorRgb[1], barColorRgb[2]);
+                // Pulse effect now just uses the base color at full brightness, height changes provide visual pulse
+                finalBarColorRgb = hsvToRgb(baseHsv[0], baseHsv[1], fullBrightnessValue); // Use full brightness
+            } else if (barColorMode === 'Wave') {
+                const waveHue = (barPositionNormalized * 360 + timeSeconds * 50) % 360;
+                finalBarColorRgb = hsvToRgb(waveHue, 80, fullBrightnessValue); // Use full brightness (adjust saturation if needed)
+            } else if (barColorMode === 'Spectrum') {
+                const spectrumHue = ((columnMidX / canvasWidth) * 360 + timeSeconds * 20) % 360;
+                finalBarColorRgb = hsvToRgb(spectrumHue, 90, fullBrightnessValue); // Use full brightness
+            } else if (barColorMode === 'Dynamic') {
+                const screenU = Math.max(0, Math.min(1, columnMidX / canvasWidth));
+                const freqBinIndex = Math.floor(screenU * 199);
+                const dynamicHue = soundReactive ? ((freqBinIndex / 199) * 360 + density * 180) % 360 : (freqBinIndex / 199) * 360;
+                finalBarColorRgb = hsvToRgb(dynamicHue, 100, fullBrightnessValue); // Use full brightness
+            } else { // Theme mode
+                 finalBarColorRgb = hsvToRgb(rgbToHsv(barColorRgb[0], barColorRgb[1], barColorRgb[2])[0], 
+                                            rgbToHsv(barColorRgb[0], barColorRgb[1], barColorRgb[2])[1], 
+                                            fullBrightnessValue); // Ensure theme color is also full bright
+            }
+
+            const barRgbStr = `rgb(${Math.round(finalBarColorRgb[0])}, ${Math.round(finalBarColorRgb[1])}, ${Math.round(finalBarColorRgb[2])})`;
+            const barRgbaStrTransparent = `rgba(${Math.round(finalBarColorRgb[0])}, ${Math.round(finalBarColorRgb[1])}, ${Math.round(finalBarColorRgb[2])}, 0)`;
+            
+            if (currentBarPixelHeight > 0) {
+                switch (barStyle) {
+                    case 'Vertical Fade':
+                        const gradV = ctx.createLinearGradient(columnX, barTopY, columnX, barTopY + currentBarPixelHeight);
+                        gradV.addColorStop(0, barRgbaStrTransparent);
+                        gradV.addColorStop(0.2, barRgbStr);
+                        gradV.addColorStop(0.8, barRgbStr);
+                        gradV.addColorStop(1, barRgbaStrTransparent);
+                        ctx.fillStyle = gradV;
+                        break;
+                    case 'Horizontal Fade':
+                        const gradH = ctx.createLinearGradient(columnX, barTopY, columnX + cellWidth, barTopY);
+                        gradH.addColorStop(0, barRgbaStrTransparent);
+                        gradH.addColorStop(0.5, barRgbStr);
+                        gradH.addColorStop(1, barRgbaStrTransparent);
+                        ctx.fillStyle = gradH;
+                        break;
+                    case 'Glow':
+                        const gradR = ctx.createRadialGradient(
+                            columnMidX, barCenterY, cellWidth * 0.1, 
+                            columnMidX, barCenterY, cellWidth * 0.75  
+                        );
+                        gradR.addColorStop(0, barRgbStr);
+                        gradR.addColorStop(1, barRgbaStrTransparent);
+                        ctx.fillStyle = gradR;
+                        break;
+                    case 'Solid':
+                    default:
+                        ctx.fillStyle = barRgbStr;
+                        break;
+                }
+                
+                ctx.fillRect(columnX, barTopY, cellWidth, currentBarPixelHeight);
+
+                if (barOutlines && barOutlineWidth > 0) {
+                    ctx.fillStyle = barOutlineColor;
+                    ctx.fillRect(columnX, barTopY, cellWidth, barOutlineWidth);
+                    ctx.fillRect(columnX, barTopY + currentBarPixelHeight - barOutlineWidth, cellWidth, barOutlineWidth);
+                }
+            }
+        }
+        
+        // Draw grid lines
+        if (gridLineWidth > 0) {
+            ctx.strokeStyle = gridRgbStr;
+            ctx.lineWidth = gridLineWidth;
+            ctx.beginPath();
+            for (let x = firstLineX; x < canvasWidth + cellWidth; x += cellWidth) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvasHeight);
+            }
+            for (let i = 0; i <= numHorizontalCells; i++) {
+                const y = verticalMargin + i * cellHeight;
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvasWidth, y);
+            }
+            ctx.stroke();
+        }
+        requestAnimationFrame(update);
+    }
+    // Start animation
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(update);
+    }
+</script>
+
+</html>
