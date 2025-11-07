@@ -6,17 +6,20 @@
     height: 100%;
 }
 
+#component-properties {
+    overflow-x: hidden;
+}
+
 /* Ensure panels can scroll independently if content overflows */
-#left-panel,
+#left-panel {
+    height: 100%;
+    overflow-y: auto;   /* Allow vertical scroll */
+    overflow-x: hidden;  /* Prevent horizontal scroll */
+}
+
 #right-panel {
     height: 100%;
     overflow: auto;
-}
-
-/* Make the right panel's top area (canvas + toolbar) fill the space */
-#right-panel {
-    display: flex;
-    flex-direction: column;
 }
 
 #right-panel-top {
