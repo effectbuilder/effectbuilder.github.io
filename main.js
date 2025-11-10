@@ -7463,27 +7463,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // BROWSE GALLERY BUTTON
-    document.getElementById('browse-btn').addEventListener('click', async () => {
-        document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
-        const galleryList = document.getElementById('gallery-project-list');
-        galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
+    // document.getElementById('browse-btn').addEventListener('click', async () => {
+    //     document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
+    //     const galleryList = document.getElementById('gallery-project-list');
+    //     galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
 
-        const q = window.query(window.collection(window.db, "projects"), window.where("isPublic", "==", true), window.orderBy("createdAt", "desc"));
+    //     const q = window.query(window.collection(window.db, "projects"), window.where("isPublic", "==", true), window.orderBy("createdAt", "desc"));
 
-        try {
-            const querySnapshot = await window.getDocs(q);
-            const projects = [];
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
-                projects.push({ docId: doc.id, ...data });
-            });
-            populateGallery(projects);
-        } catch (error) {
-            console.error("Error loading public gallery:", error);
-            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects.</li>';
-        }
-    });
+    //     try {
+    //         const querySnapshot = await window.getDocs(q);
+    //         const projects = [];
+    //         querySnapshot.forEach((doc) => {
+    //             const data = doc.data();
+    //             if (data.createdAt && data.createdAt.toDate) data.createdAt = data.createdAt.toDate();
+    //             projects.push({ docId: doc.id, ...data });
+    //         });
+    //         populateGallery(projects);
+    //     } catch (error) {
+    //         console.error("Error loading public gallery:", error);
+    //         galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects.</li>';
+    //     }
+    // });
 
     // --- LOAD FROM SHARE LINK LOGIC ---
     // This function runs automatically when the page loads.
@@ -9174,9 +9174,9 @@ document.addEventListener('DOMContentLoaded', function () {
         fetchAndDisplayGallery('user');
     });
 
-    document.getElementById('browse-btn').addEventListener('click', () => {
-        fetchAndDisplayGallery('community');
-    });
+    // document.getElementById('browse-btn').addEventListener('click', () => {
+    //     fetchAndDisplayGallery('community');
+    // });
 
     galleryOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => {
         lastVisibleDoc = null;
