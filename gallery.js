@@ -1,4 +1,4 @@
-// gallery.js - COMPLETE FILE
+// gallery.js - COMPLETE FILE (with Cards & Lazy Loading)
 
 document.addEventListener('DOMContentLoaded', function () {
     const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
@@ -13,14 +13,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const editProjectDescriptionInput = document.getElementById('edit-project-description');
     const editProjectModal = new bootstrap.Modal(editProjectModalEl);
 
-    // --- Pagination State Variables ---
-    const projectsPerPage = 8;
-    let allProjects = [];
-    let currentPage = 1;
-    const paginationNavTop = document.getElementById('pagination-nav-top');
-    const paginationNavBottom = document.getElementById('pagination-nav');
-    const paginationContainerTop = document.getElementById('pagination-container-top');
-    const paginationContainerBottom = document.getElementById('pagination-container-bottom');
+    // --- Lazy Loading State Variables ---
+    const PAGE_SIZE = 10;
+    let lastVisible = null;
+    let isLoading = false;
+    let allLoaded = false;
+    
+    // --- DOM Elements for Lazy Loading ---
+    const initialLoadingSpinner = document.getElementById('initial-loading-spinner');
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    const loadMoreSpinner = document.getElementById('load-more-spinner');
+    const loadMoreMessage = document.getElementById('load-more-message');
 
 
     // --- Firebase Authentication Handling ---
@@ -63,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.onAuthStateChanged(window.auth, updateUserAuthState);
         } else {
             console.error("Firebase Auth is not initialized.");
+            loadPublicGallery();
         }
     }, 500);
 
@@ -78,7 +82,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const likeBtn = document.getElementById(`gallery-like-btn-${docId}`);
         const likeCountSpan = document.getElementById(`gallery-like-count-${docId}`);
 
-        // Determine action based on button class
         const isCurrentlyLiked = likeBtn && likeBtn.classList.contains('btn-danger');
 
         try {
@@ -103,21 +106,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     delete likedBy[user.uid];
                 }
 
-                // Update the project document
                 transaction.update(docRef, {
                     likes: newLikesCount,
                     likedBy: likedBy,
                     updatedAt: new Date()
                 });
-
-                // Create notification only on LIKE action and if sender is not owner
-                if (action === 'liked' && projectOwnerId !== user.uid) {
-                    // Create notification document outside the transaction
-                    // We handle the notification creation optimistically below
-                }
             });
 
-            // --- Notification Creation (Outside Transaction) ---
             if (action === 'liked' && projectOwnerId !== user.uid) {
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     recipientId: projectOwnerId,
@@ -129,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
 
-            // --- Optimistic UI Update ---
             const countChange = action === 'liked' ? 1 : -1;
             const newCount = likeCountSpan ? (parseInt(likeCountSpan.textContent) || 0) + countChange : 0;
 
@@ -137,12 +131,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (action === 'liked') {
                     likeBtn.classList.remove('btn-outline-danger');
                     likeBtn.classList.add('btn-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i> Like';
                     likeBtn.title = "Unlike";
                 } else {
                     likeBtn.classList.remove('btn-danger');
                     likeBtn.classList.add('btn-outline-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart"></i>';
+                    likeBtn.innerHTML = '<i class="bi bi-heart"></i> Like';
                     likeBtn.title = "Like";
                 }
             }
@@ -158,14 +152,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Admin & Edit Functions ---
-    async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
-        buttonEl.disabled = true;
-        buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    async function toggleFeaturedStatus(docIdToToggle) {
+        // Find the button inside the dropdown
+        const featureBtn = document.getElementById(`admin-feature-btn-${docIdToToggle}`);
+        if(featureBtn) {
+            featureBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Toggling...';
+            featureBtn.classList.add('disabled');
+        }
+        
         try {
             const projectsRef = window.collection(window.db, "projects");
             const docToToggleRef = window.doc(projectsRef, docIdToToggle);
             const q = window.query(projectsRef, window.where("featured", "==", true));
             const currentlyFeaturedSnapshot = await window.getDocs(q);
+            
             await window.runTransaction(window.db, async (transaction) => {
                 const docToToggleSnap = await transaction.get(docToToggleRef);
                 if (!docToToggleSnap.exists()) throw new Error("Document does not exist!");
@@ -178,16 +178,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 transaction.update(docToToggleRef, { featured: newFeaturedState });
             });
-            document.querySelectorAll('.btn-feature').forEach(btn => {
-                const isNowFeatured = (btn.dataset.docId === docIdToToggle) && !buttonEl.classList.contains('btn-warning');
-                btn.className = `btn btn-sm btn-feature ${isNowFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
-                btn.innerHTML = isNowFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                btn.title = isNowFeatured ? 'Unfeature this effect' : 'Feature this effect';
-                btn.disabled = false;
-            });
+            
+            // Reload the whole gallery to see the change
+            loadPublicGallery(); 
+
         } catch (error) {
             console.error("Error updating featured status: ", error);
-            buttonEl.innerHTML = '<i class="bi bi-exclamation-triangle"></i>';
+            if(featureBtn) {
+                featureBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+            }
         }
     }
 
@@ -225,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 configs: updatedConfigs
             });
             editProjectModal.hide();
-            loadPublicGallery();
+            loadPublicGallery(); // Reload all
         } catch (error) {
             console.error("Error updating project:", error);
             alert("Failed to save changes.");
@@ -235,31 +234,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // --- Pagination Rendering Functions ---
-    function renderPage(pageNumber) {
-        currentPage = pageNumber;
-        const startIndex = (pageNumber - 1) * projectsPerPage;
-        const endIndex = startIndex + projectsPerPage;
-        const projectsForPage = allProjects.slice(startIndex, endIndex);
-
-        renderProjects(projectsForPage);
-        renderPagination();
-        window.scrollTo(0, 0);
-    }
-
-    function renderProjects(projects) {
-        galleryList.innerHTML = '';
+    // --- *** NEW: Project Rendering Function (Builds Cards) *** ---
+    function renderProjects(projectDocs) {
         const currentUser = window.auth.currentUser;
 
-        if (projects.length === 0) {
-            galleryList.innerHTML = '<li class="list-group-item disabled">No effects found.</li>';
-            return;
-        }
+        projectDocs.forEach((doc) => {
+            const project = { docId: doc.id, ...doc.data() };
 
-        projects.forEach(project => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center p-3';
-            li.id = `gallery-item-${project.docId}`;
+            if (project.createdAt && project.createdAt.toDate) {
+                project.createdAt = project.createdAt.toDate();
+            }
 
             let description = 'No description provided.';
             if (project.configs) {
@@ -269,203 +253,213 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'd-flex align-items-center flex-grow-1 me-2';
-            contentDiv.style.minWidth = '0';
             const viewCount = project.viewCount || 0;
             const downloadCount = project.downloadCount || 0;
             const likeCount = project.likes || 0;
-
-            // Check if current user has liked this project (based on database data)
             const userHasLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
 
-            contentDiv.innerHTML = `
-                ${project.thumbnail ? `<a href="./?effectId=${project.docId}"><img src="${project.thumbnail}" style="width: 160px; height: 100px; object-fit: cover;" class="rounded border me-4"></a>` : ''}
-                <div style="min-width: 0;">
-                    <strong class="d-block">${project.name}</strong>
-                    <small class="d-block text-body-secondary">By ${project.creatorName || 'Anonymous'}</small>
-                    <p class="mb-0 mt-1 small text-body-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${description}">
-                        ${description}
-                    </p>
-                    <div class="mt-2 small text-body-secondary d-flex align-items-center">
-                        <span class="me-3" title="Views"><i class="bi bi-eye-fill me-1"></i>${viewCount}</span>
-                        <span class="me-3" title="Downloads"><i class="bi bi-download me-1"></i>${downloadCount}</span>
-                        
-                        <span title="Likes"><i class="bi bi-heart-fill me-1"></i><span id="gallery-like-count-${project.docId}">${likeCount}</span></span>
+            // --- Create Admin Actions Dropdown ---
+            let adminDropdownHTML = '';
+            const isOwner = currentUser && currentUser.uid === project.userId;
+            const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+            
+            if (isOwner || isAdmin) {
+                const isFeatured = project.featured === true;
+                
+                // Owner can edit
+                const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>Edit</button></li>` : '';
+                
+                // Admin-only actions
+                const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? '<i class="bi bi-star-fill me-2"></i>Un-feature' : '<i class="bi bi-star me-2"></i>Feature'}</button></li>` : '';
+                const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
+                const deleteHTML = isAdmin ? `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger" id="admin-delete-btn-${project.docId}"><i class="bi bi-trash me-2"></i>Delete</button></li>` : '';
+
+                adminDropdownHTML = `
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" id="admin-dropdown-${project.docId}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="admin-dropdown-${project.docId}">
+                            ${editHTML}
+                            ${featureHTML}
+                            ${regenHTML}
+                            ${deleteHTML}
+                        </ul>
                     </div>
-                </div>
-            `;
-            li.appendChild(contentDiv);
-
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'd-flex align-items-center gap-2';
-
-            const loadBtn = document.createElement('a');
-            loadBtn.className = 'btn btn-primary';
-            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-2"></i>Load';
-            loadBtn.title = "Load Effect in Editor";
-            loadBtn.href = `./?effectId=${project.docId}`;
-            controlsDiv.appendChild(loadBtn);
-
-            // --- LIKE BUTTON ---
-            const likeBtn = document.createElement('button');
-            likeBtn.id = `gallery-like-btn-${project.docId}`;
-            likeBtn.dataset.docId = project.docId;
-            likeBtn.className = `btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'}`;
-            likeBtn.innerHTML = userHasLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
-            likeBtn.title = userHasLiked ? "Unlike" : "Like";
-            likeBtn.disabled = !currentUser; // Disable if not logged in
-
-            likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
-            controlsDiv.appendChild(likeBtn);
-            // --- END LIKE BUTTON ---
-
-
-            const buttonsSubDiv = document.createElement('div');
-            buttonsSubDiv.className = 'd-flex flex-column gap-1';
-
-            // Logic for the owner to edit their own effect
-            if (currentUser && currentUser.uid === project.userId) {
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-outline-secondary';
-                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                editBtn.title = "Edit Name/Description";
-                editBtn.onclick = () => openEditModal(project);
-                buttonsSubDiv.appendChild(editBtn);
+                `;
             }
 
-            // Logic for ADMIN ONLY
-            if (currentUser && currentUser.uid === ADMIN_UID) {
-                // Add an edit button for the admin if they are not the owner
-                if (currentUser.uid !== project.userId) {
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'btn btn-sm btn-outline-secondary';
-                    editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                    editBtn.title = "Edit Name/Description";
-                    editBtn.onclick = () => openEditModal(project);
-                    buttonsSubDiv.appendChild(editBtn);
-                }
+            // --- Create Column and Card ---
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4 d-flex align-items-stretch';
+            col.id = `gallery-item-${project.docId}`; // ID is now on the column
 
-                const featureBtn = document.createElement('button');
-                const isFeatured = project.featured === true;
-                featureBtn.className = `btn btn-sm btn-feature ${isFeatured ? 'btn-warning' : 'btn-outline-warning'}`;
-                featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                featureBtn.title = isFeatured ? 'Unfeature this effect' : 'Feature this effect';
-                featureBtn.dataset.docId = project.docId;
-                featureBtn.onclick = function () { toggleFeaturedStatus(this, project.docId); };
-                buttonsSubDiv.appendChild(featureBtn);
+            const card = document.createElement('div');
+            card.className = 'card shadow-sm h-100';
+            
+            card.innerHTML = `
+                <a href="./?effectId=${project.docId}" class="position-relative">
+                    ${project.thumbnail ? 
+                        `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` : 
+                        `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
+                            <i class="bi bi-image text-body-tertiary" style="font-size: 3rem;"></i>
+                        </div>`
+                    }
+                    ${project.featured === true ? '<span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2"><i class="bi bi-star-fill me-1"></i>Featured</span>' : ''}
+                </a>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">${project.name}</h5>
+                    <small class="card-subtitle mb-2 text-body-secondary">By ${project.creatorName || 'Anonymous'}</small>
+                    <p class="card-text small text-body-secondary flex-grow-1" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="${description}">
+                        ${description}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-body-secondary" title="Views / Downloads / Likes">
+                            <i class="bi bi-eye-fill"></i> ${viewCount} &nbsp;
+                            <i class="bi bi-download"></i> ${downloadCount} &nbsp;
+                            <i class="bi bi-heart-fill"></i> <span id="gallery-like-count-${project.docId}">${likeCount}</span>
+                        </small>
+                        ${adminDropdownHTML}
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <a href="./?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>Load</a>
+                    <button class="btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'} w-100" id="gallery-like-btn-${project.docId}" title="${userHasLiked ? 'Unlike' : 'Like'}">
+                        ${userHasLiked ? '<i class="bi bi-heart-fill"></i> Liked' : '<i class="bi bi-heart"></i> Like'}
+                    </button>
+                </div>
+            `;
 
-                // --- THE NEW REGENERATE BUTTON ---
-                const regenBtn = document.createElement('a');
-                regenBtn.className = 'btn btn-sm btn-outline-info';
-                regenBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
-                regenBtn.title = "Regenerate Thumbnail";
-                regenBtn.href = `./?effectId=${project.docId}&action=regenThumbnail`;
-                regenBtn.target = "_blank";
-                buttonsSubDiv.appendChild(regenBtn);
-                // --- END ---
+            col.appendChild(card);
+            galleryList.appendChild(col);
 
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn btn-sm btn-outline-danger';
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.title = "Delete Effect";
-                deleteBtn.onclick = async () => {
+            // --- Attach Event Listeners ---
+            const likeBtn = col.querySelector(`#gallery-like-btn-${project.docId}`);
+            if (likeBtn) {
+                likeBtn.disabled = !currentUser;
+                likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
+            }
+
+            const editBtn = col.querySelector(`#admin-edit-btn-${project.docId}`);
+            if (editBtn) {
+                editBtn.addEventListener('click', () => openEditModal(project));
+            }
+
+            const featureBtn = col.querySelector(`#admin-feature-btn-${project.docId}`);
+            if (featureBtn) {
+                featureBtn.addEventListener('click', () => toggleFeaturedStatus(project.docId));
+            }
+
+            const deleteBtn = col.querySelector(`#admin-delete-btn-${project.docId}`);
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to delete "${project.name}"? This cannot be undone.`)) {
                         try {
+                            // Optimistically remove from UI
+                            col.remove();
                             await window.deleteDoc(window.doc(window.db, "projects", project.docId));
-                            li.remove();
                         } catch (error) {
                             console.error("Error deleting project:", error);
                             alert("Failed to delete project.");
+                            // Put it back if delete failed
+                            galleryList.appendChild(col);
                         }
                     }
-                };
-                buttonsSubDiv.appendChild(deleteBtn);
-            }
-
-            if (buttonsSubDiv.hasChildNodes()) {
-                controlsDiv.appendChild(buttonsSubDiv);
-            }
-
-            li.appendChild(controlsDiv);
-            galleryList.appendChild(li);
-        });
-    }
-
-    function renderPagination() {
-        const containers = [paginationContainerTop, paginationContainerBottom];
-        const navs = [paginationNavTop, paginationNavBottom];
-
-        containers.forEach(container => { if (container) container.innerHTML = '' });
-
-        const totalPages = Math.ceil(allProjects.length / projectsPerPage);
-
-        if (totalPages <= 1) {
-            navs.forEach(nav => { if (nav) nav.style.display = 'none' });
-            return;
-        }
-        navs.forEach(nav => { if (nav) nav.style.display = 'flex' });
-
-        const createPageItem = (text, page, isDisabled = false, isActive = false) => {
-            const li = document.createElement('li');
-            li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" data-page="${page}">${text}</a>`;
-            return li;
-        };
-
-        const items = [];
-        items.push(createPageItem('Previous', currentPage - 1, currentPage === 1));
-        for (let i = 1; i <= totalPages; i++) {
-            items.push(createPageItem(i, i, false, i === currentPage));
-        }
-        items.push(createPageItem('Next', currentPage + 1, currentPage === totalPages));
-
-        containers.forEach(container => {
-            if (container) {
-                items.forEach(item => container.appendChild(item.cloneNode(true)));
+                });
             }
         });
     }
 
-    function handlePaginationClick(e) {
-        e.preventDefault();
-        const target = e.target.closest('a');
-        if (target && target.dataset.page && !target.closest('.page-item.disabled')) {
-            const pageNumber = parseInt(target.dataset.page, 10);
-            if (pageNumber !== currentPage) {
-                renderPage(pageNumber);
-            }
-        }
-    }
 
-    if (paginationContainerTop) paginationContainerTop.addEventListener('click', handlePaginationClick);
-    if (paginationContainerBottom) paginationContainerBottom.addEventListener('click', handlePaginationClick);
+    // --- Lazy Loading Data Functions ---
+    async function loadMoreProjects() {
+        if (isLoading || allLoaded) return;
 
-    // --- Data Loading ---
-    async function loadPublicGallery() {
-        galleryList.innerHTML = `<li class="list-group-item text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></li>`;
+        isLoading = true;
+        loadMoreSpinner.style.display = 'block';
+        loadMoreMessage.classList.add('d-none');
+
         try {
+            const queryConstraints = [
+                window.where("isPublic", "==", true),
+                window.orderBy("createdAt", "desc"),
+                window.limit(PAGE_SIZE)
+            ];
+
+            if (lastVisible) {
+                queryConstraints.push(window.startAfter(lastVisible));
+            }
+
             const q = window.query(
                 window.collection(window.db, "projects"),
-                window.where("isPublic", "==", true),
-                window.orderBy("createdAt", "desc")
+                ...queryConstraints
             );
+            
             const querySnapshot = await window.getDocs(q);
+            
+            if (initialLoadingSpinner) {
+                initialLoadingSpinner.remove();
+            }
 
-            allProjects = []; // Clear previous results
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.createdAt && data.createdAt.toDate) {
-                    data.createdAt = data.createdAt.toDate();
+            if (querySnapshot.empty) {
+                allLoaded = true;
+                loadMoreMessage.classList.remove('d-none');
+                if (galleryList.children.length === 0) {
+                     // Display "no effects" message inside the grid
+                     galleryList.innerHTML = '<div class="col-12"><p class="list-group-item disabled">No effects found.</p></div>';
                 }
-                allProjects.push({ docId: doc.id, ...data });
-            });
+            } else {
+                lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+                renderProjects(querySnapshot.docs);
 
-            renderPage(1); // Render the first page of the new data
+                if (querySnapshot.size < PAGE_SIZE) {
+                    allLoaded = true;
+                    loadMoreMessage.classList.remove('d-none');
+                }
+            }
 
         } catch (error) {
-            console.error("Error loading public gallery:", error);
-            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects. Please try again later.</li>';
+            console.error("Error loading more projects:", error);
+            galleryList.innerHTML = '<div class="col-12"><p class="list-group-item text-danger">Could not load effects. Please try again later.</p></div>';
+        } finally {
+            isLoading = false;
+            loadMoreSpinner.style.display = 'none';
         }
     }
+
+    function loadPublicGallery() {
+        galleryList.innerHTML = '';
+        lastVisible = null;
+        allLoaded = false;
+        isLoading = false;
+        
+        if (initialLoadingSpinner) {
+            galleryList.appendChild(initialLoadingSpinner);
+        }
+
+        loadMoreMessage.classList.add('d-none');
+        loadMoreProjects();
+    }
+    
+    // --- Intersection Observer Setup ---
+    function setupIntersectionObserver() {
+        const options = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1 
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                loadMoreProjects();
+            }
+        }, options);
+
+        if (loadMoreTrigger) {
+            observer.observe(loadMoreTrigger);
+        }
+    }
+
+    // --- INITIALIZE ---
+    setupIntersectionObserver();
 });

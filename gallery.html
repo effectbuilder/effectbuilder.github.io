@@ -55,21 +55,24 @@
                 <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
                 <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
                 <hr>
-                <nav id="pagination-nav-top" class="d-flex justify-content-center mb-4">
-                    <ul id="pagination-container-top" class="pagination">
-                    </ul>
-                </nav>
-                <ul class="list-group" id="gallery-project-list">
-                    <li class="list-group-item text-center p-4">
+                
+                <div class="row g-4" id="gallery-project-list">
+                    <div class="col-12 text-center p-4" id="initial-loading-spinner">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                    </li>
-                </ul>
-                <nav id="pagination-nav" class="d-flex justify-content-center mt-4">
-                    <ul id="pagination-container-bottom" class="pagination">
-                    </ul>
-                </nav>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12" id="load-more-trigger" class="text-center p-4">
+                        <div class="spinner-border" role="status" id="load-more-spinner" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p id="load-more-message" class="text-body-secondary d-none">End of results.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
