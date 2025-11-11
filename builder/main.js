@@ -126,6 +126,8 @@ let shareModal = null;
 const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
 const shareUrlInput = document.getElementById('share-url-input');
 
+let exportModal = null;
+
 const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side
 
 // ---
@@ -458,7 +460,7 @@ function setupAuthListeners() {
 function setupProjectListeners() {
     newBtn.addEventListener('click', () => handleNewComponent(true));
     saveBtn.addEventListener('click', handleSaveComponent);
-    exportBtn.addEventListener('click', handleExport);
+    exportBtn.addEventListener('click', showExportModal);
 
     shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
     const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
@@ -472,6 +474,19 @@ function setupProjectListeners() {
         copyShareUrlBtn.addEventListener('click', handleCopyShareUrl);
     } else {
         console.warn("Copy Share URL button not found.");
+    }
+
+    // --- Init Export Modal and Listeners ---
+    const exportModalElement = document.getElementById('export-component-modal');
+    if (exportModalElement) {
+        exportModal = new bootstrap.Modal(exportModalElement);
+        // Add listeners to update preview when format changes
+        document.getElementById('export-format-srgb').addEventListener('change', updateExportPreview);
+        document.getElementById('export-format-wled').addEventListener('change', updateExportPreview);
+        // Add listener to generate preview when modal is about to show
+        exportModalElement.addEventListener('show.bs.modal', updateExportPreview);
+    } else {
+        console.error("Export modal element not found!");
     }
 
     // --- Add guard to import ---
@@ -558,6 +573,125 @@ function handleNewComponent(showNotification = true) {
         showToast('New Project', 'Cleared the canvas and properties.', 'info');
     }
 }
+
+/**
+ * NEW: Generates the JSON for WLED
+ * @param {string} productName 
+ * @param {Array} currentLeds 
+ * @param {Array} currentWiring 
+ * @param {number} minX 
+ * @param {number} minY 
+ * @param {number} width 
+ * @param {number} height 
+ * @returns {string} A pretty-printed JSON string for WLED
+ */
+function generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height) {
+    const map = new Array(width * height).fill(-1);
+
+    // Create a map of LED ID -> Wiring Index
+    // This ensures LEDs are numbered strictly by their order in the wiring array
+    const flatWiring = currentWiring.flat().filter(id => id != null);
+    const ledIdToWiringIndex = new Map();
+    let wiringIndexCounter = 0;
+    flatWiring.forEach((id) => {
+        if (!ledIdToWiringIndex.has(id)) {
+            ledIdToWiringIndex.set(id, wiringIndexCounter++);
+        }
+    });
+
+    let collisionDetected = false;
+
+    // Place each LED into the 2D map using its wiring index
+    for (const led of currentLeds) {
+        if (!led) continue;
+
+        const wiringIndex = ledIdToWiringIndex.get(led.id);
+        // Skip if this LED wasn't in the final flat wiring list (shouldn't happen if validated)
+        if (wiringIndex === undefined) continue;
+
+        // Calculate grid coordinates (0-indexed from top-left)
+        const x = Math.round((led.x - minX) / GRID_SIZE);
+        const y = Math.round((led.y - minY) / GRID_SIZE);
+
+        //Ensure it's within bounds
+        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+        const mapIndex = y * width + x;
+
+        // Check for collisions (two LEDs in one grid spot)
+        if (map[mapIndex] !== -1) {
+            collisionDetected = true;
+            console.warn(`WLED Export Collision: LED (ID: ${led.id}) at [${x},${y}] is overwriting another LED.`);
+        }
+
+        map[mapIndex] = wiringIndex;
+    }
+
+    if (collisionDetected) {
+        showToast('WLED Export Warning', 'Multiple LEDs occupy the same grid cell. Only the last LED in the wire was mapped.', 'warning');
+    }
+
+    // --- MODIFIED: Custom JSON Stringification for WLED Preview ---
+
+    // 1. Stringify the simple parts (compactly)
+    let jsonString = `{"n":${JSON.stringify(productName)},"width":${width},"height":${height},"map":[\n`;
+
+    // 2. Build the 'map' array string with newlines for each row
+    const mapRows = [];
+    for (let y = 0; y < height; y++) {
+        // Get the slice for the current row
+        const row = map.slice(y * width, (y + 1) * width);
+        // Join elements with a comma, add a comma at the end if it's not the last row
+        const rowString = `${row.join(',')}${y < height - 1 ? ',' : ''}`;
+        mapRows.push(rowString);
+    }
+
+    jsonString += mapRows.join('\n');
+
+    // 3. Close the JSON
+    jsonString += '\n]}';
+
+    return jsonString;
+}
+
+
+/**
+
+/**
+ * NEW: Generates the JSON for SignalRGB
+ * @param {string} productName 
+ * @param {string} displayName 
+ * @param {string} brand 
+ * @param {string} currentType 
+ * @param {number} ledCount 
+ * @param {number} width 
+ * @param {number} height 
+ * @param {Array} ledCoordinates 
+ * @param {string} base64ImageData 
+ * @returns {string} A pretty-printed JSON string for SignalRGB
+ */
+function generateSignalRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData) {
+    const ledMapping = Array.from({ length: ledCount }, (_, i) => i);
+
+    const exportObject = {
+        ProductName: productName,
+        DisplayName: displayName,
+        Brand: brand,
+        Type: currentType,
+        LedCount: ledCount,
+        Width: width,
+        Height: height,
+        LedMapping: ledMapping,
+        LedCoordinates: ledCoordinates,
+        LedNames: Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`),
+        Image: base64ImageData,
+        ImageUrl: "" // Deprecated, but part of the old format
+    };
+
+    return JSON.stringify(exportObject, null, 2);
+}
+
+
 
 /**
  * Handles the file input 'change' event to read, parse, and load a JSON file.
@@ -752,50 +886,29 @@ async function handleSaveComponent() {
     }
 }
 
-function handleExport() {
-    console.log("handleExport triggered.");
-    const exportModalElement = document.getElementById('export-component-modal');
-    if (!exportModalElement) { showToast('Export Error', 'Modal element is missing.', 'danger'); return; }
-    const exportModal = bootstrap.Modal.getInstance(exportModalElement) || new bootstrap.Modal(exportModalElement);
+/**
+ * Renamed from handleExport. This function *only* validates and shows the modal.
+ * The actual JSON generation is done by updateExportPreview().
+ */
+function showExportModal() {
+    console.log("showExportModal triggered.");
 
-    if (!componentState || !Array.isArray(componentState.leds)) { showToast('Export Error', 'No component data.', 'danger'); return; }
+    if (!componentState || !Array.isArray(componentState.leds)) {
+        showToast('Export Error', 'No component data.', 'danger');
+        return;
+    }
 
     try {
-        const productName = compNameInput.value || 'My Custom Component';
-        const displayName = compDisplayNameInput.value || productName;
-        const brand = compBrandInput.value || 'Custom';
-        const currentType = compTypeInput.value || 'Other';
         const currentLeds = componentState.leds || [];
-        const currentWiring = componentState.wiring || []; // This is string[][]
-
-        // Check if image is Base64
-        const imageDataUrl = (componentState.imageUrl && componentState.imageUrl.startsWith('data:'))
-            ? componentState.imageUrl
-            : null;
-
+        const currentWiring = componentState.wiring || [];
         const ledCount = currentLeds.length;
 
-        if (ledCount === 0) { showToast('Export Error', 'Cannot export empty component.', 'warning'); return; }
+        if (ledCount === 0) {
+            showToast('Export Error', 'Cannot export empty component.', 'warning');
+            return; // Stop
+        }
 
-        // Determine offset for normalized 0,0 export coordinates
-        let minX = Infinity, minY = Infinity;
-        currentLeds.forEach(led => { if (led) { minX = Math.min(minX, led.x); minY = Math.min(minY, led.y); } });
-        minX = (minX === Infinity) ? 0 : minX; minY = (minY === Infinity) ? 0 : minY;
-
-        // --- 1. Create map for quick access to LED data ---
-        const ledDataMap = new Map();
-        let maxX = 0, maxY = 0;
-        currentLeds.forEach(led => {
-            if (led) {
-                const offsetX = Math.round((led.x - minX) / GRID_SIZE);
-                const offsetY = Math.round((led.y - minY) / GRID_SIZE);
-                ledDataMap.set(led.id, { id: led.id, x: offsetX, y: offsetY, worldX: led.x, worldY: led.y });
-                maxX = Math.max(maxX, offsetX);
-                maxY = Math.max(maxY, offsetY);
-            }
-        });
-
-        // --- 2. Build Set of All Wired IDs ---
+        // --- CHECK FOR UNWIRED LEDs (BLOCK EXPORT) ---
         const wiredLedIds = new Set();
         if (Array.isArray(currentWiring)) {
             currentWiring.forEach(circuit => {
@@ -804,8 +917,6 @@ function handleExport() {
                 }
             });
         }
-
-        // --- 3. CHECK FOR UNWIRED LEDs (BLOCK EXPORT) ---
         const unwiredLedsExist = currentLeds.some(led => led && !wiredLedIds.has(led.id));
 
         if (unwiredLedsExist) {
@@ -816,13 +927,99 @@ function handleExport() {
                 'danger'
             );
             console.error(`Export Blocked: ${unwiredCount} unwired LEDs detected.`);
-            return; // EXIT the function, blocking the export
+            return; // Stop
         }
 
-        // --- 4. Build LedCoordinates array based strictly on wiring order ---
+        // --- Validation Passed ---
+        // Reset to default format (SignalRGB) every time it's opened
+        const srgbRadio = document.getElementById('export-format-srgb');
+        if (srgbRadio) srgbRadio.checked = true;
+
+        // Now, show the modal. The 'show.bs.modal' event will trigger updateExportPreview.
+        if (exportModal) {
+            exportModal.show();
+        } else {
+            console.error("Export modal instance not found!");
+        }
+
+    } catch (error) {
+        console.error("Error during showExportModal validation:", error);
+        showToast('Export Error', `An unexpected error occurred: ${error.message}`, 'danger');
+    }
+}
+
+/**
+ * NEW: This function is called when the export modal opens or a format is changed.
+ * It generates the preview and sets up the download button.
+ */
+function updateExportPreview() {
+    const format = document.querySelector('input[name="export-format"]:checked')?.value || 'srgb';
+    const preview = document.getElementById('json-preview');
+    const downloadBtn = document.getElementById('confirm-export-json-btn');
+    const copyBtn = document.getElementById('copy-export-json-btn'); // <-- Get the new button
+
+    if (!preview || !downloadBtn || !copyBtn) {
+        console.error("Export modal preview, download, or copy button not found!");
+        return;
+    }
+
+    if (!preview || !downloadBtn) {
+        console.error("Export modal preview or download button not found!");
+        return;
+    }
+    if (!componentState || !Array.isArray(componentState.leds)) {
+        preview.textContent = 'Error: No component data.';
+        return;
+    }
+
+    try {
+        // --- 1. Collect all common data ---
+        const productName = compNameInput.value || 'My Custom Component';
+        const displayName = compDisplayNameInput.value || productName;
+        const brand = compBrandInput.value || 'Custom';
+        const currentType = compTypeInput.value || 'Other';
+        const currentLeds = componentState.leds || [];
+        const currentWiring = componentState.wiring || [];
+        const ledCount = currentLeds.length;
+
+        // Check if image is Base64
+        const imageDataUrl = (componentState.imageUrl && componentState.imageUrl.startsWith('data:'))
+            ? componentState.imageUrl
+            : null;
+
+        // Determine offset for normalized 0,0 export coordinates
+        let minX = Infinity, minY = Infinity;
+        let maxX_world = -Infinity, maxY_world = -Infinity;
+        currentLeds.forEach(led => {
+            if (led) {
+                minX = Math.min(minX, led.x);
+                minY = Math.min(minY, led.y);
+                maxX_world = Math.max(maxX_world, led.x);
+                maxY_world = Math.max(maxY_world, led.y);
+            }
+        });
+        minX = (minX === Infinity) ? 0 : minX;
+        minY = (minY === Infinity) ? 0 : minY;
+
+        // Calculate normalized width/height in GRID units
+        const maxX_norm = (maxX_world === -Infinity) ? 0 : Math.round((maxX_world - minX) / GRID_SIZE);
+        const maxY_norm = (maxY_world === -Infinity) ? 0 : Math.round((maxY_world - minY) / GRID_SIZE);
+        const width = maxX_norm + 1;
+        const height = maxY_norm + 1;
+
+        // --- 2. Build LedCoordinates array (for SignalRGB) ---
+        // This is based strictly on wiring order
+        const ledDataMap = new Map();
+        currentLeds.forEach(led => {
+            if (led) {
+                const offsetX = Math.round((led.x - minX) / GRID_SIZE);
+                const offsetY = Math.round((led.y - minY) / GRID_SIZE);
+                ledDataMap.set(led.id, { x: offsetX, y: offsetY });
+            }
+        });
+
         let ledCoordinates = [];
         const exportedLedIds = new Set();
-
         const flatWiring = currentWiring.flat().filter(id => id != null);
 
         flatWiring.forEach(ledId => {
@@ -833,60 +1030,71 @@ function handleExport() {
             }
         });
 
-        // --- 5. Final Sanity Check (Should match if all are wired) ---
-        if (ledCoordinates.length !== ledCount) {
-            console.error(`Coordinate count (${ledCoordinates.length}) mismatches LED count (${ledCount}). This indicates a wiring issue.`);
-            showToast('Internal Error', 'Export aborted due to mismatched LED count after wiring check.', 'danger');
-            return;
-        }
-        console.log("Generated LedCoordinates:", ledCoordinates.length);
-
-        const ledMapping = Array.from({ length: ledCount }, (_, i) => i);
-        const width = maxX + 1; const height = maxY + 1;
-
+        // Get Base64 image data
         let base64ImageData = "";
         if (imageDataUrl) {
             const commaIndex = imageDataUrl.indexOf(',');
             if (commaIndex !== -1) { base64ImageData = imageDataUrl.substring(commaIndex + 1); }
         }
 
-        const exportObject = {
-            ProductName: productName, DisplayName: displayName, Brand: brand, Type: currentType, LedCount: ledCount,
-            Width: width, Height: height, LedMapping: ledMapping, LedCoordinates: ledCoordinates, LedNames: Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`),
-            Image: base64ImageData,
-            ImageUrl: "" // Deprecated, but part of the old format
-        };
+        // --- 3. Generate correct JSON and filename based on format ---
+        let jsonString = "{}";
+        let filename = "component.json";
 
-        const jsonString = JSON.stringify(exportObject, null, 2);
-        const preview = document.getElementById('json-preview');
-        if (preview) { preview.textContent = jsonString; console.log("Updated json-preview."); }
-        else { console.error("json-preview element NOT FOUND!"); }
+        if (format === 'srgb') {
+            jsonString = generateSignalRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData);
+            filename = (productName || 'component').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
 
-        const downloadBtn = document.getElementById('confirm-export-json-btn');
-        if (!downloadBtn) { console.error("confirm-export-json-btn element not found!"); exportModal.show(); return; }
+        } else if (format === 'wled') {
+            // WLED format needs all data
+            jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
+            filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
+        }
+
+        preview.textContent = jsonString;
 
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const filename = (productName || 'component').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+
+        // Clone and replace download button to remove old listeners
         const newDownloadBtn = downloadBtn.cloneNode(true);
         downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
 
         newDownloadBtn.onclick = () => {
             try {
-                const a = document.createElement('a'); a.href = url; a.download = filename;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                exportModal.hide();
-            } catch (downloadError) { console.error("Error triggering download:", downloadError); showToast('Download Error', 'Could not trigger file download.', 'danger'); }
+                if (exportModal) exportModal.hide();
+            } catch (downloadError) {
+                console.error("Error triggering download:", downloadError);
+                showToast('Download Error', 'Could not trigger file download.', 'danger');
+            }
         };
-        showToast('Saving...', 'Component is valid and ready for export.', 'info');
-        exportModal.show();
+
+        // --- 5. Add listener for the new Copy button ---
+        // Clone and replace copy button as well to remove old listeners
+        const newCopyBtn = copyBtn.cloneNode(true);
+        copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+
+        newCopyBtn.onclick = () => {
+            navigator.clipboard.writeText(jsonString).then(() => {
+                showToast('Copied!', 'JSON copied to clipboard.', 'success');
+                // Don't close the modal on copy
+            }).catch(err => {
+                console.error("Error copying JSON to clipboard:", err);
+                showToast('Copy Error', 'Could not copy to clipboard.', 'danger');
+            });
+        };
+
     } catch (error) {
-        console.error("Error during handleExport:", error);
+        console.error("Error during updateExportPreview:", error);
         showToast('Export Error', `An unexpected error occurred: ${error.message}`, 'danger');
-        const preview = document.getElementById('json-preview');
         if (preview) preview.textContent = `Error: ${error.message}`;
-        exportModal.show();
     }
 }
 
@@ -2117,21 +2325,21 @@ function handleAddHexagon() {
 
     // 'numSegments' is the number of gaps between LEDs.
     // If user wants 4 LEDs per side, there are 3 gaps.
-    const numSegments = ledsPerSideInput - 1; 
-    
+    const numSegments = ledsPerSideInput - 1;
+
     // Base the radius on the number of segments to make it scale
     const R = numSegments * GRID_SIZE * 2; // Scaled radius
-    
+
     const a = R * (Math.sqrt(3) / 2); // Apothem (for height calculation)
     const shapeWidth = 2 * R;
     const shapeHeight = 2 * a;
-    
+
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
     const getVertices = (centerX, centerY) => {
         const V = [];
         // Use 30 degrees (PI/6) to get a flat-top hexagon
-        const startAngle = Math.PI / 6; 
+        const startAngle = Math.PI / 6;
         const angleStep = 2 * Math.PI / SIDES;
         for (let i = 0; i < SIDES; i++) {
             const angle = startAngle + i * angleStep;
@@ -2145,7 +2353,7 @@ function handleAddHexagon() {
 
     // findEmptySpotForShape's generator needs to return snapped points for collision checking.
     const getPositionsForSearch = (sx, sy) => {
-         // sx, sy is top-left. Center is (sx + R, sy + a)
+        // sx, sy is top-left. Center is (sx + R, sy + a)
         const vertices = getVertices(sx + R, sy + a);
         return getInterpolatedPointsForPolygon(vertices, ledsPerSideInput, GRID_SIZE);
     };
@@ -2163,7 +2371,7 @@ function handleAddHexagon() {
     const finalCenterX = startX + R;
     const finalCenterY = startY + a; // 'a' is half the height
     const finalVertices = getVertices(finalCenterX, finalCenterY);
-    
+
     // Use the new, correct interpolation function
     const newLedsRaw = getInterpolatedPointsForPolygon(finalVertices, ledsPerSideInput, GRID_SIZE);
 
@@ -2177,11 +2385,11 @@ function handleAddHexagon() {
         newLeds.push(newLed);
         newWireIds.push(id);
     }
-    
+
     // Check if snapping caused too many LEDs to merge
     const expectedLedCount = (ledsPerSideInput - 1) * SIDES;
     if (newLeds.length < expectedLedCount * 0.9) { // Allow for some merging
-         showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+        showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
     }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -2191,7 +2399,7 @@ function handleAddHexagon() {
 
     viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
-    
+
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addHexagonModal.hide(); drawCanvas(); autoSaveState();
@@ -2205,7 +2413,7 @@ function handleAddTriangle() {
     if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
-    
+
     const numSegments = ledsPerSide - 1;
     // Base the side length on the number of segments
     const s = numSegments * GRID_SIZE * 2; // Scaled side length
@@ -2218,7 +2426,7 @@ function handleAddTriangle() {
         { x: sx + shapeWidth, y: sy + shapeHeight }, // V2: Bottom-Right
         { x: sx + shapeWidth / 2, y: sy }            // V3: Top
     ];
-    
+
     // Use the new interpolation function for collision checking
     const getPositionsForSearch = (sx, sy) => {
         const vertices = getVertices(sx, sy);
@@ -2237,7 +2445,7 @@ function handleAddTriangle() {
     const finalCenterX = startX + shapeWidth / 2;
     const finalCenterY = startY + shapeHeight / 2;
     const finalVertices = getVertices(startX, startY);
-    
+
     // Use the new, correct interpolation function
     const newLedsRaw = getInterpolatedPointsForPolygon(finalVertices, ledsPerSide, GRID_SIZE);
 
@@ -2254,7 +2462,7 @@ function handleAddTriangle() {
 
     const expectedLedCount = (ledsPerSide - 1) * 3;
     if (newLeds.length < expectedLedCount * 0.9) {
-         showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+        showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
     }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -2264,7 +2472,7 @@ function handleAddTriangle() {
 
     viewTransform.panX = canvas.width / 2 - (finalCenterX * viewTransform.zoom);
     viewTransform.panY = canvas.height / 2 - (finalCenterY * viewTransform.zoom);
-    
+
     selectedLedIds.clear(); newLeds.forEach(led => selectedLedIds.add(led.id));
     setTool('select');
     addTriangleModal.hide(); drawCanvas(); autoSaveState();
