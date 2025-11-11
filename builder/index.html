@@ -687,11 +687,29 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Your component JSON will be generated.</p>
+
+                        <div class="mb-3">
+                            <label class="form-label">Export Format:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="export-format" id="export-format-srgb" value="srgb" checked>
+                                <label class="form-check-label" for="export-format-srgb">
+                                    SignalRGB (Standard)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="export-format" id="export-format-wled" value="wled">
+                                <label class="form-check-label" for="export-format-wled">
+                                    WLED (Matrix Map)
+                                </label>
+                            </div>
+                        </div>
+
+                        <p>Your component JSON preview:</p>
                         <pre id="json-preview" style="max-height: 300px; overflow: auto; background-color: var(--bs-tertiary-bg); padding: 10px; border-radius: 5px;"><code>{...}</code></pre>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="copy-export-json-btn"><i class="bi bi-clipboard me-2"></i>Copy JSON</button>
                         <button type="button" class="btn btn-primary" id="confirm-export-json-btn"><i class="bi bi-download me-2"></i>Download .json</button>
                     </div>
                 </div>
