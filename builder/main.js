@@ -483,6 +483,11 @@ function setupProjectListeners() {
         // Add listeners to update preview when format changes
         document.getElementById('export-format-srgb').addEventListener('change', updateExportPreview);
         document.getElementById('export-format-wled').addEventListener('change', updateExportPreview);
+        
+        // --- THIS IS THE FIX ---
+        document.getElementById('export-format-nolliergb').addEventListener('change', updateExportPreview);
+        // --- END OF FIX ---
+
         // Add listener to generate preview when modal is about to show
         exportModalElement.addEventListener('show.bs.modal', updateExportPreview);
     } else {
@@ -654,8 +659,29 @@ function generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, w
     return jsonString;
 }
 
-
 /**
+ * NEW: Generates the JSON for NollieRGB
+ * @param {number} ledCount
+ * @returns {string} A pretty-printed JSON string for NollieRGB
+ */
+function generateNollieRGBJson(ledCount) {
+    const led_index = [];
+    for (let i = 0; i < ledCount; i++) {
+        led_index.push(i + 1); // 1-based indexing
+    }
+
+    const exportObject = {
+        version: 1,
+        led_size: ledCount,
+        re_led_size: ledCount,
+        led_index: led_index
+    };
+
+    return JSON.stringify(exportObject, null, 2);
+}
+
+
+/**f
 
 /**
  * NEW: Generates the JSON for SignalRGB
@@ -1049,7 +1075,13 @@ function updateExportPreview() {
             // WLED format needs all data
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
+        
+        // --- THIS IS THE NEW BLOCK ---
+        } else if (format === 'nolliergb') {
+            jsonString = generateNollieRGBJson(ledCount);
+            filename = (productName || 'nolliergb_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_nollie.json';
         }
+        // --- END OF NEW BLOCK ---
 
         preview.textContent = jsonString;
 
