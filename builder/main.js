@@ -332,7 +332,8 @@ function loadComponentState(stateToLoad) {
     // Clear old state
     clearAutoSave();
     Object.assign(componentState, createDefaultComponentState()); // Reset to default first
-    Object.assign(componentState, stateToLoad); // Then apply new state
+    Object.assign(componentState, stateToLoad); // Then apply new state\
+    componentState.originalDbName = stateToLoad.name;
 
     // --- Load imageGuideState from stateToLoad or use defaults ---
     imageGuideState.x = stateToLoad.imageGuideX ?? 0;
@@ -521,7 +522,10 @@ function createDefaultComponentState() {
         // --- Guide Image Properties ---
         guideImageUrl: null,
         guideImageWidth: 500,
-        guideImageHeight: 300
+        guideImageHeight: 300,
+        
+        // --- ADD THIS LINE ---
+        originalDbName: "My Custom Component" // Give it the default name
     };
 }
 
@@ -805,44 +809,43 @@ function handleImportJson(e) {
     reader.readAsText(file);
 }
 
-async function handleSaveComponent() {
-    const user = auth.currentUser;
-    if (!user) { showToast('Error', 'You must be logged in to save.', 'danger'); return; }
-    showToast('Saving...', 'Saving component to the cloud.', 'info');
+/**
+ * Performs the actual save/update to Firebase after user confirmation.
+ * @param {boolean} isNew - True if this is a new doc (setDoc), false (updateDoc).
+ * @param {boolean} [isForking=false] - True if this is a non-owner saving.
+ */
+async function performSave(isNew, isForking = false) {
+    const user = auth.currentUser; // Re-check user
+    if (!user) {
+        showToast('Error', 'You must be logged in to save.', 'danger');
+        return;
+    }
 
+    // 1. Apply changes from inputs to the state *now*
     componentState.name = compNameInput.value;
     componentState.displayName = compDisplayNameInput.value;
     componentState.brand = compBrandInput.value;
     componentState.type = compTypeInput.value;
 
-    // --- Firestore wiring conversion ---
+    // 2. Show toast
+    if (isForking) {
+        showToast('Forking Component...', 'Saving your version as a new component.', 'info');
+    } else {
+        showToast('Saving...', 'Saving component to the cloud.', 'info');
+    }
+
+    // 3. Prepare data for Firebase
     let wiringToSave = componentState.wiring;
     if (!Array.isArray(wiringToSave)) { wiringToSave = []; }
     wiringToSave = wiringToSave.filter(circuit => Array.isArray(circuit));
     const firestoreWiring = wiringToSave.map(circuit => {
         return { circuit: circuit };
     });
-    // --- End wiring conversion ---
 
-    // --- Check permissions before saving ---
-    let isOwnerOrAdmin = false;
-    let isNewComponent = (currentComponentId === null); // Is this a brand-new component?
-
-    if (!isNewComponent) {
-        // This is an existing component, check ownership
-        if (user.uid === componentState.ownerId || user.uid === ADMIN_UID) {
-            isOwnerOrAdmin = true; // User is allowed to overwrite
-            // console.log("Save allowed: User is owner or admin.");
-        } else {
-            // User is NOT the owner. Fork the component.
-            currentComponentId = null;
-            componentState.dbId = null;
-            isNewComponent = true; // Treat it as a new component
-
-            // If forking, we keep the base64 'data:' string
-            showToast('Forking Component...', 'Saving your version as a new component.', 'info');
-            console.log("Save forking: User is not owner. Creating new component.");
-        }
+    // If it's a new component (or forking/saving as new), clear the old ID
+    if (isNew) {
+        currentComponentId = null;
+        componentState.dbId = null;
     }
 
     const dataToSave = {
@@ -852,10 +855,8 @@ async function handleSaveComponent() {
         ownerId: user.uid,
         ownerName: user.displayName,
         lastUpdated: serverTimestamp(),
-        // We are now explicitly saving the device imageUrl (which is base64)
         imageUrl: componentState.imageUrl || null,
-        // Save image guide state to Firebase (using the resized image) ---
-        guideImageUrl: componentState.guideImageUrl || null, // Stored to Firebase for cloud backup/sharing
+        guideImageUrl: componentState.guideImageUrl || null,
         imageGuideX: imageGuideState.x,
         imageGuideY: imageGuideState.y,
         imageGuideScale: imageGuideState.scale,
@@ -865,26 +866,29 @@ async function handleSaveComponent() {
     };
     delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
+    // 4. Execute Firebase save
     try {
         let docRef;
         const componentsCollection = collection(db, 'srgb-components');
 
-        if (currentComponentId && isOwnerOrAdmin) {
-            // --- OVERWRITE PATH ---
-            docRef = doc(componentsCollection, currentComponentId);
-            dataToSave.createdAt = componentState.createdAt || serverTimestamp();
-            await updateDoc(docRef, dataToSave);
-        } else {
-            // --- NEW COMPONENT (or FORK) PATH ---
+        if (isNew) {
+            // --- NEW COMPONENT (or FORK/SaveAsNew) PATH ---
             dataToSave.createdAt = serverTimestamp();
             docRef = doc(componentsCollection); // Let Firestore generate a new ID
             await setDoc(docRef, dataToSave);
             currentComponentId = docRef.id;
             componentState.dbId = currentComponentId;
+        } else {
+            // --- OVERWRITE PATH ---
+            docRef = doc(componentsCollection, currentComponentId);
+            dataToSave.createdAt = componentState.createdAt || serverTimestamp(); // Preserve original create date
+            await updateDoc(docRef, dataToSave);
         }
 
-        componentState.createdAt = dataToSave.createdAt;
+        componentState.createdAt = dataToSave.createdAt; // Ensure state has create date
+        componentState.originalDbName = componentState.name;
 
+        // 5. Update metadata (no change here)
         try {
             const filterDocRef = doc(db, "srgb-components-metadata", "filters");
             const metadataUpdate = {
@@ -892,23 +896,79 @@ async function handleSaveComponent() {
                 allBrands: arrayUnion(dataToSave.brand),
                 allLedCounts: arrayUnion(dataToSave.ledCount)
             };
-            // Use setDoc with merge:true to create or update the doc
-            // We MUST wait for this to complete to avoid a race condition
-            // where the user opens the gallery before the filters are updated.
             await setDoc(filterDocRef, metadataUpdate, { merge: true });
-            console.log("Gallery filters metadata updated successfully.");
         } catch (filterError) {
             console.warn("Could not update gallery filters metadata:", filterError);
-            // Don't block the user; just log a warning
         }
 
+        // 6. Finalize
         showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
         document.getElementById('share-component-btn').disabled = false;
         clearAutoSave();
         isDirty = false;
+
     } catch (error) {
         console.error("Error saving component: ", error);
         showToast('Error Saving', error.message, 'danger');
+    }
+}
+
+/**
+ * Gatekeeper function for saving.
+ * Checks permissions and name changes, then asks user for confirmation
+ * before calling performSave().
+ */
+async function handleSaveComponent() {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast('Error', 'You must be logged in to save.', 'danger');
+        return;
+    }
+
+    // --- 1. Get new values BUT DON'T apply them yet ---
+    const newName = compNameInput.value;
+    const originalName = componentState.originalDbName;
+
+    // --- 2. Determine save conditions ---
+    const isNewComponent = (currentComponentId === null);
+    const isOwnerOrAdmin = !isNewComponent && (user.uid === componentState.ownerId || user.uid === ADMIN_UID);
+    const isForking = !isNewComponent && !isOwnerOrAdmin;
+    const nameChanged = (newName !== originalName);
+
+    // --- 3. Route the save logic ---
+    if (isNewComponent) {
+        // A. It's a brand new component. Save it.
+        console.log("Save Route: New Component");
+        performSave(true, false); // isNew=true, isForking=false
+
+    } else if (isForking) {
+        // B. User is not owner. Force a fork (save as new).
+        console.log("Save Route: Forking");
+        performSave(true, true); // isNew=true, isForking=true
+
+    } else if (isOwnerOrAdmin) {
+        // C. User is the owner.
+        if (nameChanged) {
+            // C1. Name changed: Save as New AUTOMATICALLY. No questions asked.
+            console.log("Save Route: Owner Save As New (Name Changed) - Automatic");
+            performSave(true, false); // isNew=true, isForking=false
+        } else {
+            // C2. Name is the same: Ask to Overwrite (This is the only time we ask)
+            const overwrite = confirm(
+                'This component already exists.\n\n' +
+                'Click "OK" to OVERWRITE it with your current changes.\n' +
+                '(Click "Cancel" to do nothing).'
+            );
+            if (overwrite) {
+                console.log("Save Route: Owner Overwrite (Same Name)");
+                performSave(false, false); // isNew=false, isForking=false
+            } else {
+                showToast('Save Cancelled', 'No changes were saved.', 'info');
+            }
+        }
+    } else {
+        // Fallback for any unhandled case
+        console.error("Save logic error: Unhandled case.");
     }
 }
 
@@ -1350,16 +1410,31 @@ function toggleImageVisibility() {
 function setupPropertyListeners() {
     compNameInput.addEventListener('input', (e) => {
         console.log('Property Listener: Product Name changed');
-        if (componentState) {
-            componentState.name = e.target.value;
-            // Sync Display Name if it's currently empty or identical to the old product name
-            if (!compDisplayNameInput.value || compDisplayNameInput.value === componentState.name) {
-                compDisplayNameInput.value = e.target.value;
-                componentState.displayName = e.target.value;
-            }
-            autoSaveState();
+        if (!componentState) {
+            console.warn('setupPropertyListeners: componentState not ready.');
+            return;
         }
-        else { console.warn('setupPropertyListeners: componentState not ready.'); }
+
+        // Get the new name from the input
+        const newName = e.target.value;
+        
+        // Get the name *before* this change
+        const oldName = componentState.name; 
+
+        // Check if the display name was synced to the *old* product name
+        const wasSynced = !compDisplayNameInput.value || compDisplayNameInput.value === oldName;
+
+        // Now, update the component state's name
+        componentState.name = newName;
+
+        // If it was synced, update the display name input and its state
+        if (wasSynced) {
+            compDisplayNameInput.value = newName;
+            componentState.displayName = newName;
+        }
+
+        // Save to local storage
+        autoSaveState();
     });
 
     // ADDED Listener for Display Name
@@ -1640,6 +1715,11 @@ function setupToolbarListeners() {
         });
     } else { console.warn("Rotate button not found."); }
 
+    const reverseSelectedBtn = document.getElementById('reverse-selected-btn');
+    if (reverseSelectedBtn) {
+        reverseSelectedBtn.addEventListener('click', handleReverseSelected);
+    } else { console.warn("Reverse selected button not found."); }
+
     // Keep scale modal initialization here (it still uses a modal for factor input)
     scaleModal = new bootstrap.Modal(document.getElementById('scale-selected-modal'));
     if (scaleSelectedBtn && confirmScaleBtn) {
@@ -1766,6 +1846,10 @@ function setupKeyboardListeners() {
                 break;
 
             // Selection Actions
+            case 'r':
+            case 'R':
+                handleReverseSelected();
+                break;
             case 's':
             case 'S':
                 if (selectedLedIds.size > 0) {
@@ -2582,6 +2666,62 @@ function handleScaleSelected() {
         drawCanvas();
     }
     scaleModal.hide();
+}
+
+/**
+ * Reverses the wiring order of the currently selected LEDs
+ * within their respective circuits.
+ */
+function handleReverseSelected() {
+    if (selectedLedIds.size === 0) {
+        showToast('Action Blocked', 'Select two or more LEDs in a circuit to reverse.', 'warning');
+        return;
+    }
+
+    let stateChanged = false;
+    let totalReversedCount = 0;
+
+    componentState.wiring.forEach((circuit, circuitIndex) => {
+        if (!Array.isArray(circuit) || circuit.length < 2) {
+            return; // Skip empty or single-LED circuits
+        }
+
+        // 1. Find the selected LEDs *in this circuit* and their indices
+        const selectedInCircuit = []; // Stores { id, index }
+        circuit.forEach((ledId, index) => {
+            if (selectedLedIds.has(ledId)) {
+                selectedInCircuit.push({ id: ledId, index: index });
+            }
+        });
+
+        if (selectedInCircuit.length < 2) {
+            // Need at least 2 selected LEDs in *this* circuit to reverse
+            return;
+        }
+
+        // 2. We found selected LEDs. Time to reverse.
+        stateChanged = true;
+        totalReversedCount += selectedInCircuit.length;
+
+        // 3. Get just the IDs in reverse order
+        const reversedIds = selectedInCircuit.map(item => item.id).reverse();
+
+        // 4. Go back to the original circuit and replace the LEDs at their
+        //    original indices with the new reversed list.
+        selectedInCircuit.forEach((item, i) => {
+            // item.index is the *original* position (e.g., 1, 2, 3)
+            // reversedIds[i] is the *new* ID for that position (e.g., 'd', 'c', 'b')
+            componentState.wiring[circuitIndex][item.index] = reversedIds[i];
+        });
+    });
+
+    if (stateChanged) {
+        showToast('Wiring Reversed', `Reversed the order of ${totalReversedCount} selected LEDs.`, 'success');
+        autoSaveState();
+        drawCanvas();
+    } else {
+        showToast('Action Blocked', 'Select two or more LEDs *from the same circuit* to reverse.', 'warning');
+    }
 }
 
 // --- Gallery Functions ---
