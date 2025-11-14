@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Detector Test</title>
+    <!-- 1. Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load OpenCV.js and call onOpenCvReady() when it's loaded -->
+    <script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="onOpenCvReady();"></script>
+    <style>
+        /* Simple dark theme */
+        body { background-color: #111827; color: #f3f4f6; }
+        .btn {
+            @apply px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-200;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed;
+        }
+        /* NEW: Added danger button style */
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-500 disabled:cursor-not-allowed;
+        }
+        .video-container {
+            @apply bg-black border border-gray-700 rounded-lg shadow-inner overflow-hidden;
+        }
+        video, canvas {
+            width: 100%;
+            height: auto;
+            transform: scaleX(-1); /* Mirror the webcam feed */
+        }
+        /* New style for the overlay canvas */
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Allows clicking "through" the canvas if needed */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto space-y-6">
+        <h1 class="text-3xl font-bold text-white">LED Position Detector (Proof of Concept)</h1>
+        
+        <!-- Instructions Panel -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-2 text-yellow-400">Instructions:</h2>
+            <p id="instructions" class="text-lg">
+                1. Click "Start Webcam". <br>
+                2. Mount your webcam and device so they are **PERFECTLY STILL**. <br>
+                3. Ensure the room has **stable, dim lighting**. No reflections!
+            </p>
+        </div>
+
+        <!-- Main Grid: Video Feeds + Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Column 1: Video Feeds -->
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Live Webcam Feed</h3>
+                    <!-- This container is now 'relative' to position the overlay -->
+                    <div class="video-container relative">
+                        <video id="webcamFeed" autoplay playsinline muted></video>
+                        <!-- NEW: Overlay canvas to draw found LEDs -->
+                        <canvas id="overlayCanvas"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Analysis Canvas (Difference)</h3>
+                    <div class="video-container">
+                        <!-- This canvas shows the *result* of the subtraction -->
+                        <canvas id="diffCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Controls & Results -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+                
+                <!-- Workflow Buttons -->
+                <div class="flex flex-wrap gap-3">
+                    <button id="startBtn" class="btn btn-primary" disabled>
+                        <span id="cvLoadingSpinner" class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                        <span id="cvLoadingText">Loading OpenCV...</span>
+                    </button>
+                    <button id="calibrateBtn" class="btn btn-primary" disabled>1. Calibrate (All LEDs OFF)</button>
+                    <!-- UPDATED: This is now a Start/Stop button -->
+                    <button id="toggleScanBtn" class="btn btn-primary" disabled>Start Automatic Scan</button>
+                    <!-- NEW: Restart Button -->
+                    <button id="restartBtn" class="btn btn-danger" disabled>Restart Scan</button>
+                </div>
+
+                <!-- Sensitivity Sliders -->
+                <div>
+                    <label for="sensitivitySlider" class="block text-lg font-medium mb-2">
+                        Brightness Threshold: <span id="sensitivityValue" class="font-bold text-yellow-400">80</span>
+                    </label>
+                    <input type="range" id="sensitivitySlider" min="10" max="250" value="80" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>More Sensitive (10)</span>
+                        <span>Less Sensitive (250)</span>
+                    </div>
+                </div>
+                
+                <!-- NEW: Minimum Area Slider -->
+                <div>
+                    <label for="minAreaSlider" class="block text-lg font-medium mb-2">
+                        Minimum LED Area: <span id="minAreaValue" class="font-bold text-yellow-400">20</span>
+                    </label>
+                    <input type="range" id="minAreaSlider" min="1" max="500" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>More Noise (1)</span>
+                        <span>Less Noise (500)</span>
+                    </div>
+                </div>
+                <!-- END NEW -->
+
+
+                <!-- Results -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Found LED Coordinates:</h3>
+                    <ul id="ledList" class="list-disc list-inside bg-gray-900 p-4 rounded-md h-48 overflow-y-auto font-mono text-sm">
+                        <!-- Coordinates will be added here -->
+                    </ul>
+                </div>
+
+                <!-- Debug Output -->
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Raw Analysis Output:</h3>
+                    <pre id="rawOutput" class="bg-gray-900 p-4 rounded-md text-xs h-32 overflow-y-auto">Waiting for analysis...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden canvases for processing. These store the frames in memory. -->
+    <canvas id="captureCanvas" class="hidden"></canvas>
+    <canvas id="previousFrameCanvas" class="hidden"></canvas>
+
+    <script>
+        // --- DOM Elements ---
+        const startBtn = document.getElementById('startBtn');
+        const calibrateBtn = document.getElementById('calibrateBtn');
+        const toggleScanBtn = document.getElementById('toggleScanBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const instructions = document.getElementById('instructions');
+        const ledList = document.getElementById('ledList');
+        const rawOutput = document.getElementById('rawOutput');
+        
+        const videoEl = document.getElementById('webcamFeed');
+        const diffCanvas = document.getElementById('diffCanvas');
+        const diffCtx = diffCanvas.getContext('2d');
+        
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+
+        // Hidden canvases
+        const captureCanvas = document.getElementById('captureCanvas');
+        const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
+        const previousFrameCanvas = document.getElementById('previousFrameCanvas');
+        const previousFrameCtx = previousFrameCanvas.getContext('2d', { willReadFrequently: true });
+
+        // --- State ---
+        let cv; // Will hold the loaded OpenCV object
+        let stream;
+        let ledCounter = 0;
+        let ledCoordinates = [];
+        let isCalibrated = false;
+        let videoWidth, videoHeight;
+        
+        let isRunning = false;
+        let analysisLoopId = null;
+        let thresholdValue = 80; 
+        let minAreaValue = 20; 
+        let isPreviewing = false;
+        let previewLoopId = null;
+        
+        // NEW: Processing lock to prevent race conditions
+        let isProcessing = false; 
+
+        // Sensitivity slider elements
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const minAreaSlider = document.getElementById('minAreaSlider');
+        const minAreaValueEl = document.getElementById('minAreaValue');
+
+        /**
+         * Called once OpenCV.js is loaded and ready.
+         */
+        function onOpenCvReady() {
+            cv = window.cv;
+            console.log('OpenCV.js is ready.');
+            
+            document.getElementById('cvLoadingSpinner').classList.add('hidden');
+            document.getElementById('cvLoadingText').innerText = 'Start Webcam';
+            startBtn.disabled = false;
+        }
+
+        /**
+         * Starts the webcam feed.
+         */
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+                });
+                
+                videoEl.srcObject = stream;
+                
+                videoEl.onloadedmetadata = () => {
+                    videoWidth = videoEl.videoWidth;
+                    videoHeight = videoEl.videoHeight;
+                    
+                    [captureCanvas, previousFrameCanvas, diffCanvas, overlayCanvas].forEach(canvas => {
+                        canvas.width = videoWidth;
+                        canvas.height = videoHeight;
+                    });
+
+                    console.log(`Webcam started with resolution: ${videoWidth}x${videoHeight}`);
+                    
+                    instructions.innerHTML = `Webcam active. <br>
+                        1. Make sure all device LEDs are <b>OFF</b>. <br>
+                        2. Click 'Calibrate' to capture the dark frame.`;
+                    
+                    calibrateBtn.disabled = false;
+                    startBtn.disabled = true;
+                    restartBtn.disabled = true;
+                };
+
+            } catch (err) {
+                console.error("Error starting webcam:", err);
+                instructions.innerHTML = `<span class="text-red-400">Error: Could not start webcam. ${err.message}</span>`;
+            }
+        }
+
+        /**
+         * Captures a single frame from the video to the hidden 'captureCanvas'.
+         */
+        function captureFrameToCanvas() {
+            if (!videoWidth || !videoHeight) return;
+            captureCtx.drawImage(videoEl, 0, 0, videoWidth, videoHeight);
+        }
+
+        /**
+         * Captures the "dark" frame. All LEDs should be OFF.
+         */
+        function calibrateFrame() {
+            captureFrameToCanvas();
+            previousFrameCtx.drawImage(captureCanvas, 0, 0, videoWidth, videoHeight);
+            
+            isCalibrated = true;
+            ledCounter = 0;
+            ledCoordinates = [];
+            ledList.innerHTML = '';
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            
+            // Stop ALL loops
+            if (analysisLoopId) {
+                cancelAnimationFrame(analysisLoopId);
+                analysisLoopId = null;
+            }
+            if (previewLoopId) {
+                cancelAnimationFrame(previewLoopId);
+                previewLoopId = null;
+            }
+            
+            isRunning = false;
+            isPreviewing = true; // Start previewing immediately
+
+            instructions.innerHTML = `Calibration complete. <br>
+                1. <b>Adjust sliders</b> using the live preview below. <br>
+                2. Turn on <b>ONLY LED 1</b>. <br>
+                3. Click 'Start Automatic Scan'.`;
+            toggleScanBtn.disabled = false;
+            toggleScanBtn.innerText = 'Start Automatic Scan';
+            rawOutput.textContent = "Calibrated. Waiting for LED 1...";
+            
+            restartBtn.disabled = false;
+
+            diffCtx.fillStyle = 'black';
+            diffCtx.fillRect(0, 0, diffCanvas.width, diffCanvas.height);
+
+            // Start the preview loop
+            runPreviewLoop();
+        }
+
+        /**
+         * Toggles the automatic analysis loop on and off.
+         */
+        function toggleAnalysisLoop() {
+            isRunning = !isRunning;
+            if (isRunning) {
+                // --- STARTING the scan ---
+                isPreviewing = false; // Stop previewing
+                if (previewLoopId) {
+                    cancelAnimationFrame(previewLoopId); // Stop preview loop
+                    previewLoopId = null;
+                }
+                
+                toggleScanBtn.innerText = 'Stop Scan';
+                rawOutput.textContent = 'Scanning for new light...';
+                runAnalysisLoop(); // Start main scan loop
+            } else {
+                // --- STOPPING the scan ---
+                if (analysisLoopId) {
+                    cancelAnimationFrame(analysisLoopId); // Stop main scan loop
+                    analysisLoopId = null;
+                }
+                
+                isPreviewing = true; // Start previewing again
+                toggleScanBtn.innerText = 'Start Automatic Scan';
+                rawOutput.textContent = 'Scan stopped. Now in preview mode.';
+                runPreviewLoop(); // Start preview loop
+            }
+        }
+
+        /**
+         * The main analysis loop, requested every animation frame.
+         */
+        function runAnalysisLoop() {
+            if (!isRunning) return;
+
+            // NEW: Check the lock. If processing, skip this frame.
+            if (isProcessing) {
+                analysisLoopId = requestAnimationFrame(runAnalysisLoop);
+                return; 
+            }
+            
+            runAnalysisStep(); // This will set the lock
+            analysisLoopId = requestAnimationFrame(runAnalysisLoop);
+        }
+
+        /**
+         * The preview loop, runs when not scanning.
+         */
+        function runPreviewLoop() {
+            if (!isPreviewing) return;
+
+            // NEW: Check the lock. If processing, skip this frame.
+            if (isProcessing) {
+                previewLoopId = requestAnimationFrame(runPreviewLoop);
+                return; 
+            }
+            
+            runPreviewStep(); // Run the simplified preview step (which sets the lock)
+            previewLoopId = requestAnimationFrame(runPreviewLoop);
+        }
+
+        /**
+         * Simplified analysis step for live preview.
+         * This just shows the threshold and reports the largest area.
+         */
+        function runPreviewStep() {
+            if (!cv || isProcessing) return; // Check lock at start
+            isProcessing = true; // Set lock
+
+            // 1. Capture frame
+            captureFrameToCanvas();
+
+            // 2. Read frames into OpenCV 'Mat' objects
+            let currentMat, previousMat, diffMat, grayMat, thresholdMat;
+            let contours, hierarchy;
+            let bestContour = null;
+
+            try {
+                currentMat = cv.imread(captureCanvas);
+                previousMat = cv.imread(previousFrameCanvas); // Compare to the *calibrated* frame
+                diffMat = new cv.Mat();
+                grayMat = new cv.Mat();
+                thresholdMat = new cv.Mat();
+                contours = new cv.MatVector();
+                hierarchy = new cv.Mat();
+
+                // 3. Diff, Grayscale, Threshold (using live slider value)
+                cv.absdiff(currentMat, previousMat, diffMat);
+                cv.cvtColor(diffMat, grayMat, cv.COLOR_RGBA2GRAY);
+                cv.threshold(grayMat, thresholdMat, thresholdValue, 255, cv.THRESH_BINARY);
+
+                // 4. Find Contours
+                cv.findContours(thresholdMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                
+                let largestContourArea = 0;
+                
+
+                for (let i = 0; i < contours.size(); ++i) {
+                    let contour = contours.get(i);
+                    let area = cv.contourArea(contour);
+                    if (area > largestContourArea) {
+                        largestContourArea = area;
+                        bestContour?.delete();
+                        bestContour = contour.clone();
+                    }
+                    contour.delete();
+                }
+
+                // 5. Update UI
+                // Show the live thresholded image
+                cv.imshow(diffCanvas, thresholdMat);
+                // Report the largest area found so the user can tune the "Min Area" slider
+                rawOutput.textContent = `PREVIEWING... Largest change area: ${largestContourArea.toFixed(0)}`;
+                
+            } catch (err) {
+                console.error("OpenCV preview error:", err);
+                rawOutput.textContent = `Error: ${err.message}`;
+                // Don't stop the loop, just log
+            } finally {
+                // 6. Clean up memory
+                [currentMat, previousMat, diffMat, grayMat, thresholdMat].forEach(mat => {
+                    if (mat) mat.delete();
+                });
+                bestContour?.delete();
+                contours?.delete();
+                hierarchy?.delete();
+                
+                isProcessing = false; // RELEASE THE LOCK
+            }
+        }
+
+
+        /**
+         * This is the core logic. It runs one analysis step.
+         */
+        function runAnalysisStep() {
+            if (!cv || isProcessing) return; 
+            isProcessing = true; // Set lock
+
+            // 1. Capture the current video frame
+            captureFrameToCanvas();
+
+            // 2. Read frames into OpenCV 'Mat' objects
+            let currentMat, previousMat, diffMat, grayMat, thresholdMat;
+            let contours, hierarchy;
+            let bestContour = null;
+
+            try {
+                currentMat = cv.imread(captureCanvas);
+                previousMat = cv.imread(previousFrameCanvas);
+                diffMat = new cv.Mat();
+                grayMat = new cv.Mat();
+                thresholdMat = new cv.Mat();
+                contours = new cv.MatVector();
+                hierarchy = new cv.Mat();
+
+                // 3. --- Perform Frame Differencing ---
+                cv.absdiff(currentMat, previousMat, diffMat);
+
+                // 4. --- Process the Difference Image ---
+                cv.cvtColor(diffMat, grayMat, cv.COLOR_RGBA2GRAY);
+                cv.threshold(grayMat, thresholdMat, thresholdValue, 255, cv.THRESH_BINARY);
+
+                // 5. --- Find Contours (Blobs) ---
+                cv.findContours(thresholdMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                
+                let largestContourArea = 0;
+                
+
+                for (let i = 0; i < contours.size(); ++i) {
+                    let contour = contours.get(i);
+                    let area = cv.contourArea(contour);
+                    
+                    if (area > largestContourArea) {
+                        largestContourArea = area;
+                        bestContour?.delete(); 
+                        bestContour = contour.clone();
+                    }
+                    contour.delete();
+                }
+                
+                // 6. --- TRIGGER: Check if the largest blob is big enough ---
+                if (bestContour && largestContourArea > minAreaValue) {
+                    ledCounter++;
+                    
+                    // Find the center of the blob using "moments"
+                    const moments = cv.moments(bestContour);
+                    const physicalX = Math.round(moments.m10 / moments.m00);
+                    const physicalY = Math.round(moments.m01 / moments.m00);
+                    
+                    if (isNaN(physicalX) || isNaN(physicalY)) {
+                        throw new Error("Invalid moments calculation (m00 is zero).");
+                    }
+
+                    const foundCoord = { x: physicalX, y: physicalY };
+                    ledCoordinates.push(foundCoord);
+
+                    // Add to the list
+                    const li = document.createElement('li');
+                    li.textContent = `LED ${ledCounter}: (x: ${foundCoord.x}, y: ${foundCoord.y})`;
+                    ledList.appendChild(li);
+                    ledList.scrollTop = ledList.scrollHeight;
+
+                    // Update debug info
+                    rawOutput.textContent = `Found new light source!\nLED ${ledCounter} at (x: ${physicalX}, y: ${physicalY})\nArea: ${largestContourArea.toFixed(0)}`;
+                    
+                    // Update instructions
+                    instructions.innerHTML = `Found LED ${ledCounter}. <br>
+                        Waiting for <b>LED ${ledCounter + 1}</b>... <br>
+                        (Keep others on)`;
+                    
+                    // --- Draw on the overlay canvas ---
+                    let drawX = physicalX;
+                    let drawY = physicalY;
+
+                    overlayCtx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+                    overlayCtx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    overlayCtx.lineWidth = 2;
+                    overlayCtx.beginPath();
+                    overlayCtx.arc(drawX, drawY, 15, 0, 2 * Math.PI);
+                    overlayCtx.fill();
+                    overlayCtx.stroke();
+                    
+                    overlayCtx.save(); 
+                    overlayCtx.translate(drawX, drawY);
+                    overlayCtx.scale(-1, 1);
+                    overlayCtx.fillStyle = '#FF0000';
+                    overlayCtx.font = 'bold 16px sans-serif';
+                    overlayCtx.textAlign = 'center';
+                    overlayCtx.textBaseline = 'middle';
+                    overlayCtx.fillText(ledCounter, 0, 0);
+                    overlayCtx.restore();
+                    
+                    // 8. --- Prepare for the Next Loop ---
+                    previousFrameCtx.drawImage(captureCanvas, 0, 0, videoWidth, videoHeight);
+                
+                } else {
+                    // --- This block runs every frame a new LED is *not* found ---
+                    if (largestContourArea > 0) {
+                        rawOutput.textContent = `Scanning... Detected change, but area (${largestContourArea.toFixed(0)}) is below minimum (${minAreaValue}).`;
+                    } else {
+                        rawOutput.textContent = 'Scanning... No change detected.';
+                    }
+                }
+
+                // 7. --- Show the Analysis Image (every frame) ---
+                cv.imshow(diffCanvas, thresholdMat);
+
+            } catch (err) {
+                console.error("OpenCV processing error:", err);
+                rawOutput.textContent = `Error: ${err.message}`;
+                toggleAnalysisLoop(); // Stop the loop on error
+            } finally {
+                // 9. --- IMPORTANT: Clean up memory ---
+                [currentMat, previousMat, diffMat, grayMat, thresholdMat].forEach(mat => {
+                    if (mat) mat.delete();
+                });
+                bestContour?.delete(); 
+                contours?.delete();
+                hierarchy?.delete();
+                
+                isProcessing = false; // RELEASE THE LOCK
+            }
+        }
+
+        // --- Attach Event Listeners ---
+        startBtn.addEventListener('click', startWebcam);
+        calibrateBtn.addEventListener('click', calibrateFrame);
+        toggleScanBtn.addEventListener('click', toggleAnalysisLoop);
+        restartBtn.addEventListener('click', calibrateFrame); 
+
+        // Listener for the sensitivity slider
+        sensitivitySlider.addEventListener('input', (e) => {
+            thresholdValue = parseInt(e.target.value, 10);
+            sensitivityValue.textContent = thresholdValue;
+            
+            // REMOVED: No longer need to manually call runPreviewStep()
+        });
+
+        // NEW: Listener for the minimum area slider
+        minAreaSlider.addEventListener('input', (e) => {
+            minAreaValue = parseInt(e.target.value, 10);
+            minAreaValueEl.textContent = minAreaValue;
+            
+            // REMOVED: No longer need to manually call runPreviewStep()
+        });
+
+    </script>
+</body>
+</html>
