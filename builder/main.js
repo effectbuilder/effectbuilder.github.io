@@ -314,9 +314,6 @@ function clearAutoSave() {
     localStorage.removeItem(AUTOSAVE_KEY);
 }
 
-// ---
-// --- NEW HELPER FUNCTION: loadComponentState (MODIFIED) ---
-// ---
 /**
  * Central function to load any valid component state object into the app.
  * It handles state assignment, wiring validation/fixing, and UI updates.
@@ -342,6 +339,45 @@ function loadComponentState(stateToLoad) {
     imageGuideState.rotation = stateToLoad.imageGuideRotation ?? 0;
     imageGuideState.isLocked = stateToLoad.imageGuideIsLocked ?? true;
     imageGuideState.isVisible = stateToLoad.imageGuideIsVisible ?? true;
+
+    // --- NEW FIX: CONVERT DATABASE WEBP IMAGES TO PNG ---
+    if (componentState.imageUrl && componentState.imageUrl.startsWith('data:image/webp')) {
+        console.warn("loadComponentState: Detected WebP image from database. Converting to PNG in memory...");
+        
+        const webPDataUrl = componentState.imageUrl;
+        // Set to null temporarily so the UI doesn't try to load the (broken) WebP
+        componentState.imageUrl = null; 
+
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth; // Use naturalWidth for correct dimensions
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // Get the new PNG data URL
+            const pngDataUrl = canvas.toDataURL('image/png');
+            
+            // Update the component state with the correct format
+            componentState.imageUrl = pngDataUrl; 
+            componentState.imageWidth = img.naturalWidth; // Also update dimensions
+            componentState.imageHeight = img.naturalHeight;
+
+            console.log("loadComponentState: WebP converted to PNG successfully.");
+            
+            // Re-run UI update and autosave with the new PNG data
+            updateUIFromState();
+            autoSaveState();
+        };
+        img.onerror = () => {
+            console.error("loadComponentState: Failed to convert WebP to PNG.");
+            // Image is already null, so it will just stay blank.
+        };
+        img.src = webPDataUrl; // Start the conversion
+    }
+    // --- END NEW FIX ---
+
 
     // --- VALIDATE AND FIX WIRING ---
     componentState.leds = componentState.leds || [];
@@ -380,7 +416,7 @@ function loadComponentState(stateToLoad) {
 
     currentComponentId = stateToLoad.dbId || null; // Reset DB id if it's not in the new state
 
-    updateUIFromState();
+    updateUIFromState(); // Run initial update
     selectedLedIds.clear();
     resetView(); // This will also call drawCanvas()
 
@@ -404,7 +440,6 @@ function loadComponentState(stateToLoad) {
     // The *caller* is responsible for setting the dirty state.
     return true;
 }
-// --- END NEW HELPER FUNCTION ---
 
 
 // --- Auth & Project Management ---
@@ -758,7 +793,7 @@ function handleImportJson(e) {
                 // Check if data.Image exists and is a non-empty string
                 if (data.Image && data.Image.length > 0) {
                     // The app exports images as webp, so we must import them as webp.
-                    stateToLoad.imageUrl = `data:image/webp;base64,${data.Image}`;
+                    stateToLoad.imageUrl = `data:image/png;base64,${data.Image}`;
                 } else {
                     stateToLoad.imageUrl = null;
                 }
@@ -1041,22 +1076,19 @@ function showExportModal() {
 function updateExportPreview() {
     const format = document.querySelector('input[name="export-format"]:checked')?.value || 'srgb';
     const preview = document.getElementById('json-preview');
+    
+    // --- GET THE BUTTONS (DO NOT CLONE) ---
     const downloadBtn = document.getElementById('confirm-export-json-btn');
-    const copyBtn = document.getElementById('copy-export-json-btn'); // <-- Get the new button
+    const copyBtn = document.getElementById('copy-export-json-btn');
 
     if (!preview || !downloadBtn || !copyBtn) {
         console.error("Export modal preview, download, or copy button not found!");
         return;
     }
-
-    if (!preview || !downloadBtn) {
-        console.error("Export modal preview or download button not found!");
-        return;
-    }
-    if (!componentState || !Array.isArray(componentState.leds)) {
-        preview.textContent = 'Error: No component data.';
-        return;
-    }
+    
+    // Disable buttons until new data is ready
+    downloadBtn.disabled = true;
+    copyBtn.disabled = true;
 
     try {
         // --- 1. Collect all common data ---
@@ -1094,7 +1126,6 @@ function updateExportPreview() {
         const height = maxY_norm + 1;
 
         // --- 2. Build LedCoordinates array (for SignalRGB) ---
-        // This is based strictly on wiring order
         const ledDataMap = new Map();
         currentLeds.forEach(led => {
             if (led) {
@@ -1119,6 +1150,7 @@ function updateExportPreview() {
         // Get Base64 image data
         let base64ImageData = "";
         if (imageDataUrl) {
+            // Use the PNG data you fixed before
             const commaIndex = imageDataUrl.indexOf(',');
             if (commaIndex !== -1) { base64ImageData = imageDataUrl.substring(commaIndex + 1); }
         }
@@ -1130,29 +1162,30 @@ function updateExportPreview() {
         if (format === 'srgb') {
             jsonString = generateSignalRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData);
             filename = (productName || 'component').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
-
         } else if (format === 'wled') {
-            // WLED format needs all data
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
-        
-        // --- THIS IS THE NEW BLOCK ---
         } else if (format === 'nolliergb') {
             jsonString = generateNollieRGBJson(ledCount);
             filename = (productName || 'nolliergb_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_nollie.json';
         }
-        // --- END OF NEW BLOCK ---
 
         preview.textContent = jsonString;
 
+        // --- 4. CREATE BLOB AND URL ---
         const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // Revoke the *old* URL if it exists to prevent memory leaks
+        if (downloadBtn._objectURL) {
+            URL.revokeObjectURL(downloadBtn._objectURL);
+        }
+        
         const url = URL.createObjectURL(blob);
+        downloadBtn._objectURL = url; // Store the new URL on the button
 
-        // Clone and replace download button to remove old listeners
-        const newDownloadBtn = downloadBtn.cloneNode(true);
-        downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
-
-        newDownloadBtn.onclick = () => {
+        // --- 5. ASSIGN ONCLICK HANDLERS DIRECTLY ---
+        
+        downloadBtn.onclick = () => {
             try {
                 const a = document.createElement('a');
                 a.href = url;
@@ -1160,7 +1193,7 @@ function updateExportPreview() {
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                // Do not revoke URL here; let the next update handle it.
                 if (exportModal) exportModal.hide();
             } catch (downloadError) {
                 console.error("Error triggering download:", downloadError);
@@ -1168,20 +1201,18 @@ function updateExportPreview() {
             }
         };
 
-        // --- 5. Add listener for the new Copy button ---
-        // Clone and replace copy button as well to remove old listeners
-        const newCopyBtn = copyBtn.cloneNode(true);
-        copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-
-        newCopyBtn.onclick = () => {
+        copyBtn.onclick = () => {
             navigator.clipboard.writeText(jsonString).then(() => {
                 showToast('Copied!', 'JSON copied to clipboard.', 'success');
-                // Don't close the modal on copy
             }).catch(err => {
                 console.error("Error copying JSON to clipboard:", err);
                 showToast('Copy Error', 'Could not copy to clipboard.', 'danger');
             });
         };
+        
+        // Re-enable the buttons
+        downloadBtn.disabled = false;
+        copyBtn.disabled = false;
 
     } catch (error) {
         console.error("Error during updateExportPreview:", error);
@@ -1229,7 +1260,7 @@ function handleImageFile(file) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 // Get the new image as a WebP data URL (more efficient than PNG)
-                const resizedDataUrl = canvas.toDataURL('image/webp', 0.85); // 85% quality
+                const resizedDataUrl = canvas.toDataURL('image/png');
 
                 // Save the RESIZED dataUrl to the state
                 componentState.imageUrl = resizedDataUrl;
@@ -1302,7 +1333,7 @@ function handleImageGuideFile(e) {
             ctx.drawImage(img, 0, 0, width, height);
 
             // 3. Get the new image as a WebP data URL
-            const resizedDataUrl = canvas.toDataURL('image/webp', 0.85); // 85% quality
+            const resizedDataUrl = canvas.toDataURL('image/png');
 
             // 4. Update component state and image guide state
             componentState.guideImageUrl = resizedDataUrl;
