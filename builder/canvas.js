@@ -321,6 +321,13 @@ function setupCanvasListeners(rightPanelTop) {
 
 function handleContextMenu(e) {
     console.log(`>>> contextmenu event triggered. Tool=${currentToolGetter()}`);
+
+    if (isPanning) {
+        e.preventDefault();
+        isPanning = false; // Reset pan state
+        return; // Stop further processing
+    }
+
     // Only handle right-clicks when the wiring tool is active or image tool is active
     if (currentToolGetter() === 'wiring') {
         e.preventDefault(); // Prevent default menu *only* in wiring mode
@@ -853,11 +860,21 @@ function handleCanvasMouseMove(e) {
 
 function handleCanvasMouseUp(e) {
     if (!componentState || !Array.isArray(componentState.leds) || !selectedLedIds) return;
-    // Stop Panning (Middle or Right)
-    if (e.button === 1 || e.button === 2) {
+
+    // --- Middle Mouse Button Up ---
+    if (e.button === 1) {
         if (isPanning) {
-            console.log("Mouse Up: Stopping Pan.");
-            isPanning = false; window.setAppCursor(); e.preventDefault();
+            isPanning = false;
+            window.setAppCursor();
+            e.preventDefault();
+        }
+    }
+
+    // --- Right Mouse Button Up ---
+    if (e.button === 2) {
+        if (isPanning) {
+            window.setAppCursor();
+            e.preventDefault();
         }
     }
     // Left Mouse Up
@@ -867,11 +884,10 @@ function handleCanvasMouseUp(e) {
             console.log("Mouse Up: Stopping Drag.");
             isDragging = false; window.setAppCursor();
             ledDragOffsets.forEach(item => {
-                item.led.x = Math.round(item.led.x / GRID_SIZE) * GRID_SIZE;
-                item.led.y = Math.round(item.led.y / GRID_SIZE) * GRID_SIZE;
+                item.led.x = snapToGrid(item.led.x);
+                item.led.y = snapToGrid(item.led.y);
             });
             ledDragOffsets = []; drawCanvas(); stateChanged = true;
-            console.log('handleCanvasMouseUp (drag end): Calling autoSave');
         } else if (isMarqueeSelecting) {
             console.log("Mouse Up: Stopping Marquee.");
             isMarqueeSelecting = false;
