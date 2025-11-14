@@ -55,7 +55,21 @@
                 <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
                 <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
                 <hr>
-                
+
+                <div class="row mb-3">
+                    <div class="col-12 col-md-6 offset-md-3">
+                        <form id="search-form" role="search">
+                            <div class="input-group">
+                                <input type="search" class="form-control" placeholder="Search for effects by name..." aria-label="Search" id="search-input">
+                                <button class="btn btn-outline-secondary" type="button" id="search-clear-btn" title="Clear search" style="display: none;"><i class="bi bi-x-lg"></i></button>
+                                <button class="btn btn-primary" type="submit" id="search-submit-btn"><i class="bi bi-search"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row g-4" id="gallery-project-list">
+
                 <div class="row g-4" id="gallery-project-list">
                     <div class="col-12 text-center p-4" id="initial-loading-spinner">
                         <div class="spinner-border" role="status">
@@ -63,13 +77,13 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
-                    <div class="col-12" id="load-more-trigger" class="text-center p-4">
+                    <div class="col-12 text-center p-4" id="load-more-trigger">
                         <div class="spinner-border" role="status" id="load-more-spinner" style="display: none;">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <p id="load-more-message" class="text-body-secondary d-none">End of results.</p>
+                        <p id="load-more-message" class="text-body-secondary d-none"></p>
                     </div>
                 </div>
 
