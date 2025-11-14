@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const editProjectModal = new bootstrap.Modal(editProjectModalEl);
 
     // --- Lazy Loading State Variables ---
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = 9;
     let lastVisible = null;
     let isLoading = false;
     let allLoaded = false;
@@ -61,14 +61,12 @@ document.addEventListener('DOMContentLoaded', function () {
         loadPublicGallery();
     }
 
-    setTimeout(() => {
-        if (window.auth) {
-            window.onAuthStateChanged(window.auth, updateUserAuthState);
-        } else {
-            console.error("Firebase Auth is not initialized.");
-            loadPublicGallery();
-        }
-    }, 500);
+    if (window.auth) {
+        window.onAuthStateChanged(window.auth, updateUserAuthState);
+    } else {
+        console.error("Firebase Auth is not initialized.");
+        loadPublicGallery();
+    }
 
 
     // --- LIKE ACTION HANDLER ---
@@ -438,7 +436,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         loadMoreMessage.classList.add('d-none');
-        loadMoreProjects();
     }
     
     // --- Intersection Observer Setup ---
