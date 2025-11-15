@@ -3367,4 +3367,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Otherwise, load from autosave or start new
         handleNewComponent(false);
     }
+
+    // Show the welcome tutorial for new users ---
+    // We run this after the initial component has been loaded
+    try {
+        const tutorialSeen = localStorage.getItem('srgbTutorialSeen');
+        
+        // If 'tutorialSeen' does not exist, show the modal
+        if (!tutorialSeen) {
+            console.log("First visit: Showing the help modal.");
+            const helpModalElement = document.getElementById('help-modal');
+            
+            if (helpModalElement) {
+                // Use a short delay to ensure the main UI is stable
+                setTimeout(() => {
+                    // Get the Bootstrap modal instance
+                    const helpModal = new bootstrap.Modal(helpModalElement);
+                    helpModal.show();
+                    
+                    // Mark as seen so it doesn't show again
+                    localStorage.setItem('srgbTutorialSeen', 'true');
+                }, 1000); // 1-second delay
+            }
+        }
+    } catch (e) {
+        // Catch errors (e.g., if localStorage is disabled)
+        console.error("Error checking/showing tutorial modal:", e);
+    }
+    
 });
