@@ -1,11 +1,14 @@
 // --- IMPORT ---
-import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail } from './util.js';
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from './util.js';
 import {
     auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
     doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
     query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue, arrayUnion,
-    onSnapshot
+    onSnapshot,
+    writeBatch,
+    FieldPath,
+    documentId
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
@@ -20,6 +23,7 @@ const GRID_SIZE = 10;
 
 let commentsUnsubscribe = null; // Holds the Firestore listener unsubscribe function
 let currentUserIsAdmin = false;
+let notificationListenerCleanup = null;
 
 const DISALLOWED_WORDS = [
     'asshole', 'bitch', 'cock', 'cunt', 'damn', 'dick', 'fag', 'faggot', 'fuck', 'nigger', 'nigga', 'penis',
@@ -152,6 +156,363 @@ const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
 // ---
+
+// --- [NEW] NOTIFICATION FUNCTIONS ---
+
+/**
+ * Fetches display names for a list of user IDs from the 'users' collection.
+ * @param {string[]} uids - An array of user IDs.
+ * @returns {Promise<Map<string, string>>} A Map where key is UID and value is display name.
+ */
+async function fetchDisplayNames(uids) {
+    const namesMap = new Map();
+    if (!uids || uids.length === 0) {
+        return namesMap;
+    }
+    const usersRef = collection(db, "users");
+    const uniqueUids = [...new Set(uids)];
+    const uidBatches = [];
+    for (let i = 0; i < uniqueUids.length; i += 30) {
+        uidBatches.push(uniqueUids.slice(i, i + 30));
+    }
+
+    try {
+        for (const batch of uidBatches) {
+            const q = query(usersRef, where(documentId(), 'in', batch));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => {
+                namesMap.set(doc.id, doc.data().displayName || 'Anonymous User');
+            });
+        }
+    } catch (e) {
+        console.error("Error fetching display names:", e);
+    }
+    return namesMap;
+}
+
+/**
+ * Fetches component names for a list of component IDs.
+ * @param {string[]} componentIds - An array of component document IDs.
+ * @returns {Promise<Map<string, string>>} A Map where key is component ID and value is component name.
+ */
+async function fetchComponentNames(componentIds) {
+    const namesMap = new Map();
+    if (!componentIds || componentIds.length === 0) {
+        return namesMap;
+    }
+
+    const uniqueIds = [...new Set(componentIds)];
+    const idBatches = [];
+    for (let i = 0; i < uniqueIds.length; i += 30) {
+        idBatches.push(uniqueIds.slice(i, i + 30));
+    }
+
+    try {
+        for (const batch of idBatches) {
+            const componentsRef = collection(db, "srgb-components");
+            const q = query(componentsRef, where(documentId(), 'in', batch));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => {
+                namesMap.set(doc.id, doc.data().name || 'Untitled Component');
+            });
+        }
+    } catch (e) {
+        console.error("Error fetching component names:", e);
+    }
+    return namesMap;
+}
+
+/**
+ * Sets up the real-time listener for notifications for the logged-in user.
+ * @param {object|null} user - The Firebase auth user object, or null if logged out.
+ */
+function setupNotificationListener(user) {
+    if (notificationListenerCleanup) {
+        notificationListenerCleanup();
+        notificationListenerCleanup = null;
+    }
+
+    const toggleBtn = document.getElementById('notification-dropdown-toggle');
+    const notificationBadge = document.getElementById('notification-badge');
+    const listContainer = document.getElementById('notification-list-container');
+
+    if (!user) {
+        if (listContainer) {
+            listContainer.innerHTML = `
+            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+            </li>`;
+        }
+        toggleBtn.disabled = true;
+        notificationBadge.classList.add('d-none');
+        return;
+    }
+
+    toggleBtn.disabled = false;
+
+    const notificationsRef = collection(db, "notifications");
+
+    // [MODIFIED] Added the notificationType filter
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("notificationType", "==", "component"), // <-- [NEW] ADD THIS FILTER
+        orderBy("timestamp", "desc"),
+        limit(30)
+    );
+
+    notificationListenerCleanup = onSnapshot(q, async (snapshot) => {
+        const allNotifications = [];
+        const senderUids = new Set();
+        const componentIds = new Set(); // Changed from projectIds
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allNotifications.push({ ...data, docId: doc.id });
+            senderUids.add(data.senderId);
+
+            // Check if the notification is for a component (srgb-components)
+            // We check this by seeing if projectId (the ID) exists at all.
+            if (data.projectId) {
+                componentIds.add(data.projectId);
+            }
+        });
+
+        const namesMap = await fetchDisplayNames(Array.from(senderUids));
+        // Use the new function to get component names
+        const componentNamesMap = await fetchComponentNames(Array.from(componentIds));
+
+        const finalNotifications = allNotifications.map(notification => ({
+            ...notification,
+            senderName: namesMap.get(notification.senderId) || 'A User',
+            // Use the component map
+            projectName: componentNamesMap.get(notification.projectId) || 'Untitled Component'
+        }));
+
+        const newUnreadCount = finalNotifications.filter(n => !n.read).length;
+
+        notificationBadge.textContent = newUnreadCount;
+        if (newUnreadCount > 0) {
+            notificationBadge.classList.remove('d-none');
+        } else {
+            notificationBadge.classList.add('d-none');
+        }
+
+        renderNotificationDropdown(finalNotifications);
+
+    }, (err) => {
+        console.error("Error setting up notification listener:", err);
+    });
+}
+
+/**
+     * Renders the notification dropdown list.
+     * @param {Array} allNotifications - A list of notification objects (read and unread).
+     */
+function renderNotificationDropdown(allNotifications) {
+    const listContainer = document.getElementById('notification-list-container');
+    const markAllBtn = document.getElementById('mark-all-read-btn');
+    const deleteAllReadBtn = document.getElementById('delete-all-read-btn'); // [NEW] Get new button
+    const toggleBtn = document.getElementById('notification-dropdown-toggle');
+    const user = auth.currentUser;
+
+    if (!listContainer || !deleteAllReadBtn || !markAllBtn) return; // [MODIFIED] Add guard
+
+    if (!user) {
+        listContainer.innerHTML = `
+                <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                    <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                </li>
+            `;
+        markAllBtn.style.display = 'none';
+        deleteAllReadBtn.style.display = 'none'; // [NEW] Hide
+        return;
+    }
+
+    // --- [MODIFIED] Show buttons based on notification state ---
+    const hasUnread = allNotifications.some(n => !n.read);
+    const hasRead = allNotifications.some(n => n.read); // [NEW] Check for read
+
+    markAllBtn.style.display = hasUnread ? 'inline' : 'none';
+    deleteAllReadBtn.style.display = hasRead ? 'inline' : 'none'; // [NEW] Show if read notifications exist
+    // --- [END MODIFICATION] ---
+
+    if (allNotifications.length === 0) {
+        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
+        return;
+    }
+
+    listContainer.innerHTML = '';
+
+    allNotifications.forEach(notification => {
+        const item = document.createElement('li');
+
+        let notificationText = '';
+        let notificationIcon = '';
+
+        if (notification.eventType === 'like') {
+            notificationText = `Your component <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
+            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>`;
+        } else if (notification.eventType === 'comment') {
+            // Use 'projectName' which we mapped to the component name
+            notificationText = `<strong>${notification.senderName}</strong> commented on your component <strong>${notification.projectName}</strong>.`;
+            notificationIcon = `<i class="bi bi-chat-left-text-fill text-info fs-5 mt-1 flex-shrink-0"></i>`;
+        } else {
+            notificationText = `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+            notificationIcon = `<i class="bi bi-bell-fill text-warning fs-5 mt-1 flex-shrink-0"></i>`;
+        }
+
+        const timestamp = notification.timestamp && notification.timestamp.toDate
+            ? notification.timestamp.toDate()
+            : new Date();
+
+        const readStyle = notification.read ? 'opacity: 0.65; background-color: rgba(255,255,255,0.03);' : '';
+
+        item.innerHTML = `
+                <a href="#" style="${readStyle}" class="dropdown-item d-flex align-items-start gap-2 p-3 notification-link" data-project-id="${notification.projectId}" data-notification-id="${notification.docId}">
+                    ${notificationIcon}
+                    <div class="flex-grow-1">
+                        <p class="mb-0 small">
+                            ${notificationText}
+                        </p>
+                        <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
+                    </div>
+                </a>
+            `;
+        listContainer.appendChild(item);
+    });
+
+    toggleBtn.disabled = false;
+}
+
+/**
+ * Handles the click event on a notification item: loads the component and marks the notification as read.
+ * @param {string} componentId - The ID of the component to load.
+ * @param {string} notificationId - The ID of the notification document to mark as read.
+ */
+async function handleNotificationClick(componentId, notificationId) {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast("Please sign in to load components.", "warning");
+        return;
+    }
+
+    // 1. Load the Component from the database
+    try {
+        const componentDocRef = doc(db, "srgb-components", componentId);
+        const componentDoc = await getDoc(componentDocRef);
+
+        if (!componentDoc.exists()) {
+            showToast("The associated component was not found.", "danger");
+            // Do not return, still mark as read
+        } else {
+            const componentData = { dbId: componentDoc.id, ...componentDoc.data() };
+
+            // This is the main component load function
+            if (loadComponentState(componentData)) {
+                currentComponentId = componentDoc.id;
+                document.getElementById('share-component-btn').disabled = false;
+                isDirty = false;
+                clearAutoSave();
+            } else {
+                showToast("Load Error", "Failed to parse component data.", "danger");
+            }
+        }
+
+    } catch (error) {
+        console.error("Error loading component from notification:", error);
+        showToast("Failed to load the component.", "danger");
+    }
+
+    // 2. Mark the specific notification as read
+    try {
+        const notifDocRef = doc(db, "notifications", notificationId);
+        await updateDoc(notifDocRef, { read: true });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+    }
+}
+
+/**
+ * [NEW] Deletes all READ notifications for the current user.
+ */
+async function deleteAllReadNotifications() {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast("You must be logged in to perform this action.", "warning");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete all *read* notifications? This cannot be undone.")) {
+        return;
+    }
+
+    console.log("Deleting all read notifications...");
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("notificationType", "==", "component"), // Filter for component notifications
+        where("read", "==", true) // Only delete read ones
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            showToast("No read notifications to delete.", "info");
+            return;
+        }
+
+        // Use a batch write to delete all found documents
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        showToast("Success", `Cleared ${querySnapshot.size} read notifications.`, "success");
+        // The real-time listener will automatically update the list.
+
+    } catch (error) {
+        console.error("Error deleting all read notifications:", error);
+        showToast("Error", "Could not delete read notifications.", "danger");
+    }
+}
+
+/**
+ * Marks all unread notifications for the current user as read.
+ */
+async function markAllNotificationsAsRead() {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast("You must be logged in to perform this action.", "warning");
+        return;
+    }
+
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("read", "==", false)
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) return;
+
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.update(doc.ref, { read: true });
+        });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+        showToast("Could not mark all notifications as read.", "danger");
+    }
+}
+
+// --- [END NEW] NOTIFICATION FUNCTIONS ---
 
 /**
  * Loads a specific component from Firestore based on a URL parameter.
@@ -540,6 +901,7 @@ function setupAuthListeners() {
             }, { merge: true }).catch(err => {
                 console.error("Failed to save user profile to Firestore:", err);
             });
+            setupNotificationListener(user);
         } else {
             if (userSessionGroup) userSessionGroup.classList.add('d-none');
             if (loginBtn) loginBtn.classList.remove('d-none');
@@ -553,6 +915,7 @@ function setupAuthListeners() {
 
             if (commentForm) commentForm.style.display = 'none';
             if (commentLoginPrompt) commentLoginPrompt.style.display = 'block';
+            setupNotificationListener(null);
         }
     });
 }
@@ -1737,6 +2100,46 @@ async function handlePostComment(commentText) {
         // The onSnapshot listener will automatically display the new comment.
         // We just need to re-enable the button.
 
+        // --- [MODIFIED] NOTIFICATION LOGIC ---
+        // 1. Get the component owner's ID
+        let componentOwnerId = null;
+        try {
+            const componentDocRef = doc(db, "srgb-components", currentComponentId);
+            const componentDoc = await getDoc(componentDocRef);
+            if (componentDoc.exists()) {
+                componentOwnerId = componentDoc.data().ownerId;
+            }
+        } catch (err) {
+            console.error("Error fetching component owner for notification:", err);
+        }
+
+        // 2. Create a notification for the component owner (if they aren't the commenter)
+        if (componentOwnerId && componentOwnerId !== user.uid) {
+            await addDoc(collection(db, "notifications"), {
+                recipientId: componentOwnerId,
+                senderId: user.uid,
+                projectId: currentComponentId, // Use projectId to store componentId
+                eventType: 'comment',
+                notificationType: 'component', // <-- [NEW] ADD THIS TAG
+                timestamp: serverTimestamp(),
+                read: false
+            });
+        }
+
+        // 3. Create a notification for the Admin
+        if (ADMIN_UID && ADMIN_UID !== componentOwnerId) {
+            await addDoc(collection(db, "notifications"), {
+                recipientId: ADMIN_UID,
+                senderId: user.uid,
+                projectId: currentComponentId, // Use projectId to store componentId
+                eventType: 'comment',
+                notificationType: 'component', // <-- [NEW] ADD THIS TAG
+                timestamp: serverTimestamp(),
+                read: false
+            });
+        }
+        // --- [END MODIFICATION] ---
+
     } catch (error) {
         console.error("Error posting comment:", error);
         showToast('Error', 'Could not post your comment.', 'danger');
@@ -1745,6 +2148,106 @@ async function handlePostComment(commentText) {
         commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
     }
 }
+
+// /**
+//      * Handles the logic for posting a new comment to Firestore.
+//      * @param {string} commentText - The text of the comment.
+//      */
+// async function handlePostComment(commentText) {
+//     // --- Word Filter Check ---
+//     const lowerComment = commentText.toLowerCase();
+//     const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
+//     if (foundWord) {
+//         showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+//         return;
+//     }
+
+//     const user = auth.currentUser;
+//     if (!user) {
+//         showToast('Error', 'You must be logged in to comment.', 'danger');
+//         return;
+//     }
+//     if (!currentComponentId) {
+//         showToast('Error', 'Cannot post comment: No component selected.', 'danger');
+//         return;
+//     }
+
+//     commentSubmitBtn.disabled = true;
+//     commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+
+//     const commentData = {
+//         componentId: currentComponentId,
+//         ownerId: user.uid,
+//         ownerName: user.displayName || 'Anonymous',
+//         ownerPhoto: user.photoURL || null,
+//         text: commentText,
+//         createdAt: serverTimestamp()
+//     };
+
+//     try {
+//         const commentsRef = collection(db, 'srgb-component-comments');
+//         await addDoc(commentsRef, commentData);
+
+//         // Clear the textarea
+//         commentTextarea.value = '';
+
+//         // --- [MODIFIED] NOTIFICATION LOGIC ---
+
+//         // 1. Get the component owner's ID from the database
+//         let componentOwnerId = null;
+//         try {
+//             const componentDocRef = doc(db, "srgb-components", currentComponentId);
+//             const componentDoc = await getDoc(componentDocRef);
+//             if (componentDoc.exists()) {
+//                 componentOwnerId = componentDoc.data().ownerId; // This might be null/undefined
+//             }
+//         } catch (err) {
+//             console.error("Error fetching component owner for notification:", err);
+//         }
+
+//         // 2. Determine the *actual* recipient.
+//         // If the component has an owner, use that.
+//         // If it doesn't (ownerId is null), assume the person commenting is the owner.
+//         let recipientId = componentOwnerId;
+//         if (!recipientId) {
+//             recipientId = user.uid; // Send notification to the commenter
+//         }
+
+//         // 3. Create a notification for the recipient (Owner or Commenter-as-Owner)
+//         if (recipientId) {
+//             await addDoc(collection(db, "notifications"), {
+//                 recipientId: recipientId,
+//                 senderId: user.uid,
+//                 projectId: currentComponentId,
+//                 eventType: 'comment',
+//                 notificationType: 'component',
+//                 timestamp: serverTimestamp(),
+//                 read: false
+//             });
+//         }
+
+//         // 4. Create a notification for the Admin (if the Admin isn't already the recipient)
+//         if (ADMIN_UID && ADMIN_UID !== recipientId) {
+//             await addDoc(collection(db, "notifications"), {
+//                 recipientId: ADMIN_UID,
+//                 senderId: user.uid,
+//                 projectId: currentComponentId,
+//                 eventType: 'comment',
+//                 notificationType: 'component',
+//                 timestamp: serverTimestamp(),
+//                 read: false
+//             });
+//         }
+//         // --- [END MODIFICATION] ---
+
+//     } catch (error) {
+//         console.error("Error posting comment:", error);
+//         showToast('Error', 'Could not post your comment.', 'danger');
+//     } finally {
+//         commentSubmitBtn.disabled = false;
+//         commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
+//     }
+// }
 
 
 // --- UI & Tool Listeners ---
@@ -3676,6 +4179,51 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPropertyListeners();
     setupGalleryListener();
     setupCommentListeners();
+
+    // --- [NEW] Event listener for clicking a notification ---
+    const notificationListContainer = document.getElementById('notification-list-container');
+    if (notificationListContainer) {
+        notificationListContainer.addEventListener('click', (e) => {
+            const link = e.target.closest('.notification-link');
+            if (link) {
+                e.preventDefault();
+                const { projectId, notificationId } = link.dataset;
+                if (projectId && notificationId) {
+                    // Use projectId, which holds the componentId
+                    handleNotificationClick(projectId, notificationId);
+
+                    // Manually close the dropdown
+                    const dropdownToggle = document.getElementById('notification-dropdown-toggle');
+                    if (dropdownToggle) {
+                        const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                        if (bsDropdown) {
+                            bsDropdown.hide();
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const deleteAllReadBtn = document.getElementById('delete-all-read-btn');
+    if (deleteAllReadBtn) {
+        deleteAllReadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop the dropdown from closing
+            deleteAllReadNotifications();
+        });
+    }
+
+    // --- [NEW] Event listener for Mark All Read button ---
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop the dropdown from closing
+            markAllNotificationsAsRead();
+        });
+    }
+    // --- [END NEW] ---
 
     // --- Check for URL parameter ---
     const urlParams = new URLSearchParams(window.location.search);
