@@ -320,7 +320,7 @@ function setupCanvasListeners(rightPanelTop) {
 }
 
 function handleContextMenu(e) {
-    console.log(`>>> contextmenu event triggered. Tool=${currentToolGetter()}`);
+    // // console.log(`>>> contextmenu event triggered. Tool=${currentToolGetter()}`);
 
     if (isPanning) {
         e.preventDefault();
@@ -338,14 +338,14 @@ function handleContextMenu(e) {
         const hitLed = findHitLed(worldPos);
         let stateChanged = false;
 
-        console.log("--- Wiring Right Click Start (via contextmenu) ---");
-        console.log("Wiring State BEFORE:", JSON.parse(JSON.stringify(componentState.wiring)));
+        // // console.log("--- Wiring Right Click Start (via contextmenu) ---");
+        // // console.log("Wiring State BEFORE:", JSON.parse(JSON.stringify(componentState.wiring)));
 
         if (hitLed) {
-            console.log(`Right Click Hit LED: ${hitLed.id}`);
+            // // console.log(`Right Click Hit LED: ${hitLed.id}`);
             const circuitInfo = findLedInWiring(hitLed.id);
             if (circuitInfo) { // Hit a wired LED
-                console.log(`Wiring: Right-click on LED in circuit ${circuitInfo.circuitIndex} at index ${circuitInfo.indexInCircuit}, removing it.`);
+                // // console.log(`Wiring: Right-click on LED in circuit ${circuitInfo.circuitIndex} at index ${circuitInfo.indexInCircuit}, removing it.`);
                 // Remove only that one LED from its circuit
                 componentState.wiring[circuitInfo.circuitIndex].splice(circuitInfo.indexInCircuit, 1);
                 // If the circuit becomes empty after removal, remove the circuit itself
@@ -357,12 +357,12 @@ function handleContextMenu(e) {
                     pendingConnectionStartLed = null;
                 }
             } else {
-                console.log('Right-click on unwired LED, no action.');
+                // // console.log('Right-click on unwired LED, no action.');
             }
         } else {
             const hitSegment = findHitWireSegment(worldPos);
             if (hitSegment) {
-                console.log(`Wiring: Right-click on segment in circuit ${hitSegment.circuitIndex}, breaking path after index ${hitSegment.segmentStartIndex}.`);
+                // // console.log(`Wiring: Right-click on segment in circuit ${hitSegment.circuitIndex}, breaking path after index ${hitSegment.segmentStartIndex}.`);
                 const originalCircuit = componentState.wiring[hitSegment.circuitIndex];
 
                 // --- MODIFIED LOGIC FOR SPLITTING ---
@@ -378,11 +378,11 @@ function handleContextMenu(e) {
                 if (newParts.length > 0) {
                     // Replace 1 element at circuitIndex with all elements in newParts
                     // e.g., splice(1, 1, [A], [B]) -> replaces [A,B,C] with [A], [B], [C]
-                    console.log(`... splitting circuit ${hitSegment.circuitIndex} into ${newParts.length} new circuit(s).`);
+                    // // console.log(`... splitting circuit ${hitSegment.circuitIndex} into ${newParts.length} new circuit(s).`);
                     componentState.wiring.splice(hitSegment.circuitIndex, 1, ...newParts);
                 } else {
                     // This happens if the original circuit only had 2 LEDs
-                    console.log(`... removing now-empty circuit ${hitSegment.circuitIndex}.`);
+                    // // console.log(`... removing now-empty circuit ${hitSegment.circuitIndex}.`);
                     componentState.wiring.splice(hitSegment.circuitIndex, 1);
                 }
 
@@ -390,24 +390,24 @@ function handleContextMenu(e) {
 
                 stateChanged = true; // State has changed
             } else {
-                console.log('Right-click on empty space, no action.');
+                // // console.log('Right-click on empty space, no action.');
             }
         }
 
         if (stateChanged) {
-            console.log("Wiring State AFTER:", JSON.parse(JSON.stringify(componentState.wiring)));
+            // console.log("Wiring State AFTER:", JSON.parse(JSON.stringify(componentState.wiring)));
             pendingConnectionStartLed = null; // Cancel any pending connection on right click change
             drawCanvas();
             autoSave();
         } else {
-            console.log("No state change from right click.");
+            // // console.log("No state change from right click.");
         }
-        console.log("--- Wiring Right Click End ---");
+        // // console.log("--- Wiring Right Click End ---");
 
     } else if (currentToolGetter() === 'place-led') {
         e.preventDefault(); // Prevent context menu
         if (pendingConnectionStartLed) {
-            console.log("Place-LED: Right click, cancelling chain.");
+            // // console.log("Place-LED: Right click, cancelling chain.");
             pendingConnectionStartLed = null;
             drawCanvas(); // Redraw to remove highlight
         }
@@ -426,7 +426,7 @@ function handleContextMenu(e) {
             showToast('Image Guide', imageGuideState.isLocked ? 'Image Guide Locked' : 'Image Guide Unlocked', 'info');
         }
     } else {
-        console.log("Context menu event ignored (not in wiring or image mode).");
+        // // console.log("Context menu event ignored (not in wiring or image mode).");
         // Allow default context menu to appear
     }
 } // --- End handleContextMenu ---
@@ -452,12 +452,12 @@ export function updateLedCount() {
 }
 
 function handleCanvasMouseDown(e) {
-    console.log(`>>> mousedown event: Button=${e.button}, Tool=${currentToolGetter()}`);
+    // // console.log(`>>> mousedown event: Button=${e.button}, Tool=${currentToolGetter()}`);
     if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
 
     // --- Pan on Middle click OR Right click (if NOT wiring/placing/image) ---
     if (e.button === 1 || (e.button === 2 && currentToolGetter() !== 'wiring' && currentToolGetter() !== 'place-led' && currentToolGetter() !== 'image')) {
-        console.log("Starting Pan...");
+        // // console.log("Starting Pan...");
         isPanning = true; canvas.style.cursor = 'grabbing'; e.preventDefault(); return;
     }
 
@@ -468,7 +468,7 @@ function handleCanvasMouseDown(e) {
         } else if (currentToolGetter() === 'place-led') {
             e.preventDefault(); // Prevent context menu
             if (pendingConnectionStartLed) {
-                console.log("Place-LED: Right click, cancelling chain.");
+                // // console.log("Place-LED: Right click, cancelling chain.");
                 pendingConnectionStartLed = null;
                 drawCanvas(); // Redraw to remove highlight
             }
@@ -482,12 +482,12 @@ function handleCanvasMouseDown(e) {
         const worldPos = screenToWorld(e.offsetX, e.offsetY);
         const hitLed = findHitLed(worldPos);
         let stateChanged = false;
-        console.log(`Left Mouse Down: Tool=${currentToolGetter()}, Hit LED=${hitLed ? hitLed.id : 'None'}`);
+        // // console.log(`Left Mouse Down: Tool=${currentToolGetter()}, Hit LED=${hitLed ? hitLed.id : 'None'}`);
 
         // --- NEW: Image Tool Logic ---
         if (currentToolGetter() === 'image' && componentState.guideImageUrl && imageGuideState.isVisible && !imageGuideState.isLocked) {
             imageGuideHandle = findHitImageHandle(worldPos);
-            console.log(`Image Tool: Hit Handle: ${imageGuideHandle}`);
+            // // console.log(`Image Tool: Hit Handle: ${imageGuideHandle}`);
 
             if (imageGuideHandle === 'move') {
                 isImageGuideDragging = true;
@@ -512,7 +512,7 @@ function handleCanvasMouseDown(e) {
             if (hitLed) {
                 // Clicking an existing LED breaks the chain and selects it
                 if (pendingConnectionStartLed) {
-                    console.log("Place-LED: Clicked existing LED, cancelling chain.");
+                    // // console.log("Place-LED: Clicked existing LED, cancelling chain.");
                     pendingConnectionStartLed = null;
                 }
                 window.setAppTool('select'); selectedLedIds.clear(); selectedLedIds.add(hitLed.id); drawCanvas();
@@ -532,7 +532,7 @@ function handleCanvasMouseDown(e) {
                         const startLedCircuitInfo = findLedInWiring(startLedId);
 
                         if (startLedCircuitInfo) { // Start LED was in a circuit
-                            console.log(`Place-LED: Appending ${newLedId} to circuit ${startLedCircuitInfo.circuitIndex}`);
+                            // // console.log(`Place-LED: Appending ${newLedId} to circuit ${startLedCircuitInfo.circuitIndex}`);
                             componentState.wiring[startLedCircuitInfo.circuitIndex].push(newLedId);
                             newLedCircuitInfo = findLedInWiring(newLedId); // Get its new info
                         } else { // Should not happen if logic is correct, but fallback
@@ -541,7 +541,7 @@ function handleCanvasMouseDown(e) {
                             newLedCircuitInfo = findLedInWiring(newLedId);
                         }
                     } else { // This is the FIRST LED in a chain
-                        console.log(`Place-LED: Starting new chain with ${newLedId}`);
+                        // // console.log(`Place-LED: Starting new chain with ${newLedId}`);
                         componentState.wiring.push([newLedId]); // Create a new circuit for it
                         newLedCircuitInfo = findLedInWiring(newLedId);
                     }
@@ -552,16 +552,16 @@ function handleCanvasMouseDown(e) {
 
                     updateLedCount();
                     drawCanvas(); stateChanged = true;
-                    console.log('handleCanvasMouseDown (place): State changed.');
+                    // // console.log('handleCanvasMouseDown (place): State changed.');
                 } else {
-                    console.log("Place LED blocked by overlap."); showToast("Overlap", "Cannot place an LED on top of another.", "warning");
+                    // // console.log("Place LED blocked by overlap."); showToast("Overlap", "Cannot place an LED on top of another.", "warning");
                 }
             }
         }
 
         if (currentToolGetter() === 'select') {
             if (hitLed) {
-                console.log(`Select Tool: Hit LED ${hitLed.id}. Shift: ${e.shiftKey}`);
+                // // console.log(`Select Tool: Hit LED ${hitLed.id}. Shift: ${e.shiftKey}`);
 
                 isDragging = true;
                 canvas.style.cursor = 'grabbing';
@@ -606,7 +606,7 @@ function handleCanvasMouseDown(e) {
                             });
                         }
                     });
-                    console.log(`Prepared ${ledDragOffsets.length} LEDs for dragging.`);
+                    // // console.log(`Prepared ${ledDragOffsets.length} LEDs for dragging.`);
                 } else {
                     // If Shift was used to deselect the last LED, prevent drag
                     isDragging = false;
@@ -615,7 +615,7 @@ function handleCanvasMouseDown(e) {
                 // --- MODIFIED LOGIC END ---
 
             } else {
-                console.log("Select Tool: Clicked empty space. Starting Marquee.");
+                // // console.log("Select Tool: Clicked empty space. Starting Marquee.");
                 isMarqueeSelecting = true;
                 marqueeStartPos = { x: worldPos.x, y: worldPos.y };
                 marqueeEndPos = { x: worldPos.x, y: worldPos.y };
@@ -629,24 +629,28 @@ function handleCanvasMouseDown(e) {
         } // End Select Tool
 
         if (currentToolGetter() === 'wiring') {
-            console.log("--- Wiring Click Start ---");
-            console.log("Current Wiring State:", JSON.parse(JSON.stringify(componentState.wiring)));
-            console.log("Current Pending Start:", pendingConnectionStartLed ? { ...pendingConnectionStartLed, circuitInfo: pendingConnectionStartLed.circuitInfo ? { ...pendingConnectionStartLed.circuitInfo, circuit: '[Ref]' } : null } : null);
+            // console.log("--- Wiring Click Start ---");
+            // console.log("Current Wiring State:", JSON.parse(JSON.stringify(componentState.wiring)));
+            // console.log("Current Pending Start:", pendingConnectionStartLed ? { ...pendingConnectionStartLed, circuitInfo: pendingConnectionStartLed.circuitInfo ? { ...pendingConnectionStartLed.circuitInfo, circuit: '[Ref]' } : null } : null);
 
             if (hitLed) {
                 const hitLedId = hitLed.id;
                 let hitLedCircuitInfo = findLedInWiring(hitLedId);
-                console.log(`Hit LED: ${hitLedId}. Circuit Info:`, hitLedCircuitInfo ? { ...hitLedCircuitInfo, circuit: '[Ref]' } : null);
+                // console.log(`Hit LED: ${hitLedId}. Circuit Info:`, hitLedCircuitInfo ? { ...hitLedCircuitInfo, circuit: '[Ref]' } : null);
 
                 if (pendingConnectionStartLed) { // == SECOND CLICK (Attempt Connection) ==
                     const startLedId = pendingConnectionStartLed.ledId;
                     const startLedCircuitInfo = findLedInWiring(startLedId); // Get fresh info for start LED
 
-                    console.log(`Attempting Connection: From ${startLedId} TO ${hitLedId}`);
+                    // console.log(`Attempting Connection: From ${startLedId} TO ${hitLedId}`);
 
                     // --- Pre-connection validation ---
-                    if (hitLedId === startLedId) { console.log("Cannot connect LED to itself. Cancelling."); pendingConnectionStartLed = null; }
-                    else if (startLedCircuitInfo && startLedCircuitInfo.circuit.includes(hitLedId)) { console.log("Cannot connect back into the same circuit segment. Cancelling."); pendingConnectionStartLed = null; }
+                    if (hitLedId === startLedId) {
+                        // console.log("Cannot connect LED to itself. Cancelling."); pendingConnectionStartLed = null;
+                    }
+                    else if (startLedCircuitInfo && startLedCircuitInfo.circuit.includes(hitLedId)) {
+                        // console.log("Cannot connect back into the same circuit segment. Cancelling."); pendingConnectionStartLed = null; 
+                    }
                     else {
                         // --- Determine Connection Type ---
                         let canConnect = false;
@@ -663,7 +667,7 @@ function handleCanvasMouseDown(e) {
                             } else { // Target IS WIRED
                                 // Check for different circuits (safety check)
                                 if (startLedCircuitInfo && startLedCircuitInfo.circuitIndex === hitLedCircuitInfo.circuitIndex) {
-                                    console.log("Cannot connect within the same circuit.");
+                                    // console.log("Cannot connect within the same circuit.");
                                 }
                                 else if (hitLedCircuitInfo.isStart) {
                                     // Standard Merge: (End of C1 / Unwired) -> Start of C2
@@ -674,21 +678,21 @@ function handleCanvasMouseDown(e) {
                                     canConnect = true;
                                     connectAction = 'merge-reverse';
                                 } else {
-                                    console.log("Invalid connection: Target LED is in the middle of a circuit.");
+                                    // console.log("Invalid connection: Target LED is in the middle of a circuit.");
                                 }
                             }
                         } else {
-                            console.log("Invalid start point. Must be end of path or unwired.");
+                            // console.log("Invalid start point. Must be end of path or unwired.");
                         }
 
-                        console.log(`Connection Check: canConnect=${canConnect}, action=${connectAction}`);
+                        // console.log(`Connection Check: canConnect=${canConnect}, action=${connectAction}`);
 
                         // --- Perform Connection ---
                         if (canConnect) {
                             let newlyAddedLedId = hitLedId;
                             let finalCircuitIndex = -1;
 
-                            console.log("Wiring State BEFORE Connect Action:", JSON.parse(JSON.stringify(componentState.wiring)));
+                            // console.log("Wiring State BEFORE Connect Action:", JSON.parse(JSON.stringify(componentState.wiring)));
                             if (connectAction === 'append') {
                                 const currentStartIndex = findLedInWiring(startLedId)?.circuitIndex;
                                 if (currentStartIndex > -1 && componentState.wiring[currentStartIndex]) {
@@ -716,7 +720,7 @@ function handleCanvasMouseDown(e) {
                                 if (currentTargetIndex > -1 && componentState.wiring[currentTargetIndex]) {
                                     // Get the target circuit and REVERSE it
                                     const targetCircuit = componentState.wiring.splice(currentTargetIndex, 1)[0];
-                                    console.log("...reversing target circuit:", JSON.stringify(targetCircuit));
+                                    // console.log("...reversing target circuit:", JSON.stringify(targetCircuit));
                                     targetCircuit.reverse(); // <-- The core of the new logic
 
                                     if (startLedCircuitInfo) {
@@ -737,47 +741,51 @@ function handleCanvasMouseDown(e) {
                                 } else { console.error("Merge-reverse error: Target circuit not found."); connectAction = null; }
                             }
 
-                            console.log("Wiring State AFTER Connect Action:", JSON.parse(JSON.stringify(componentState.wiring)));
+                            // console.log("Wiring State AFTER Connect Action:", JSON.parse(JSON.stringify(componentState.wiring)));
 
                             if (connectAction) {
                                 stateChanged = true;
                                 const nextCircuitInfo = findLedInWiring(newlyAddedLedId);
                                 if (nextCircuitInfo) {
                                     pendingConnectionStartLed = { ledId: newlyAddedLedId, ...nextCircuitInfo };
-                                    console.log(`Wiring: Chaining - ${newlyAddedLedId} is now pending start.`);
+                                    // console.log(`Wiring: Chaining - ${newlyAddedLedId} is now pending start.`);
                                 } else { console.warn("Wiring: Chaining failed. Clearing pending."); pendingConnectionStartLed = null; }
-                            } else { console.log("Wiring: Connection action failed. Clearing pending."); pendingConnectionStartLed = null; }
+                            } else {
+                                // console.log("Wiring: Connection action failed. Clearing pending."); pendingConnectionStartLed = null; 
+                            }
                             drawCanvas();
                         } else {
-                            console.log("Wiring: Invalid connection. Treating as NEW first click.");
+                            // console.log("Wiring: Invalid connection. Treating as NEW first click.");
                             pendingConnectionStartLed = { ledId: hitLedId, ...hitLedCircuitInfo };
                             drawCanvas();
                         }
                     }
                 } else { // == FIRST CLICK ==
                     if (!hitLedCircuitInfo || hitLedCircuitInfo.isEnd) {
-                        console.log(`Wiring: First click -> Pending Start = ${hitLedId}`);
+                        // console.log(`Wiring: First click -> Pending Start = ${hitLedId}`);
                         pendingConnectionStartLed = { ledId: hitLedId, ...hitLedCircuitInfo };
                         // If starting from an unwired LED, create a new single-LED circuit
                         if (!hitLedCircuitInfo) {
                             componentState.wiring.push([hitLedId]);
-                            console.log("Starting new wire with first LED as new circuit.");
+                            // console.log("Starting new wire with first LED as new circuit.");
                             stateChanged = true;
                         }
                         drawCanvas();
                     } else {
-                        console.log("Wiring: Invalid start point. Must be end of path or unwired. Clearing pending.");
+                        // console.log("Wiring: Invalid start point. Must be end of path or unwired. Clearing pending.");
                         pendingConnectionStartLed = null; drawCanvas();
                     }
                 }
             } else { // Clicked empty space
                 if (pendingConnectionStartLed) {
-                    console.log("Wiring: Clicked empty space -> Cancelling Pending Start.");
+                    // console.log("Wiring: Clicked empty space -> Cancelling Pending Start.");
                     pendingConnectionStartLed = null; drawCanvas();
-                } else { console.log("Wiring: Clicked empty space, no pending start."); }
+                } else {
+                    // console.log("Wiring: Clicked empty space, no pending start."); 
+                }
             }
-            console.log("--- Wiring Click End ---");
-            console.log("Final Pending Start:", pendingConnectionStartLed ? { ...pendingConnectionStartLed, circuitInfo: pendingConnectionStartLed.circuitInfo ? { ...pendingConnectionStartLed.circuitInfo, circuit: '[Ref]' } : null } : null);
+            // console.log("--- Wiring Click End ---");
+            // console.log("Final Pending Start:", pendingConnectionStartLed ? { ...pendingConnectionStartLed, circuitInfo: pendingConnectionStartLed.circuitInfo ? { ...pendingConnectionStartLed.circuitInfo, circuit: '[Ref]' } : null } : null);
         } // --- End Wiring Tool Logic ---
 
         if (stateChanged) autoSave();
@@ -881,7 +889,7 @@ function handleCanvasMouseUp(e) {
     if (e.button === 0) {
         let stateChanged = false;
         if (isDragging) {
-            console.log("Mouse Up: Stopping Drag.");
+            // console.log("Mouse Up: Stopping Drag.");
             isDragging = false; window.setAppCursor();
             ledDragOffsets.forEach(item => {
                 item.led.x = snapToGrid(item.led.x);
@@ -889,18 +897,20 @@ function handleCanvasMouseUp(e) {
             });
             ledDragOffsets = []; drawCanvas(); stateChanged = true;
         } else if (isMarqueeSelecting) {
-            console.log("Mouse Up: Stopping Marquee.");
+            // console.log("Mouse Up: Stopping Marquee.");
             isMarqueeSelecting = false;
             const initialSelectionSize = selectedLedIds.size;
             const ledsInBox = getLedsInMarquee(marqueeStartPos, marqueeEndPos);
             (ledsInBox || []).forEach(led => selectedLedIds.add(led.id));
             if (selectedLedIds.size !== initialSelectionSize) {
-                stateChanged = true; console.log('handleCanvasMouseUp (marquee end): Selection changed.');
-            } else { console.log('handleCanvasMouseUp (marquee end): Selection did not change.'); }
+                stateChanged = true; // console.log('handleCanvasMouseUp (marquee end): Selection changed.');
+            } else {
+                // console.log('handleCanvasMouseUp (marquee end): Selection did not change.'); 
+            }
             marqueeStartPos = {}; marqueeEndPos = {}; drawCanvas();
         } else if (isImageGuideDragging || isImageGuideScaling || isImageGuideRotating) {
             // --- NEW: Image Tool Mouse Up ---
-            console.log("Mouse Up: Stopping Image Guide Interaction.");
+            // console.log("Mouse Up: Stopping Image Guide Interaction.");
             isImageGuideDragging = false;
             isImageGuideScaling = false;
             isImageGuideRotating = false;
@@ -920,20 +930,24 @@ function handleCanvasMouseLeave(e) {
     const coordsDisplay = document.getElementById('coords-display');
     if (coordsDisplay) coordsDisplay.textContent = '---, ---';
     let stateChanged = false;
-    if (isPanning) { console.log("Mouse Leave: Stopping Pan."); isPanning = false; window.setAppCursor(); }
+    if (isPanning) {
+        // console.log("Mouse Leave: Stopping Pan."); isPanning = false; window.setAppCursor(); 
+    }
     if (isDragging) {
-        console.log("Mouse Leave: Stopping Drag."); isDragging = false; window.setAppCursor();
+        // console.log("Mouse Leave: Stopping Drag."); isDragging = false; window.setAppCursor();
         ledDragOffsets.forEach(item => {
             item.led.x = Math.round(item.led.x / GRID_SIZE) * GRID_SIZE;
             item.led.y = Math.round(item.led.y / GRID_SIZE) * GRID_SIZE;
         });
         ledDragOffsets = []; stateChanged = true;
-        console.log('handleCanvasMouseLeave (drag end): Changes detected.');
+        // console.log('handleCanvasMouseLeave (drag end): Changes detected.');
     }
-    if (isMarqueeSelecting) { console.log("Mouse Leave: Stopping Marquee."); isMarqueeSelecting = false; }
+    if (isMarqueeSelecting) {
+        // console.log("Mouse Leave: Stopping Marquee."); isMarqueeSelecting = false; 
+    }
     // --- NEW: Image Tool Mouse Leave ---
     if (isImageGuideDragging || isImageGuideScaling || isImageGuideRotating) {
-        console.log("Mouse Leave: Stopping Image Guide Interaction.");
+        // console.log("Mouse Leave: Stopping Image Guide Interaction.");
         isImageGuideDragging = false;
         isImageGuideScaling = false;
         isImageGuideRotating = false;
@@ -982,7 +996,7 @@ export function resetView() {
     const bounds = calculateLedBounds();
     if (!bounds || bounds.width < 0 || bounds.height < 0) {
         viewTransform.zoom = 5; viewTransform.panX = canvas.width / 2; viewTransform.panY = canvas.height / 2;
-        console.log("Reset View: No LEDs found, centering on origin.");
+        // console.log("Reset View: No LEDs found, centering on origin.");
     } else {
         const padding = 50; const canvasWidth = canvas.width - padding * 2; const canvasHeight = canvas.height - padding * 2;
         const boundsWidth = Math.max(GRID_SIZE, bounds.width); const boundsHeight = Math.max(GRID_SIZE, bounds.height);
@@ -991,14 +1005,14 @@ export function resetView() {
         viewTransform.zoom = Math.max(0.1, Math.min(zoomX, zoomY, 10));
         viewTransform.panX = canvas.width / 2 - bounds.centerX * viewTransform.zoom;
         viewTransform.panY = canvas.height / 2 - bounds.centerY * viewTransform.zoom;
-        console.log("Reset View: Zooming to fit bounds.", bounds);
+        // console.log("Reset View: Zooming to fit bounds.", bounds);
     }
     drawCanvas();
 }
 
 export function clearPendingConnection() {
     if (pendingConnectionStartLed) {
-        console.log("Clearing pending connection state.");
+        // console.log("Clearing pending connection state.");
         pendingConnectionStartLed = null;
         drawCanvas(); // Redraw to remove highlight
     }
@@ -1166,7 +1180,7 @@ function drawWiringNumbers() {
     const fontSize = Math.max(6, Math.min(12, (LED_RADIUS * viewTransform.zoom) * 0.5)); // Smaller font
     ctx.font = `bold ${fontSize}px sans-serif`;
 
-    console.log("Wiring Order for Numbering:", JSON.stringify(flatWiringOrder));
+    // // console.log("Wiring Order for Numbering:", JSON.stringify(flatWiringOrder));
 
     flatWiringOrder.forEach((id, index) => {
         if (!numberedLedIds.has(id)) {
@@ -1177,10 +1191,12 @@ function drawWiringNumbers() {
                 numberedLedIds.add(id); return;
             }
             const numberToDraw = index + 1;
-            console.log(`Drawing number ${numberToDraw} for LED ID ${id} at flattened index ${index}`);
+            // // console.log(`Drawing number ${numberToDraw} for LED ID ${id} at flattened index ${index}`);
             ctx.fillText(numberToDraw.toString(), screenPos.x, screenPos.y);
             numberedLedIds.add(id);
-        } else { console.log(`Skipping duplicate draw for LED ID ${id} at index ${index}`); }
+        } else {
+            // // console.log(`Skipping duplicate draw for LED ID ${id} at index ${index}`); 
+        }
     });
     ctx.restore();
 }
@@ -1190,7 +1206,7 @@ export function drawCanvas() {
         if (ctx && canvas) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore(); }
         return;
     }
-    
+
     if (!Array.isArray(componentState.wiring)) {
         console.error("drawCanvas: wiring state is not an array! Resetting.");
         componentState.wiring = [];
@@ -1280,7 +1296,7 @@ export function drawCanvas() {
         ctx.setLineDash([]);
     }
 
-for (const led of ledsToDraw) {
+    for (const led of ledsToDraw) {
         if (!led) continue;
         const isWired = allWiredLedIds.has(led.id);
         const isPendingStart = pendingConnectionStartLed && pendingConnectionStartLed.ledId === led.id;
@@ -1319,13 +1335,13 @@ for (const led of ledsToDraw) {
         }
 
         ctx.beginPath(); ctx.arc(led.x, led.y, ledRadius, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
-        
+
         // <-- GLOW RESET -->
         if (isSelected && !isPendingStart) {
             ctx.shadowBlur = 0;
             ctx.shadowColor = 'transparent';
         }
-        
+
         ctx.lineWidth = lineWidth; // Reset for next loop
     }
 

@@ -246,7 +246,37 @@
                             </symbol>
                         </svg>
                     </div>
+                    <hr>
+                    <div id="component-comments-section" class="mt-2">
+                        <h4 class="text-body-emphasis mb-3">Comments</h4>
 
+                        <div class="alert alert-info small p-2" role="alert">
+                            <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
+                        </div>
+                        <div id="comment-list" class="pe-2 mb-3" style="max-height: 400px; overflow-y: auto;">
+                            <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Loading comments...
+                            </p>
+                            <p id="comments-save-prompt" class="text-muted" style="display: none;">
+                                Save this component to the cloud to enable comments.
+                            </p>
+                        </div>
+
+                        <form id="comment-form" class="pe-2" style="display: none;">
+                            <div class="mb-2">
+                                <label for="comment-textarea" class="form-label form-label-sm">Add a comment</label>
+                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." required></textarea>
+                            </div>
+                            <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-send me-1"></i> Post Comment
+                            </button>
+                        </form>
+
+                        <div id="comment-login-prompt" class="alert alert-info" style="display: none;">
+                            Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -703,14 +733,14 @@
                                     WLED (Matrix Map)
                                 </label>
                             </div>
-                            
+
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="export-format" id="export-format-nolliergb" value="nolliergb">
                                 <label class="form-check-label" for="export-format-nolliergb">
                                     NollieRGB
                                 </label>
                             </div>
-                            </div>
+                        </div>
                         <p>Your component JSON preview:</p>
                         <pre id="json-preview" style="max-height: 300px; overflow: auto; background-color: var(--bs-tertiary-bg); padding: 10px; border-radius: 5px;"><code>{...}</code></pre>
                     </div>
