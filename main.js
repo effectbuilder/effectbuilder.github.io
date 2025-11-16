@@ -16,12 +16,35 @@ let preParsedGifColorCount = 0;
 let isFetchingGifs = false;
 // --- Giphy Search Integration ---
 
+let currentUserIsAdmin = false;
+const DISALLOWED_WORDS = [
+    'asshole', 'bitch', 'cock', 'cunt', 'damn', 'dick', 'fag', 'faggot',
+    'fuck', 'nigger', 'nigga', 'penis', 'pussy', 'shit', 'slut', 'twat', 'vagina', 'whore'
+];
+
 const propsToScale = [
     'x', 'y', 'width', 'height', 'innerDiameter', 'fontSize',
     'lineWidth', 'strokeWidth', 'pulseDepth', 'vizLineWidth', 'strimerBlockSize',
     'pathAnim_size', 'pathAnim_speed', 'pathAnim_objectSpacing', 'pathAnim_trailLength',
     'spawn_size', 'spawn_speed', 'spawn_gravity', 'spawn_matrixGlowSize'
 ];
+
+window.setAdminStatus = (isAdmin) => {
+    currentUserIsAdmin = isAdmin;
+    console.log("User Admin Status:", currentUserIsAdmin);
+};
+let commentsUnsubscribe = null; // Holds the Firestore listener unsubscribe function
+
+const commentSection = document.getElementById('component-comments-section');
+const commentList = document.getElementById('comment-list');
+const commentForm = document.getElementById('comment-form');
+const commentTextarea = document.getElementById('comment-textarea');
+const commentSubmitBtn = document.getElementById('comment-submit-btn');
+const commentLoginPrompt = document.getElementById('comment-login-prompt');
+const commentLoginLink = document.getElementById('comment-login-link');
+const commentsLoadingPlaceholder = document.getElementById('comments-loading-placeholder');
+const commentsSavePrompt = document.getElementById('comments-save-prompt');
+const commentDisclaimer = document.querySelector('#component-comments-section .alert-info');
 
 // --- Custom Cursor Library (Definitive Version) ---
 const CURSOR_SIZE = 48;
@@ -3336,9 +3359,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     /**
-     * Clears all objects and resets the workspace to a blank state.
-     */
+ * Clears all objects and resets the workspace to a blank state.
+ */
     function resetWorkspace() {
+        // [NEW] Clear any active comment listeners
+        unsubscribeFromComments();
+
         // Clear all object-specific data
         objects = [];
         selectedObjectIds = [];
@@ -3373,6 +3399,12 @@ document.addEventListener('DOMContentLoaded', function () {
         isRestoring = true;
         renderForm();
         isRestoring = false;
+
+        // [NEW] Show the "save" prompt for comments
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'block';
+        if (commentDisclaimer) commentDisclaimer.style.display = 'block';
+        // [END NEW]
 
         drawFrame();
         updateUndoRedoButtons();
@@ -5901,11 +5933,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             isRestoring = true;
+
+            // [NEW] Clear any active comment listeners before loading
+            unsubscribeFromComments();
+
             // This now calls the new, robust loader function
             _loadFromConfigArray(workspace.configs, workspace.objects);
 
             currentProjectDocId = workspace.docId || null;
             updateShareButtonState();
+
+            // [NEW] Load comments if this is a saved effect
+            if (currentProjectDocId) {
+                loadComments(currentProjectDocId);
+            } else {
+                if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+                if (commentsSavePrompt) commentsSavePrompt.style.display = 'block';
+                if (commentDisclaimer) commentDisclaimer.style.display = 'block';
+            }
+            // [END NEW]
 
             if (workspace.docId) {
                 const newUrl = `${window.location.pathname}?effectId=${workspace.docId}`;
@@ -6605,6 +6651,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         await window.updateDoc(docRef, projectData);
                         currentProjectDocId = existingDocId;
                         updateShareButtonState();
+
+                        // [NEW] Load comments for this effect
+                        loadComments(currentProjectDocId);
+
                         showToast(`Project "${trimmedName}" was overwritten successfully!`, 'success');
                     } catch (error) {
                         console.error("Error overwriting document: ", error);
@@ -6644,6 +6694,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 const docRef = await window.addDoc(projectsRef, projectData);
                 currentProjectDocId = docRef.id;
                 updateShareButtonState();
+
+                // [NEW] Load comments for the new effect
+                loadComments(currentProjectDocId);
+
                 showToast(`Effect "${trimmedName}" was saved successfully!`, 'success');
             } catch (error) {
                 console.error("Error saving new document: ", error);
@@ -9301,8 +9355,236 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // --- END NEW ---
 
+    //
+    // --- [NEW] ALL COMMENT FUNCTIONS ---
+    // (Adapted for Effect Builder)
+    //
+
+    /**
+     * Sets up listeners for the comment form.
+     */
+    function setupCommentListeners() {
+        if (commentForm) {
+            commentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const commentText = commentTextarea.value.trim();
+                if (commentText) {
+                    handlePostComment(commentText);
+                }
+            });
+        }
+
+        // Add listener to the "sign in" link in the prompt
+        if (commentLoginLink) {
+            commentLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // We know handleLogin is globally available from firebase.js
+                const loginBtn = document.getElementById('login-btn');
+                if (loginBtn) loginBtn.click();
+            });
+        }
+
+        // Event delegation for deleting comments
+        if (commentList) {
+            commentList.addEventListener('click', (e) => {
+                const deleteLink = e.target.closest('[data-comment-id]');
+                if (deleteLink) {
+                    e.preventDefault();
+                    const commentId = deleteLink.dataset.commentId;
+                    handleDeleteComment(commentId);
+                }
+            });
+        }
+    }
+
+    /**
+     * Unsubscribes from the current real-time comment listener (if one exists).
+     * Hides and clears the comment section UI.
+     */
+    function unsubscribeFromComments() {
+        if (commentsUnsubscribe) {
+            console.log("Unsubscribing from comments listener.");
+            commentsUnsubscribe();
+            commentsUnsubscribe = null;
+        }
+        // Hide and clear the UI
+        if (commentList) commentList.innerHTML = '';
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'none';
+        if (commentDisclaimer) commentDisclaimer.style.display = 'none';
+    }
+
+    /**
+     * Loads and listens for real-time comments for a specific project ID.
+     * @param {string} projectId - The Firestore document ID of the project.
+     */
+    function loadComments(projectId) {
+        if (!projectId) return;
+
+        // 1. Unsubscribe from any old listener
+        unsubscribeFromComments();
+
+        console.log(`Loading comments for project ID: ${projectId}`);
+
+        // 2. Show the comment section and the initial loading placeholder
+        if (commentDisclaimer) commentDisclaimer.style.display = 'block';
+        if (commentList) commentList.innerHTML = ''; // Clear list
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'block';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'none';
+
+        // 3. Create the query for the NEW collection
+        const commentsRef = window.collection(window.db, 'srgb-effect-comments');
+        const q = window.query(commentsRef, window.where('projectId', '==', projectId), window.orderBy('createdAt', 'asc'));
+
+        // 4. Start the real-time listener (using window.onSnapshot)
+        commentsUnsubscribe = window.onSnapshot(q, (querySnapshot) => {
+            console.log("Comment snapshot received.");
+            if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+
+            if (querySnapshot.empty && commentList.innerHTML === '') {
+                commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">No comments yet. Be the first!</p>';
+                return;
+            }
+
+            commentList.innerHTML = ''; // Clear list on each update
+            querySnapshot.forEach((doc) => {
+                renderComment(doc);
+            });
+
+        }, (error) => {
+            console.error("Error loading comments:", error);
+            showToast('Comment Error', 'Could not load comments.', 'danger');
+            if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+            if (commentList) commentList.innerHTML = '<p class="text-danger">Error loading comments.</p>';
+        });
+    }
+
+    /**
+     * Renders a single comment object into the DOM.
+     * @param {object} doc - The comment document snapshot from Firestore.
+     */
+    function renderComment(doc) {
+        if (!commentList) return;
+
+        const data = doc.data();
+        const commentId = doc.id;
+
+        const placeholder = document.getElementById('no-comments-placeholder');
+        if (placeholder) placeholder.remove();
+
+        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
+
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+
+        const authorName = data.ownerName || 'Anonymous';
+        const authorPhoto = data.ownerPhoto || defaultIcon;
+        const commentDate = data.createdAt?.toDate()?.toLocaleString() || 'just now';
+        const commentText = data.text || '';
+
+        const user = window.auth.currentUser;
+        const canDelete = user && (currentUserIsAdmin || user.uid === data.ownerId);
+
+        div.innerHTML = `
+        <img src="${authorPhoto}" alt="${authorName}" class="comment-avatar">
+        <div class="comment-body">
+            <div class="comment-header">
+                <span class="comment-author">${authorName}</span>
+                <span class="comment-date">${commentDate}</span>
+                ${canDelete ? `
+                    <span class="comment-delete ms-auto">
+                        <a href="#" data-comment-id="${commentId}" class="text-danger" title="Delete comment">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </span>
+                ` : ''}
+            </div>
+            <p class="comment-text"></p>
+        </div>
+    `;
+
+        // Set textContent to prevent XSS
+        div.querySelector('.comment-text').textContent = commentText;
+
+        commentList.appendChild(div);
+        commentList.scrollTop = commentList.scrollHeight;
+    }
+
+    /**
+     * Handles the logic for posting a new comment to Firestore.
+     * @param {string} commentText - The text of the comment.
+     */
+    async function handlePostComment(commentText) {
+        // Word Filter Check
+        const lowerComment = commentText.toLowerCase();
+        const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
+        if (foundWord) {
+            showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+            return;
+        }
+
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast('Error', 'You must be logged in to comment.', 'danger');
+            return;
+        }
+        if (!currentProjectDocId) {
+            showToast('Error', 'Cannot post comment: No effect selected.', 'danger');
+            return;
+        }
+
+        commentSubmitBtn.disabled = true;
+        commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+
+        const commentData = {
+            projectId: currentProjectDocId, // Link to the effect
+            ownerId: user.uid,
+            ownerName: user.displayName || 'Anonymous',
+            ownerPhoto: user.photoURL || null,
+            text: commentText,
+            createdAt: window.serverTimestamp() // Use window global
+        };
+
+        try {
+            const commentsRef = window.collection(window.db, 'srgb-effect-comments');
+            await window.addDoc(commentsRef, commentData); // Use window global
+            commentTextarea.value = '';
+        } catch (error) {
+            console.error("Error posting comment:", error);
+            showToast('Error', 'Could not post your comment.', 'danger');
+        } finally {
+            commentSubmitBtn.disabled = false;
+            commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
+        }
+    }
+
+    /**
+     * Deletes a comment from Firestore.
+     * @param {string} commentId - The document ID of the comment to delete.
+     */
+    async function handleDeleteComment(commentId) {
+        if (!commentId) return;
+
+        if (!confirm("Are you sure you want to permanently delete this comment?")) {
+            return;
+        }
+
+        showToast('Deleting...', 'Removing comment...', 'info');
+
+        try {
+            const docRef = window.doc(window.db, "srgb-effect-comments", commentId);
+            await window.deleteDoc(docRef); // Use window global
+            showToast('Success', 'Comment deleted.', 'success');
+        } catch (error) {
+            console.error("Error deleting comment:", error);
+            showToast('Error', 'Could not delete comment.', 'danger');
+        }
+    }
+    // --- [END NEW COMMENT FUNCTIONS] ---
+
 
 
     // Start the application.
     init();
+    setupCommentListeners();
 });
