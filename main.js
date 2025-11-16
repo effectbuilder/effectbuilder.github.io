@@ -3999,13 +3999,28 @@ document.addEventListener('DOMContentLoaded', function () {
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
             helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down`;
+            
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
             hiddenInput.className = 'd-none';
-            hiddenInput.value = defaultValue;
+            // hiddenInput.value = defaultValue;
             let stops = []; let activeStopId = -1; let nextStopId = 0;
             let lastMarkerClick = { id: null, time: 0 };
+
+            let stopsData = defaultValue;
+            if (typeof stopsData === 'string') {
+                try { stopsData = JSON.parse(stopsData); }
+                catch(e) { stopsData = [{ color: '#000000', position: 0 }, { color: '#FFFFFF', position: 1 }]; }
+            }
+            if (!Array.isArray(stopsData) || stopsData.length === 0) {
+                stopsData = [{ color: '#000000', position: 0 }, { color: '#FFFFFF', position: 1 }];
+            }
+            
+            // Add unique IDs for the UI
+            stops = stopsData.map(s => ({ ...s, id: nextStopId++ }));
+            // Always store a valid JSON string in the form
+            hiddenInput.value = JSON.stringify(stopsData);
 
             const updatePreviewOnly = () => {
                 stops.sort((a, b) => a.position - b.position);
@@ -4183,8 +4198,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            try { const loadedStops = JSON.parse(defaultValue); stops = loadedStops.map(s => ({ ...s, id: nextStopId++ })); }
-            catch (e) { stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }]; }
+            // try { const loadedStops = JSON.parse(defaultValue); stops = loadedStops.map(s => ({ ...s, id: nextStopId++ })); }
+            // catch (e) { stops = [{ color: '#000000', position: 0, id: nextStopId++ }, { color: '#FFFFFF', position: 1, id: nextStopId++ }]; }
 
             container.appendChild(previewBar);
             container.appendChild(stopsContainer);
@@ -4232,17 +4247,30 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'nodetable') {
             const container = document.createElement('div');
             container.className = 'node-table-container';
+
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
-            hiddenTextarea.textContent = defaultValue;
+            // hiddenTextarea.textContent = defaultValue;
             const table = document.createElement('table');
             table.className = 'table table-dark table-sm node-table';
             table.innerHTML = `<thead><tr><th scope="col">#</th><th scope="col">X</th><th scope="col">Y</th><th scope="col" style="width: 80px;">Actions</th></tr></thead><tbody></tbody>`;
             const tbody = table.querySelector('tbody');
             let nodes = [];
-            try { nodes = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
+
+            let nodeData = defaultValue;
+            if (typeof nodeData === 'string') {
+                try { nodeData = JSON.parse(nodeData); } 
+                catch (e) { nodeData = []; console.error("Could not parse polyline nodes for table.", e); }
+            }
+            if (!Array.isArray(nodeData)) {
+                nodeData = [];
+            }
+            nodes = nodeData;
+            hiddenTextarea.value = JSON.stringify(nodes); // Always store a string
+
+            // try { nodes = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse polyline nodes for table.", e); }
             nodes.forEach((node, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.index = index;
@@ -4260,11 +4288,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'pixelarttable') {
             const container = document.createElement('div');
             container.className = 'pixel-art-table-container';
+
             const hiddenTextarea = document.createElement('textarea');
             hiddenTextarea.id = controlId;
             hiddenTextarea.name = controlId;
             hiddenTextarea.style.display = 'none';
-            hiddenTextarea.textContent = defaultValue;
+            // hiddenTextarea.textContent = defaultValue;
             const framesContainer = document.createElement('div');
             framesContainer.className = 'd-flex flex-column gap-2 pixel-art-frames-container';
             let objectId = null;
@@ -4278,7 +4307,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 try { gradientStops = JSON.parse(gradientConf.default); } catch (e) { console.error("Could not parse gradient stops for thumbnail rendering."); }
             }
             let frames = [];
-            try { frames = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
+
+            let frameData = defaultValue;
+            if (typeof frameData === 'string') {
+                try { frameData = JSON.parse(frameData); }
+                catch (e) { frameData = []; console.error("Could not parse pixel art frames for table.", e); }
+            }
+            if (!Array.isArray(frameData)) {
+                frameData = [];
+            }
+            frames = frameData;
+            hiddenTextarea.value = JSON.stringify(frames); // Always store a string
+
+            // try { frames = JSON.parse(defaultValue); } catch (e) { console.error("Could not parse pixel art frames for table.", e); }
             frames.forEach((frame, index) => {
                 const frameItem = document.createElement('div');
                 frameItem.className = 'pixel-art-frame-item border rounded p-1 bg-body d-flex gap-2 align-items-center';
@@ -4574,37 +4615,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 1. Get ALL old configuration blocks
                 const oldConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${idToCopy}_`));
+                
                 const newConfigs = oldConfigs.map(oldConf => {
-                    const newConf = { ...oldConf };
+                    const newConf = { ...oldConf }; // Copy the template (type, min, max, etc.)
                     const prefix = `obj${idToCopy}_`;
                     const newPrefix = `obj${newId}_`;
                     const propName = oldConf.property.substring(prefix.length);
 
+                    // Update property name and label for the new ID
                     newConf.property = newPrefix + propName;
                     newConf.label = `${newState.name}:${oldConf.label.split(':').slice(1).join(':')}`;
 
-                    let liveValue = newState[propName];
+                    let liveValue;
 
-                    // *** FIX: If the property is directly on the Shape object (e.g., rotationSpeed, animationSpeed), 
-                    // and it needs to be unscaled for the UI (like 0.5 -> 25), apply the scaling here. 
-                    // All other properties (x,y,width,height) are already scaled to canvas units (x4) in newState. ***
-
-                    if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
-                        liveValue *= 10;
-                    } else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') {
-                        liveValue *= 50;
-                    } else if (propName === 'x' || propName === 'y' || propName === 'width' || propName === 'height') {
-                        // The value in 'newState' is in canvas units (x4). We must scale it back down to UI units (x1) for the config default.
-                        liveValue /= 4;
+                    // Step 1: Get the LIVE value from the cloned 'newState'
+                    // We must check for special nested properties first.
+                    if (propName === 'gradientStops') {
+                        liveValue = newState.gradient ? newState.gradient.stops : [];
+                    } else if (propName === 'strokeGradientStops') {
+                        liveValue = newState.strokeGradient ? newState.strokeGradient.stops : [];
+                    } else {
+                        // This gets all other properties, including strings like
+                        // 'pixelArtFrames' and 'polylineNodes', and numbers like 'x' or 'waveCount'.
+                        liveValue = newState[propName];
                     }
 
+                    // Step 2: Apply UI scaling logic (scaling values *down* for the config)
                     if (liveValue !== undefined) {
-                        if (typeof liveValue === 'boolean') { liveValue = String(liveValue); }
-                        newConf.default = liveValue;
-                    }
+                        if (propName === 'animationSpeed' || propName === 'strokeAnimationSpeed') {
+                            liveValue *= 10;
+                        } else if (propName === 'cycleSpeed' || propName === 'strokeCycleSpeed') {
+                            liveValue *= 50;
+                        } else if (propsToScale.includes(propName) && typeof liveValue === 'number') {
+                            // Scale canvas units (e.g., 40) back down to UI units (e.g., 10)
+                            liveValue /= 4;
+                        }
 
-                    // Gradient stops/frames are already handled by keeping the oldConf.default (which is a string)
-                    // If the original was a string, the default is already correct.
+                        // Step 3: Set the 'default' value, stringifying arrays to prevent DB errors
+                        if (Array.isArray(liveValue)) {
+                            // This now correctly catches gradientStops and strokeGradientStops
+                            newConf.default = JSON.stringify(liveValue);
+                        } else {
+                            // This catches all primitives (numbers, booleans) and
+                            // all pre-stringified properties (pixelArtFrames, polylineNodes).
+                            if (typeof liveValue === 'boolean') { liveValue = String(liveValue); }
+                            newConf.default = liveValue;
+                        }
+                    }
+                    // If liveValue is undefined, newConf.default retains the value from oldConf.default
 
                     return newConf;
                 });
@@ -7877,8 +7935,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     const key = conf.property;
                     conf.label = `${name}: ${conf.label.split(':').slice(1).join(':').trim()}`;
                     if (key === `obj${id}_shape`) conf.default = shape;
-                    if (constantsMap.has(key)) conf.default = constantsMap.get(key);
-                    else if (loadedConfigMap.has(key)) conf.default = loadedConfigMap.get(key).default;
+
+                    // --- START: FINAL FIX ---
+                    if (constantsMap.has(key)) {
+                        let value = constantsMap.get(key);
+                        // If the value from the script is an array, stringify it
+                        // before assigning it to the config store.
+                        if (Array.isArray(value)) {
+                            // This catches pixelArtFrames, polylineNodes, and gradients
+                            conf.default = JSON.stringify(value);
+                        } else {
+                            conf.default = value;
+                        }
+                    } 
+                    else if (loadedConfigMap.has(key)) {
+                        // Values from meta tags are already strings, so they are safe.
+                        conf.default = loadedConfigMap.get(key).default;
+                    }
+                    // --- END: FINAL FIX ---
                 });
                 newConfigStore.push(...defaults);
             });
