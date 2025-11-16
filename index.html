@@ -166,6 +166,39 @@
                     <i class="bi bi-crosshair me-2"></i>
                     <span id="coords-display" class="font-monospace" style="min-width: 100px;">---, ---</span>
                 </div>
+
+                <div id="component-comments-section" class="p-3 border-top bg-body-tertiary" style="flex-shrink: 0; max-height: 40%; overflow-y: auto;">
+                    <h5 class="text-body-emphasis mb-2">Comments</h5>
+
+                    <div class="alert alert-info small p-2" role="alert" style="display: none;">
+                        <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
+                    </div>
+
+                    <div id="comment-list" class="pe-2 mb-3" style="max-height: 250px; overflow-y: auto;">
+                        <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            Loading comments...
+                        </p>
+                        <p id="comments-save-prompt" class="text-muted" style="display: none;">
+                            Save this effect to the cloud to enable comments.
+                        </p>
+                    </div>
+
+                    <form id="comment-form" class="pe-2" style="display: none;">
+                        <div class="mb-2">
+                            <textarea id="comment-textarea" class="form-control form-control-sm" rows="2" placeholder="Write your comment..." required></textarea>
+                        </div>
+                        <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-send me-1"></i> Post Comment
+                        </button>
+                    </form>
+
+                    <div id="comment-login-prompt" class="alert alert-secondary p-2" style="display: none;">
+                        Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
+                    </div>
+                </div>
+
+                
             </div>
         </div>
 
