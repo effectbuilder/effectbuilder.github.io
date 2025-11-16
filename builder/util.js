@@ -104,6 +104,36 @@ export function showToast(title, message, type = 'info') {
 }
 
 /**
+ * [NEW] Converts a Date object into a relative time string (e.g., "5m ago").
+ * @param {Date} date - The date object to format.
+ * @returns {string} A relative time string.
+ */
+export function timeAgo(date) {
+    if (!date) return 'just now';
+
+    const now = new Date();
+    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.round(hours / 24);
+    if (days < 30) return `${days}d ago`;
+
+    const months = Math.round(days / 30.44); // Average days in month
+    if (months < 12) return `${months}mo ago`;
+
+    const years = Math.round(days / 365.25);
+    return `${years}y ago`;
+}
+
+/**
  * [NEW] Renders a simple, read-only preview of a component onto a canvas.
  * @param {HTMLCanvasElement} canvas - The target canvas element to draw on.
  * @param {object} componentData - The component state object (must have leds and wiring).
