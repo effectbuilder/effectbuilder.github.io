@@ -81,7 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // This listener handles all UI changes related to authentication state.
-    window.onAuthStateChanged(window.auth, user => {
+    // [MODIFIED] Made the callback async
+    window.onAuthStateChanged(window.auth, async user => {
         const loginBtn = document.getElementById('login-btn');
         const userSessionGroup = document.getElementById('user-session-group');
         const userPhotoEl = document.getElementById('user-photo');
@@ -90,6 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadWsBtn = document.getElementById('load-ws-btn');
         const isLoggedIn = !!user;
         const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4='; 
+
+        // --- [NEW] Comment UI elements ---
+        const commentForm = document.getElementById('comment-form');
+        const commentLoginPrompt = document.getElementById('comment-login-prompt');
+        const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1'; // From main.js
+        // --- [END NEW] ---
 
         if (isLoggedIn) {
             // Show the logged-in group and hide the login button
@@ -120,6 +127,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // --- [NEW] Admin check and comment UI toggle ---
+            if (window.setAdminStatus) { // Check if main.js has loaded this function
+                let isAdmin = false;
+                if (user.uid === ADMIN_UID) {
+                    isAdmin = true;
+                } else {
+                    const adminDocRef = window.doc(window.db, "admins", user.uid);
+                    try {
+                        const adminDocSnap = await window.getDoc(adminDocRef);
+                        if (adminDocSnap.exists()) {
+                            isAdmin = true;
+                        }
+                    } catch (err) {
+                        console.error("Error checking admin status:", err);
+                    }
+                }
+                window.setAdminStatus(isAdmin); // Pass status to main.js
+            }
+            if (commentForm) commentForm.style.display = 'block';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'none';
+            // --- [END NEW] ---
+
             // Setup notification listener on login
             if (typeof window.setupNotificationListener === 'function') {
                 window.setupNotificationListener(user);
@@ -131,6 +160,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userSessionGroup) userSessionGroup.classList.add('d-none');
 
             // REMOVED: Redundant code to toggle notification button visibility.
+
+            // --- [NEW] Reset admin status and toggle comment UI ---
+            if (window.setAdminStatus) {
+                window.setAdminStatus(false);
+            }
+            if (commentForm) commentForm.style.display = 'none';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'block';
+            // --- [END NEW] ---
 
             // Clear notification listener on logout
             if (typeof window.setupNotificationListener === 'function') {
