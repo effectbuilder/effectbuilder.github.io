@@ -9874,6 +9874,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const commentCollapseElement = document.getElementById('comment-collapse-wrapper');
+    if (commentCollapseElement) {
+        commentCollapseElement.addEventListener('show.bs.collapse', () => {
+            const icon = document.querySelector('[data-bs-target="#comment-collapse-wrapper"] i');
+            if (icon) {
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            }
+        });
+        commentCollapseElement.addEventListener('hide.bs.collapse', () => {
+            const icon = document.querySelector('[data-bs-target="#comment-collapse-wrapper"] i');
+            if (icon) {
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            }
+        });
+    }
+
     // Start the application.
     init();
     setupCommentListeners();
