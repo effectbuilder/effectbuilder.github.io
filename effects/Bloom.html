@@ -1,11 +1,20 @@
 <!DOCTYPE html><html>
 <head>
-    <title>ORGB: Bloom</title>
-    <meta description="Flower blooming effect.">
-    <meta publisher="Jose Miranda (Port and improvements)">
+    <title>Bloom</title>
+    <meta description="Growing flowers of light blooming to the rythm of your music.">
+    <meta publisher="Jose Miranda">
 
-    <meta property="speed" label="Speed" type="number" min="10" max="200" default="100">
-    <meta property="saturation" label="Saturation" type="number" min="0" max="255" default="255">
+    <meta property="soundResponsive" label="Sound Responsive" type="boolean" default="1">
+    <meta property="audio_trigger" label="Audio Trigger (%)" type="number" min="1" max="100" default="30">
+    
+    <meta property="palette" label="Color Palette" type="combobox" values="Audio-Reactive,Rainbow,Lava,Ocean,Forest,Party,Heat,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Holiday,Pastel,Sakura,Sunset,Technicolor,Vaporwave" default="Audio-Reactive">
+    
+    <meta property="speed" label="Growth Speed" type="number" min="1" max="100" default="20">
+    <meta property="max_blooms" label="Max Blooms" type="number" min="1" max="50" default="10">
+    <meta property="max_size" label="Max Size" type="number" min="1" max="200" default="80">
+    <meta property="spawn_rate" label="Spawn Rate / Audio Gate" type="number" min="1" max="100" default="30">
+    <meta property="bloom_thickness" label="Bloom Thickness" type="number" min="1" max="100" default="20">
+    <meta property="saturation" label="Saturation (Audio/Rainbow)" type="number" min="0" max="255" default="255">
 
     <style>
         body, html {
@@ -18,10 +27,6 @@
             display: block;
             width: 100%;
             height: 100%;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
     </style>
 
@@ -38,33 +43,122 @@
 
 const canvas = document.getElementById('bloom-canvas');
 const ctx = canvas.getContext('2d');
-
-// --- ADDED: Disable image smoothing ---
-ctx.imageSmoothingEnabled = false;
-ctx.mozImageSmoothingEnabled = false;
-ctx.webkitImageSmoothingEnabled = false;
-
 const canvasWidth = canvas.width;
 const canvasHeight = canvas.height;
 
-let flowers = []; // This will store the state for each "flower" (pixel)
+let flowers = []; // This will store our active flower objects
+let lastSpawnTime = 0;
 
 // -------------------------------------------------------------------
-// HELPER FUNCTIONS
+// COLOR PALETTES & HELPERS
 // -------------------------------------------------------------------
+
+const wledPalettes = {
+    "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF"],
+    "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000"],
+    "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF"],
+    "Forest": ["#006400", "#228B22", "#008000", "#556B2F"],
+    "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+    "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+    "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+    "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"],
+    "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+    "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+    "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+    "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+    "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+    "Fairy Light": ["#FF000080", "#00FF0080", "#0000FF80", "#FFFF0080"],
+    "Holiday": ["#D92626", "#0E592D", "#F2B705", "#F2F2F2"],
+    "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+    "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+    "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+    "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+    "Vaporwave": ["#FF71CE", "#B967FF", "#01CDFE", "#05FFA1", "#FFFB96"]
+};
 
 /**
- * Resets and initializes the state for every pixel.
- * Each pixel gets a random starting hue and a random speed multiplier.
+ * Converts Hex color string to [r, g, b] array
  */
-function resetFlowers() {
-    flowers = []; // Clear the existing array
-    for (let i = 0; i < canvasWidth * canvasHeight; i++) {
-        flowers.push({
-            hue: Math.random() * 360, // Random starting hue (0-360)
-            speed_mult: Math.random() + 1, // Random speed multiplier (1.0-2.0)
-        });
+function hexToRgb(hex) {
+    if (!hex) return [255, 0, 0]; // Fallback
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
+/**
+ * Converts HSL color to RGB.
+ * h (0-360), s (0-100), l (0-100)
+ * Returns [r, g, b] array (0-255)
+ */
+function hslToRgb(h, s, l) {
+    s /= 100; // Convert to 0-1
+    l /= 100; // Convert to 0-1
+
+    let r, g, b;
+    if (s === 0) {
+        r = g = b = l; // Achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h / 360 + 1 / 3);
+        g = hue2rgb(p, q, h / 360);
+        b = hue2rgb(p, q, h / 360 - 1 / 3);
     }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+/**
+ * Spawns a new flower.
+ * freqIndex of -1 means it's a random (non-audio) spawn.
+ */
+function spawnFlower(currentMaxBlooms, freqIndex) {
+    if (flowers.length >= currentMaxBlooms) {
+        return;
+    }
+
+    // Get palette setting (global var)
+    const currentPalette = palette; 
+    let newHue = 0;
+    let newColor = null; // Will store an [r,g,b] array if a palette is used
+
+    if (currentPalette === 'Audio-Reactive') {
+        if (freqIndex !== -1) {
+            // Map frequency (0-50) to hue (0-360)
+            newHue = (freqIndex / 50) * 360;
+        } else {
+            newHue = Math.random() * 360; // Fallback for random spawns
+        }
+    } else if (currentPalette === 'Rainbow') {
+        newHue = Math.random() * 360;
+    } else {
+        // A specific WLED palette is chosen
+        const paletteData = wledPalettes[currentPalette];
+        if (paletteData) {
+            const randomColorHex = paletteData[Math.floor(Math.random() * paletteData.length)];
+            newColor = hexToRgb(randomColorHex);
+        } else {
+            // Fallback if palette is somehow missing (e.g., Audio-Reactive)
+            newHue = Math.random() * 360;
+        }
+    }
+
+    flowers.push({
+        x: Math.random() * canvasWidth,
+        y: Math.random() * canvasHeight,
+        hue: newHue, // Used if newColor is null
+        color: newColor, // Used if a palette is selected
+        radius: 0
+    });
 }
 
 // -------------------------------------------------------------------
@@ -73,6 +167,18 @@ function resetFlowers() {
 
 let lastTime = 0;
 function update(currentTime) {
+    // --- BROWSER/STARTUP FIX: Initialize meta properties if undefined ---
+    if (typeof soundResponsive === 'undefined') soundResponsive = 1; // Default to on (1)
+    if (typeof audio_trigger === 'undefined') audio_trigger = 30;
+    if (typeof palette === 'undefined') palette = "Audio-Reactive";
+    if (typeof speed === 'undefined') speed = 20;
+    if (typeof max_blooms === 'undefined') max_blooms = 10;
+    if (typeof max_size === 'undefined') max_size = 80;
+    if (typeof spawn_rate === 'undefined') spawn_rate = 30;
+    if (typeof bloom_thickness === 'undefined') bloom_thickness = 20;
+    if (typeof saturation === 'undefined') saturation = 255;
+    // --- End of Fix ---
+
     const deltaTime = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
 
@@ -80,53 +186,98 @@ function update(currentTime) {
         requestAnimationFrame(update);
         return;
     }
-
-    // --- ADDED: Fallbacks for meta properties ---
-    const currentSpeed = typeof speed !== 'undefined' ? speed : 100;
-    const currentSaturation = typeof saturation !== 'undefined' ? saturation : 255;
-
-    // This ensures that if the device layout changes, the effect resets properly.
-    if (flowers.length !== canvasWidth * canvasHeight) {
-        resetFlowers();
-    }
     
-    const imageData = ctx.createImageData(canvasWidth, canvasHeight);
-    const data = imageData.data;
-    
-    // Calculate the hue change for this frame
-    const hue_change = (currentSpeed / 10) * deltaTime;
+    // Normalize properties
+    const satPercent = saturation / 2.55;
+    const growthAmount = (speed / 10) * deltaTime * 60; // Normalized to 60fps
+    const thicknessPercent = Math.max(0.01, bloom_thickness / 100);
 
-    // Update and draw each flower
-    for (let i = 0; i < flowers.length; i++) {
+    // Draw a black background
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Set to 'lighter' for a nice additive blending effect
+    ctx.globalCompositeOperation = 'lighter';
+
+    // Update and draw all flowers
+    for (let i = flowers.length - 1; i >= 0; i--) {
         const flower = flowers[i];
+        flower.radius += growthAmount;
 
-        // Update the hue based on its unique speed and the master speed control
-        flower.hue = (flower.hue + hue_change * flower.speed_mult) % 360;
+        if (flower.radius > max_size) {
+            flowers.splice(i, 1);
+            continue;
+        }
 
-        // Set the color in the image buffer using HSL color space
-        const color = `hsl(${flower.hue}, ${currentSaturation / 2.55}%, 50%)`;
+        // --- Draw the bloom ---
+        let r, g, b;
+        if (flower.color) {
+            [r, g, b] = flower.color;
+        } else {
+            flower.hue = (flower.hue + 0.2) % 360;
+            [r, g, b] = hslToRgb(flower.hue, satPercent, 50);
+        }
         
-        // This is a simple way to convert CSS color to RGB for the canvas buffer
-        ctx.fillStyle = color; // Use the context to parse the color
-        const rgbMatch = ctx.fillStyle.match(/\d+/g); // Extract [r, g, b]
+        const progress = flower.radius / max_size;
+        const opacity = Math.sin((1 - progress) * Math.PI);
+        const grad = ctx.createRadialGradient(flower.x, flower.y, 0, flower.x, flower.y, flower.radius);
+        
+        const innerEdge = Math.max(0, 1 - thicknessPercent - (progress * (1 - thicknessPercent)));
+        const outerEdge = Math.min(1, innerEdge + thicknessPercent);
 
-        if (rgbMatch) {
-            const index = i * 4;
-            data[index] = rgbMatch[0];
-            data[index + 1] = rgbMatch[1];
-            data[index + 2] = rgbMatch[2];
-            data[index + 3] = 255; // Alpha
+        grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+        grad.addColorStop(innerEdge, `rgba(${r},${g},${b},0)`);
+        grad.addColorStop(outerEdge, `rgba(${r},${g},${b},${opacity})`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(flower.x, flower.y, flower.radius, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    // --- SPAWNING LOGIC (FINAL) ---
+    
+    const hasAudioEngine = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq);
+    const spawnChance = (spawn_rate / 10) * deltaTime;
+    const spawnCooldown = 1000 / (spawn_rate / 10);
+
+    // Check for 1 (true, "true", or 1). This is the 'ON' state.
+    if (soundResponsive == 1 && hasAudioEngine) {
+        // --- Audio-based spawning ---
+        const audioData = new Int8Array(engine.audio.freq);
+        const triggerValue = (audio_trigger / 100.0) * 128.0;
+        let maxAmp = 0;
+        let maxFreqIndex = -1;
+        
+        for (let i = 2; i < 50; i++) {
+            const amp = Math.abs(audioData[i]);
+            if (amp > maxAmp) {
+                maxAmp = amp;
+                maxFreqIndex = i;
+            }
+        }
+        
+        if (maxAmp > triggerValue && (currentTime - lastSpawnTime > spawnCooldown)) {
+            spawnFlower(max_blooms, maxFreqIndex);
+            lastSpawnTime = currentTime;
+        }
+    } 
+    else {
+        // --- Random-based spawning ---
+        // This runs if:
+        // 1) Sound Responsive is OFF (0, "0", false, "false").
+        // 2) Sound Responsive is ON, but we're in a browser (no audio engine).
+        if (Math.random() < spawnChance) {
+            spawnFlower(max_blooms, -1);
         }
     }
-
-    // Draw the completed frame to the canvas at once
-    ctx.putImageData(imageData, 0, 0);
 
     requestAnimationFrame(update);
 }
 
-// Initial setup and first call to start the animation
-resetFlowers();
+// Initial call to start the animation
 requestAnimationFrame(update);
 
 </script>
