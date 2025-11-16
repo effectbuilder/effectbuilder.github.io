@@ -1,9 +1,10 @@
 // --- IMPORT ---
-import { initializeTooltips, showToast, setupThemeSwitcher } from './util.js';
+// [MODIFIED] Import new thumbnail renderer and setDoc
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail } from './util.js';
 import {
     auth, db,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-    doc, deleteDoc,
+    doc, deleteDoc, setDoc, // <-- ADDED SETDOC
     query, where, getDocs, orderBy, limit, startAfter, getDoc, collection
 } from './firebase.js';
 
@@ -82,7 +83,8 @@ function setupAuthListeners() {
 // ---
 
 /**
- * Populates all 3 filter dropdowns from the metadata document.
+ * [MODIFIED] Populates all 3 filter dropdowns from the metadata document.
+ * Includes one-time scan logic to build the filter list if it's missing.
  */
 async function populateGalleryFilters() {
     if (!galleryFilterType || !galleryFilterBrand || !galleryFilterLeds) return;
@@ -103,23 +105,66 @@ async function populateGalleryFilters() {
         let brandsToUse = [];
         let ledCountsToUse = [];
 
+        // --- 3. FAST PATH: Try to use the existing filters doc ---
         if (docSnap.exists() && docSnap.data()) {
+            console.log("Populating filters from fast-load metadata doc.");
             const data = docSnap.data();
             if (data.allTypes) typesToUse = data.allTypes;
             if (data.allBrands) brandsToUse = data.allBrands;
             if (data.allLedCounts) ledCountsToUse = data.allLedCounts;
+
         } else {
-            console.warn("Filters doc empty or missing.");
-            // We don't do the one-time scan here for performance.
-            // It will be built next time someone saves a component.
+            // --- 4. One-time scan to build the filters doc ---
+            console.warn("Filters doc empty or missing. Performing one-time scan...");
+            showToast("Gallery Init", "Building filter list for the first time...", "info");
+
+            const allTypes = new Set();
+            const allBrands = new Set();
+            const allLedCounts = new Set();
+
+            const componentsCollection = collection(db, 'srgb-components');
+            const scanQuery = query(componentsCollection); // Query for *all* docs
+            const querySnapshot = await getDocs(scanQuery);
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.type) allTypes.add(data.type);
+                if (data.brand) allBrands.add(data.brand);
+
+                // --- Robust LED count check ---
+                let count = data.ledCount;
+                if (typeof count !== 'number' && Array.isArray(data.leds)) {
+                    count = data.leds.length;
+                }
+                if (typeof count === 'number' && count > 0) {
+                    allLedCounts.add(count);
+                }
+            });
+
+            typesToUse = Array.from(allTypes);
+            brandsToUse = Array.from(allBrands);
+            ledCountsToUse = Array.from(allLedCounts);
+
+            // --- 5. Save the results back to the doc for next time ---
+            if (typesToUse.length > 0 || brandsToUse.length > 0 || ledCountsToUse.length > 0) {
+                await setDoc(filterDocRef, {
+                    allTypes: typesToUse,
+                    allBrands: brandsToUse,
+                    allLedCounts: ledCountsToUse
+                }, { merge: true });
+                console.log("One-time scan complete. Saved results to metadata doc.");
+            }
         }
 
+        // --- 6. Populate Dropdowns ---
         typesToUse.sort().forEach(type => {
             galleryFilterType.innerHTML += `<option value="${type}">${type}</option>`;
         });
         brandsToUse.sort().forEach(brand => {
             galleryFilterBrand.innerHTML += `<option value="${brand}">${brand}</option>`;
         });
+        
+        // --- 7. Populate LED Dropdown ---
         ledCountsToUse.sort((a, b) => a - b).forEach(count => {
             galleryFilterLeds.innerHTML += `<option value="${count}">${count} LEDs</option>`;
         });
@@ -129,6 +174,7 @@ async function populateGalleryFilters() {
         showToast("Filter Error", "Could not load filter options.", "danger");
     }
 
+    // --- 8. Restore user selection ---
     galleryFilterType.value = currentType;
     galleryFilterBrand.value = currentBrand;
     galleryFilterLeds.value = currentLeds;
@@ -230,11 +276,8 @@ async function loadUserComponents(reset = false) {
                 <div class="card-img-top d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
                      style="background-color: #212529; height: 180px; color: #6c757d; border-bottom: 1px solid var(--bs-border-color);">
-                    <svg viewBox="0 0 32 32" fill="currentColor" width="64" height="64">
-                        <circle cx="26" cy="16" r="3" /> <circle cx="23" cy="23" r="3" /> <circle cx="16" cy="26" r="3" />
-                        <circle cx="9" cy="23" r="3" /> <circle cx="6" cy="16" r="3" /> <circle cx="9" cy="9" r="3" />
-                        <circle cx="16" cy="6" r="3" /> <circle cx="23" cy="9" r="3" />
-                    </svg>
+                    
+                    <canvas id="thumb-${componentId}" width="180" height="180" style="padding: 10px;"></canvas>
                 </div>`;
 
             if (imageUrl) {
@@ -276,6 +319,16 @@ async function loadUserComponents(reset = false) {
             `;
             
             galleryComponentList.appendChild(col);
+
+            // --- [NEW] Render thumbnail if no image ---
+            if (!imageUrl) {
+                const thumbCanvas = col.querySelector(`#thumb-${componentId}`);
+                if (thumbCanvas) {
+                    renderComponentThumbnail(thumbCanvas, componentData);
+                }
+            }
+            // --- [END NEW] ---
+
 
             // --- Attach Listeners ---
             // On this page, "Load" just links to the builder with the ID
@@ -356,14 +409,18 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
 }
 
 /**
- * Triggers loading the next page when the user scrolls near the bottom.
+ * [MODIFIED] Triggers loading the next page when the user scrolls the correct container.
  */
-function handleGalleryScroll() {
+function handleGalleryScroll(e) {
     if (isGalleryLoading || allComponentsLoaded) return;
 
-    // We check the scroll position of the whole window
+    // Get the scrolling element from the event
+    const listElement = e.target;
+    if (!listElement) return;
+
     const buffer = 300; // px from bottom
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - buffer) {
+    // Check if user is near the bottom of *this element*
+    if (listElement.scrollTop + listElement.clientHeight >= listElement.scrollHeight - buffer) {
         console.log("Lazy load triggered by page scroll...");
         loadUserComponents(false); // false = append next page
     }
@@ -395,8 +452,16 @@ document.addEventListener('DOMContentLoaded', () => {
         galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
     }
 
-    // Add scroll listener for lazy loading
-    window.addEventListener('scroll', handleGalleryScroll);
+    // --- [MODIFIED] Attach scroll listener to the correct element ---
+    // The scrolling container is the parent element of the component list
+    const galleryScrollingContainer = galleryComponentList ? galleryComponentList.parentElement : null;
+
+    if (galleryScrollingContainer) {
+        galleryScrollingContainer.addEventListener('scroll', handleGalleryScroll);
+    } else {
+        console.error("Could not find gallery scrolling container for lazy-loading.");
+    }
+    // --- [END MODIFIED] ---
 
     // Initial load of components (triggered by auth listener)
     // We call it here just in case auth is delayed

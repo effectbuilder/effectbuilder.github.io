@@ -1,10 +1,11 @@
 // --- IMPORT ---
-import { initializeTooltips, showToast, setupThemeSwitcher } from './util.js';
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail } from './util.js';
 import {
     auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
     doc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
-    query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue, arrayUnion
+    query, where, getDocs, orderBy, limit, startAfter, getDoc, FieldValue, arrayUnion,
+    onSnapshot
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
@@ -16,6 +17,13 @@ let currentTool = 'select';
 let currentComponentId = null;
 let isDirty = false;
 const GRID_SIZE = 10;
+
+let commentsUnsubscribe = null; // Holds the Firestore listener unsubscribe function
+let currentUserIsAdmin = false;
+
+const DISALLOWED_WORDS = [
+    'asshole', 'bitch', 'cock', 'cunt', 'damn', 'dick', 'fag', 'faggot', 'fuck', 'nigger', 'nigga', 'penis',
+    'pussy', 'shit', 'slut', 'twat', 'vagina', 'whore'];
 
 // --- NEW GALLERY/PAGINATION STATE ---
 let lastVisibleComponent = null; // Tracks the last doc for pagination
@@ -122,6 +130,17 @@ const toggleImageVisibleBtn = document.getElementById('toggle-image-visible-btn'
 const imageUploadTriggerBtn = document.getElementById('image-upload-trigger-btn');
 const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
 
+// --- [NEW] COMMENT DOM Elements ---
+const commentSection = document.getElementById('component-comments-section');
+const commentList = document.getElementById('comment-list');
+const commentForm = document.getElementById('comment-form');
+const commentTextarea = document.getElementById('comment-textarea');
+const commentSubmitBtn = document.getElementById('comment-submit-btn');
+const commentLoginPrompt = document.getElementById('comment-login-prompt');
+const commentLoginLink = document.getElementById('comment-login-link');
+const commentsLoadingPlaceholder = document.getElementById('comments-loading-placeholder');
+const commentsSavePrompt = document.getElementById('comments-save-prompt');
+
 let shareModal = null;
 const copyShareUrlBtn = document.getElementById('copy-share-url-btn');
 const shareUrlInput = document.getElementById('share-url-input');
@@ -151,6 +170,7 @@ async function loadComponentFromUrl(componentId) {
 
             if (loadComponentState(componentData)) {
                 currentComponentId = docSnap.id;
+                loadComments(currentComponentId);
                 showToast('Load Successful', `Loaded shared component: ${componentData.name}`, 'success');
                 isDirty = false;
                 clearAutoSave(); // Clear any local autosave to not overwrite the loaded one
@@ -262,7 +282,7 @@ function handleClearImageGuide() {
 // --- Local Storage Functions ---
 function autoSaveState() {
     isDirty = true;
-    console.log('Attempting to autosave state...');
+    // console.log('Attempting to autosave state...');
     if (componentState && Array.isArray(componentState.leds) && Array.isArray(componentState.wiring)) {
         try {
             // Create a temporary object for saving to local storage
@@ -284,7 +304,7 @@ function autoSaveState() {
 
             const stateString = JSON.stringify(stateToSave);
             localStorage.setItem(AUTOSAVE_KEY, stateString);
-            console.log('Autosave successful. Saved LEDs:', componentState.leds.length, 'Circuits:', componentState.wiring.length);
+            // console.log('Autosave successful. Saved LEDs:', componentState.leds.length, 'Circuits:', componentState.wiring.length);
         } catch (e) {
             console.error('Error stringifying componentState for autosave:', e);
             if (e.name === 'QuotaExceededError') {
@@ -310,7 +330,7 @@ function checkDirtyState() {
 }
 
 function clearAutoSave() {
-    console.log('Clearing autosave data.');
+    // console.log('Clearing autosave data.');
     localStorage.removeItem(AUTOSAVE_KEY);
 }
 
@@ -325,6 +345,8 @@ function loadComponentState(stateToLoad) {
         showToast('Load Error', 'Invalid component data object.', 'danger');
         return false;
     }
+
+    unsubscribeFromComments();
 
     // Clear old state
     clearAutoSave();
@@ -343,10 +365,10 @@ function loadComponentState(stateToLoad) {
     // --- NEW FIX: CONVERT DATABASE WEBP IMAGES TO PNG ---
     if (componentState.imageUrl && componentState.imageUrl.startsWith('data:image/webp')) {
         console.warn("loadComponentState: Detected WebP image from database. Converting to PNG in memory...");
-        
+
         const webPDataUrl = componentState.imageUrl;
         // Set to null temporarily so the UI doesn't try to load the (broken) WebP
-        componentState.imageUrl = null; 
+        componentState.imageUrl = null;
 
         const img = new Image();
         img.onload = () => {
@@ -355,17 +377,17 @@ function loadComponentState(stateToLoad) {
             canvas.height = img.naturalHeight;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
-            
+
             // Get the new PNG data URL
             const pngDataUrl = canvas.toDataURL('image/png');
-            
+
             // Update the component state with the correct format
-            componentState.imageUrl = pngDataUrl; 
+            componentState.imageUrl = pngDataUrl;
             componentState.imageWidth = img.naturalWidth; // Also update dimensions
             componentState.imageHeight = img.naturalHeight;
 
-            console.log("loadComponentState: WebP converted to PNG successfully.");
-            
+            // console.log("loadComponentState: WebP converted to PNG successfully.");
+
             // Re-run UI update and autosave with the new PNG data
             updateUIFromState();
             autoSaveState();
@@ -415,6 +437,15 @@ function loadComponentState(stateToLoad) {
     }
 
     currentComponentId = stateToLoad.dbId || null; // Reset DB id if it's not in the new state
+
+    if (currentComponentId) {
+        // It's a saved component, load the comments
+        loadComments(currentComponentId);
+    } else {
+        // It's a new component, show the "Save" prompt
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'block';
+    }
 
     updateUIFromState(); // Run initial update
     selectedLedIds.clear();
@@ -467,9 +498,11 @@ function setupAuthListeners() {
     loginBtn.addEventListener('click', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
 
-    onAuthStateChanged(auth, (user) => {
+    // [MODIFIED] Made the callback async to check for admin status
+    onAuthStateChanged(auth, async (user) => {
         const isLoggedIn = !!user;
         const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
+
         if (isLoggedIn) {
             if (userDisplay) userDisplay.textContent = user.displayName || user.email;
             if (userPhoto) userPhoto.src = user.photoURL || defaultIcon;
@@ -477,6 +510,29 @@ function setupAuthListeners() {
             if (loginBtn) loginBtn.classList.add('d-none');
             if (saveBtn) saveBtn.disabled = false;
             if (loadBtn) loadBtn.disabled = false;
+
+            if (commentForm) commentForm.style.display = 'block';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'none';
+
+            // --- [NEW] Check for Admin Status ---
+            currentUserIsAdmin = false; // Reset on every auth change
+            if (user.uid === ADMIN_UID) {
+                currentUserIsAdmin = true;
+            } else {
+                // Check the /admins collection, as per your security rules
+                const adminDocRef = doc(db, "admins", user.uid);
+                try {
+                    const adminDocSnap = await getDoc(adminDocRef);
+                    if (adminDocSnap.exists()) {
+                        currentUserIsAdmin = true;
+                    }
+                } catch (err) {
+                    console.error("Error checking admin status:", err);
+                }
+            }
+            // console.log("User Admin Status:", currentUserIsAdmin);
+            // --- [END NEW] ---
+
             const userDocRef = doc(db, "users", user.uid);
             setDoc(userDocRef, {
                 displayName: user.displayName || 'Anonymous User',
@@ -490,9 +546,17 @@ function setupAuthListeners() {
             if (saveBtn) saveBtn.disabled = true;
             if (loadBtn) loadBtn.disabled = true;
             if (shareBtn) shareBtn.disabled = true;
+
+            // --- [NEW] Reset admin status on logout ---
+            currentUserIsAdmin = false;
+            // --- [END NEW] ---
+
+            if (commentForm) commentForm.style.display = 'none';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'block';
         }
     });
 }
+
 function setupProjectListeners() {
     newBtn.addEventListener('click', () => handleNewComponent(true));
     saveBtn.addEventListener('click', handleSaveComponent);
@@ -519,7 +583,7 @@ function setupProjectListeners() {
         // Add listeners to update preview when format changes
         document.getElementById('export-format-srgb').addEventListener('change', updateExportPreview);
         document.getElementById('export-format-wled').addEventListener('change', updateExportPreview);
-        
+
         // --- THIS IS THE FIX ---
         document.getElementById('export-format-nolliergb').addEventListener('change', updateExportPreview);
         // --- END OF FIX ---
@@ -558,7 +622,7 @@ function createDefaultComponentState() {
         guideImageUrl: null,
         guideImageWidth: 500,
         guideImageHeight: 300,
-        
+
         // --- ADD THIS LINE ---
         originalDbName: "My Custom Component" // Give it the default name
     };
@@ -567,9 +631,10 @@ function createDefaultComponentState() {
 function handleNewComponent(showNotification = true) {
     // Check if the current canvas work is dirty and requires a confirmation dialog
     if (!checkDirtyState()) return;
+    unsubscribeFromComments();
 
     let stateToLoad = createDefaultComponentState();
-    console.log('handleNewComponent called. showNotification:', showNotification);
+    // console.log('handleNewComponent called. showNotification:', showNotification);
 
     // Preserve Image Guide URL and Dimensions
     // Extract the guide image details from the current component state before checking autosave or resetting to defaults.
@@ -579,7 +644,7 @@ function handleNewComponent(showNotification = true) {
 
     if (!showNotification) {
         const savedState = localStorage.getItem(AUTOSAVE_KEY);
-        console.log('Checking localStorage...');
+        // console.log('Checking localStorage...');
         if (savedState) {
             try {
                 const parsedState = JSON.parse(savedState);
@@ -595,7 +660,7 @@ function handleNewComponent(showNotification = true) {
                 clearAutoSave();
             }
         } else {
-            console.log('No autosave data found in localStorage.');
+            // console.log('No autosave data found in localStorage.');
         }
     }
 
@@ -774,12 +839,12 @@ function handleImportJson(e) {
 
             if (data.leds && Array.isArray(data.leds)) {
                 // --- 1. It's an INTERNAL format (from autosave, or a friend's state) ---
-                console.log('Importing internal component format.');
+                // console.log('Importing internal component format.');
                 stateToLoad = data; // Directly use the data object
 
             } else if (data.LedCoordinates && Array.isArray(data.LedCoordinates)) {
                 // --- 2. It's an EXPORTED format (ProductName, LedCoordinates, etc.) ---
-                console.log('Importing exported .json format.');
+                // console.log('Importing exported .json format.');
                 stateToLoad = createDefaultComponentState(); // Start with defaults
 
                 stateToLoad.name = data.ProductName || 'Imported Component';
@@ -923,6 +988,8 @@ async function performSave(isNew, isForking = false) {
         componentState.createdAt = dataToSave.createdAt; // Ensure state has create date
         componentState.originalDbName = componentState.name;
 
+        loadComments(currentComponentId);
+
         // 5. Update metadata (no change here)
         try {
             const filterDocRef = doc(db, "srgb-components-metadata", "filters");
@@ -973,19 +1040,19 @@ async function handleSaveComponent() {
     // --- 3. Route the save logic ---
     if (isNewComponent) {
         // A. It's a brand new component. Save it.
-        console.log("Save Route: New Component");
+        // console.log("Save Route: New Component");
         performSave(true, false); // isNew=true, isForking=false
 
     } else if (isForking) {
         // B. User is not owner. Force a fork (save as new).
-        console.log("Save Route: Forking");
+        // console.log("Save Route: Forking");
         performSave(true, true); // isNew=true, isForking=true
 
     } else if (isOwnerOrAdmin) {
         // C. User is the owner.
         if (nameChanged) {
             // C1. Name changed: Save as New AUTOMATICALLY. No questions asked.
-            console.log("Save Route: Owner Save As New (Name Changed) - Automatic");
+            // console.log("Save Route: Owner Save As New (Name Changed) - Automatic");
             performSave(true, false); // isNew=true, isForking=false
         } else {
             // C2. Name is the same: Ask to Overwrite (This is the only time we ask)
@@ -995,7 +1062,7 @@ async function handleSaveComponent() {
                 '(Click "Cancel" to do nothing).'
             );
             if (overwrite) {
-                console.log("Save Route: Owner Overwrite (Same Name)");
+                // console.log("Save Route: Owner Overwrite (Same Name)");
                 performSave(false, false); // isNew=false, isForking=false
             } else {
                 showToast('Save Cancelled', 'No changes were saved.', 'info');
@@ -1012,7 +1079,7 @@ async function handleSaveComponent() {
  * The actual JSON generation is done by updateExportPreview().
  */
 function showExportModal() {
-    console.log("showExportModal triggered.");
+    // console.log("showExportModal triggered.");
 
     if (!componentState || !Array.isArray(componentState.leds)) {
         showToast('Export Error', 'No component data.', 'danger');
@@ -1076,7 +1143,7 @@ function showExportModal() {
 function updateExportPreview() {
     const format = document.querySelector('input[name="export-format"]:checked')?.value || 'srgb';
     const preview = document.getElementById('json-preview');
-    
+
     // --- GET THE BUTTONS (DO NOT CLONE) ---
     const downloadBtn = document.getElementById('confirm-export-json-btn');
     const copyBtn = document.getElementById('copy-export-json-btn');
@@ -1085,7 +1152,7 @@ function updateExportPreview() {
         console.error("Export modal preview, download, or copy button not found!");
         return;
     }
-    
+
     // Disable buttons until new data is ready
     downloadBtn.disabled = true;
     copyBtn.disabled = true;
@@ -1174,17 +1241,17 @@ function updateExportPreview() {
 
         // --- 4. CREATE BLOB AND URL ---
         const blob = new Blob([jsonString], { type: 'application/json' });
-        
+
         // Revoke the *old* URL if it exists to prevent memory leaks
         if (downloadBtn._objectURL) {
             URL.revokeObjectURL(downloadBtn._objectURL);
         }
-        
+
         const url = URL.createObjectURL(blob);
         downloadBtn._objectURL = url; // Store the new URL on the button
 
         // --- 5. ASSIGN ONCLICK HANDLERS DIRECTLY ---
-        
+
         downloadBtn.onclick = () => {
             try {
                 const a = document.createElement('a');
@@ -1209,7 +1276,7 @@ function updateExportPreview() {
                 showToast('Copy Error', 'Could not copy to clipboard.', 'danger');
             });
         };
-        
+
         // Re-enable the buttons
         downloadBtn.disabled = false;
         copyBtn.disabled = false;
@@ -1267,7 +1334,7 @@ function handleImageFile(file) {
                 componentState.imageWidth = width;
                 componentState.imageHeight = height;
 
-                // console.log(`Device image resized to: ${width}x${height}`);
+                // // console.log(`Device image resized to: ${width}x${height}`);
                 imagePreview.src = resizedDataUrl; // Show the resized preview
                 imagePreview.style.display = 'block';
                 autoSaveState();
@@ -1322,7 +1389,7 @@ function handleImageGuideFile(e) {
                 const ratio = MAX_GUIDE_IMAGE_DIMENSION / Math.max(width, height);
                 width = Math.round(width * ratio);
                 height = Math.round(height * ratio);
-                console.log(`Image Guide resized to: ${width}x${height}`);
+                // console.log(`Image Guide resized to: ${width}x${height}`);
             }
 
             // 2. Draw resized image to canvas
@@ -1437,10 +1504,253 @@ function toggleImageVisibility() {
 
 // --- END NEW IMAGE GUIDE FUNCTIONS ---
 
+/**
+ * Sets up listeners for the comment form.
+ */
+function setupCommentListeners() {
+    if (commentForm) {
+        commentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const commentText = commentTextarea.value.trim();
+            if (commentText) {
+                handlePostComment(commentText);
+            }
+        });
+    }
+
+    // Add listener to the "sign in" link in the prompt
+    if (commentLoginLink) {
+        commentLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogin();
+        });
+    }
+
+    // --- [NEW] Event delegation for deleting comments ---
+    if (commentList) {
+        commentList.addEventListener('click', (e) => {
+            // Find the closest delete link (handles clicking the icon inside the link)
+            const deleteLink = e.target.closest('[data-comment-id]');
+            if (deleteLink) {
+                e.preventDefault();
+                const commentId = deleteLink.dataset.commentId;
+                handleDeleteComment(commentId);
+            }
+        });
+    }
+    // --- [END NEW] ---
+}
+
+/**
+ * Unsubscribes from the current real-time comment listener (if one exists).
+ * Hides and clears the comment section UI.
+ */
+function unsubscribeFromComments() {
+    if (commentsUnsubscribe) {
+        // console.log("Unsubscribing from comments listener.");
+        commentsUnsubscribe();
+        commentsUnsubscribe = null;
+    }
+    // Hide and clear the UI
+    if (commentList) commentList.innerHTML = '';
+    // Hide all placeholders
+    if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+    if (commentsSavePrompt) commentsSavePrompt.style.display = 'none';
+}
+
+
+/**
+ * Deletes a comment from Firestore.
+ * @param {string} commentId - The document ID of the comment to delete.
+ */
+async function handleDeleteComment(commentId) {
+    if (!commentId) return;
+
+    // Get confirmation
+    if (!confirm("Are you sure you want to permanently delete this comment?")) {
+        return;
+    }
+
+    showToast('Deleting...', 'Removing comment...', 'info');
+
+    try {
+        const docRef = doc(db, "srgb-component-comments", commentId);
+        await deleteDoc(docRef);
+        // No need to remove from UI, onSnapshot will handle it.
+        showToast('Success', 'Comment deleted.', 'success');
+    } catch (error) {
+        console.error("Error deleting comment:", error);
+        showToast('Error', 'Could not delete comment.', 'danger');
+    }
+}
+
+/**
+ * Loads and listens for real-time comments for a specific component ID.
+ * @param {string} componentId - The Firestore document ID of the component.
+ */
+function loadComments(componentId) {
+    if (!componentId) return;
+
+    // 1. Unsubscribe from any old listener
+    unsubscribeFromComments(); // This clears the list and hides placeholders
+
+    // console.log(`Loading comments for component ID: ${componentId}`);
+
+    // 2. [MODIFIED] Show loading, hide save prompt
+    if (commentSection) commentSection.style.display = 'block'; // Ensure section is visible
+    if (commentList) commentList.innerHTML = ''; // Clear list
+    if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'block';
+    if (commentsSavePrompt) commentsSavePrompt.style.display = 'none'; // Hide save prompt
+
+    // 3. Create the query
+    const commentsRef = collection(db, 'srgb-component-comments');
+    const q = query(commentsRef, where('componentId', '==', componentId), orderBy('createdAt', 'asc'));
+
+    // 4. Start the real-time listener
+    commentsUnsubscribe = onSnapshot(q, (querySnapshot) => {
+        // console.log("Comment snapshot received.");
+        // Hide loading placeholder once data arrives
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'none'; // Ensure save prompt is hidden
+
+        if (querySnapshot.empty && commentList.innerHTML === '') {
+            commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">No comments yet. Be the first!</p>';
+            return;
+        }
+
+        // Use docChanges to efficiently update the list (optional, but good practice)
+        // For simplicity in this step, we'll just re-render all docs.
+        commentList.innerHTML = ''; // Clear list on each update
+        querySnapshot.forEach((doc) => {
+            // [MODIFIED] Pass the full doc to renderComment so we can get its ID
+            renderComment(doc);
+        });
+
+    }, (error) => {
+        console.error("Error loading comments:", error);
+        showToast('Comment Error', 'Could not load comments.', 'danger');
+        if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
+        if (commentsSavePrompt) commentsSavePrompt.style.display = 'none'; // Ensure save prompt is hidden on error too
+        if (commentList) commentList.innerHTML = '<p class="text-danger">Error loading comments.</p>';
+    });
+}
+
+/**
+ * Renders a single comment object into the DOM.
+ * @param {object} doc - The comment document snapshot from Firestore.
+ */
+function renderComment(doc) { // [MODIFIED] Changed parameter
+    if (!commentList) return;
+
+    // [NEW] Get data and ID from the doc
+    const data = doc.data();
+    const commentId = doc.id;
+
+    // Remove the "no comments" placeholder if it exists
+    const placeholder = document.getElementById('no-comments-placeholder');
+    if (placeholder) placeholder.remove();
+
+    const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
+
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+
+    const authorName = data.ownerName || 'Anonymous';
+    const authorPhoto = data.ownerPhoto || defaultIcon;
+    const commentDate = data.createdAt?.toDate()?.toLocaleString() || 'just now';
+    const commentText = data.text || '';
+
+    // --- [NEW] Check if the current user can delete this comment ---
+    const user = auth.currentUser;
+    const canDelete = user && (currentUserIsAdmin || user.uid === data.ownerId);
+    // --- [END NEW] ---
+
+    // [MODIFIED] Added delete button logic to the header
+    div.innerHTML = `
+        <img src="${authorPhoto}" alt="${authorName}" class="comment-avatar">
+        <div class="comment-body">
+            <div class="comment-header">
+                <span class="comment-author">${authorName}</span>
+                <span class="comment-date">${commentDate}</span>
+                ${canDelete ? `
+                    <span class="comment-delete ms-auto">
+                        <a href="#" data-comment-id="${commentId}" class="text-danger" title="Delete comment">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </span>
+                ` : ''}
+            </div>
+            <p class="comment-text"></p>
+        </div>
+    `;
+
+    // Set textContent to prevent XSS from user-submitted comment text
+    div.querySelector('.comment-text').textContent = commentText;
+
+    commentList.appendChild(div);
+    // Scroll to bottom
+    commentList.scrollTop = commentList.scrollHeight;
+}
+
+/**
+ * Handles the logic for posting a new comment to Firestore.
+ * @param {string} commentText - The text of the comment.
+ */
+async function handlePostComment(commentText) {
+    // --- [NEW] Word Filter Check ---
+    const lowerComment = commentText.toLowerCase();
+    const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
+    if (foundWord) {
+        showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+        return; // Stop the function
+    }
+    // --- [END NEW] ---
+
+    const user = auth.currentUser;
+    if (!user) {
+        showToast('Error', 'You must be logged in to comment.', 'danger');
+        return;
+    }
+    if (!currentComponentId) {
+        showToast('Error', 'Cannot post comment: No component selected.', 'danger');
+        return;
+    }
+
+    commentSubmitBtn.disabled = true;
+    commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+
+    const commentData = {
+        componentId: currentComponentId,
+        ownerId: user.uid,
+        ownerName: user.displayName || 'Anonymous',
+        ownerPhoto: user.photoURL || null,
+        text: commentText,
+        createdAt: serverTimestamp()
+    };
+
+    try {
+        const commentsRef = collection(db, 'srgb-component-comments');
+        await addDoc(commentsRef, commentData);
+
+        // Clear the textarea
+        commentTextarea.value = '';
+        // The onSnapshot listener will automatically display the new comment.
+        // We just need to re-enable the button.
+
+    } catch (error) {
+        console.error("Error posting comment:", error);
+        showToast('Error', 'Could not post your comment.', 'danger');
+    } finally {
+        commentSubmitBtn.disabled = false;
+        commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
+    }
+}
+
+
 // --- UI & Tool Listeners ---
 function setupPropertyListeners() {
     compNameInput.addEventListener('input', (e) => {
-        console.log('Property Listener: Product Name changed');
+        // console.log('Property Listener: Product Name changed');
         if (!componentState) {
             console.warn('setupPropertyListeners: componentState not ready.');
             return;
@@ -1448,9 +1758,9 @@ function setupPropertyListeners() {
 
         // Get the new name from the input
         const newName = e.target.value;
-        
+
         // Get the name *before* this change
-        const oldName = componentState.name; 
+        const oldName = componentState.name;
 
         // Check if the display name was synced to the *old* product name
         const wasSynced = !compDisplayNameInput.value || compDisplayNameInput.value === oldName;
@@ -1470,26 +1780,26 @@ function setupPropertyListeners() {
 
     // ADDED Listener for Display Name
     compDisplayNameInput.addEventListener('input', (e) => {
-        console.log('Property Listener: Display Name changed');
+        // console.log('Property Listener: Display Name changed');
         if (componentState) { componentState.displayName = e.target.value; autoSaveState(); }
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
     // ADDED Listener for Brand
     compBrandInput.addEventListener('input', (e) => {
-        console.log('Property Listener: Brand changed');
+        // console.log('Property Listener: Brand changed');
         if (componentState) { componentState.brand = e.target.value; autoSaveState(); }
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
     compTypeInput.addEventListener('input', (e) => {
-        console.log('Property Listener: Type changed');
+        // console.log('Property Listener: Type changed');
         if (componentState) { componentState.type = e.target.value; autoSaveState(); }
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
     // --- Image File Handling ---
-    console.log('Image Handling: Attaching file, click, and paste listeners.');
+    // console.log('Image Handling: Attaching file, click, and paste listeners.');
 
     // --- 1. File Input 'change' listener ---
     compImageInput.addEventListener('change', (e) => {
@@ -1508,13 +1818,13 @@ function setupPropertyListeners() {
     // A contenteditable element must be focused to receive a paste event.
     // This makes sure that clicking the box makes it ready to paste.
     imagePasteZone.addEventListener('click', () => {
-        console.log('Image Handling: Paste zone clicked, setting focus.');
+        // console.log('Image Handling: Paste zone clicked, setting focus.');
         imagePasteZone.focus();
     });
 
     // --- 3. NEW: Image Paste Zone 'paste' listener (with DEBUGGING) ---
     imagePasteZone.addEventListener('paste', (e) => {
-        console.log('Image Handling: Paste event detected.');
+        // console.log('Image Handling: Paste event detected.');
         e.preventDefault(); // Stop browser from pasting image as a broken element
 
         const items = e.clipboardData ? e.clipboardData.items : null;
@@ -1524,27 +1834,27 @@ function setupPropertyListeners() {
             return;
         }
 
-        console.log(`Image Handling: Found ${items.length} clipboard items.`);
+        // console.log(`Image Handling: Found ${items.length} clipboard items.`);
         let foundFile = null;
 
         // Loop through all items to find the *actual* file
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            console.log(`Item ${i}:`, { kind: item.kind, type: item.type });
+            // console.log(`Item ${i}:`, { kind: item.kind, type: item.type });
 
             // This is the key: check *kind* is 'file' first.
             if (item.kind === 'file' && item.type.startsWith('image/')) {
-                console.log(`Image Handling: Item ${i} is an image file. Grabbing it.`);
+                // console.log(`Image Handling: Item ${i} is an image file. Grabbing it.`);
                 foundFile = item.getAsFile();
                 break; // Found it, stop looking
             }
         }
 
         if (foundFile) {
-            console.log('Image Handling: File successfully retrieved from clipboard.');
+            // console.log('Image Handling: File successfully retrieved from clipboard.');
             handleImageFile(foundFile); // Use the same handler
         } else {
-            console.log('Image Handling: No usable file found in clipboard items.');
+            // console.log('Image Handling: No usable file found in clipboard items.');
             showToast('Paste Error', 'No image file found in clipboard.', 'warning');
         }
     });
@@ -1556,7 +1866,7 @@ function setupPropertyListeners() {
 
             // Check if there is an image to delete
             if (componentState && componentState.imageUrl) {
-                console.log('Image delete key pressed.');
+                // console.log('Image delete key pressed.');
                 componentState.imageUrl = null;
                 componentState.imageWidth = 500; // Reset to default
                 componentState.imageHeight = 300; // Reset to default
@@ -1683,7 +1993,7 @@ function findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, positionGene
     }
 
     // If center is taken, spiral outwards
-    console.log("Center spot overlaps, searching...");
+    // console.log("Center spot overlaps, searching...");
     searchLoop:
     for (let radius = 1; radius <= maxSearchRadius; radius++) {
         for (let side = 0; side < 4; side++) { // 4 sides of the search square
@@ -1706,7 +2016,7 @@ function findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, positionGene
                 potentialPositions = positionGenerator(currentStartX, currentStartY);
 
                 if (!checkOverlap(potentialPositions)) {
-                    console.log(`Found spot at offset dx=${dx}, dy=${dy}`);
+                    // console.log(`Found spot at offset dx=${dx}, dy=${dy}`);
                     return { foundSpot: true, startX: currentStartX, startY: currentStartY };
                 }
             }
@@ -1791,10 +2101,12 @@ function setTool(toolName) {
     if (toolName === 'wiring' && currentTool === 'wiring') {
         const confirmClear = confirm("Are you sure you want to clear all wiring paths?");
         if (confirmClear) {
-            console.log('SetTool: Clearing wiring (confirmed)');
+            // console.log('SetTool: Clearing wiring (confirmed)');
             if (componentState) componentState.wiring = []; // Reset to empty array of arrays
             drawCanvas(); autoSaveState();
-        } else { console.log('SetTool: Clear wiring cancelled.'); }
+        } else {
+            // console.log('SetTool: Clear wiring cancelled.');
+        }
         return;
     }
     currentTool = toolName;
@@ -1892,7 +2204,7 @@ function setupKeyboardListeners() {
             case 'Delete':
             case 'Backspace':
                 if (selectedLedIds.size > 0) {
-                    console.log('Keyboard Listener: Delete triggered');
+                    // console.log('Keyboard Listener: Delete triggered');
                     componentState.leds = componentState.leds.filter(led => led && !selectedLedIds.has(led.id));
 
                     const newWiring = [];
@@ -2101,7 +2413,7 @@ function handleAddCircle() {
     // --- Use the user's radius ---
     const radiusPx = radiusUnits * GRID_SIZE;
 
-    console.log(`Creating circle: ${ledCount} LEDs, ${radiusUnits} unit radius (${radiusPx}px).`);
+    // console.log(`Creating circle: ${ledCount} LEDs, ${radiusUnits} unit radius (${radiusPx}px).`);
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
@@ -2867,11 +3179,8 @@ async function loadUserComponents(reset = false) {
                 <div class="col-md-4 d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
                      style="background-color: #212529; min-height: 170px; color: #6c757d;">
-                    <svg viewBox="0 0 32 32" fill="currentColor" width="64" height="64">
-                        <circle cx="26" cy="16" r="3" /> <circle cx="23" cy="23" r="3" /> <circle cx="16" cy="26" r="3" />
-                        <circle cx="9" cy="23" r="3" /> <circle cx="6" cy="16" r="3" /> <circle cx="9" cy="9" r="3" />
-                        <circle cx="16" cy="6" r="3" /> <circle cx="23" cy="9" r="3" />
-                    </svg>
+                    
+                    <canvas id="thumb-${componentId}" width="170" height="170" style="padding: 10px;"></canvas>
                 </div>`;
 
             if (imageUrl) {
@@ -2904,6 +3213,15 @@ async function loadUserComponents(reset = false) {
 
             card.innerHTML = `<div class="row g-0">${imageHtml}${bodyHtml}</div>`;
             galleryComponentList.appendChild(card);
+
+            // --- [NEW] Render thumbnail if no image ---
+            if (!imageUrl) {
+                const thumbCanvas = card.querySelector(`#thumb-${componentId}`);
+                if (thumbCanvas) {
+                    renderComponentThumbnail(thumbCanvas, componentData);
+                }
+            }
+            // --- [END NEW] ---
 
             // --- Attach Listeners ---
             const doLoadComponent = () => {
@@ -3054,12 +3372,12 @@ async function populateGalleryFilters() {
             galleryFilterBrand.innerHTML += `<option value="${brand}">${brand}</option>`;
         });
 
-        // --- 7. NEW: Populate LED Dropdown with exact counts ---
+        // --- 7. [MODIFIED] Populate LED Dropdown with exact counts ---
         // Sort the numbers numerically (e.g., 8, 12, 64, 120)
         ledCountsToUse.sort((a, b) => a - b).forEach(count => {
             galleryFilterLeds.innerHTML += `<option value="${count}">${count} LEDs</option>`;
         });
-        // --- END NEW LED LOGIC ---
+        // --- END MODIFICATION ---
 
 
     } catch (error) {
@@ -3130,7 +3448,7 @@ function handleGalleryScroll() {
 
     // Check if user is ~200px from the bottom
     if (list.scrollTop + list.clientHeight >= list.scrollHeight - 200) {
-        console.log("Lazy load triggered...");
+        // console.log("Lazy load triggered...");
         loadUserComponents(false); // false = append next page
     }
 }
@@ -3326,6 +3644,8 @@ function getPointsForPolygon(vertices, gridSize) {
 // --- END NEW HELPER FUNCTIONS ---
 
 
+
+
 // ---
 // --- INITIALIZATION ---
 // ---
@@ -3355,6 +3675,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupKeyboardListeners();
     setupPropertyListeners();
     setupGalleryListener();
+    setupCommentListeners();
 
     // --- Check for URL parameter ---
     const urlParams = new URLSearchParams(window.location.search);
@@ -3372,19 +3693,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // We run this after the initial component has been loaded
     try {
         const tutorialSeen = localStorage.getItem('srgbTutorialSeen');
-        
+
         // If 'tutorialSeen' does not exist, show the modal
         if (!tutorialSeen) {
-            console.log("First visit: Showing the help modal.");
+            // console.log("First visit: Showing the help modal.");
             const helpModalElement = document.getElementById('help-modal');
-            
+
             if (helpModalElement) {
                 // Use a short delay to ensure the main UI is stable
                 setTimeout(() => {
                     // Get the Bootstrap modal instance
                     const helpModal = new bootstrap.Modal(helpModalElement);
                     helpModal.show();
-                    
+
                     // Mark as seen so it doesn't show again
                     localStorage.setItem('srgbTutorialSeen', 'true');
                 }, 1000); // 1-second delay
@@ -3394,5 +3715,5 @@ document.addEventListener('DOMContentLoaded', () => {
         // Catch errors (e.g., if localStorage is disabled)
         console.error("Error checking/showing tutorial modal:", e);
     }
-    
+
 });
