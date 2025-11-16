@@ -102,3 +102,92 @@ export function showToast(title, message, type = 'info') {
     const toast = bootstrap.Toast.getInstance(toastEl) || new bootstrap.Toast(toastEl);
     toast.show();
 }
+
+/**
+ * [NEW] Renders a simple, read-only preview of a component onto a canvas.
+ * @param {HTMLCanvasElement} canvas - The target canvas element to draw on.
+ * @param {object} componentData - The component state object (must have leds and wiring).
+ */
+export function renderComponentThumbnail(canvas, componentData) {
+    if (!canvas || !componentData || !componentData.leds || componentData.leds.length === 0) {
+        // console.warn("Thumbnail render skipped: no canvas or no LEDs.");
+        return;
+    }
+
+    const leds = componentData.leds;
+    const wiring = componentData.wiring || [];
+    const ctx = canvas.getContext('2d');
+
+    // 1. Find bounds
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    leds.forEach(led => {
+        if (!led) return;
+        minX = Math.min(minX, led.x);
+        minY = Math.min(minY, led.y);
+        maxX = Math.max(maxX, led.x);
+        maxY = Math.max(maxY, led.y);
+    });
+
+    if (minX === Infinity) return; // No valid LEDs found
+
+    // 2. Calculate scale and offset
+    const padding = 20; // 20px padding inside the canvas
+    const boundsWidth = (maxX - minX) || 1; // Prevent divide by zero
+    const boundsHeight = (maxY - minY) || 1;
+
+    const canvasWidth = canvas.width - padding * 2;
+    const canvasHeight = canvas.height - padding * 2;
+
+    const scale = Math.min(canvasWidth / boundsWidth, canvasHeight / boundsHeight);
+
+    // Calculate the center of the bounds
+    const boundsCenterX = minX + boundsWidth / 2;
+    const boundsCenterY = minY + boundsHeight / 2;
+
+    // Calculate the translation needed to center the bounds in the canvas
+    const panX = (canvas.width / 2) - (boundsCenterX * scale);
+    const panY = (canvas.height / 2) - (boundsCenterY * scale);
+
+    // 3. Clear and transform canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(panX, panY);
+    ctx.scale(scale, scale);
+
+    // 4. Draw wiring (simple, no fancy logic)
+    const ledMap = new Map(leds.map(led => [led.id, led]));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; // Dim white lines
+    ctx.lineWidth = 1 / scale; // Keep line width consistent
+
+    wiring.forEach(circuit => {
+        if (!Array.isArray(circuit) || circuit.length < 2) return;
+        ctx.beginPath();
+        let firstLed = ledMap.get(circuit[0]);
+        if (firstLed) {
+            ctx.moveTo(firstLed.x, firstLed.y);
+        }
+        for (let i = 1; i < circuit.length; i++) {
+            let led = ledMap.get(circuit[i]);
+            if (led) {
+                ctx.lineTo(led.x, led.y);
+            }
+        }
+        ctx.stroke();
+    });
+
+    // 5. Draw LEDs
+    const ledRadius = 5 / scale; // 5px radius, scaled
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillStyle = 'rgba(0, 200, 0, 0.7)'; // Green fill
+
+    leds.forEach(led => {
+        if (!led) return;
+        ctx.beginPath();
+        ctx.arc(led.x, led.y, ledRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    // 6. Restore canvas state
+    ctx.restore();
+}
