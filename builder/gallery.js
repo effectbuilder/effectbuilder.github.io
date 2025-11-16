@@ -1,11 +1,16 @@
 // --- IMPORT ---
-// [MODIFIED] Import new thumbnail renderer and setDoc
-import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail } from './util.js';
+// [MODIFIED] Import timeAgo
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from './util.js';
 import {
     auth, db,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-    doc, deleteDoc, setDoc, // <-- ADDED SETDOC
-    query, where, getDocs, orderBy, limit, startAfter, getDoc, collection
+    doc, deleteDoc, setDoc,
+    query, where, getDocs, orderBy, limit, startAfter, getDoc, collection,
+    // [MODIFIED] Add notification-related imports
+    onSnapshot,
+    updateDoc,
+    writeBatch,
+    documentId // [MODIFIED] Import documentId instead of FieldPath
 } from './firebase.js';
 
 // --- CONSTANTS ---
@@ -62,7 +67,7 @@ function setupAuthListeners() {
     onAuthStateChanged(auth, (user) => {
         const isLoggedIn = !!user;
         const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
-        
+
         if (isLoggedIn) {
             if (userDisplay) userDisplay.textContent = user.displayName || user.email;
             if (userPhoto) userPhoto.src = user.photoURL || defaultIcon;
@@ -72,11 +77,307 @@ function setupAuthListeners() {
             if (userSessionGroup) userSessionGroup.classList.add('d-none');
             if (loginBtn) loginBtn.classList.remove('d-none');
         }
-        
+
         // Reload components on auth change to show/hide delete buttons
         loadUserComponents(true);
     });
 }
+
+// --- [NEW] NOTIFICATION FUNCTIONS (Copied from main.js) ---
+
+/**
+ * [NEW] Deletes all READ notifications for the current user.
+ */
+async function deleteAllReadNotifications() {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast("You must be logged in to perform this action.", "warning");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete all *read* notifications? This cannot be undone.")) {
+        return;
+    }
+
+    console.log("Deleting all read notifications...");
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("notificationType", "==", "component"), // Filter for component notifications
+        where("read", "==", true) // Only delete read ones
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            showToast("No read notifications to delete.", "info");
+            return;
+        }
+
+        // Use a batch write to delete all found documents
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        showToast("Success", `Cleared ${querySnapshot.size} read notifications.`, "success");
+        // The real-time listener will automatically update the list.
+
+    } catch (error) {
+        console.error("Error deleting all read notifications:", error);
+        showToast("Error", "Could not delete read notifications.", "danger");
+    }
+}
+
+async function fetchDisplayNames(uids) {
+    const namesMap = new Map();
+    if (!uids || uids.length === 0) {
+        return namesMap;
+    }
+    const usersRef = collection(db, "users");
+    const uniqueUids = [...new Set(uids)];
+    const uidBatches = [];
+    for (let i = 0; i < uniqueUids.length; i += 30) {
+        uidBatches.push(uniqueUids.slice(i, i + 30));
+    }
+
+    try {
+        for (const batch of uidBatches) {
+            const q = query(usersRef, where(documentId(), 'in', batch));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => {
+                namesMap.set(doc.id, doc.data().displayName || 'Anonymous User');
+            });
+        }
+    } catch (e) {
+        console.error("Error fetching display names:", e);
+    }
+    return namesMap;
+}
+
+async function fetchComponentNames(componentIds) {
+    const namesMap = new Map();
+    if (!componentIds || componentIds.length === 0) {
+        return namesMap;
+    }
+
+    const uniqueIds = [...new Set(componentIds)];
+    const idBatches = [];
+    for (let i = 0; i < uniqueIds.length; i += 30) {
+        idBatches.push(uniqueIds.slice(i, i + 30));
+    }
+
+    try {
+        for (const batch of idBatches) {
+            const componentsRef = collection(db, "srgb-components");
+            const q = query(componentsRef, where(documentId(), 'in', batch));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(doc => {
+                namesMap.set(doc.id, doc.data().name || 'Untitled Component');
+            });
+        }
+    } catch (e) {
+        console.error("Error fetching component names:", e);
+    }
+    return namesMap;
+}
+
+function setupNotificationListener(user) {
+    if (notificationListenerCleanup) {
+        notificationListenerCleanup();
+        notificationListenerCleanup = null;
+    }
+
+    const toggleBtn = document.getElementById('notification-dropdown-toggle');
+    const notificationBadge = document.getElementById('notification-badge');
+    const listContainer = document.getElementById('notification-list-container');
+
+    if (!user) {
+        if (listContainer) {
+            listContainer.innerHTML = `
+            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+            </li>`;
+        }
+        toggleBtn.disabled = true;
+        notificationBadge.classList.add('d-none');
+        return;
+    }
+
+    toggleBtn.disabled = false;
+
+    const notificationsRef = collection(db, "notifications");
+
+    // [MODIFIED] Added the notificationType filter
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("notificationType", "==", "component"), // <-- [NEW] ADD THIS FILTER
+        orderBy("timestamp", "desc"),
+        limit(30)
+    );
+
+    notificationListenerCleanup = onSnapshot(q, async (snapshot) => {
+        const allNotifications = [];
+        const senderUids = new Set();
+        const componentIds = new Set();
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allNotifications.push({ ...data, docId: doc.id });
+            senderUids.add(data.senderId);
+            if (data.projectId) {
+                componentIds.add(data.projectId);
+            }
+        });
+
+        const namesMap = await fetchDisplayNames(Array.from(senderUids));
+        const componentNamesMap = await fetchComponentNames(Array.from(componentIds));
+
+        const finalNotifications = allNotifications.map(notification => ({
+            ...notification,
+            senderName: namesMap.get(notification.senderId) || 'A User',
+            projectName: componentNamesMap.get(notification.projectId) || 'Untitled Component'
+        }));
+
+        const newUnreadCount = finalNotifications.filter(n => !n.read).length;
+
+        notificationBadge.textContent = newUnreadCount;
+        if (newUnreadCount > 0) {
+            notificationBadge.classList.remove('d-none');
+        } else {
+            notificationBadge.classList.add('d-none');
+        }
+
+        renderNotificationDropdown(finalNotifications);
+
+    }, (err) => {
+        console.error("Error setting up notification listener:", err);
+    });
+}
+
+function renderNotificationDropdown(allNotifications) {
+    const listContainer = document.getElementById('notification-list-container');
+    const markAllBtn = document.getElementById('mark-all-read-btn');
+    const deleteAllReadBtn = document.getElementById('delete-all-read-btn'); // [NEW] Get new button
+    const toggleBtn = document.getElementById('notification-dropdown-toggle');
+    const user = auth.currentUser;
+
+    if (!listContainer || !deleteAllReadBtn || !markAllBtn) return; // [MODIFIED] Add guard
+
+    if (!user) {
+        listContainer.innerHTML = `
+                <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                    <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                </li>
+            `;
+        markAllBtn.style.display = 'none';
+        deleteAllReadBtn.style.display = 'none'; // [NEW] Hide
+        return;
+    }
+
+    // --- [MODIFIED] Show buttons based on notification state ---
+    const hasUnread = allNotifications.some(n => !n.read);
+    const hasRead = allNotifications.some(n => n.read); // [NEW] Check for read
+
+    markAllBtn.style.display = hasUnread ? 'inline' : 'none';
+    deleteAllReadBtn.style.display = hasRead ? 'inline' : 'none'; // [NEW] Show if read notifications exist
+    // --- [END MODIFICATION] ---
+
+    if (allNotifications.length === 0) {
+        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
+        return;
+    }
+
+    listContainer.innerHTML = '';
+
+    allNotifications.forEach(notification => {
+        const item = document.createElement('li');
+
+        let notificationText = '';
+        let notificationIcon = '';
+
+        if (notification.eventType === 'like') {
+            notificationText = `Your component <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
+            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>`;
+        } else if (notification.eventType === 'comment') {
+            notificationText = `<strong>${notification.senderName}</strong> commented on your component <strong>${notification.projectName}</strong>.`;
+            notificationIcon = `<i class="bi bi-chat-left-text-fill text-info fs-5 mt-1 flex-shrink-0"></i>`;
+        } else {
+            notificationText = `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+            notificationIcon = `<i class="bi bi-bell-fill text-warning fs-5 mt-1 flex-shrink-0"></i>`;
+        }
+
+        const timestamp = notification.timestamp && notification.timestamp.toDate
+            ? notification.timestamp.toDate()
+            : new Date();
+
+        const readStyle = notification.read ? 'opacity: 0.65; background-color: rgba(255,255,255,0.03);' : '';
+
+        item.innerHTML = `
+                <a href="#" style="${readStyle}" class="dropdown-item d-flex align-items-start gap-2 p-3 notification-link" data-project-id="${notification.projectId}" data-notification-id="${notification.docId}">
+                    ${notificationIcon}
+                    <div class="flex-grow-1">
+                        <p class="mb-0 small">
+                            ${notificationText}
+                        </p>
+                        <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
+                    </div>
+                </a>
+            `;
+        listContainer.appendChild(item);
+    });
+
+    toggleBtn.disabled = false;
+}
+
+/**
+ * Handles clicking a notification on the GALLERY page.
+ * Redirects to the builder and marks as read.
+ */
+async function handleNotificationClick(componentId, notificationId) {
+    // 1. Mark the notification as read
+    try {
+        const notifDocRef = doc(db, "notifications", notificationId);
+        await updateDoc(notifDocRef, { read: true });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+    }
+
+    // 2. Redirect to the builder page with the component ID
+    // (This is different from main.js, which loads it in-page)
+    window.location.href = `index.html?id=${componentId}`;
+}
+
+async function markAllNotificationsAsRead() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+        notificationsRef,
+        where("recipientId", "==", user.uid),
+        where("read", "==", false)
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) return;
+
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.update(doc.ref, { read: true });
+        });
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+        showToast("Could not mark all notifications as read.", "danger");
+    }
+}
+// --- [END NEW] NOTIFICATION FUNCTIONS ---
 
 // ---
 // --- GALLERY FUNCTIONS (Adapted from main.js) ---
@@ -163,7 +464,7 @@ async function populateGalleryFilters() {
         brandsToUse.sort().forEach(brand => {
             galleryFilterBrand.innerHTML += `<option value="${brand}">${brand}</option>`;
         });
-        
+
         // --- 7. Populate LED Dropdown ---
         ledCountsToUse.sort((a, b) => a - b).forEach(count => {
             galleryFilterLeds.innerHTML += `<option value="${count}">${count} LEDs</option>`;
@@ -205,7 +506,7 @@ async function loadUserComponents(reset = false) {
         allComponentsLoaded = false;
         await populateGalleryFilters();
     }
-    
+
     // If all are loaded and we're not resetting, just exit.
     if (allComponentsLoaded && !reset) {
         isGalleryLoading = false;
@@ -261,7 +562,7 @@ async function loadUserComponents(reset = false) {
         finalDocs.forEach((docSnap) => {
             const componentData = docSnap.data();
             const componentId = docSnap.id;
-            
+
             const col = document.createElement('div');
             col.className = 'col';
 
@@ -289,7 +590,7 @@ async function loadUserComponents(reset = false) {
                              style="max-height: 100%; object-fit: contain;">
                     </div>`;
             }
-            
+
             const deleteButtonHtml = (user && (user.uid === ownerId || user.uid === ADMIN_UID))
                 ? `<button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete" title="Delete Component"><i class="bi bi-trash"></i></button>`
                 : '';
@@ -317,7 +618,7 @@ async function loadUserComponents(reset = false) {
                     </div>
                 </div>
             `;
-            
+
             galleryComponentList.appendChild(col);
 
             // --- [NEW] Render thumbnail if no image ---
@@ -337,7 +638,7 @@ async function loadUserComponents(reset = false) {
                 window.location.href = loadUrl;
             });
             col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => {
-                 window.location.href = loadUrl;
+                window.location.href = loadUrl;
             });
 
             const deleteButton = col.querySelector(`[data-component-id="${componentId}-delete"]`);
@@ -382,7 +683,7 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
     }
 
     showToast('Deleting...', `Deleting ${componentName}...`, 'info');
-    
+
     // Disable the button to prevent double-click
     const button = e.target.closest('button');
     if (button) button.disabled = true;
@@ -431,13 +732,13 @@ function handleGalleryScroll(e) {
 // ---
 document.addEventListener('DOMContentLoaded', () => {
     initializeTooltips();
-    
+
     // Setup theme switcher first so colors are correct
     setupThemeSwitcher(null); // No canvas to redraw
 
     // Setup auth listeners
     setupAuthListeners();
-    
+
     // Add listeners for the filter controls
     if (gallerySearchInput) {
         gallerySearchInput.addEventListener('change', () => loadUserComponents(true));
@@ -450,6 +751,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (galleryFilterLeds) {
         galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
+    }
+
+    // --- [NEW] Event listener for Delete All Read button ---
+    const deleteAllReadBtn = document.getElementById('delete-all-read-btn');
+    if (deleteAllReadBtn) {
+        deleteAllReadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop the dropdown from closing
+            deleteAllReadNotifications();
+        });
     }
 
     // --- [MODIFIED] Attach scroll listener to the correct element ---
@@ -466,6 +777,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial load of components (triggered by auth listener)
     // We call it here just in case auth is delayed
     if (!auth.currentUser) {
-         loadUserComponents(true);
+        loadUserComponents(true);
     }
 });

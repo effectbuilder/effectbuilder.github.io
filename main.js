@@ -285,7 +285,93 @@ function getGradientColorAt(progress, stops) {
     return sortedStops[sortedStops.length - 1].color;
 }
 
-function renderNotificationDropdown(unreadProjects) {
+/**
+ * Converts a Date object into a relative time string (e.g., "5m ago").
+ * @param {Date} date - The date object to format.
+ * @returns {string} A relative time string.
+ */
+function timeAgo(date) {
+    if (!date) return 'just now';
+
+    const now = new Date();
+    const seconds = Math.round((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.round(hours / 24);
+    if (days < 30) return `${days}d ago`;
+
+    const months = Math.round(days / 30.44); // Average days in month
+    if (months < 12) return `${months}mo ago`;
+
+    const years = Math.round(days / 365.25);
+    return `${years}y ago`;
+}
+
+/**
+ * Handles the click event on a notification item: loads the effect and marks the notification as read.
+ * @param {string} projectId - The ID of the project/effect to load.
+ * @param {string} notificationId - The ID of the notification document to mark as read.
+ */
+async function handleNotificationClick(projectId, notificationId) {
+    const user = window.auth.currentUser;
+    if (!user) {
+        showToast("Please sign in to load effects.", "warning");
+        return;
+    }
+
+    // 1. Load the Effect from the database
+    try {
+        const projectDocRef = window.doc(window.db, "projects", projectId);
+        const projectDoc = await window.getDoc(projectDocRef);
+
+        if (!projectDoc.exists()) {
+            showToast("The associated effect was not found.", "danger");
+            // Do not return, still mark as read
+        } else {
+            // Prepare the workspace object
+            const workspace = { docId: projectDoc.id, ...projectDoc.data() };
+            if (workspace.createdAt && workspace.createdAt.toDate) {
+                workspace.createdAt = workspace.createdAt.toDate();
+            }
+
+            // Load the effect into the builder
+            loadWorkspace(workspace);
+
+            // Optionally close the offcanvas if it's open
+            const galleryOffcanvas = document.getElementById('gallery-offcanvas');
+            if (galleryOffcanvas) {
+                const offcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvas);
+                if (offcanvas) {
+                    offcanvas.hide();
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error("Error loading effect from notification:", error);
+        showToast("Failed to load the effect.", "danger");
+        // We still proceed to mark as read even if the load failed.
+    }
+
+    // 2. Mark the specific notification as read
+    try {
+        const notifDocRef = window.doc(window.db, "notifications", notificationId);
+        await window.updateDoc(notifDocRef, { read: true });
+        // The real-time listener will automatically update the badge/dropdown UI.
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+    }
+}
+
+function renderNotificationDropdown(allNotifications) { // <-- [MODIFIED] Parameter renamed
     const listContainer = document.getElementById('notification-list-container');
     const markAllBtn = document.getElementById('mark-all-read-btn');
     const toggleBtn = document.getElementById('notification-dropdown-toggle');
@@ -293,7 +379,6 @@ function renderNotificationDropdown(unreadProjects) {
 
     if (!listContainer) return;
 
-    // We rely on setupNotificationListener to ensure user is logged in before rendering.
     if (!user) {
         // This should ideally never be hit if setupNotificationListener is called correctly, 
         // but serves as a failsafe.
@@ -306,40 +391,55 @@ function renderNotificationDropdown(unreadProjects) {
         return;
     }
 
-    markAllBtn.style.display = unreadProjects.length > 0 ? 'inline' : 'none';
+    // --- [MODIFIED] Show "Mark All Read" if *any* notification is unread ---
+    const hasUnread = allNotifications.some(n => !n.read);
+    markAllBtn.style.display = hasUnread ? 'inline' : 'none';
+    // --- [END MODIFICATION] ---
 
-    if (unreadProjects.length === 0) {
+    if (allNotifications.length === 0) { // <-- [MODIFIED]
         listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
         return;
     }
 
     listContainer.innerHTML = '';
 
-    unreadProjects.forEach(notification => { // Renamed 'project' to 'notification' for clarity
-        const item = document.createElement('li');
+    allNotifications.forEach(notification => { // <-- [MODIFIED]
+        const item = document.createElement('li'); // This is the container <li>
 
-        // Construct the notification message
-        const notificationText = (notification.eventType === 'like')
-            ? `Your effect <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`
-            : `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+        let notificationText = '';
+        let notificationIcon = '';
 
-        // The outer <li> will hold the click handler
-        item.className = 'notification-item-container';
+        if (notification.eventType === 'like') {
+            notificationText = `Your effect <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
+            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>`;
+        } else if (notification.eventType === 'comment') {
+            notificationText = `<strong>${notification.senderName}</strong> commented on your effect <strong>${notification.projectName}</strong>.`;
+            notificationIcon = `<i class="bi bi-chat-left-text-fill text-info fs-5 mt-1 flex-shrink-0"></i>`;
+        } else {
+            // Fallback for any other event types
+            notificationText = `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+            notificationIcon = `<i class="bi bi-bell-fill text-warning fs-5 mt-1 flex-shrink-0"></i>`;
+        }
 
         const timestamp = notification.timestamp && notification.timestamp.toDate
             ? notification.timestamp.toDate()
             : new Date(); // Fallback to current time if timestamp is invalid
 
+        // --- [MODIFIED] Add inline style for read notifications ---
+        const readStyle = notification.read ? 'opacity: 0.65; background-color: rgba(255,255,255,0.03);' : '';
+        // --- [END MODIFICATION] ---
+
+        // [MODIFIED] The innerHTML is now an <a> tag with data attributes
         item.innerHTML = `
-            <li class="dropdown-item d-flex align-items-start gap-2 p-3">
-                <i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>
+            <a href="#" style="${readStyle}" class="dropdown-item d-flex align-items-start gap-2 p-3 notification-link" data-project-id="${notification.projectId}" data-notification-id="${notification.docId}">
+                ${notificationIcon}
                 <div class="flex-grow-1">
                     <p class="mb-0 small">
                         ${notificationText}
                     </p>
                     <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
                 </div>
-            </li>
+            </a>
         `;
         listContainer.appendChild(item);
     });
@@ -3265,10 +3365,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Render logged-out state and disable button
             if (listContainer) {
                 listContainer.innerHTML = `
-                <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                    <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
-                </li>
-            `;
+            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+            </li>
+        `;
             }
             toggleBtn.disabled = true;
             notificationBadge.classList.add('d-none');
@@ -3280,44 +3380,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const notificationsRef = window.collection(window.db, "notifications");
 
-        // 2. Query for unread notifications addressed to the current user
+        // 2. Query for notifications addressed to the current user
         const q = window.query(
             notificationsRef,
             window.where("recipientId", "==", user.uid),
-            window.where("read", "==", false),
-            window.orderBy("timestamp", "desc")
+            // window.where("read", "==", false), // <-- [REMOVED] This was filtering the list
+            window.orderBy("timestamp", "desc"),
+            window.limit(30) // <-- [ADDED] Limit to the 30 most recent notifications
         );
 
         notificationListenerCleanup = window.onSnapshot(q, async (snapshot) => {
-            const unreadNotifications = [];
+            const allNotifications = []; // <-- Renamed
             const senderUids = new Set();
-            const projectIds = new Set(); // <-- NEW: Set to collect unique project IDs
+            const projectIds = new Set();
 
             // 4. Collect Notification Data
             snapshot.forEach(doc => {
                 const data = doc.data();
-                unreadNotifications.push({ ...data, docId: doc.id });
+                allNotifications.push({ ...data, docId: doc.id }); // <-- Renamed
                 senderUids.add(data.senderId);
-                projectIds.add(data.projectId); // <-- NEW: Collect project IDs
+                projectIds.add(data.projectId);
             });
 
             // 5. Fetch Display Names for the senders and Project Names
             const namesMap = await fetchDisplayNames(Array.from(senderUids));
-
-            // <-- NEW: Fetch Project Names (Batched Query) -->
             const projectNamesMap = await fetchProjectNames(Array.from(projectIds));
-            // <-- END NEW -->
 
             // 6. Finalize notification list with names and project names
-            const finalNotifications = unreadNotifications.map(notification => ({
+            const finalNotifications = allNotifications.map(notification => ({
                 ...notification,
                 senderName: namesMap.get(notification.senderId) || 'A User',
-                // <-- NEW: Inject the project name -->
                 projectName: projectNamesMap.get(notification.projectId) || 'Undefined Effect'
             }));
 
             // 7. Update the UI
-            const newUnreadCount = finalNotifications.length;
+            // --- [MODIFIED] Manually count unread notifications ---
+            const newUnreadCount = finalNotifications.filter(n => !n.read).length;
+            // --- [END MODIFICATION] ---
+
             notificationBadge.textContent = newUnreadCount;
             if (newUnreadCount > 0) {
                 notificationBadge.classList.remove('d-none');
@@ -3326,7 +3426,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Render the dropdown
-            renderNotificationDropdown(finalNotifications);
+            renderNotificationDropdown(finalNotifications); // <-- Pass *all* notifications
 
         }, (err) => {
             console.error("Error setting up notification listener:", err);
@@ -3999,7 +4099,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
             helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down`;
-            
+
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
             hiddenInput.name = controlId;
@@ -4011,12 +4111,12 @@ document.addEventListener('DOMContentLoaded', function () {
             let stopsData = defaultValue;
             if (typeof stopsData === 'string') {
                 try { stopsData = JSON.parse(stopsData); }
-                catch(e) { stopsData = [{ color: '#000000', position: 0 }, { color: '#FFFFFF', position: 1 }]; }
+                catch (e) { stopsData = [{ color: '#000000', position: 0 }, { color: '#FFFFFF', position: 1 }]; }
             }
             if (!Array.isArray(stopsData) || stopsData.length === 0) {
                 stopsData = [{ color: '#000000', position: 0 }, { color: '#FFFFFF', position: 1 }];
             }
-            
+
             // Add unique IDs for the UI
             stops = stopsData.map(s => ({ ...s, id: nextStopId++ }));
             // Always store a valid JSON string in the form
@@ -4261,7 +4361,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             let nodeData = defaultValue;
             if (typeof nodeData === 'string') {
-                try { nodeData = JSON.parse(nodeData); } 
+                try { nodeData = JSON.parse(nodeData); }
                 catch (e) { nodeData = []; console.error("Could not parse polyline nodes for table.", e); }
             }
             if (!Array.isArray(nodeData)) {
@@ -4615,7 +4715,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 1. Get ALL old configuration blocks
                 const oldConfigs = configStore.filter(c => c.property && c.property.startsWith(`obj${idToCopy}_`));
-                
+
                 const newConfigs = oldConfigs.map(oldConf => {
                     const newConf = { ...oldConf }; // Copy the template (type, min, max, etc.)
                     const prefix = `obj${idToCopy}_`;
@@ -7947,7 +8047,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         } else {
                             conf.default = value;
                         }
-                    } 
+                    }
                     else if (loadedConfigMap.has(key)) {
                         // Values from meta tags are already strings, so they are safe.
                         conf.default = loadedConfigMap.get(key).default;
@@ -9623,6 +9723,49 @@ document.addEventListener('DOMContentLoaded', function () {
             const commentsRef = window.collection(window.db, 'srgb-effect-comments');
             await window.addDoc(commentsRef, commentData); // Use window global
             commentTextarea.value = '';
+
+            // --- [MODIFIED] NOTIFICATION LOGIC ---
+            // 1. Get the project owner's ID
+            let projectOwnerId = null;
+            try {
+                const projectDocRef = window.doc(window.db, "projects", currentProjectDocId);
+                const projectDoc = await window.getDoc(projectDocRef);
+                if (projectDoc.exists()) {
+                    projectOwnerId = projectDoc.data().userId;
+                }
+            } catch (err) {
+                console.error("Error fetching project owner for notification:", err);
+            }
+
+            // 2. Create a notification for the project owner (if they aren't the commenter)
+            if (projectOwnerId && projectOwnerId !== user.uid) {
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    recipientId: projectOwnerId,
+                    senderId: user.uid,
+                    projectId: currentProjectDocId,
+                    eventType: 'comment', // New event type
+                    timestamp: window.serverTimestamp(),
+                    read: false
+                });
+            }
+
+            // --- [NEW] ADMIN NOTIFICATION LOGIC ---
+            // 3. Create a notification for the Admin for *every* comment,
+            //    unless the Admin is the project owner (who already got one in step 2).
+            const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1'; // From main.js
+            if (ADMIN_UID && ADMIN_UID !== projectOwnerId) {
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    recipientId: ADMIN_UID,
+                    senderId: user.uid,
+                    projectId: currentProjectDocId,
+                    eventType: 'comment',
+                    timestamp: window.serverTimestamp(),
+                    read: false
+                });
+            }
+            // --- [END NEW] ---
+            // --- [END MODIFICATION] ---
+
         } catch (error) {
             console.error("Error posting comment:", error);
             showToast('Error', 'Could not post your comment.', 'danger');
@@ -9656,7 +9799,80 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // --- [END NEW COMMENT FUNCTIONS] ---
 
+    // --- Event listener for clicking a notification ---
+    const notificationListContainer = document.getElementById('notification-list-container');
+    if (notificationListContainer) {
+        notificationListContainer.addEventListener('click', (e) => {
+            // Find the <a> tag that was clicked
+            const link = e.target.closest('.notification-link');
+            if (link) {
+                e.preventDefault();
+                const { projectId, notificationId } = link.dataset;
+                if (projectId && notificationId) {
+                    handleNotificationClick(projectId, notificationId);
 
+                    // Manually close the dropdown
+                    const dropdownToggle = document.getElementById('notification-dropdown-toggle');
+                    if (dropdownToggle) {
+                        const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                        if (bsDropdown) {
+                            bsDropdown.hide();
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Marks all unread notifications for the current user as read.
+     */
+    async function markAllNotificationsAsRead() {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to perform this action.", "warning");
+            return;
+        }
+
+        console.log("Marking all notifications as read...");
+        const notificationsRef = window.collection(window.db, "notifications");
+        const q = window.query(
+            notificationsRef,
+            window.where("recipientId", "==", user.uid),
+            window.where("read", "==", false)
+        );
+
+        try {
+            const querySnapshot = await window.getDocs(q);
+            if (querySnapshot.empty) {
+                console.log("No unread notifications to mark.");
+                return;
+            }
+
+            // Use a batch write for efficiency
+            const batch = window.writeBatch(window.db);
+            querySnapshot.forEach(doc => {
+                batch.update(doc.ref, { read: true });
+            });
+
+            await batch.commit();
+            console.log(`Marked ${querySnapshot.size} notifications as read.`);
+            // The real-time listener will automatically clear the list.
+
+        } catch (error) {
+            console.error("Error marking all notifications as read:", error);
+            showToast("Could not mark all notifications as read.", "danger");
+        }
+    }
+
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop the dropdown from closing
+            markAllNotificationsAsRead();
+        });
+    }
 
     // Start the application.
     init();

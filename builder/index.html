@@ -56,6 +56,34 @@
                 <div id="auth-notification-block" class="d-flex align-items-center">
                     <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
                     <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
+                        
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                <i class="bi bi-bell"></i>
+                                <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                    0
+                                    <span class="visually-hidden">new notifications</span>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
+                                <li class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <strong>Notifications</strong>
+                                    <div> <button class="btn btn-sm btn-link text-info p-0 me-2" id="mark-all-read-btn" style="display: none;">Mark All Read</button>
+                                        <button class="btn btn-sm btn-link text-danger p-0" id="delete-all-read-btn" style="display: none;" title="Delete all read notifications">
+                                            Clear Read
+                                        </button>
+                                    </div>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <div id="notification-list-container" style="max-height: 400px; overflow-y: auto;">
+                                    <li class="dropdown-item disabled text-center text-body-secondary small p-3">
+                                        <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                                    </li>
+                                </div>
+                            </ul>
+                        </div>
                         <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
                             <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
                             <span id="user-display"></span>
