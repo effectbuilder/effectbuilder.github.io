@@ -56,7 +56,7 @@
                 <div id="auth-notification-block" class="d-flex align-items-center">
                     <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
                     <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
-                        
+
                         <div class="btn-group" role="group">
                             <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                                 <i class="bi bi-bell"></i>
@@ -274,37 +274,6 @@
                             </symbol>
                         </svg>
                     </div>
-                    <hr>
-                    <div id="component-comments-section" class="mt-2">
-                        <h4 class="text-body-emphasis mb-3">Comments</h4>
-
-                        <div class="alert alert-info small p-2" role="alert">
-                            <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
-                        </div>
-                        <div id="comment-list" class="pe-2 mb-3" style="max-height: 400px; overflow-y: auto;">
-                            <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
-                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                Loading comments...
-                            </p>
-                            <p id="comments-save-prompt" class="text-muted" style="display: none;">
-                                Save this component to the cloud to enable comments.
-                            </p>
-                        </div>
-
-                        <form id="comment-form" class="pe-2" style="display: none;">
-                            <div class="mb-2">
-                                <label for="comment-textarea" class="form-label form-label-sm">Add a comment</label>
-                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." required></textarea>
-                            </div>
-                            <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-send me-1"></i> Post Comment
-                            </button>
-                        </form>
-
-                        <div id="comment-login-prompt" class="alert alert-info" style="display: none;">
-                            Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -368,6 +337,51 @@
                 <div class="ms-auto ps-3 text-body-secondary d-flex align-items-center">
                     <i class="bi bi-crosshair me-2"></i>
                     <span id="coords-display" class="font-monospace" style="min-width: 100px;">---, ---</span>
+                </div>
+                <div class="d-flex justify-content-end px-4">
+                    <button class="btn btn-outline-danger btn-sm" id="like-component-btn" data-bs-toggle="tooltip" title="Like Component" disabled>
+                        <i class="bi bi-heart"></i> Like
+                        <span id="like-count-display" class="badge bg-danger ms-1" style="display: none;">0</span>
+                    </button>
+                </div>
+                <div id="component-comments-section" class="m-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-2">
+
+                            <h4 class="text-body-emphasis mb-0">Comments</h4>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="true" aria-controls="comment-collapse-wrapper" title="Toggle Comments">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div class="collapse show" id="comment-collapse-wrapper">
+                        <div class="alert alert-info small p-2" role="alert">
+                            <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
+                        </div>
+                        <div id="comment-list" class="pe-2 mb-3" style="max-height: 400px; overflow-y: auto;">
+                            <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Loading comments...
+                            </p>
+                            <p id="comments-save-prompt" class="text-muted" style="display: none;">
+                                Save this component to the cloud to enable comments.
+                            </p>
+                        </div>
+
+                        <form id="comment-form" class="pe-2" style="display: none;">
+                            <div class="mb-2">
+                                <label for="comment-textarea" class="form-label form-label-sm">Add a comment</label>
+                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." required></textarea>
+                            </div>
+                            <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-send me-1"></i> Post Comment
+                            </button>
+                        </form>
+
+                        <div id="comment-login-prompt" class="alert alert-info" style="display: none;">
+                            Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
