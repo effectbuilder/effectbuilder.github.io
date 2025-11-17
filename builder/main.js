@@ -512,49 +512,6 @@ async function markAllNotificationsAsRead() {
     }
 }
 
-// --- [END NEW] NOTIFICATION FUNCTIONS ---
-
-/**
- * Loads a specific component from Firestore based on a URL parameter.
- * This is called on initial page load if an 'id' is found.
- * @param {string} componentId - The document ID from Firebase.
- */
-async function loadComponentFromUrl(componentId) {
-    showToast('Loading Share', 'Loading component from URL...', 'info');
-    try {
-        const docRef = doc(db, 'srgb-components', componentId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const componentData = docSnap.data();
-            componentData.dbId = docSnap.id; // Add the dbId to the state
-
-            if (loadComponentState(componentData)) {
-                currentComponentId = docSnap.id;
-                loadComments(currentComponentId);
-                showToast('Load Successful', `Loaded shared component: ${componentData.name}`, 'success');
-                isDirty = false;
-                clearAutoSave(); // Clear any local autosave to not overwrite the loaded one
-
-                // Enable share button so the user can re-share this link
-                document.getElementById('share-component-btn').disabled = false;
-            } else {
-                throw new Error("Failed to parse component data.");
-            }
-        } else {
-            showToast('Load Error', 'Component ID from URL was not found.', 'danger');
-            handleNewComponent(false); // Fall back to normal load
-        }
-    } catch (error) {
-        console.error("Error loading component from URL:", error);
-        showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
-        handleNewComponent(false); // Fall back to normal load
-    } finally {
-        // Clean the URL (remove the ?id=...) so a refresh doesn't trigger another load
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-}
-
 /**
  * Generates the share link and shows the share modal.
  */
@@ -695,6 +652,63 @@ function clearAutoSave() {
     localStorage.removeItem(AUTOSAVE_KEY);
 }
 
+// --- [NEW FUNCTION] ---
+/**
+ * [NEW] Updates the browser's URL to match the currently loaded component's ID.
+ * If componentId is null, it clears the query string.
+ * @param {string | null} componentId - The ID of the component, or null.
+ */
+function updateBrowserUrl(componentId) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    let newUrl = baseUrl;
+
+    if (componentId) {
+        newUrl += `?id=${componentId}`;
+    }
+
+    // Use replaceState to not pollute browser history
+    window.history.replaceState({ id: componentId }, document.title, newUrl);
+}
+
+/**
+ * Loads a specific component from Firestore based on a URL parameter.
+ * This is called on initial page load if an 'id' is found.
+ * @param {string} componentId - The document ID from Firebase.
+ */
+async function loadComponentFromUrl(componentId) {
+    showToast('Loading Share', 'Loading component from URL...', 'info');
+    try {
+        const docRef = doc(db, 'srgb-components', componentId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const componentData = docSnap.data();
+            componentData.dbId = docSnap.id; // Add the dbId to the state
+
+            if (loadComponentState(componentData)) { // loadComponentState will call updateBrowserUrl
+                currentComponentId = docSnap.id;
+                loadComments(currentComponentId);
+                showToast('Load Successful', `Loaded shared component: ${componentData.name}`, 'success');
+                isDirty = false;
+                clearAutoSave(); // Clear any local autosave to not overwrite the loaded one
+
+                // Enable share button so the user can re-share this link
+                document.getElementById('share-component-btn').disabled = false;
+            } else {
+                throw new Error("Failed to parse component data.");
+            }
+        } else {
+            showToast('Load Error', 'Component ID from URL was not found.', 'danger');
+            handleNewComponent(false); // Fall back to normal load
+        }
+    } catch (error) {
+        console.error("Error loading component from URL:", error);
+        showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
+        handleNewComponent(false); // Fall back to normal load
+    }
+    // Notice the 'finally' block is gone!
+}
+
 /**
  * Central function to load any valid component state object into the app.
  * It handles state assignment, wiring validation/fixing, and UI updates.
@@ -828,6 +842,10 @@ function loadComponentState(stateToLoad) {
 
     // --- Update the Image Guide UI on load ---
     updateImageGuideUI();
+
+    // --- [NEW] UPDATE BROWSER URL ---
+    updateBrowserUrl(currentComponentId);
+    // --- [END NEW] ---
 
     // The *caller* is responsible for setting the dirty state.
     return true;
@@ -4152,7 +4170,7 @@ function getPointsForPolygon(vertices, gridSize) {
 // ---
 // --- INITIALIZATION ---
 // ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeTooltips();
 
     if (!ctx) {
