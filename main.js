@@ -16,6 +16,9 @@ let preParsedGifColorCount = 0;
 let isFetchingGifs = false;
 // --- Giphy Search Integration ---
 
+let currentUserHasLiked = false;
+let likeListenerUnsubscribe = null; // Holds the Firestore listener for likes
+
 let currentUserIsAdmin = false;
 const DISALLOWED_WORDS = [
     'asshole', 'bitch', 'cock', 'cunt', 'damn', 'dick', 'fag', 'faggot',
@@ -31,7 +34,7 @@ const propsToScale = [
 
 window.setAdminStatus = (isAdmin) => {
     currentUserIsAdmin = isAdmin;
-    console.log("User Admin Status:", currentUserIsAdmin);
+    // console.log("User Admin Status:", currentUserIsAdmin);
 };
 let commentsUnsubscribe = null; // Holds the Firestore listener unsubscribe function
 
@@ -821,10 +824,10 @@ document.addEventListener('DOMContentLoaded', function () {
     setVersionWithCaching();
 
     /**
- * Handles the click event for liking or unliking an effect.
- * This function now updates both the offcanvas gallery button (if present)
- * and the main navbar like button.
- */
+     * Handles the click event for liking or unliking an effect.
+     * This function now only sends the update to Firestore; the real-time
+     * listener (loadLikeData) is responsible for updating the UI.
+     */
     async function likeEffect(docId) {
         const user = window.auth.currentUser;
         if (!user) {
@@ -832,97 +835,48 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const docRef = window.doc(window.db, "projects", docId);
-        let action = '';
-        let newLikesCount = 0;
-        let projectOwnerId = ''; // To capture the recipient UID
+        // Disable button to prevent double-clicks
+        if (likeEffectBtn) likeEffectBtn.disabled = true;
 
-        // References to UI elements (must be defined outside the transaction)
-        // 1. Offcanvas gallery button
-        const likeBtn = document.getElementById(`like-btn-${docId}`);
-        const likeCountSpan = document.getElementById(`like-count-value-${docId}`);
-        // 2. Main navbar button
-        const navLikeBtn = document.getElementById('like-effect-btn');
-        const navLikeLabel = document.getElementById('like-effect-btn-label');
+        const docRef = window.doc(window.db, "projects", docId);
+        const newLikedState = !currentUserHasLiked; // The state we are moving *to*
+
+        const updateData = {
+            likes: window.increment(newLikedState ? 1 : -1),
+            likedBy: newLikedState ? window.arrayUnion(user.uid) : window.arrayRemove(user.uid)
+        };
 
         try {
-            await window.runTransaction(window.db, async (transaction) => {
-                const projectDoc = await transaction.get(docRef);
-                if (!projectDoc.exists()) {
-                    throw new Error("Project does not exist!");
+            // Use a simple updateDoc
+            await window.updateDoc(docRef, updateData);
+
+            // Send notification *only* if liking (not unliking)
+            if (newLikedState) {
+                let projectOwnerId = null;
+                const projectDoc = await window.getDoc(docRef);
+                if (projectDoc.exists()) {
+                    projectOwnerId = projectDoc.data().userId;
                 }
 
-                const data = projectDoc.data();
-                const likedBy = data.likedBy || {};
-                const isCurrentlyLiked = likedBy.hasOwnProperty(user.uid);
-
-                projectOwnerId = data.userId; // Get the owner's ID
-                newLikesCount = data.likes || 0;
-
-                if (isCurrentlyLiked) {
-                    // UNLIKE ACTION
-                    newLikesCount = Math.max(0, newLikesCount - 1);
-                    delete likedBy[user.uid];
-                    action = 'unliked';
-                } else {
-                    // LIKE ACTION
-                    newLikesCount += 1;
-                    likedBy[user.uid] = true;
-                    action = 'liked';
-                }
-
-                transaction.update(docRef, {
-                    likes: newLikesCount,
-                    likedBy: likedBy,
-                });
-            });
-
-            // --- Create Notification Document AFTER successful transaction commit ---
-            if (action === 'liked' && projectOwnerId !== user.uid) {
-                await window.addDoc(window.collection(window.db, "notifications"), {
-                    recipientId: projectOwnerId,
-                    senderId: user.uid,
-                    projectId: docId,
-                    eventType: 'like',
-                    timestamp: window.serverTimestamp(),
-                    read: false
-                });
-            }
-
-            // --- UI Update Logic (Runs AFTER successful transaction commit) ---
-            const isLiked = (action === 'liked');
-
-            // 1. Update offcanvas gallery UI (if it exists)
-            if (likeCountSpan) {
-                likeCountSpan.textContent = newLikesCount;
-            }
-            if (likeBtn) {
-                likeBtn.classList.toggle('btn-danger', isLiked);
-                likeBtn.classList.toggle('btn-danger', !isLiked); // This was btn-outline-danger in gallery.js, but btn-danger in main.js. Sticking with main.js logic.
-                likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
-                likeBtn.title = isLiked ? "Unlike this effect" : "Like this effect";
-            }
-
-            // 2. Update main navbar UI (if this is the currently loaded effect)
-            if (navLikeBtn && docId === currentProjectDocId) {
-                navLikeBtn.classList.toggle('btn-danger', isLiked);
-                navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
-                navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
-                if (navLikeLabel) {
-                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
-                }
-                const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
-                if (tooltip) {
-                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+                if (projectOwnerId && projectOwnerId !== user.uid) {
+                    await window.addDoc(window.collection(window.db, "notifications"), {
+                        recipientId: projectOwnerId,
+                        senderId: user.uid,
+                        projectId: docId,
+                        eventType: 'like',
+                        timestamp: window.serverTimestamp(),
+                        read: false
+                    });
                 }
             }
-            // --- END UI Update Logic ---
-
-            // showToast(`Effect ${action}!`, 'success');
+            // The onSnapshot listener will handle all UI updates.
 
         } catch (error) {
             console.error("Error liking/unliking effect:", error);
-            showToast("Could not process like/unlike action. Check permissions/log.", 'danger');
+            showToast("Could not process like/unlike action.", 'danger');
+        } finally {
+            // Re-enable button. The listener will have updated the state.
+            if (likeEffectBtn) likeEffectBtn.disabled = false;
         }
     }
 
@@ -3002,6 +2956,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const coordsDisplay = document.getElementById('coords-display');
 
     const likeEffectBtn = document.getElementById('like-effect-btn');
+    const likeCountDisplay = document.getElementById('like-count-display');
+
     if (likeEffectBtn) {
         likeEffectBtn.addEventListener('click', () => {
             if (currentProjectDocId) {
@@ -3274,8 +3230,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Fetch user documents in parallel batches
         const promises = batches.map(batch => {
-            const q = window.query(usersRef, window.where(window.documentId, 'in', batch));
-
+            // --- THIS IS THE FIX ---
+            // OLD: const q = window.query(usersRef, window.where(window.documentId, 'in', batch));
+            const q = window.query(usersRef, window.where("__name__", 'in', batch));
+            // --- END OF FIX ---
+            
             return window.getDocs(q).then(snapshot => {
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -3358,7 +3317,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Fetch project documents in parallel batches
         const promises = batches.map(batch => {
-            const q = window.query(projectsRef, window.where(window.documentId, 'in', batch));
+            // --- THIS IS THE FIX ---
+            // OLD: const q = window.query(projectsRef, window.where(window.documentId, 'in', batch));
+            const q = window.query(projectsRef, window.where("__name__", 'in', batch));
+            // --- END OF FIX ---
             return window.getDocs(q).then(snapshot => {
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -3583,6 +3545,117 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.restore();
     }
 
+    /**
+     * Unsubscribes from the current real-time like listener (if one exists).
+     */
+    function unsubscribeFromLikes() {
+        if (likeListenerUnsubscribe) {
+            likeListenerUnsubscribe();
+            likeListenerUnsubscribe = null;
+        }
+    }
+
+    /**
+     * Updates the like button UI based on the current component and user state.
+     */
+    function updateLikeButtonUI() {
+        if (!likeEffectBtn || !likeCountDisplay) return;
+
+        const user = window.auth.currentUser;
+        const likeCount = parseInt(likeCountDisplay.textContent, 10) || 0;
+        const navLikeLabel = document.getElementById('like-effect-btn-label'); // <-- ADDED
+
+        // --- State 1: Component loaded and user is logged in ---
+        if (currentProjectDocId && user) {
+            const isLiked = currentUserHasLiked;
+
+            likeEffectBtn.disabled = false;
+            likeEffectBtn.classList.toggle('btn-danger', isLiked);
+            likeEffectBtn.classList.toggle('btn-outline-danger', !isLiked);
+
+            const icon = likeEffectBtn.querySelector('i');
+            if (icon) {
+                icon.className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1'; // <-- MODIFIED (added me-1)
+            }
+
+            if (navLikeLabel) { // <-- ADDED BLOCK
+                navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+            }
+
+            const tooltip = bootstrap.Tooltip.getInstance(likeEffectBtn);
+            if (tooltip) {
+                tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+            }
+
+            // --- State 2: Component not loaded or user is logged out (Reset/Disabled state) ---
+        } else {
+            likeEffectBtn.disabled = true;
+            likeEffectBtn.classList.remove('btn-danger');
+            likeEffectBtn.classList.add('btn-outline-danger');
+
+            const icon = likeEffectBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'bi bi-heart me-1'; // <-- MODIFIED (added me-1)
+            }
+
+            if (navLikeLabel) { // <-- ADDED BLOCK
+                navLikeLabel.textContent = 'Like';
+            }
+
+            const tooltip = bootstrap.Tooltip.getInstance(likeEffectBtn);
+            if (tooltip) {
+                tooltip.setContent({ '.tooltip-inner': 'Like this effect' });
+            }
+        }
+
+        // --- Handle the like count badge (applies in all states) ---
+        if (likeCount > 0) {
+            likeCountDisplay.textContent = likeCount;
+            likeCountDisplay.style.display = 'inline-block';
+        } else {
+            likeCountDisplay.textContent = '0';
+            likeCountDisplay.style.display = 'none';
+        }
+    }
+
+    /**
+     * Sets up a real-time listener for the current component's like data.
+     * @param {string} componentId - The Firestore document ID of the component.
+     */
+    function loadLikeData(componentId) {
+        unsubscribeFromLikes(); // Unsubscribe from any previous listener
+
+        const componentDocRef = window.doc(window.db, "projects", componentId);
+
+        likeListenerUnsubscribe = window.onSnapshot(componentDocRef, (docSnap) => {
+            if (!docSnap.exists()) {
+                currentUserHasLiked = false;
+                if (likeCountDisplay) likeCountDisplay.textContent = '0';
+                updateLikeButtonUI(); // Will reset to disabled/zero state
+                return;
+            }
+
+            const data = docSnap.data();
+            const likedBy = data.likedBy || {};
+            const likeCount = data.likes || 0;
+
+            const user = window.auth.currentUser;
+            currentUserHasLiked = user ? likedBy.hasOwnProperty(user.uid) : false;
+
+            if (likeCountDisplay) {
+                likeCountDisplay.textContent = likeCount;
+            }
+
+            updateLikeButtonUI();
+
+        }, (error) => {
+            console.error("Error loading like data:", error);
+            currentUserHasLiked = false;
+            if (likeCountDisplay) likeCountDisplay.textContent = '0';
+            updateLikeButtonUI();
+        });
+    }
+
 
     /**
      * Clears all objects and resets the workspace to a blank state.
@@ -3639,23 +3712,10 @@ document.addEventListener('DOMContentLoaded', function () {
         currentProjectDocId = null;
         updateShareButtonState();
 
-        // === MODIFICATION START ===
-        const navLikeBtn = document.getElementById('like-effect-btn');
-        const navLikeLabel = document.getElementById('like-effect-btn-label');
-        if (navLikeBtn) {
-            navLikeBtn.disabled = true;
-            navLikeBtn.classList.remove('btn-danger');
-            navLikeBtn.classList.add('btn-outline-danger');
-            navLikeBtn.querySelector('i').className = 'bi bi-heart me-1';
-            if (navLikeLabel) {
-                navLikeLabel.textContent = 'Like';
-            }
-            const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
-            if (tooltip) {
-                tooltip.setContent({ '.tooltip-inner': 'Like this effect' });
-            }
-        }
-        // === MODIFICATION END ===
+        unsubscribeFromLikes();
+        currentUserHasLiked = false;
+        if (likeCountDisplay) likeCountDisplay.textContent = '0';
+        updateLikeButtonUI(); // This will reset the button
 
         loadedStateSnapshot = null;
         dirtyProperties.clear();
@@ -3761,8 +3821,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const isInitiallyLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
             const likeBtn = document.createElement('button');
             likeBtn.id = `like-btn-${project.docId}`;
-            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-danger'}`;
-            likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>';
+            // --- START MODIFIED BLOCK ---
+            // FIX: Use btn-outline-danger when not liked and add text
+            likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-outline-danger'}`;
+            likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
+            // --- END MODIFIED BLOCK ---
             likeBtn.title = isInitiallyLiked ? "Unlike" : "Like";
             likeBtn.onclick = () => likeEffect(project.docId);
             btnGroup.appendChild(likeBtn);
@@ -6238,6 +6301,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // [NEW] Clear any active comment listeners before loading
             unsubscribeFromComments();
+            unsubscribeFromLikes();
 
             // This now calls the new, robust loader function
             _loadFromConfigArray(workspace.configs, workspace.objects);
@@ -6245,45 +6309,20 @@ document.addEventListener('DOMContentLoaded', function () {
             currentProjectDocId = workspace.docId || null;
             updateShareButtonState();
 
-            // === MODIFICATION START ===
-            const navLikeBtn = document.getElementById('like-effect-btn');
-            const navLikeLabel = document.getElementById('like-effect-btn-label');
-            const user = window.auth.currentUser;
 
-            if (navLikeBtn && currentProjectDocId && user) {
-                const likedBy = workspace.likedBy || {};
-                const isLiked = likedBy.hasOwnProperty(user.uid);
-
-                navLikeBtn.disabled = false;
-                navLikeBtn.classList.toggle('btn-danger', isLiked);
-                navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
-                navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
-                if (navLikeLabel) {
-                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
-                }
-                const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
-                if (tooltip) {
-                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
-                }
-            } else if (navLikeBtn) {
-                // Disable if it's not a saved effect or user is logged out
-                navLikeBtn.disabled = true;
-                navLikeBtn.classList.remove('btn-danger');
-                navLikeBtn.classList.add('btn-outline-danger');
-                navLikeBtn.querySelector('i').className = 'bi bi-heart me-1';
-                if (navLikeLabel) {
-                    navLikeLabel.textContent = 'Like';
-                }
-            }
-            // === MODIFICATION END ===
 
             // [NEW] Load comments if this is a saved effect
             if (currentProjectDocId) {
                 loadComments(currentProjectDocId);
+                loadLikeData(currentProjectDocId);
             } else {
                 if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
                 if (commentsSavePrompt) commentsSavePrompt.style.display = 'block';
                 if (commentDisclaimer) commentDisclaimer.style.display = 'block';
+
+                currentUserHasLiked = false;
+                if (likeCountDisplay) likeCountDisplay.textContent = '0';
+                updateLikeButtonUI();
             }
             // [END NEW]
 
@@ -9774,7 +9813,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 1. Unsubscribe from any old listener
         unsubscribeFromComments();
 
-        console.log(`Loading comments for project ID: ${projectId}`);
+        // console.log(`Loading comments for project ID: ${projectId}`);
 
         // 2. Show the comment section and the initial loading placeholder
         if (commentDisclaimer) commentDisclaimer.style.display = 'block';
@@ -9788,7 +9827,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 4. Start the real-time listener (using window.onSnapshot)
         commentsUnsubscribe = window.onSnapshot(q, (querySnapshot) => {
-            console.log("Comment snapshot received.");
+            // console.log("Comment snapshot received.");
             if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
 
             if (querySnapshot.empty && commentList.innerHTML === '') {
@@ -10068,7 +10107,132 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
+    const provider = new window.GoogleAuthProvider();
+    const loginBtn = document.getElementById('login-btn');
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            window.signInWithPopup(window.auth, provider).catch(console.error);
+        });
+    }
+
+    // Use event delegation for the logout button, which is more robust
+    document.addEventListener('click', async (e) => {
+        const logoutBtnClicked = e.target.closest('#logout-btn');
+
+        if (logoutBtnClicked) {
+            e.preventDefault();
+            try {
+                await window.signOut(window.auth);
+                if (typeof showToast === 'function') {
+                    showToast("Signed out successfully.", 'success');
+                }
+            } catch (error) {
+                console.error("Error signing out:", error);
+                if (typeof showToast === 'function') {
+                    showToast("Error signing out. Please try again.", 'danger');
+                }
+            }
+        }
+    });
+
+
+    // This listener handles all UI changes related to authentication state.
+    // [MODIFIED] Made the callback async
+    window.onAuthStateChanged(window.auth, async user => {
+        const loginBtn = document.getElementById('login-btn');
+        const userSessionGroup = document.getElementById('user-session-group');
+        const userPhotoEl = document.getElementById('user-photo');
+        const userDisplay = document.getElementById('user-display');
+        const saveWsBtn = document.getElementById('save-ws-btn');
+        const loadWsBtn = document.getElementById('load-ws-btn');
+        const isLoggedIn = !!user;
+        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
+
+        // --- [NEW] Comment UI elements ---
+        const commentForm = document.getElementById('comment-form');
+        const commentLoginPrompt = document.getElementById('comment-login-prompt');
+        const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1'; // From main.js
+        // --- [END NEW] ---
+
+        if (isLoggedIn) {
+            // Show the logged-in group and hide the login button
+            if (loginBtn) loginBtn.classList.add('d-none');
+            if (userSessionGroup) userSessionGroup.classList.remove('d-none');
+
+            // REMOVED: Redundant code to toggle notification button visibility,
+            // as it's now inside the userSessionGroup.
+
+            // Populate user info
+            if (userDisplay) userDisplay.textContent = user.displayName || user.email;
+            if (userPhotoEl) {
+                userPhotoEl.src = user.photoURL || defaultIcon;
+                userPhotoEl.onerror = () => {
+                    userPhotoEl.src = defaultIcon;
+                    userPhotoEl.onerror = null;
+                };
+            }
+
+            // --- [NEW] Admin check and comment UI toggle ---
+            if (window.setAdminStatus) { // Check if main.js has loaded this function
+                let isAdmin = false;
+                if (user.uid === ADMIN_UID) {
+                    isAdmin = true;
+                } else {
+                    const adminDocRef = window.doc(window.db, "admins", user.uid);
+                    try {
+                        const adminDocSnap = await window.getDoc(adminDocRef);
+                        if (adminDocSnap.exists()) {
+                            isAdmin = true;
+                        }
+                    } catch (err) {
+                        console.error("Error checking admin status:", err);
+                    }
+                }
+                window.setAdminStatus(isAdmin); // Pass status to main.js
+            }
+            if (commentForm) commentForm.style.display = 'block';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'none';
+            // --- [END NEW] ---
+
+            // Setup notification listener on login
+            if (typeof window.setupNotificationListener === 'function') {
+                window.setupNotificationListener(user);
+            }
+
+        } else {
+            // Show the login button and hide the logged-in group
+            if (loginBtn) loginBtn.classList.remove('d-none');
+            if (userSessionGroup) userSessionGroup.classList.add('d-none');
+
+            // REMOVED: Redundant code to toggle notification button visibility.
+
+            // --- [NEW] Reset admin status and toggle comment UI ---
+            if (window.setAdminStatus) {
+                window.setAdminStatus(false);
+            }
+            if (commentForm) commentForm.style.display = 'none';
+            if (commentLoginPrompt) commentLoginPrompt.style.display = 'block';
+            // --- [END NEW] ---
+
+            // Clear notification listener on logout
+            if (typeof window.setupNotificationListener === 'function') {
+                window.setupNotificationListener(null);
+            }
+        }
+
+        // Enable/disable other buttons based on auth state
+        if (saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
+        if (loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
+
+        // Ensure gallery updates after auth state is known
+        if (typeof window.loadUserSpecificGalleryData === 'function') {
+            window.loadUserSpecificGalleryData();
+        }
+    });
+
     // Start the application.
     init();
-    setupCommentListeners();
+    setupCommentListeners()
 });
