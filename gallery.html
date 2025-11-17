@@ -54,9 +54,30 @@
             <div class="col-12">
                 <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
                 <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
-                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <ul class="nav nav-tabs border-bottom-0" id="gallery-filter-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#" data-filter="all">All Effects</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-filter="liked" id="filter-liked-tab" style="display: none;">My Liked Effects</a>
+                        </li>
+                    </ul>
 
-                <div class="row g-4" id="gallery-project-list">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-sort-down me-1"></i> Sort By: <span id="sort-by-label">Newest</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="createdAt">Newest</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="likes">Most Liked</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="downloadCount">Most Downloaded</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="name">Alphabetical</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <hr class="mt-0"> <div class="row g-4" id="gallery-project-list">
                     <div class="col-12 text-center p-4" id="initial-loading-spinner">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading...</span>

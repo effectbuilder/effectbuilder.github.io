@@ -820,6 +820,114 @@ async function setVersionWithCaching() {
 document.addEventListener('DOMContentLoaded', function () {
     setVersionWithCaching();
 
+    /**
+ * Handles the click event for liking or unliking an effect.
+ * This function now updates both the offcanvas gallery button (if present)
+ * and the main navbar like button.
+ */
+    async function likeEffect(docId) {
+        const user = window.auth.currentUser;
+        if (!user) {
+            showToast("You must be logged in to like or unlike an effect.", 'danger');
+            return;
+        }
+
+        const docRef = window.doc(window.db, "projects", docId);
+        let action = '';
+        let newLikesCount = 0;
+        let projectOwnerId = ''; // To capture the recipient UID
+
+        // References to UI elements (must be defined outside the transaction)
+        // 1. Offcanvas gallery button
+        const likeBtn = document.getElementById(`like-btn-${docId}`);
+        const likeCountSpan = document.getElementById(`like-count-value-${docId}`);
+        // 2. Main navbar button
+        const navLikeBtn = document.getElementById('like-effect-btn');
+        const navLikeLabel = document.getElementById('like-effect-btn-label');
+
+        try {
+            await window.runTransaction(window.db, async (transaction) => {
+                const projectDoc = await transaction.get(docRef);
+                if (!projectDoc.exists()) {
+                    throw new Error("Project does not exist!");
+                }
+
+                const data = projectDoc.data();
+                const likedBy = data.likedBy || {};
+                const isCurrentlyLiked = likedBy.hasOwnProperty(user.uid);
+
+                projectOwnerId = data.userId; // Get the owner's ID
+                newLikesCount = data.likes || 0;
+
+                if (isCurrentlyLiked) {
+                    // UNLIKE ACTION
+                    newLikesCount = Math.max(0, newLikesCount - 1);
+                    delete likedBy[user.uid];
+                    action = 'unliked';
+                } else {
+                    // LIKE ACTION
+                    newLikesCount += 1;
+                    likedBy[user.uid] = true;
+                    action = 'liked';
+                }
+
+                transaction.update(docRef, {
+                    likes: newLikesCount,
+                    likedBy: likedBy,
+                });
+            });
+
+            // --- Create Notification Document AFTER successful transaction commit ---
+            if (action === 'liked' && projectOwnerId !== user.uid) {
+                await window.addDoc(window.collection(window.db, "notifications"), {
+                    recipientId: projectOwnerId,
+                    senderId: user.uid,
+                    projectId: docId,
+                    eventType: 'like',
+                    timestamp: window.serverTimestamp(),
+                    read: false
+                });
+            }
+
+            // --- UI Update Logic (Runs AFTER successful transaction commit) ---
+            const isLiked = (action === 'liked');
+
+            // 1. Update offcanvas gallery UI (if it exists)
+            if (likeCountSpan) {
+                likeCountSpan.textContent = newLikesCount;
+            }
+            if (likeBtn) {
+                likeBtn.classList.toggle('btn-danger', isLiked);
+                likeBtn.classList.toggle('btn-danger', !isLiked); // This was btn-outline-danger in gallery.js, but btn-danger in main.js. Sticking with main.js logic.
+                likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
+                likeBtn.title = isLiked ? "Unlike this effect" : "Like this effect";
+            }
+
+            // 2. Update main navbar UI (if this is the currently loaded effect)
+            if (navLikeBtn && docId === currentProjectDocId) {
+                navLikeBtn.classList.toggle('btn-danger', isLiked);
+                navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
+                navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
+                if (navLikeLabel) {
+                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+                }
+                const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
+                if (tooltip) {
+                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+                }
+            }
+            // --- END UI Update Logic ---
+
+            // showToast(`Effect ${action}!`, 'success');
+
+        } catch (error) {
+            console.error("Error liking/unliking effect:", error);
+            showToast("Could not process like/unlike action. Check permissions/log.", 'danger');
+        }
+    }
+
+
+
     function createCustomColorPicker(containerElement) {
         return new iro.ColorPicker(containerElement, {
             width: 200,
@@ -2893,6 +3001,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const confirmBtn = document.getElementById('confirm-overwrite-btn');
     const coordsDisplay = document.getElementById('coords-display');
 
+    const likeEffectBtn = document.getElementById('like-effect-btn');
+    if (likeEffectBtn) {
+        likeEffectBtn.addEventListener('click', () => {
+            if (currentProjectDocId) {
+                // The global likeEffect function will handle the logic
+                likeEffect(currentProjectDocId);
+            } else {
+                // User clicked "Like" on an unsaved project
+                showToast("Please save your effect to the cloud before liking it.", "info");
+            }
+        });
+    }
+
     let activeTool = 'select'; // 'select' or 'polyline'
     let isDrawingPolyline = false;
     let currentlyDrawingShapeId = null;
@@ -3264,8 +3385,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let projectOwnerId = ''; // To capture the recipient UID
 
         // References to UI elements (must be defined outside the transaction)
+        // 1. Offcanvas gallery button
         const likeBtn = document.getElementById(`like-btn-${docId}`);
         const likeCountSpan = document.getElementById(`like-count-value-${docId}`);
+        // 2. Main navbar button
+        const navLikeBtn = document.getElementById('like-effect-btn');
+        const navLikeLabel = document.getElementById('like-effect-btn-label');
 
         try {
             await window.runTransaction(window.db, async (transaction) => {
@@ -3293,18 +3418,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     action = 'liked';
                 }
 
-                // Commit the transaction: We remove lastLikeTime as it's now tracked by the 'notifications' collection.
                 transaction.update(docRef, {
                     likes: newLikesCount,
                     likedBy: likedBy,
-                    // lastLikeTime is NO LONGER needed here, rely on the notification document timestamp.
                 });
             });
 
-            // --- NEW: Create Notification Document AFTER successful transaction commit ---
-            // We only create a notification on a LIKE action, and only if the liker is not the owner.
+            // --- Create Notification Document AFTER successful transaction commit ---
             if (action === 'liked' && projectOwnerId !== user.uid) {
-                //if (action === 'liked') {
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     recipientId: projectOwnerId,
                     senderId: user.uid,
@@ -3314,32 +3435,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     read: false
                 });
             }
-            // --- END NEW ---
 
             // --- UI Update Logic (Runs AFTER successful transaction commit) ---
+            const isLiked = (action === 'liked');
+
+            // 1. Update offcanvas gallery UI (if it exists)
             if (likeCountSpan) {
-                // Update the count based on the committed action
-                const currentCount = parseInt(likeCountSpan.textContent.trim()) || 0;
-                const finalCount = Math.max(0, currentCount + (action === 'liked' ? 1 : -1));
-                likeCountSpan.textContent = finalCount;
+                likeCountSpan.textContent = newLikesCount;
+            }
+            if (likeBtn) {
+                likeBtn.classList.toggle('btn-danger', isLiked);
+                likeBtn.classList.toggle('btn-outline-danger', !isLiked); // <-- Fixed bug from my previous code
+                likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
+                likeBtn.title = isLiked ? "Unlike this effect" : "Like this effect";
             }
 
-            if (likeBtn) {
-                if (action === 'liked') {
-                    likeBtn.classList.remove('btn-danger');
-                    likeBtn.classList.add('btn-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart-fill me-1"></i> Liked';
-                    likeBtn.title = "Unlike this effect";
-                } else {
-                    likeBtn.classList.remove('btn-danger');
-                    likeBtn.classList.add('btn-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart me-1"></i> Like';
-                    likeBtn.title = "Like this effect";
+            // 2. Update main navbar UI (if this is the currently loaded effect)
+            if (navLikeBtn && docId === currentProjectDocId) {
+                navLikeBtn.classList.toggle('btn-danger', isLiked);
+                navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
+                navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
+                if (navLikeLabel) {
+                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+                }
+                const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
+                if (tooltip) {
+                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
                 }
             }
             // --- END UI Update Logic ---
 
-            showToast(`Effect ${action}!`, 'success');
+            // showToast(`Effect ${action}!`, 'success');
 
         } catch (error) {
             console.error("Error liking/unliking effect:", error);
@@ -3459,8 +3585,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     /**
- * Clears all objects and resets the workspace to a blank state.
- */
+     * Clears all objects and resets the workspace to a blank state.
+     */
     function resetWorkspace() {
         // [NEW] Clear any active comment listeners
         unsubscribeFromComments();
@@ -3512,6 +3638,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         currentProjectDocId = null;
         updateShareButtonState();
+
+        // === MODIFICATION START ===
+        const navLikeBtn = document.getElementById('like-effect-btn');
+        const navLikeLabel = document.getElementById('like-effect-btn-label');
+        if (navLikeBtn) {
+            navLikeBtn.disabled = true;
+            navLikeBtn.classList.remove('btn-danger');
+            navLikeBtn.classList.add('btn-outline-danger');
+            navLikeBtn.querySelector('i').className = 'bi bi-heart me-1';
+            if (navLikeLabel) {
+                navLikeLabel.textContent = 'Like';
+            }
+            const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
+            if (tooltip) {
+                tooltip.setContent({ '.tooltip-inner': 'Like this effect' });
+            }
+        }
+        // === MODIFICATION END ===
 
         loadedStateSnapshot = null;
         dirtyProperties.clear();
@@ -6100,6 +6244,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
             currentProjectDocId = workspace.docId || null;
             updateShareButtonState();
+
+            // === MODIFICATION START ===
+            const navLikeBtn = document.getElementById('like-effect-btn');
+            const navLikeLabel = document.getElementById('like-effect-btn-label');
+            const user = window.auth.currentUser;
+
+            if (navLikeBtn && currentProjectDocId && user) {
+                const likedBy = workspace.likedBy || {};
+                const isLiked = likedBy.hasOwnProperty(user.uid);
+
+                navLikeBtn.disabled = false;
+                navLikeBtn.classList.toggle('btn-danger', isLiked);
+                navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
+                navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
+                if (navLikeLabel) {
+                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+                }
+                const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
+                if (tooltip) {
+                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+                }
+            } else if (navLikeBtn) {
+                // Disable if it's not a saved effect or user is logged out
+                navLikeBtn.disabled = true;
+                navLikeBtn.classList.remove('btn-danger');
+                navLikeBtn.classList.add('btn-outline-danger');
+                navLikeBtn.querySelector('i').className = 'bi bi-heart me-1';
+                if (navLikeLabel) {
+                    navLikeLabel.textContent = 'Like';
+                }
+            }
+            // === MODIFICATION END ===
 
             // [NEW] Load comments if this is a saved effect
             if (currentProjectDocId) {
