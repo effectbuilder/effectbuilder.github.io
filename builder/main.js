@@ -8,12 +8,14 @@ import {
     onSnapshot,
     writeBatch,
     FieldPath,
-    documentId
+    documentId, increment, arrayRemove
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
 // --- GLOBAL SHARED STATE ---
 let componentState = createDefaultComponentState(); // Initialize immediately
+let currentUserHasLiked = false;
+let likeListenerUnsubscribe = null; // Holds the Firestore listener for likes
 let viewTransform = { panX: 0, panY: 0, zoom: 1 };
 let selectedLedIds = new Set();
 let currentTool = 'select';
@@ -133,6 +135,8 @@ const toggleImageLockBtn = document.getElementById('toggle-image-lock-btn');
 const toggleImageVisibleBtn = document.getElementById('toggle-image-visible-btn');
 const imageUploadTriggerBtn = document.getElementById('image-upload-trigger-btn');
 const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
+const likeBtn = document.getElementById('like-component-btn');
+const likeCountDisplay = document.getElementById('like-count-display');
 
 // --- [NEW] COMMENT DOM Elements ---
 const commentSection = document.getElementById('component-comments-section');
@@ -156,6 +160,174 @@ const MAX_GUIDE_IMAGE_DIMENSION = 1500; // Max pixels for longest side
 // ---
 // --- ALL FUNCTION DEFINITIONS ---
 // ---
+
+/**
+ * Unsubscribes from the current real-time like listener (if one exists).
+ */
+function unsubscribeFromLikes() {
+    if (likeListenerUnsubscribe) {
+        likeListenerUnsubscribe();
+        likeListenerUnsubscribe = null;
+    }
+}
+
+/**
+ * Updates the like button UI based on the current component and user state.
+ * This function handles all states: liked, unliked, and disabled.
+ */
+function updateLikeButtonUI() {
+    if (!likeBtn || !likeCountDisplay) return; // Exit if elements don't exist
+
+    const user = auth.currentUser;
+    const likeCount = parseInt(likeCountDisplay.textContent, 10) || 0;
+
+    // --- State 1: Component loaded and user is logged in ---
+    if (currentComponentId && user) {
+        const isLiked = currentUserHasLiked; // This is set by the loadLikeData listener
+
+        likeBtn.disabled = false;
+        likeBtn.classList.toggle('btn-danger', isLiked); // Solid color if liked
+        likeBtn.classList.toggle('btn-outline-danger', !isLiked); // Outline if not
+
+        const icon = likeBtn.querySelector('i');
+        if (icon) {
+            icon.className = isLiked ? 'bi bi-heart-fill' : 'bi bi-heart';
+        }
+
+        // Update tooltip
+        const tooltip = bootstrap.Tooltip.getInstance(likeBtn);
+        if (tooltip) {
+            tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike component' : 'Like component' });
+        }
+
+    // --- State 2: Component not loaded or user is logged out (Reset/Disabled state) ---
+    } else {
+        likeBtn.disabled = true;
+        likeBtn.classList.remove('btn-danger'); // Remove solid color
+        likeBtn.classList.add('btn-outline-danger'); // Ensure outline
+
+        const icon = likeBtn.querySelector('i');
+        if (icon) {
+            icon.className = 'bi bi-heart';
+        }
+
+        // Update tooltip
+        const tooltip = bootstrap.Tooltip.getInstance(likeBtn);
+        if (tooltip) {
+            tooltip.setContent({ '.tooltip-inner': 'Like component' });
+        }
+    }
+
+    // --- Handle the like count badge (applies in all states) ---
+    if (likeCount > 0) {
+        likeCountDisplay.textContent = likeCount;
+        likeCountDisplay.style.display = 'inline-block';
+    } else {
+        likeCountDisplay.textContent = '0';
+        likeCountDisplay.style.display = 'none';
+    }
+}
+
+/**
+ * Sets up a real-time listener for the current component's like data.
+ * @param {string} componentId - The Firestore document ID of the component.
+ */
+function loadLikeData(componentId) {
+    unsubscribeFromLikes(); // Unsubscribe from any previous listener
+
+    const componentDocRef = doc(db, "srgb-components", componentId);
+
+    likeListenerUnsubscribe = onSnapshot(componentDocRef, (docSnap) => {
+        if (!docSnap.exists()) {
+            updateLikeButtonUI();
+            return;
+        }
+
+        const data = docSnap.data();
+        const likedBy = data.likedBy || [];
+        const likeCount = data.likeCount || 0;
+
+        const user = auth.currentUser;
+        currentUserHasLiked = user ? likedBy.includes(user.uid) : false;
+
+        if (likeCountDisplay) {
+            likeCountDisplay.textContent = likeCount;
+        }
+
+        updateLikeButtonUI();
+
+    }, (error) => {
+        console.error("Error loading like data:", error);
+        updateLikeButtonUI();
+    });
+}
+
+/**
+ * Handles the user clicking the like/unlike button.
+ */
+async function handleLikeComponent() {
+    const user = auth.currentUser;
+    if (!user) {
+        showToast('Error', 'You must be logged in to like a component.', 'danger');
+        return;
+    }
+    if (!currentComponentId) {
+        showToast('Error', 'Please save the component before liking.', 'danger');
+        return;
+    }
+
+    likeBtn.disabled = true; // Prevent double-clicks
+    const componentDocRef = doc(db, "srgb-components", currentComponentId);
+
+    const newLikedState = !currentUserHasLiked; // The state we are moving *to*
+
+    // Use a transaction for safety, though updateDoc is likely fine
+    const updateData = {
+        likeCount: increment(newLikedState ? 1 : -1),
+        likedBy: newLikedState ? arrayUnion(user.uid) : arrayRemove(user.uid)
+    };
+
+    try {
+        await updateDoc(componentDocRef, updateData);
+        
+        // --- The optimistic UI update is removed ---
+        // The onSnapshot listener will now automatically handle the UI change.
+
+        // Send notification *only* if liking (not unliking)
+        // and not liking your own component
+        if (newLikedState) {
+            const componentOwnerId = componentState.ownerId; // From loaded state
+            
+            if (componentOwnerId && componentOwnerId !== user.uid) {
+                await addDoc(collection(db, "notifications"), {
+                    recipientId: componentOwnerId,
+                    senderId: user.uid,
+                    projectId: currentComponentId,
+                    eventType: 'like',
+                    notificationType: 'component',
+                    timestamp: serverTimestamp(),
+                    read: false
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error("Error updating like status:", error);
+        showToast('Error', 'Could not update like status.', 'danger');
+    } finally {
+        // Re-enable button (snapshot will refresh state)
+        likeBtn.disabled = false;
+    }
+}
+
+/**
+ * Sets up listeners for the like button.
+ */
+function setupLikeListener() {
+    if (likeBtn) {
+        likeBtn.addEventListener('click', handleLikeComponent);
+    }
+}
 
 // --- [NEW] NOTIFICATION FUNCTIONS ---
 
@@ -352,7 +524,7 @@ function renderNotificationDropdown(allNotifications) {
 
         if (notification.eventType === 'like') {
             notificationText = `Your component <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
-            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>`;
+            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i> Like`;
         } else if (notification.eventType === 'comment') {
             // Use 'projectName' which we mapped to the component name
             notificationText = `<strong>${notification.senderName}</strong> commented on your component <strong>${notification.projectName}</strong>.`;
@@ -722,10 +894,12 @@ function loadComponentState(stateToLoad) {
     }
 
     unsubscribeFromComments();
+    unsubscribeFromLikes();
 
     // Clear old state
     clearAutoSave();
     Object.assign(componentState, createDefaultComponentState()); // Reset to default first
+    updateLikeButtonUI();
     Object.assign(componentState, stateToLoad); // Then apply new state\
     componentState.originalDbName = stateToLoad.name;
 
@@ -816,6 +990,7 @@ function loadComponentState(stateToLoad) {
     if (currentComponentId) {
         // It's a saved component, load the comments
         loadComments(currentComponentId);
+        loadLikeData(currentComponentId);
     } else {
         // It's a new component, show the "Save" prompt
         if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
@@ -893,6 +1068,13 @@ function setupAuthListeners() {
             if (commentForm) commentForm.style.display = 'block';
             if (commentLoginPrompt) commentLoginPrompt.style.display = 'none';
 
+            if (currentComponentId) {
+                // Re-load like data to update with new user's status
+                loadLikeData(currentComponentId);
+            } else {
+                likeBtn.disabled = true; // No component, so disable
+            }
+
             // --- [NEW] Check for Admin Status ---
             currentUserIsAdmin = false; // Reset on every auth change
             if (user.uid === ADMIN_UID) {
@@ -926,6 +1108,10 @@ function setupAuthListeners() {
             if (saveBtn) saveBtn.disabled = true;
             if (loadBtn) loadBtn.disabled = true;
             if (shareBtn) shareBtn.disabled = true;
+
+            currentUserHasLiked = false;
+            updateLikeButtonUI(); // This will show "unliked"
+            likeBtn.disabled = true; // Can't like when logged out
 
             // --- [NEW] Reset admin status on logout ---
             currentUserIsAdmin = false;
@@ -1013,6 +1199,7 @@ function handleNewComponent(showNotification = true) {
     // Check if the current canvas work is dirty and requires a confirmation dialog
     if (!checkDirtyState()) return;
     unsubscribeFromComments();
+    unsubscribeFromLikes();
 
     let stateToLoad = createDefaultComponentState();
     // console.log('handleNewComponent called. showNotification:', showNotification);
@@ -4197,6 +4384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPropertyListeners();
     setupGalleryListener();
     setupCommentListeners();
+    setupLikeListener();
 
     // --- [NEW] Event listener for clicking a notification ---
     const notificationListContainer = document.getElementById('notification-list-container');

@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+// import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -44,144 +45,8 @@ window.updateDoc = updateDoc;
 window.increment = increment;
 window.serverTimestamp = serverTimestamp;
 window.setDoc = setDoc;
-window.documentId = '__name__'; // Correctly query by document ID
+window.documentId = documentId; // This exports the actual function
 window.writeBatch = writeBatch;
-
-
-// Wait for the DOM to be fully loaded before setting up UI event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    const provider = new window.GoogleAuthProvider();
-    const loginBtn = document.getElementById('login-btn');
-
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            window.signInWithPopup(window.auth, provider).catch(console.error);
-        });
-    }
-
-    // Use event delegation for the logout button, which is more robust
-    document.addEventListener('click', async (e) => {
-        const logoutBtnClicked = e.target.closest('#logout-btn');
-
-        if (logoutBtnClicked) {
-            e.preventDefault(); 
-            try {
-                await window.signOut(window.auth);
-                if (typeof showToast === 'function') {
-                    showToast("Signed out successfully.", 'success');
-                }
-            } catch (error) {
-                console.error("Error signing out:", error);
-                if (typeof showToast === 'function') {
-                    showToast("Error signing out. Please try again.", 'danger');
-                }
-            }
-        }
-    });
-
-
-    // This listener handles all UI changes related to authentication state.
-    // [MODIFIED] Made the callback async
-    window.onAuthStateChanged(window.auth, async user => {
-        const loginBtn = document.getElementById('login-btn');
-        const userSessionGroup = document.getElementById('user-session-group');
-        const userPhotoEl = document.getElementById('user-photo');
-        const userDisplay = document.getElementById('user-display');
-        const saveWsBtn = document.getElementById('save-ws-btn');
-        const loadWsBtn = document.getElementById('load-ws-btn');
-        const isLoggedIn = !!user;
-        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4='; 
-
-        // --- [NEW] Comment UI elements ---
-        const commentForm = document.getElementById('comment-form');
-        const commentLoginPrompt = document.getElementById('comment-login-prompt');
-        const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1'; // From main.js
-        // --- [END NEW] ---
-
-        if (isLoggedIn) {
-            // Show the logged-in group and hide the login button
-            if (loginBtn) loginBtn.classList.add('d-none');
-            if (userSessionGroup) userSessionGroup.classList.remove('d-none');
-            
-            // REMOVED: Redundant code to toggle notification button visibility,
-            // as it's now inside the userSessionGroup.
-
-            // Populate user info
-            if (userDisplay) userDisplay.textContent = user.displayName || user.email;
-            if (userPhotoEl) {
-                userPhotoEl.src = user.photoURL || defaultIcon;
-                userPhotoEl.onerror = () => {
-                    userPhotoEl.src = defaultIcon;
-                    userPhotoEl.onerror = null;
-                };
-            }
-
-            // Set/Update user document with display name in Firestore
-            if (user) {
-                const userDocRef = window.doc(window.db, "users", user.uid);
-                window.setDoc(userDocRef, {
-                    displayName: user.displayName || 'Anonymous User',
-                    photoURL: user.photoURL || null
-                }, { merge: true }).catch(err => {
-                    console.error("Failed to save user profile to Firestore:", err);
-                });
-            }
-
-            // --- [NEW] Admin check and comment UI toggle ---
-            if (window.setAdminStatus) { // Check if main.js has loaded this function
-                let isAdmin = false;
-                if (user.uid === ADMIN_UID) {
-                    isAdmin = true;
-                } else {
-                    const adminDocRef = window.doc(window.db, "admins", user.uid);
-                    try {
-                        const adminDocSnap = await window.getDoc(adminDocRef);
-                        if (adminDocSnap.exists()) {
-                            isAdmin = true;
-                        }
-                    } catch (err) {
-                        console.error("Error checking admin status:", err);
-                    }
-                }
-                window.setAdminStatus(isAdmin); // Pass status to main.js
-            }
-            if (commentForm) commentForm.style.display = 'block';
-            if (commentLoginPrompt) commentLoginPrompt.style.display = 'none';
-            // --- [END NEW] ---
-
-            // Setup notification listener on login
-            if (typeof window.setupNotificationListener === 'function') {
-                window.setupNotificationListener(user);
-            }
-
-        } else {
-            // Show the login button and hide the logged-in group
-            if (loginBtn) loginBtn.classList.remove('d-none');
-            if (userSessionGroup) userSessionGroup.classList.add('d-none');
-
-            // REMOVED: Redundant code to toggle notification button visibility.
-
-            // --- [NEW] Reset admin status and toggle comment UI ---
-            if (window.setAdminStatus) {
-                window.setAdminStatus(false);
-            }
-            if (commentForm) commentForm.style.display = 'none';
-            if (commentLoginPrompt) commentLoginPrompt.style.display = 'block';
-            // --- [END NEW] ---
-
-            // Clear notification listener on logout
-            if (typeof window.setupNotificationListener === 'function') {
-                window.setupNotificationListener(null);
-            }
-        }
-
-        // Enable/disable other buttons based on auth state
-        if (saveWsBtn) saveWsBtn.disabled = !isLoggedIn;
-        if (loadWsBtn) loadWsBtn.disabled = !isLoggedIn;
-
-        // Ensure gallery updates after auth state is known
-        if (typeof window.loadUserSpecificGalleryData === 'function') {
-            window.loadUserSpecificGalleryData();
-        }
-    });
-});
+window.arrayUnion = arrayUnion;
+window.arrayRemove = arrayRemove;
+window.documentId = documentId; // This exports a constant string 'documentId'
