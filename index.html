@@ -53,10 +53,6 @@
                 <div class="btn-group me-3" role="group" aria-label="Editor">
                     <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
-                <!-- <div class="btn-group me-3" role="group" aria-label="Effect sharing actions">
-                    <button class="btn btn-secondary" id="upload-effect-btn" data-bs-toggle="tooltip" title="Upload an effect HTML file"><i class="bi bi-upload me-1"></i> Upload</button>
-                </div> -->
-
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
@@ -168,8 +164,13 @@
                 </div>
 
                 <hr>
-                <div id="component-comments-section" class="m-4">
 
+                <div class="d-flex justify-content-end px-4">
+                    <button class="btn btn-outline-danger btn-lg" id="like-effect-btn" data-bs-toggle="tooltip" title="Like this effect" disabled>
+                        <i class="bi bi-heart me-2"></i> <span id="like-effect-btn-label">Like</span>
+                    </button>
+                </div>
+                <div id="component-comments-section" class="m-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="text-body-emphasis mb-0">Comments</h4>
                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="true" aria-controls="comment-collapse-wrapper" title="Toggle Comments">

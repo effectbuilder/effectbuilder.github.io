@@ -16,7 +16,9 @@ const COLLECTIONS_TO_BACKUP = [
     'projects',                     // From Effect Builder
     'bans',                         // From Effect Builder
     'admins',                       // From Effect Builder
-    'notifications'                 // From Effect Builder
+    'notifications',                // From Effect Builder
+    'srgb-component-comments',     // Comments on components
+    'srgb-effect-comments'          // Comments on effects
 ];
 
 // --- DOM ELEMENTS ---

@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastVisible = null;
     let isLoading = false;
     let allLoaded = false;
+    // === MODIFICATION START ===
+    let currentFilter = 'all'; // 'all' or 'liked'
+    let currentSort = 'createdAt'; // 'createdAt', 'likes', 'downloadCount', 'name'
+    let currentSortLabel = 'Newest';
+    // === MODIFICATION END ===
     
     // --- DOM Elements for Lazy Loading ---
     const initialLoadingSpinner = document.getElementById('initial-loading-spinner');
@@ -49,16 +54,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateUserAuthState(user) {
+        // === MODIFICATION START ===
+        const likedTab = document.getElementById('filter-liked-tab');
+        // === MODIFICATION END ===
+
         if (user) {
             loginBtn.classList.add('d-none');
             userSessionGroup.classList.remove('d-none');
             document.getElementById('user-photo').src = user.photoURL;
             document.getElementById('user-display').textContent = user.displayName;
+            if (likedTab) likedTab.style.display = 'block'; // Show "My Liked" tab
         } else {
             loginBtn.classList.remove('d-none');
             userSessionGroup.classList.add('d-none');
+            if (likedTab) likedTab.style.display = 'none'; // Hide "My Liked" tab
+            
+            // If user logged out while on "liked" tab, switch back to "all"
+            if (currentFilter === 'liked') {
+                currentFilter = 'all';
+                // Manually update tab UI
+                document.querySelector('#gallery-filter-tabs a[data-filter="liked"]').classList.remove('active');
+                document.querySelector('#gallery-filter-tabs a[data-filter="all"]').classList.add('active');
+            }
+            // === MODIFICATION END ===
         }
-        loadPublicGallery();
+        // Reload the gallery to apply auth-specific views (like buttons)
+        loadPublicGallery(); 
     }
 
     if (window.auth) {
@@ -67,6 +88,42 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error("Firebase Auth is not initialized.");
         loadPublicGallery();
     }
+
+    // === NEW FILTER & SORT LISTENERS START ===
+    const filterTabs = document.getElementById('gallery-filter-tabs');
+    if (filterTabs) {
+        filterTabs.addEventListener('click', (e) => {
+            e.preventDefault();
+            const link = e.target.closest('a[data-filter]');
+            // Check if the link exists and is not already active
+            if (link && !link.classList.contains('active')) {
+                // Update active state for tabs
+                const activeLink = filterTabs.querySelector('a.active');
+                if (activeLink) activeLink.classList.remove('active');
+                link.classList.add('active');
+                
+                currentFilter = link.dataset.filter;
+                loadPublicGallery(); // Reload the gallery with the new filter
+            }
+        });
+    }
+
+    const sortDropdown = document.querySelector('.dropdown-menu');
+    const sortLabel = document.getElementById('sort-by-label');
+    if (sortDropdown) {
+        sortDropdown.addEventListener('click', (e) => {
+            e.preventDefault();
+            const link = e.target.closest('a.gallery-sort-option');
+            if (link) {
+                currentSort = link.dataset.sort;
+                currentSortLabel = link.textContent;
+                if(sortLabel) sortLabel.textContent = currentSortLabel;
+                
+                loadPublicGallery(); // Reload the gallery with the new sort
+            }
+        });
+    }
+    // === NEW FILTER & SORT LISTENERS END ===
 
 
     // --- LIKE ACTION HANDLER ---
@@ -80,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const likeBtn = document.getElementById(`gallery-like-btn-${docId}`);
         const likeCountSpan = document.getElementById(`gallery-like-count-${docId}`);
 
+        // Check the button's current state to decide the action
         const isCurrentlyLiked = likeBtn && likeBtn.classList.contains('btn-danger');
 
         try {
@@ -94,23 +152,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const data = projectDoc.data();
                 const likedBy = data.likedBy || {};
                 let newLikesCount = data.likes || 0;
-                projectOwnerId = data.userId;
+                projectOwnerId = data.userId; // Get owner for notification
 
                 if (action === 'liked') {
                     newLikesCount = newLikesCount + 1;
-                    likedBy[user.uid] = true;
+                    likedBy[user.uid] = true; // Add user's UID to the map
                 } else {
                     newLikesCount = Math.max(0, newLikesCount - 1);
-                    delete likedBy[user.uid];
+                    delete likedBy[user.uid]; // Remove user's UID from the map
                 }
 
+                // Commit the changes
                 transaction.update(docRef, {
                     likes: newLikesCount,
-                    likedBy: likedBy,
-                    updatedAt: new Date()
+                    likedBy: likedBy
+                    // No need to update 'updatedAt' for a simple like
                 });
             });
 
+            // Send notification only on a "like" action and if not liking your own post
             if (action === 'liked' && projectOwnerId !== user.uid) {
                 await window.addDoc(window.collection(window.db, "notifications"), {
                     recipientId: projectOwnerId,
@@ -122,6 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
 
+            // --- UI Update ---
             const countChange = action === 'liked' ? 1 : -1;
             const newCount = likeCountSpan ? (parseInt(likeCountSpan.textContent) || 0) + countChange : 0;
 
@@ -129,22 +190,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (action === 'liked') {
                     likeBtn.classList.remove('btn-outline-danger');
                     likeBtn.classList.add('btn-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i> Like';
+                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i> Liked'; // Show "Liked"
                     likeBtn.title = "Unlike";
                 } else {
                     likeBtn.classList.remove('btn-danger');
                     likeBtn.classList.add('btn-outline-danger');
-                    likeBtn.innerHTML = '<i class="bi bi-heart"></i> Like';
+                    likeBtn.innerHTML = '<i class="bi bi-heart"></i> Like'; // Show "Like"
                     likeBtn.title = "Like";
+
+                    // If we are in the "My Liked Effects" filter, remove the card
+                    if (currentFilter === 'liked') {
+                        const cardColumn = likeBtn.closest('.col-12');
+                        if (cardColumn) {
+                            cardColumn.style.transition = 'opacity 0.3s ease';
+                            cardColumn.style.opacity = '0';
+                            setTimeout(() => cardColumn.remove(), 300);
+                        }
+                    }
                 }
             }
             if (likeCountSpan) {
-                likeCountSpan.textContent = Math.max(0, newCount);
+                likeCountSpan.textContent = Math.max(0, newCount); // Update count
             }
 
         } catch (error) {
             console.error("Error processing like action:", error);
             alert("Failed to process like/unlike action. Please check your network or sign-in status.");
+            // Force a reload to correct any UI inconsistencies
             loadPublicGallery();
         }
     }
@@ -208,12 +280,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const docRef = window.doc(window.db, "projects", docId);
             const docSnap = await window.getDoc(docRef);
             if (!docSnap.exists()) throw new Error("Document not found.");
+            // Update the name in both the root and the configs array
             const updatedConfigs = docSnap.data().configs.map(conf => {
                 if (conf.name === 'description') {
                     return { ...conf, default: newDescription };
                 }
                 if (conf.name === 'title') {
                     return { ...conf, default: newName };
+                }
+                // Update object labels as well
+                if (conf.label && conf.label.startsWith(docSnap.data().name)) {
+                    return { ...conf, label: conf.label.replace(docSnap.data().name, newName) };
                 }
                 return conf;
             });
@@ -334,7 +411,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- Attach Event Listeners ---
             const likeBtn = col.querySelector(`#gallery-like-btn-${project.docId}`);
             if (likeBtn) {
-                likeBtn.disabled = !currentUser;
+                // Like button is disabled if user is not logged in
+                likeBtn.disabled = !currentUser; 
                 likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
             }
 
@@ -378,15 +456,50 @@ document.addEventListener('DOMContentLoaded', function () {
         loadMoreMessage.classList.add('d-none');
 
         try {
+            // === MODIFICATION START ===
+            const user = window.auth.currentUser;
+            
             const queryConstraints = [
-                window.where("isPublic", "==", true),
-                window.orderBy("createdAt", "desc"),
-                window.limit(PAGE_SIZE)
+                window.where("isPublic", "==", true)
             ];
 
+            // 1. Add filter
+            if (currentFilter === 'liked' && user) {
+                // This is the key: query for the map field containing the user's UID
+                queryConstraints.push(window.where(`likedBy.${user.uid}`, "==", true));
+            }
+
+            // 2. Add sorting
+            // Note: Firestore requires the first orderBy to match the inequality filter if one exists.
+            // If we filter by 'likedBy', we can't effectively sort by 'createdAt' etc.
+            // So, for 'liked' filter, we will implicitly sort by 'likedBy' (which is fine)
+            // or we must fetch all and sort client-side.
+            // For now, let's keep the query simple. The 'liked' filter will just show results.
+            // Let's refine this:
+            
+            if (currentFilter === 'liked' && user) {
+                // When filtering by "liked", sorting by other fields (like 'likes' or 'createdAt') 
+                // requires a composite index in Firestore (e.g., `likedBy.USER_ID` and `likes`).
+                // This is complex to do for *every* user.
+                // A simpler approach for "My Liked Effects" is to just show them, sorted by the default (name or date).
+                // Let's stick to sorting by the selected field. This WILL require composite indexes.
+                // If indexes don't exist, the console will show an error with a link to create them.
+                const sortDirection = (currentSort === 'name') ? 'asc' : 'desc';
+                queryConstraints.push(window.orderBy(currentSort, sortDirection));
+
+            } else {
+                // Standard sorting for "All Effects"
+                const sortDirection = (currentSort === 'name') ? 'asc' : 'desc';
+                queryConstraints.push(window.orderBy(currentSort, sortDirection));
+            }
+
+
+            // 3. Add pagination
+            queryConstraints.push(window.limit(PAGE_SIZE));
             if (lastVisible) {
                 queryConstraints.push(window.startAfter(lastVisible));
             }
+            // === MODIFICATION END ===
 
             const q = window.query(
                 window.collection(window.db, "projects"),
@@ -396,7 +509,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const querySnapshot = await window.getDocs(q);
             
             if (initialLoadingSpinner) {
-                initialLoadingSpinner.remove();
+                // Use .remove() for modern browsers
+                initialLoadingSpinner.remove(); 
             }
 
             if (querySnapshot.empty) {
@@ -404,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadMoreMessage.classList.remove('d-none');
                 if (galleryList.children.length === 0) {
                      // Display "no effects" message inside the grid
-                     galleryList.innerHTML = '<div class="col-12"><p class="list-group-item disabled">No effects found.</p></div>';
+                     galleryList.innerHTML = '<div class="col-12"><p class="text-body-secondary text-center mt-4">No effects found.</p></div>';
                 }
             } else {
                 lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
@@ -418,25 +532,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error loading more projects:", error);
-            galleryList.innerHTML = '<div class="col-12"><p class="list-group-item text-danger">Could not load effects. Please try again later.</p></div>';
+            galleryList.innerHTML = `<div class="col-12"><p class="list-group-item text-danger">Could not load effects. ${error.message.includes('indexes') ? '<b>This filter/sort combination requires a database index.</b> Check the console (F12) for a link to create it.' : 'Please try again later.'}</p></div>`;
         } finally {
             isLoading = false;
             loadMoreSpinner.style.display = 'none';
         }
     }
 
+    // === MODIFICATION START ===
+    // This function now just resets the state and triggers the first load.
     function loadPublicGallery() {
-        galleryList.innerHTML = '';
+        galleryList.innerHTML = ''; // Clear the list
         lastVisible = null;
         allLoaded = false;
         isLoading = false;
         
+        // Put the initial spinner back
         if (initialLoadingSpinner) {
             galleryList.appendChild(initialLoadingSpinner);
         }
 
-        loadMoreMessage.classList.add('d-none');
+        loadMoreMessage.classList.add('d-none'); // Hide end-of-results message
+        
+        // Trigger the first page load. 
+        // loadMoreProjects() will use the current filter/sort settings.
+        loadMoreProjects();
     }
+    // === MODIFICATION END ===
     
     // --- Intersection Observer Setup ---
     function setupIntersectionObserver() {
@@ -459,4 +581,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- INITIALIZE ---
     setupIntersectionObserver();
+    // Note: The initial call to loadPublicGallery() is now handled 
+    // by the onAuthStateChanged callback, so we don't need one here.
 });
