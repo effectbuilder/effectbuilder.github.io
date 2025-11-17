@@ -670,7 +670,6 @@ function updateBrowserUrl(componentId) {
     window.history.replaceState({ id: componentId }, document.title, newUrl);
 }
 
-// --- [MODIFIED FUNCTION] ---
 /**
  * Loads a specific component from Firestore based on a URL parameter.
  * This is called on initial page load if an 'id' is found.
@@ -707,11 +706,9 @@ async function loadComponentFromUrl(componentId) {
         showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
         handleNewComponent(false); // Fall back to normal load
     }
-    // [MODIFIED] Removed the finally block that cleared the URL.
-    // loadComponentState() will now handle setting the URL.
+    // Notice the 'finally' block is gone!
 }
 
-// --- [MODIFIED FUNCTION] ---
 /**
  * Central function to load any valid component state object into the app.
  * It handles state assignment, wiring validation/fixing, and UI updates.
@@ -4173,7 +4170,7 @@ function getPointsForPolygon(vertices, gridSize) {
 // ---
 // --- INITIALIZATION ---
 // ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeTooltips();
 
     if (!ctx) {
