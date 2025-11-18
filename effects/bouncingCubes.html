@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bouncing Cubes</title>
+    <meta description="A 3D cube landscape that animates with audio shockwaves or sine waves.">
+    <meta publisher="Jose Miranda">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor" default="Lava">
+    <meta property="customColor" label="Custom Color" type="color" default="#ff0000" min="0" max="360">
+    <meta property="backgroundColor" label="Background Color" type="color" default="#000000" min="0" max="360">
+
+    <meta property="gridSize" label="Grid Size" type="number" min="10" max="100" default="50">
+    <meta property="blockSize" label="Block Size (%)" type="number" min="1" max="500" default="100">
+    <meta property="blockGap" label="Block Gap (%)" type="number" min="0" max="100" default="0">
+    
+    <meta property="isAudioSensitive" label="Audio Reactive" type="boolean" default="true">
+    <meta property="audioTrigger" label="Audio Trigger" type="number" min="1" max="100" default="15">
+    <meta property="audioSensitivity" label="Audio Sensitivity" type="number" min="1" max="100" default="4">
+    <meta property="waveSpeed" label="Wave Speed" type="number" min="1" max="1000" default="200">
+    <meta property="waveWidth" label="Wave Width" type="number" min="1" max="5" default="3"> 
+    <meta property="smoothing" label="Smoothing" type="number" min="0" max="99" default="5">
+    
+    <meta property="manualCamera" label="Manual Camera" type="boolean" default="false">
+    <meta property="cameraRotationSpeed" label="Orbit Speed" type="number" min="-100" max="100" default="1">
+    <meta property="cameraAngle" label="Camera Angle" type="number" min="0" max="360" default="80">
+    <meta property="cameraHeight" label="Camera Height" type="number" min="1" max="50" default="10">
+    <meta property="cameraZoom" label="Camera Zoom" type="number" min="1" max="100" default="10">
+    
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+
+<script>
+    // --- Browser Test Mode Fallbacks ---
+    var isBrowserTest = false;
+    if (typeof engine === 'undefined') {
+        isBrowserTest = true; 
+        
+        // Create all properties with their default values from your <head>
+        var palette = "Lava";
+        var customColor = "#ff0000";
+        var backgroundColor = "#000000";
+        var gridSize = 50;
+        var blockSize = 100;
+        var blockGap = 0;
+        var isAudioSensitive = true;
+        var audioTrigger = 15;
+        var audioSensitivity = 4;
+        var waveSpeed = 200;
+        var waveWidth = 3;
+        var smoothing = 5;
+        var manualCamera = false;
+        var cameraRotationSpeed = 1;
+        var cameraAngle = 80;
+        var cameraHeight = 10;
+        var cameraZoom = 10;
+
+        // Mock the SignalRGB engine
+        var engine = {
+            audio: {
+                freq: new Int8Array(200) // 200 audio bins
+            }
+        };
+    }
+    // --- End Fallbacks ---
+
+
+    // These will be populated by the scripts above
+    const { THREE } = window;
+
+    // --- Palettes ---
+    const wledPalettes = {
+        "Custom": [], 
+        "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+        "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+        "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+        "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+        "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+        "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+        "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+        "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+        "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+        "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+        "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+        "Holiday": ["#D92626", "#0E592D", "#F2B705", "#F2F2F2"],
+        "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+        "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+        "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+        "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+        "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+        "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+        "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+    };
+
+    // --- Global Variables ---
+    let camera, scene, renderer, mesh, material; 
+    
+    const dummy = new THREE.Object3D();
+    const seeds = [];
+    const color = new THREE.Color();
+    const tempHSL = {}; 
+    const canvas = document.getElementById('effect-canvas');
+    
+    const currentHeights = []; 
+    const blockPositions = []; 
+    const shockwaves = []; 
+    let lastBeatTimestamp = 0; 
+    
+    let lastGridSize = 0;
+    let lastBlockSize = 0.0;
+    let lastBlockGap = 0.0; 
+    let lastOffset = 0.0; 
+    
+    let orbitAngle = 0; 
+    let lastFrameTime = 0;
+    let lastPalette = ""; 
+    let lastCustomColor = ""; 
+
+    // --- Functions ---
+    function init() {
+        if (!THREE || !THREE.RoomEnvironment) {
+             const ctx = canvas.getContext('2d');
+             ctx.fillStyle = 'red';
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+             ctx.fillStyle = 'white';
+             ctx.font = '12px Arial';
+             ctx.textAlign = 'center';
+             ctx.fillText('Error: Failed to load THREE.js libs.', canvas.width / 2, canvas.height / 2);
+             return false;
+        }
+        
+        if (mesh) {
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            material.dispose();
+        }
+        seeds.length = 0; 
+        currentHeights.length = 0; 
+        blockPositions.length = 0; 
+        shockwaves.length = 0; 
+        orbitAngle = 0;
+        lastFrameTime = 0;
+        
+        const amount = parseInt(gridSize) || 40;
+        const count = Math.pow(amount, 2);
+        
+        const size = (parseInt(blockSize) || 100) / 100.0;
+        const gapSize = (parseInt(blockGap) || 0) / 100.0;
+        const spacing = size + gapSize;
+        
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(canvas.width, canvas.height);
+        renderer.toneMapping = THREE.NeutralToneMapping; 
+
+        camera = new THREE.PerspectiveCamera(60, canvas.width / canvas.height, 0.1, 100);
+        camera.position.set(10, 10, 10);
+        camera.lookAt(0, 0, 0);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(backgroundColor || "#000000");
+        scene.environment = pmremGenerator.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+
+        const geometry = new THREE.BoxGeometry(size, size, size); 
+        
+        material = new THREE.MeshStandardMaterial();
+
+        mesh = new THREE.InstancedMesh(geometry, material, count);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(mesh);
+
+        // Apply colors using the dedicated function
+        updateColors();
+
+        let i = 0;
+        const totalWidth = (amount - 1) * spacing;
+        const offset = totalWidth / 2;
+        lastOffset = offset; 
+
+        for (let x = 0; x < amount; x++) {
+            for (let z = 0; z < amount; z++) {
+                
+                const xPos = offset - (x * spacing);
+                const zPos = offset - (z * spacing);
+                dummy.position.set(xPos, 0, zPos);
+                
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix); 
+
+                i++;
+                seeds.push(Math.random());
+                currentHeights.push(0); 
+                blockPositions.push({ x: xPos, z: zPos }); 
+            }
+        }
+        
+        lastGridSize = amount;
+        lastBlockSize = size; 
+        lastBlockGap = gapSize;
+        
+        return true;
+    }
+
+    function updateColors() {
+        const selectedPaletteName = palette || "Rainbow";
+        lastPalette = selectedPaletteName;
+        lastCustomColor = customColor; 
+
+        if (!mesh) return; 
+        
+        for (let i = 0; i < mesh.count; i++) {
+            if (selectedPaletteName === "Custom") {
+                color.set(customColor || "#00aaff");
+                color.getHSL(tempHSL);
+                tempHSL.l = Math.random() * 0.5 + 0.3; // 30% to 80%
+                color.setHSL(tempHSL.h, tempHSL.s, tempHSL.l);
+            } else {
+                const selectedPalette = wledPalettes[selectedPaletteName];
+                const randomColorHex = selectedPalette[Math.floor(Math.random() * selectedPalette.length)];
+                color.set(randomColorHex);
+            }
+            mesh.setColorAt(i, color); 
+        }
+        mesh.instanceColor.needsUpdate = true;
+    }
+
+    function animate(currentTime) {
+        requestAnimationFrame(animate);
+
+        // --- Mock Engine Update ---
+        if (isBrowserTest) {
+            // *** UPDATED MOCK BEAT ***
+            // This is a much stronger "thump"
+            const beat = (Math.sin(currentTime / 500.0) + 1) / 2;
+            const beatValue = beat > 0.8 ? 127 : 0; // 127 on beat, 0 off beat
+            for (let b = 1; b < 10; b++) {
+                engine.audio.freq[b] = beatValue;
+            }
+        }
+        // --- End Mock Update ---
+        
+        if (!renderer || !mesh) return; 
+        
+        const cubeTime = currentTime / 1000.0; // Time in seconds
+        
+        if (lastFrameTime === 0) lastFrameTime = currentTime;
+        const deltaTime = (currentTime - lastFrameTime) / 1000.0; 
+        lastFrameTime = currentTime;
+        
+        const bgColor = backgroundColor || "#000000";
+        if (scene.background.getHexString() !== bgColor.substring(1)) {
+            scene.background.set(bgColor);
+        }
+
+        // Read properties
+        const amount = parseInt(gridSize) || 40;
+        const currentPalette = palette || "Rainbow";
+        const currentBlockSize = (parseInt(blockSize) || 100) / 100.0;
+        const currentBlockGap = (parseInt(blockGap) || 0) / 100.0; 
+        const currentCustomColor = customColor;
+
+        // --- Property Change Logic ---
+        if (amount !== lastGridSize || 
+            currentBlockSize !== lastBlockSize || 
+            currentBlockGap !== lastBlockGap) {
+            init(); // Rebuild everything
+        
+        } else if (currentPalette !== lastPalette ||
+                   (currentPalette === "Custom" && currentCustomColor !== lastCustomColor)) {
+            updateColors(); // ...update the colors
+        }
+        
+        lastPalette = currentPalette;
+        lastCustomColor = currentCustomColor;
+
+
+        const zoom = parseInt(cameraZoom) || 15;
+        const currentSmoothFactor = (1.0 - (parseInt(smoothing) || 80) / 100.0); 
+        
+        // --- Get Audio Data & Create Waves ---
+        if (isAudioSensitive) {
+            // Use the (potentially mock) engine
+            const audioData = (engine && engine.audio && engine.audio.freq) ? 
+                              new Int8Array(engine.audio.freq) : 
+                              null;
+            
+            if (audioData) {
+                let bassLevel = 0;
+                for (let b = 1; b < 10; b++) { 
+                    bassLevel += Math.abs(audioData[b]); 
+                }
+                bassLevel /= (9 * 128.0); 
+
+                const trigger = (parseInt(audioTrigger) || 30) / 100.0;
+                const cooldown = 150; 
+
+                if (bassLevel > trigger && (currentTime - lastBeatTimestamp) > cooldown) {
+                    lastBeatTimestamp = currentTime;
+                    
+                    const wSpeed = (parseInt(waveSpeed) || 200);
+                    const wWidth = (parseInt(waveWidth) || 10);
+                    const wAmp = (bassLevel * (parseInt(audioSensitivity) || 20)); 
+                    
+                    const maxDist = Math.sqrt(lastOffset * lastOffset + lastOffset * lastOffset);
+                    const waveSpeedUnits = wSpeed / 10.0; 
+                    const timeToTravel = (maxDist / waveSpeedUnits); 
+                    const newMaxAge = (timeToTravel * 1000) + 1000; 
+                    
+                    shockwaves.push({ 
+                        startTime: currentTime, speed: wSpeed, width: wWidth, 
+                        amplitude: wAmp, maxAge: newMaxAge
+                    });
+                }
+            }
+        } else {
+            if (shockwaves.length > 0) {
+                shockwaves.length = 0;
+            }
+        }
+
+        // --- Camera Logic ---
+        if (manualCamera) { 
+            const angleRad = (parseInt(cameraAngle) || 0) * (Math.PI / 180);
+            const height = parseInt(cameraHeight) || 15;
+            camera.position.x = Math.sin(angleRad) * zoom;
+            camera.position.z = Math.cos(angleRad) * zoom;
+            camera.position.y = height;
+            camera.lookAt(0, 0, 0);
+        } else {
+            const speed = (parseInt(cameraRotationSpeed) || 0) * 0.5;
+            orbitAngle += speed * deltaTime; 
+            camera.position.x = Math.sin(orbitAngle) * zoom;
+            camera.position.z = Math.cos(orbitAngle) * zoom;
+            camera.position.y = 10; 
+            camera.lookAt(0, 0, 0);
+        }
+
+        // --- Animate Cubes ---
+        for (let i = 0; i < mesh.count; i++) {
+            mesh.getMatrixAt(i, dummy.matrix);
+            dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+
+            let targetHeight = 0;
+
+            if (isAudioSensitive) {
+                // AUDIO-REACTIVE MODE (Wave only)
+                const pos = blockPositions[i];
+                const dist = Math.sqrt(pos.x * pos.x + pos.z * pos.z); 
+                
+                for (let j = shockwaves.length - 1; j >= 0; j--) {
+                    const wave = shockwaves[j];
+                    const age = currentTime - wave.startTime; 
+                    
+                    if (age > wave.maxAge) {
+                        shockwaves.splice(j, 1);
+                        continue;
+                    }
+
+                    const waveRadius = (age / 1000.0) * (wave.speed / 10.0); 
+                    const diff = Math.abs(dist - waveRadius);
+                    const wWidth = wave.width;
+
+                    if (diff < wWidth) {
+                        const pulse = (Math.cos(diff / wWidth * Math.PI) + 1) / 2;
+                        targetHeight += (pulse * wave.amplitude) * currentBlockSize;
+                    }
+                }
+            } else {
+                // SINE WAVE MODE (Normal up and down)
+                const jumpAmount = Math.abs(Math.sin((cubeTime + seeds[i]) * 2 + seeds[i]));
+                targetHeight = jumpAmount * currentBlockSize; 
+            }
+            
+            // Apply smoothing
+            currentHeights[i] += (targetHeight - currentHeights[i]) * currentSmoothFactor;
+            dummy.position.y = currentHeights[i];
+            
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+        }
+
+        mesh.instanceMatrix.needsUpdate = true;
+        
+        mesh.geometry.computeBoundingSphere(); 
+        renderer.render(scene, camera);
+    }
+
+    // Start
+    if (init()) {
+        animate(0);
+    }
+
+</script>
+</html>
