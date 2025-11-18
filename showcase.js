@@ -70,7 +70,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "concertLasers.html",
         "ink_drops.html",
         "starfield.html",
-        "digital_noiseform.html"
+        "digital_noiseform.html",
+        "bouncingCubes.html"
     ];
 
     // --- Path Configuration ---
