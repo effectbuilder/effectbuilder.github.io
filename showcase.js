@@ -72,7 +72,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "starfield.html",
         "digital_noiseform.html",
         "bouncingCubes.html",
-        "clouds.html"
+        "clouds.html",
+        "polyPlanet.html"
     ];
 
     // --- Path Configuration ---

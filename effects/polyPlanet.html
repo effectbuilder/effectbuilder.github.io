@@ -1,0 +1,447 @@
+<!-- Original code: https://codepen.io/tr13ze/pen/pbjWwg -->
+<!DOCTYPE html><html>
+<head>
+    <title>Poly Planet</title>
+    <meta description="A geometric planet with multi-color transitioning themes.">
+    <meta publisher="Jose Miranda">
+
+    <meta property="speed" label="Rotation Speed" type="number" min="0" max="100" default="20">
+    <meta property="particleCount" label="Particle Count (0 to Disable)" type="number" min="0" max="2000" default="1000">
+    <meta property="particleSize" label="Particle Size" type="number" min="1" max="50" default="2">
+    
+    <meta property="scaleMain" label="Planet Scale" type="number" min="1" max="50" default="16">
+    <meta property="scaleWire" label="Wireframe Scale" type="number" min="1" max="50" default="10">
+    
+    <meta property="bassSensitivity" label="Bass Sensitivity (Core)" type="number" min="1" max="100" default="50">
+    <meta property="trebleSensitivity" label="Treble Sensitivity (Wire)" type="number" min="1" max="100" default="50">
+    <meta property="deformationAmount" label="Wireframe Deformation" type="number" min="0" max="100" default="50">
+    
+    <meta property="flashEnabled" label="Flash on Beat" type="boolean" default="true">
+    <meta property="flashThreshold" label="Flash Threshold" type="number" min="0" max="100" default="50">
+
+    <meta property="colorTheme" label="Color Theme" type="combobox" values="Custom,Blood Moon,Cotton Candy,Cyberpunk,Deep Sea,Forest,Golden Hour,Ice Kingdom,Lavender,Magma,Matrix,Midnight,Minty,Monochrome,Northern Lights,Rainbow,Royal,Slate,Solar Flare,Sunset,Toxic,Vaporwave" default="Vaporwave">
+    <meta property="colorCycleSpeed" label="Color Cycle Speed" type="number" min="1" max="100" default="20">
+    
+    <meta property="overrideBackground" label="Override Background" type="boolean" default="false">
+    
+    <meta property="customPlanetColor" label="Custom: Planet Color" type="color" default="#ff00ff">
+    <meta property="customWireframeColor" label="Custom: Wireframe Color" type="color" default="#00ffff">
+    <meta property="customBgTop" label="Custom: Background Top" type="color" default="#2b002b">
+    <meta property="customBgBottom" label="Custom: Background Bottom" type="color" default="#000000">
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas"></div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // --- Browser Test Mode Fallbacks ---
+    var isBrowserTest = false;
+    if (typeof engine === 'undefined') {
+        isBrowserTest = true; 
+        
+        // Motion & Physics
+        var speed = 1;
+        var particleCount = 1000;
+        var particleSize = 2;
+        
+        // Scales
+        var scaleMain = 20;
+        var scaleWire = 15
+        ;
+        
+        // Audio Response
+        var bassSensitivity = 50;
+        var trebleSensitivity = 50;
+        var deformationAmount = 50;
+        
+        // Flash Settings
+        var flashEnabled = false;
+        var flashThreshold = 50;
+
+        // Styling
+        var colorTheme = "Vaporwave";
+        var colorCycleSpeed = 20;
+        
+        // Background Settings
+        var overrideBackground = false;
+
+        // Custom Colors
+        var customPlanetColor = "#ff00ff";
+        var customWireframeColor = "#00ffff";
+        var customBgTop = "#2b002b";
+        var customBgBottom = "#000000";
+
+        // Mock the SignalRGB engine
+        var engine = {
+            audio: {
+                freq: new Int8Array(200) // 200 audio bins
+            }
+        };
+    }
+    // --- End Fallbacks ---
+
+    var renderer, scene, camera, circle, skelet, particle;
+    var ambientLight; 
+    
+    // State Tracking
+    let lastParticleCount = -1;
+    let lastParticleSize = -1;
+    let lastScaleMain = -1;
+    let lastScaleWire = -1;
+    
+    // Color State
+    let currentPlanetColor = new THREE.Color();
+    let currentWireframeColor = new THREE.Color();
+    
+    // Geometry Data
+    let originalWireframePositions = null;
+    
+    var lights = [];
+
+    // -----------------------------------------------------
+    // THEME DEFINITIONS
+    // -----------------------------------------------------
+    const themes = {
+        "Blood Moon":     { planet: ["#8a0303", "#b22222", "#800000"], wire: ["#ff0000", "#ff4500", "#dc143c"], bgTop: "#1a0000", bgBot: "#000000" },
+        "Cotton Candy":   { planet: ["#ffb7d5", "#ffc0cb", "#ff69b4"], wire: ["#a6e7ff", "#87ceeb", "#e0ffff"], bgTop: "#2e2028", bgBot: "#20282e" },
+        "Cyberpunk":      { planet: ["#fcee0a", "#ff0055", "#00ff00"], wire: ["#0afcfa", "#ff00ff", "#ffff00"], bgTop: "#0a0a2e", bgBot: "#000000" },
+        "Deep Sea":       { planet: ["#000080", "#0000cd", "#4169e1"], wire: ["#00ffff", "#00ced1", "#7fffd4"], bgTop: "#001a33", bgBot: "#00050a" },
+        "Forest":         { planet: ["#006400", "#228b22", "#556b2f"], wire: ["#32cd32", "#98fb98", "#00ff00"], bgTop: "#001a00", bgBot: "#000000" },
+        "Golden Hour":    { planet: ["#ffcc00", "#ffd700", "#ffa500"], wire: ["#ff8800", "#ff4500", "#daa520"], bgTop: "#2e2200", bgBot: "#1a0d00" },
+        "Ice Kingdom":    { planet: ["#ffffff", "#f0f8ff", "#e0ffff"], wire: ["#a6e7ff", "#00bfff", "#1e90ff"], bgTop: "#e0f7fa", bgBot: "#006064" },
+        "Lavender":       { planet: ["#e6e6fa", "#d8bfd8", "#dda0dd"], wire: ["#9370db", "#8a2be2", "#7b68ee"], bgTop: "#1e1a2e", bgBot: "#000000" },
+        "Magma":          { planet: ["#ff0000", "#ff4500", "#ff8c00"], wire: ["#ffaa00", "#ffd700", "#ff4500"], bgTop: "#330000", bgBot: "#1a0500" },
+        "Matrix":         { planet: ["#000000", "#003300", "#001100"], wire: ["#00ff00", "#32cd32", "#00fa9a"], bgTop: "#001a00", bgBot: "#000000" },
+        "Midnight":       { planet: ["#191970", "#000080", "#00008b"], wire: ["#4169e1", "#1e90ff", "#6495ed"], bgTop: "#000000", bgBot: "#050515" },
+        "Minty":          { planet: ["#98ff98", "#00ff7f", "#3cb371"], wire: ["#ffffff", "#f0fff0", "#f5fffa"], bgTop: "#002e1f", bgBot: "#000000" },
+        "Monochrome":     { planet: ["#ffffff", "#cccccc", "#999999"], wire: ["#888888", "#aaaaaa", "#dddddd"], bgTop: "#222222", bgBot: "#000000" },
+        "Northern Lights":{ planet: ["#00ff80", "#00fa9a", "#90ee90"], wire: ["#8000ff", "#9400d3", "#4b0082"], bgTop: "#001a1a", bgBot: "#05001a" },
+        "Rainbow":        { planet: ["#ff0000", "#ffa500", "#ffff00", "#008000", "#0000ff", "#4b0082", "#ee82ee"], wire: ["#ff0000", "#ffa500", "#ffff00", "#008000", "#0000ff", "#4b0082", "#ee82ee"], bgTop: "#202020", bgBot: "#000000" },
+        "Royal":          { planet: ["#ffd700", "#daa520", "#b8860b"], wire: ["#4b0082", "#800080", "#8b008b"], bgTop: "#1a002e", bgBot: "#000000" },
+        "Slate":          { planet: ["#708090", "#778899", "#2f4f4f"], wire: ["#b0c4de", "#4682b4", "#5f9ea0"], bgTop: "#2f4f4f", bgBot: "#000000" },
+        "Solar Flare":    { planet: ["#ff4500", "#ff8c00", "#ffa500"], wire: ["#ffff00", "#ffd700", "#ffa500"], bgTop: "#2e0d00", bgBot: "#000000" },
+        "Sunset":         { planet: ["#ff4500", "#ff6347", "#ff7f50"], wire: ["#8a2be2", "#9370db", "#4b0082"], bgTop: "#2e001f", bgBot: "#1a0500" },
+        "Toxic":          { planet: ["#ccff00", "#adff2f", "#7fff00"], wire: ["#a020f0", "#8a2be2", "#9400d3"], bgTop: "#1a2e00", bgBot: "#15002e" },
+        "Vaporwave":      { planet: ["#ff00ff", "#bd00ff", "#ff00aa"], wire: ["#00ffff", "#00bfff", "#ff00ff"], bgTop: "#2b002b", bgBot: "#000000" }
+    };
+
+    init();
+    animate();
+
+    function init() {
+        const container = document.getElementById('canvas');
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.autoClear = false;
+        container.appendChild(renderer.domElement);
+
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 400;
+        scene.add(camera);
+
+        circle = new THREE.Object3D();
+        skelet = new THREE.Object3D();
+        particle = new THREE.Object3D();
+
+        scene.add(circle);
+        scene.add(skelet);
+        scene.add(particle);
+
+        createSceneObjects();
+
+        // Lighting
+        ambientLight = new THREE.AmbientLight(0x404040); 
+        scene.add(ambientLight);
+
+        lights[0] = new THREE.DirectionalLight(0xffffff, 1);
+        lights[0].position.set(1, 0, 0);
+        
+        lights[1] = new THREE.DirectionalLight(0xffffff, 0.8);
+        lights[1].position.set(0.75, 1, 0.5);
+        
+        lights[2] = new THREE.DirectionalLight(0xffffff, 0.8);
+        lights[2].position.set(-0.75, -1, 0.5);
+        
+        scene.add(lights[0]);
+        scene.add(lights[1]);
+        scene.add(lights[2]);
+
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function createSceneObjects() {
+        // Cleanup
+        while(particle.children.length > 0){ particle.remove(particle.children[0]); }
+        while(circle.children.length > 0){ circle.remove(circle.children[0]); }
+        while(skelet.children.length > 0){ skelet.remove(skelet.children[0]); }
+
+        // Props
+        const count = typeof particleCount !== 'undefined' ? particleCount : 1000;
+        const size = typeof particleSize !== 'undefined' ? particleSize : 2;
+
+        // Geometry
+        var geometry = new THREE.TetrahedronGeometry(size, 0);
+        var geom = new THREE.IcosahedronGeometry(7, 1);
+        var geom2 = new THREE.IcosahedronGeometry(15, 1);
+
+        originalWireframePositions = Float32Array.from(geom2.attributes.position.array);
+
+        // Particles
+        if (count > 0) {
+            var materialParticle = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                flatShading: true
+            });
+
+            for (var i = 0; i < count; i++) {
+                var mesh = new THREE.Mesh(geometry, materialParticle);
+                mesh.position.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+                mesh.position.multiplyScalar(90 + (Math.random() * 700));
+                mesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+                particle.add(mesh);
+            }
+        }
+
+        // Planet Material (Solid)
+        var matPlanet = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            flatShading: true,
+            shininess: 10
+        });
+
+        // Wireframe Material
+        var matWire = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            wireframe: true,
+            side: THREE.DoubleSide
+        });
+
+        var planet = new THREE.Mesh(geom, matPlanet);
+        const sMain = typeof scaleMain !== 'undefined' ? scaleMain : 16;
+        planet.scale.set(sMain, sMain, sMain);
+        circle.add(planet);
+
+        var planet2 = new THREE.Mesh(geom2, matWire);
+        const sWire = typeof scaleWire !== 'undefined' ? scaleWire : 10;
+        planet2.scale.set(sWire, sWire, sWire);
+        skelet.add(planet2);
+
+        lastParticleCount = count;
+        lastParticleSize = size;
+        lastScaleMain = sMain;
+        lastScaleWire = sWire;
+    }
+
+    // Helper to interpolate through an array of color hex strings
+    function getTransitionColor(colorArray, speed) {
+        if (!Array.isArray(colorArray)) return new THREE.Color(colorArray);
+        
+        const time = Date.now() * 0.0001 * speed;
+        const len = colorArray.length;
+        
+        const currentIndex = Math.floor(time) % len;
+        const nextIndex = (currentIndex + 1) % len;
+        const alpha = time - Math.floor(time);
+        
+        const c1 = new THREE.Color(colorArray[currentIndex]);
+        const c2 = new THREE.Color(colorArray[nextIndex]);
+        
+        return c1.lerp(c2, alpha);
+    }
+
+    function updateThemeColors() {
+        const themeName = typeof colorTheme !== 'undefined' ? colorTheme : "Vaporwave";
+        const cycleSpeed = typeof colorCycleSpeed !== 'undefined' ? colorCycleSpeed : 20;
+        const useOverrideBg = typeof overrideBackground !== 'undefined' ? overrideBackground : false;
+
+        let targetPlanetColors, targetWireColors, targetBgTop, targetBgBot;
+
+        if (themeName === "Custom") {
+            const cPlanet = typeof customPlanetColor !== 'undefined' ? customPlanetColor : "#ff00ff";
+            const cWire = typeof customWireframeColor !== 'undefined' ? customWireframeColor : "#00ffff";
+            targetPlanetColors = cPlanet;
+            targetWireColors = cWire;
+            
+            targetBgTop = typeof customBgTop !== 'undefined' ? customBgTop : "#2b002b";
+            targetBgBot = typeof customBgBottom !== 'undefined' ? customBgBottom : "#000000";
+        } else {
+            const t = themes[themeName] || themes["Vaporwave"];
+            targetPlanetColors = t.planet;
+            targetWireColors = t.wire;
+            targetBgTop = t.bgTop;
+            targetBgBot = t.bgBot;
+        }
+
+        if (useOverrideBg) {
+            targetBgTop = typeof customBgTop !== 'undefined' ? customBgTop : "#2b002b";
+            targetBgBot = typeof customBgBottom !== 'undefined' ? customBgBottom : "#000000";
+        }
+
+        currentPlanetColor = getTransitionColor(targetPlanetColors, cycleSpeed);
+        currentWireframeColor = getTransitionColor(targetWireColors, cycleSpeed);
+
+        document.body.style.background = `linear-gradient(to bottom, ${targetBgTop} 0%, ${targetBgBot} 100%)`;
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // 0. Browser Test Mode Mocking
+        if (isBrowserTest) {
+             const time = Date.now() / 1000;
+             const beat = (Math.sin(time * 5) + 1) * 0.5; // Simulate beat
+             const beatVal = beat > 0.8 ? 127 : 10;
+             // Fill fake audio data
+             for (let i = 0; i < 10; i++) engine.audio.freq[i] = beatVal;
+             for (let i = 100; i < 110; i++) engine.audio.freq[i] = beatVal * 0.5;
+        }
+
+        // 1. Calculate Colors
+        updateThemeColors();
+
+        // 2. Check for Geometry Prop Changes
+        const pCount = typeof particleCount !== 'undefined' ? particleCount : 1000;
+        const pSize = typeof particleSize !== 'undefined' ? particleSize : 2;
+        const sMain = typeof scaleMain !== 'undefined' ? scaleMain : 16;
+        const sWire = typeof scaleWire !== 'undefined' ? scaleWire : 10;
+
+        if (pCount !== lastParticleCount || pSize !== lastParticleSize || sMain !== lastScaleMain || sWire !== lastScaleWire) {
+            createSceneObjects();
+        }
+
+        // 3. Audio Analysis
+        let bass = 0;
+        let treble = 0;
+        const bSens = typeof bassSensitivity !== 'undefined' ? bassSensitivity / 20 : 2.5;
+        const tSens = typeof trebleSensitivity !== 'undefined' ? trebleSensitivity / 20 : 2.5;
+
+        if (typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+            const audioData = engine.audio.freq; 
+            
+            let bassSum = 0;
+            for (let i = 0; i < 4; i++) { bassSum += Math.abs(audioData[i]); }
+            bass = (bassSum / 4) / 128.0; 
+
+            let trebleSum = 0;
+            let tCount = 0;
+            for (let i = 100; i < 140; i++) { 
+                trebleSum += Math.abs(audioData[i]); 
+                tCount++;
+            }
+            treble = (trebleSum / tCount) / 128.0;
+        } else {
+            const time = Date.now() / 1000;
+            bass = (Math.sin(time * 2) + 1) * 0.2;
+            treble = (Math.cos(time * 5) + 1) * 0.1;
+        }
+
+        const bassReaction = bass * bSens;
+        const trebleReaction = treble * tSens;
+
+        // 4. Flash on Beat
+        const flash = typeof flashEnabled !== 'undefined' ? flashEnabled : true;
+        const thresh = typeof flashThreshold !== 'undefined' ? flashThreshold / 100.0 : 0.5;
+        
+        if (flash && bass > thresh) {
+             lights[1].intensity = 2.5;
+             lights[2].intensity = 2.5;
+             if(ambientLight) ambientLight.intensity = 1.5; 
+
+             if (circle.children[0]) circle.children[0].material.color.setHex(0xFFFFFF);
+             if (skelet.children[0]) skelet.children[0].material.color.setHex(0xFFFFFF);
+
+        } else {
+             lights[1].intensity = 0.8;
+             lights[2].intensity = 0.8;
+             if(ambientLight) ambientLight.intensity = 0.6;
+
+             if (circle.children[0]) circle.children[0].material.color.copy(currentPlanetColor);
+             if (skelet.children[0]) skelet.children[0].material.color.copy(currentWireframeColor);
+        }
+
+        // 5. Rotation
+        const rawSpeed = typeof speed !== 'undefined' ? speed : 20;
+
+        if (rawSpeed > 0) {
+            const baseSpeed = rawSpeed / 2000.0;
+            const speedMod = baseSpeed + (bassReaction * 0.005); 
+
+            if (particle.children.length > 0) {
+                particle.rotation.x += speedMod;
+                particle.rotation.y -= speedMod * 2;
+            }
+            
+            circle.rotation.x -= speedMod;
+            circle.rotation.y -= speedMod;
+            skelet.rotation.x -= speedMod / 2;
+            skelet.rotation.y += speedMod;
+        }
+
+        // 6. Solid Planet Pulse
+        if (circle.children[0]) {
+            const pulseScale = sMain + (bassReaction * 3);
+            circle.children[0].scale.set(pulseScale, pulseScale, pulseScale);
+        }
+
+        // 7. Wireframe Deformation
+        const defAmt = typeof deformationAmount !== 'undefined' ? deformationAmount / 100 : 0.5;
+        
+        if (skelet.children[0] && originalWireframePositions) {
+            const mesh = skelet.children[0];
+            const positionAttribute = mesh.geometry.attributes.position;
+            const positions = positionAttribute.array;
+            
+            const time = Date.now() * 0.002;
+            
+            for (let i = 0; i < positions.length; i += 3) {
+                const ox = originalWireframePositions[i];
+                const oy = originalWireframePositions[i + 1];
+                const oz = originalWireframePositions[i + 2];
+                
+                const seed = ox * 0.5 + oy * 0.3 + oz * 0.2;
+                
+                const noise = Math.sin(time * 10 + seed);
+                const offset = (trebleReaction * defAmt) * (5 + noise * 10);
+                
+                const vector = new THREE.Vector3(ox, oy, oz).normalize();
+                
+                positions[i]     = ox + (vector.x * offset);
+                positions[i + 1] = oy + (vector.y * offset);
+                positions[i + 2] = oz + (vector.z * offset);
+            }
+            positionAttribute.needsUpdate = true;
+        }
+
+        renderer.clear();
+        renderer.render(scene, camera);
+    };
+</script>
+</html>
