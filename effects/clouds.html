@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Flying Through Clouds</title>
+    <meta description="3D clouds with dynamic palette color cycling and image-textured sun/moon." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="cloudSpeed" label="Cloud Cycle Time (s)" type="number" min="1" max="100" default="30">
+    <meta property="cameraMovement" label="Camera Motion (Amplitude)" type="number" min="0" max="100" default="50">
+    <meta property="dayNightMode" label="Day/Night Mode" type="combobox" default="Night" values="Day,Night">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,America,Aurora,Beach,Bumblebee,Breeze,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Rainbow,Sakura,Sunset,Technicolor" default="Rainbow">
+    <meta property="color1" label="Color 1 (Custom Start)" type="color" default="#FFFFFF">
+    <meta property="color2" label="Color 2 (Custom End)" type="color" default="#8c8c8c">
+    <meta property="transitionSpeed" label="Color Transition Time (s)" type="number" min="1" max="10" default="5">
+    <meta property="colorChangeInterval" label="Color Change Period (s)" type="number" min="1" max="60" default="5">
+
+    <meta property="celestialYOffset" label="Sun/Moon Vertical Position (0-100)" type="number" min="0" max="100" default="58">
+    <meta property="celestialXOffset" label="Sun/Moon Horizontal Position (0-100)" type="number" min="0" max="100" default="84">
+    <meta property="celestialScale" label="Sun/Moon Size (100-500)" type="number" min="100" max="2000" default="1200">
+
+    <style>
+        body,
+        html {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Monospace;
+            background-color: #326696;
+        }
+
+        #effect-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas"></canvas>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+        "addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+}
+</script>
+
+    <script type="module">
+        // --- Browser Test Mode Fallbacks (MUST be first) ---
+        if (typeof engine === 'undefined') {
+            console.warn("Running in Browser Test Mode: SignalRGB properties are mocked.");
+
+            // Explicitly declare them on the window object if they don't exist.
+            window.cloudSpeed = 30;
+            window.cameraMovement = 50;
+            window.dayNightMode = "Night";
+            window.palette = "Custom";
+            window.color1 = "#FFFFFF";
+            window.color2 = "#8c8c8c";
+            window.transitionSpeed = 5;
+            window.colorChangeInterval = 5;
+            window.celestialYOffset = 58;
+            window.celestialXOffset = 84;
+            window.celestialScale = 1200;
+        }
+        // --- End Fallbacks ---
+
+        import * as THREE from "three";
+        import * as BufferGeometryUtils from "addons/utils/BufferGeometryUtils.js";
+
+        // GLOBALS
+        let material;
+        let start_time = Date.now();
+        let lastPalette = '';
+
+        let lastFrameTime = 0;
+        let colorChangeTimeAccumulator = 0.0;
+
+        let cameraX = 0, cameraY = 0, cameraTargetX = 0, cameraTargetY = 0, time = 0;
+        let sunMoonLight, starField, sunMesh, moonMesh;
+        const STAR_COUNT = 1500;
+        let sunTexture, moonTexture;
+
+        // Smooth blending variables
+        let currentCloudColor = new THREE.Color(1, 1, 1);
+        let targetCloudColor = new THREE.Color(1, 1, 1);
+        let startCloudColor = new THREE.Color(1, 1, 1);
+        let transitionComplete = true;
+        let transitionStarted = false;
+        let currentTransitionProgress = 0.0;
+
+        // COLOR PALETTES
+        // MODIFIED: Palettes redefined to be in alphabetical order with Custom at the top
+        const wledPalettes = {
+            "Custom": [], // Custom is always first in the object
+            "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"],
+            "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+            "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+            "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+            "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+            "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+            "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+            "Holiday": ["#D92626", "#0E5D2E", "#F2B705", "#F2F2F2"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+            "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+            "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+            "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+        };
+
+        // HEX HELPERS
+        function hexToRgb(hex) {
+            const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return r ? [parseInt(r[1], 16) / 255, parseInt(r[2], 16) / 255, parseInt(r[3], 16) / 255] : [0, 0, 0];
+        }
+        function hexToThreeColor(hex) {
+            const [r, g, b] = hexToRgb(hex);
+            return new THREE.Color(r, g, b);
+        }
+
+        function getColorFromPalette(paletteName) {
+            if (paletteName === "Custom") {
+                const c1 = hexToThreeColor(typeof color1 !== 'undefined' ? color1 : "#FFFFFF");
+                const c2 = hexToThreeColor(typeof color2 !== 'undefined' ? color2 : "#FF0000");
+                return Math.random() > 0.5 ? c1 : c2;
+            }
+
+            const palette = wledPalettes[paletteName];
+            if (palette && palette.length > 0) return hexToThreeColor(palette[Math.floor(Math.random() * palette.length)]);
+            return new THREE.Color(1, 1, 1);
+        }
+
+        // --- SIMPLIFIED CLOUD SHADER (Corrected for GLSL validation) ---
+        const cloudShader = {
+            vertexShader: `
+                varying vec2 vUv;
+                varying float vDepth;
+                void main(){
+                    vUv = uv;
+                    vec4 mvPosition = modelViewMatrix * vec4(position,1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+                    vDepth = (-mvPosition.z-100.0)/(3000.0-100.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D map;
+                uniform vec3 cloudColor; // ONLY uniform used for color
+                varying vec2 vUv;
+                varying float vDepth;
+                void main(){
+                    gl_FragColor = texture2D(map,vUv);
+                    gl_FragColor.rgb *= cloudColor; 
+                    gl_FragColor.w *= pow(gl_FragCoord.z, 20.0);
+                }
+            `
+        };
+
+        // THREE SETUP
+        const canvas = document.getElementById('effect-canvas');
+        const scene = new THREE.Scene();
+        const sizes = { width: canvas.width, height: canvas.height };
+        let camera = new THREE.PerspectiveCamera(30, sizes.width / sizes.height, 1, 10000);
+        let renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // LIGHTS & STARS
+        function setupLightsAndStars() {
+            const starGeo = new THREE.BufferGeometry();
+            const starVerts = [];
+            const alphas = [];
+            const sizes = [];
+            const offsets = []; // Array for time offsets
+
+            for (let i = 0; i < STAR_COUNT; i++) {
+                starVerts.push(THREE.MathUtils.randFloatSpread(5000));
+                starVerts.push(THREE.MathUtils.randFloatSpread(5000));
+                starVerts.push(THREE.MathUtils.randFloat(-3000, 100));
+
+                sizes.push(Math.random() * 4 + 3);
+                alphas.push(Math.random() * 0.5 + 0.3);
+
+                offsets.push(Math.random() * Math.PI * 2);
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+            starGeo.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+            starGeo.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
+            starGeo.setAttribute('offset', new THREE.Float32BufferAttribute(offsets, 1)); // Offset attribute
+
+            const starMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    color: { value: new THREE.Color(0xffffff) },
+                    pointTexture: { value: null },
+                    u_time: { value: 0.0 } // Time uniform
+                },
+                vertexShader: `
+                    attribute float size;
+                    attribute float alpha;
+                    attribute float offset; 
+                    varying float vAlpha;
+                    varying float vOffset;
+                    void main() {
+                        vAlpha = alpha;
+                        vOffset = offset;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        gl_PointSize = size * (300.0 / -mvPosition.z);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 color;
+                    uniform float u_time;
+                    varying float vAlpha;
+                    varying float vOffset;
+                    void main() {
+                        float twinkleSpeed = 1.5; 
+                        float twinkleInfluence = (sin(u_time * twinkleSpeed + vOffset) + 1.0) * 0.25 + 0.75;
+                        
+                        float dist = length(gl_PointCoord - vec2(0.5));
+                        if (dist > 0.5) discard;
+                        
+                        float finalAlpha = vAlpha * twinkleInfluence; 
+                        
+                        gl_FragColor = vec4(color, finalAlpha * (1.0 - dist * 0.5)); 
+                    }
+                `,
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true
+            });
+
+            starField = new THREE.Points(starGeo, starMat);
+
+            starField.visible = false;
+            scene.add(starField);
+
+            sunMoonLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            sunMoonLight.position.set(0, 100, -100);
+            scene.add(sunMoonLight);
+        }
+
+        // CREATE MESH FUNCTION (Reused for Sun and Moon)
+        function createCelestialBody(texture) {
+            // FIXED: Create PlaneGeometry with a static, normalized size (100)
+            const normalizedSize = 100;
+            const sunGeo = new THREE.PlaneGeometry(normalizedSize, normalizedSize);
+
+            const sunMat = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                blending: THREE.NormalBlending,
+                side: THREE.DoubleSide,
+                color: 0xFFFFFF
+            });
+
+            const mesh = new THREE.Mesh(sunGeo, sunMat);
+            mesh.renderOrder = 0;
+            scene.add(mesh);
+            return mesh;
+        }
+
+        // SUN
+        function createSun() {
+            sunMesh = createCelestialBody(sunTexture);
+            const sunLight = new THREE.PointLight(0xFFD700, 10, 15000);
+            sunLight.position.copy(sunMesh.position);
+            sunMesh.userData.light = sunLight;
+            scene.add(sunLight);
+        }
+
+        // MOON
+        function createMoon() {
+            moonMesh = createCelestialBody(moonTexture);
+            const moonLight = new THREE.PointLight(0xAAAAFF, 3, 15000);
+            moonLight.position.copy(moonMesh.position);
+            moonMesh.userData.light = moonLight;
+            scene.add(moonLight);
+            moonMesh.visible = false; // Start hidden
+        }
+
+
+        // ATMOSPHERE (Night Mode Background and Lighting Fixes)
+        function updateAtmosphere() {
+            let newBgColor, lightColor, lightIntensity;
+            const bgDefault = "#326696";
+            const isNight = dayNightMode === "Night";
+
+            if (isNight) {
+                newBgColor = hexToThreeColor("#000000");
+                lightColor = new THREE.Color(0.8, 0.8, 1.0);
+                lightIntensity = 0.2;
+
+                if (starField) starField.visible = true;
+
+                if (sunMesh) sunMesh.visible = false;
+                if (moonMesh) moonMesh.visible = true;
+            } else {
+                newBgColor = hexToThreeColor(bgDefault);
+                lightColor = new THREE.Color(1.0, 0.9, 0.7);
+                lightIntensity = 2.5;
+                if (starField) starField.visible = false;
+
+                if (sunMesh) sunMesh.visible = true;
+                if (moonMesh) moonMesh.visible = false;
+            }
+
+            scene.background = newBgColor;
+
+            if (sunMoonLight) {
+                sunMoonLight.color.copy(lightColor);
+                sunMoonLight.intensity = lightIntensity;
+            }
+
+            document.body.style.backgroundColor = newBgColor.getStyle();
+        }
+
+        // CLOUD COLOR (Time-Based Transition and Period)
+        function updateCloudColorUniforms(deltaTime) {
+            if (!material || !material.uniforms) return;
+
+            const waitPeriodSeconds = typeof colorChangeInterval !== "undefined" ? colorChangeInterval : 10;
+            const transitionTimeSeconds = typeof transitionSpeed !== "undefined" ? transitionSpeed : 5;
+
+            colorChangeTimeAccumulator += deltaTime;
+
+            if (!transitionStarted) {
+                currentTransitionProgress = 0.0;
+
+                if (colorChangeTimeAccumulator >= waitPeriodSeconds) {
+                    startCloudColor.copy(currentCloudColor);
+                    targetCloudColor = getColorFromPalette(palette || "Rainbow");
+
+                    colorChangeTimeAccumulator = 0.0;
+                    transitionStarted = true;
+                    transitionComplete = false;
+                }
+            } else if (!transitionComplete) {
+                currentTransitionProgress += deltaTime;
+
+                let progressFactor = currentTransitionProgress / transitionTimeSeconds;
+
+                if (progressFactor >= 1.0) {
+                    currentCloudColor.copy(targetCloudColor);
+                    colorChangeTimeAccumulator = 0.0;
+                    currentTransitionProgress = 0.0;
+                    transitionComplete = true;
+                    transitionStarted = false;
+                } else {
+                    currentCloudColor.copy(startCloudColor).lerp(targetCloudColor, progressFactor);
+                }
+            }
+
+            material.uniforms.cloudColor.value.copy(currentCloudColor);
+        }
+
+
+        // INIT
+        const tLoader = new THREE.TextureLoader();
+
+        // 1. Load the main cloud texture
+        tLoader.load("https://effectbuilder.github.io/images/cloud10.png", (t) => {
+            t.colorSpace = THREE.SRGBColorSpace;
+
+            // 2. Load the sun texture 
+            tLoader.load("https://effectbuilder.github.io/images/sun.png", (sunT) => {
+                sunTexture = sunT;
+                sunTexture.colorSpace = THREE.SRGBColorSpace;
+
+                // 3. Load the moon texture
+                tLoader.load("https://effectbuilder.github.io/images/moon.png", (moonT) => {
+                    moonTexture = moonT;
+                    moonTexture.colorSpace = THREE.SRGBColorSpace;
+
+                    // 4. Initialize everything once all textures are loaded
+                    init(t); onWindowResize(); animate(0);
+                });
+            });
+        });
+
+        function init(texture) {
+            camera.position.z = 6000;
+            const planeGeo = new THREE.PlaneGeometry(64, 64);
+            const planeObj = new THREE.Object3D();
+            const geometries = [];
+
+            texture.magFilter = THREE.LinearMipMapLinearFilter;
+            texture.minFilter = THREE.LinearMipMapLinearFilter;
+
+            setupLightsAndStars();
+            createSun();
+            createMoon();
+            updateAtmosphere();
+
+            const initialColor = hexToThreeColor(color1 || "#FFFFFF");
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    map: { value: texture },
+                    cloudColor: { value: initialColor },
+                },
+                vertexShader: cloudShader.vertexShader,
+                fragmentShader: cloudShader.fragmentShader,
+                depthWrite: false,
+                depthTest: false,
+                transparent: true
+            });
+
+            for (let i = 0; i < 8000; i++) {
+                planeObj.position.x = Math.random() * 1000 - 500;
+                planeObj.position.y = -Math.random() * Math.random() * 200 - 15;
+                planeObj.position.z = i;
+                planeObj.rotation.z = Math.random() * Math.PI;
+                planeObj.scale.x = planeObj.scale.y = Math.random() * Math.random() * 1.5 + 0.5;
+                planeObj.updateMatrix();
+                const cloned = planeGeo.clone();
+                cloned.applyMatrix4(planeObj.matrix);
+                geometries.push(cloned);
+            }
+
+            const mergedGeo = BufferGeometryUtils.mergeGeometries(geometries);
+            const planesMesh = new THREE.Mesh(mergedGeo, material);
+            planesMesh.renderOrder = 2;
+
+            const planesMeshA = planesMesh.clone();
+            planesMeshA.position.z = -8000;
+            planesMeshA.renderOrder = 1;
+
+            scene.add(planesMesh, planesMeshA);
+
+            window.addEventListener("resize", onWindowResize, false);
+        }
+
+        // RESIZE
+        function onWindowResize() {
+            const newWidth = canvas.clientWidth;
+            const newHeight = canvas.clientHeight;
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+        }
+
+        // ANIMATE
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            // Calculate deltaTime
+            if (lastFrameTime === 0) lastFrameTime = currentTime;
+            const deltaTime = (currentTime - lastFrameTime) / 1000.0; // Time in seconds
+            lastFrameTime = currentTime;
+
+            time += deltaTime;
+
+            if (starField && starField.material.uniforms.u_time) {
+                starField.material.uniforms.u_time.value = time;
+            }
+
+            const currentCloudCycleTime = (typeof cloudSpeed !== "undefined" ? cloudSpeed : 30);
+            const currentCameraMovement = (typeof cameraMovement !== "undefined" ? cameraMovement : 50) / 100.0;
+
+            // NEW: Get celestial properties
+            const currentScale = (typeof celestialScale !== 'undefined' ? celestialScale : 300);
+            const verticalOffset = (typeof celestialYOffset !== 'undefined' ? celestialYOffset : 50) / 100.0;
+            const horizontalOffset = (typeof celestialXOffset !== 'undefined' ? celestialXOffset : 50) / 100.0;
+
+            updateAtmosphere();
+            updateCloudColorUniforms(deltaTime);
+
+            // Clouds move: Reverted to original working scaling.
+            const movementSpeedFactor = (currentCloudCycleTime / 100) * 0.1;
+
+            const positionDelta = (Date.now() - start_time) * movementSpeedFactor;
+            const position = positionDelta % 8000;
+            camera.position.z = -position + 8000;
+
+            // Camera motion
+            const motionMagnitude = 150 * currentCameraMovement;
+            cameraTargetX = Math.sin(time * 0.5) * motionMagnitude * 0.5;
+            cameraTargetY = Math.cos(time * 0.7) * motionMagnitude * 0.3;
+
+            const dampingFactor = Math.min(1.0, deltaTime * 5.0);
+            cameraX += (cameraTargetX - cameraX) * dampingFactor;
+            cameraY += (cameraTargetY - cameraY) * dampingFactor;
+            camera.position.x += (cameraX - camera.position.x) * dampingFactor;
+            camera.position.y += (-cameraY - camera.position.y) * dampingFactor;
+
+            // Stars fixed: Dynamic position fix
+            if (starField) {
+                starField.position.x = camera.position.x;
+                starField.position.y = camera.position.y;
+                starField.position.z = camera.position.z - 4000;
+            }
+
+            // Update Sun/Moon position, size, and X/Y based on user input
+            const sunMoonOffsetZ = -3500;
+            const isNight = dayNightMode === "Night";
+
+            const activeMesh = isNight ? moonMesh : sunMesh;
+            const activeLight = activeMesh ? activeMesh.userData.light : null;
+
+            if (activeMesh) {
+                // APPLY DYNAMIC SCALE
+                const scaleFactor = currentScale / 100.0;
+                activeMesh.scale.set(scaleFactor, scaleFactor, 1);
+
+                // CALCULATE X/Y POSITIONING
+                const rangeX = 3000;
+                const rangeY = 1000;
+
+                const sunMoonOffsetX = (horizontalOffset - 0.5) * rangeX;
+                const sunMoonOffsetY = 400 + (verticalOffset - 0.5) * rangeY;
+
+                activeMesh.position.x = camera.position.x + sunMoonOffsetX;
+                activeMesh.position.y = camera.position.y + sunMoonOffsetY;
+                activeMesh.position.z = camera.position.z + sunMoonOffsetZ;
+
+                if (activeLight) {
+                    activeLight.position.copy(activeMesh.position);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('load', onWindowResize);
+        window.addEventListener('resize', onWindowResize);
+    </script>
+</body>
+
+</html>

@@ -71,7 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "ink_drops.html",
         "starfield.html",
         "digital_noiseform.html",
-        "bouncingCubes.html"
+        "bouncingCubes.html",
+        "clouds.html"
     ];
 
     // --- Path Configuration ---
