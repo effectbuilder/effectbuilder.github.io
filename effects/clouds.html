@@ -1,4 +1,3 @@
-<!-- Original code: https://freefrontend.com/three-js/ -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -402,7 +401,7 @@
             const planeObj = new THREE.Object3D();
             const geometries = [];
 
-            texture.magFilter = THREE.LinearMipMapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
             texture.minFilter = THREE.LinearMipMapLinearFilter;
 
             setupLightsAndStars();
