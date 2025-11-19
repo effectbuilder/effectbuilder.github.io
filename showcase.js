@@ -73,7 +73,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "digital_noiseform.html",
         "bouncingCubes.html",
         "clouds.html",
-        "polyPlanet.html"
+        "polyPlanet.html",
+        "serenityWaves.html"
     ];
 
     // --- Path Configuration ---
