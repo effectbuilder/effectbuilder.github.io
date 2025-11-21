@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Bouncer</title>
+    <meta description="Visualizes system stats with physics-based bouncing balls." />
+    <meta publisher="José Miranda" />
+
+    <meta property="sensor_ram" label="Ball Count Sensor" type="sensor" default="Memory Load" />
+    <meta property="sensor_cpu" label="Speed Sensor" type="sensor" default="CPU Load" />
+    <meta property="sensor_temp" label="Color Sensor" type="sensor" default="CPU Package" />
+
+    <meta property="max_balls" label="Max Ball Count (Scaled by RAM %)" type="number" min="10" max="300" default="100" />
+    <meta property="ball_size" label="Base Ball Size" type="number" min="2" max="50" default="10" />
+    <meta property="size_randomness" label="Size Randomness (%)" type="number" min="0" max="100" default="50" />
+    
+    <meta property="shade_variance" label="Shade Variance (%)" type="number" min="0" max="100" default="75" />
+    <meta property="trail_length" label="Trail Length (%)" type="number" min="0" max="95" default="75" />
+    
+    <meta property="cold_color" label="Cold Color (Low Temp)" type="color" default="#0000ff" />
+    <meta property="hot_color" label="Hot Color (High Temp)" type="color" default="#ff0000" />
+    <meta property="bg_color" label="Background Color" type="color" default="#000000" />
+    
+    
+
+    <meta property="min_temp" label="Min Value (Temp/Load)" type="number" min="0" max="100" default="30" />
+    <meta property="max_temp" label="Max Value (Temp/Load)" type="number" min="0" max="120" default="120" />
+    <meta property="speed_sensitivity" label="Speed Sensitivity" type="number" min="1" max="100" default="20" />
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+
+<script>
+// -------------------------------------------------------------------
+// SETUP
+// -------------------------------------------------------------------
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let width, height;
+let balls = [];
+
+// System Data State
+let currentRamPct = 50; 
+let currentCpuPct = 10; 
+let currentTemp = 40;   
+
+// -------------------------------------------------------------------
+// UTILITIES
+// -------------------------------------------------------------------
+
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : { r: 0, g: 0, b: 0 };
+}
+
+function lerpColorObj(hex1, hex2, factor) {
+    factor = Math.max(0, Math.min(1, factor));
+    const c1 = hexToRgb(hex1);
+    const c2 = hexToRgb(hex2);
+
+    return {
+        r: Math.round(c1.r + (c2.r - c1.r) * factor),
+        g: Math.round(c1.g + (c2.g - c1.g) * factor),
+        b: Math.round(c1.b + (c2.b - c1.b) * factor)
+    };
+}
+
+function getSensorReading(sensorName) {
+    if (!sensorName || typeof engine === 'undefined') return 0;
+    const data = engine.getSensorValue(sensorName);
+    if (typeof data === 'object' && data !== null && 'value' in data) {
+        return data.value;
+    }
+    return data || 0;
+}
+
+// -------------------------------------------------------------------
+// BALL CLASS
+// -------------------------------------------------------------------
+
+class Ball {
+    constructor() {
+        this.sizeSeed = Math.random(); 
+        
+        // Each ball gets a unique "darkness" seed (0.0 to 1.0)
+        // 1.0 = Full Brightness, 0.0 = Max Darkness allowed by variance
+        this.shadeSeed = Math.random();
+
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        
+        const angle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angle);
+        this.vy = Math.sin(angle);
+        
+        this.radius = 10;
+        this.mass = 10;
+
+        // Animation State
+        this.scale = 0.05; 
+        this.isDying = false; 
+        this.isDead = false; 
+        this.growthSpeed = 0.05; 
+    }
+
+    update(speedMult, baseSize, sizeRandomness) {
+        // --- Animation Logic ---
+        if (this.isDying) {
+            this.scale -= this.growthSpeed;
+            if (this.scale <= 0) {
+                this.scale = 0;
+                this.isDead = true;
+            }
+        } else {
+            if (this.scale < 1.0) {
+                this.scale += this.growthSpeed;
+                if (this.scale > 1.0) this.scale = 1.0;
+            }
+        }
+
+        // --- Size Calculation ---
+        const variance = baseSize * (sizeRandomness / 100.0);
+        let targetRadius = baseSize + ((this.sizeSeed - 0.5) * 2 * variance);
+        
+        this.radius = Math.max(1, targetRadius * this.scale);
+        this.mass = Math.max(0.1, this.radius * this.radius);
+
+        // --- Movement ---
+        this.x += this.vx * speedMult;
+        this.y += this.vy * speedMult;
+
+        // --- Wall Collision ---
+        if (this.x - this.radius < 0) {
+            this.x = this.radius;
+            this.vx = Math.abs(this.vx); 
+        } else if (this.x + this.radius > width) {
+            this.x = width - this.radius;
+            this.vx = -Math.abs(this.vx); 
+        }
+
+        if (this.y - this.radius < 0) {
+            this.y = this.radius;
+            this.vy = Math.abs(this.vy);
+        } else if (this.y + this.radius > height) {
+            this.y = height - this.radius;
+            this.vy = -Math.abs(this.vy);
+        }
+    }
+
+    draw(baseRgb, shadeVariance) {
+        if (this.scale <= 0) return;
+
+        // Calculate Shading
+        // If shadeVariance is 0, multiplier is 1.0 (No change)
+        // If shadeVariance is 50, multiplier is between 0.5 and 1.0
+        // Formula: Multiplier = 1.0 - (Variance% * RandomSeed)
+        const maxDarkness = shadeVariance / 100.0; // e.g., 0.5
+        const multiplier = 1.0 - (this.shadeSeed * maxDarkness);
+
+        const r = Math.floor(baseRgb.r * multiplier);
+        const g = Math.floor(baseRgb.g * multiplier);
+        const b = Math.floor(baseRgb.b * multiplier);
+
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Optional: Add a highlight reflection to make it look spherical
+        // This helps distinctness even more
+        /*
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.beginPath();
+        ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.3, this.radius * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        */
+       
+        // Outline
+        ctx.strokeStyle = `rgba(0,0,0,0.3)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
+// -------------------------------------------------------------------
+// PHYSICS ENGINE
+// -------------------------------------------------------------------
+
+function resolveCollisions() {
+    for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+            const b1 = balls[i];
+            const b2 = balls[j];
+
+            if (b1.scale < 0.2 || b2.scale < 0.2) continue;
+
+            const dx = b2.x - b1.x;
+            const dy = b2.y - b1.y;
+            const distSq = dx*dx + dy*dy;
+            const minDist = b1.radius + b2.radius;
+            
+            if (distSq < minDist * minDist) {
+                const distance = Math.sqrt(distSq);
+                const overlap = minDist - distance;
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                const totalMass = b1.mass + b2.mass;
+                const m1Ratio = b2.mass / totalMass;
+                const m2Ratio = b1.mass / totalMass;
+
+                b1.x -= nx * overlap * m1Ratio;
+                b1.y -= ny * overlap * m1Ratio;
+                b2.x += nx * overlap * m2Ratio;
+                b2.y += ny * overlap * m2Ratio;
+
+                const v1n = b1.vx * nx + b1.vy * ny;
+                const v2n = b2.vx * nx + b2.vy * ny;
+
+                if (v1n - v2n < 0) continue;
+
+                const m1 = b1.mass;
+                const m2 = b2.mass;
+
+                const v1nTag = (v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2);
+                const v2nTag = (v2n * (m2 - m1) + 2 * m1 * v1n) / (m1 + m2);
+
+                b1.vx = b1.vx - v1n * nx + v1nTag * nx;
+                b1.vy = b1.vy - v1n * ny + v1nTag * ny;
+                b2.vx = b2.vx - v2n * nx + v2nTag * nx;
+                b2.vy = b2.vy - v2n * ny + v2nTag * ny;
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------------
+// DATA LOGIC
+// -------------------------------------------------------------------
+
+function updateSystemData() {
+    if (typeof engine !== 'undefined') {
+        if (typeof sensor_ram !== 'undefined') currentRamPct = getSensorReading(sensor_ram);
+        if (typeof sensor_cpu !== 'undefined') currentCpuPct = getSensorReading(sensor_cpu);
+        if (typeof sensor_temp !== 'undefined') currentTemp = getSensorReading(sensor_temp);
+    }
+}
+
+// -------------------------------------------------------------------
+// MAIN LOOP
+// -------------------------------------------------------------------
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const maxBallsVal = typeof max_balls !== 'undefined' ? max_balls : 50;
+    const baseSizeVal = typeof ball_size !== 'undefined' ? ball_size : 10;
+    const randomnessVal = typeof size_randomness !== 'undefined' ? size_randomness : 0;
+    const bg = typeof bg_color !== 'undefined' ? bg_color : "#000000";
+    const cCold = typeof cold_color !== 'undefined' ? cold_color : "#00aaff";
+    const cHot = typeof hot_color !== 'undefined' ? hot_color : "#ff0000";
+    const sSens = typeof speed_sensitivity !== 'undefined' ? speed_sensitivity : 10;
+    const mnTemp = typeof min_temp !== 'undefined' ? min_temp : 30;
+    const mxTemp = typeof max_temp !== 'undefined' ? max_temp : 80;
+    const trailVal = typeof trail_length !== 'undefined' ? trail_length : 0;
+    const shadeVarVal = typeof shade_variance !== 'undefined' ? shade_variance : 50;
+
+    updateSystemData();
+
+    const targetCount = Math.floor((currentRamPct / 100) * maxBallsVal);
+    const speedMult = 1 + (currentCpuPct / 100) * (sSens / 5); 
+
+    let tempFactor = (currentTemp - mnTemp) / (mxTemp - mnTemp);
+    tempFactor = Math.max(0, Math.min(1, tempFactor));
+    const baseColorObj = lerpColorObj(cCold, cHot, tempFactor);
+
+    // --- POPULATION CONTROL ---
+    balls = balls.filter(b => !b.isDead);
+
+    const activeBalls = balls.filter(b => !b.isDying).length;
+
+    if (activeBalls < targetCount) {
+        if (activeBalls < targetCount) balls.push(new Ball()); 
+        if (activeBalls + 1 < targetCount) balls.push(new Ball()); 
+    } 
+    else if (activeBalls > targetCount) {
+        let removeCount = activeBalls - targetCount;
+        for (let i = balls.length - 1; i >= 0; i--) {
+            if (removeCount <= 0) break;
+            if (!balls[i].isDying) {
+                balls[i].isDying = true;
+                removeCount--;
+            }
+        }
+    }
+
+    // --- BACKGROUND / TRAILS ---
+    const bgAlpha = 1.0 - (trailVal / 100.0);
+    const bgRgb = hexToRgb(bg);
+    ctx.fillStyle = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${bgAlpha})`;
+    ctx.fillRect(0, 0, width, height);
+
+    // Update Physics
+    for (let i = 0; i < balls.length; i++) {
+        balls[i].update(speedMult, baseSizeVal, randomnessVal);
+    }
+    resolveCollisions();
+
+    // Draw with Dynamic Shading
+    for (let i = 0; i < balls.length; i++) {
+        balls[i].draw(baseColorObj, shadeVarVal);
+    }
+}
+
+animate();
+
+</script>
+</html>

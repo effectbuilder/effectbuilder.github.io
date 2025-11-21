@@ -74,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "bouncingCubes.html",
         "clouds.html",
         "polyPlanet.html",
-        "serenityWaves.html"
+        "serenityWaves.html",
+        "systemBouncer.html"
     ];
 
     // --- Path Configuration ---
