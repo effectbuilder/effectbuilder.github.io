@@ -102,7 +102,7 @@ const controlGroupMap = {
 
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
-    <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by Jose Miranda" />
+    <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by José Miranda" />
     <meta publisher="SRGB Interactive Effect Builder" />
     <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
     <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
@@ -131,7 +131,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta property="obj1_numberOfRows" label="Small Clock: Number of Rows" type="number" min="1" max="100" default="2" />
     <meta property="obj1_numberOfColumns" label="Small Clock: Number of Columns" type="number" min="1" max="100" default="1" />
     <meta property="obj1_phaseOffset" label="Small Clock: Phase Offset" type="number" min="0" max="100" default="100" />
-    <meta property="obj1_text" label="Small Clock: Text" type="textfield" default="Jose Miranda" />
+    <meta property="obj1_text" label="Small Clock: Text" type="textfield" default="José Miranda" />
     <meta property="obj1_fontSize" label="Small Clock: Font Size" type="number" min="2" max="100" default="42" />
     <meta property="obj1_textAlign" label="Small Clock: Justification" type="combobox" values="left,center,right" default="center" />
     <meta property="obj1_pixelFont" label="Small Clock: Pixel Font Style" type="combobox" values="small,large" default="small" />
