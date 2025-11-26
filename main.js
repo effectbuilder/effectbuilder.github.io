@@ -97,7 +97,8 @@ const controlGroupMap = {
     'Sensor Responsiveness': { props: ['enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'], icon: 'bi-cpu-fill' },
     'Strimer': { props: ['strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed', 'strimerDirection', 'strimerEasing', 'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'], icon: 'bi-segmented-nav' },
     'Spawner': { props: ['spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_gravity', 'spawn_spread'], icon: 'bi-broadcast' },
-    'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' }
+    'Particle': { props: ['spawn_shapeType', 'spawn_size', 'spawn_size_randomness', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random', 'spawn_matrixCharSet', 'spawn_matrixTrailLength', 'spawn_matrixEnableGlow', 'spawn_matrixGlowSize', 'spawn_matrixGlowColor', 'spawn_svg_path', 'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing'], icon: 'bi-stars' },
+    'GIF Settings': { props: ['gifUrl', 'gifFit', 'gifFilter', 'gifFilterValue'], icon: 'bi-film' }
 };
 
 const INITIAL_CONFIG_TEMPLATE = `
@@ -999,20 +1000,47 @@ document.addEventListener('DOMContentLoaded', function () {
                 card.addEventListener('click', async () => {
                     // This logic remains the same
                     card.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Fetching...</span></div></div>`;
-                    try {
+                    if (window.isGifUrlSearch) {
+                        // --- GIF OBJECT PATH ---
                         const originalGifUrl = gif.images.original.url;
-                        const gifResponse = await fetch(originalGifUrl);
-                        selectedGifBlob = await gifResponse.blob();
-                        await preProcessGifBlob(selectedGifBlob);
+
+                        // Update the config store and object
+                        const objId = activeGifSearchObjectId;
+                        const inputName = `obj${objId}_gifUrl`;
+
+                        // Update ConfigStore default
+                        const conf = configStore.find(c => c.property === inputName);
+                        if (conf) conf.default = originalGifUrl;
+
+                        // Update Live Object
+                        const obj = objects.find(o => o.id === parseInt(objId));
+                        if (obj) obj.update({ gifUrl: originalGifUrl });
+
+                        // Update Form UI
+                        const inputEl = document.getElementById(inputName);
+                        if (inputEl) inputEl.value = originalGifUrl;
+
+                        // Close Modal
                         const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
                         searchModal.hide();
-                        const optionsModal = new bootstrap.Modal(document.getElementById('upload-gif-modal'));
-                        optionsModal.show();
-                    } catch (err) {
-                        console.error("Error fetching selected GIF:", err);
-                        showToast("Failed to fetch the selected GIF.", "danger");
-                        card.innerHTML = '';
-                        card.appendChild(img);
+                        showToast("GIF URL applied!", "success");
+
+                    } else {
+                        try {
+                            const originalGifUrl = gif.images.original.url;
+                            const gifResponse = await fetch(originalGifUrl);
+                            selectedGifBlob = await gifResponse.blob();
+                            await preProcessGifBlob(selectedGifBlob);
+                            const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
+                            searchModal.hide();
+                            const optionsModal = new bootstrap.Modal(document.getElementById('upload-gif-modal'));
+                            optionsModal.show();
+                        } catch (err) {
+                            console.error("Error fetching selected GIF:", err);
+                            showToast("Failed to fetch the selected GIF.", "danger");
+                            card.innerHTML = '';
+                            card.appendChild(img);
+                        }
                     }
                 });
             });
@@ -1271,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
 
                     if (relevantConfigs.length > 0) {
-                        const groupId = `export-group-${obj.id}-${groupName.replace(/\\s/g, '-')}`;
+                        const groupId = `export-group-${obj.id}-${groupName.replace(/\s/g, '-')}`;
                         const groupContainer = document.createElement('div');
                         groupContainer.className = 'mb-3';
 
@@ -1349,8 +1377,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const safeFilename = effectTitle.replace(/[\\s/\\?%*:|"<>]/g, '_');
 
             // 4. Define the static parts of the exported file
-            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; }';
-            const bodyContent = '<body><canvas id="signalCanvas"></canvas></body>';
+            const styleContent = 'body { background-color: #000; overflow: hidden; margin: 0; } canvas { width: 100%; height: 100%; } .srgb-gif-overlay { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }';
+            const bodyContent = '<body><div id="canvas-container" style="position: relative; width: 100%; height: 100%;"><canvas id="signalCanvas"></canvas><div id="dom-overlay-container"></div></div></body>';
 
             // 5. Bundle all required helper functions and the Shape class into strings
             // Convert the Shape class to a string
@@ -3094,6 +3122,11 @@ document.addEventListener('DOMContentLoaded', function () {
             'spawn_enableTrail', 'spawn_trailLength', 'spawn_trailSpacing',
             'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
         ],
+        'gif': [
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed',
+            'gifUrl', 'gifFit', 'gifFilter', 'gifFilterValue',
+            'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
+        ]
     };
 
     const galleryOffcanvasEl = document.getElementById('gallery-offcanvas');
@@ -3234,7 +3267,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // OLD: const q = window.query(usersRef, window.where(window.documentId, 'in', batch));
             const q = window.query(usersRef, window.where("__name__", 'in', batch));
             // --- END OF FIX ---
-            
+
             return window.getDocs(q).then(snapshot => {
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -3663,6 +3696,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetWorkspace() {
         // [NEW] Clear any active comment listeners
         unsubscribeFromComments();
+
+        const overlayContainer = document.getElementById('dom-overlay-container');
+        if (overlayContainer) {
+            overlayContainer.innerHTML = '';
+        }
 
         // Clear all object-specific data
         objects = [];
@@ -4224,6 +4262,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 toolLink.className = 'form-text d-block mt-2';
                 toolLink.innerHTML = 'Open SVG Path Editor <i class="bi bi-box-arrow-up-right"></i>';
                 formGroup.appendChild(toolLink);
+            } else if (controlId.endsWith('_gifUrl')) {
+                const searchBtn = document.createElement('button');
+                searchBtn.type = 'button';
+                searchBtn.className = 'btn btn-sm btn-outline-primary mt-2 w-100 btn-search-gif'; // Reuse existing class or new one
+                searchBtn.innerHTML = '<i class="bi bi-search"></i> Search Giphy';
+                formGroup.appendChild(searchBtn);
             }
         } else if (type === 'color') {
             const colorGroup = document.createElement('div');
@@ -5674,7 +5718,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // In main.js, find the drawFrame function and replace it
 
-    function drawFrame(audioData = {}, sensorData = {}, deltaTime = 0, palette = {}, globalCycle = {}) {
+    // Updated signature with forceCanvasDraw
+    function drawFrame(audioData = {}, sensorData = {}, deltaTime = 0, palette = {}, globalCycle = {}, forceCanvasDraw = false) {
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000';
@@ -5720,9 +5765,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // 3. Animate and Draw the object using the (potentially overridden) state
+            // 3. Animate and Draw
             obj.updateAnimationState(audioData, sensorData, deltaTime);
-            obj.draw(selectedObjectIds.includes(obj.id), audioData, {});
+            obj.draw(selectedObjectIds.includes(obj.id), audioData, {}, forceCanvasDraw);
 
             // 4. Restore the object's original state so the UI controls remain correct
             obj.gradient = originalGradient;
@@ -5849,6 +5894,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!Array.isArray(idsToDelete) || idsToDelete.length === 0) {
             return;
         }
+
+        // Remove DOM elements for deleted objects to prevent orphans
+        idsToDelete.forEach(id => {
+            const obj = objects.find(o => o.id === id);
+            if (obj && obj.gifElement) {
+                obj.gifElement.remove();
+            }
+        });
 
         // Filter the main objects array
         objects = objects.filter(o => !idsToDelete.includes(o.id));
@@ -6369,7 +6422,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function getDefaultObjectConfig(newId) {
         return [
             // Geometry & Transform
-            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline', description: 'The basic shape of the object.' },
+            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline,gif', description: 'The basic shape of the object.' },
             { property: `obj${newId}_x`, label: `Object ${newId}: X Position`, type: 'number', default: '10', min: '0', max: '320', description: 'The horizontal position of the object on the canvas.' },
             { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
             { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
@@ -6545,6 +6598,12 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_pathAnim_trail`, label: `Object ${newId}: Trail`, type: 'combobox', values: 'None,Fade,Solid', default: 'None', description: 'Adds a trail behind the moving object.' },
             { property: `obj${newId}_pathAnim_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '20', min: '1', max: '200', description: 'The length of the trail.' },
             { property: `obj${newId}_pathAnim_trailColor`, label: `Object ${newId}: Trail Color`, type: 'combobox', values: 'Inherit,Rainbow', default: 'Inherit', description: 'The color style of the trail.' },
+
+            //GIF
+            { property: `obj${newId}_gifUrl`, label: `Object ${newId}: Image/GIF URL`, type: 'textfield', default: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDBsdDVibmc0cjF1amoxbDFmOGU1eGY0OHNrbmptejd4eHc4OWg0cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hqIaXesRGpP44/giphy.webp', description: 'URL of the image or GIF.' },
+            { property: `obj${newId}_gifFit`, label: `Object ${newId}: Fit Mode`, type: 'combobox', values: 'contain,cover,fill,none', default: 'contain', description: 'How the image should resize to fit the box.' },
+            { property: `obj${newId}_gifFilter`, label: `Object ${newId}: CSS Filter`, type: 'combobox', values: 'None,Brightness,Contrast,Hue-Rotate,Invert,Saturate,Sepia', default: 'None', description: 'Apply a CSS filter effect.' },
+            { property: `obj${newId}_gifFilterValue`, label: `Object ${newId}: Filter Intensity`, type: 'number', default: '50', min: '0', max: '100', description: 'Intensity of the selected filter.' },
         ];
     }
 
@@ -6709,7 +6768,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchGifBtn) {
             e.preventDefault();
             const fieldset = searchGifBtn.closest('fieldset[data-object-id]');
-            activeGifSearchObjectId = fieldset.dataset.objectId;
+            const objectId = parseInt(fieldset.dataset.objectId, 10);
+            const obj = objects.find(o => o.id === objectId);
+
+            activeGifSearchObjectId = objectId; // Global state
+
+            // Determine behavior based on shape type
+            if (obj && obj.shape === 'gif') {
+                // We are searching for a URL
+                window.isGifUrlSearch = true; // Flag to tell search handler what to do
+            } else {
+                // We are searching for pixel data (existing logic)
+                window.isGifUrlSearch = false;
+            }
+
             const gifSearchModal = new bootstrap.Modal(document.getElementById('gif-search-modal'));
             gifSearchModal.show();
             return;
@@ -7598,27 +7670,59 @@ document.addEventListener('DOMContentLoaded', function () {
                     const worldVecY = y - anchorPoint.y;
 
                     // Rotate this vector into the object's local coordinate system.
-                    // This tells us the dimensions of the bounding box in the object's orientation.
+                    // This effectively un-rotates the mouse vector.
                     const localVecX = worldVecX * cosA + worldVecY * sinA;
                     const localVecY = -worldVecX * sinA + worldVecY * cosA;
 
-                    // The new width and height are the absolute values of the local vector components.
-                    let newWidth = Math.abs(localVecX);
-                    let newHeight = Math.abs(localVecY);
+                    let newWidth = initial.initialWidth;
+                    let newHeight = initial.initialHeight;
+                    let deltaX = 0;
+                    let deltaY = 0;
 
-                    // --- Aspect Ratio Lock (Shift Key) ---
-                    if (moveEvent.shiftKey && initial.initialWidth > 0 && initial.initialHeight > 0) {
-                        const aspectRatio = initial.initialWidth / initial.initialHeight;
-                        if (newWidth / newHeight > aspectRatio) {
-                            newHeight = newWidth / aspectRatio;
-                        } else {
-                            newWidth = newHeight * aspectRatio;
+                    // Determine dimensions and center offset based on handle type
+                    if (['left', 'right'].includes(activeResizeHandle)) {
+                        newWidth = Math.abs(localVecX);
+                        deltaX = localVecX / 2;
+                        deltaY = 0; // Constrain vertical movement in local space
+                    }
+                    else if (['top', 'bottom'].includes(activeResizeHandle)) {
+                        newHeight = Math.abs(localVecY);
+                        deltaX = 0; // Constrain horizontal movement in local space
+                        deltaY = localVecY / 2;
+                    }
+                    else {
+                        // Corner Handles (Keep existing logic)
+                        newWidth = Math.abs(localVecX);
+                        newHeight = Math.abs(localVecY);
+
+                        // Aspect Ratio Lock (Shift Key) - Only for corners
+                        if (moveEvent.shiftKey && initial.initialWidth > 0 && initial.initialHeight > 0) {
+                            const aspectRatio = initial.initialWidth / initial.initialHeight;
+                            if (newWidth / newHeight > aspectRatio) {
+                                newHeight = newWidth / aspectRatio;
+                            } else {
+                                newWidth = newHeight * aspectRatio;
+                            }
                         }
+
+                        // For corners, we use the full computed vector for the center
+                        // However, we must respect the aspect ratio adjustment if applied
+                        // Re-calculate deltas based on the FINAL newWidth/newHeight signs
+                        const signX = Math.sign(localVecX) || 1;
+                        const signY = Math.sign(localVecY) || 1;
+                        deltaX = (newWidth * signX) / 2;
+                        deltaY = (newHeight * signY) / 2;
                     }
 
-                    // The center of the new bounding box is the midpoint between the anchor and the mouse.
-                    const newCenterX = (anchorPoint.x + x) / 2;
-                    const newCenterY = (anchorPoint.y + y) / 2;
+                    // Calculate new Center in World Space
+                    // Rotate the local delta vector back to world space
+                    // WorldDeltaX = deltaX * cosA - deltaY * sinA
+                    // WorldDeltaY = deltaX * sinA + deltaY * cosA
+                    const worldDeltaX = deltaX * cosA - deltaY * sinA;
+                    const worldDeltaY = deltaX * sinA + deltaY * cosA;
+
+                    const newCenterX = anchorPoint.x + worldDeltaX;
+                    const newCenterY = anchorPoint.y + worldDeltaY;
 
                     // Calculate the new top-left corner (x, y) from the new center and dimensions.
                     const newX = newCenterX - newWidth / 2;
@@ -8051,10 +8155,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function generateThumbnail(sourceCanvas, width = 400) {
         // Temporarily store the current selection
         const originalSelection = [...selectedObjectIds];
-
-        // Deselect all objects to hide the selection UI
         selectedObjectIds = [];
-        drawFrame(); // Redraw the canvas without selection boxes
+
+        // --- FORCE DRAW FOR THUMBNAIL ---
+        // Pass TRUE as the 6th argument
+        drawFrame({}, {}, 0, {}, {}, true);
 
         const thumbnailCanvas = document.createElement('canvas');
         const thumbWidth = width;
@@ -8063,13 +8168,12 @@ document.addEventListener('DOMContentLoaded', function () {
         thumbnailCanvas.height = thumbHeight;
         const thumbCtx = thumbnailCanvas.getContext('2d');
 
-        // Draw the clean main canvas onto the smaller thumbnail canvas
         thumbCtx.drawImage(sourceCanvas, 0, 0, thumbWidth, thumbHeight);
         const dataUrl = thumbnailCanvas.toDataURL('image/png');
 
-        // Restore the original selection and redraw the canvas for the user
+        // Restore
         selectedObjectIds = originalSelection;
-        drawFrame();
+        drawFrame(); // Normal draw
 
         return dataUrl;
     }
