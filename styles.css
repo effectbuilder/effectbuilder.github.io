@@ -476,3 +476,21 @@ body {
 .comment-delete a:hover {
     opacity: 1;
 }
+
+#canvas-container {
+    position: relative; /* Ensure absolute children position relative to this */
+}
+
+.srgb-gif-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left; /* Logic calculates center, so we transform from top-left reference */
+    pointer-events: none; /* CRITICAL: Allows clicking "through" the GIF to select the object on canvas */
+    z-index: 10;
+}
+
+#canvas-container {
+    position: relative;
+    overflow: hidden;
+}
