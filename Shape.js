@@ -372,7 +372,7 @@ class Shape {
         spawn_trailLength, spawn_audioTarget, spawn_trailSpacing, polylineNodes, polylineCurveStyle, pathAnim_enable, pathAnim_shape, pathAnim_size,
         pathAnim_speed, pathAnim_gradType, pathAnim_useSharpGradient, pathAnim_gradColor1, pathAnim_gradColor2,
         pathAnim_cycleColors, pathAnim_cycleSpeed, pathAnim_animationMode, pathAnim_animationSpeed, pathAnim_scrollDir, pathAnim_trail,
-        pathAnim_trailLength, pathAnim_behavior, pathAnim_objectCount, pathAnim_objectSpacing, pathAnim_trailColor }) {
+        pathAnim_trailLength, pathAnim_behavior, pathAnim_objectCount, pathAnim_objectSpacing, pathAnim_trailColor, gifUrl, gifFit, gifFilter, gifFilterValue, gifElement }) {
         // --- ALL properties are assigned here first ---
         this.lastDeltaTime = 0;
         this.dirty = true;
@@ -509,6 +509,12 @@ class Shape {
         this.fireSpread = fireSpread || 100;
         this.particleSpawnCounter = 0;
         this.nextParticleId = 0;
+
+        this.gifUrl = gifUrl || '';
+        this.gifFit = gifFit || 'contain';
+        this.gifFilter = gifFilter || 'None';
+        this.gifFilterValue = gifFilterValue !== undefined ? gifFilterValue : 50;
+        this.gifElement = null; // Reference to the DOM element
 
         try {
             const initialFrames = pixelArtFrames || '[{"data":"[[1]]","duration":1}]';
@@ -875,6 +881,110 @@ class Shape {
                 break;
         }
         this.ctx.fill('evenodd');
+    }
+
+    _updateDomElement(isSelected) {
+        let container = document.getElementById('dom-overlay-container');
+
+        if (!container && typeof document !== 'undefined') {
+            container = document.body;
+        }
+
+        if (this.gifElement && !document.body.contains(this.gifElement)) {
+            this.gifElement = null;
+        }
+
+        if (this.shape === 'gif' && !this.gifElement && container) {
+            const elementId = `gif-overlay-${this.id}`;
+            let existingElement = document.getElementById(elementId);
+
+            if (existingElement) {
+                this.gifElement = existingElement;
+            } else {
+                this.gifElement = document.createElement('img');
+                this.gifElement.crossOrigin = "Anonymous"; // Critical for Thumbnail generation
+                this.gifElement.id = elementId;
+                this.gifElement.className = 'srgb-gif-overlay';
+                this.gifElement.style.position = 'absolute';
+                this.gifElement.style.top = '0px';
+                this.gifElement.style.left = '0px';
+                this.gifElement.style.transformOrigin = 'center';
+                this.gifElement.style.pointerEvents = 'none';
+                this.gifElement.style.zIndex = '10';
+                container.appendChild(this.gifElement);
+            }
+        }
+
+        if (this.shape !== 'gif' && this.gifElement) {
+            this.gifElement.remove();
+            this.gifElement = null;
+            return;
+        }
+
+        if (this.gifElement) {
+            if (this.gifElement.src !== this.gifUrl) {
+                this.gifElement.src = this.gifUrl;
+            }
+
+            const canvas = this.ctx.canvas;
+
+            // Get accurate screen rectangles to handle CSS zooming
+            const positioningContext = this.gifElement.offsetParent || document.body;
+            const canvasRect = canvas.getBoundingClientRect();
+            const contextRect = positioningContext.getBoundingClientRect();
+
+            const scaleX = (canvasRect.width && canvas.width) ? (canvasRect.width / canvas.width) : 1;
+            const scaleY = (canvasRect.height && canvas.height) ? (canvasRect.height / canvas.height) : 1;
+
+            const offsetX = canvasRect.left - contextRect.left;
+            const offsetY = canvasRect.top - contextRect.top;
+
+            // FIX: Correctly combine Degrees (rotation) and Radians (animationAngle)
+            const animAngleDeg = (this.animationAngle || 0) * (180 / Math.PI);
+            const totalAngleDeg = this.rotation + animAngleDeg;
+
+            // Apply Internal Scale (e.g. Audio Pulse)
+            const iScale = this.internalScale || 1.0;
+            const finalWidth = this.width * scaleX * iScale;
+            const finalHeight = this.height * scaleY * iScale;
+
+            this.gifElement.style.width = `${finalWidth}px`;
+            this.gifElement.style.height = `${finalHeight}px`;
+            this.gifElement.style.objectFit = this.gifFit;
+
+            const translateX = (this.x * scaleX) + offsetX;
+            const translateY = (this.y * scaleY) + offsetY;
+
+            this.gifElement.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${totalAngleDeg}deg)`;
+
+            let filterString = 'none';
+            const val = this.gifFilterValue;
+            switch (this.gifFilter) {
+                case "Brightness": filterString = `brightness(${val * 0.02})`; break;
+                case "Contrast": filterString = `contrast(${val * 0.02})`; break;
+                case "Hue-Rotate": filterString = `hue-rotate(${Math.round(val * 3.6)}deg)`; break;
+                case "Invert": filterString = `invert(${val * 0.01})`; break;
+                case "Saturate": filterString = `saturate(${val * 0.02})`; break;
+                case "Sepia": filterString = `sepia(${val * 0.01})`; break;
+            }
+            this.gifElement.style.filter = filterString;
+
+            if (isSelected) {
+                const color = this.locked ? 'orange' : '#00f6ff';
+                this.gifElement.style.outline = `2px solid ${color}`;
+                this.gifElement.style.outlineOffset = '-2px';
+                this.gifElement.style.zIndex = '1000';
+            } else {
+                this.gifElement.style.outline = 'none';
+                this.gifElement.style.zIndex = '10';
+            }
+
+            if (this.enableAudioReactivity && this.audioTarget === 'Flash') {
+                this.gifElement.style.opacity = this.flashOpacity > 0 ? this.flashOpacity : 1;
+            } else {
+                this.gifElement.style.opacity = 1;
+            }
+        }
     }
 
     _drawParticleShape(particle) {
@@ -3443,7 +3553,9 @@ class Shape {
         // --- END: NEW, CORRECTED FIRE LOGIC ---
     }
 
-    draw(isSelected, audioData = {}, palette = {}) {
+    draw(isSelected, audioData = {}, palette = {}, forceCanvasDraw = false) {
+        this._updateDomElement(isSelected);
+
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
         const angleToUse = this.getRenderAngle();
@@ -4483,6 +4595,75 @@ class Shape {
                         }
                     }
                 }
+            } else if (this.shape === 'gif') {
+                if (forceCanvasDraw && this.gifElement && this.gifElement.complete && this.gifElement.naturalWidth !== 0) {
+                    // Apply Filters
+                    let filterString = 'none';
+                    const val = this.gifFilterValue;
+                    switch (this.gifFilter) {
+                        case "Brightness": filterString = `brightness(${val * 0.02})`; break;
+                        case "Contrast": filterString = `contrast(${val * 0.02})`; break;
+                        case "Hue-Rotate": filterString = `hue-rotate(${Math.round(val * 3.6)}deg)`; break;
+                        case "Invert": filterString = `invert(${val * 0.01})`; break;
+                        case "Saturate": filterString = `saturate(${val * 0.02})`; break;
+                        case "Sepia": filterString = `sepia(${val * 0.01})`; break;
+                    }
+                    if (this.ctx.filter) this.ctx.filter = filterString;
+
+                    const imgW = this.gifElement.naturalWidth;
+                    const imgH = this.gifElement.naturalHeight;
+                    const boxW = this.width;
+                    const boxH = this.height;
+
+                    let drawW = boxW;
+                    let drawH = boxH;
+
+                    if (this.gifFit === 'contain' || this.gifFit === 'cover') {
+                        const imgRatio = imgW / imgH;
+                        const boxRatio = boxW / boxH;
+
+                        if (this.gifFit === 'contain') {
+                            if (imgRatio > boxRatio) {
+                                drawW = boxW;
+                                drawH = boxW / imgRatio;
+                            } else {
+                                drawH = boxH;
+                                drawW = boxH * imgRatio;
+                            }
+                        } else { // cover
+                            if (imgRatio > boxRatio) {
+                                drawH = boxH;
+                                drawW = boxH * imgRatio;
+                            } else {
+                                drawW = boxW;
+                                drawH = boxW / imgRatio;
+                            }
+                            this.ctx.beginPath();
+                            this.ctx.rect(-boxW / 2, -boxH / 2, boxW, boxH);
+                            this.ctx.clip();
+                        }
+                    }
+
+                    this.ctx.drawImage(this.gifElement, -drawW / 2, -drawH / 2, drawW, drawH);
+                    this.ctx.restore();
+                    return;
+                }
+
+                // Placeholder for Editor
+                if (!isSelected && !this.gifUrl && !forceCanvasDraw) {
+                    this.ctx.translate(centerX, centerY);
+                    this.ctx.rotate(angleToUse);
+                    this.ctx.strokeStyle = '#555';
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                    this.ctx.fillStyle = '#FFF';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText("GIF (No URL)", 0, 0);
+                    this.ctx.restore();
+                    return;
+                }
+                this.ctx.restore();
+                return;
             } else {
                 // Check if we need to polyfill conic gradients for these basic shapes
                 const isConic = this.gradType === 'conic' || this.gradType === 'rainbow-conic';
