@@ -367,7 +367,7 @@ async function handleNotificationClick(projectId, notificationId) {
 
     // 2. Mark the specific notification as read
     try {
-        const notifDocRef = window.doc(window.db, "notifications", notificationId);
+        const notifDocRef = window.doc(window.db, "srgb-effect-notifications", notificationId);
         await window.updateDoc(notifDocRef, { read: true });
         // The real-time listener will automatically update the badge/dropdown UI.
     } catch (error) {
@@ -860,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (projectOwnerId && projectOwnerId !== user.uid) {
-                    await window.addDoc(window.collection(window.db, "notifications"), {
+                    await window.addDoc(window.collection(window.db, "srgb-effect-notifications"), {
                         recipientId: projectOwnerId,
                         senderId: user.uid,
                         projectId: docId,
@@ -3421,7 +3421,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // --- Create Notification Document AFTER successful transaction commit ---
             if (action === 'liked' && projectOwnerId !== user.uid) {
-                await window.addDoc(window.collection(window.db, "notifications"), {
+                await window.addDoc(window.collection(window.db, "srgb-effect-notifications"), {
                     recipientId: projectOwnerId,
                     senderId: user.uid,
                     projectId: docId,
@@ -3499,7 +3499,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // If signed in, enable the button and set up listener
         toggleBtn.disabled = false;
 
-        const notificationsRef = window.collection(window.db, "notifications");
+        const notificationsRef = window.collection(window.db, "srgb-effect-notifications");
 
         // 2. Query for notifications addressed to the current user
         const q = window.query(
@@ -10154,7 +10154,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         console.log("Marking all notifications as read...");
-        const notificationsRef = window.collection(window.db, "notifications");
+        const notificationsRef = window.collection(window.db, "srgb-effect-notifications");
         const q = window.query(
             notificationsRef,
             window.where("recipientId", "==", user.uid),
