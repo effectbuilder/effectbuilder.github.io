@@ -878,7 +878,6 @@ async function loadComponentFromUrl(componentId) {
         showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
         handleNewComponent(false); // Fall back to normal load
     }
-    // Notice the 'finally' block is gone!
 }
 
 /**
@@ -895,6 +894,14 @@ function loadComponentState(stateToLoad) {
 
     unsubscribeFromComments();
     unsubscribeFromLikes();
+
+    if (stateToLoad.dbId) {
+        const compRef = doc(db, "srgb-components", stateToLoad.dbId);
+        // "increment" must be imported from ./firebase.js at the top of main.js
+        updateDoc(compRef, {
+            viewCount: increment(1)
+        }).catch(err => console.error("Error incrementing view count:", err));
+    }
 
     // Clear old state
     clearAutoSave();
