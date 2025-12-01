@@ -137,6 +137,7 @@ const imageUploadTriggerBtn = document.getElementById('image-upload-trigger-btn'
 const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
 const likeBtn = document.getElementById('like-component-btn');
 const likeCountDisplay = document.getElementById('like-count-display');
+const viewCountDisplay = document.getElementById('view-count-display');
 
 // --- [NEW] COMMENT DOM Elements ---
 const commentSection = document.getElementById('component-comments-section');
@@ -216,6 +217,8 @@ function updateLikeButtonUI() {
         if (tooltip) {
             tooltip.setContent({ '.tooltip-inner': 'Like component' });
         }
+        
+        if (viewCountDisplay) viewCountDisplay.textContent = "0";
     }
 
     // --- Handle the like count badge (applies in all states) ---
@@ -238,8 +241,9 @@ function loadLikeData(componentId) {
     const componentDocRef = doc(db, "srgb-components", componentId);
 
     likeListenerUnsubscribe = onSnapshot(componentDocRef, (docSnap) => {
-        if (!docSnap.exists()) {
+       if (!docSnap.exists()) {
             updateLikeButtonUI();
+            if (viewCountDisplay) viewCountDisplay.textContent = "0"; // Reset views
             return;
         }
 
@@ -255,6 +259,11 @@ function loadLikeData(componentId) {
         }
 
         updateLikeButtonUI();
+        
+        const viewCount = data.viewCount || 0;
+        if (viewCountDisplay) {
+            viewCountDisplay.textContent = viewCount;
+        }
 
     }, (error) => {
         console.error("Error loading like data:", error);
