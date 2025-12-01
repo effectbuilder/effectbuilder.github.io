@@ -34,6 +34,7 @@ const gallerySearchInput = document.getElementById('gallery-search-input');
 const galleryFilterType = document.getElementById('gallery-filter-type');
 const galleryFilterBrand = document.getElementById('gallery-filter-brand');
 const galleryFilterLeds = document.getElementById('gallery-filter-leds');
+const galleryFilterSort = document.getElementById('gallery-filter-sort');
 const galleryLoadingSpinner = document.getElementById('gallery-loading-spinner');
 const galleryEndMessage = document.getElementById('gallery-end-message');
 
@@ -507,7 +508,6 @@ async function loadUserComponents(reset = false) {
         await populateGalleryFilters();
     }
 
-    // If all are loaded and we're not resetting, just exit.
     if (allComponentsLoaded && !reset) {
         isGalleryLoading = false;
         if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
@@ -517,8 +517,14 @@ async function loadUserComponents(reset = false) {
 
     try {
         const componentsCollection = collection(db, 'srgb-components');
+
+        // --- SORTING LOGIC ---
+        // Ensure the element exists before accessing .value
+        const sortElement = document.getElementById('gallery-filter-sort');
+        const sortField = sortElement ? sortElement.value : 'lastUpdated';
+
         const queryConstraints = [
-            orderBy('lastUpdated', 'desc'),
+            orderBy(sortField, 'desc'), 
             limit(GALLERY_PAGE_SIZE)
         ];
 
@@ -527,22 +533,14 @@ async function loadUserComponents(reset = false) {
         const filterBrand = galleryFilterBrand ? galleryFilterBrand.value : 'all';
         const filterLeds = galleryFilterLeds ? galleryFilterLeds.value : 'all';
 
-        if (filterType !== 'all') {
-            queryConstraints.push(where('type', '==', filterType));
-        }
-        if (filterBrand !== 'all') {
-            queryConstraints.push(where('brand', '==', filterBrand));
-        }
+        if (filterType !== 'all') queryConstraints.push(where('type', '==', filterType));
+        if (filterBrand !== 'all') queryConstraints.push(where('brand', '==', filterBrand));
         if (filterLeds !== 'all') {
             const ledCount = parseInt(filterLeds, 10);
-            if (!isNaN(ledCount)) {
-                queryConstraints.push(where('ledCount', '==', ledCount));
-            }
+            if (!isNaN(ledCount)) queryConstraints.push(where('ledCount', '==', ledCount));
         }
 
-        if (lastVisibleComponent) {
-            queryConstraints.push(startAfter(lastVisibleComponent));
-        }
+        if (lastVisibleComponent) queryConstraints.push(startAfter(lastVisibleComponent));
 
         const q = query(componentsCollection, ...queryConstraints);
         const querySnapshot = await getDocs(q);
@@ -563,9 +561,7 @@ async function loadUserComponents(reset = false) {
             const componentData = docSnap.data();
             const componentId = docSnap.id;
 
-            const col = document.createElement('div');
-            col.className = 'col';
-
+            // --- DEFINITIONS START HERE ---
             const ledCount = componentData.ledCount || (Array.isArray(componentData.leds) ? componentData.leds.length : 0);
             const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
             const ownerName = componentData.ownerName || 'Anonymous';
@@ -573,11 +569,18 @@ async function loadUserComponents(reset = false) {
             const imageUrl = componentData.imageUrl;
             const ownerId = componentData.ownerId;
 
+            // [FIX] Define these variables BEFORE using them in the HTML string below
+            const likeCount = componentData.likeCount || 0;
+            const viewCount = componentData.viewCount || 0;
+            // --- DEFINITIONS END ---
+
+            const col = document.createElement('div');
+            col.className = 'col';
+
             let imageHtml = `
                 <div class="card-img-top d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
                      style="background-color: #212529; height: 180px; color: #6c757d; border-bottom: 1px solid var(--bs-border-color);">
-                    
                     <canvas id="thumb-${componentId}" width="180" height="180" style="padding: 10px;"></canvas>
                 </div>`;
 
@@ -595,11 +598,12 @@ async function loadUserComponents(reset = false) {
                 ? `<button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete" title="Delete Component"><i class="bi bi-trash"></i></button>`
                 : '';
 
+            // Render Card HTML
             col.innerHTML = `
                 <div class="card h-100 bg-body-tertiary">
                     ${imageHtml}
                     <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">${componentName}</h5>
+                        <h5 class="card-title text-truncate" title="${componentName}">${componentName}</h5>
                         <small class="card-subtitle text-muted mb-2">By: ${ownerName}</small>
                         <div class="mb-3">
                             <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
@@ -613,39 +617,32 @@ async function loadUserComponents(reset = false) {
                             ${deleteButtonHtml}
                         </div>
                     </div>
-                    <div class="card-footer text-muted" style="font-size: 0.85rem;">
-                        Updated: ${lastUpdated}
+                    <div class="card-footer text-muted d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
+                        <span>${lastUpdated}</span>
+                        <div class="d-flex gap-3">
+                            <span title="Likes"><i class="bi bi-heart-fill text-danger me-1"></i> ${likeCount}</span>
+                            <span title="Views"><i class="bi bi-eye-fill text-secondary me-1"></i> ${viewCount}</span>
+                        </div>
                     </div>
                 </div>
             `;
 
             galleryComponentList.appendChild(col);
 
-            // --- [NEW] Render thumbnail if no image ---
+            // Render Thumbnail (if needed)
             if (!imageUrl) {
                 const thumbCanvas = col.querySelector(`#thumb-${componentId}`);
-                if (thumbCanvas) {
-                    renderComponentThumbnail(thumbCanvas, componentData);
-                }
+                if (thumbCanvas) renderComponentThumbnail(thumbCanvas, componentData);
             }
-            // --- [END NEW] ---
 
-
-            // --- Attach Listeners ---
-            // On this page, "Load" just links to the builder with the ID
+            // Listeners
             const loadUrl = `index.html?id=${componentId}`;
-            col.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', () => {
-                window.location.href = loadUrl;
-            });
-            col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => {
-                window.location.href = loadUrl;
-            });
+            col.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', () => window.location.href = loadUrl);
+            col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => window.location.href = loadUrl);
 
             const deleteButton = col.querySelector(`[data-component-id="${componentId}-delete"]`);
             if (deleteButton) {
-                deleteButton.addEventListener('click', (e) => {
-                    handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId);
-                });
+                deleteButton.addEventListener('click', (e) => handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId));
             }
         });
 
@@ -658,12 +655,17 @@ async function loadUserComponents(reset = false) {
         if (querySnapshot.size < GALLERY_PAGE_SIZE) {
             allComponentsLoaded = true;
             if (galleryEndMessage) galleryEndMessage.style.display = 'block';
-            console.log("All components loaded.");
         }
 
     } catch (error) {
         console.error("Error loading user components:", error);
         galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-danger">Error loading components. See console for details.</div></div>';
+        
+        // Helper for Index Errors
+        if (error.code === 'failed-precondition') {
+             galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-warning">Sort Index Missing. Click the link in the console to create it.</div></div>';
+        }
+        
         showToast('Load Error', 'Could not fetch components.', 'danger');
         if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
     } finally {
@@ -751,6 +753,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (galleryFilterLeds) {
         galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
+    }
+    if (galleryFilterSort) {
+        galleryFilterSort.addEventListener('change', () => loadUserComponents(true));
     }
 
     // --- [NEW] Event listener for Delete All Read button ---
