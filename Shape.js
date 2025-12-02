@@ -354,7 +354,7 @@ function getPatternColor(t, c1, c2) {
 // Update this for a new property
 class Shape {
     constructor({ id, name, shape, x, y, width, height, rotation, gradient, gradientStops, gradType, scrollDirection, cycleColors, cycleSpeed, animationSpeed, ctx,
-        innerDiameter, angularWidth, numberOfSegments, rotationSpeed, useSharpGradient, locked, numberOfRows, numberOfColumns, phaseOffset,
+        innerDiameter, angularWidth, numberOfSegments, rotationSpeed, movementType, movementSpeedX, movementSpeedY, useSharpGradient, locked, numberOfRows, numberOfColumns, phaseOffset,
         animationMode, text, fontSize, textAlign, pixelFont, textAnimation, textAnimationSpeed, showTime, showDate, autoWidth, lineWidth, waveType,
         frequency, oscDisplayMode, pulseDepth, fillShape, enableWaveAnimation, waveStyle, waveCount, tetrisBlockCount, tetrisAnimation, tetrisSpeed,
         tetrisBounce, tetrisHoldTime, tetrisBlurEdges, tetrisHold, tetrisMixColorMode, tetrisCustomMixColor, sides, points, starInnerRadius, enableStroke, strokeWidth, strokeGradType, strokeGradient, strokeGradientStops, strokeScrollDir,
@@ -445,6 +445,9 @@ class Shape {
         this.angularWidth = angularWidth || 20;
         this.numberOfSegments = numberOfSegments || 12;
         this.rotationSpeed = rotationSpeed || 0;
+        this.movementType = movementType || 'Static';
+        this.movementSpeedX = movementSpeedX !== undefined ? movementSpeedX : 5;
+        this.movementSpeedY = movementSpeedY !== undefined ? movementSpeedY : 5;
         this.rotationAngle = 0;
         this.animationAngle = 0;
         this.wavePhaseAngle = wavePhaseAngle || 0;
@@ -515,6 +518,7 @@ class Shape {
         this.gifFilter = gifFilter || 'None';
         this.gifFilterValue = gifFilterValue !== undefined ? gifFilterValue : 50;
         this.gifElement = null; // Reference to the DOM element
+
 
         try {
             const initialFrames = pixelArtFrames || '[{"data":"[[1]]","duration":1}]';
@@ -1714,6 +1718,12 @@ class Shape {
                 } catch (e) {
                     console.error("Error parsing polyline nodes in update:", e);
                 }
+            } else if (key === 'movementType') {
+                this.movementType = props[key];
+            } else if (key === 'movementSpeedX') {
+                this.movementSpeedX = props[key];
+            } else if (key === 'movementSpeedY') {
+                this.movementSpeedY = props[key];
             } else if (key === 'pixelArtFrames') {
                 try {
                     const newFramesData = props.pixelArtFrames;
@@ -2581,6 +2591,37 @@ class Shape {
         const currentTetrisSpeed = this.tetrisSpeed || 0; // Default to 0 if undefined
 
         this.strokeAnimationAngle += (this.strokeRotationSpeed || 0) * deltaTime * 0.06;
+
+        if (this.movementType === 'Bounce' && !this.locked) {
+            // Speed factor: 10 allows UI values (0-100) to map comfortably to pixels/sec
+            const moveStepX = this.movementSpeedX * deltaTime * 10;
+            const moveStepY = this.movementSpeedY * deltaTime * 10;
+
+            this.x += moveStepX;
+            this.y += moveStepY;
+
+            // Collision Detection with Canvas Boundaries
+            const canvasWidth = this.ctx.canvas.width;
+            const canvasHeight = this.ctx.canvas.height;
+
+            // X-Axis Collision
+            if (this.x <= 0) {
+                this.x = 0;
+                this.movementSpeedX = Math.abs(this.movementSpeedX); // Force positive
+            } else if (this.x + this.width >= canvasWidth) {
+                this.x = canvasWidth - this.width;
+                this.movementSpeedX = -Math.abs(this.movementSpeedX); // Force negative
+            }
+
+            // Y-Axis Collision
+            if (this.y <= 0) {
+                this.y = 0;
+                this.movementSpeedY = Math.abs(this.movementSpeedY); // Force positive
+            } else if (this.y + this.height >= canvasHeight) {
+                this.y = canvasHeight - this.height;
+                this.movementSpeedY = -Math.abs(this.movementSpeedY); // Force negative
+            }
+        }
 
         if (this.shape === 'spawner') {
             let spawnRate = Number(this.spawn_spawnRate) || 0;

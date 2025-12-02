@@ -81,7 +81,8 @@ window.Cursors = {
 // Update this for a new property
 //Tabs
 const controlGroupMap = {
-    'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' },
+    'Geometry': { props: ['shape', 'x', 'y', 'width', 'height', 'autoWidth', 'innerDiameter', 'numberOfSegments', 'angularWidth', 'sides', 'points', 'starInnerRadius'], icon: 'bi-box-fill' }, // Removed rotation/rotationSpeed
+    'Animations': { props: ['rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY'], icon: 'bi-film' }, // New Tab
     'Polyline': { props: ['polylineNodes', 'polylineCurveStyle'], icon: 'bi-vector-pen' },
     'Stroke': { props: ['enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir'], icon: 'bi-brush-fill' },
     'Object': { props: ['pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing', 'pathAnim_trail', 'pathAnim_trailLength', 'pathAnim_trailColor'], icon: 'bi-box-seam' },
@@ -3006,15 +3007,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update this for a new property
     const shapePropertyMap = {
         rectangle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
+            // Moved rotation/rotationSpeed here + New Movement Props
+            'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polyline: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'polylineNodes', 'polylineCurveStyle',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'polylineNodes', 'polylineCurveStyle',
             'pathAnim_enable', 'pathAnim_shape', 'pathAnim_size', 'pathAnim_speed', 'pathAnim_behavior', 'pathAnim_objectCount', 'pathAnim_objectSpacing',
             'pathAnim_gradType', 'pathAnim_useSharpGradient', 'pathAnim_gradColor1', 'pathAnim_gradColor2',
             'pathAnim_cycleColors', 'pathAnim_cycleSpeed', 'pathAnim_animationMode', 'pathAnim_animationSpeed', 'pathAnim_scrollDir',
@@ -3023,53 +3027,59 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         circle: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         ring: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+            'animationMode', 'animationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
             'innerDiameter', 'numberOfSegments', 'angularWidth',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         polygon: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'sides',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         star: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'points', 'starInnerRadius',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
         text: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'text', 'fontSize', 'textAlign', 'pixelFont', 'textAnimation',
             'textAnimationSpeed', 'showTime', 'showDate',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         oscilloscope: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
-            'animationMode', 'animationSpeed', 'rotationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+            'animationMode', 'animationSpeed', 'cycleSpeed', 'scrollDir', 'phaseOffset',
             'lineWidth', 'waveType', 'frequency', 'oscDisplayMode', 'pulseDepth', 'fillShape',
             'enableWaveAnimation', 'waveStyle', 'waveCount', 'oscAnimationSpeed',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         'tetris': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
             'gradType', 'gradientStops', 'cycleColors', 'useSharpGradient', 'scrollDir', 'phaseOffset', 'animationSpeed', 'cycleSpeed',
             'tetrisAnimation', 'tetrisBlockCount', 'tetrisSpeed', 'tetrisBounce', 'tetrisHoldTime', 'tetrisBlurEdges', 'tetrisHold',
             'tetrisMixColorMode',
@@ -3078,24 +3088,28 @@ document.addEventListener('DOMContentLoaded', function () {
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
         ],
         fire: [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableStroke', 'strokeWidth', 'strokeGradType', 'strokeGradientStops', 'strokeUseSharpGradient', 'strokeCycleColors', 'strokeCycleSpeed', 'strokeAnimationSpeed', 'strokeRotationSpeed', 'strokeAnimationMode', 'strokePhaseOffset', 'strokeScrollDir',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'fire-radial': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient', 'cycleColors',
             'animationSpeed', 'cycleSpeed', 'scrollDir', 'fireSpread',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ],
         'pixel-art': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'pixelArtFrames',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing',
             'enableSensorReactivity', 'sensorTarget', 'userSensor', 'timePlotLineThickness', 'timePlotFillArea', 'sensorMeterShowValue', 'timePlotAxesStyle', 'timePlotTimeScale', 'sensorColorMode', 'sensorMidThreshold', 'sensorMaxThreshold'
         ],
-        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'gradType', 'gradientStops', 'useSharpGradient',
+        'audio-visualizer': ['shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'animationSpeed', 'scrollDir',
             'vizLayout', 'vizDrawStyle', 'vizStyle',
             'vizLineWidth',
@@ -3105,7 +3119,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'vizInnerRadius', 'vizBassLevel', 'vizTrebleBoost', 'vizDynamicRange'
         ],
         'strimer': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
             'gradType', 'gradientStops', 'useSharpGradient',
             'cycleColors', 'cycleSpeed', 'animationSpeed', 'scrollDir', 'phaseOffset',
             'strimerRows', 'strimerColumns', 'strimerBlockCount', 'strimerBlockSize', 'strimerAnimation', 'strimerAnimationSpeed',
@@ -3113,8 +3127,9 @@ document.addEventListener('DOMContentLoaded', function () {
             'strimerBlockSpacing', 'strimerGlitchFrequency', 'strimerPulseSync', 'strimerAudioSensitivity', 'strimerBassLevel', 'strimerTrebleBoost', 'strimerAudioSmoothing', 'strimerPulseSpeed', 'strimerSnakeDirection'
         ],
         'spawner': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'gradType', 'gradientStops', 'useSharpGradient',
-            'cycleColors', 'animationMode', 'animationSpeed', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
+            'gradType', 'gradientStops', 'useSharpGradient',
+            'cycleColors', 'animationMode', 'animationSpeed',
             'cycleSpeed', 'scrollDir', 'phaseOffset', 'numberOfRows', 'numberOfColumns',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing', 'spawn_audioTarget',
             'spawn_shapeType', 'spawn_animation', 'spawn_count', 'spawn_spawnRate', 'spawn_lifetime', 'spawn_speed', 'spawn_speedVariance', 'spawn_size', 'spawn_size_randomness', 'spawn_gravity', 'spawn_spread', 'spawn_rotationSpeed', 'spawn_rotationVariance', 'spawn_initialRotation_random',
@@ -3123,7 +3138,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'sides', 'points', 'starInnerRadius', 'spawn_svg_path'
         ],
         'gif': [
-            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed',
+            'shape', 'x', 'y', 'width', 'height', 'rotation', 'rotationSpeed', 'movementType', 'movementSpeedX', 'movementSpeedY',
             'gifUrl', 'gifFit', 'gifFilter', 'gifFilterValue',
             'enableAudioReactivity', 'audioTarget', 'audioMetric', 'beatThreshold', 'audioSensitivity', 'audioSmoothing'
         ]
@@ -6427,7 +6442,13 @@ document.addEventListener('DOMContentLoaded', function () {
             { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
             { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
             { property: `obj${newId}_height`, label: `Object ${newId}: Height`, type: 'number', default: '38', min: '2', max: '200', description: 'The height of the object.' },
+
+            // Animations (New Tab Content)
             { property: `obj${newId}_rotation`, label: `Object ${newId}: Rotation`, type: 'number', default: '0', min: '-360', max: '360', description: 'The static rotation of the object in degrees.' },
+            { property: `obj${newId}_rotationSpeed`, label: `Object ${newId}: Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the object. Overrides static rotation.' },
+            { property: `obj${newId}_movementType`, label: `Object ${newId}: Movement Style`, type: 'combobox', values: 'Static,Bounce', default: 'Static', description: 'Defines how the object moves around the canvas.' },
+            { property: `obj${newId}_movementSpeedX`, label: `Object ${newId}: Horizontal Speed`, type: 'number', default: '5', min: '-100', max: '100', description: 'Horizontal velocity for Bounce mode.' },
+            { property: `obj${newId}_movementSpeedY`, label: `Object ${newId}: Vertical Speed`, type: 'number', default: '5', min: '-100', max: '100', description: 'Vertical velocity for Bounce mode.' },
 
             // Fill Style & Animation
             { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
