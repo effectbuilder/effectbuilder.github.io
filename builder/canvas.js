@@ -83,6 +83,10 @@ export function setupCanvas(appState) {
 
 // --- HELPER FUNCTIONS ---
 
+export function snapToGrid(val) {
+    return Math.round(val / GRID_SIZE) * GRID_SIZE;
+}
+
 /**
  * Sets the source URL for the image guide object.
  * This is exposed globally for main.js to call after a file upload.
@@ -807,7 +811,10 @@ function handleCanvasMouseMove(e) {
         drawCanvas();
     } else if (isDragging) {
         didDrag = true;
-        ledDragOffsets.forEach(item => { item.led.x = worldPos.x + item.offsetX; item.led.y = worldPos.y + item.offsetY; });
+        ledDragOffsets.forEach(item => { 
+            item.led.x = snapToGrid(worldPos.x + item.offsetX); 
+            item.led.y = snapToGrid(worldPos.y + item.offsetY); 
+        });
         drawCanvas();
     } else if (isMarqueeSelecting) {
         didDrag = true; marqueeEndPos = worldPos;
@@ -936,8 +943,8 @@ function handleCanvasMouseLeave(e) {
     if (isDragging) {
         // console.log("Mouse Leave: Stopping Drag."); isDragging = false; window.setAppCursor();
         ledDragOffsets.forEach(item => {
-            item.led.x = Math.round(item.led.x / GRID_SIZE) * GRID_SIZE;
-            item.led.y = Math.round(item.led.y / GRID_SIZE) * GRID_SIZE;
+            item.led.x = snapToGrid(item.led.x);
+            item.led.y = snapToGrid(item.led.y);
         });
         ledDragOffsets = []; stateChanged = true;
         // console.log('handleCanvasMouseLeave (drag end): Changes detected.');
