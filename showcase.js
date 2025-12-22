@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-// --- 2. FIREBASE CONFIGURATION (From your firebase.js) ---
+// --- 2. FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyBIzgQqxHMTdCsW0UG4MOEuFWwjEYAFYbk",
     authDomain: "effect-builder.firebaseapp.com",
@@ -17,37 +17,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- 3. HELPER FUNCTIONS FOR COUNTS ---
+// --- 3. HELPER FUNCTIONS ---
 
-/**
- * Generates a safe Firestore Document ID from a filename.
- * e.g., "RetroWave.html" -> "RetroWave_html"
- */
 function getSafeDocId(filename) {
     return filename.replace(/\./g, '_');
 }
 
-/**
- * Fetches the current download count for a specific effect.
- */
 async function getDownloadCount(filename) {
     const docId = getSafeDocId(filename);
     const docRef = doc(db, "showcase_stats", docId);
     try {
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return docSnap.data().downloads || 0;
-        }
-        return 0;
+        return docSnap.exists() ? (docSnap.data().downloads || 0) : 0;
     } catch (error) {
         console.warn("Could not fetch count for", filename);
         return 0;
     }
 }
 
-/**
- * Increments the download count in Firestore.
- */
 async function incrementDownloadCount(filename) {
     const docId = getSafeDocId(filename);
     const docRef = doc(db, "showcase_stats", docId);
@@ -60,12 +47,8 @@ async function incrementDownloadCount(filename) {
     }
 
     try {
-        // Try to update existing document
-        await updateDoc(docRef, {
-            downloads: increment(1)
-        });
+        await updateDoc(docRef, { downloads: increment(1) });
     } catch (error) {
-        // If document doesn't exist (first download ever), create it
         try {
             await setDoc(docRef, { downloads: 1 });
         } catch (e) {
@@ -79,112 +62,48 @@ async function incrementDownloadCount(filename) {
 document.addEventListener('DOMContentLoaded', function () {
     // --- CONFIGURATION ---
     const effectFilenames = [
-        "SwirlCirclesAudio.html",
-        "RotatingBeam.html",
-        "NoiseMap.html",
-        "Policing.html",
-        "MovingPanes.html",
-        "SpectrumCycling.html",
-        "Sunrise.html",
-        "Stack.html",
-        "Mosaic.html",
-        "Marquee.html",
-        "Swap.html",
-        "Mask.html",
-        "ZigZag.html",
-        "AudioBubbles.html",
-        "Wavy.html",
-        "Visor.html",
-        "StarryNight.html",
-        "Spiral.html",
-        "Sequence.html",
-        "SmoothBlink.html",
-        "SparkleFade.html",
-        "RandomMarquee.html",
-        "RotatingRainbow.html",
-        "RandomSpin.html",
-        "RadialRainbow.html",
-        "Rain.html",
-        "RainbowWave.html",
-        "Lightning.html",
-        "MotionPoints.html",
-        "GradientWave.html",
-        "FractalMotion.html",
-        "Hypnotoad.html",
-        "Fill.html",
-        "DoubleRotatingRainbow.html",
-        "BreathingCircle.html",
-        "BubbleCollision.html",
-        "ColorWheel.html",
-        "CustomMarque.html",
-        "CrossingBeams.html",
-        "Comet.html",
-        "CustomGradientWave.html",
-        "CustomBlink.html",
-        "Clock.html",
-        "Bubbles.html",
-        "Breathing.html",
-        "BouncingBall.html",
-        "Bloom.html",
-        "AudioVUMeter.html",
-        "AudioVisualizer.html",
-        "AudioSync.html",
-        "AudioStar.html",
-        "AudioSine.html",
-        "AudioParty.html",
-        "Ambient.html",
-        "ParticleSwarm.html",
-        "NeonHex.html",
-        "fractal_explorer.html",
-        "audio_eclipse.html",
-        "RetroWave.html",
-        "infinity_spiral.html",
-        "PRFlag.html",
-        "SolarSystem.html",
-        "tunnel.html",
-        "particle_eq_bars.html",
-        "laserShapes.html",
-        "concertLasers.html",
-        "ink_drops.html",
-        "starfield.html",
-        "digital_noiseform.html",
-        "bouncingCubes.html",
-        "clouds.html",
-        "polyPlanet.html",
-        "serenityWaves.html",
-        "systemBouncer.html",
-        "picasso.html",
+        "SwirlCirclesAudio.html", "RotatingBeam.html", "NoiseMap.html", "Policing.html",
+        "MovingPanes.html", "SpectrumCycling.html", "Sunrise.html", "Stack.html",
+        "Mosaic.html", "Marquee.html", "Swap.html", "Mask.html", "ZigZag.html",
+        "AudioBubbles.html", "Wavy.html", "Visor.html", "StarryNight.html",
+        "Spiral.html", "Sequence.html", "SmoothBlink.html", "SparkleFade.html",
+        "RandomMarquee.html", "RotatingRainbow.html", "RandomSpin.html",
+        "RadialRainbow.html", "Rain.html", "RainbowWave.html", "Lightning.html",
+        "MotionPoints.html", "GradientWave.html", "FractalMotion.html",
+        "Hypnotoad.html", "Fill.html", "DoubleRotatingRainbow.html",
+        "BreathingCircle.html", "BubbleCollision.html", "ColorWheel.html",
+        "CustomMarque.html", "CrossingBeams.html", "Comet.html",
+        "CustomGradientWave.html", "CustomBlink.html", "Clock.html",
+        "Bubbles.html", "Breathing.html", "BouncingBall.html", "Bloom.html",
+        "AudioVUMeter.html", "AudioVisualizer.html", "AudioSync.html",
+        "AudioStar.html", "AudioSine.html", "AudioParty.html", "Ambient.html",
+        "ParticleSwarm.html", "NeonHex.html", "fractal_explorer.html",
+        "audio_eclipse.html", "RetroWave.html", "infinity_spiral.html",
+        "PRFlag.html", "SolarSystem.html", "tunnel.html",
+        "particle_eq_bars.html", "laserShapes.html", "concertLasers.html",
+        "ink_drops.html", "starfield.html", "digital_noiseform.html",
+        "bouncingCubes.html", "clouds.html", "polyPlanet.html",
+        "serenityWaves.html", "systemBouncer.html", "picasso.html",
         "void_and_silk.html"
     ];
 
-    // --- Path Configuration ---
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
-
-    // Variable to store all effects for filtering
     let allEffects = [];
-
-    // Search Input Element
     const searchInput = document.getElementById('effect-search-input');
 
-
-    // --- MODAL VARIABLES (CODE PREVIEW) ---
+    // --- MODAL VARIABLES ---
     const codePreviewModalEl = document.getElementById('code-preview-modal');
-    // FIX: Check if element exists before initialization
     const codePreviewModal = codePreviewModalEl ? new bootstrap.Modal(codePreviewModalEl) : null;
     const codePreviewTitle = document.getElementById('code-preview-title');
     const codePreviewContent = document.getElementById('code-preview-content');
     const copyCodeBtn = document.getElementById('copy-code-btn');
 
-    // --- MODAL VARIABLES (EFFECT VIEW) ---
     const effectViewModalEl = document.getElementById('effect-view-modal');
-    // FIX: Check if element exists before initialization
     const effectViewModal = effectViewModalEl ? new bootstrap.Modal(effectViewModalEl) : null;
     const effectViewTitle = document.getElementById('effect-view-title');
     const effectIframe = document.getElementById('effect-iframe');
     const effectIframeContainer = document.getElementById('effect-iframe-container');
-
-    // Download and Share Buttons in View Modal
     const effectDownloadBtn = document.getElementById('effect-download-btn');
     const effectShareBtn = document.getElementById('effect-share-btn');
 
@@ -194,45 +113,103 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const response = await fetch(effectUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch ${effectUrl}: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Failed to fetch ${effectUrl}: ${response.statusText}`);
             const htmlText = await response.text();
-
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
 
+            // --- HELPER TO EXTRACT META ATTRIBUTES ---
             const getCustomMeta = (attrName) => {
-                const el = doc.querySelector(`meta[${attrName}]`);
-                return el ? el.getAttribute(attrName) : null;
+                // Try selecting by property or name (handles <meta description="..."> and <meta name="description">)
+                const el = doc.querySelector(`meta[${attrName}]`) || doc.querySelector(`meta[name="${attrName}"]`);
+                return el ? (el.getAttribute(attrName) || el.getAttribute('content')) : null;
             };
 
-            const getStandardMeta = (name) => {
-                const el = doc.querySelector(`meta[name="${name}"]`);
-                return el ? el.getAttribute('content') : null;
-            };
+            const title = getCustomMeta('title') || doc.querySelector('title')?.textContent || 'Untitled Effect';
+            const description = getCustomMeta('description') || getCustomMeta('og:description') || 'No description available.';
+            const author = getCustomMeta('publisher') || getCustomMeta('author') || 'Unknown Author';
 
-            const title = getCustomMeta('title')
-                || doc.querySelector('title')?.textContent
-                || 'Untitled Effect';
+            // --- 1. PARSE RICH PROPERTIES (The Void and Silk method) ---
+            // Looks for <meta property="speed" label="Speed" type="number" ... />
+            const propertyMetas = doc.querySelectorAll('meta[property]');
+            let structuredControls = [];
 
-            const description = getCustomMeta('description')
-                || getStandardMeta('description')
-                || getStandardMeta('og:description')
-                || 'No description available.';
+            if (propertyMetas.length > 0) {
+                propertyMetas.forEach(meta => {
+                    const prop = meta.getAttribute('property');
+                    // Skip internal properties if necessary, usually we want all
+                    if (!prop) return;
 
-            const author = getCustomMeta('publisher')
-                || getStandardMeta('publisher')
-                || getStandardMeta('author')
-                || 'Unknown Author';
+                    const label = meta.getAttribute('label') || prop;
+                    const type = meta.getAttribute('type'); // number, boolean, list, color
+                    const tooltip = meta.getAttribute('tooltip') || '';
+                    const def = meta.getAttribute('default') || '-';
+                    
+                    let valueDesc = '';
+                    if (type === 'number') {
+                        const min = meta.getAttribute('min');
+                        const max = meta.getAttribute('max');
+                        valueDesc = `${min} to ${max} (Default: ${def})`;
+                    } else if (type === 'boolean') {
+                        valueDesc = `Toggle (True/False)`;
+                    } else if (type === 'list') {
+                        const values = meta.getAttribute('values');
+                        // Truncate long lists for display
+                        const valList = values ? values.split(',') : [];
+                        valueDesc = valList.length > 3 ? 
+                            `Select: ${valList.slice(0,3).join(', ')}... (+${valList.length-3})` : 
+                            `Select: ${valList.join(', ')}`;
+                    } else if (type === 'color') {
+                        valueDesc = `Color Picker (Hex)`;
+                    } else {
+                        valueDesc = `Default: ${def}`;
+                    }
+
+                    structuredControls.push({
+                        label: label,
+                        variable: prop,
+                        values: valueDesc,
+                        description: tooltip
+                    });
+                });
+            }
+
+            // --- 3. TAG DETECTION ---
+            let tags = [];
+            const tagsMeta = getCustomMeta('tags') || getCustomMeta('keywords');
+            if (tagsMeta) tags = tagsMeta.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+            // Auto-Detect Tags
+            const textToAnalyze = `${title} ${description} ${filename}`.toLowerCase();
+            
+            // Helper to add unique tags
+            const addTag = (t) => { if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t); };
+
+            if (textToAnalyze.match(/audio|sound|music|beat|freq|mic|visualizer|spect|vu meter|rhythm/)) {
+                // Check if meta specifically says audio_reactive default=true
+                const audioMeta = doc.querySelector('meta[property="audio_reactive"]');
+                if (audioMeta) {
+                    // It's definitely sound responsive if it has this property
+                    if(!tags.some(t => t.toLowerCase().includes('sound'))) tags.unshift('Sound Responsive');
+                } else if (!tags.some(t => t.toLowerCase().includes('sound'))) {
+                    // Fallback text detection
+                    tags.unshift('Sound Responsive');
+                }
+            }
+            if (textToAnalyze.match(/mouse|click|drag|interactive|cursor|touch/)) addTag('Interactive');
+            if (textToAnalyze.match(/rainbow|color cycle|gradient|hues|spectrum/)) addTag('Rainbow');
+            if (textToAnalyze.match(/fractal|mandelbrot|julia|math|geometry/)) addTag('Fractal');
+            if (textToAnalyze.match(/particle|swarm|dots|dust|starfield/)) addTag('Particles');
+            
+            // Detect Customizable
+            if (structuredControls.length > 0 && !tags.includes('Customizable')) {
+                tags.push('Customizable');
+            }
 
             return {
-                title,
-                description,
-                author,
-                effectUrl,
-                staticUrl,
-                filename: filename
+                title, description, author, effectUrl, staticUrl, filename,
+                tags,
+                structuredControls // Array of objects from meta property tags
             };
 
         } catch (error) {
@@ -242,159 +219,123 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function buildEffectsList(filenames) {
-        const effectPromises = filenames.map(fetchEffectMetadata);
-        const effects = await Promise.all(effectPromises);
+        const effects = await Promise.all(filenames.map(fetchEffectMetadata));
         return effects.filter(effect => effect !== null);
-    }
-
-    function getEffectByFilename(filename) {
-        return allEffects.find(effect => effect.filename === filename);
     }
 
     function populateShowcase(effects) {
         projectListContainer.innerHTML = '';
-
         if (!effects || effects.length === 0) {
-            projectListContainer.innerHTML = `
-                <div class="col-12">
-                    <div class="card h-100">
-                        <div class="card-body text-center text-body-secondary">
-                           <p class="mb-1">No effects match your search criteria.</p>
-                           <p class="small">Try a different keyword.</p>
-                        </div>
-                    </div>
-                </div>`;
+            projectListContainer.innerHTML = `<div class="col-12 text-center text-muted"><p>No effects found.</p></div>`;
             return;
         }
 
         effects.forEach(effect => {
             const col = document.createElement('div');
             col.className = 'col';
-
             const card = document.createElement('div');
             card.className = 'card h-100 shadow-sm';
 
+            // Image/Iframe
             const previewContainer = document.createElement('div');
-            previewContainer.className = 'card-img-top';
+            previewContainer.className = 'card-img-top position-relative';
             previewContainer.style.height = '180px';
+            previewContainer.style.backgroundColor = '#000';
             previewContainer.style.backgroundImage = `url('${effect.staticUrl}')`;
             previewContainer.style.backgroundSize = 'cover';
             previewContainer.style.backgroundPosition = 'center';
-            previewContainer.style.overflow = 'hidden';
-            previewContainer.style.display = 'flex';
-            previewContainer.style.justifyContent = 'center';
-            previewContainer.style.alignItems = 'center';
+            previewContainer.style.cursor = 'pointer';
 
             let previewIframe = null;
-
-            card.addEventListener('mouseover', () => {
+            card.addEventListener('mouseenter', () => {
                 previewContainer.style.backgroundImage = 'none';
-                previewContainer.style.backgroundColor = 'black';
-
                 if (!previewIframe) {
-                    const scale = 180 / 200;
                     previewIframe = document.createElement('iframe');
                     previewIframe.src = effect.effectUrl;
                     previewIframe.style.width = '320px';
                     previewIframe.style.height = '200px';
                     previewIframe.style.border = 'none';
-                    previewIframe.style.transformOrigin = 'center center';
-                    previewIframe.style.transform = `scale(${scale})`;
-                    previewIframe.scrolling = 'no';
+                    previewIframe.style.overflow = 'hidden'; // Force CSS hide
+                    previewIframe.setAttribute('scrolling', 'no'); // Legacy attribute that works best for iframes
+                    previewIframe.style.transform = 'scale(0.9) translate(-50%, -50%)';
+                    previewIframe.style.transformOrigin = 'top left';
+                    previewIframe.style.position = 'absolute';
+                    previewIframe.style.top = '50%';
+                    previewIframe.style.left = '50%';
                     previewIframe.style.pointerEvents = 'none';
                     previewContainer.appendChild(previewIframe);
                 }
             });
-
-            card.addEventListener('mouseout', () => {
+            card.addEventListener('mouseleave', () => {
                 previewContainer.style.backgroundImage = `url('${effect.staticUrl}')`;
-                previewContainer.style.backgroundColor = 'transparent';
-
-                if (previewIframe) {
-                    previewContainer.removeChild(previewIframe);
-                    previewIframe = null;
-                }
+                if (previewIframe) { previewIframe.remove(); previewIframe = null; }
             });
-
-            previewContainer.addEventListener('error', () => {
-                previewContainer.style.backgroundImage = `url('https://placehold.co/400x225/343a40/dee2e6?text=No+Preview')`;
-            });
-
             previewContainer.addEventListener('click', () => {
                 handleViewEffect(effect);
                 window.location.hash = effect.filename;
             });
 
+            // Tags
+            let tagsHtml = '';
+            if (effect.tags.length > 0) {
+                tagsHtml = `<div class="mb-2">`;
+                effect.tags.slice(0, 3).forEach(tag => { 
+                    let cls = 'bg-secondary';
+                    if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
+                    else if (tag === 'Customizable') cls = 'bg-warning text-dark';
+                    else if (tag === 'Interactive') cls = 'bg-success';
+                    tagsHtml += `<span class="badge ${cls} me-1 small">${tag}</span>`;
+                });
+                if (effect.tags.length > 3) tagsHtml += `<span class="badge bg-light text-dark border me-1 small">+${effect.tags.length - 3}</span>`;
+                tagsHtml += `</div>`;
+            }
+
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body d-flex flex-column';
             cardBody.innerHTML = `
-                <h5 class="card-title">${effect.title}</h5>
-                <p class="card-text text-body-secondary small flex-grow-1">${effect.description}</p>
-                <small class="text-muted">By: ${effect.author}</small>
+                <h5 class="card-title text-truncate" title="${effect.title}">${effect.title}</h5>
+                ${tagsHtml}
+                <p class="card-text text-body-secondary small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${effect.description}</p>
+                <small class="text-muted mt-2">By: ${effect.author}</small>
             `;
 
-            // --- 4. MODIFIED FOOTER FOR COUNTS ---
+            // Footer
             const cardFooter = document.createElement('div');
             cardFooter.className = 'card-footer bg-transparent border-top-0 d-flex justify-content-between align-items-center';
 
-            // Create Count Element
             const docId = getSafeDocId(effect.filename);
-            const countBadge = document.createElement('div');
-            countBadge.className = 'text-body-secondary small';
+            const countBadge = document.createElement('small');
+            countBadge.className = 'text-muted';
             countBadge.innerHTML = `<i class="bi bi-download me-1"></i><span id="count-${docId}">...</span>`;
             
-            // Load Count
-            getDownloadCount(effect.filename).then(count => {
+            getDownloadCount(effect.filename).then(c => {
                 const el = document.getElementById(`count-${docId}`);
-                if(el) el.textContent = count;
+                if(el) el.textContent = c;
             });
 
             const btnGroup = document.createElement('div');
             btnGroup.className = 'btn-group';
-            btnGroup.role = 'group';
-
-            const viewButton = document.createElement('a');
-            viewButton.className = 'btn btn-sm btn-primary'; // made btn-sm for better fit
-            viewButton.innerHTML = '<i class="bi bi-eye-fill me-1"></i> View';
-            viewButton.href = '#' + effect.filename;
-            viewButton.role = 'button';
-
-            viewButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleViewEffect(effect);
-                window.location.hash = effect.filename;
-            });
-
-            const codeButton = document.createElement('button');
-            codeButton.type = 'button';
-            codeButton.className = 'btn btn-sm btn-secondary'; // made btn-sm
-            codeButton.innerHTML = '<i class="bi bi-code-slash me-1"></i> Code';
-            codeButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleViewCode(effect);
-            });
-
-            const downloadButton = document.createElement('button');
-            downloadButton.type = 'button';
-            downloadButton.className = 'btn btn-sm btn-success'; // made btn-sm
-            downloadButton.innerHTML = '<i class="bi bi-download me-1"></i> Zip';
-            downloadButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleDownloadZip(effect, e.currentTarget);
-            });
-
-            btnGroup.appendChild(viewButton);
-            btnGroup.appendChild(codeButton);
-            btnGroup.appendChild(downloadButton);
-
-            cardFooter.appendChild(countBadge);
-            cardFooter.appendChild(btnGroup);
             
-            card.appendChild(previewContainer);
-            card.appendChild(cardBody);
-            card.appendChild(cardFooter);
-            col.appendChild(card);
-            projectListContainer.appendChild(col);
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-sm btn-outline-primary';
+            viewBtn.innerHTML = '<i class="bi bi-eye"></i>';
+            viewBtn.onclick = (e) => { e.stopPropagation(); handleViewEffect(effect); window.location.hash = effect.filename; };
+
+            const codeBtn = document.createElement('button');
+            codeBtn.className = 'btn btn-sm btn-outline-secondary';
+            codeBtn.innerHTML = '<i class="bi bi-code-slash"></i>';
+            codeBtn.onclick = (e) => { e.stopPropagation(); handleViewCode(effect); };
+
+            const dlBtn = document.createElement('button');
+            dlBtn.className = 'btn btn-sm btn-outline-success';
+            dlBtn.innerHTML = '<i class="bi bi-download"></i>';
+            dlBtn.onclick = (e) => { e.stopPropagation(); handleDownloadZip(effect, dlBtn); };
+
+            btnGroup.append(viewBtn, codeBtn, dlBtn);
+            cardFooter.append(countBadge, btnGroup);
+            card.append(previewContainer, cardBody, cardFooter);
+            col.append(card);
+            projectListContainer.append(col);
         });
     }
 
@@ -402,221 +343,171 @@ document.addEventListener('DOMContentLoaded', function () {
         effectViewTitle.textContent = effect.title;
         effectIframe.src = effect.effectUrl;
 
+        // Reset Buttons
         if (effectDownloadBtn) {
-            effectDownloadBtn.replaceWith(effectDownloadBtn.cloneNode(true));
-            const newDownloadBtn = document.getElementById('effect-download-btn');
-            newDownloadBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleDownloadZip(effect, newDownloadBtn);
-            });
+            const newBtn = effectDownloadBtn.cloneNode(true);
+            effectDownloadBtn.replaceWith(newBtn);
+            newBtn.addEventListener('click', () => handleDownloadZip(effect, newBtn));
         }
-
         if (effectShareBtn) {
-            effectShareBtn.replaceWith(effectShareBtn.cloneNode(true));
-            const newShareBtn = document.getElementById('effect-share-btn');
-            newShareBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                handleShareLink(newShareBtn, effect.filename);
+            const newBtn = effectShareBtn.cloneNode(true);
+            effectShareBtn.replaceWith(newBtn);
+            newBtn.addEventListener('click', () => handleShareLink(newBtn, effect.filename));
+        }
+
+        // Iframe Scaling
+        const scale = 2.0;
+        effectIframe.style.width = '320px'; effectIframe.style.height = '200px';
+        effectIframe.style.transform = `scale(${scale})`;
+        effectIframeContainer.style.width = `${320*scale}px`; effectIframeContainer.style.height = `${200*scale}px`;
+
+        // --- INJECT METADATA & PROPERTIES ---
+        const detailsId = 'effect-details-section';
+        const oldDetails = document.getElementById(detailsId);
+        if (oldDetails) oldDetails.remove();
+
+        const detailsDiv = document.createElement('div');
+        detailsDiv.id = detailsId;
+        detailsDiv.className = 'p-3 border-top pt-3';
+
+        // 1. Tags
+        let tagsHtml = '';
+        if(effect.tags.length) {
+            tagsHtml = `<div class="mb-3"><h6 class="fw-bold">Tags:</h6>`;
+            effect.tags.forEach(tag => {
+                let cls = 'bg-secondary';
+                if (tag.includes('Sound')) cls = 'bg-info text-dark';
+                else if (tag === 'Customizable') cls = 'bg-warning text-dark';
+                tagsHtml += `<span class="badge ${cls} me-2">${tag}</span>`;
             });
+            tagsHtml += `</div>`;
         }
 
-        const SCALE_FACTOR = 2.0;
-        const BASE_WIDTH = 320;
-        const BASE_HEIGHT = 200;
+        // 2. Adjustable Properties (Using Structured Data)
+        let propsHtml = '';
+        if (effect.structuredControls && effect.structuredControls.length > 0) {
+            propsHtml = `<h6 class="fw-bold mb-2"><i class="bi bi-sliders me-2"></i>Adjustable Properties</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm small">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:30%">Property / Variable</th>
+                            <th style="width:30%">Type / Range</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            effect.structuredControls.forEach(ctrl => {
+                propsHtml += `
+                    <tr>
+                        <td>
+                            <strong>${ctrl.label}</strong><br>
+                            <code class="text-primary">${ctrl.variable}</code>
+                        </td>
+                        <td>${ctrl.values}</td>
+                        <td>${ctrl.description}</td>
+                    </tr>`;
+            });
 
-        effectIframe.style.width = `${BASE_WIDTH}px`;
-        effectIframe.style.height = `${BASE_HEIGHT}px`;
-        effectIframe.style.transform = `scale(${SCALE_FACTOR})`;
-        effectIframe.style.transformOrigin = 'center center';
-        effectIframeContainer.style.height = `${BASE_HEIGHT * SCALE_FACTOR}px`;
-        effectIframeContainer.style.width = `${BASE_WIDTH * SCALE_FACTOR}px`;
-
-        if (effectViewModal) {
-            effectViewModal.show();
+            propsHtml += `</tbody></table></div>`;
         }
+
+        detailsDiv.innerHTML = `
+            <div class="mb-3"><h6 class="fw-bold">Description</h6><p>${effect.description}</p></div>
+            ${tagsHtml}
+            ${propsHtml}
+        `;
+
+        effectIframeContainer.parentElement.appendChild(detailsDiv);
+        if (effectViewModal) effectViewModal.show();
     }
 
     async function handleViewCode(effect) {
         codePreviewTitle.textContent = `${effect.title} - Source Code`;
         codePreviewContent.textContent = 'Loading...';
-        if (window.Prism) {
-            Prism.highlightElement(codePreviewContent);
-        }
-
-        if (codePreviewModal) {
-            codePreviewModal.show();
-        }
-
+        if (codePreviewModal) codePreviewModal.show();
         try {
-            const response = await fetch(effect.effectUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const code = await response.text();
-            codePreviewContent.textContent = code;
-
-            if (window.Prism) {
-                Prism.highlightElement(codePreviewContent);
-            }
-
-        } catch (error) {
-            console.error('Error fetching code:', error);
-            codePreviewContent.textContent = 'Error: Could not load effect source code.';
-            if (window.Prism) {
-                Prism.highlightElement(codePreviewContent);
-            }
-        }
+            const res = await fetch(effect.effectUrl);
+            const text = await res.text();
+            codePreviewContent.textContent = text;
+            if (window.Prism) Prism.highlightElement(codePreviewContent);
+        } catch (e) { codePreviewContent.textContent = 'Error loading code.'; }
     }
 
-    async function handleDownloadZip(effect, button) {
-        const originalHtml = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
-
-        // --- 5. CALL INCREMENT FUNCTION ---
+    async function handleDownloadZip(effect, btn) {
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
+        btn.disabled = true;
         incrementDownloadCount(effect.filename);
 
         try {
-            const htmlResponse = await fetch(effect.effectUrl);
-            const staticResponse = await fetch(effect.staticUrl);
-
-            if (!htmlResponse.ok) throw new Error('Failed to fetch HTML file.');
-
-            const htmlContent = await htmlResponse.text();
+            const [htmlRes, imgRes] = await Promise.all([ fetch(effect.effectUrl), fetch(effect.staticUrl) ]);
+            if (!htmlRes.ok) throw new Error('HTML fetch failed');
+            
             const zip = new JSZip();
+            zip.file(effect.filename, await htmlRes.text());
+            if (imgRes.ok) zip.file(effect.staticUrl.split('/').pop(), await imgRes.blob());
 
-            const htmlFilename = effect.effectUrl.split('/').pop();
-            const zipFilename = htmlFilename.replace(/\.html$/, '.zip');
-            zip.file(htmlFilename, htmlContent);
-
-            if (staticResponse.ok) {
-                const staticContent = await staticResponse.blob();
-                const staticFilename = effect.staticUrl.split('/').pop();
-                zip.file(staticFilename, staticContent);
-            } else {
-                console.warn(`Could not fetch static PNG: ${effect.staticUrl}`);
-            }
-
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(zipBlob);
-            link.download = zipFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-
-        } catch (error) {
-            console.error('Error creating ZIP:', error);
-            alert('Failed to create download. See console for details.');
-        } finally {
-            button.disabled = false;
-            button.innerHTML = originalHtml;
-        }
+            const blob = await zip.generateAsync({type:'blob'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = effect.filename.replace('.html', '.zip');
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) { console.error(err); alert('Download failed.'); } 
+        finally { btn.innerHTML = oldHtml; btn.disabled = false; }
     }
 
-    async function handleShareLink(button, filename) {
-        const shareLink = window.location.origin + window.location.pathname + '#' + filename;
-        const originalText = button.innerHTML;
-
+    async function handleShareLink(btn, filename) {
+        const url = `${window.location.origin}${window.location.pathname}#${filename}`;
         try {
-            await navigator.clipboard.writeText(shareLink);
-            button.innerHTML = '<i class="bi bi-check-lg me-1"></i> Link Copied!';
-            button.classList.remove('btn-outline-info');
-            button.classList.add('btn-info');
-        } catch (err) {
-            console.error('Failed to copy link: ', err);
-            button.innerHTML = '<i class="bi bi-x-lg me-1"></i> Copy Error';
-            button.classList.remove('btn-outline-info');
-            button.classList.add('btn-danger');
-        }
-
-        setTimeout(() => {
-            button.innerHTML = originalText;
-            button.classList.remove('btn-info', 'btn-danger');
-            button.classList.add('btn-outline-info');
-        }, 2500);
+            await navigator.clipboard.writeText(url);
+            const old = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            setTimeout(() => btn.innerHTML = old, 2000);
+        } catch (e) { console.error(e); }
     }
 
-    if (copyCodeBtn) {
-        copyCodeBtn.addEventListener('click', async () => {
-            const code = codePreviewContent.textContent;
-            const originalText = copyCodeBtn.innerHTML;
-            try {
-                await navigator.clipboard.writeText(code);
-                copyCodeBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i> Copied!';
-            } catch (err) {
-                console.error('Failed to copy code: ', err);
-                copyCodeBtn.innerHTML = 'Error Copying';
-            }
-
-            setTimeout(() => {
-                copyCodeBtn.innerHTML = originalText;
-            }, 2000);
-        });
-    }
-
+    // --- CLEANUP & SEARCH ---
     if (effectViewModalEl) {
         effectViewModalEl.addEventListener('hidden.bs.modal', () => {
             effectIframe.src = 'about:blank';
-            effectIframe.style.transform = 'none';
-            effectIframe.style.width = '320px';
-            effectIframe.style.height = '200px';
-            effectIframeContainer.style.height = '200px';
-            effectIframeContainer.style.width = '100%';
-
-            if (window.location.hash) {
-                history.pushState("", document.title, window.location.pathname + window.location.search);
-            }
+            const details = document.getElementById('effect-details-section');
+            if (details) details.remove();
+            if (window.location.hash) history.pushState("", document.title, window.location.pathname + window.location.search);
         });
     }
-
-    function handleSearch() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-
-        if (searchTerm.length === 0) {
-            populateShowcase(allEffects);
-            return;
-        }
-
-        const filteredEffects = allEffects.filter(effect => {
-            return effect.title.toLowerCase().includes(searchTerm) ||
-                effect.description.toLowerCase().includes(searchTerm) ||
-                effect.author.toLowerCase().includes(searchTerm);
-        });
-
-        populateShowcase(filteredEffects);
-    }
-
-    function handleDeepLink() {
-        const filename = window.location.hash.substring(1);
-
-        if (filename) {
-            const effect = getEffectByFilename(filename);
-            if (effect) {
-                setTimeout(() => {
-                    handleViewEffect(effect);
-                }, 100);
-            }
-        }
-    }
-
-    // --- INITIALIZATION ---
-    buildEffectsList(effectFilenames)
-        .then(manualEffects => {
-            manualEffects.sort((a, b) => a.title.localeCompare(b.title));
-            allEffects = manualEffects;
-            populateShowcase(allEffects);
-            handleDeepLink();
-        })
-        .catch(error => {
-            console.error("Failed to build effects list:", error);
-            populateShowcase([]);
-        });
-
-    window.addEventListener('hashchange', handleDeepLink);
 
     if (searchInput) {
-        searchInput.addEventListener('keyup', handleSearch);
+        searchInput.addEventListener('keyup', () => {
+            const term = searchInput.value.toLowerCase().trim();
+            if (!term) return populateShowcase(allEffects);
+            const filtered = allEffects.filter(e => 
+                e.title.toLowerCase().includes(term) || 
+                e.description.toLowerCase().includes(term) ||
+                e.tags.some(t => t.toLowerCase().includes(term))
+            );
+            populateShowcase(filtered);
+        });
     }
+
+    // --- INIT ---
+    buildEffectsList(effectFilenames).then(effects => {
+        allEffects = effects.sort((a,b) => a.title.localeCompare(b.title));
+        populateShowcase(allEffects);
+        const hash = window.location.hash.substring(1);
+        if(hash) {
+            const found = allEffects.find(e => e.filename === hash);
+            if(found) setTimeout(() => handleViewEffect(found), 100);
+        }
+    });
+
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.substring(1);
+        if(!hash) return;
+        const found = allEffects.find(e => e.filename === hash);
+        if(found) handleViewEffect(found);
+    });
 });
