@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Picasso's Dream</title>
+    <meta description="A generative Cubist art generator that fractures and recomposes based on audio.">
+    <meta publisher="SignalRGB Effects">
+
+    <meta property="period" label="Art Period" type="combobox" values="Cubism,Blue Period,Rose Period,Surrealism,Guernica,African Period,Synthetic Cubism,Dora Maar,Analytic Cubism,Mediterranean,Vallauris,Harlequin" default="Cubism">
+    <meta property="complexity" label="Complexity" type="number" min="5" max="100" default="30">
+    <meta property="speed" label="Evolution Speed" type="number" min="0" max="100" default="20">
+    <meta property="stroke_width" label="Line Thickness" type="number" min="1" max="20" default="3">
+    <meta property="fragmentation" label="Fragmentation" type="number" min="0" max="100" default="50">
+    <meta property="audio_reactive" label="Audio Reactive" type="boolean" default="1">
+    <meta property="bass_trigger" label="Bass Sensitivity" type="number" min="1" max="100" default="50">
+</head>
+
+<style>
+    body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; }
+</style>
+
+<body>
+    <canvas id="picassoCanvas"></canvas>
+</body>
+
+<script>
+    // --- Browser Compatibility Polyfill ---
+    // This ensures the code works in a browser by reading the meta tags
+    // and creating the global variables that SignalRGB usually injects.
+    (function polyfillMetaVariables() {
+        const metas = document.querySelectorAll('meta[property]');
+        metas.forEach(meta => {
+            const prop = meta.getAttribute('property');
+            const type = meta.getAttribute('type');
+            const def = meta.getAttribute('default');
+
+            if (!window.hasOwnProperty(prop)) {
+                if (type === 'number') {
+                    window[prop] = parseFloat(def);
+                } else if (type === 'boolean') {
+                    window[prop] = (def === '1' || def === 'true');
+                } else {
+                    window[prop] = def;
+                }
+                console.log(`[Polyfill] Defined ${prop} = ${window[prop]}`);
+            }
+        });
+    })();
+
+    // --- Configuration & State ---
+    const canvas = document.getElementById('picassoCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let shapes = [];
+    let width, height;
+    
+    let prevComplexity = 0;
+    let prevPeriod = "";
+
+    // Palettes
+    const palettes = {
+        "Cubism": ["#D9C5A0", "#A68B5B", "#594129", "#262626", "#8C8372", "#D99E6A", "#732C02"],
+        "Blue Period": ["#102540", "#1D3A59", "#3E6B8C", "#688CA6", "#0D0D0D", "#213640"],
+        "Rose Period": ["#F29F8D", "#D96C6C", "#A64646", "#F2D7B6", "#BF7E6F", "#732C2C"],
+        "Surrealism": ["#F2CB05", "#F21905", "#044BD9", "#000000", "#FFFFFF", "#33F205"],
+        "Guernica": ["#000000", "#262626", "#4D4D4D", "#808080", "#B3B3B3", "#FFFFFF"],
+        "African Period": ["#402008", "#D97925", "#8C311C", "#F2E6D8", "#0D0D0D", "#592316"],
+        "Synthetic Cubism": ["#03A696", "#F2C84B", "#F24405", "#F2F2F2", "#262626", "#594011"],
+        "Dora Maar": ["#F2E205", "#F23D3D", "#357F28", "#000000", "#591E23", "#F2F2F2"],
+        "Analytic Cubism": ["#8C7D61", "#594F3B", "#262016", "#D9C8A9", "#A6987E", "#40382C"],
+        "Mediterranean": ["#03588C", "#F2C53D", "#027368", "#F2F2F2", "#D94B18", "#038C7F"],
+        "Vallauris": ["#D95204", "#F2B705", "#025959", "#F2F2F2", "#0D0D0D", "#BF4904"],
+        "Harlequin": ["#F20505", "#04BFBF", "#F2E205", "#0D0D0D", "#F2F2F2", "#8C0303"]
+    };
+
+    // --- Shape Class ---
+    class Shape {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.baseSize = (Math.random() * width * 0.15) + 30; 
+            this.size = this.baseSize;
+            
+            // Random type: 0=Rect, 1=Tri, 2=Arc, 3=Eye, 4=Circle, 5=Diamond
+            this.type = Math.floor(Math.random() * 6); 
+            
+            this.angle = Math.random() * Math.PI * 2;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            
+            this.color = this.getRandomColor();
+            
+            this.compositeOp = Math.random() > 0.5 ? 'source-over' : 'overlay';
+
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            
+            this.targetScale = 1;
+            this.currentScale = 1;
+        }
+
+        getRandomColor() {
+            const currentPalette = palettes[period] || palettes["Cubism"];
+            return currentPalette[Math.floor(Math.random() * currentPalette.length)];
+        }
+
+        update(kickLevel) {
+            const moveSpeed = speed / 20; 
+
+            this.x += this.vx * moveSpeed;
+            this.y += this.vy * moveSpeed;
+            this.angle += this.rotationSpeed * (moveSpeed * 0.5);
+
+            if (this.x > width + this.size) this.x = -this.size;
+            if (this.x < -this.size) this.x = width + this.size;
+            if (this.y > height + this.size) this.y = -this.size;
+            if (this.y < -this.size) this.y = height + this.size;
+
+            if (kickLevel > 0) {
+                const frag = fragmentation / 100;
+                this.x += (Math.random() - 0.5) * 30 * kickLevel * frag;
+                this.y += (Math.random() - 0.5) * 30 * kickLevel * frag;
+                
+                this.targetScale = 1 + (kickLevel * 0.8);
+                
+                if (kickLevel > 0.5 && Math.random() > 0.9) {
+                    this.color = this.getRandomColor();
+                }
+            } else {
+                this.targetScale = 1;
+            }
+
+            this.currentScale += (this.targetScale - this.currentScale) * 0.1;
+        }
+
+        draw(ctx) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            ctx.scale(this.currentScale, this.currentScale);
+
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = "#000000"; 
+            ctx.lineWidth = stroke_width; 
+
+            ctx.globalCompositeOperation = this.compositeOp;
+
+            ctx.beginPath();
+            
+            switch (this.type) {
+                case 0: // Rectangle
+                    ctx.rect(-this.size/2, -this.size/2, this.size, this.size);
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+                    break;
+                    
+                case 1: // Triangle
+                    ctx.moveTo(0, -this.size/2);
+                    ctx.lineTo(this.size/2, this.size/2);
+                    ctx.lineTo(-this.size/2, this.size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+                    break;
+                    
+                case 2: // Arc (Semi-circle)
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI, false);
+                    ctx.closePath();
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+                    break;
+
+                case 3: // Picasso Eye
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.beginPath();
+                    ctx.moveTo(-this.size/2, 0);
+                    ctx.quadraticCurveTo(0, -this.size/3, this.size/2, 0);
+                    ctx.quadraticCurveTo(0, this.size/3, -this.size/2, 0);
+                    ctx.closePath();
+                    ctx.fillStyle = "#F0F0F0"; 
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.fillStyle = this.color; 
+                    ctx.arc(0, 0, this.size/6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+
+                case 4: // Full Circle
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+                    break;
+
+                case 5: // Diamond (Rhombus)
+                    ctx.moveTo(0, -this.size/2);
+                    ctx.lineTo(this.size/2, 0);
+                    ctx.lineTo(0, this.size/2);
+                    ctx.lineTo(-this.size/2, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    if (stroke_width > 0) ctx.stroke();
+                    break;
+            }
+
+            ctx.restore();
+        }
+    }
+
+    // --- Management Functions ---
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        width = canvas.width;
+        height = canvas.height;
+    }
+
+    function createShapes() {
+        shapes = [];
+        for (let i = 0; i < complexity; i++) {
+            shapes.push(new Shape());
+        }
+    }
+
+    function updateColors() {
+        shapes.forEach(s => s.color = s.getRandomColor());
+    }
+
+    function checkForChanges() {
+        if (complexity !== prevComplexity) {
+            if (shapes.length < complexity) {
+                while(shapes.length < complexity) shapes.push(new Shape());
+            } else {
+                shapes.splice(complexity);
+            }
+            prevComplexity = complexity;
+        }
+
+        if (period !== prevPeriod) {
+            updateColors();
+            prevPeriod = period;
+        }
+    }
+
+    // --- Main Loop ---
+
+    function draw() {
+        checkForChanges();
+
+        let bgAlpha = 1.0; 
+        let bgColor = "rgba(20, 15, 10, " + bgAlpha + ")"; // Default Brown
+        
+        if (period === "Blue Period") bgColor = "rgba(16, 37, 64, " + bgAlpha + ")";
+        else if (period === "Rose Period") bgColor = "rgba(242, 215, 182, " + bgAlpha + ")";
+        else if (period === "Surrealism") bgColor = "rgba(30, 20, 60, " + bgAlpha + ")"; 
+        else if (period === "Guernica") bgColor = "rgba(30, 30, 30, " + bgAlpha + ")";
+        else if (period === "African Period") bgColor = "rgba(40, 20, 10, " + bgAlpha + ")";
+        else if (period === "Synthetic Cubism") bgColor = "rgba(230, 220, 200, " + bgAlpha + ")";
+        else if (period === "Dora Maar") bgColor = "rgba(20, 40, 20, " + bgAlpha + ")";
+        else if (period === "Analytic Cubism") bgColor = "rgba(64, 56, 44, " + bgAlpha + ")";
+        else if (period === "Mediterranean") bgColor = "rgba(3, 88, 140, " + bgAlpha + ")";
+        else if (period === "Vallauris") bgColor = "rgba(191, 73, 4, " + bgAlpha + ")";
+        else if (period === "Harlequin") bgColor = "rgba(20, 20, 20, " + bgAlpha + ")";
+        
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+
+        let kickLevel = 0;
+        
+        // SignalRGB Logic
+        if (audio_reactive && typeof engine !== 'undefined' && engine.audio) {
+            const freq = new Int8Array(engine.audio.freq);
+            let bassEnergy = 0;
+            const bins = 6;
+            for(let i=0; i<bins; i++) {
+                bassEnergy += Math.abs(freq[i]);
+            }
+            bassEnergy = bassEnergy / (bins * 128); 
+
+            let sensitivity = (bass_trigger || 50) / 100.0;
+            if (sensitivity < 0.01) sensitivity = 0.01;
+            const thresh = 0.6 - (sensitivity * 0.55);
+
+            if (bassEnergy > thresh) {
+                kickLevel = (bassEnergy - thresh) / (1 - thresh);
+            }
+        } 
+        // Browser Fallback Logic (Mock Audio)
+        else if (audio_reactive && typeof engine === 'undefined') {
+            // Simulated beat for browser viewing
+            const time = Date.now() / 1000;
+            // Create a rhythmic "kick"
+            const beat = (Math.sin(time * 3) + 1) / 2;
+            if (beat > 0.8) {
+                kickLevel = (beat - 0.8) * 2; 
+            }
+        }
+
+        for (let i = 0; i < shapes.length; i++) {
+            shapes[i].update(kickLevel);
+            shapes[i].draw(ctx);
+        }
+
+        if (fragmentation > 80) {
+            ctx.globalCompositeOperation = 'difference';
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        window.requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    createShapes(); 
+    
+    window.requestAnimationFrame(draw);
+
+</script>
+</html>
