@@ -152,7 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
         "clouds.html",
         "polyPlanet.html",
         "serenityWaves.html",
-        "systemBouncer.html"
+        "systemBouncer.html",
+        "picasso.html",
+        "void_and_silk.html"
     ];
 
     // --- Path Configuration ---
