@@ -6,31 +6,39 @@
     <meta publisher="Jose Miranda" />
 
     <meta property="theme" label="Theme" tooltip="Select the visual theme based on characters and locations." type="list" values="Dirtmouth (Blue/Grey),Forgotten Crossroads (Grey/Orange),Greenpath (Green),Fungal Wastes (Brown/Yellow),City of Tears (Blue),Crystal Peak (Pink/Purple),Resting Grounds (Grey/White),Royal Waterways (Green/Teal),Ancient Basin (Grey/Orange),The Abyss (Black/Void),Deepnest (Dark Grey),Kingdoms Edge (White/Ash),The Hive (Yellow/Gold),Fog Canyon (Pink/Purple),Queens Gardens (Green/White),White Palace (White/Silver),Colosseum of Fools (Red/Gold),Godhome (Gold),Moss Grotto (Green),Deep Docks (Red/Orange),Greymoor (Grey),The Citadel (Red/White),Coral Forest (Pink/Teal),Bonebottom (Bone/Brown),False Knight (Grey/Orange),Hornet (Red/White),Mantis Lords (Teal/Blue),Soul Master (Pale/Soul),Dung Defender (Brown/Gold),Broken Vessel (Orange),Watcher Knights (Blue/Orange),Uumuu (Purple),Nosk (Dark/Orange),The Collector (Void/Purple),Traitor Lord (Green/Orange),Grimm (Red),Nightmare King (Scarlet),Grey Prince Zote (Grey),The Hollow Knight (Void/Orange),Pure Vessel (Silver/Void),The Radiance (Orange/Yellow),Absolute Radiance (Gold/White),Sisters of Battle (Teal/Blue),Lace (White/Red),Steel Assassin Sharpe (Red/Steel),Trobbio (Yellow/Pink),Hunter Queen Carmelita (Pink),Seth (Void/Gold),Last Judge (White/Rings)" default="Uumuu (Purple)" />
-    
     <meta property="audio_reactive" label="Audio Reactive" tooltip="If true, effects trigger based on sound. If false, effects trigger randomly." type="boolean" default="true" />
-    <meta property="show_slashes" label="Enable Slashes" tooltip="Toggle the melee nail slash visual effects." type="boolean" default="true" />
-    <meta property="show_spirits" label="Enable Spirits" tooltip="Toggle the flying spirit projectile visual effects." type="boolean" default="true" />
-    <meta property="show_silk" label="Enable Silk" tooltip="Toggle the vibrating silk thread visual effects." type="boolean" default="true" />
-    <meta property="show_knight" label="Enable Knight" tooltip="Toggle the silhouette of The Knight dashing." type="boolean" default="true" />
-    <meta property="show_hornet" label="Enable Hornet" tooltip="Toggle the silhouette of Hornet lunging." type="boolean" default="true" />
-    
-    <meta property="activity_intensity" label="Random Intensity" tooltip="Controls how frequently effects spawn when Audio Reactive is disabled." type="number" min="1" max="100" default="50" />
-
-    <meta property="particle_density" label="Atmosphere Density" tooltip="The number of atmospheric spores/particles on screen." type="number" min="0" max="200" default="138" />
-    <meta property="particle_size" label="Spore Size" tooltip="The size of the individual atmospheric particles." type="number" min="1" max="10" default="4" />
-    <meta property="particle_speed" label="Atmosphere Flow" tooltip="The speed at which the background particles drift." type="number" min="0" max="100" default="20" />
-    
-    <meta property="slash_sensitivity" label="Effect Sensitivity" tooltip="Adjusts how easily audio triggers Slashes, Spirits, and Silk." type="number" min="1" max="100" default="79" />
-    <meta property="slash_thickness" label="Effect Thickness" tooltip="Controls the visual width of slashes, trails, and threads." type="number" min="1" max="50" default="15" />
-    
+    <meta property="slash_sensitivity" label="Audio Sensitivity" tooltip="Adjusts how easily audio triggers Slashes, Spirits, and Silk." type="number" min="1" max="100" default="79" />
     <meta property="wave_intensity" label="Wave Strength" tooltip="The strength of the distortion ripple effect caused by bass or random triggers." type="number" min="0" max="100" default="38" />
     <meta property="wave_speed" label="Wave Speed" tooltip="How fast the distortion ripples expand across the screen." type="number" min="1" max="100" default="80" />
-    
-    <meta property="direction" label="Flow Direction" tooltip="The direction the atmospheric particles will travel." type="list" values="Up,Down,Random" default="Up" />
+    <meta property="activity_intensity" label="Random Intensity" tooltip="Controls how frequently effects spawn when Audio Reactive is disabled." type="number" min="1" max="100" default="50" />
+
+    <meta property="direction" label="Spore Flow" tooltip="The direction the atmospheric particles will travel." type="list" values="Up,Down,Random" default="Up" />
+    <meta property="particle_size" label="Spore Size" tooltip="The size of the individual atmospheric particles." type="number" min="1" max="10" default="4" />
+    <meta property="particle_density" label="Spore Density" tooltip="The number of atmospheric spores/particles on screen." type="number" min="0" max="200" default="138" />
+    <meta property="particle_speed" label="Spore Speed" tooltip="The speed at which the background particles drift." type="number" min="0" max="100" default="20" />
+
+
+    <meta property="show_slashes" label="Enable Slashes" tooltip="Toggle the melee nail slash visual effects." type="boolean" default="true" />
+    <meta property="slash_thickness" label="Slash Size" tooltip="Controls the base visual width of slashes, trails, and threads." type="number" min="1" max="50" default="15" />
+    <meta property="show_spirits" label="Enable Spirits" tooltip="Toggle the flying spirit projectile visual effects." type="boolean" default="true" />
+    <meta property="spirit_size" label="Spirit Size" tooltip="Adjust the size of the Spirit silhouette." type="number" min="1" max="10" default="3" />
+    <meta property="show_silk" label="Enable Silk" tooltip="Toggle the vibrating silk thread visual effects." type="boolean" default="true" />
+    <meta property="silk_size" label="Silk Size" tooltip="Adjust the thickness of the silk threads." type="number" min="1" max="10" default="2" />
+    <meta property="show_knight" label="Enable Knight" tooltip="Toggle the silhouette of The Knight dashing." type="boolean" default="true" />
+    <meta property="knight_size" label="Knight Size" tooltip="Adjust the size of the Knight silhouette." type="number" min="1" max="10" default="5" />
+    <meta property="show_hornet" label="Enable Hornet" tooltip="Toggle the silhouette of Hornet lunging." type="boolean" default="true" />
+    <meta property="hornet_size" label="Hornet Size" tooltip="Adjust the size of the Hornet silhouette." type="number" min="1" max="10" default="5" />
+
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; }
+        #void-canvas { display: block; width: 100vw; height: 100vh; }
+        #start-overlay { display: none; }
+    </style>
 </head>
 
-<body style="margin: 0; padding: 0; background-color: #000;">
-    <canvas id="void-canvas" width="320" height="200"></canvas>
+<body>
+    <div id="start-overlay"></div>
+    <canvas id="void-canvas"></canvas>
 </body>
 
 <script>
@@ -38,88 +46,51 @@
     // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
     // -------------------------------------------------------------------
     
-    // 1. Detect if we are in a browser (engine is undefined)
     if (typeof window.engine === 'undefined') {
-        
-        // 2. Auto-Parse Meta Tags to create global variables
-        console.log("Browser detected: Auto-generating variables from <meta> tags...");
         const metaTags = document.querySelectorAll('meta[property]');
-        
         metaTags.forEach(meta => {
             const propName = meta.getAttribute('property');
             const propType = meta.getAttribute('type');
             const defaultVal = meta.getAttribute('default');
-
             if (propName) {
                 let finalValue = defaultVal;
-
-                if (propType === 'number') {
-                    finalValue = parseFloat(defaultVal);
-                } else if (propType === 'boolean') {
-                    finalValue = (defaultVal === 'true' || defaultVal === '1');
-                }
-                
-                // Create the global variable
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
                 window[propName] = finalValue;
-                console.log(`  Defined: ${propName} = ${finalValue} (${typeof finalValue})`);
             }
         });
 
-        // 3. Mock the Engine Object for Audio
-        window.engine = {
-            audio: {
-                freq: new Array(128).fill(0) 
-            }
-        };
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
 
-        // 4. Simulate Audio Data (Sine Waves)
-        // No user interaction needed, generates fake audio data for testing
         function simulateAudio() {
-            const time = Date.now() / 1000; // Seconds
+            const time = Date.now() / 1000; 
             const dataArray = new Array(128).fill(0);
             
-            // --- Simulate Bass (Frequencies 0-3) ---
-            // 120 BPM Pulse (2 beats per second)
-            // Sine wave from 0 to 1, raised to power of 4 for sharp peaks
+            // Bass: Strong pulses
             const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
             const bassVal = Math.pow(beat, 4) * 255; 
-            
-            dataArray[0] = bassVal;
-            dataArray[1] = bassVal;
-            dataArray[2] = bassVal;
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
 
-            // --- Simulate Treble/Mids (Frequencies 10-40) ---
-            // Wandering sine waves to trigger random effects
+            // Treble
             for (let i = 10; i < 40; i++) {
-                // Combine time and index for varied wave patterns
                 const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
-                // Add some randomness
                 dataArray[i] = wave * 150 + (Math.random() * 50); 
             }
-
             window.engine.audio.freq = dataArray;
             requestAnimationFrame(simulateAudio);
         }
-        
-        // Start the simulation immediately
         simulateAudio();
-
     } else {
-        // SignalRGB environment
         document.getElementById('start-overlay').style.display = 'none';
     }
 </script>
 
 <script>
     // -------------------------------------------------------------------
-    // SVG PATH CONFIGURATION
-    // You can edit these strings to change the silhouette shapes.
+    // SVG PATH CONFIGURATION (ORIGINAL PATHS RESTORED)
     // -------------------------------------------------------------------
     
-    // The Knight
     const KNIGHT_PATH_DATA = "m 15.4294 -43.9378 c -0.9187 0.0315 -1.3793 0.6445 -0.9181 1.2218 c 1.9384 2.4258 2.8947 3.97 2.9208 4.7177 c 0.0269 0.7697 -0.0714 0.883 -1.0139 1.1725 c -1.8725 0.5751 -1.9003 1.7036 -0.0736 2.9986 c 1.3197 0.9355 3.3929 3.57 4.5414 5.7708 c 2.0898 4.0047 1.579 8.9357 -1.2779 12.3289 c -1.5522 1.8437 -2.0364 2.0055 -4.877 1.6316 c -4.7143 -0.6207 -8.0652 -0.7592 -13.6923 -0.5663 c -8.0223 0.2747 -14.8656 1.4411 -22.0988 3.7655 c -3.3669 1.082 -3.466 1.0636 -5.9557 -1.1074 c -3.1828 -2.7756 -4.3443 -5.0321 -4.4914 -8.725 c -0.1428 -3.5802 0.8769 -6.2478 3.7998 -9.9413 c 0.9022 -1.14 1.5724 -2.1752 1.489 -2.3002 c -0.0834 -0.125 -0.6574 -0.3437 -1.2749 -0.486 c -0.6177 -0.1423 -1.2759 -0.3755 -1.4628 -0.5183 c -0.8047 -0.6139 -0.3542 -2.4968 1.2779 -5.338 c 0.6822 -1.1875 0.1187 -1.4024 -1.711 -0.6529 c -1.2574 0.515 -1.9407 1.0674 -3.7089 2.9953 c -2.3255 2.5355 -3.3514 4.1959 -4.6407 7.5123 c -2.3203 5.9686 -1.7908 12.2904 1.569 18.7353 c 1.7618 3.3796 3.7115 6.0073 6.5776 8.8642 c 1.2351 1.231 2.3917 2.4896 2.5704 2.797 c 0.1786 0.3076 0.5595 2.2288 0.8461 4.2695 c 0.6536 4.6522 1.43 8.0496 2.9578 12.9453 c 1.396 4.473 2.1429 6.1139 3.7539 8.2482 c 1.1518 1.5259 3.5296 3.4125 5.4037 4.2876 c 1.2389 0.5785 4.4849 1.4376 6.2336 1.6501 c 0.7583 0.0922 3.6977 0.0478 6.532 -0.0982 c 4.4451 -0.2291 5.5497 -0.3743 8.0378 -1.0574 c 3.8744 -1.0637 5.9402 -1.8404 8.0358 -3.0217 c 2.2801 -1.2852 4.5662 -3.8623 5.2576 -5.9269 c 1.3423 -4.0087 1.9474 -13.5064 1.2346 -19.3751 c -0.5842 -4.8085 -0.457 -5.3331 1.9931 -8.226 c 3.1074 -3.6691 4.6919 -6.4973 5.8671 -10.4719 c 2.6824 -9.0721 -0.3411 -18.9094 -7.5797 -24.6611 c -2.4702 -1.9628 -5.1563 -3.4716 -6.1223 -3.4384 z m -3.1288 53.0577 c 1.4955 -0.0522 2.2543 0.2093 3.4516 1.1887 c 3.6879 3.0167 3.0687 10.5009 -1.1312 13.6698 c -0.9088 0.6855 -1.4249 0.8631 -2.8776 0.9904 c -1.5967 0.1398 -1.8933 0.0823 -3.0216 -0.5879 c -0.9335 -0.5546 -1.4577 -1.1292 -2.0647 -2.2635 c -0.723 -1.351 -0.8229 -1.8006 -0.9011 -4.038 c -0.0808 -2.3128 -0.0224 -2.6644 0.7206 -4.3164 c 1.2774 -2.8409 3.4336 -4.5596 5.8241 -4.6431 z m -25.6294 2.5228 c 0.9177 -0.0479 1.8807 0.1248 2.7925 0.5401 c 4.5753 2.084 6.8342 8.8491 4.3231 12.9476 c -1.2545 2.0476 -4.1856 2.829 -6.6022 1.7601 c -4.8061 -2.1262 -7.0827 -9.1852 -4.2778 -13.2652 c 0.8313 -1.2093 2.235 -1.9028 3.7643 -1.9826 z";
-    
-    // Hornet
     const HORNET_PATH_DATA = "m 3.1286 -34.6572 c -1.0217 0.1255 -1.6263 1.0007 -1.6025 2.3197 c 0.0176 0.9743 0.3436 2.0965 1.188 4.0888 c 1.1206 2.6439 2.0287 5.439 2.8108 8.6516 c 0.6651 2.7319 1.3646 8.4556 1.3398 10.9649 c -0.0625 6.3464 -1.7644 11.2105 -4.5642 13.044 c -0.7709 0.5048 -0.9346 0.5599 -2.0871 0.7014 c -1.1156 0.137 -1.3406 0.1225 -2.0855 -0.1341 c -1.5926 -0.5487 -3.4045 -2.1933 -4.6434 -4.2151 c -1.9695 -3.2139 -3.2489 -7.334 -3.8945 -12.5397 c -0.6692 -5.3958 -0.5815 -9.9414 0.3018 -15.6314 c 0.3041 -1.9593 0.2843 -2.9543 -0.0777 -3.8828 c -0.3997 -1.0254 -0.9217 -1.4625 -1.7371 -1.4543 c -1.2582 0.0125 -2.0802 0.8764 -3.4574 3.633 c -4.4094 8.8253 -7.0432 19.0566 -7.396 28.7324 c -0.1365 3.7412 -0.0843 4.7941 0.4554 9.192 c 0.5684 4.632 0.8281 5.8704 1.9483 9.2906 c 2.0445 6.2425 5.085 11.3133 9.1782 15.3075 c 1.2582 1.2277 3.7042 3.15 5.1095 4.0154 c 2.7429 1.6893 7.1959 3.4422 9.2435 3.6386 c 1.5108 0.1449 1.7187 0.1157 3.1832 -0.4458 c 1.2511 -0.4796 2.897 -1.5163 5.0319 -3.169 c 2.4161 -1.8704 5.2226 -5.0259 6.8378 -7.6881 c 3.8549 -6.3538 5.5989 -13.8486 5.2527 -22.5724 c -0.1147 -2.8923 -0.3686 -4.948 -0.9799 -7.9435 c -2.0604 -10.0929 -6.4955 -19.6945 -13.0834 -28.3244 c -3.37 -4.4146 -4.8724 -5.751 -6.2721 -5.5791 z m 12.3315 55.8435 c 0.3812 -0.0383 0.7011 0.0268 0.935 0.2095 c 0.6021 0.4704 0.3925 3.2713 -0.4222 5.6402 c -1.3521 3.9315 -4.0683 7.1663 -6.3944 7.6152 c -0.7423 0.1432 -0.9225 0.1314 -1.354 -0.0892 c -1.0123 -0.5173 -1.3313 -1.5096 -1.0658 -3.3142 c 0.3167 -2.1527 1.3819 -4.3991 2.9995 -6.3258 c 1.7982 -2.1417 3.9406 -3.5991 5.3017 -3.7358 z m -25.8463 3.3232 c 0.5941 -0.0733 1.4143 0.0596 2.3901 0.4076 c 3.579 1.2765 6.6089 4.0369 7.9998 7.2882 c 0.7169 1.6758 0.7241 2.56 0.0271 3.3816 c -0.4206 0.4958 -1.7603 0.7393 -2.6959 0.4898 c -2.1809 -0.5816 -4.7245 -2.6564 -6.5558 -5.3475 c -1.3849 -2.0352 -2.3459 -4.3915 -2.1979 -5.3893 c 0.0708 -0.4773 0.4385 -0.7571 1.0325 -0.8304 z";
 
     // -------------------------------------------------------------------
@@ -131,7 +102,16 @@
     let width = canvas.width;
     let height = canvas.height;
 
-    // Pre-compile paths
+    // Handle Resizing
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        width = canvas.width;
+        height = canvas.height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
     const knightPath = new Path2D(KNIGHT_PATH_DATA);
     const hornetPath = new Path2D(HORNET_PATH_DATA);
 
@@ -145,14 +125,12 @@
     let shockwaves = []; 
     let lastTime = 0;
     
-    // Timers
     let lastWaveTime = 0;
     let nextEffectTime = 0;
     let nextWaveTime = 0;
 
-    // Theme Palettes: [BgTop, BgBot, Particle, Slash/Spirit, SlashGlow]
+    // Theme Palettes
     const palettes = {
-        // --- HOLLOW KNIGHT PLACES ---
         "Dirtmouth (Blue/Grey)":            ["#0F1123", "#1C2238", "#AABFFF", "#FFFFFF", "#AABFFF"],
         "Forgotten Crossroads (Grey/Orange)":["#1A1A2E", "#2A2A40", "#FFAA00", "#FF8800", "#FFFFFF"],
         "Greenpath (Green)":                ["#051A05", "#0F2E0F", "#55FF55", "#CCFFCC", "#00FF00"],
@@ -171,16 +149,12 @@
         "White Palace (White/Silver)":      ["#505050", "#707070", "#FFFFFF", "#000000", "#FFFFFF"],
         "Colosseum of Fools (Red/Gold)":    ["#2E0A0A", "#471111", "#FFCC00", "#FFAA00", "#FFFFFF"],
         "Godhome (Gold)":                   ["#332A00", "#665500", "#FFEEAA", "#FFFFCC", "#FFCC00"],
-
-        // --- SILKSONG PLACES ---
         "Moss Grotto (Green)":              ["#0A1A0A", "#142E14", "#88FF88", "#DDFFDD", "#FFFFFF"],
         "Deep Docks (Red/Orange)":          ["#1A0505", "#2E0A0A", "#FF5500", "#FFAA00", "#FFFFFF"],
         "Greymoor (Grey)":                  ["#1A1A1A", "#2E2E2E", "#888888", "#CCCCCC", "#FFFFFF"],
         "The Citadel (Red/White)":          ["#2E1A1A", "#472E2E", "#FF8888", "#FFFFFF", "#FF4444"],
         "Coral Forest (Pink/Teal)":         ["#00111A", "#002233", "#FF55AA", "#00FFCC", "#FFFFFF"],
         "Bonebottom (Bone/Brown)":          ["#1A1510", "#2E2620", "#DDCCAA", "#FFEECC", "#FFAA55"],
-
-        // --- HOLLOW KNIGHT BOSSES ---
         "False Knight (Grey/Orange)":       ["#1A1A1A", "#2E2E2E", "#FFAA00", "#FF8800", "#FFFFFF"],
         "Hornet (Red/White)":               ["#2D0000", "#4A0000", "#FFFFFF", "#FFFFFF", "#FF0044"],
         "Mantis Lords (Teal/Blue)":         ["#00111A", "#002233", "#00AAFF", "#FFFFFF", "#0088CC"],
@@ -200,8 +174,6 @@
         "The Radiance (Orange/Yellow)":     ["#442200", "#663300", "#FFFF00", "#FFFFAA", "#FFFFFF"],
         "Absolute Radiance (Gold/White)":   ["#664400", "#885500", "#FFFFFF", "#FFD700", "#FFFFFF"],
         "Sisters of Battle (Teal/Blue)":    ["#001122", "#003344", "#FFFFFF", "#00FFFF", "#0088FF"],
-
-        // --- SILKSONG BOSSES ---
         "Lace (White/Red)":                 ["#1A0A0A", "#2E1111", "#FFFFFF", "#FF0044", "#FFFFFF"],
         "Steel Assassin Sharpe (Red/Steel)":["#110000", "#220000", "#FF0000", "#AAAAAA", "#FF0000"],
         "Trobbio (Yellow/Pink)":            ["#2E2E00", "#474700", "#FFFF00", "#FF00CC", "#FFFF00"],
@@ -313,13 +285,13 @@
     }
 
     class Spirit {
-        constructor(w, h, themeColors) {
+        constructor(w, h, themeColors, sizeMult) {
             this.direction = Math.random() > 0.5 ? 1 : -1; 
             this.x = this.direction === 1 ? -50 : w + 50;
             this.y = Math.random() * (h * 0.8) + (h * 0.1);
             this.speed = Math.random() * 200 + 300; 
             this.color = themeColors[3]; this.glow = themeColors[4];
-            this.size = Math.random() * 10 + 10;
+            this.size = Math.random() * sizeMult + 4.0 * sizeMult;
             this.trail = []; this.trailLength = 10;
         }
         update(dt, w) {
@@ -343,13 +315,14 @@
     }
 
     class SilkThread {
-        constructor(w, h, themeColors) {
+        constructor(w, h, themeColors, sizeMult) {
             this.x1 = Math.random() < 0.5 ? -20 : w + 20;
             this.y1 = Math.random() * h;
             this.x2 = Math.random() * w;
             this.y2 = Math.random() * h;
             this.life = 1.0; this.decay = 2.0; 
             this.color = themeColors[3]; this.glow = themeColors[4]; 
+            this.sizeMult = sizeMult;
             this.segments = [];
             let count = 10;
             let dx = (this.x2 - this.x1) / count, dy = (this.y2 - this.y1) / count;
@@ -363,7 +336,8 @@
         draw(ctx, thickness) {
             if(this.life <= 0) return;
             ctx.save(); ctx.strokeStyle = this.color; ctx.shadowColor = this.glow; ctx.shadowBlur = 15;
-            ctx.lineWidth = Math.max(1, thickness * 0.3); ctx.lineCap = "round"; ctx.lineJoin = "round";
+            ctx.lineWidth = Math.max(1, thickness * 0.3 * (this.sizeMult / 2.0)); 
+            ctx.lineCap = "round"; ctx.lineJoin = "round";
             ctx.globalAlpha = this.life;
             ctx.beginPath(); ctx.moveTo(this.segments[0].x, this.segments[0].y);
             for(let i=1; i<this.segments.length; i++) { let p = this.segments[i]; ctx.lineTo(p.x + p.ox, p.y + p.oy); }
@@ -372,14 +346,14 @@
     }
 
     class Knight {
-        constructor(w, h, themeColors) {
+        constructor(w, h, themeColors, sizeMult) {
             this.direction = Math.random() > 0.5 ? 1 : -1;
             this.x = this.direction === 1 ? -60 : w + 60;
             this.y = Math.random() * (h * 0.6) + (h * 0.2);
             this.speed = Math.random() * 200 + 200;
             this.color = themeColors[3]; 
             this.glow = themeColors[4];
-            this.scale = 0.5 + Math.random() * 0.5;
+            this.scale = (0.5 + Math.random() * 0.5) * (sizeMult / 5.0);
         }
         update(dt, w) {
             this.x += this.speed * this.direction * dt;
@@ -394,21 +368,20 @@
             ctx.scale(this.scale, this.scale);
             ctx.shadowBlur = 10; ctx.shadowColor = this.glow;
             ctx.fillStyle = this.color;
-            // Use the global Path2D object
             ctx.fill(knightPath);
             ctx.restore();
         }
     }
 
     class Hornet {
-        constructor(w, h, themeColors) {
+        constructor(w, h, themeColors, sizeMult) {
             this.direction = Math.random() > 0.5 ? 1 : -1;
             this.x = this.direction === 1 ? -60 : w + 60;
             this.y = Math.random() * (h * 0.6) + (h * 0.2);
             this.speed = Math.random() * 250 + 250; 
             this.color = themeColors[3];
             this.glow = themeColors[4];
-            this.scale = 0.5 + Math.random() * 0.5;
+            this.scale = (0.5 + Math.random() * 0.5) * (sizeMult / 5.0);
         }
         update(dt, w) {
             this.x += this.speed * this.direction * dt;
@@ -422,7 +395,6 @@
             ctx.scale(this.scale, this.scale);
             ctx.shadowBlur = 10; ctx.shadowColor = this.glow;
             ctx.fillStyle = this.color;
-            // Use the global Path2D object
             ctx.fill(hornetPath);
             ctx.restore();
         }
@@ -444,6 +416,7 @@
             lastTime = currentTime;
             nextEffectTime = currentTime + 1000;
             nextWaveTime = currentTime + 3000;
+            lastWaveTime = currentTime; 
             requestAnimationFrame(update); return;
         }
         const dt = (currentTime - lastTime) / 1000;
@@ -462,6 +435,12 @@
         const wStrength = wave_intensity || 38;
         const wSpeed = (wave_speed || 80) * 5; 
         
+        // New Size Props
+        const szSilk = silk_size || 2;
+        const szKnight = knight_size || 5;
+        const szSpirit = spirit_size || 5;
+        const szHornet = hornet_size || 5;
+        
         const isAudio = getProp('audio_reactive');
         const doSlashes = getProp('show_slashes');
         const doSpirits = getProp('show_spirits');
@@ -470,21 +449,22 @@
         const doHornet = getProp('show_hornet');
         const intensity = (activity_intensity || 50) / 100; 
 
-        // Audio
+        // Audio Analysis
         let bass = 0, trebel = 0;
         if (isAudio && typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
             const audio = engine.audio.freq; 
-            bass = (Math.abs(audio[0]) + Math.abs(audio[1]) + Math.abs(audio[2])) / (3 * 128.0);
+            bass = (Math.abs(audio[0]) + Math.abs(audio[1]) + Math.abs(audio[2])) / (3 * 255.0);
             let tSum = 0;
             for(let i=10; i<40; i++) tSum += Math.abs(audio[i]);
-            trebel = (tSum / 30.0) / 128.0;
+            trebel = (tSum / 30.0) / 255.0;
             trebel *= 3.0; 
         }
 
         // --- Waves ---
         let spawnWave = false;
         if (isAudio) {
-            if (bass > 0.6 && (currentTime - lastWaveTime > 300)) spawnWave = true;
+            // Lowered threshold to 0.2 for better sensitivity
+            if (bass > 0.2 && (currentTime - lastWaveTime > 300)) spawnWave = true;
         } else {
             if (currentTime > nextWaveTime) {
                 spawnWave = true;
@@ -495,10 +475,14 @@
             shockwaves.push({ radius: 0, strength: isAudio ? bass * wStrength : wStrength * 0.7, active: true });
             lastWaveTime = currentTime;
         }
+        
+        // Dynamic Wave Expiration Limit based on screen size
+        const maxWaveRadius = Math.max(width, height) + 200;
+
         for (let i = shockwaves.length - 1; i >= 0; i--) {
             shockwaves[i].radius += wSpeed * dt;
-            shockwaves[i].strength *= 0.98;
-            if (shockwaves[i].radius > 400 || shockwaves[i].strength < 0.5) shockwaves.splice(i, 1);
+            shockwaves[i].strength *= 0.99; 
+            if (shockwaves[i].radius > maxWaveRadius || shockwaves[i].strength < 0.1) shockwaves.splice(i, 1);
         }
 
         // --- Particles ---
@@ -537,10 +521,10 @@
             if (pool.length > 0) {
                 const choice = pool[Math.floor(Math.random() * pool.length)];
                 if (choice === 'slash') slashes.push(new Slash(width, height, themeColors));
-                if (choice === 'spirit') spirits.push(new Spirit(width, height, themeColors));
-                if (choice === 'silk') silks.push(new SilkThread(width, height, themeColors));
-                if (choice === 'knight') knights.push(new Knight(width, height, themeColors));
-                if (choice === 'hornet') hornets.push(new Hornet(width, height, themeColors));
+                if (choice === 'spirit') spirits.push(new Spirit(width, height, themeColors, szSpirit));
+                if (choice === 'silk') silks.push(new SilkThread(width, height, themeColors, szSilk));
+                if (choice === 'knight') knights.push(new Knight(width, height, themeColors, szKnight));
+                if (choice === 'hornet') hornets.push(new Hornet(width, height, themeColors, szHornet));
             }
         }
 
