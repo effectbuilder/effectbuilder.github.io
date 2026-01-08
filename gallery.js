@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const userHasLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
 
             // --- Create Admin Actions Dropdown ---
+            // --- 1. Create Admin Actions Dropdown (Top Right Kebab) ---
             let adminDropdownHTML = '';
             const isOwner = currentUser && currentUser.uid === project.userId;
             const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
@@ -341,20 +342,24 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isOwner || isAdmin) {
                 const isFeatured = project.featured === true;
                 
-                // Owner can edit
                 const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>Edit</button></li>` : '';
-                
-                // Admin-only actions
                 const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? '<i class="bi bi-star-fill me-2"></i>Un-feature' : '<i class="bi bi-star me-2"></i>Feature'}</button></li>` : '';
                 const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
                 const deleteHTML = isAdmin ? `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger" id="admin-delete-btn-${project.docId}"><i class="bi bi-trash me-2"></i>Delete</button></li>` : '';
 
+                // MODIFIED: Matches the provided image (Light Grey Circle, Dark Dots)
+                // Uses 'btn-light' for the color and flexbox for perfect centering
                 adminDropdownHTML = `
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" id="admin-dropdown-${project.docId}" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-three-dots"></i>
+                    <div class="dropdown position-absolute top-0 end-0 m-2 z-2">
+                        <button class="btn btn-light rounded-circle shadow-sm p-0 d-flex align-items-center justify-content-center" 
+                                style="width: 32px; height: 32px;" 
+                                type="button" 
+                                id="admin-dropdown-${project.docId}" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="admin-dropdown-${project.docId}">
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="admin-dropdown-${project.docId}">
                             ${editHTML}
                             ${featureHTML}
                             ${regenHTML}
@@ -364,38 +369,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
             }
 
-            // --- Create Column and Card ---
+            // --- 2. Build the Card HTML ---
             const col = document.createElement('div');
             col.className = 'col-12 col-md-6 col-lg-4 d-flex align-items-stretch';
-            col.id = `gallery-item-${project.docId}`; // ID is now on the column
+            col.id = `gallery-item-${project.docId}`;
 
             const card = document.createElement('div');
             card.className = 'card shadow-sm h-100';
             
+            // Note: We create a parent 'position-relative' div to hold the Link AND the Menu separate
             card.innerHTML = `
-                <a href="./?effectId=${project.docId}" class="position-relative">
-                    ${project.thumbnail ? 
-                        `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` : 
-                        `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
-                            <i class="bi bi-image text-body-tertiary" style="font-size: 3rem;"></i>
-                        </div>`
-                    }
-                    ${project.featured === true ? '<span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2"><i class="bi bi-star-fill me-1"></i>Featured</span>' : ''}
-                </a>
+                <div class="position-relative">
+                    <a href="./?effectId=${project.docId}" class="d-block">
+                        ${project.thumbnail ? 
+                            `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` : 
+                            `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
+                                <i class="bi bi-image text-body-tertiary" style="font-size: 3rem;"></i>
+                            </div>`
+                        }
+                    </a>
+                    ${project.featured === true ? '<span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2 z-1"><i class="bi bi-star-fill me-1"></i>Featured</span>' : ''}
+                    ${adminDropdownHTML} 
+                </div>
+
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${project.name}</h5>
+                    <h5 class="card-title text-truncate">${project.name}</h5>
                     <small class="card-subtitle mb-2 text-body-secondary">By ${project.creatorName || 'Anonymous'}</small>
                     <p class="card-text small text-body-secondary flex-grow-1" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="${description}">
                         ${description}
                     </p>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
                         <small class="text-body-secondary" title="Views / Downloads / Likes">
                             <i class="bi bi-eye-fill"></i> ${viewCount} &nbsp;
                             <i class="bi bi-download"></i> ${downloadCount} &nbsp;
                             <i class="bi bi-heart-fill"></i> <span id="gallery-like-count-${project.docId}">${likeCount}</span>
                         </small>
-                        ${adminDropdownHTML}
-                    </div>
+                        </div>
                 </div>
                 <div class="card-footer d-flex gap-2">
                     <a href="./?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>Load</a>
