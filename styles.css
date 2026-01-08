@@ -494,3 +494,25 @@ body {
     position: relative;
     overflow: hidden;
 }
+
+/* --- Kebab Menu Button --- */
+.btn-kebab {
+    background: transparent;
+    border: none;
+    color: var(--bs-body-color);
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    font-size: 1.25rem;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.btn-kebab:hover, .btn-kebab:focus {
+    opacity: 1;
+    color: var(--bs-primary);
+}
+
+/* Optional: Remove the default bootstrap dropdown toggle arrow if present */
+.btn-kebab::after {
+    display: none;
+}
