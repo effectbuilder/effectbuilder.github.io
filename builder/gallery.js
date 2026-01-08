@@ -524,7 +524,7 @@ async function loadUserComponents(reset = false) {
         const sortField = sortElement ? sortElement.value : 'lastUpdated';
 
         const queryConstraints = [
-            orderBy(sortField, 'desc'), 
+            orderBy(sortField, 'desc'),
             limit(GALLERY_PAGE_SIZE)
         ];
 
@@ -561,22 +561,39 @@ async function loadUserComponents(reset = false) {
             const componentData = docSnap.data();
             const componentId = docSnap.id;
 
-            // --- DEFINITIONS START HERE ---
+            // --- DEFINITIONS ---
             const ledCount = componentData.ledCount || (Array.isArray(componentData.leds) ? componentData.leds.length : 0);
             const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
             const ownerName = componentData.ownerName || 'Anonymous';
             const componentName = componentData.name || 'Untitled';
             const imageUrl = componentData.imageUrl;
             const ownerId = componentData.ownerId;
-
-            // [FIX] Define these variables BEFORE using them in the HTML string below
             const likeCount = componentData.likeCount || 0;
             const viewCount = componentData.viewCount || 0;
-            // --- DEFINITIONS END ---
+
+            // --- [NEW] KEBAB MENU LOGIC ---
+            // Only generate this HTML if the user is allowed to delete
+            let kebabMenuHtml = '';
+            if (user && (user.uid === ownerId || user.uid === ADMIN_UID)) {
+                kebabMenuHtml = `
+                    <div class="dropdown position-absolute top-0 end-0 mt-2 me-2" style="z-index: 10;">
+                        <button class="btn btn-light btn-sm rounded-circle shadow-sm opacity-75" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li>
+                                <button class="dropdown-item text-danger" data-component-id="${componentId}-delete">
+                                    <i class="bi bi-trash me-2"></i>Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>`;
+            }
 
             const col = document.createElement('div');
             col.className = 'col';
 
+            // Image HTML (Same as before)
             let imageHtml = `
                 <div class="card-img-top d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
@@ -594,13 +611,11 @@ async function loadUserComponents(reset = false) {
                     </div>`;
             }
 
-            const deleteButtonHtml = (user && (user.uid === ownerId || user.uid === ADMIN_UID))
-                ? `<button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete" title="Delete Component"><i class="bi bi-trash"></i></button>`
-                : '';
-
-            // Render Card HTML
+            // --- RENDER CARD ---
+            // Added 'position-relative' to the card so the kebab menu is positioned correctly
             col.innerHTML = `
-                <div class="card h-100 bg-body-tertiary">
+                <div class="card h-100 bg-body-tertiary position-relative">
+                    ${kebabMenuHtml}
                     ${imageHtml}
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title text-truncate" title="${componentName}">${componentName}</h5>
@@ -610,11 +625,10 @@ async function loadUserComponents(reset = false) {
                             <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
                             <span class="badge bg-secondary">${ledCount} LEDs</span>
                         </div>
-                        <div class="mt-auto d-flex justify-content-between align-items-center">
-                            <button class="btn btn-primary" data-component-id="${componentId}-load">
+                        <div class="mt-auto">
+                            <button class="btn btn-primary w-100" data-component-id="${componentId}-load">
                                 <i class="bi bi-folder2-open me-1"></i> Load in Builder
                             </button>
-                            ${deleteButtonHtml}
                         </div>
                     </div>
                     <div class="card-footer text-muted d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
@@ -629,20 +643,24 @@ async function loadUserComponents(reset = false) {
 
             galleryComponentList.appendChild(col);
 
-            // Render Thumbnail (if needed)
+            // --- THUMBNAIL LOGIC ---
             if (!imageUrl) {
                 const thumbCanvas = col.querySelector(`#thumb-${componentId}`);
                 if (thumbCanvas) renderComponentThumbnail(thumbCanvas, componentData);
             }
 
-            // Listeners
+            // --- EVENT LISTENERS ---
             const loadUrl = `index.html?id=${componentId}`;
             col.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', () => window.location.href = loadUrl);
             col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => window.location.href = loadUrl);
 
+            // Attach listener to the new dropdown delete button
             const deleteButton = col.querySelector(`[data-component-id="${componentId}-delete"]`);
             if (deleteButton) {
-                deleteButton.addEventListener('click', (e) => handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId));
+                deleteButton.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent menu closing weirdness
+                    handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId);
+                });
             }
         });
 
@@ -660,12 +678,12 @@ async function loadUserComponents(reset = false) {
     } catch (error) {
         console.error("Error loading user components:", error);
         galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-danger">Error loading components. See console for details.</div></div>';
-        
+
         // Helper for Index Errors
         if (error.code === 'failed-precondition') {
-             galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-warning">Sort Index Missing. Click the link in the console to create it.</div></div>';
+            galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-warning">Sort Index Missing. Click the link in the console to create it.</div></div>';
         }
-        
+
         showToast('Load Error', 'Could not fetch components.', 'danger');
         if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
     } finally {
@@ -781,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial load of components (triggered by auth listener)
     // We call it here just in case auth is delayed
-    if (!auth.currentUser) {
-        loadUserComponents(true);
-    }
+    // if (!auth.currentUser) {
+    //     loadUserComponents(true);
+    // }
 });
