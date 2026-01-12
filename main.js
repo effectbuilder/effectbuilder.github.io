@@ -256,6 +256,10 @@ const PIXEL_ART_ITEMS_PER_PAGE = 9;
 let prePastedImageBlob = null;
 let prePastedImageDims = { width: 0, height: 0 };
 
+// --- SignalRGB Layout Overlay State ---
+let layoutOverlayData = JSON.parse(localStorage.getItem('srgb_layout_overlay') || '[]');
+let showLayoutOverlay = !!layoutOverlayData.length; // Auto-show if data exists
+
 /**
  * Calculates the interpolated color at a specific progress point within a set of color stops.
  * @param {number} progress - The position to find the color for (0.0 to 1.0).
@@ -5884,6 +5888,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         drawFrame(audioData, sensorData, isAnimating ? deltaTime : 0, paletteProps, globalCycleProps);
+        drawLayoutOverlay(ctx, canvas.width, canvas.height);
     }
 
     /**
@@ -7829,6 +7834,112 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const debouncedUpdateForm = debounce(updateFormValuesFromObjects, 10);
+
+    // --- SignalRGB Layout Image Overlay ---
+
+    // State
+    let layoutOverlayImage = new Image();
+    let layoutOverlayLoaded = false;
+    let showLayoutOverlay = false;
+    let layoutOverlayOpacity = 0.3;
+
+    // Try to load saved image from LocalStorage on startup
+    const savedOverlayData = localStorage.getItem('srgb_layout_image_data');
+    if (savedOverlayData) {
+        layoutOverlayImage.src = savedOverlayData;
+        layoutOverlayImage.onload = () => {
+            layoutOverlayLoaded = true;
+            showLayoutOverlay = true; // Auto-show if we have a saved image
+            updateLayoutButtonState();
+        };
+    }
+
+    // 1. Paste from Clipboard Function
+    window.pasteLayoutFromClipboard = async function () {
+        try {
+            const clipboardItems = await navigator.clipboard.read();
+            for (const item of clipboardItems) {
+                // Look for image types
+                if (item.types.some(type => type.startsWith('image/'))) {
+                    const blob = await item.getType(item.types.find(type => type.startsWith('image/')));
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        const result = e.target.result;
+
+                        // Update State
+                        layoutOverlayImage = new Image();
+                        layoutOverlayImage.src = result;
+                        layoutOverlayImage.onload = () => {
+                            layoutOverlayLoaded = true;
+                            showLayoutOverlay = true;
+                            updateLayoutButtonState();
+
+                            // Save to LocalStorage (Try/Catch because images can be large)
+                            try {
+                                localStorage.setItem('srgb_layout_image_data', result);
+                                if (typeof showToast === 'function') showToast("Layout image pasted and saved!", 'success');
+                                else alert("Layout image pasted!");
+                            } catch (err) {
+                                console.warn("Image too large for LocalStorage, but loaded for this session.");
+                                if (typeof showToast === 'function') showToast("Image loaded (too large to save).", 'warning');
+                            }
+                        };
+                    };
+                    reader.readAsDataURL(blob);
+                    return; // Stop after finding the first image
+                }
+            }
+            alert("No image found in clipboard.");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to read clipboard. Make sure you gave permission.");
+        }
+    };
+
+    // 2. Toggle Visibility
+    window.toggleLayoutOverlay = function () {
+        if (!layoutOverlayLoaded) {
+            alert("Paste an image first!");
+            return;
+        }
+        showLayoutOverlay = !showLayoutOverlay;
+        updateLayoutButtonState();
+    }
+
+    // 3. Update Opacity
+    window.updateLayoutOpacity = function (val) {
+        layoutOverlayOpacity = parseFloat(val);
+    }
+
+    // 4. Update Button UI
+    function updateLayoutButtonState() {
+        const btn = document.getElementById('toggle-layout-btn');
+        if (!btn) return;
+
+        if (showLayoutOverlay && layoutOverlayLoaded) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-info');
+            btn.innerHTML = '<i class="bi bi-eye-fill"></i>';
+        } else {
+            btn.classList.add('btn-outline-secondary');
+            btn.classList.remove('btn-info');
+            btn.innerHTML = '<i class="bi bi-eye"></i>';
+        }
+    }
+
+    // 5. Draw Function (Call this in your animation loop)
+    function drawLayoutOverlay(ctx, cvsWidth, cvsHeight) {
+        if (!showLayoutOverlay || !layoutOverlayLoaded) return;
+
+        ctx.save();
+        ctx.globalAlpha = layoutOverlayOpacity;
+
+        // Draw the image stretched to fill the entire canvas
+        ctx.drawImage(layoutOverlayImage, 0, 0, cvsWidth, cvsHeight);
+
+        ctx.restore();
+    }
 
     /**
      * The main initialization function for the application.
