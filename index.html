@@ -53,6 +53,7 @@
                 <div class="btn-group me-3" role="group" aria-label="Editor">
                     <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
+
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
@@ -151,6 +152,20 @@
                         <button type="button" class="btn btn-secondary" id="constrain-btn" data-bs-toggle="tooltip" title="Snap to Canvas"><i class="bi bi-magnet-fill"></i></button>
                         <button type="button" class="btn btn-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" title="Match Text Size to Cell Height" disabled><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
                         <button id="startAudioBtn" class="btn btn-primary">Start Listening</button>
+                    </div>
+
+                    <div class="btn-group btn-group-sm me-2 mb-1 align-items-center" role="group">
+                        <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard">
+                            <i class="bi bi-clipboard-plus"></i> Paste
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay">
+                            <i class="bi bi-eye"></i>
+                        </button>
+
+                        <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">
+                            <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity">
+                        </div>
                     </div>
                 </div>
                 <div id="right-panel-top" class="d-flex flex-column" style="overflow: auto; min-height: 0;">
