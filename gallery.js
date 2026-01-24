@@ -18,11 +18,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastVisible = null;
     let isLoading = false;
     let allLoaded = false;
-    // === MODIFICATION START ===
     let currentFilter = 'all'; // 'all' or 'liked'
     let currentSort = 'createdAt'; // 'createdAt', 'likes', 'downloadCount', 'name'
     let currentSortLabel = 'Newest';
-    // === MODIFICATION END ===
+    let isGalleryReady = false;
     
     // --- DOM Elements for Lazy Loading ---
     const initialLoadingSpinner = document.getElementById('initial-loading-spinner');
@@ -548,26 +547,24 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // === MODIFICATION START ===
-    // This function now just resets the state and triggers the first load.
     function loadPublicGallery() {
-        galleryList.innerHTML = ''; // Clear the list
+        galleryList.innerHTML = ''; 
         lastVisible = null;
         allLoaded = false;
         isLoading = false;
+
+        // === FIX START: Enable Observer ===
+        isGalleryReady = true; 
+        // === FIX END ===
         
-        // Put the initial spinner back
         if (initialLoadingSpinner) {
             galleryList.appendChild(initialLoadingSpinner);
         }
 
-        loadMoreMessage.classList.add('d-none'); // Hide end-of-results message
+        loadMoreMessage.classList.add('d-none'); 
         
-        // Trigger the first page load. 
-        // loadMoreProjects() will use the current filter/sort settings.
         loadMoreProjects();
     }
-    // === MODIFICATION END ===
     
     // --- Intersection Observer Setup ---
     function setupIntersectionObserver() {
@@ -578,9 +575,12 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting) {
+            // === FIX START: Check Flag ===
+            // Only load if intersecting AND the gallery has been initialized
+            if (entries[0].isIntersecting && isGalleryReady) {
                 loadMoreProjects();
             }
+            // === FIX END ===
         }, options);
 
         if (loadMoreTrigger) {
