@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>South Park Generator</title>
+    <meta description="Generates South Park style characters that waddle and react to audio." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="bg_mode" label="Background" type="combobox" values="Solid Color,Bus Stop,Mountains,School" default="Bus Stop">
+    <meta property="mode" label="Spawn Mode" type="combobox" values="The Boys,Random Crowd,Lineup" default="The Boys">
+    <meta property="speed" label="Walk Speed" type="number" min="0" max="20" default="3">
+    <meta property="scale" label="Character Size" type="number" min="10" max="200" default="60">
+    <meta property="population" label="Crowd Density" type="number" min="1" max="20" default="5">
+    <meta property="audio_bounce" label="Bounce to Beat" type="boolean" default="true">
+    <meta property="audio_mouth" label="Lip Sync" type="boolean" default="true">
+    <meta property="bg_color" label="Solid BG Color" type="color" default="#404040">
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+<script>
+    /**
+     * South Park Generator
+     * Browser Safe Version (Defaults enabled, no UI)
+     */
+
+    // --- Browser Compatibility Layer ---
+    // If these variables are not defined (because we are not in SignalRGB), 
+    // define them with the values from the meta tags above.
+    
+    if (typeof bg_mode === 'undefined') var bg_mode = "Bus Stop";
+    if (typeof mode === 'undefined') var mode = "The Boys";
+    if (typeof speed === 'undefined') var speed = 3;
+    if (typeof scale === 'undefined') var scale = 60;
+    if (typeof population === 'undefined') var population = 5;
+    if (typeof audio_bounce === 'undefined') var audio_bounce = true;
+    if (typeof audio_mouth === 'undefined') var audio_mouth = true;
+    if (typeof bg_color === 'undefined') var bg_color = "#404040";
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    // State
+    let characters = [];
+    let frame = 0;
+    
+    // Audio State
+    let bassLevel = 0;
+    let volumeLevel = 0;
+    
+    // Horizon at 80% of screen height
+    const HORIZON_RATIO = 0.80; 
+
+    // --- Helpers ---
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initCharacters();
+    }
+
+    function randomColor() {
+        return `hsl(${Math.random() * 360}, 70%, 50%)`;
+    }
+
+    // --- Background Drawing ---
+
+    function drawBackground(ctx, mode) {
+        const horizonY = height * HORIZON_RATIO;
+        const availableSky = horizonY; 
+
+        // Sky
+        const skyColor = mode === "Solid Color" ? (bg_color || "#404040") : "#6a9bd1"; 
+        ctx.fillStyle = skyColor;
+        ctx.fillRect(0, 0, width, height);
+
+        if (mode === "Solid Color") {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, horizonY, width, height - horizonY);
+            ctx.strokeStyle = "#CCCCCC";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, horizonY); ctx.lineTo(width, horizonY); ctx.stroke();
+            return;
+        }
+
+        // Procedural Scenery
+        if (mode === "Bus Stop") {
+            drawMountainsBg(ctx, horizonY, 0.5, availableSky); 
+            drawBusStopSign(ctx, horizonY, availableSky);
+        } 
+        else if (mode === "Mountains") {
+            drawMountainsBg(ctx, horizonY, 1.0, availableSky); 
+        }
+        else if (mode === "School") {
+            drawSchoolBg(ctx, horizonY, availableSky);
+        }
+
+        // Snow Ground (Foreground)
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, horizonY, width, height - horizonY);
+        
+        // Snow Horizon Line
+        ctx.strokeStyle = "#a0a0a0";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); 
+        ctx.moveTo(0, horizonY); 
+        ctx.lineTo(width, horizonY); 
+        ctx.stroke();
+
+        // Road for Bus Stop
+        if (mode === "Bus Stop") {
+             const roadH = (height - horizonY) * 0.4;
+             const roadY = height - roadH;
+             
+             ctx.fillStyle = "#7a7a7a"; 
+             ctx.fillRect(0, roadY, width, roadH);
+             ctx.strokeStyle = "#555";
+             ctx.beginPath(); ctx.moveTo(0, roadY); ctx.lineTo(width, roadY); ctx.stroke();
+        }
+    }
+
+    function drawMountainsBg(ctx, horizonY, visibility, availableSky) {
+        ctx.fillStyle = "#5d4fa3"; 
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        
+        const peakCount = 5;
+        const peakWidth = width / peakCount;
+        
+        const maxDesiredH = 250;
+        const scale = Math.min(1, (availableSky * 0.8) / maxDesiredH);
+
+        for(let i=0; i<=peakCount; i++) {
+            const h = ((i % 2 === 0) ? 200 * visibility : 100 * visibility) * scale;
+            ctx.lineTo(i * peakWidth, horizonY - h - (50*scale));
+        }
+        ctx.lineTo(width, horizonY);
+        ctx.fill();
+
+        // Snow Caps
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        for(let i=0; i<=peakCount; i++) {
+             if (i % 2 === 0) {
+                 const x = i * peakWidth;
+                 const h = (200 * visibility) * scale;
+                 const y = horizonY - h - (50*scale);
+                 
+                 const capSize = 30 * scale;
+                 ctx.moveTo(x, y);
+                 ctx.lineTo(x - capSize, y + (40*scale));
+                 ctx.lineTo(x, y + (30*scale));
+                 ctx.lineTo(x + capSize, y + (40*scale));
+                 ctx.fill();
+             }
+        }
+        
+        // Trees
+        if (visibility < 0.8) {
+             ctx.fillStyle = "#1e4d2b";
+             for(let x = 0; x < width; x+=30) {
+                 const treeH = (40 + Math.sin(x)*10) * scale;
+                 ctx.beginPath();
+                 ctx.moveTo(x, horizonY);
+                 ctx.lineTo(x+10, horizonY - treeH);
+                 ctx.lineTo(x+20, horizonY);
+                 ctx.fill();
+             }
+        }
+    }
+
+    function drawBusStopSign(ctx, horizonY, availableSky) {
+        const poleW_Base = 8;
+        const poleH_Base = 280;
+        const signSize_Base = 90;
+        const totalH = poleH_Base + signSize_Base;
+
+        let scale = height / 1000; 
+        if ((totalH * scale) > availableSky - 20) {
+            scale = (availableSky - 20) / totalH;
+        }
+
+        const x = width * 0.75;
+        const poleW = poleW_Base * scale;
+        const poleH = poleH_Base * scale;
+        const signSize = signSize_Base * scale;
+        
+        // Pole
+        ctx.fillStyle = "#462e15"; 
+        ctx.fillRect(x - poleW/2, horizonY - poleH, poleW, poleH);
+        
+        // Sign
+        ctx.fillStyle = "#f2c900"; 
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        const signY = horizonY - poleH - (signSize * 0.8);
+        ctx.rect(x - signSize/2, signY, signSize, signSize);
+        ctx.fill();
+        ctx.stroke();
+
+        // Text
+        ctx.fillStyle = "black";
+        ctx.font = `bold ${22 * scale}px Arial`;
+        ctx.textAlign = "center";
+        ctx.fillText("BUS", x, signY + (30*scale));
+        ctx.fillText("STOP", x, signY + (55*scale));
+    }
+
+    function drawSchoolBg(ctx, horizonY, availableSky) {
+        let bW = Math.min(width * 0.6, 600); 
+        let bH = bW * 0.45; 
+        
+        const flagPoleH = 80;
+        const totalBuildingH = bH + flagPoleH;
+
+        if (totalBuildingH > availableSky - 20) {
+            const ratio = (availableSky - 20) / totalBuildingH;
+            bW *= ratio;
+            bH *= ratio;
+        }
+
+        const bX = (width - bW) / 2;
+        const bY = horizonY - bH;
+
+        // Building
+        ctx.fillStyle = "#b55533"; 
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.fillRect(bX, bY, bW, bH);
+        ctx.strokeRect(bX, bY, bW, bH);
+        
+        // Entrance
+        const doorW = bW * 0.15;
+        const doorH = bH * 0.4;
+        ctx.fillStyle = "#8a4126";
+        ctx.fillRect(bX + bW/2 - doorW, bY + bH - doorH - 10, doorW*2, doorH + 10);
+        
+        // Doors
+        ctx.fillStyle = "#2a4a3a"; 
+        ctx.fillRect(bX + bW/2 - doorW + 5, bY + bH - doorH, doorW - 5, doorH);
+        ctx.fillRect(bX + bW/2 + 5, bY + bH - doorH, doorW - 5, doorH);
+
+        // Windows
+        ctx.fillStyle = "#87ceeb";
+        const rows = 2;
+        const cols = 4;
+        const winW = bW / 10;
+        const winH = bH / 4;
+        
+        for(let r=0; r<rows; r++) {
+            for(let c=0; c<cols; c++) {
+                if (c === 1 || c === 2) continue; 
+                const wx = bX + (c * (bW/cols)) + (bW*0.05);
+                const wy = bY + (r * (bH/rows)) + (bH*0.1);
+                ctx.fillRect(wx, wy, winW, winH);
+                ctx.strokeRect(wx, wy, winW, winH);
+            }
+        }
+        
+        // Flag pole
+        const fX = bX + (bW * 0.15);
+        const fY = bY; 
+        const scale = bH / 270; 
+
+        ctx.fillStyle = "#aaa";
+        ctx.fillRect(fX, fY - (80*scale), 4*scale, 80*scale);
+        
+        // Flag
+        ctx.fillStyle = "#d13030"; 
+        ctx.fillRect(fX + (4*scale), fY - (80*scale), 35*scale, 20*scale);
+        ctx.fillStyle = "blue";
+        ctx.fillRect(fX + (4*scale), fY - (80*scale), 15*scale, 10*scale);
+    }
+
+    // --- Character Class ---
+
+    class Character {
+        constructor(type, x) {
+            this.type = type;
+            this.x = x;
+            this.walkOffset = Math.random() * 100;
+            
+            if (this.type === "random") {
+                this.coatColor = randomColor();
+                this.pantsColor = "#" + Math.floor(Math.random()*16777215).toString(16);
+                this.hatColor = randomColor();
+                this.hatTrim = randomColor();
+                this.skinColor = "#ffe0bd";
+                this.bodyType = Math.random() > 0.2 ? "normal" : "fat";
+            }
+        }
+
+        draw(ctx, currentScale, currentSpeed, bounceY, mouthOpen, groundLevel) {
+            const s = currentScale / 100;
+            
+            // Animation Math
+            const walkCycle = currentSpeed > 0 ? Math.sin((frame * currentSpeed * 0.15) + this.walkOffset) : 0;
+            const tilt = walkCycle * 0.15; 
+            const hop = Math.abs(Math.cos((frame * currentSpeed * 0.15) + this.walkOffset)) * 8 * s;
+            
+            // Anchor Y
+            const anchorY = groundLevel - (90 * s);
+
+            const drawX = this.x;
+            const drawY = anchorY - hop - bounceY;
+
+            ctx.save();
+            ctx.translate(drawX, drawY);
+            ctx.rotate(tilt);
+            ctx.scale(s, s);
+
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000000';
+
+            if (this.type === "stan") this.drawStan(ctx, mouthOpen);
+            else if (this.type === "kyle") this.drawKyle(ctx, mouthOpen);
+            else if (this.type === "cartman") this.drawCartman(ctx, mouthOpen);
+            else if (this.type === "kenny") this.drawKenny(ctx, mouthOpen);
+            else this.drawRandom(ctx, mouthOpen);
+
+            ctx.restore();
+
+            // Move
+            this.x += currentSpeed;
+            const charWidth = 100 * s;
+            if (this.x > width + charWidth) {
+                this.x = -charWidth;
+            }
+        }
+
+        drawOval(ctx, x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        drawRect(ctx, x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+        }
+
+        drawEye(ctx, x, y, size, pupilSize = 0.15) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 1.3, 0, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#000000";
+            ctx.beginPath();
+            ctx.arc(x + (size*0.1), y, size * pupilSize * 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        drawMouth(ctx, x, y, openAmount, expression = "neutral") {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#000000";
+            ctx.fillStyle = "#000000";
+            
+            if (openAmount > 0.15) {
+                const h = 20 * openAmount;
+                ctx.beginPath();
+                ctx.moveTo(x - 12, y);
+                ctx.bezierCurveTo(x-5, y+h, x+5, y+h, x + 12, y); 
+                ctx.lineTo(x - 12, y); 
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                if (expression === "frown") {
+                    ctx.moveTo(x - 8, y + 6); ctx.quadraticCurveTo(x, y, x + 8, y + 6);
+                } else {
+                    ctx.moveTo(x - 6, y + 2); ctx.lineTo(x + 6, y + 2);
+                }
+                ctx.stroke();
+            }
+            ctx.lineWidth = 3;
+        }
+
+        drawFeet(ctx, spacing=25) {
+            ctx.fillStyle = "#000000";
+            ctx.beginPath(); ctx.ellipse(-spacing, 90, 22, 6, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(spacing, 90, 22, 6, 0, 0, Math.PI*2); ctx.fill();
+        }
+
+        drawHand(ctx, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.beginPath();
+            if (x < 0) ctx.arc(x+4, y-2, 6, 0.5, 2.5);
+            else ctx.arc(x-4, y-2, 6, 0.5, 2.5);
+            ctx.stroke();
+        }
+
+        drawStan(ctx, mouthOpen) {
+            ctx.fillStyle = "#274e7d"; 
+            ctx.beginPath(); ctx.rect(-32, 60, 64, 30); ctx.fill(); ctx.stroke();
+            this.drawFeet(ctx);
+            ctx.fillStyle = "#8f6b4e";
+            ctx.beginPath();
+            ctx.moveTo(-35, 70); ctx.lineTo(-30, 25); ctx.lineTo(30, 25); ctx.lineTo(35, 70); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#d13030";
+            ctx.beginPath(); ctx.moveTo(-15, 25); ctx.quadraticCurveTo(0, 35, 15, 25); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "black";
+            ctx.beginPath(); ctx.arc(0, 40, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 55, 2, 0, Math.PI*2); ctx.fill();
+            this.drawOval(ctx, 0, 0, 40, 42, "#ffe0bd");
+            ctx.fillStyle = "#3d6cb3";
+            ctx.beginPath(); ctx.arc(0, -5, 41, Math.PI, 0); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#d13030";
+            ctx.beginPath(); ctx.ellipse(0, -8, 42, 12, 0, Math.PI, 0); 
+            ctx.lineTo(42, -5); ctx.quadraticCurveTo(0, 5, -42, -5); ctx.closePath(); ctx.fill(); ctx.stroke();
+            this.drawOval(ctx, 0, -48, 10, 8, "#d13030");
+            ctx.strokeStyle = "#d13030"; ctx.lineWidth = 2;
+            for(let i=0; i<8; i++) {
+                let a = (i/8)*Math.PI*2;
+                ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(Math.cos(a)*12, -48+Math.sin(a)*12); ctx.stroke();
+            }
+            ctx.strokeStyle = "black"; ctx.lineWidth = 3;
+            this.drawEye(ctx, -8, 2, 10);
+            this.drawEye(ctx, 8, 2, 10);
+            this.drawMouth(ctx, 0, 22, mouthOpen);
+            this.drawHand(ctx, -38, 45, "#d13030");
+            this.drawHand(ctx, 38, 45, "#d13030");
+        }
+
+        drawKyle(ctx, mouthOpen) {
+            ctx.fillStyle = "#164426";
+            ctx.beginPath(); ctx.rect(-32, 60, 64, 30); ctx.fill(); ctx.stroke();
+            this.drawFeet(ctx);
+            ctx.fillStyle = "#f56416";
+            ctx.beginPath();
+            ctx.moveTo(-35, 70); ctx.lineTo(-30, 25); ctx.lineTo(30, 25); ctx.lineTo(35, 70); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.rect(-25, 50, 15, 1); ctx.stroke();
+            ctx.beginPath(); ctx.rect(10, 50, 15, 1); ctx.stroke();
+            ctx.fillStyle = "#164426";
+            ctx.beginPath(); ctx.moveTo(-15, 25); ctx.quadraticCurveTo(0, 35, 15, 25); ctx.fill(); ctx.stroke();
+            this.drawOval(ctx, 0, 0, 40, 42, "#ffe0bd");
+            const hatGreen = "#34a853"; const hatDark = "#1e6b34";
+            ctx.fillStyle = hatGreen;
+            ctx.beginPath(); ctx.rect(-42, -25, 15, 30); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.rect(27, -25, 15, 30); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = hatDark;
+            ctx.beginPath(); ctx.roundRect(-42, -40, 84, 25, 5); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = hatGreen;
+            ctx.beginPath(); ctx.ellipse(0, -40, 40, 10, Math.PI, 0, Math.PI); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = hatGreen;
+            ctx.beginPath(); ctx.roundRect(-25, -45, 50, 20, 2); ctx.fill(); ctx.stroke();
+            this.drawEye(ctx, -9, 2, 10);
+            this.drawEye(ctx, 9, 2, 10);
+            this.drawMouth(ctx, 0, 22, mouthOpen);
+            this.drawHand(ctx, -38, 45, "#164426");
+            this.drawHand(ctx, 38, 45, "#164426");
+        }
+
+        drawCartman(ctx, mouthOpen) {
+            ctx.fillStyle = "#5c4033"; 
+            ctx.beginPath(); ctx.rect(-45, 65, 90, 25); ctx.fill(); ctx.stroke();
+            this.drawFeet(ctx, 35);
+            ctx.fillStyle = "#d92b2b";
+            ctx.beginPath(); ctx.ellipse(0, 45, 55, 45, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(0, 85); ctx.stroke();
+            ctx.fillStyle = "black";
+            ctx.beginPath(); ctx.rect(-2, 45, 4, 2); ctx.fill();
+            this.drawOval(ctx, 0, 5, 48, 42, "#ffe0bd");
+            ctx.beginPath(); ctx.arc(0, 28, 12, 0.4, Math.PI-0.4); ctx.stroke();
+            ctx.fillStyle = "#f2e863";
+            ctx.beginPath(); ctx.roundRect(-49, -12, 98, 12, 5); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#4faec4";
+            ctx.beginPath(); ctx.ellipse(0, -12, 47, 30, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
+            this.drawOval(ctx, 0, -42, 18, 6, "#f2e863");
+            this.drawEye(ctx, -11, 0, 11);
+            this.drawEye(ctx, 11, 0, 11);
+            this.drawMouth(ctx, 0, 20, mouthOpen, "frown");
+            this.drawHand(ctx, -55, 50, "#f2e863");
+            this.drawHand(ctx, 55, 50, "#f2e863");
+        }
+
+        drawKenny(ctx, mouthOpen) {
+            ctx.fillStyle = "#e07a10";
+            ctx.beginPath(); ctx.rect(-32, 60, 64, 30); ctx.fill(); ctx.stroke();
+            this.drawFeet(ctx);
+            ctx.fillStyle = "#ff8c00";
+            ctx.beginPath(); ctx.moveTo(-35, 70); ctx.lineTo(-32, 25); ctx.lineTo(32, 25); ctx.lineTo(35, 70); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 25); ctx.lineTo(0, 70); ctx.stroke();
+            ctx.fillStyle = "#ff8c00";
+            this.drawOval(ctx, 0, 0, 40, 40, "#ff8c00");
+            ctx.fillStyle = "#543318";
+            this.drawOval(ctx, 0, 0, 26, 26, "#543318");
+            ctx.fillStyle = "#ffe0bd";
+            this.drawOval(ctx, 0, 0, 18, 18, "#ffe0bd");
+            ctx.strokeStyle = "black"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-12, 20); ctx.bezierCurveTo(-15, 30, -10, 40, -12, 45); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(12, 20); ctx.bezierCurveTo(15, 30, 10, 40, 12, 45); ctx.stroke();
+            ctx.lineWidth = 3;
+            this.drawEye(ctx, -8, 0, 10);
+            this.drawEye(ctx, 8, 0, 10);
+            if (mouthOpen > 0.5) {
+                ctx.fillStyle = "rgba(0,0,0,0.2)";
+                ctx.beginPath(); ctx.arc(0, 12, 5, 0, Math.PI); ctx.fill();
+            }
+            this.drawHand(ctx, -38, 45, "#543318");
+            this.drawHand(ctx, 38, 45, "#543318");
+        }
+
+        drawRandom(ctx, mouthOpen) {
+            ctx.fillStyle = this.pantsColor; 
+            ctx.beginPath(); ctx.rect(-32, 60, 64, 30); ctx.fill(); ctx.stroke();
+            this.drawFeet(ctx);
+            ctx.fillStyle = this.coatColor;
+            if (this.bodyType === "fat") {
+                ctx.beginPath(); ctx.ellipse(0, 45, 55, 45, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(-35, 70); ctx.lineTo(-30, 25); ctx.lineTo(30, 25); ctx.lineTo(35, 70); ctx.closePath(); ctx.fill(); ctx.stroke();
+            }
+            this.drawOval(ctx, 0, 0, 40, 42, this.skinColor);
+            ctx.fillStyle = this.hatColor;
+            ctx.beginPath(); ctx.arc(0, -10, 41, Math.PI, 0); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = this.hatTrim;
+            ctx.beginPath(); ctx.roundRect(-42, -15, 84, 15, 2); ctx.fill(); ctx.stroke();
+            this.drawOval(ctx, 0, -45, 10, 10, this.hatTrim);
+            this.drawEye(ctx, -9, 2, 10);
+            this.drawEye(ctx, 9, 2, 10);
+            this.drawMouth(ctx, 0, 22, mouthOpen);
+            this.drawHand(ctx, -38, 45, this.coatColor);
+            this.drawHand(ctx, 38, 45, this.coatColor);
+        }
+    }
+
+    // --- Logic ---
+
+    function initCharacters() {
+        // Use Global Variables which are safe now
+        const charMode = mode;
+        const pop = population;
+        
+        characters = [];
+
+        if (charMode === "The Boys") {
+            let spacing = width / 5;
+            characters.push(new Character("stan", spacing * 1));
+            characters.push(new Character("kyle", spacing * 2));
+            characters.push(new Character("cartman", spacing * 3));
+            characters.push(new Character("kenny", spacing * 4));
+        } else if (charMode === "Lineup") {
+             let spacing = width / (pop + 1);
+             for(let i=0; i<pop; i++) {
+                 const types = ["stan", "kyle", "cartman", "kenny"];
+                 characters.push(new Character(types[i % 4], spacing * (i + 1)));
+             }
+        } else {
+            for(let i=0; i<pop; i++) {
+                characters.push(new Character("random", Math.random() * width));
+            }
+        }
+    }
+
+    function animate() {
+        // Ensure values are current (in case SignalRGB updates them hot)
+        const currentSpeed = speed;
+        const currentScale = scale;
+        const currentMode = mode;
+        const currentPop = population;
+        const currentBg = bg_mode;
+        const isBounce = audio_bounce;
+        const isMouth = audio_mouth;
+
+        // Reset check
+        if (characters.length === 0 || 
+            (currentMode === "Random Crowd" && characters.length !== currentPop) ||
+            (currentMode === "The Boys" && characters.length !== 4) ||
+            (currentMode === "Lineup" && characters.length !== currentPop)) {
+            initCharacters();
+        }
+
+        // Audio Processing
+        if (window.engine && window.engine.audio && window.engine.audio.freq) {
+            const freq = window.engine.audio.freq;
+            let bass = 0; for(let i=0; i<5; i++) bass += freq[i];
+            bassLevel = bass / (5 * 255); 
+            let vol = 0; for(let i=20; i<60; i++) vol += freq[i];
+            volumeLevel = vol / (40 * 255);
+        } else {
+            // No audio in regular browser mode
+            bassLevel = 0; 
+            volumeLevel = 0;
+        }
+
+        const bounceY = isBounce ? Math.max(0, (bassLevel - 0.2) * 50) : 0;
+        const mouthOpen = isMouth ? Math.min(1, volumeLevel * 4) : 0;
+
+        // Draw Background
+        drawBackground(ctx, currentBg);
+
+        // Ground Level Calculation
+        const groundLevel = height * HORIZON_RATIO;
+
+        // Draw Characters
+        characters.forEach(char => {
+            char.draw(ctx, currentScale, currentSpeed, bounceY, mouthOpen, groundLevel);
+        });
+
+        frame++;
+        requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+        resize();
+        window.addEventListener('resize', resize);
+        animate();
+    };
+
+</script>
+</body>
+</html>
