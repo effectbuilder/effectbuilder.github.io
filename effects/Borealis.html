@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Aurora Borealis</title>
+    <meta description="A procedural simulation of the Northern Lights with audio-reactive white energy streaks." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="speed" label="Flow Speed" type="number" min="0" max="100" default="3">
+    <meta property="scale" label="Curtain Scale" type="number" min="1" max="100" default="100">
+    <meta property="brightness" label="Brightness" type="number" min="0" max="200" default="200">
+    <meta property="vertical_stretch" label="Vertical Stretch" type="number" min="1" max="100" default="100">
+    <meta property="turbulence" label="Turbulence" type="number" min="0" max="100" default="100">
+    <meta property="octaves" label="Complexity" type="number" min="1" max="5" default="5">
+    <meta property="audio_sensitivity" label="Audio Sensitivity" type="number" min="0" max="200" default="100">
+    <meta property="min_streak" label="Streaks Always Visible" type="boolean" default="true" tooltip="If checked, the white streaks stay visible at 50% intensity even without audio.">
+    <meta property="audio_white_mix" label="Core Strength" type="number" min="0" max="100" default="100" tooltip="How bright the white center streak becomes on beat.">
+    <meta property="streak_thickness" label="Streak Thickness" type="number" min="1" max="100" default="70" tooltip="Higher values make the beam wider and easier to see. Lower values make it sharper.">
+
+    <meta property="profile" label="Color Profile" type="combobox" values="Custom,Borealis,Solar Flare,Deep Ocean,Nebula,Toxic,Sunset,Cotton Candy,Cyberpunk,Forest,Glacial,Blood Moon,Ultraviolet,Golden Hour,Matrix,Spirit,Arcade,Midnight,Candy Corn,Love,Easter" default="Arcade">
+    <meta property="bg_color" label="Sky Background" type="color" default="#000000">
+    <meta property="color1" label="Custom 1 (Bottom)" type="color" default="#00ffaa">
+    <meta property="color2" label="Custom 2 (Low-Mid)" type="color" default="#00aaff">
+    <meta property="color3" label="Custom 3 (High-Mid)" type="color" default="#5500ff">
+    <meta property="color4" label="Custom 4 (Top)" type="color" default="#aa00ff">
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+        }
+
+        #effect-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas" width="320" height="180"></canvas>
+
+    <script>
+        /**
+         * Simplex Noise Implementation
+         */
+        const SimplexNoise = (function () {
+            var F3 = 1.0 / 3.0;
+            var G3 = 1.0 / 6.0;
+            var p = new Uint8Array(256);
+            var perm = new Uint8Array(512);
+            var permMod12 = new Uint8Array(512);
+            var grad3 = new Float32Array([1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0, 1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1]);
+
+            for (var i = 0; i < 256; i++) p[i] = i;
+            for (i = 0; i < 256; i++) {
+                var r = (Math.random() * (256 - i) + i) | 0;
+                var t = p[i]; p[i] = p[r]; p[r] = t;
+            }
+            for (i = 0; i < 512; i++) {
+                perm[i] = p[i & 255];
+                permMod12[i] = perm[i] % 12;
+            }
+
+            return {
+                noise3D: function (xin, yin, zin) {
+                    var n0, n1, n2, n3;
+                    var s = (xin + yin + zin) * F3;
+                    var i = Math.floor(xin + s);
+                    var j = Math.floor(yin + s);
+                    var k = Math.floor(zin + s);
+                    var t = (i + j + k) * G3;
+                    var X0 = i - t;
+                    var Y0 = j - t;
+                    var Z0 = k - t;
+                    var x0 = xin - X0;
+                    var y0 = yin - Y0;
+                    var z0 = zin - Z0;
+                    var i1, j1, k1;
+                    var i2, j2, k2;
+                    if (x0 >= y0) {
+                        if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+                        else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+                        else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
+                    } else {
+                        if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
+                        else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
+                        else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+                    }
+                    var x1 = x0 - i1 + G3;
+                    var y1 = y0 - j1 + G3;
+                    var z1 = z0 - k1 + G3;
+                    var x2 = x0 - i2 + 2.0 * G3;
+                    var y2 = y0 - j2 + 2.0 * G3;
+                    var z2 = z0 - k2 + 2.0 * G3;
+                    var x3 = x0 - 1.0 + 3.0 * G3;
+                    var y3 = y0 - 1.0 + 3.0 * G3;
+                    var z3 = z0 - 1.0 + 3.0 * G3;
+                    var ii = i & 255;
+                    var jj = j & 255;
+                    var kk = k & 255;
+                    var gi0 = permMod12[ii + perm[jj + perm[kk]]];
+                    var gi1 = permMod12[ii + i1 + perm[jj + j1 + perm[kk + k1]]];
+                    var gi2 = permMod12[ii + i2 + perm[jj + j2 + perm[kk + k2]]];
+                    var gi3 = permMod12[ii + 1 + perm[jj + 1 + perm[kk + 1]]];
+                    var t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+                    if (t0 < 0) n0 = 0.0;
+                    else { t0 *= t0; n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0 + grad3[gi0 + 2] * z0); }
+                    var t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+                    if (t1 < 0) n1 = 0.0;
+                    else { t1 *= t1; n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1 + grad3[gi1 + 2] * z1); }
+                    var t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+                    if (t2 < 0) n2 = 0.0;
+                    else { t2 *= t2; n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2 + grad3[gi2 + 2] * z2); }
+                    var t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+                    if (t3 < 0) n3 = 0.0;
+                    else { t3 *= t3; n3 = t3 * t3 * (grad3[gi3] * x3 + grad3[gi3 + 1] * y3 + grad3[gi3 + 2] * z3); }
+                    return 32.0 * (n0 + n1 + n2 + n3);
+                }
+            };
+        })();
+
+        // --- Color Profiles Dictionary ---
+        const profilesData = {
+            "Borealis": ["#00ffaa", "#00aaff", "#5500ff", "#aa00ff"],
+            "Solar Flare": ["#ffff00", "#ff8800", "#ff4400", "#ff0000"],
+            "Deep Ocean": ["#00ffff", "#0088ff", "#0000ff", "#000088"],
+            "Nebula": ["#ff00ff", "#aa00ff", "#5500ff", "#0000ff"],
+            "Toxic": ["#aaff00", "#55ff00", "#00ff00", "#005500"],
+            "Sunset": ["#ffff00", "#ff8800", "#ff0088", "#550088"],
+            "Cotton Candy": ["#00ffff", "#ff00ff", "#ffff00", "#ffffff"],
+            "Cyberpunk": ["#00eaff", "#00ffaa", "#ff00aa", "#aa00ff"],
+            "Forest": ["#55aa00", "#228800", "#004400", "#332200"],
+            "Glacial": ["#ffffff", "#ccffff", "#00ffff", "#0088aa"],
+            "Blood Moon": ["#ff4400", "#ff0000", "#880000", "#000000"],
+            "Ultraviolet": ["#ff00ff", "#aa00ff", "#5500ff", "#220088"],
+            "Golden Hour": ["#ffeebb", "#ffaa00", "#cc7700", "#884400"],
+            "Matrix": ["#ccffcc", "#00ff00", "#008800", "#002200"],
+            "Spirit": ["#ffffff", "#aaffff", "#00ccff", "#004488"],
+            "Arcade": ["#ffff00", "#00ff00", "#ff0000", "#0000ff"],
+            "Midnight": ["#444455", "#222244", "#111122", "#000000"],
+            "Candy Corn": ["#ffff00", "#ff8800", "#ffffff", "#ffffff"],
+            "Love": ["#ffaaaa", "#ff5555", "#ff0000", "#880000"],
+            "Easter": ["#aaffaa", "#aaffff", "#ffccff", "#ffffaa"]
+        };
+
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const width = canvas.width;
+        const height = canvas.height;
+        const imageData = ctx.createImageData(width, height);
+        const data = imageData.data;
+
+        let time = 0;
+
+        function hexToRgb(hex) {
+            var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+                return r + r + g + g + b + b;
+            });
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function animate() {
+            const currentSpeed = (typeof speed !== 'undefined' ? speed : 20) / 1000.0;
+            const currentScale = (typeof scale !== 'undefined' ? scale : 30) / 100.0;
+            const currentBrightness = (typeof brightness !== 'undefined' ? brightness : 100) / 100.0;
+            const bgHex = typeof bg_color !== 'undefined' ? bg_color : "#000000";
+            const vStretch = (typeof vertical_stretch !== 'undefined' ? vertical_stretch : 40) / 10.0;
+            const turb = (typeof turbulence !== 'undefined' ? turbulence : 20) / 100.0;
+            const oct = typeof octaves !== 'undefined' ? octaves : 3;
+
+            // Audio Props
+            const sensitivity = (typeof audio_sensitivity !== 'undefined' ? audio_sensitivity : 150) / 100.0;
+            const whiteMixStrength = (typeof audio_white_mix !== 'undefined' ? audio_white_mix : 100) / 100.0;
+
+            // Boolean handling for Min Streak
+            const isAlwaysVisible = (typeof min_streak !== 'undefined' ? min_streak : false);
+            // If min_streak is TRUE, then we force a 0.5 baseline for the streaks.
+            const minStreakVal = isAlwaysVisible === true ? 0.5 : 0.0;
+
+            // THICKNESS LOGIC:
+            const thicknessInput = typeof streak_thickness !== 'undefined' ? streak_thickness : 50;
+            const corePower = 20.0 - ((thicknessInput / 100.0) * 19.0);
+
+            const currentProfile = typeof profile !== 'undefined' ? profile : "Borealis";
+
+            let c1Hex, c2Hex, c3Hex, c4Hex;
+            if (currentProfile === "Custom" || !profilesData[currentProfile]) {
+                c1Hex = typeof color1 !== 'undefined' ? color1 : "#00ffaa";
+                c2Hex = typeof color2 !== 'undefined' ? color2 : "#00aaff";
+                c3Hex = typeof color3 !== 'undefined' ? color3 : "#5500ff";
+                c4Hex = typeof color4 !== 'undefined' ? color4 : "#aa00ff";
+            } else {
+                const p = profilesData[currentProfile];
+                c1Hex = p[0]; c2Hex = p[1]; c3Hex = p[2]; c4Hex = p[3];
+            }
+
+            const c1 = hexToRgb(c1Hex);
+            const c2 = hexToRgb(c2Hex);
+            const c3 = hexToRgb(c3Hex);
+            const c4 = hexToRgb(c4Hex);
+            const bg = hexToRgb(bgHex);
+
+            time += currentSpeed;
+
+            // --- AUDIO PROCESSING ---
+            let bassLevel = 0;
+
+            if (typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+                let totalBass = 0;
+                for (let i = 0; i < 4; i++) {
+                    totalBass += Math.abs(engine.audio.freq[i]);
+                }
+                bassLevel = (totalBass / 4.0) / 128.0;
+            }
+            else {
+                // BROWSER DEMO MODE: Simulate spikey beats
+                const beat = Math.sin(time * 30);
+                if (beat > 0.8) {
+                    bassLevel = (beat - 0.8) * 5.0;
+                }
+            }
+
+            // Apply sensitivity
+            bassLevel = bassLevel * sensitivity;
+
+            // Apply minimum visibility logic (Checkbox)
+            bassLevel = Math.max(bassLevel, minStreakVal);
+
+            for (let y = 0; y < height; y++) {
+                const ny = y / height;
+                const gradPos = 1.0 - ny;
+
+                // 1. Calculate Base Gradient
+                let ar, ag, ab;
+                let t = 0;
+
+                if (gradPos < 0.33) {
+                    t = gradPos / 0.33;
+                    ar = c1.r + (c2.r - c1.r) * t;
+                    ag = c1.g + (c2.g - c1.g) * t;
+                    ab = c1.b + (c2.b - c1.b) * t;
+                } else if (gradPos < 0.66) {
+                    t = (gradPos - 0.33) / 0.33;
+                    ar = c2.r + (c3.r - c2.r) * t;
+                    ag = c2.g + (c3.g - c2.g) * t;
+                    ab = c2.b + (c3.b - c2.b) * t;
+                } else {
+                    t = (gradPos - 0.66) / 0.34;
+                    ar = c3.r + (c4.r - c3.r) * t;
+                    ag = c3.g + (c4.g - c3.g) * t;
+                    ab = c3.b + (c4.b - c3.b) * t;
+                }
+
+                const alphaFade = Math.sin(ny * Math.PI);
+
+                for (let x = 0; x < width; x++) {
+                    const nx = x / width;
+
+                    // --- Noise Calculation (Shared) ---
+                    let noiseVal = 0;
+                    let amp = 1.0;
+                    let freq = 1.0;
+                    let maxAmp = 0;
+
+                    for (let o = 0; o < oct; o++) {
+                        const xOff = nx * currentScale * freq + time + (ny * turb);
+                        const yOff = (ny / vStretch) * currentScale * freq + (time * 0.2);
+                        noiseVal += SimplexNoise.noise3D(xOff, yOff, time * 0.1) * amp;
+                        maxAmp += amp;
+                        amp *= 0.5;
+                        freq *= 2.0;
+                    }
+                    noiseVal = (noiseVal / maxAmp) * 0.5 + 0.5;
+
+                    // --- Base Aurora Layer ---
+                    const baseCurve = Math.pow(noiseVal, 3);
+                    let intensity = baseCurve * alphaFade * currentBrightness * 2.0;
+
+                    if (intensity > 1) intensity = 1;
+                    if (intensity < 0) intensity = 0;
+
+                    // --- White Energy Core Layer ---
+                    // Now controlled by "Thickness" (Lower Power = Thicker)
+                    let coreVal = Math.pow(noiseVal, corePower);
+
+                    // Boost the intensity significantly (20x) so it punches through
+                    let coreIntensity = coreVal * bassLevel * whiteMixStrength * 20.0;
+
+                    coreIntensity *= alphaFade;
+
+                    // Composite
+                    // 1. Blend background with Aurora Color
+                    let r = bg.r + (ar - bg.r) * intensity;
+                    let g = bg.g + (ag - bg.g) * intensity;
+                    let b = bg.b + (ab - bg.b) * intensity;
+
+                    // 2. Additive Blend the Core
+                    r += coreIntensity * 255;
+                    g += coreIntensity * 255;
+                    b += coreIntensity * 255;
+
+                    const index = (y * width + x) * 4;
+                    data[index] = Math.min(255, r);
+                    data[index + 1] = Math.min(255, g);
+                    data[index + 2] = Math.min(255, b);
+                    data[index + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+
+</html>
