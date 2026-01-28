@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
         "ink_drops.html", "starfield.html", "digital_noiseform.html",
         "bouncingCubes.html", "clouds.html", "polyPlanet.html",
         "serenityWaves.html", "systemBouncer.html", "picasso.html",
-        "void_and_silk.html", "SouthPark.html"
+        "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html"
     ];
 
     const effectsFolder = "effects";

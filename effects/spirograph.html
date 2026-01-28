@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Spirograph</title>
+    <meta description="Stutter-free spirographs with random rotation and memory optimizations." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="colorTheme" label="Color Theme" type="combobox" values="Rainbow,Neon,Cyberpunk,Fire,Ice,Forest,Ocean,Sunset,Cotton Candy,Magma,Emerald,Amethyst,Gold,Monochrome,Electric,Pastel,Vaporwave,Toxic,Blood,Deep Sea,Custom Dual" default="Cyberpunk">
+    <meta property="color1" label="Custom Color 1" type="color" default="#FF0000">
+    <meta property="color2" label="Custom Color 2" type="color" default="#00FFFF">
+    <meta property="glowAmount" label="Glow Intensity" type="number" default="5" min="0" max="20">
+
+    <meta property="spiroCount" label="Instance Count" type="number" default="5" min="1" max="30">
+    <meta property="drawSpeed" label="Drawing Speed" type="number" default="10" min="1" max="100">
+    <meta property="tailLength" label="Tail Length" type="number" default="50" min="1" max="100">
+    <meta property="permanentTrails" label="Permanent Trails" type="boolean" default="false">
+
+    <meta property="minSize" label="Min Radius" type="number" default="30" min="5" max="100">
+    <meta property="maxSize" label="Max Radius" type="number" default="80" min="10" max="250">
+    <meta property="shapeStyle" label="Shape Style" type="combobox" values="Random,Triangle,Square,Star,Oval,Flower" default="Random">
+    <meta property="lineWidth" label="Line Thickness" type="number" default="3" min="1" max="10">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="mainCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let width, height;
+        let spirographs = [];
+
+        const themes = {
+            "Cyberpunk": ["#00fbff", "#ff00ff", "#ffee00"],
+            "Fire": ["#ff0000", "#ff8800", "#ffff00"],
+            "Ice": ["#00ffff", "#0088ff", "#ffffff"],
+            "Forest": ["#00ff00", "#008800", "#88ff00"],
+            "Ocean": ["#0000ff", "#0088ff", "#00ffff"],
+            "Sunset": ["#ff4e50", "#fc913a", "#f9d423"],
+            "Cotton Candy": ["#ffbcd9", "#bae1ff", "#ffffff"],
+            "Magma": ["#330000", "#ff0000", "#ff8800"],
+            "Emerald": ["#004d00", "#00ff88", "#00ff00"],
+            "Amethyst": ["#4b0082", "#9400d3", "#e0b0ff"],
+            "Gold": ["#bf953f", "#fcf6ba", "#b38728"],
+            "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1"],
+            "Toxic": ["#adff2f", "#00ff00", "#20b2aa"],
+            "Blood": ["#440000", "#880000", "#ff0000"],
+            "Deep Sea": ["#000033", "#000088", "#0055ff"],
+            "Electric": ["#ffff00", "#00ffff", "#ffffff"],
+            "Pastel": ["#ff9999", "#99ff99", "#9999ff"]
+        };
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 255, g: 0, b: 0 };
+        }
+
+        class SpiroInstance {
+            constructor() {
+                // Parallel arrays for performance
+                this.hx = [];
+                this.hy = [];
+                this.hc = [];
+                this.reset();
+            }
+
+            reset() {
+                const minR = typeof minSize !== 'undefined' ? parseInt(minSize) : 20;
+                const maxR = typeof maxSize !== 'undefined' ? parseInt(maxSize) : 80;
+                const style = typeof shapeStyle !== 'undefined' ? shapeStyle : "Random";
+
+                this.aspectRatio = 1;
+                this.centerX = Math.random() * width;
+                this.centerY = Math.random() * height;
+                this.baseHue = Math.random() * 360;
+                this.done = false;
+                this.iter = 0;
+                this.t = 0;
+                
+                // ROTATION PROPERTIES
+                this.currentAngle = Math.random() * Math.PI * 2; // Initial random angle
+                // Random spin speed (left or right)
+                this.spinSpeed = (Math.random() - 0.5) * 0.02; 
+
+                const speed = typeof drawSpeed !== 'undefined' ? parseInt(drawSpeed) : 5;
+                this.maxIter = (1000 + Math.random() * 2000) * (speed / 5);
+
+                this.hx = [];
+                this.hy = [];
+                this.hc = [];
+
+                this.R = Math.random() * (maxR - minR) + minR;
+
+                if (style === "Triangle") {
+                    this.r = this.R / 3;
+                    this.d = this.r * (0.8 + Math.random() * 2.0); 
+                } 
+                else if (style === "Square") {
+                    this.r = this.R / 4;
+                    this.d = this.r * (0.8 + Math.random() * 2.0);
+                } 
+                else if (style === "Star") {
+                    this.r = this.R / 5;
+                    this.d = this.r * (1.5 + Math.random() * 2.0);
+                }
+                else if (style === "Oval") {
+                    this.r = Math.random() * (this.R * 0.7) + 5;
+                    this.d = Math.random() * this.R;
+                    this.aspectRatio = 0.5 + Math.random() * 0.2; 
+                }
+                else if (style === "Flower") {
+                    const petals = 2 + Math.floor(Math.random() * 6);
+                    this.r = this.R / (petals + 0.5);
+                    this.d = this.r * 2.5;
+                }
+                else {
+                    this.r = Math.random() * (this.R * 0.7) + 5;
+                    this.d = Math.random() * this.R;
+                }
+
+                const currentTheme = typeof colorTheme !== 'undefined' ? colorTheme : "Cyberpunk";
+                this.instanceColor = themes[currentTheme] ? themes[currentTheme][Math.floor(Math.random() * themes[currentTheme].length)] : "#FF0000";
+            }
+
+            getStyle(time) {
+                const theme = typeof colorTheme !== 'undefined' ? colorTheme : "Rainbow";
+                if (theme === "Rainbow") return `hsl(${(this.baseHue + time * 30) % 360}, 100%, 50%)`;
+                if (theme === "Neon") return `hsl(${[60, 180, 300][Math.floor(this.baseHue % 3)]}, 100%, 50%)`;
+                if (theme === "Custom Dual") {
+                    const c1 = hexToRgb(color1); const c2 = hexToRgb(color2);
+                    const l = (Math.sin(time) + 1) / 2;
+                    return `rgb(${Math.floor(c1.r + (c2.r - c1.r) * l)}, ${Math.floor(c1.g + (c2.g - c1.g) * l)}, ${Math.floor(c1.b + (c2.b - c1.b) * l)})`;
+                }
+                return this.instanceColor;
+            }
+
+            update() {
+                const isPerm = (typeof permanentTrails !== 'undefined' && (permanentTrails === "true" || permanentTrails === true));
+                
+                if (this.done && !isPerm) {
+                    this.reset();
+                }
+
+                const tLen = typeof tailLength !== 'undefined' ? parseInt(tailLength) : 50;
+                const maxHistory = tLen * 30;
+                const stepSize = 0.03;
+                const speed = typeof drawSpeed !== 'undefined' ? parseInt(drawSpeed) : 5;
+
+                for (let i = 0; i < speed; i++) {
+                    // Calculate basic shape centered at 0,0
+                    let x = (this.R - this.r) * Math.cos(this.t) + this.d * Math.cos(((this.R - this.r) / this.r) * this.t);
+                    let y = (this.R - this.r) * Math.sin(this.t) - this.d * Math.sin(((this.R - this.r) / this.r) * this.t);
+                    
+                    // Apply Aspect Ratio (squash)
+                    y *= this.aspectRatio;
+
+                    // Apply Random Spiral Rotation
+                    // x' = x cos(θ) - y sin(θ)
+                    // y' = x sin(θ) + y cos(θ)
+                    const cosA = Math.cos(this.currentAngle);
+                    const sinA = Math.sin(this.currentAngle);
+                    const rotX = x * cosA - y * sinA;
+                    const rotY = x * sinA + y * cosA;
+
+                    // Push Final Coordinate
+                    this.hx.push(this.centerX + rotX);
+                    this.hy.push(this.centerY + rotY);
+                    this.hc.push(this.getStyle(this.t));
+
+                    this.t += stepSize;
+                    this.iter++;
+                    
+                    // Slowly rotate the coordinate system for the next point
+                    this.currentAngle += this.spinSpeed * 0.1; 
+                }
+
+                if (!isPerm) {
+                    if (this.hx.length > maxHistory) {
+                        const cut = this.hx.length - maxHistory;
+                        this.hx.splice(0, cut);
+                        this.hy.splice(0, cut);
+                        this.hc.splice(0, cut);
+                    }
+                } else {
+                    if (this.hx.length > 10000) {
+                        const cut = this.hx.length - 10000;
+                        this.hx.splice(0, cut);
+                        this.hy.splice(0, cut);
+                        this.hc.splice(0, cut);
+                    }
+                }
+
+                if (!isPerm && this.iter > this.maxIter) {
+                    this.done = true;
+                }
+            }
+
+            draw() {
+                if (this.hx.length < 2) return;
+
+                const isPerm = (typeof permanentTrails !== 'undefined' && (permanentTrails === "true" || permanentTrails === true));
+                const theme = typeof colorTheme !== 'undefined' ? colorTheme : "Cyberpunk";
+                const speed = typeof drawSpeed !== 'undefined' ? parseInt(drawSpeed) : 5;
+                const lw = typeof lineWidth !== 'undefined' ? parseInt(lineWidth) : 3;
+
+                if (isPerm) {
+                    const startIdx = Math.max(0, this.hx.length - speed - 1);
+                    this.drawSegment(startIdx, this.hx.length - 1, lw);
+                    return;
+                }
+
+                if (theme !== "Rainbow" && theme !== "Custom Dual") {
+                    ctx.beginPath();
+                    ctx.strokeStyle = this.hc[this.hc.length - 1];
+                    ctx.lineWidth = lw;
+                    ctx.moveTo(this.hx[0], this.hy[0]);
+                    for (let i = 1; i < this.hx.length; i++) {
+                        ctx.lineTo(this.hx[i], this.hy[i]);
+                    }
+                    ctx.stroke();
+                } else {
+                    ctx.lineWidth = lw;
+                    for (let i = 0; i < this.hx.length - 1; i++) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = this.hc[i];
+                        ctx.moveTo(this.hx[i], this.hy[i]);
+                        ctx.lineTo(this.hx[i + 1], this.hy[i + 1]);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            drawSegment(start, end, lw) {
+                ctx.lineWidth = lw;
+                for (let i = start; i < end; i++) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = this.hc[i];
+                    ctx.moveTo(this.hx[i], this.hy[i]);
+                    ctx.lineTo(this.hx[i + 1], this.hy[i + 1]);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, width, height);
+            spirographs = [];
+            const count = typeof spiroCount !== 'undefined' ? parseInt(spiroCount) : 5;
+            for (let i = 0; i < count; i++) spirographs.push(new SpiroInstance());
+        }
+
+        function animate() {
+            const targetCount = typeof spiroCount !== 'undefined' ? parseInt(spiroCount) : 5;
+            if (spirographs.length !== targetCount) resize();
+
+            const isPerm = (typeof permanentTrails !== 'undefined' && (permanentTrails === "true" || permanentTrails === true));
+
+            if (!isPerm) {
+                ctx.globalCompositeOperation = "source-over";
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            const glow = typeof glowAmount !== 'undefined' ? parseInt(glowAmount) : 5;
+            if (glow > 0) {
+                ctx.shadowBlur = glow;
+                ctx.shadowColor = (!isPerm && spirographs[0]) ? spirographs[0].getStyle(0) : "white";
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
+            spirographs.forEach(s => {
+                s.update();
+                s.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = () => {
+            resize();
+            window.addEventListener('resize', resize);
+            animate();
+        };
+    </script>
+</body>
+
+</html>
