@@ -156,11 +156,15 @@
 
                     <div class="btn-group btn-group-sm me-2 mb-1 align-items-center" role="group">
                         <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard">
-                            <i class="bi bi-clipboard-plus"></i> Paste
+                            <i class="bi bi-clipboard-plus"></i> Paste Layout Screenshot
                         </button>
 
                         <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay">
                             <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button type="button" class="btn btn-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" title="Delete Layout Screenshot" disabled>
+                            <i class="bi bi-trash"></i>
                         </button>
 
                         <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">

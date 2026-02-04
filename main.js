@@ -7907,6 +7907,20 @@ document.addEventListener('DOMContentLoaded', function () {
         updateLayoutButtonState();
     }
 
+    // 2.5 Delete Layout
+    window.deleteLayoutOverlay = function () {
+        if (!layoutOverlayLoaded) return;
+
+        if (confirm("Are you sure you want to delete the layout screenshot?")) {
+            localStorage.removeItem('srgb_layout_image_data');
+            layoutOverlayImage = new Image();
+            layoutOverlayLoaded = false;
+            showLayoutOverlay = false;
+            updateLayoutButtonState();
+            if (typeof showToast === 'function') showToast("Layout screenshot deleted.", 'info');
+        }
+    }
+
     // 3. Update Opacity
     window.updateLayoutOpacity = function (val) {
         layoutOverlayOpacity = parseFloat(val);
@@ -7914,17 +7928,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 4. Update Button UI
     function updateLayoutButtonState() {
-        const btn = document.getElementById('toggle-layout-btn');
-        if (!btn) return;
+        const toggleBtn = document.getElementById('toggle-layout-btn');
+        const deleteBtn = document.getElementById('delete-layout-btn');
 
-        if (showLayoutOverlay && layoutOverlayLoaded) {
-            btn.classList.remove('btn-outline-secondary');
-            btn.classList.add('btn-info');
-            btn.innerHTML = '<i class="bi bi-eye-fill"></i>';
-        } else {
-            btn.classList.add('btn-outline-secondary');
-            btn.classList.remove('btn-info');
-            btn.innerHTML = '<i class="bi bi-eye"></i>';
+        if (toggleBtn) {
+            if (showLayoutOverlay && layoutOverlayLoaded) {
+                toggleBtn.classList.remove('btn-outline-secondary');
+                toggleBtn.classList.add('btn-info');
+                toggleBtn.innerHTML = '<i class="bi bi-eye-fill"></i>';
+            } else {
+                toggleBtn.classList.add('btn-outline-secondary');
+                toggleBtn.classList.remove('btn-info');
+                toggleBtn.innerHTML = '<i class="bi bi-eye"></i>';
+            }
+        }
+
+        if (deleteBtn) {
+            deleteBtn.disabled = !layoutOverlayLoaded;
         }
     }
 
