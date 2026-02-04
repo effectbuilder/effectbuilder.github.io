@@ -23,6 +23,7 @@ function getSafeDocId(filename) {
     return filename.replace(/\./g, '_');
 }
 
+// Optimized: Fetch just one doc (used when downloading)
 async function getDownloadCount(filename) {
     const docId = getSafeDocId(filename);
     const docRef = doc(db, "showcase_stats", docId);
@@ -61,6 +62,7 @@ async function incrementDownloadCount(filename) {
 
 document.addEventListener('DOMContentLoaded', function () {
     // --- CONFIGURATION ---
+    // Note: The order here represents the "Newest Added" sort order (Assuming you append new files to the end)
     const effectFilenames = [
         "SwirlCirclesAudio.html", "RotatingBeam.html", "NoiseMap.html", "Policing.html",
         "MovingPanes.html", "SpectrumCycling.html", "Sunrise.html", "Stack.html",
@@ -89,16 +91,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
-    let allEffects = [];
+    
+    // --- STATE MANAGEMENT ---
+    let allEffects = []; // Stores the full list of effect objects
+    let statsLoaded = false; // Flag to check if we have popularity data
+    
+    // UI Elements
     const searchInput = document.getElementById('effect-search-input');
+    const sortSelect = document.getElementById('sort-order');
+    const tagFilterSelect = document.getElementById('tag-filter');
+    const totalCountBadge = document.getElementById('total-count-badge');
 
     // --- MODAL VARIABLES ---
     const codePreviewModalEl = document.getElementById('code-preview-modal');
     const codePreviewModal = codePreviewModalEl ? new bootstrap.Modal(codePreviewModalEl) : null;
     const codePreviewTitle = document.getElementById('code-preview-title');
     const codePreviewContent = document.getElementById('code-preview-content');
-    const copyCodeBtn = document.getElementById('copy-code-btn');
-
+    
     const effectViewModalEl = document.getElementById('effect-view-modal');
     const effectViewModal = effectViewModalEl ? new bootstrap.Modal(effectViewModalEl) : null;
     const effectViewTitle = document.getElementById('effect-view-title');
@@ -107,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const effectDownloadBtn = document.getElementById('effect-download-btn');
     const effectShareBtn = document.getElementById('effect-share-btn');
 
-    async function fetchEffectMetadata(filename) {
+    async function fetchEffectMetadata(filename, index) {
         const effectUrl = `${effectsFolder}/${filename}`;
         const staticUrl = effectUrl.replace(/\.html$/, '.png');
 
@@ -118,9 +127,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
 
-            // --- HELPER TO EXTRACT META ATTRIBUTES ---
+            // --- META ATTRIBUTES ---
             const getCustomMeta = (attrName) => {
-                // Try selecting by property or name (handles <meta description="..."> and <meta name="description">)
                 const el = doc.querySelector(`meta[${attrName}]`) || doc.querySelector(`meta[name="${attrName}"]`);
                 return el ? (el.getAttribute(attrName) || el.getAttribute('content')) : null;
             };
@@ -129,35 +137,30 @@ document.addEventListener('DOMContentLoaded', function () {
             const description = getCustomMeta('description') || getCustomMeta('og:description') || 'No description available.';
             const author = getCustomMeta('publisher') || getCustomMeta('author') || 'Unknown Author';
 
-            // --- 1. PARSE RICH PROPERTIES (The Void and Silk method) ---
-            // Looks for <meta property="speed" label="Speed" type="number" ... />
+            // --- PROPERTIES ---
             const propertyMetas = doc.querySelectorAll('meta[property]');
             let structuredControls = [];
 
             if (propertyMetas.length > 0) {
                 propertyMetas.forEach(meta => {
                     const prop = meta.getAttribute('property');
-                    // Skip internal properties if necessary, usually we want all
                     if (!prop) return;
 
                     const label = meta.getAttribute('label') || prop;
-                    const type = meta.getAttribute('type'); // number, boolean, list, color
+                    const type = meta.getAttribute('type'); 
                     const tooltip = meta.getAttribute('tooltip') || '';
                     const def = meta.getAttribute('default') || '-';
                     
                     let valueDesc = '';
                     if (type === 'number') {
-                        const min = meta.getAttribute('min');
-                        const max = meta.getAttribute('max');
-                        valueDesc = `${min} to ${max} (Default: ${def})`;
+                        valueDesc = `${meta.getAttribute('min')} to ${meta.getAttribute('max')} (Default: ${def})`;
                     } else if (type === 'boolean') {
                         valueDesc = `Toggle (True/False)`;
                     } else if (type === 'list') {
                         const values = meta.getAttribute('values');
-                        // Truncate long lists for display
                         const valList = values ? values.split(',') : [];
                         valueDesc = valList.length > 3 ? 
-                            `Select: ${valList.slice(0,3).join(', ')}... (+${valList.length-3})` : 
+                            `Select: ${valList.slice(0,3).join(', ')}...` : 
                             `Select: ${valList.join(', ')}`;
                     } else if (type === 'color') {
                         valueDesc = `Color Picker (Hex)`;
@@ -166,34 +169,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     structuredControls.push({
-                        label: label,
-                        variable: prop,
-                        values: valueDesc,
-                        description: tooltip
+                        label, variable: prop, values: valueDesc, description: tooltip
                     });
                 });
             }
 
-            // --- 3. TAG DETECTION ---
+            // --- TAG DETECTION ---
             let tags = [];
             const tagsMeta = getCustomMeta('tags') || getCustomMeta('keywords');
             if (tagsMeta) tags = tagsMeta.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
-            // Auto-Detect Tags
             const textToAnalyze = `${title} ${description} ${filename}`.toLowerCase();
-            
-            // Helper to add unique tags
             const addTag = (t) => { if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t); };
 
             if (textToAnalyze.match(/audio|sound|music|beat|freq|mic|visualizer|spect|vu meter|rhythm/)) {
-                // Check if meta specifically says audio_reactive default=true
                 const audioMeta = doc.querySelector('meta[property="audio_reactive"]');
-                if (audioMeta) {
-                    // It's definitely sound responsive if it has this property
-                    if(!tags.some(t => t.toLowerCase().includes('sound'))) tags.unshift('Sound Responsive');
-                } else if (!tags.some(t => t.toLowerCase().includes('sound'))) {
-                    // Fallback text detection
-                    tags.unshift('Sound Responsive');
+                if (audioMeta || !tags.some(t => t.toLowerCase().includes('sound'))) {
+                   if(!tags.includes('Sound Responsive')) tags.unshift('Sound Responsive');
                 }
             }
             if (textToAnalyze.match(/mouse|click|drag|interactive|cursor|touch/)) addTag('Interactive');
@@ -201,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (textToAnalyze.match(/fractal|mandelbrot|julia|math|geometry/)) addTag('Fractal');
             if (textToAnalyze.match(/particle|swarm|dots|dust|starfield/)) addTag('Particles');
             
-            // Detect Customizable
             if (structuredControls.length > 0 && !tags.includes('Customizable')) {
                 tags.push('Customizable');
             }
@@ -209,7 +200,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return {
                 title, description, author, effectUrl, staticUrl, filename,
                 tags,
-                structuredControls // Array of objects from meta property tags
+                structuredControls,
+                originalIndex: index, // For "Newest" sort
+                downloads: 0 // Placeholder
             };
 
         } catch (error) {
@@ -218,15 +211,93 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function buildEffectsList(filenames) {
-        const effects = await Promise.all(filenames.map(fetchEffectMetadata));
-        return effects.filter(effect => effect !== null);
+    // --- MAIN DATA FLOW ---
+
+    async function initializeGallery() {
+        // 1. Fetch Metadata
+        const effects = await Promise.all(effectFilenames.map((f, i) => fetchEffectMetadata(f, i)));
+        allEffects = effects.filter(effect => effect !== null);
+        
+        // 2. Build Filter Options
+        populateTagFilter();
+
+        // 3. Render Initial Grid (Alphabetical default)
+        updateGalleryDisplay();
+
+        // 4. Background Fetch Stats
+        fetchAndAttachStats();
     }
 
-    function populateShowcase(effects) {
+    async function fetchAndAttachStats() {
+        const promises = allEffects.map(async (effect) => {
+            const count = await getDownloadCount(effect.filename);
+            effect.downloads = count;
+            
+            // Update individual badge if visible
+            const badge = document.getElementById(`count-${getSafeDocId(effect.filename)}`);
+            if(badge) badge.textContent = count;
+        });
+
+        await Promise.allSettled(promises);
+        statsLoaded = true;
+        
+        // If the user has selected "Most Popular" while we were loading, re-sort now
+        if(sortSelect.value === 'downloads') {
+            updateGalleryDisplay();
+        }
+    }
+
+    function populateTagFilter() {
+        const uniqueTags = new Set();
+        allEffects.forEach(e => e.tags.forEach(t => uniqueTags.add(t)));
+        
+        const sortedTags = Array.from(uniqueTags).sort();
+        
+        sortedTags.forEach(tag => {
+            const opt = document.createElement('option');
+            opt.value = tag;
+            opt.textContent = tag;
+            tagFilterSelect.appendChild(opt);
+        });
+    }
+
+    // --- FILTERING & SORTING LOGIC ---
+
+    function updateGalleryDisplay() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedTag = tagFilterSelect.value;
+        const sortMode = sortSelect.value;
+
+        // 1. Filter
+        let filtered = allEffects.filter(e => {
+            const matchesSearch = !searchTerm || 
+                e.title.toLowerCase().includes(searchTerm) || 
+                e.description.toLowerCase().includes(searchTerm) ||
+                e.tags.some(t => t.toLowerCase().includes(searchTerm));
+            
+            const matchesTag = !selectedTag || e.tags.includes(selectedTag);
+
+            return matchesSearch && matchesTag;
+        });
+
+        // 2. Sort
+        filtered.sort((a, b) => {
+            if (sortMode === 'name-asc') return a.title.localeCompare(b.title);
+            if (sortMode === 'name-desc') return b.title.localeCompare(a.title);
+            if (sortMode === 'downloads') return b.downloads - a.downloads; // Descending downloads
+            if (sortMode === 'newest') return b.originalIndex - a.originalIndex; // High index = newer
+            return 0;
+        });
+
+        // 3. Render
+        renderGrid(filtered);
+        totalCountBadge.textContent = `${filtered.length} Effects`;
+    }
+
+    function renderGrid(effects) {
         projectListContainer.innerHTML = '';
-        if (!effects || effects.length === 0) {
-            projectListContainer.innerHTML = `<div class="col-12 text-center text-muted"><p>No effects found.</p></div>`;
+        if (effects.length === 0) {
+            projectListContainer.innerHTML = `<div class="col-12 text-center text-muted py-5"><h3><i class="bi bi-search"></i></h3><p>No effects found matching your criteria.</p></div>`;
             return;
         }
 
@@ -236,46 +307,60 @@ document.addEventListener('DOMContentLoaded', function () {
             const card = document.createElement('div');
             card.className = 'card h-100 shadow-sm';
 
-            // Image/Iframe
+            // Image Container
             const previewContainer = document.createElement('div');
-            previewContainer.className = 'card-img-top position-relative';
+            previewContainer.className = 'card-img-top position-relative overflow-hidden';
             previewContainer.style.height = '180px';
             previewContainer.style.backgroundColor = '#000';
-            previewContainer.style.backgroundImage = `url('${effect.staticUrl}')`;
-            previewContainer.style.backgroundSize = 'cover';
-            previewContainer.style.backgroundPosition = 'center';
-            previewContainer.style.cursor = 'pointer';
+            
+            // --- LAZY LOADING FIX: USE IMG TAG ---
+            const img = document.createElement('img');
+            img.src = effect.staticUrl;
+            img.loading = "lazy"; // Enables browser lazy loading
+            img.alt = effect.title;
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "cover"; // Replicates background-size: cover
+            previewContainer.appendChild(img);
 
+            // Hover Iframe Logic
             let previewIframe = null;
+            let hoverTimeout;
+
             card.addEventListener('mouseenter', () => {
-                previewContainer.style.backgroundImage = 'none';
-                if (!previewIframe) {
-                    previewIframe = document.createElement('iframe');
-                    previewIframe.src = effect.effectUrl;
-                    previewIframe.style.width = '320px';
-                    previewIframe.style.height = '200px';
-                    previewIframe.style.border = 'none';
-                    previewIframe.style.overflow = 'hidden'; // Force CSS hide
-                    previewIframe.setAttribute('scrolling', 'no'); // Legacy attribute that works best for iframes
-                    previewIframe.style.transform = 'scale(0.9) translate(-50%, -50%)';
-                    previewIframe.style.transformOrigin = 'top left';
-                    previewIframe.style.position = 'absolute';
-                    previewIframe.style.top = '50%';
-                    previewIframe.style.left = '50%';
-                    previewIframe.style.pointerEvents = 'none';
-                    previewContainer.appendChild(previewIframe);
-                }
+                hoverTimeout = setTimeout(() => {
+                    img.style.opacity = '0'; // Hide image
+                    if (!previewIframe) {
+                        previewIframe = document.createElement('iframe');
+                        previewIframe.src = effect.effectUrl;
+                        previewIframe.style.width = '320px';
+                        previewIframe.style.height = '200px';
+                        previewIframe.style.border = 'none';
+                        previewIframe.setAttribute('scrolling', 'no');
+                        previewIframe.style.transform = 'scale(0.9) translate(-50%, -50%)';
+                        previewIframe.style.transformOrigin = 'top left';
+                        previewIframe.style.position = 'absolute';
+                        previewIframe.style.top = '50%';
+                        previewIframe.style.left = '50%';
+                        previewIframe.style.pointerEvents = 'none';
+                        previewContainer.appendChild(previewIframe);
+                    }
+                }, 200); // 200ms delay to prevent accidental triggers
             });
+
             card.addEventListener('mouseleave', () => {
-                previewContainer.style.backgroundImage = `url('${effect.staticUrl}')`;
+                clearTimeout(hoverTimeout);
+                img.style.opacity = '1'; // Show image
                 if (previewIframe) { previewIframe.remove(); previewIframe = null; }
             });
+
+            previewContainer.style.cursor = 'pointer';
             previewContainer.addEventListener('click', () => {
                 handleViewEffect(effect);
                 window.location.hash = effect.filename;
             });
 
-            // Tags
+            // Tags HTML
             let tagsHtml = '';
             if (effect.tags.length > 0) {
                 tagsHtml = `<div class="mb-2">`;
@@ -306,12 +391,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const docId = getSafeDocId(effect.filename);
             const countBadge = document.createElement('small');
             countBadge.className = 'text-muted';
-            countBadge.innerHTML = `<i class="bi bi-download me-1"></i><span id="count-${docId}">...</span>`;
-            
-            getDownloadCount(effect.filename).then(c => {
-                const el = document.getElementById(`count-${docId}`);
-                if(el) el.textContent = c;
-            });
+            // If statsLoaded is true, use the value, otherwise '...'
+            countBadge.innerHTML = `<i class="bi bi-download me-1"></i><span id="count-${docId}">${statsLoaded ? effect.downloads : '...'}</span>`;
 
             const btnGroup = document.createElement('div');
             btnGroup.className = 'btn-group';
@@ -319,16 +400,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn btn-sm btn-outline-primary';
             viewBtn.innerHTML = '<i class="bi bi-eye"></i>';
+            viewBtn.title = "Preview";
             viewBtn.onclick = (e) => { e.stopPropagation(); handleViewEffect(effect); window.location.hash = effect.filename; };
 
             const codeBtn = document.createElement('button');
             codeBtn.className = 'btn btn-sm btn-outline-secondary';
             codeBtn.innerHTML = '<i class="bi bi-code-slash"></i>';
+            codeBtn.title = "Source Code";
             codeBtn.onclick = (e) => { e.stopPropagation(); handleViewCode(effect); };
 
             const dlBtn = document.createElement('button');
             dlBtn.className = 'btn btn-sm btn-outline-success';
             dlBtn.innerHTML = '<i class="bi bi-download"></i>';
+            dlBtn.title = "Download";
             dlBtn.onclick = (e) => { e.stopPropagation(); handleDownloadZip(effect, dlBtn); };
 
             btnGroup.append(viewBtn, codeBtn, dlBtn);
@@ -338,6 +422,8 @@ document.addEventListener('DOMContentLoaded', function () {
             projectListContainer.append(col);
         });
     }
+
+    // --- INTERACTION HANDLERS (View, Code, Download) ---
 
     function handleViewEffect(effect) {
         effectViewTitle.textContent = effect.title;
@@ -361,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
         effectIframe.style.transform = `scale(${scale})`;
         effectIframeContainer.style.width = `${320*scale}px`; effectIframeContainer.style.height = `${200*scale}px`;
 
-        // --- INJECT METADATA & PROPERTIES ---
+        // Inject Details
         const detailsId = 'effect-details-section';
         const oldDetails = document.getElementById(detailsId);
         if (oldDetails) oldDetails.remove();
@@ -370,7 +456,6 @@ document.addEventListener('DOMContentLoaded', function () {
         detailsDiv.id = detailsId;
         detailsDiv.className = 'p-3 border-top pt-3';
 
-        // 1. Tags
         let tagsHtml = '';
         if(effect.tags.length) {
             tagsHtml = `<div class="mb-3"><h6 class="fw-bold">Tags:</h6>`;
@@ -383,42 +468,17 @@ document.addEventListener('DOMContentLoaded', function () {
             tagsHtml += `</div>`;
         }
 
-        // 2. Adjustable Properties (Using Structured Data)
         let propsHtml = '';
         if (effect.structuredControls && effect.structuredControls.length > 0) {
             propsHtml = `<h6 class="fw-bold mb-2"><i class="bi bi-sliders me-2"></i>Adjustable Properties</h6>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm small">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:30%">Property / Variable</th>
-                            <th style="width:30%">Type / Range</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            effect.structuredControls.forEach(ctrl => {
-                propsHtml += `
-                    <tr>
-                        <td>
-                            <strong>${ctrl.label}</strong><br>
-                            <code class="text-primary">${ctrl.variable}</code>
-                        </td>
-                        <td>${ctrl.values}</td>
-                        <td>${ctrl.description}</td>
-                    </tr>`;
-            });
-
-            propsHtml += `</tbody></table></div>`;
+                    <thead class="table-light"><tr><th>Property</th><th>Type / Range</th><th>Description</th></tr></thead>
+                    <tbody>${effect.structuredControls.map(c => `<tr><td><strong>${c.label}</strong><br><code class="text-primary">${c.variable}</code></td><td>${c.values}</td><td>${c.description}</td></tr>`).join('')}</tbody>
+                </table></div>`;
         }
 
-        detailsDiv.innerHTML = `
-            <div class="mb-3"><h6 class="fw-bold">Description</h6><p>${effect.description}</p></div>
-            ${tagsHtml}
-            ${propsHtml}
-        `;
-
+        detailsDiv.innerHTML = `<div class="mb-3"><h6 class="fw-bold">Description</h6><p>${effect.description}</p></div>${tagsHtml}${propsHtml}`;
         effectIframeContainer.parentElement.appendChild(detailsDiv);
         if (effectViewModal) effectViewModal.show();
     }
@@ -439,6 +499,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const oldHtml = btn.innerHTML;
         btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
         btn.disabled = true;
+        
+        // Update local model first
+        effect.downloads = (effect.downloads || 0) + 1;
+        // Update UI
+        const badge = document.getElementById(`count-${getSafeDocId(effect.filename)}`);
+        if(badge) badge.textContent = effect.downloads;
+        
+        // Fire and forget increment
         incrementDownloadCount(effect.filename);
 
         try {
@@ -470,7 +538,8 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) { console.error(e); }
     }
 
-    // --- CLEANUP & SEARCH ---
+    // --- EVENT LISTENERS ---
+
     if (effectViewModalEl) {
         effectViewModalEl.addEventListener('hidden.bs.modal', () => {
             effectIframe.src = 'about:blank';
@@ -480,34 +549,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (searchInput) {
-        searchInput.addEventListener('keyup', () => {
-            const term = searchInput.value.toLowerCase().trim();
-            if (!term) return populateShowcase(allEffects);
-            const filtered = allEffects.filter(e => 
-                e.title.toLowerCase().includes(term) || 
-                e.description.toLowerCase().includes(term) ||
-                e.tags.some(t => t.toLowerCase().includes(term))
-            );
-            populateShowcase(filtered);
-        });
-    }
-
-    // --- INIT ---
-    buildEffectsList(effectFilenames).then(effects => {
-        allEffects = effects.sort((a,b) => a.title.localeCompare(b.title));
-        populateShowcase(allEffects);
-        const hash = window.location.hash.substring(1);
-        if(hash) {
-            const found = allEffects.find(e => e.filename === hash);
-            if(found) setTimeout(() => handleViewEffect(found), 100);
-        }
+    // Debounce Search
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(updateGalleryDisplay, 300);
     });
 
+    tagFilterSelect.addEventListener('change', updateGalleryDisplay);
+    sortSelect.addEventListener('change', updateGalleryDisplay);
+
+    // Hash Handler
     window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
         if(!hash) return;
         const found = allEffects.find(e => e.filename === hash);
         if(found) handleViewEffect(found);
+    });
+
+    // Start
+    initializeGallery().then(() => {
+        const hash = window.location.hash.substring(1);
+        if(hash) {
+            const found = allEffects.find(e => e.filename === hash);
+            if(found) setTimeout(() => handleViewEffect(found), 500);
+        }
     });
 });
