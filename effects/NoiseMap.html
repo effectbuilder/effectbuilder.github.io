@@ -1,86 +1,127 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
     <title>ORGB: Noise Map</title>
-    <meta description="Floor is lava.">
-    <meta publisher="José Miranda (Port and improvements)">
+    <meta description="Floor is lava with auto-gain audio contours.">
+    <meta publisher="Jose Miranda">
 
-    <meta property="speed" label="Global Speed" type="number" min="1" max="100" default="50">
-    <meta property="motion" label="Motion" type="list" values="Up,Down,Left,Right" default="Up">
-    <meta property="motion_speed" label="Motion Speed" type="number" min="0" max="100" default="10">
-    <meta property="colors_mode" label="Color Mode" type="list" values="Rainbow,Inverse Rainbow,Custom Gradient" default="Rainbow">
+    <meta property="speed" label="Global Speed" type="number" min="1" max="100" default="20">
+    
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom Gradient,Rainbow,Inverse Rainbow,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor,Neon" default="Lava">
 
-    <meta property="frequency" label="Frequency" type="number" min="1" max="5000" default="1200">
-    <meta property="amplitude" label="Amplitude" type="number" min="1" max="50000" default="39000">
-    <meta property="lacunarity" label="Lacunarity" type="number" min="1" max="50000" default="7500">
-    <meta property="persistence" label="Persistence" type="number" min="1" max="50000" default="5000">
-    <meta property="octaves" label="Octaves" type="number" min="1" max="20" default="2">
+    <meta property="frequencyBand" label="Audio Response Band" type="combobox" values="Bass,Mids,Treble,Total" default="Bass">
+    <meta property="audio_mode" label="Audio Effect Mode" type="combobox" values="None,Flash,Pulse,Turbulence" default="Flash">
+    <meta property="audio_sensitivity" label="Audio Sensitivity" type="number" min="1" max="100" default="50">
 
-    <meta property="color1" label="Color 1" type="color" default="#ff5500">
-    <meta property="color2" label="Color 2" type="color" default="#ffc800">
-    <meta property="color3" label="Color 3" type="color" default="#c80000">
-    <meta property="color4" label="Color 4" type="color" default="#ff5500">
+    <meta property="frequency" label="Noise Scale" type="number" min="1" max="5000" default="1500">
+    <meta property="amplitude" label="Noise Contrast" type="number" min="1" max="50000" default="39000">
+    
+    <meta property="lacunarity" label="Detail Frequency (Lacunarity)" type="number" min="100" max="200" default="200" help="Controls the size of details. 200 = 2.0x freq per octave.">
+    <meta property="persistence" label="Detail Strength (Persistence)" type="number" min="10" max="90" default="50" help="Controls the roughness. 50 = 0.5x amp per octave.">
+    <meta property="octaves" label="Detail Layers (Octaves)" type="number" min="1" max="8" default="4">
+
+    <meta property="color1" label="Custom Color 1" type="color" default="#ff5500">
+    <meta property="color2" label="Custom Color 2" type="color" default="#ffc800">
+    <meta property="color3" label="Custom Color 3" type="color" default="#c80000">
+    <meta property="color4" label="Custom Color 4" type="color" default="#ff5500">
 
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #000;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
     </style>
-
 </head>
 
-<body style="margin: 0; padding: 0;">
+<body>
     <canvas id="noisemap-canvas" width="320" height="200"></canvas>
 </body>
 
 <script>
-// -------------------------------------------------------------------
-// SETUP
-// -------------------------------------------------------------------
+    // -------------------------------------------------------------------
+    // BROWSER COMPATIBILITY LAYER
+    // -------------------------------------------------------------------
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
 
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+        function simulateAudio() {
+            const time = Date.now() / 1000; 
+            const dataArray = window.engine.audio.freq;
+            
+            const beat = (Math.sin(time * Math.PI * 2) + 1) / 2; 
+            const val = Math.pow(beat, 2) * 200; 
+            for(let i=0; i<128; i++) dataArray[i] = val * (Math.random() * 0.5 + 0.5);
+
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    } 
+</script>
+
+<script>
+// -------------------------------------------------------------------
+// GLOBALS & PALETTES
+// -------------------------------------------------------------------
 const canvas = document.getElementById('noisemap-canvas');
 const ctx = canvas.getContext('2d');
-
-// --- ADDED: Disable image smoothing ---
-ctx.imageSmoothingEnabled = false;
-ctx.mozImageSmoothingEnabled = false;
-ctx.webkitImageSmoothingEnabled = false;
-
 const canvasWidth = canvas.width;
 const canvasHeight = canvas.height;
-// --- ADDED: ImageData buffer ---
 const imageData = ctx.createImageData(canvasWidth, canvasHeight);
 const pixels = imageData.data;
 
+// WLED / Standard Palettes
+const presets = {
+    "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF"],
+    "Inverse Rainbow": ["#FF00FF", "#0000FF", "#00FFFF", "#00FF00", "#FFFF00", "#FF0000"],
+    "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+    "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+    "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+    "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+    "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+    "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+    "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+    "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+    "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+    "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+    "Holiday": ["#D92626", "#0E592D", "#F2B705", "#F2F2F2"],
+    "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+    "Fairy Light": ["#FF000080", "#00FF0080", "#0000FF80", "#FFFF0080"],
+    "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+    "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#000000", "#FF1493"],
+    "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+    "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+    "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"],
+    "Neon": ["#FF00FF", "#00FFFF", "#FFFF00", "#FF00FF"]
+};
 
+// Gradient generation for lookup
 const gradientCanvas = document.createElement('canvas');
 gradientCanvas.width = 256;
 gradientCanvas.height = 1;
 const gradientCtx = gradientCanvas.getContext('2d', { willReadFrequently: true });
 let gradientData = null;
 
-let progress = 0.0; // Used for time dimension in noise
-// --- MODIFIED: Initialize with defaults ---
-let lastColorSettings = (typeof color1 !== 'undefined' ? color1 : "#ff5500") +
-                        (typeof color2 !== 'undefined' ? color2 : "#ffc800") +
-                        (typeof color3 !== 'undefined' ? color3 : "#c80000") +
-                        (typeof color4 !== 'undefined' ? color4 : "#ff5500");
-let lastColorsMode = typeof colors_mode !== 'undefined' ? colors_mode : "Rainbow";
-let initialized = false; // Flag for initial setup
+let progress = 0.0;
+let lastPaletteSetting = "";
+let lastColorSettings = "";
+let initialized = false;
+let lastTime = 0; 
+let selectedBandLevel = 0;
+let maxVolumeObserved = 10.0;
 
 // -------------------------------------------------------------------
-// SIMPLEX NOISE ALGORITHM (provided implementation)
+// SIMPLEX NOISE
 // -------------------------------------------------------------------
 const SimplexNoise = (function() {
     const F3 = 1.0 / 3.0, G3 = 1.0 / 6.0;
@@ -126,20 +167,21 @@ const SimplexNoise = (function() {
             else { t1 *= t1; n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1 + grad3[gi1 + 2] * z1); }
             let t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
             if (t2 < 0) n2 = 0.0;
-            else { t2 *= t2; n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2 + grad3[gi2 + 2] * z2); } // Corrected index from gi2+2 to gi2+1 for y
+            else { t2 *= t2; n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2 + grad3[gi2 + 2] * z2); }
             let t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
             if (t3 < 0) n3 = 0.0;
             else { t3 *= t3; n3 = t3 * t3 * (grad3[gi3] * x3 + grad3[gi3 + 1] * y3 + grad3[gi3 + 2] * z3); }
             return 32.0 * (n0 + n1 + n2 + n3);
         },
-        fractal: function(octavesCount, x, y, z, freqVal, ampVal, lacVal, perVal) { // Pass params explicitly
+        fractal: function(octavesCount, x, y, z, freqVal, ampVal, lacVal, perVal) {
             let val = 0;
-            let freq = freqVal, amp = ampVal; // Use passed values
-            const lac = lacVal, per = perVal;
+            let freq = freqVal, amp = ampVal;
+            // Standard fractal sum: value += noise(p * freq) * amp
+            // freq increases (lacunarity > 1), amp decreases (persistence < 1)
             for(let i = 0; i < octavesCount; i++) {
                 val += this.noise3D(x * freq, y * freq, z * freq) * amp;
-                freq *= lac;
-                amp *= per;
+                freq *= lacVal;
+                amp *= perVal;
             }
             return val;
         }
@@ -147,184 +189,173 @@ const SimplexNoise = (function() {
 })();
 
 // -------------------------------------------------------------------
-// HELPER FUNCTIONS
+// HELPERS
 // -------------------------------------------------------------------
-// --- ADDED: HSL to RGB ---
-function hslToRgb(h, s, l) { // h(0-360), s(0-100), l(0-100)
-    h /= 360; s /= 100; l /= 100;
-    let r, g, b;
-    if (s === 0) { r = g = b = l; }
-    else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1; if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
+function updateGradient() {
+    let colors = [];
+    if (palette === "Custom Gradient") {
+        colors = [color1, color2, color3, color4];
+    } else if (presets[palette]) {
+        colors = presets[palette];
+    } else {
+        // Fallback
+        colors = ["#ff0000", "#0000ff"];
     }
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-}
-
-
-function generateGradient() {
-    // --- ADDED: Fallbacks for colors ---
-    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff5500";
-    const c2 = typeof color2 !== 'undefined' ? color2 : "#ffc800";
-    const c3 = typeof color3 !== 'undefined' ? color3 : "#c80000";
-    const c4 = typeof color4 !== 'undefined' ? color4 : "#ff5500"; // Repeat first
-
-    let colors = [c1, c2, c3, c4].filter(c => c && c !== ''); // Filter empty
-    if (colors.length < 2) colors = ["#ff0000", "#0000ff"]; // Ensure at least 2 colors
 
     const grad = gradientCtx.createLinearGradient(0, 0, gradientCanvas.width, 0);
-    const step = 1.0 / (colors.length - 1);
-    for (let i = 0; i < colors.length; i++) {
-        grad.addColorStop(i * step, colors[i]);
+    // Distribute colors evenly
+    if (colors.length > 1) {
+        const step = 1.0 / (colors.length - 1);
+        colors.forEach((c, i) => grad.addColorStop(i * step, c));
+    } else {
+        grad.addColorStop(0, colors[0]);
+        grad.addColorStop(1, colors[0]);
     }
+    
     gradientCtx.fillStyle = grad;
     gradientCtx.fillRect(0, 0, gradientCanvas.width, 1);
-    try {
-        gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
-    } catch(e) {
-        console.error("Error getting gradient data:", e);
-        gradientData = null;
-    }
+    gradientData = gradientCtx.getImageData(0, 0, gradientCanvas.width, 1).data;
 }
 
-// -------------------------------------------------------------------
-// EFFECT LOGIC
-// -------------------------------------------------------------------
+function processAudio() {
+    if (!engine.audio || !engine.audio.freq) return;
+    const audioData = engine.audio.freq;
+    const userSens = audio_sensitivity / 100.0;
+    
+    let bassSum = 0; for (let i = 0; i < 4; i++) bassSum += audioData[i];
+    let midSum = 0;  for (let i = 4; i < 40; i++) midSum += audioData[i];
+    let trebSum = 0; for (let i = 40; i < 80; i++) trebSum += audioData[i];
+    let totalSum = 0; for (let i = 0; i < 60; i++) totalSum += audioData[i];
+
+    let currentRaw = 0;
+    let divisor = 1;
+
+    if (frequencyBand === "Bass") { currentRaw = bassSum; divisor = 4; }
+    else if (frequencyBand === "Mids") { currentRaw = midSum; divisor = 36; }
+    else if (frequencyBand === "Treble") { currentRaw = trebSum; divisor = 40; }
+    else { currentRaw = totalSum; divisor = 60; }
+
+    currentRaw = currentRaw / divisor; 
+
+    // Auto-Gain
+    if (currentRaw > maxVolumeObserved) maxVolumeObserved = currentRaw;
+    else maxVolumeObserved *= 0.999;
+    if(maxVolumeObserved < 0.1) maxVolumeObserved = 0.1; 
+
+    const agcFactor = (1.0 / maxVolumeObserved);
+    const sensitivityBoost = (1.0 + userSens * 3.0);
+    const finalGain = agcFactor * sensitivityBoost;
+
+    selectedBandLevel = Math.min(1.0, currentRaw * finalGain); 
+}
 
 function getPixelColor(x, y) {
-    // --- ADDED: Fallbacks for meta properties ---
-    const currentMotion = typeof motion !== 'undefined' ? motion : "Up";
-    const currentMotionSpeed = typeof motion_speed !== 'undefined' ? motion_speed : 10;
-    const currentOctaves = typeof octaves !== 'undefined' ? Math.max(1, octaves) : 2; // Ensure >= 1
-    const currentColorsMode = typeof colors_mode !== 'undefined' ? colors_mode : "Rainbow";
-    // Noise parameter fallbacks
-    const currentFrequency = typeof frequency !== 'undefined' ? frequency : 1200;
-    const currentAmplitude = typeof amplitude !== 'undefined' ? amplitude : 39000;
-    const currentLacunarity = typeof lacunarity !== 'undefined' ? lacunarity : 7500;
-    const currentPersistence = typeof persistence !== 'undefined' ? persistence : 5000;
+    let dynamicFreq = frequency / 10000.0;
+    let dynamicAmp = amplitude / 10000.0;
+    let timeZ = progress;
 
-
-    let x_shift = 0, y_shift = 0;
-    // Scale motion speed for visual effect
-    const motion_val = (currentMotionSpeed / 10.0) * progress; // Divide by 10 for less extreme shift
-    switch (currentMotion) {
-        case "Up": y_shift = motion_val; break;
-        case "Down": y_shift = -motion_val; break;
-        case "Left": x_shift = motion_val; break;
-        case "Right": x_shift = -motion_val; break;
+    // --- AUDIO EFFECTS ---
+    if (audio_mode === "Pulse") {
+        const pulse = 1.0 + (selectedBandLevel * 3.0); 
+        dynamicFreq /= pulse; 
+        dynamicAmp *= (1.0 + selectedBandLevel * 0.5);
+    } 
+    else if (audio_mode === "Turbulence") {
+        const turb = 1.0 + (selectedBandLevel * 5.0);
+        dynamicFreq *= turb;
+        timeZ += (Math.random() - 0.5) * selectedBandLevel * 0.2;
     }
 
-    // Scale x, y for noise input domain (adjust 50.0 to control zoom)
-    const noiseX = (x / 50.0) + x_shift;
-    const noiseY = (y / 50.0) + y_shift;
-    const noiseZ = progress; // Use progress for the time dimension
+    // --- NOISE GENERATION ---
+    // Fix: Lacunarity mapped 100-500 -> 1.0 to 5.0 (Standard for detail scaling)
+    const lacVal = lacunarity / 100.0; 
+    // Fix: Persistence mapped 10-90 -> 0.1 to 0.9 (Standard for detail amplitude)
+    const perVal = persistence / 100.0;
 
-    // Get the noise value (-1 to 1) using fallbacks for parameters
-    const value = SimplexNoise.fractal(
-        currentOctaves, noiseX, noiseY, noiseZ,
-        currentFrequency / 10000.0, currentAmplitude / 10000.0, // Scale down params
-        currentLacunarity / 10000.0, currentPersistence / 10000.0
+    const val = SimplexNoise.fractal(
+        Math.max(1, octaves), 
+        (x / 50.0), 
+        (y / 50.0), 
+        timeZ, 
+        dynamicFreq, 
+        dynamicAmp, 
+        lacVal, 
+        perVal
     );
 
-    // Normalize to 0-1 range
-    const frac = Math.max(0, Math.min(1, (1 + value) * 0.5)); // Clamp frac
-
-    let finalRgb = [0, 0, 0]; // Default black
-
-    switch (currentColorsMode) {
-        case "Rainbow":
-            finalRgb = hslToRgb(360 * frac, 100, 50); // H(0-360), S(0-100), L(0-100)
-            break;
-        case "Inverse Rainbow":
-            finalRgb = hslToRgb(360 - 360 * frac, 100, 50);
-            break;
-        case "Custom Gradient":
-            if (gradientData) {
-                const gradIndex = Math.min(gradientCanvas.width - 1, Math.floor(frac * gradientCanvas.width)) * 4;
-                finalRgb = [gradientData[gradIndex], gradientData[gradIndex+1], gradientData[gradIndex+2]];
-            }
-            break;
+    const frac = Math.max(0, Math.min(1, (1 + val) * 0.5));
+    
+    // --- CONTOURS ---
+    let contourWeight = 0;
+    if (audio_mode === "Flash") {
+        const threshold = 0.5; 
+        const distanceToEdge = Math.abs(frac - threshold);
+        const edgeWidth = 0.001 + (selectedBandLevel * 0.10); 
+        if (distanceToEdge < edgeWidth) {
+            contourWeight = 1.0 - (distanceToEdge / edgeWidth);
+            contourWeight = Math.pow(contourWeight, 1.5); 
+            contourWeight *= (0.2 + selectedBandLevel * 1.2);
+        }
     }
-    return finalRgb; // Return RGB array
+
+    let finalRgb = [0, 0, 0];
+    const dim = (audio_mode === "Flash") ? 0.7 : 1.0;
+
+    // Lookup Color from Gradient Canvas
+    if (gradientData) {
+        // Clamp 0-255
+        const idx = Math.min(255, Math.floor(frac * 255)) * 4;
+        finalRgb = [
+            gradientData[idx] * dim, 
+            gradientData[idx+1] * dim, 
+            gradientData[idx+2] * dim
+        ];
+    }
+
+    if (contourWeight > 0) {
+        contourWeight = Math.min(1.0, contourWeight);
+        finalRgb[0] += (255 - finalRgb[0]) * contourWeight;
+        finalRgb[1] += (255 - finalRgb[1]) * contourWeight;
+        finalRgb[2] += (255 - finalRgb[2]) * contourWeight;
+    }
+
+    return finalRgb;
 }
 
 // -------------------------------------------------------------------
-// MAIN ANIMATION LOOP
+// MAIN LOOP
 // -------------------------------------------------------------------
-
-let lastTime = 0;
-function update(currentTime) {
-     // --- MODIFIED: Use performance.now() ---
+function update() {
     const now = performance.now();
-    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000; // Delta in seconds
+    const deltaTime = lastTime === 0 ? 0.016 : (now - lastTime) / 1000;
     lastTime = now;
 
-    if (isNaN(deltaTime) || deltaTime <= 0) {
-        requestAnimationFrame(update);
-        return;
-    }
+    processAudio();
 
-     // --- ADDED: Fallbacks for meta properties ---
-    const currentColorsMode = typeof colors_mode !== 'undefined' ? colors_mode : "Rainbow";
-    const currentSpeed = typeof speed !== 'undefined' ? speed : 50;
-    const c1 = typeof color1 !== 'undefined' ? color1 : "#ff5500";
-    const c2 = typeof color2 !== 'undefined' ? color2 : "#ffc800";
-    const c3 = typeof color3 !== 'undefined' ? color3 : "#c80000";
-    const c4 = typeof color4 !== 'undefined' ? color4 : "#ff5500";
-
-     // --- ADDED: Initialize gradient on first run ---
-     if (!initialized) {
-        if (currentColorsMode === "Custom Gradient") {
-             generateGradient(); // Uses fallbacks internally
-             lastColorSettings = c1+c2+c3+c4; // Sync state
-        }
-        lastColorsMode = currentColorsMode; // Sync state
+    // Check if palette needs update
+    const currentSettings = palette + color1 + color2 + color3 + color4;
+    if (!initialized || currentSettings !== lastPaletteSetting) {
+        updateGradient();
+        lastPaletteSetting = currentSettings;
         initialized = true;
-     }
-
-
-    // Regenerate custom gradient if mode or colors change
-    if (currentColorsMode === "Custom Gradient") {
-        const currentSettings = c1 + c2 + c3 + c4;
-        if(currentSettings !== lastColorSettings || currentColorsMode !== lastColorsMode) {
-            generateGradient(); // Uses fallbacks internally
-            lastColorSettings = currentSettings;
-            lastColorsMode = currentColorsMode;
-        }
-    } else if (currentColorsMode !== lastColorsMode) {
-        lastColorsMode = currentColorsMode; // Update mode tracker
     }
 
+    progress += (speed / 50.0) * deltaTime;
 
-    // Update progress based on global speed
-    progress += (currentSpeed / 50.0) * deltaTime; // Speed 50 = base rate
-
-    // Render using ImageData
     for (let y = 0; y < canvasHeight; y++) {
         for (let x = 0; x < canvasWidth; x++) {
-            const [r, g, b] = getPixelColor(x, y); // Uses fallbacks internally
+            const [r, g, b] = getPixelColor(x, y);
             const index = (y * canvasWidth + x) * 4;
             pixels[index] = r;
             pixels[index + 1] = g;
             pixels[index + 2] = b;
-            pixels[index + 3] = 255; // Alpha
+            pixels[index + 3] = 255;
         }
     }
-    ctx.putImageData(imageData, 0, 0); // Draw buffer
-
+    ctx.putImageData(imageData, 0, 0);
     requestAnimationFrame(update);
 }
 
-// Initial call
 requestAnimationFrame(update);
-
 </script>
 </html>
