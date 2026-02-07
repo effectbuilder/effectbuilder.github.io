@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kinetic Sand</title>
+    <meta description="Particle-based sand physics with vibrant spectral colors, auto-drain, and fluidized bed vibration." />
+    <meta publisher="José Miranda" />
+
+    <meta property="spawnRate" label="Spawn Rate" type="number" min="1" max="100" default="20" 
+          tooltip="Controls how fast new sand falls from the top. 1 = Trickle, 100 = Heavy Rain.">
+          
+    <meta property="gravity" label="Gravity" type="number" min="1" max="20" default="6" 
+          tooltip="Controls how fast particles fall. Lower values make the sand feel floaty.">
+          
+    <meta property="friction" label="Pile Steepness" type="number" min="0" max="10" default="3" 
+          tooltip="Controls how easily sand slides down slopes. 0 = Flat water-like, 10 = Vertical walls.">
+          
+    <meta property="drainSpeed" label="Drain Speed" type="number" min="0" max="100" default="22" 
+          tooltip="Controls the chance of particles randomly disappearing to prevent screen overflow.">
+          
+    <meta property="particleSize" label="Particle Size" type="number" min="1" max="5" default="2" 
+          tooltip="Scales the resolution. 1 = Native (fine sand), 5 = Blocky (retro pixel art style).">
+    
+    <meta property="audioSens" label="Audio Sensitivity" type="number" min="0" max="100" default="15" 
+          tooltip="Adjusts response to volume. Set to 0 to enable gentle auto-pilot animation.">
+          
+    <meta property="jumpForce" label="Bass Jump Strength" type="number" min="0" max="100" default="30" 
+          tooltip="Determines how high the sand piles 'erupt' when a bass beat hits.">
+    
+    <meta property="palette" label="Color Palette" type="combobox" values="Random,Custom,Blood,Matrix,Grayscale,Toxic,Sepia,Ice,Bubblegum,Cyberpunk,Fire,Forest,Gold,Heatmap,Midnight,Ocean,Rust,Sunset,Ultraviolet,Vaporwave,Neon,Rainbow" default="Random" 
+          tooltip="Select 'Custom' to use the colors below, or 'Random' to cycle themes.">
+          
+    <meta property="customColor1" label="Custom Color 1" type="color" default="#e000ff" tooltip="Start color (Left Side) for the Custom palette.">
+    <meta property="customColor2" label="Custom Color 2" type="color" default="#ff9a00" tooltip="End color (Right Side) for the Custom palette.">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; }
+        canvas { display: block; width: 320px; height: 200px; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <canvas id="sand-canvas" width="320" height="200"></canvas>
+
+<script>
+    // -------------------------------------------------------------------
+    // 1. COMPATIBILITY & SETUP
+    // -------------------------------------------------------------------
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+        window.engine = { audio: { freq: new Array(200).fill(0) } };
+        function simulateAudio() {
+            const t = Date.now() / 1000; 
+            const arr = new Array(200).fill(0);
+            const kick = (Math.sin(t * 8) + 1) / 2;
+            arr[0] = Math.pow(kick, 4) * 255; 
+            for(let i=1; i<200; i++) arr[i] = Math.random() * 80;
+            window.engine.audio.freq = arr;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    }
+
+    const canvas = document.getElementById('sand-canvas');
+    canvas.style.width = "320px";
+    canvas.style.height = "200px";
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    // Dynamic Simulation Dimensions
+    let simWidth = 320;
+    let simHeight = 200;
+    let currentSize = 0; 
+
+    // Data Structures
+    let grid = null;
+    let particles = [];
+    const MAX_PARTICLES_BASE = 30000;
+    
+    // Audio Globals
+    let maxVolumeObserved = 10.0;
+    let bassSmoothed = 0;
+
+    // Palette Globals
+    let activePaletteName = "Rainbow";
+    let lastRandomTime = 0;
+    const RANDOM_INTERVAL = 5000; 
+
+    // -------------------------------------------------------------------
+    // 2. COLORS & GRADIENTS (Vibrant)
+    // -------------------------------------------------------------------
+    const gradients = {
+        "Custom":    ["#ff0000", "#00ffff"], 
+        "Blood":     ["#880000", "#cc0000", "#ff0000", "#ff4444"],
+        "Matrix":    ["#006600", "#00aa00", "#00ff00", "#ccff00"],
+        "Grayscale": ["#444444", "#888888", "#cccccc", "#ffffff"],
+        "Toxic":     ["#448800", "#77dd00", "#bbff00", "#eeff66"],
+        "Sepia":     ["#5e432e", "#8b6c42", "#d2b48c", "#ffeebb"],
+        "Ice":       ["#005577", "#0088aa", "#00ccff", "#ffffff"],
+        "Bubblegum": ["#aa0055", "#ff1493", "#ff69b4", "#ffc0cb"],
+        "Cyberpunk": ["#7df9ff", "#ff00ff", "#7f00ff", "#00ffff"],
+        "Fire":      ["#aa0000", "#ff4500", "#ffcc00", "#ffffaa"],
+        "Forest":    ["#004400", "#009900", "#33cc33", "#99ff33"],
+        "Gold":      ["#886600", "#daa520", "#ffd700", "#ffffdd"],
+        "Heatmap":   ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"],
+        "Midnight":  ["#000066", "#222299", "#5555cc", "#8888ff"],
+        "Ocean":     ["#000088", "#0044ff", "#00ccff", "#e0ffff"],
+        "Rust":      ["#662200", "#aa4400", "#dd8822", "#ffaa44"],
+        "Sunset":    ["#8a2be2", "#ff0000", "#ff8c00", "#ffd700"],
+        "Ultraviolet":["#3a0ca3", "#7209b7", "#f72585", "#4cc9f0"], 
+        "Vaporwave": ["#550055", "#ff00ff", "#00ffff", "#ffffff"],
+        "Neon":      ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"],
+        "Rainbow":   ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#9400d3"]
+    };
+
+    function hexToABGR(hex) {
+        if (!hex) return 0xFF000000;
+        if (hex.charAt(0) === '#') hex = hex.substring(1);
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        const r = parseInt(hex.substring(0,2), 16);
+        const g = parseInt(hex.substring(2,4), 16);
+        const b = parseInt(hex.substring(4,6), 16);
+        return (255 << 24) | (b << 16) | (g << 8) | r;
+    }
+
+    function lerpColor(c1, c2, t) {
+        const r1 = c1 & 0xFF; const g1 = (c1 >> 8) & 0xFF; const b1 = (c1 >> 16) & 0xFF;
+        const r2 = c2 & 0xFF; const g2 = (c2 >> 8) & 0xFF; const b2 = (c2 >> 16) & 0xFF;
+        const r = Math.round(r1 + (r2 - r1) * t);
+        const g = Math.round(g1 + (g2 - g1) * t);
+        const b = Math.round(b1 + (b2 - b1) * t);
+        return (255 << 24) | (b << 16) | (g << 8) | r;
+    }
+
+    function getColor(pos) {
+        const pal = gradients[activePaletteName] || gradients["Rainbow"];
+        pos = Math.max(0, Math.min(1, pos));
+        const scaled = pos * (pal.length - 1);
+        const idx = Math.floor(scaled);
+        const t = scaled - idx;
+        return lerpColor(hexToABGR(pal[idx]), hexToABGR(pal[Math.min(idx+1, pal.length-1)]), t);
+    }
+
+    // -------------------------------------------------------------------
+    // 3. MAIN LOOP
+    // -------------------------------------------------------------------
+    function update() {
+        const now = Date.now();
+        
+        // Grab controls
+        const pSize = (typeof particleSize !== 'undefined' ? Math.floor(particleSize) : 2);
+        const uSens = (typeof audioSens !== 'undefined' ? audioSens : 15) / 100.0;
+        const sRate = (typeof spawnRate !== 'undefined' ? spawnRate : 44);
+        const jForce = (typeof jumpForce !== 'undefined' ? jumpForce : 75);
+        const grav = (typeof gravity !== 'undefined' ? gravity : 6);
+        const frict = (typeof friction !== 'undefined' ? friction : 3);
+        const dSpeed = (typeof drainSpeed !== 'undefined' ? drainSpeed : 22);
+
+        // --- UPDATE CUSTOM GRADIENT ---
+        if (typeof customColor1 !== 'undefined' && typeof customColor2 !== 'undefined') {
+            gradients["Custom"] = [customColor1, customColor2];
+        }
+
+        // --- RESOLUTION SCALING ---
+        if (pSize !== currentSize) {
+            currentSize = pSize;
+            simWidth = Math.floor(320 / pSize);
+            simHeight = Math.floor(200 / pSize);
+            canvas.width = simWidth;
+            canvas.height = simHeight;
+            grid = new Uint32Array(simWidth * simHeight);
+            particles = []; 
+        }
+
+        // --- RANDOM PALETTE ---
+        if (typeof palette !== 'undefined') {
+            if (palette === "Random") {
+                if (now - lastRandomTime > RANDOM_INTERVAL) {
+                    const keys = Object.keys(gradients);
+                    const available = keys.filter(k => k !== "Random" && k !== "Custom");
+                    activePaletteName = available[Math.floor(Math.random() * available.length)];
+                    lastRandomTime = now;
+                }
+            } else {
+                activePaletteName = palette;
+            }
+        } else {
+            activePaletteName = "Rainbow";
+        }
+
+        // --- AUDIO PROCESSING & AUTO-PILOT ---
+        
+        // 1. Calculate Spawn Threshold FIRST
+        // Rate 1 = 0.99, Rate 100 = 0.0
+        const spawnThreshold = 1.0 - (sRate / 101.0); 
+
+        let normAudio = new Float32Array(200);
+        let bassNow = 0;
+
+        if (uSens <= 0.0) {
+            // AUTO-PILOT
+            for(let i=0; i<200; i++) {
+                // FIXED: We must generate signal that beats the current threshold.
+                // We give a 2% chance per bin to be (threshold + tiny amount)
+                if (Math.random() > 0.98) {
+                    normAudio[i] = spawnThreshold + 0.1; 
+                } else {
+                    normAudio[i] = 0;
+                }
+            }
+            // Gentle breathing for bass
+            bassNow = (Math.sin(now / 1000) + 1) * 0.15; 
+        } else {
+            // NORMAL AUDIO
+            let raw = (window.engine && engine.audio && engine.audio.freq) ? engine.audio.freq : [];
+            let currMax = 1;
+            for(let i=0; i<200; i++) { if(raw[i] > currMax) currMax = raw[i]; }
+            maxVolumeObserved = Math.max(1, currMax > maxVolumeObserved ? currMax : maxVolumeObserved * 0.995);
+            
+            const gain = (1.0 / maxVolumeObserved) * (1.0 + uSens * 2.5);
+            for(let i=0; i<200; i++) {
+                normAudio[i] = Math.min(1.0, (raw[i] || 0) * gain * (1 + i/150));
+            }
+            bassNow = (normAudio[0] + normAudio[1] + normAudio[2]) / 3;
+        }
+
+        bassSmoothed = bassSmoothed * 0.6 + bassNow * 0.4; 
+        
+        // -- 1. SPAWNING (Rain) --
+        const currentMaxParticles = Math.floor(MAX_PARTICLES_BASE / (pSize * pSize));
+
+        for (let i = 0; i < 200; i++) {
+            if (normAudio[i] > spawnThreshold && particles.length < currentMaxParticles) {
+                
+                let x;
+                
+                // FIXED: Toggle Mapping Mode
+                if (uSens <= 0.0) {
+                    // Auto-Pilot: Use Linear Mapping for even rain distribution
+                    x = Math.floor((i / 200) * simWidth);
+                } else {
+                    // Audio Mode: Use Logarithmic Mapping to visualize Bass/Treble correctly
+                    const logPos = Math.log10(i + 1) / Math.log10(201);
+                    x = Math.floor(logPos * simWidth);
+                }
+                
+                // Spawn count logic
+                const intensityBonus = Math.floor(normAudio[i] * 3); 
+                const spawnCount = 1 + intensityBonus; 
+                
+                for(let k=0; k<spawnCount; k++) {
+                    const finalX = Math.max(0, Math.min(simWidth-1, x + Math.floor((Math.random()-0.5)*20)));
+                    if (Math.random() > 0.4) {
+                        
+                        // Positional Color Mixing
+                        let screenPos = finalX / simWidth;
+                        let jitter = (Math.random() - 0.5) * 0.4; 
+                        let colorPos = screenPos + jitter;
+                        
+                        particles.push({
+                            x: finalX,
+                            y: 0,
+                            vx: (Math.random()-0.5)*0.3,
+                            vy: Math.random() * 2,
+                            color: getColor(colorPos)
+                        });
+                    }
+                }
+            }
+        }
+
+        // -- 2. VIBRATION (Hotspots) --
+        if (bassSmoothed > 0.1 && jForce > 0) {
+            const eruptionCount = Math.floor(bassSmoothed * 20); 
+            const forceBase = (jForce / 10) * bassSmoothed;
+
+            for(let k=0; k<eruptionCount; k++) {
+                const rx = Math.floor(Math.random() * simWidth);
+                for (let y = 0; y < simHeight; y++) {
+                    const idx = y * simWidth + rx;
+                    if (grid[idx] !== 0) {
+                        const spreadV = (Math.random() - 0.5) * 3.0; 
+                        const lift = -forceBase * (1.0 + Math.random());
+
+                        particles.push({
+                            x: rx, y: y,
+                            vx: spreadV, vy: lift,
+                            color: grid[idx] 
+                        });
+                        grid[idx] = 0; 
+                        break;
+                    }
+                }
+            }
+        }
+
+        // -- 3. PHYSICS --
+        const g = grav / 20;
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.vy += g;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.x < 0) { p.x = 0; p.vx *= -0.7; }
+            if (p.x >= simWidth) { p.x = simWidth - 1; p.vx *= -0.7; }
+
+            const ix = Math.floor(p.x);
+            let iy = Math.floor(p.y);
+            
+            let hit = false;
+            if (iy >= simHeight) hit = true;
+            else if (iy >= 0 && grid[iy * simWidth + ix] !== 0) hit = true;
+
+            if (hit) {
+                while (iy >= 0 && (iy >= simHeight || grid[iy*simWidth+ix] !== 0)) {
+                    iy--;
+                }
+                if (iy >= 0) {
+                    grid[iy*simWidth+ix] = p.color;
+                }
+                particles.splice(i, 1);
+            }
+        }
+
+        // -- 4. AVALANCHE & RANDOM DRAIN --
+        const slipChance = 1 - (frict / 10);
+        const drainProb = (dSpeed / 10000.0);
+
+        for (let y = simHeight - 1; y >= 0; y--) {
+            for (let x = 0; x < simWidth; x++) {
+                const idx = y * simWidth + x;
+                const col = grid[idx];
+                
+                if (col !== 0) {
+                    // Random Drain
+                    if (Math.random() < drainProb) {
+                        grid[idx] = 0;
+                        continue; 
+                    }
+                    
+                    // Slide
+                    const below = idx + simWidth;
+                    if (below < grid.length && grid[below] === 0) {
+                        grid[below] = col;
+                        grid[idx] = 0;
+                    } 
+                    else if (Math.random() < slipChance) {
+                        const dir = Math.random() > 0.5 ? 1 : -1;
+                        const sideX = x + dir;
+                        if (sideX >= 0 && sideX < simWidth) {
+                            const sideBelow = (y+1)*simWidth + sideX;
+                            if (sideBelow < grid.length && grid[sideBelow] === 0) {
+                                grid[sideBelow] = col;
+                                grid[idx] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // -- 5. RENDER --
+        const imgData = ctx.createImageData(simWidth, simHeight);
+        const data = new Uint32Array(imgData.data.buffer);
+
+        for(let i=0; i<grid.length; i++) {
+            if(grid[i] !== 0) data[i] = grid[i];
+            else data[i] = 0xFF000000;
+        }
+
+        for(let p of particles) {
+            const idx = Math.floor(p.y) * simWidth + Math.floor(p.x);
+            if(idx >= 0 && idx < data.length) data[idx] = p.color;
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        requestAnimationFrame(update);
+    }
+    update();
+</script>
+</body>
+</html>
