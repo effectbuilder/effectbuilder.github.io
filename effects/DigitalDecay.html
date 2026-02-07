@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Digital Decay</title>
+    <meta name="title" content="Digital Decay">
+    <meta name="description" content="A real-time audio visualizer that uses frequency analysis to create procedural glitch art and signal degradation effects." />
+    <meta name="publisher" content="José Miranda" />
+
+    <meta property="signalMode" label="Signal Mode" type="combobox" values="Datamosh Smear,ASCII Terminal,Liquid Meltdown,Binary Rain,Spectral Waveform,Barcode Scanner,Mosaic Shards,Void Tunnel" default="Barcode Scanner">
+    <meta property="colorStrategy" label="Color Strategy" type="combobox" values="Default Mode Color,Use Color Profile" default="Use Color Profile">
+    <meta property="colorProfile" label="Color Profile" type="combobox" values="Blood,Bubblegum,Cyberpunk,Fire,Forest,Gold,Grayscale,Heatmap,Ice,Matrix,Midnight,Neon,Ocean,Rainbow,Rust,Sepia,Sunset,Toxic,Ultraviolet,Vaporwave" default="Rainbow">
+
+    <meta property="corruption" label="Intensity" type="number" default="50" min="0" max="100">
+    <meta property="speed" label="Flow Speed" type="number" default="86" min="0" max="100">
+    <meta property="colorSpeed" label="Color Speed" type="number" default="10" min="0" max="100">
+    <meta property="density" label="Density" type="number" default="11" min="0" max="100">
+    <meta property="audioReact" label="Audio Reactivity" type="number" default="81" min="0" max="100">
+    <meta property="audioBand" label="Audio Band" type="combobox" values="Bass,Mid,Treble" default="Bass">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+    <script>
+        // --- BROWSER COMPATIBILITY & SIMULATION ---
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+            window.engine = { audio: { freq: new Array(200).fill(0) } };
+            
+            function simulateAudio() {
+                const time = Date.now() / 1000; 
+                const dataArray = new Array(200).fill(0);
+                const bassBeat = (Math.sin(time * Math.PI * 2) + 1) / 2;
+                for(let i=0; i<6; i++) dataArray[i] = Math.pow(bassBeat, 4) * 100;
+                const midBeat = (Math.sin(time * Math.PI * 6) + 1) / 2;
+                for(let i=10; i<60; i++) dataArray[i] = midBeat * 80;
+                const trebBeat = (Math.sin(time * Math.PI * 10) + 1) / 2;
+                for(let i=60; i<150; i++) dataArray[i] = trebBeat * 60 * Math.random();
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+
+    <script>
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const width = 320;
+        const height = 200;
+
+        const startTime = performance.now();
+        let lastMode = "";
+        let particles = [];
+        
+        let maxVolumeSeen = 10; 
+        let lastBand = "Bass"; 
+
+        function getAudioData(band) {
+            try {
+                if (!window.engine || !window.engine.audio || !window.engine.audio.freq) return 0;
+                
+                const freq = window.engine.audio.freq;
+                let start = 0;
+                let end = 5;
+
+                if (band === "Treble") { start = 150; end = 200; } 
+                else if (band === "Mid") { start = 100; end = 110; } 
+                else { start = 0; end = 6; }
+
+                end = Math.min(end, freq.length - 1);
+                if (start > end) return 0;
+
+                let currentPeak = 0;
+                for (let i = start; i <= end; i++) {
+                    if (freq[i] > currentPeak) currentPeak = freq[i];
+                }
+
+                if (currentPeak > maxVolumeSeen) maxVolumeSeen = currentPeak;
+                else maxVolumeSeen -= 0.5; 
+                
+                if (maxVolumeSeen < 10) maxVolumeSeen = 10;
+
+                let normalized = currentPeak / maxVolumeSeen;
+                if (normalized < 0.05) return 0.0;
+                return Math.min(normalized, 1.0);
+            } catch (e) { return 0; }
+        }
+
+        function initParticles(mode, count) {
+            particles = [];
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    speed: 0.2 + Math.random() * 0.8, 
+                    size: 5 + Math.random() * 20,
+                    char: Math.random() > 0.5 ? "1" : "0",
+                    offset: Math.random() * 100
+                });
+            }
+        }
+
+        function getPaletteColor(profile, val, time, rawAudio, colorSpeed) {
+            const shift = time * (colorSpeed * 2.0);
+            const p = (val + shift) % 1.0;
+            const smooth = (Math.sin((val + shift) * Math.PI * 2) + 1) / 2;
+
+            switch (profile) {
+                case "Blood": return `rgb(${50 + smooth * 205}, 0, 0)`;
+                case "Matrix": return `rgb(0, ${50 + smooth * 205}, 0)`;
+                case "Grayscale": { const g = 50 + smooth * 205; return `rgb(${g},${g},${g})`; }
+                case "Toxic": return `hsl(100, 100%, ${30 + smooth * 70}%)`; 
+                case "Sepia": return `hsl(40, 50%, ${30 + smooth * 70}%)`;   
+                case "Ice": return `hsl(${180 + Math.sin(p * Math.PI) * 40}, 100%, ${50 + smooth * 40}%)`; 
+                case "Bubblegum": return `hsl(330, 100%, ${40 + smooth * 60}%)`;
+                case "Cyberpunk": return Math.sin((val + shift) * Math.PI * 4) > 0 ? "#00ffff" : "#ff00ff";
+                case "Fire": return `hsl(${smooth * 50}, 100%, 50%)`;
+                case "Forest": return `hsl(${90 + smooth * 40}, 60%, 40%)`;
+                case "Gold": return `hsl(45, 100%, ${20 + smooth * 60}%)`;
+                case "Heatmap": return `hsl(${240 - (smooth * 240)}, 100%, 50%)`;
+                case "Midnight": return `hsl(240, 80%, ${30 + smooth * 50}%)`;
+                case "Ocean": return `hsl(${200 + smooth * 40}, 80%, 50%)`;
+                case "Rust": return `hsl(${10 + smooth * 30}, 80%, ${30 + smooth * 30}%)`;
+                case "Sunset": return `hsl(${280 + smooth * 60}, 70%, 50%)`;
+                case "Ultraviolet": return `hsl(${260 + smooth * 40}, 100%, 50%)`;
+                case "Vaporwave": return `hsl(${260 + smooth * 60}, 100%, 70%)`;
+                case "Neon": return `hsl(${(time * (colorSpeed * 300) + val * 100) % 360}, 100%, 60%)`;
+                case "Rainbow": return `hsl(${(val * 360 + time * (colorSpeed * 300)) % 360}, 100%, 50%)`;
+                default: return "white";
+            }
+        }
+
+        function calculateWaveY(x, phase, intensity, dens, audioKick) {
+             const maxAmp = (height / 2) * intensity;
+             const baseFreq = (x * (0.02 + dens * 0.2)) + phase; 
+             let noise = 0;
+             if (dens > 0.1) {
+                const glitchZone = Math.sin(x * 0.1 - phase * 0.5); 
+                if (glitchZone > (1.0 - dens)) {
+                    noise = Math.sin(x * (50 + dens * 100)) * (intensity * 30);
+                }
+             }
+             return (height / 2) + Math.sin(baseFreq) * (maxAmp + audioKick * 50) + noise;
+        }
+
+        function draw(timestamp) {
+            requestAnimationFrame(draw);
+
+            const totalTime = (timestamp - startTime) / 1000;
+
+            const mode = window.signalMode || "ASCII Terminal";
+            const strategy = window.colorStrategy || "Default Mode Color";
+            const profile = window.colorProfile || "Matrix";
+            
+            const intensity = (window.corruption ?? 50) / 100;
+            const flow = (window.speed ?? 15) / 100; 
+            const colorSpd = (window.colorSpeed ?? 10) / 100; 
+            const dens = (window.density ?? 40) / 100;
+            const react = (window.audioReact ?? 50) / 100;
+            const band = window.audioBand || "Bass";
+
+            if (band !== lastBand) {
+                maxVolumeSeen = 10;
+                lastBand = band;
+            }
+
+            const rawAudio = getAudioData(band);
+            const audioKick = rawAudio * react;
+
+            const phase = totalTime * flow * 5.0; 
+            const asciiTick = Math.floor(totalTime * (1 + flow * 20));
+
+            const targetParticleCount = Math.floor(dens * 200) + 10;
+            if (mode !== lastMode || (particles.length > 0 && Math.abs(particles.length - targetParticleCount) > 50)) {
+                initParticles(mode, targetParticleCount);
+                lastMode = mode;
+                ctx.fillStyle = "black";
+                ctx.fillRect(0,0,width,height);
+            }
+
+            let trailAlpha = 0.2; 
+            if (mode === "Datamosh Smear") trailAlpha = 0.05;
+            else if (mode === "Binary Rain") trailAlpha = 0.15;
+            else if (mode === "Spectral Waveform") trailAlpha = 0.35; 
+            else if (mode === "Barcode Scanner") trailAlpha = 0.3; 
+            else if (mode === "Void Tunnel") trailAlpha = 0.25;
+            else if (mode === "ASCII Terminal") trailAlpha = 0.3; 
+
+            ctx.fillStyle = `rgba(0, 0, 0, ${trailAlpha})`;
+            ctx.fillRect(0, 0, width, height);
+
+            if (mode === "Datamosh Smear") {
+                const sliceCount = 5 + (dens * 40); 
+                for(let i=0; i<sliceCount; i++) {
+                    const sx = Math.random() * width;
+                    const sy = Math.random() * height;
+                    const sw = 10 + Math.random() * 60;
+                    const sh = 10 + Math.random() * 60;
+                    const minSpeed = flow > 0.01 ? 1.0 : 0.0;
+                    const totalForce = minSpeed + flow * 15 + audioKick * 50;
+                    const dx = sx + (Math.random()-0.5) * totalForce;
+                    const dy = sy + (Math.random()-0.5) * totalForce;
+                    const injectThreshold = totalForce > 0.5 ? 0.85 : 0.99;
+                    if (Math.random() > injectThreshold) {
+                        const val = Math.random();
+                        ctx.fillStyle = strategy === "Default Mode Color" ? `rgb(${val*255}, ${Math.random()*255}, ${Math.random()*255})` : getPaletteColor(profile, val, totalTime, rawAudio, colorSpd);
+                        ctx.fillRect(dx, dy, sw, sh);
+                    } else if (totalForce > 0.5) {
+                        ctx.drawImage(canvas, sx, sy, sw, sh, dx, dy, sw, sh);
+                    }
+                }
+            }
+            else if (mode === "ASCII Terminal") {
+                ctx.font = "10px monospace";
+                const cols = Math.floor(width / 10);
+                const rows = Math.floor(height / 10);
+                for (let i = 0; i < (cols * rows * (dens * 0.8 + 0.1)); i++) {
+                    const seed = (i * 1337 + asciiTick); 
+                    const randX = Math.abs(Math.sin(seed) * 10000) % cols;
+                    const randY = Math.abs(Math.cos(seed) * 10000) % rows;
+                    const cx = Math.floor(randX) * 10;
+                    const cy = Math.floor(randY) * 10;
+                    const chars = "01XY#%?@";
+                    const char = chars[seed % chars.length];
+                    const val = (cx/width + totalTime * 0.1) % 1;
+                    if (audioKick > 0.1 && Math.random() < audioKick) {
+                        ctx.fillStyle = "white"; 
+                    } else {
+                        ctx.fillStyle = strategy === "Default Mode Color" ? "#00ff00" : getPaletteColor(profile, val, totalTime, rawAudio, colorSpd);
+                    }
+                    ctx.fillText(char, cx, cy);
+                }
+            }
+            else if (mode === "Liquid Meltdown") {
+                const waveFreq = 0.01 + (dens * 0.15);
+                const stripWidth = 4;
+                const amplitude = (height / 2) * intensity;
+                for (let x = 0; x < width; x += stripWidth) {
+                    const wavePhase = x * waveFreq + phase + audioKick;
+                    const waveY = Math.sin(wavePhase) * amplitude;
+                    ctx.fillStyle = strategy === "Default Mode Color" ? `hsl(${(x/width)*360}, 70%, 50%)` : getPaletteColor(profile, x/width, totalTime, rawAudio, colorSpd);
+                    ctx.fillRect(x, (height / 2) + waveY - (20 + audioKick*50), stripWidth, 40 + audioKick * 100);
+                }
+            }
+            else if (mode === "Binary Rain") {
+                ctx.font = "12px monospace";
+                particles.forEach(p => {
+                    p.y += p.speed * (flow * 5 + 0.5) + (audioKick * 5);
+                    if (p.y > height) { p.y = -10; p.x = Math.random() * width; }
+                    const val = p.y / height;
+                    if (audioKick > 0.1 && Math.random() < audioKick * 0.5) {
+                        ctx.fillStyle = "white";
+                    } else {
+                        ctx.fillStyle = strategy === "Default Mode Color" ? `rgba(0, 255, 100, ${1-val})` : getPaletteColor(profile, 1-val, totalTime, rawAudio, colorSpd);
+                    }
+                    ctx.fillText(p.char, p.x, p.y);
+                });
+            }
+            else if (mode === "Spectral Waveform") {
+                ctx.beginPath();
+                ctx.lineWidth = 4 + audioKick * 8; 
+                ctx.shadowBlur = 15; 
+                ctx.shadowColor = strategy === "Default Mode Color" ? "white" : getPaletteColor(profile, 0.5, totalTime, rawAudio, colorSpd);
+                const startY = calculateWaveY(0, phase, intensity, dens, audioKick);
+                ctx.moveTo(0, startY);
+                for (let x = 4; x < width; x+=4) {
+                    const y = calculateWaveY(x, phase, intensity, dens, audioKick);
+                    ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = ctx.shadowColor;
+                ctx.stroke();
+                ctx.shadowBlur = 0; 
+            }
+            else if (mode === "Barcode Scanner") {
+                const lineCount = 5 + dens * 15;
+                for (let i = 0; i < lineCount; i++) {
+                    // TUNED: Reduced speed multiplier from 500 to 150
+                    const x = (totalTime * (flow * 150) + i * (width/lineCount)) % width;
+                    const wNoise = Math.sin(totalTime * 10 + i * 132); 
+                    // TUNED: Reduced width expansion from 50 to 15
+                    const w = 2 + (Math.abs(wNoise) * 10 * intensity) + (audioKick * 15);
+                    
+                    if (audioKick > 0.1 && Math.random() < audioKick * 0.5) {
+                        ctx.fillStyle = "white";
+                    } else {
+                        ctx.fillStyle = strategy === "Default Mode Color" ? "red" : getPaletteColor(profile, x/width, totalTime, rawAudio, colorSpd);
+                    }
+                    ctx.fillRect(x, 0, w, height);
+                }
+            }
+            else if (mode === "Mosaic Shards") {
+                particles.forEach((p, i) => {
+                    const px = (p.x + totalTime * 50 * p.speed * flow) % (width + 50);
+                    const py = (p.y + Math.sin(totalTime + i) * flow * 20) % height;
+                    const size = p.size + audioKick * 30 + intensity * 20;
+                    ctx.beginPath();
+                    const angle = totalTime * flow + i;
+                    ctx.moveTo(px + Math.cos(angle)*size, py + Math.sin(angle)*size);
+                    ctx.lineTo(px + Math.cos(angle + 2)*size, py + Math.sin(angle + 2)*size);
+                    ctx.lineTo(px + Math.cos(angle + 4)*size, py + Math.sin(angle + 4)*size);
+                    ctx.closePath();
+                    const val = (i / particles.length);
+                    if (audioKick > 0.1 && Math.random() < audioKick * 0.5) {
+                         ctx.fillStyle = "white";
+                         ctx.shadowBlur = 20;
+                         ctx.shadowColor = "white";
+                    } else {
+                         ctx.fillStyle = strategy === "Default Mode Color" ? `hsla(${val*360}, 60%, 50%, 0.8)` : getPaletteColor(profile, val, totalTime, rawAudio, colorSpd);
+                         ctx.shadowBlur = 0;
+                    }
+                    ctx.fill();
+                });
+            }
+            else if (mode === "Void Tunnel") {
+                const ringCount = 10 + dens * 10;
+                for (let i = 0; i < ringCount; i++) {
+                    const offset = (totalTime * 50 + i * (200/ringCount)) % 200;
+                    const radius = offset * (1 + audioKick * 0.15);
+                    ctx.beginPath();
+                    ctx.arc(width/2, height/2, radius, 0, Math.PI * 2);
+                    let thickness = 2;
+                    if (intensity > 0) {
+                        const pulse = Math.sin(totalTime * 10 + i); 
+                        if (pulse > (1.0 - intensity * 0.3)) thickness = 1 + Math.abs(pulse) * 3;
+                    }
+                    if (audioKick > 0.4 && Math.random() < audioKick * 0.2) {
+                         ctx.strokeStyle = "white";
+                         ctx.lineWidth = thickness * 2 + audioKick * 30;
+                         ctx.shadowBlur = 20 + audioKick * 20;
+                         ctx.shadowColor = "white";
+                    } else {
+                         ctx.strokeStyle = strategy === "Default Mode Color" ? `hsl(${(i/ringCount)*360}, 100%, 50%)` : getPaletteColor(profile, i/ringCount, totalTime, rawAudio, colorSpd);
+                         ctx.lineWidth = thickness;
+                         ctx.shadowBlur = 0;
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>
