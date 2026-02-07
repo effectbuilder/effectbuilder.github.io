@@ -517,34 +517,50 @@ async function loadUserComponents(reset = false) {
 
     try {
         const componentsCollection = collection(db, 'srgb-components');
-
-        // --- SORTING LOGIC ---
-        // Ensure the element exists before accessing .value
-        const sortElement = document.getElementById('gallery-filter-sort');
-        const sortField = sortElement ? sortElement.value : 'lastUpdated';
-
-        const queryConstraints = [
-            orderBy(sortField, 'desc'),
-            limit(GALLERY_PAGE_SIZE)
-        ];
-
-        const searchTerm = gallerySearchInput ? gallerySearchInput.value.toLowerCase() : '';
+        
+        // 1. Get Values
+        const searchTerm = gallerySearchInput ? gallerySearchInput.value.trim().toLowerCase() : '';
         const filterType = galleryFilterType ? galleryFilterType.value : 'all';
         const filterBrand = galleryFilterBrand ? galleryFilterBrand.value : 'all';
         const filterLeds = galleryFilterLeds ? galleryFilterLeds.value : 'all';
+        const sortElement = document.getElementById('gallery-filter-sort');
+        const sortField = sortElement ? sortElement.value : 'lastUpdated';
 
-        if (filterType !== 'all') queryConstraints.push(where('type', '==', filterType));
-        if (filterBrand !== 'all') queryConstraints.push(where('brand', '==', filterBrand));
-        if (filterLeds !== 'all') {
-            const ledCount = parseInt(filterLeds, 10);
-            if (!isNaN(ledCount)) queryConstraints.push(where('ledCount', '==', ledCount));
+        let q;
+
+        // 2. SEARCH MODE (Server-Side)
+        // If there is a search term, we MUST order by 'searchName' for the inequality filter to work
+        if (searchTerm) {
+            // "Starts With" Query
+            q = query(
+                componentsCollection,
+                where('searchName', '>=', searchTerm),
+                where('searchName', '<=', searchTerm + '\uf8ff'),
+                limit(50) // Fetch up to 50 matches (search is usually specific enough)
+            );
+        } 
+        // 3. BROWSE MODE (Normal Pagination)
+        else {
+            const queryConstraints = [
+                orderBy(sortField, 'desc'),
+                limit(GALLERY_PAGE_SIZE)
+            ];
+
+            if (filterType !== 'all') queryConstraints.push(where('type', '==', filterType));
+            if (filterBrand !== 'all') queryConstraints.push(where('brand', '==', filterBrand));
+            if (filterLeds !== 'all') {
+                const ledCount = parseInt(filterLeds, 10);
+                if (!isNaN(ledCount)) queryConstraints.push(where('ledCount', '==', ledCount));
+            }
+
+            if (lastVisibleComponent) queryConstraints.push(startAfter(lastVisibleComponent));
+            
+            q = query(componentsCollection, ...queryConstraints);
         }
 
-        if (lastVisibleComponent) queryConstraints.push(startAfter(lastVisibleComponent));
-
-        const q = query(componentsCollection, ...queryConstraints);
         const querySnapshot = await getDocs(q);
-
+        
+        // Note: We remove the client-side .filter() because the server did the work!
         let finalDocs = querySnapshot.docs;
         if (searchTerm) {
             finalDocs = finalDocs.filter(doc => {
