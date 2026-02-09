@@ -4361,7 +4361,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.style.display = 'none';
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down`;
+            helpText.innerHTML = (typeof i18next !== 'undefined') ? i18next.t('gradientPicker.help', '<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down') : '<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down';
 
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
@@ -4455,14 +4455,14 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.innerHTML = `
     <div class="d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
-            <label class="col-form-label-sm flex-shrink-0">Color:</label>
+            <label class="col-form-label-sm flex-shrink-0">${(typeof i18next !== 'undefined') ? i18next.t('gradientPicker.color', 'Color:') : 'Color:'}</label>
             <div class="input-group input-group-sm">
-                <span class="input-group-text">HEX</span>
+                <span class="input-group-text">${(typeof i18next !== 'undefined') ? i18next.t('gradientPicker.hex', 'HEX') : 'HEX'}</span>
                 <input type="text" class="form-control active-hex-input" aria-label="Hex Color" style="cursor: pointer;">
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <label class="col-form-label-sm flex-shrink-0">Position:</label>
+            <label class="col-form-label-sm flex-shrink-0">${(typeof i18next !== 'undefined') ? i18next.t('gradientPicker.position', 'Position:') : 'Position:'}</label>
             <div class="input-group input-group-sm" style="width: 110px;">
                 <input type="number" class="form-control active-position-input" min="0" max="100" step="0.1">
                 <span class="input-group-text">%</span>
@@ -5137,7 +5137,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 groupCard.className = 'card card-body bg-body mb-3';
                 const groupHeader = document.createElement('h6');
                 groupHeader.className = 'text-body-secondary border-bottom pb-1 mb-3';
-                groupHeader.textContent = groupName.replace(/-/g, ' & ');
+                groupHeader.textContent = translatedGroupName;
                 groupCard.appendChild(groupHeader);
                 relevantProps.forEach(conf => {
                     groupCard.appendChild(createFormControl(conf));
@@ -5282,7 +5282,7 @@ document.addEventListener('DOMContentLoaded', function () {
             overridesHeader.dataset.bsTarget = '#collapse-overrides';
             overridesHeader.setAttribute('aria-expanded', 'false'); // Start collapsed
             overridesHeader.innerHTML = `
-            <span class="fs-6 fw-semibold">Global Overrides</span>
+            <span class="fs-6 fw-semibold">${(typeof i18next !== 'undefined') ? i18next.t('properties.Global Overrides', 'Global Overrides') : 'Global Overrides'}</span>
             <span class="legend-button collapsed"><i class="bi bi-chevron-up"></i></span>
         `;
             generalCollapseWrapper.appendChild(overridesHeader);

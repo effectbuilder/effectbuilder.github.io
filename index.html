@@ -259,11 +259,11 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="loadProjectModalLabel">Load Project</h5>
+                        <h5 class="modal-title" id="loadProjectModalLabel" data-i18n="modals.loadProject.title">Load Project</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Select a project to load. This will overwrite your current workspace.</p>
+                        <p data-i18n="modals.loadProject.body">Select a project to load. This will overwrite your current workspace.</p>
                         <ul class="list-group" id="load-project-list"></ul>
                     </div>
                 </div>
@@ -273,22 +273,22 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="saveProjectModalLabel">Save Project</h5>
+                        <h5 class="modal-title" id="saveProjectModalLabel" data-i18n="modals.saveProject.title">Save Project</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="save-project-name-input" class="form-label">Project Name:</label>
-                            <input type="text" class="form-control" id="save-project-name-input" placeholder="Enter a name for your project...">
+                            <label for="save-project-name-input" class="form-label" data-i18n="modals.saveProject.nameLabel">Project Name:</label>
+                            <input type="text" class="form-control" id="save-project-name-input" placeholder="Enter a name for your project..." data-i18n="[placeholder]modals.saveProject.placeholder">
                         </div>
                         <hr>
-                        <p>Existing Projects:</p>
+                        <p data-i18n="modals.saveProject.existing">Existing Projects:</p>
                         <ul class="list-group" id="save-project-existing-list">
                         </ul>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-save-btn">Save Project</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.saveProject.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-save-btn" data-i18n="modals.saveProject.save">Save Project</button>
                     </div>
                 </div>
             </div>
@@ -297,13 +297,13 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="notificationModalLabel">Success</h5>
+                        <h5 class="modal-title" id="notificationModalLabel" data-i18n="modals.notification.title">Success</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" id="notification-modal-body">
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modals.notification.ok">OK</button>
                     </div>
                 </div>
             </div>
@@ -312,15 +312,15 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="confirmOverwriteModalLabel">Confirm Overwrite</h5>
+                        <h5 class="modal-title" id="confirmOverwriteModalLabel" data-i18n="modals.confirmOverwrite.title">Confirm Overwrite</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" id="confirm-overwrite-modal-body">
+                    <div class="modal-body" id="confirm-overwrite-modal-body" data-i18n="modals.confirmOverwrite.body">
                         A project with this name already exists. Do you want to overwrite it?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger" id="confirm-overwrite-btn">Overwrite</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.confirmOverwrite.cancel">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirm-overwrite-btn" data-i18n="modals.confirmOverwrite.overwrite">Overwrite</button>
                     </div>
                 </div>
             </div>
@@ -330,7 +330,7 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title me-auto" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i>How to Use the Effect Builder</h5>
+                        <h5 class="modal-title me-auto" id="helpModalLabel" data-i18n="modals.help.title"><i class="bi bi-question-circle me-2"></i>How to Use the Effect Builder</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -345,7 +345,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-1">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-1" aria-expanded="true" aria-controls="help-collapse-1">
-                                        <i class="bi bi-layout-split me-2"></i> Interface Overview
+                                        <i class="bi bi-layout-split me-2"></i> <span data-i18n="modals.help.interface">Interface Overview</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-1" class="accordion-collapse collapse show" aria-labelledby="help-heading-1">
@@ -372,7 +372,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-2">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-2" aria-expanded="false" aria-controls="help-collapse-2">
-                                        <i class="bi bi-easel2-fill me-2"></i> The Canvas & Toolbar
+                                        <i class="bi bi-easel2-fill me-2"></i> <span data-i18n="modals.help.canvas">The Canvas & Toolbar</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-2" class="accordion-collapse collapse" aria-labelledby="help-heading-2">
@@ -409,7 +409,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-3">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-3" aria-expanded="false" aria-controls="help-collapse-3">
-                                        <i class="bi bi-stars me-2"></i> Advanced Shapes & Tools
+                                        <i class="bi bi-stars me-2"></i> <span data-i18n="modals.help.advanced">Advanced Shapes & Tools</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-3" class="accordion-collapse collapse" aria-labelledby="help-heading-3">
@@ -457,7 +457,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-4">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-4" aria-expanded="false" aria-controls="help-collapse-4">
-                                        <i class="bi bi-soundwave me-2"></i> Audio & Sensor Reactivity
+                                        <i class="bi bi-soundwave me-2"></i> <span data-i18n="modals.help.reactivity">Audio & Sensor Reactivity</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-4" class="accordion-collapse collapse" aria-labelledby="help-heading-4">
@@ -474,7 +474,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-5">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-5" aria-expanded="false" aria-controls="help-collapse-5">
-                                        <i class="bi bi-box-arrow-up-right me-2"></i> Saving, Loading & Exporting
+                                        <i class="bi bi-box-arrow-up-right me-2"></i> <span data-i18n="modals.help.saving">Saving, Loading & Exporting</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-5" class="accordion-collapse collapse" aria-labelledby="help-heading-5">
@@ -504,7 +504,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-6">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-6" aria-expanded="false" aria-controls="help-collapse-6">
-                                        <i class="bi bi-box-arrow-in-down me-2"></i> Installing Custom Effects in SignalRGB
+                                        <i class="bi bi-box-arrow-in-down me-2"></i> <span data-i18n="modals.help.installing">Installing Custom Effects in SignalRGB</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-6" class="accordion-collapse collapse" aria-labelledby="help-heading-6">
@@ -555,7 +555,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modals.help.gotIt">Got it!</button>
                     </div>
                 </div>
             </div>
@@ -565,7 +565,7 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="aboutModalLabel">About Effect Builder</h5>
+                        <h5 class="modal-title" id="aboutModalLabel" data-i18n="modals.about.title">About Effect Builder</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -573,27 +573,27 @@
                         <p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p>
                         <ul class="list-group">
                             <li class="list-group-item">
-                                <strong>Version:</strong> <span id="version-display">1.0</span>
+                                <strong data-i18n="modals.about.version">Version:</strong> <span id="version-display">1.0</span>
                             </li>
                             <li class="list-group-item">
-                                <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
+                                <strong data-i18n="modals.about.projectHome">Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank" data-i18n="modals.about.viewGithub">View on GitHub</a>
                             </li>
                             <li class="list-group-item">
-                                <strong>Terms & Privacy:</strong>
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> |
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>
+                                <strong data-i18n="modals.about.termsPrivacy">Terms & Privacy:</strong>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal" data-i18n="modals.about.termsLink">Terms of Usage</a> |
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal" data-i18n="modals.about.privacyLink">Privacy Policy</a>
                             </li>
                         </ul>
-                        <h6 class="mt-4">Credits & Inspirations</h6>
+                        <h6 class="mt-4" data-i18n="modals.about.credits">Credits & Inspirations</h6>
                         <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
 
-                        <h6 class="mt-4">For Developers & Contributors</h6>
+                        <h6 class="mt-4" data-i18n="modals.about.developers">For Developers & Contributors</h6>
                         <p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p>
 
                     </div>
                     <div class="modal-footer">
                         <div class="text-muted small me-auto">© 2025 José A. Miranda Vélez. All Rights Reserved.</div>
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modals.about.close">Close</button>
                     </div>
                 </div>
             </div>
@@ -603,7 +603,7 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="termsModalLabel">Terms of Usage</h5>
+                        <h5 class="modal-title" id="termsModalLabel" data-i18n="modals.terms.title">Terms of Usage</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -633,7 +633,7 @@
                         <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
+                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal" data-i18n="modals.terms.accept">I Accept</button>
                     </div>
                 </div>
             </div>
@@ -643,7 +643,7 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="privacyPolicyModalLabel">Privacy Policy</h5>
+                        <h5 class="modal-title" id="privacyPolicyModalLabel" data-i18n="modals.privacy.title">Privacy Policy</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -671,7 +671,7 @@
                         <p>You have the right to delete your saved effects. This can be done from the "My Projects" section of the gallery when you are signed in.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modals.privacy.close">Close</button>
                     </div>
                 </div>
             </div>
@@ -681,17 +681,17 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="importMetaModalLabel"><i class="bi bi-code-slash me-2"></i>Import from Meta Tags</h5>
+                        <h5 class="modal-title" id="importMetaModalLabel" data-i18n="modals.import.title"><i class="bi bi-code-slash me-2"></i>Import from Meta Tags</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.</p>
+                        <p data-i18n="[html]modals.import.body">Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.</p>
                         </p>
                         <textarea class="form-control font-monospace" id="import-textarea" rows="10" placeholder="<meta title=... />&#10;<meta description=... />&#10;..."></textarea>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-import-btn">Import Effect</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.import.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-import-btn" data-i18n="modals.import.importBtn">Import Effect</button>
                     </div>
                 </div>
             </div>
@@ -741,14 +741,14 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="shareModalLabel"><i class="bi bi-share-fill me-2"></i>Share Your Effect</h5>
+                        <h5 class="modal-title" id="shareModalLabel" data-i18n="modals.share.title"><i class="bi bi-share-fill me-2"></i>Share Your Effect</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Anyone with this link can view and load your effect.</p>
+                        <p data-i18n="modals.share.body">Anyone with this link can view and load your effect.</p>
                         <div class="input-group">
                             <input type="text" class="form-control" id="share-link-input" readonly>
-                            <button class="btn btn-primary" type="button" id="copy-share-link-btn">
+                            <button class="btn btn-primary" type="button" id="copy-share-link-btn" data-i18n="modals.share.copy">
                                 <i class="bi bi-clipboard"></i> Copy
                             </button>
                         </div>
@@ -761,18 +761,18 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-sliders me-2"></i>Export Properties</h5>
+                        <h5 class="modal-title" id="exportOptionsModalLabel" data-i18n="modals.exportOptions.title"><i class="bi bi-sliders me-2"></i>Export Properties</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" id="export-options-body">
-                        <p class="text-body-secondary">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
+                        <p class="text-body-secondary" data-i18n="modals.exportOptions.body">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
                         <div class="accordion" id="export-options-accordion">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="export-copy-code-btn"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
-                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Generate .zip File</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.exportOptions.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="export-copy-code-btn" data-i18n="modals.exportOptions.copyCode"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
+                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn" data-i18n="modals.exportOptions.generateZip"><i class="bi bi-file-earmark-zip-fill me-2"></i>Generate .zip File</button>
                     </div>
                 </div>
             </div>
@@ -782,13 +782,13 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i>Terms & Privacy</h5>
+                        <h5 class="modal-title" id="acceptTermsModalLabel" data-i18n="modals.acceptTerms.title"><i class="bi bi-shield-check me-2"></i>Terms & Privacy</h5>
                     </div>
                     <div class="modal-body">
-                        <p>By using this tool, you agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> and acknowledge our <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>.</p>
+                        <p data-i18n="[html]modals.acceptTerms.body">By using this tool, you agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#terms-modal" data-bs-dismiss="modal">Terms of Usage</a> and acknowledge our <a href="#" data-bs-toggle="modal" data-bs-target="#privacy-policy-modal" data-bs-dismiss="modal">Privacy Policy</a>.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal">I Accept</button>
+                        <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal" data-i18n="modals.acceptTerms.accept">I Accept</button>
                     </div>
                 </div>
             </div>
@@ -798,50 +798,50 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="copyPropsModalLabel"><i class="bi bi-clipboard-plus me-2"></i>Copy Properties</h5>
+                        <h5 class="modal-title" id="copyPropsModalLabel" data-i18n="modals.copyProps.title"><i class="bi bi-clipboard-plus me-2"></i>Copy Properties</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <form id="copy-props-form">
                         <div class="modal-body">
-                            <p>Select the property groups you want to copy from the source object.</p>
+                            <p data-i18n="modals.copyProps.body">Select the property groups you want to copy from the source object.</p>
                             <div class="list-group">
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-position" checked>
-                                    Position (X, Y)
+                                    <span data-i18n="modals.copyProps.pos">Position (X, Y)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-size" checked>
-                                    Size (Width, Height)
+                                    <span data-i18n="modals.copyProps.size">Size (Width, Height)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-rotation" checked>
-                                    Rotation & Rotation Speed
+                                    <span data-i18n="modals.copyProps.rot">Rotation & Rotation Speed</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-fill-style" checked>
-                                    Fill Style (Type, Colors, Gradient)
+                                    <span data-i18n="modals.copyProps.fill">Fill Style (Type, Colors, Gradient)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-animation" checked>
-                                    Fill Animation (Mode, Speed, Direction)
+                                    <span data-i18n="modals.copyProps.anim">Fill Animation (Mode, Speed, Direction)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-color-animation" checked>
-                                    Color Animation (Cycle Colors & Speed)
+                                    <span data-i18n="modals.copyProps.colAnim">Color Animation (Cycle Colors & Speed)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-shape-type">
-                                    Shape Type
+                                    <span data-i18n="modals.copyProps.shape">Shape Type</span>
                                 </label>
                                 <label class="list-group-item d-none" id="shape-specific-props-container">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-shape-specific">
-                                    Shape-Specific Properties (<span id="shape-specific-name"></span>)
+                                    <span data-i18n="modals.copyProps.shapeSpecific">Shape-Specific Properties</span> (<span id="shape-specific-name"></span>)
                                 </label>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn">Copy to Clipboard</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.copyProps.cancel">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn" data-i18n="modals.copyProps.copyBtn">Copy to Clipboard</button>
                         </div>
                     </form>
                 </div>
@@ -852,7 +852,7 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtEditorModalLabel">Pixel Art Editor</h5>
+                        <h5 class="modal-title" id="pixelArtEditorModalLabel" data-i18n="modals.pixelEditor.title">Pixel Art Editor</h5>
                         <div class="ms-auto d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-prev-frame-btn" title="Save and Go to Previous Frame"><i class="bi bi-arrow-left-circle"></i></button>
                             <span id="pixel-editor-frame-counter" class="text-body-secondary small font-monospace"></span>
@@ -867,32 +867,32 @@
                     <div class="modal-body">
                         <div class="row align-items-end mb-3">
                             <div class="col-md-4">
-                                <label for="pixel-editor-width" class="form-label-sm">Grid Width</label>
+                                <label for="pixel-editor-width" class="form-label-sm" data-i18n="modals.pixelEditor.width">Grid Width</label>
                                 <input type="number" class="form-control" id="pixel-editor-width" value="16" min="1" max="64">
                             </div>
                             <div class="col-md-4">
-                                <label for="pixel-editor-height" class="form-label-sm">Grid Height</label>
+                                <label for="pixel-editor-height" class="form-label-sm" data-i18n="modals.pixelEditor.height">Grid Height</label>
                                 <input type="number" class="form-control" id="pixel-editor-height" value="16" min="1" max="64">
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-secondary w-100" id="pixel-editor-resize-btn">Apply New Size</button>
+                                <button type="button" class="btn btn-secondary w-100" id="pixel-editor-resize-btn" data-i18n="modals.pixelEditor.applySize">Apply New Size</button>
                             </div>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
-                                <strong class="me-3">Tools:</strong>
+                                <strong class="me-3" data-i18n="modals.pixelEditor.tools">Tools:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-tools">
-                                    <button type="button" class="btn btn-sm btn-secondary active" id="pixel-editor-paint-btn" title="Paint Tool"><i class="bi bi-pencil-fill"></i> Paint</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-fill-btn" title="Fill Area"><i class="bi bi-paint-bucket"></i> Fill</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-h-btn" title="Flip Horizontal"><i class="bi bi-arrow-left-right"></i></button>
-                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-v-btn" title="Flip Vertical"><i class="bi bi-arrow-down-up"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary active" id="pixel-editor-paint-btn" title="Paint Tool" data-i18n="[title]modals.pixelEditor.paint"><i class="bi bi-pencil-fill"></i> <span data-i18n="modals.pixelEditor.paint">Paint</span></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-fill-btn" title="Fill Area" data-i18n="[title]modals.pixelEditor.fill"><i class="bi bi-paint-bucket"></i> <span data-i18n="modals.pixelEditor.fill">Fill</span></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-h-btn" title="Flip Horizontal" data-i18n="[title]modals.pixelEditor.flipH"><i class="bi bi-arrow-left-right"></i></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-v-btn" title="Flip Vertical" data-i18n="[title]modals.pixelEditor.flipV"><i class="bi bi-arrow-down-up"></i></button>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center">
                                 <strong class="me-3">Paint:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-palette">
-                                    <button type="button" class="btn btn-sm btn-light active" data-value="0.7" style="background: repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px;" title="Use object's main fill style (value: 0.7)">Selected Fill</button>
+                                    <button type="button" class="btn btn-sm btn-light active" data-value="0.7" style="background: repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px;" title="Use object's main fill style (value: 0.7)" data-i18n="modals.pixelEditor.selectedFill">Selected Fill</button>
                                 </div>
                             </div>
                         </div>
@@ -905,20 +905,20 @@
                         <hr>
                         <p>
                             <a class="btn btn-sm btn-secondary" data-bs-toggle="collapse" href="#collapseRawData" role="button" aria-expanded="false" aria-controls="collapseRawData">
-                                <i class="bi bi-code-slash"></i> View Raw Data
+                                <i class="bi bi-code-slash"></i> <span data-i18n="modals.pixelEditor.rawData">View Raw Data</span>
                             </a>
                         </p>
                         <div class="collapse" id="collapseRawData">
                             <div class="card card-body bg-dark">
-                                <label for="pixel-editor-raw-data" class="form-label-sm">JSON Data (Advanced)</label>
+                                <label for="pixel-editor-raw-data" class="form-label-sm" data-i18n="modals.pixelEditor.jsonLabel">JSON Data (Advanced)</label>
                                 <textarea id="pixel-editor-raw-data" class="form-control font-monospace" rows="5"></textarea>
                                 <div class="form-text">Changes here will override the visual editor if the JSON is valid.</div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="pixel-editor-save-btn">Apply Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.pixelEditor.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="pixel-editor-save-btn" data-i18n="modals.pixelEditor.apply">Apply Changes</button>
                     </div>
                 </div>
             </div>
@@ -928,33 +928,33 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pasteSpriteModalLabel"><i class="bi bi-clipboard-image me-2"></i>Paste Sprite Sheet</h5>
+                        <h5 class="modal-title" id="pasteSpriteModalLabel" data-i18n="modals.pasteSprite.title"><i class="bi bi-clipboard-image me-2"></i>Paste Sprite Sheet</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
+                        <p data-i18n="modals.pasteSprite.body">Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
                         <p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p>
                         <div class="row">
                             <div class="col">
-                                <label for="sprite-frame-width" class="form-label-sm">Single Frame Width</label>
+                                <label for="sprite-frame-width" class="form-label-sm" data-i18n="modals.pasteSprite.frameWidth">Single Frame Width</label>
                                 <input type="number" class="form-control" id="sprite-frame-width" value="16" min="1" max="128">
                             </div>
                             <div class="col">
-                                <label for="sprite-frame-height" class="form-label-sm">Single Frame Height</label>
+                                <label for="sprite-frame-height" class="form-label-sm" data-i18n="modals.pasteSprite.frameHeight">Single Frame Height</label>
                                 <input type="number" class="form-control" id="sprite-frame-height" value="16" min="1" max="128">
                             </div>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-downsample">
-                            <label class="form-check-label" for="sprite-downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
+                            <label class="form-check-label" for="sprite-downsample" data-i18n="modals.pasteSprite.downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-paste-append">
-                            <label class="form-check-label" for="sprite-paste-append">Append to existing frames (instead of replacing)</label>
+                            <label class="form-check-label" for="sprite-paste-append" data-i18n="modals.pasteSprite.append">Append to existing frames (instead of replacing)</label>
                         </div>
                         <hr>
                         <div class="d-grid">
-                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Paste from Clipboard</button>
+                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn" data-i18n="modals.pasteSprite.pasteBtn"><i class="bi bi-clipboard-check-fill me-2"></i>Paste from Clipboard</button>
                         </div>
                     </div>
                 </div>
@@ -965,7 +965,7 @@
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtGalleryModalLabel"><i class="bi bi-substack me-2"></i>Community Pixel Art</h5>
+                        <h5 class="modal-title" id="pixelArtGalleryModalLabel" data-i18n="modals.pixelGallery.title"><i class="bi bi-substack me-2"></i>Community Pixel Art</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -973,7 +973,7 @@
                             <div class="col-12">
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="pixel-art-search-input" class="form-control" placeholder="Search by effect name or creator...">
+                                    <input type="text" id="pixel-art-search-input" class="form-control" placeholder="Search by effect name or creator..." data-i18n="[placeholder]modals.pixelGallery.searchPlaceholder">
                                 </div>
                             </div>
                         </div>
@@ -994,43 +994,43 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="uploadGifModalLabel"><i class="bi bi-film me-2"></i>Upload GIF Options</h5>
+                        <h5 class="modal-title" id="uploadGifModalLabel" data-i18n="modals.uploadGif.title"><i class="bi bi-film me-2"></i>Upload GIF Options</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Specify the target pixel art dimensions for your animation.</p>
+                        <p data-i18n="modals.uploadGif.body">Specify the target pixel art dimensions for your animation.</p>
                         <div class="row">
                             <div class="col">
-                                <label for="gif-target-width" class="form-label-sm">Target Width</label>
+                                <label for="gif-target-width" class="form-label-sm" data-i18n="modals.uploadGif.targetWidth">Target Width</label>
                                 <input type="number" class="form-control" id="gif-target-width" value="16" min="1" max="128">
                             </div>
                             <div class="col">
-                                <label for="gif-target-height" class="form-label-sm">Target Height</label>
+                                <label for="gif-target-height" class="form-label-sm" data-i18n="modals.uploadGif.targetHeight">Target Height</label>
                                 <input type="number" class="form-control" id="gif-target-height" value="16" min="1" max="128">
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col">
-                                <label for="gif-max-colors" class="form-label-sm">Max Colors (2-32)</label>
+                                <label for="gif-max-colors" class="form-label-sm" data-i18n="modals.uploadGif.maxColors">Max Colors (2-32)</label>
                                 <input type="number" class="form-control" id="gif-max-colors" value="16" min="2" max="32">
-                                <div class="form-text">Reduces the GIF's palette to the specified number of colors.</div>
+                                <div class="form-text" data-i18n="modals.uploadGif.reduceText">Reduces the GIF's palette to the specified number of colors.</div>
                             </div>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="gif-append-frames">
-                            <label class="form-check-label" for="gif-append-frames">Append to existing frames (instead of replacing)</label>
+                            <label class="form-check-label" for="gif-append-frames" data-i18n="modals.uploadGif.append">Append to existing frames (instead of replacing)</label>
                         </div>
                         <hr>
                         <div id="gif-info-display" class="text-body-secondary small" style="display: none;">
-                            <p class="mb-1"><strong>Original GIF Info:</strong></p>
+                            <p class="mb-1"><strong data-i18n="modals.uploadGif.originalInfo">Original GIF Info:</strong></p>
                             <ul class="list-unstyled mb-0">
-                                <li>Dimensions: <span id="gif-info-dims">--</span></li>
-                                <li>Unique Colors: <span id="gif-info-colors">--</span></li>
+                                <li><span data-i18n="modals.uploadGif.dims">Dimensions:</span> <span id="gif-info-dims">--</span></li>
+                                <li><span data-i18n="modals.uploadGif.colors">Unique Colors:</span> <span id="gif-info-colors">--</span></li>
                             </ul>
                         </div>
                         <hr>
                         <div class="d-grid">
-                            <button type="button" class="btn btn-primary" id="confirm-gif-upload-btn">...</button>
+                            <button type="button" class="btn btn-primary" id="confirm-gif-upload-btn" data-i18n="modals.uploadGif.process">...</button>
                         </div>
                     </div>
                 </div>
@@ -1041,26 +1041,26 @@
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="colorMapperModalLabel"><i class="bi bi-palette-fill me-2"></i>Map Colors</h5>
+                        <h5 class="modal-title" id="colorMapperModalLabel" data-i18n="modals.colorMapper.title"><i class="bi bi-palette-fill me-2"></i>Map Colors</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Assign the most common colors from the first frame to the available slots in your object's palette.</p>
+                        <p data-i18n="modals.colorMapper.body">Assign the most common colors from the first frame to the available slots in your object's palette.</p>
                         <div class="row">
                             <div class="col-md-5">
-                                <h6 class="text-center">First Frame Preview</h6>
+                                <h6 class="text-center" data-i18n="modals.colorMapper.preview">First Frame Preview</h6>
                                 <canvas id="color-mapper-preview" class="w-100 border rounded" style="image-rendering: pixelated;"></canvas>
                             </div>
                             <div class="col-md-7">
-                                <h6 class="text-center">Color Assignments</h6>
+                                <h6 class="text-center" data-i18n="modals.colorMapper.assignments">Color Assignments</h6>
                                 <div id="color-mapper-assignments" class="d-grid gap-2">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-color-map-btn">Process Image</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.colorMapper.cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-color-map-btn" data-i18n="modals.colorMapper.process">Process Image</button>
                     </div>
                 </div>
             </div>
@@ -1070,7 +1070,7 @@
             <div class="modal-dialog modal-dialog-centered" style="width: 280px;">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtColorPickerModalLabel">Edit Color</h5>
+                        <h5 class="modal-title" id="pixelArtColorPickerModalLabel" data-i18n="modals.editColor.title">Edit Color</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body d-flex flex-column justify-content-center">
@@ -1089,7 +1089,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="modals.editColor.done">Done</button>
                     </div>
                 </div>
             </div>
@@ -1099,7 +1099,7 @@
             <div class="modal-dialog modal-dialog-centered" style="width: 280px;">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Select Color</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title" data-i18n="modals.selectColor.title">Select Color</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body d-flex justify-content-center">
                         <div id="general-picker-container"></div>
@@ -1112,14 +1112,14 @@
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="gifSearchModalLabel"><i class="bi bi-film me-2"></i>Search for GIFs</h5>
+                        <h5 class="modal-title" id="gifSearchModalLabel" data-i18n="modals.gifSearch.title"><i class="bi bi-film me-2"></i>Search for GIFs</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form id="gif-search-form" class="mb-3">
                             <div class="input-group">
-                                <input type="text" id="gif-search-input" class="form-control" placeholder="Search for GIFs..." required>
-                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+                                <input type="text" id="gif-search-input" class="form-control" placeholder="Search for GIFs..." required data-i18n="[placeholder]modals.gifSearch.placeholder">
+                                <button class="btn btn-primary" type="submit" data-i18n="[title]modals.gifSearch.search"><i class="bi bi-search"></i> <span data-i18n="modals.gifSearch.search">Search</span></button>
                             </div>
                         </form>
                         <div id="gif-results-container" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
@@ -1128,7 +1128,7 @@
                     <div class="modal-footer d-flex justify-content-between align-items-center">
                         <div>Powered by: <img src="xQVVOLyi.png" alt="Powered by Giphy" height="30"></div>
                         <div id="gif-search-footer" style="display: none;"></div>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modals.gifSearch.close">Close</button>
                     </div>
                 </div>
             </div>

@@ -323,6 +323,7 @@ window.translations = {
                 "Segments": "Segments",
                 "Segment Angle": "Segment Angle",
                 "General Settings": "General Settings",
+                "Global Overrides": "Global Overrides",
                 "Number of Rows": "Number of Rows",
                 "Number of Columns": "Number of Columns",
                 "Line Width": "Line Width",
@@ -387,6 +388,175 @@ window.translations = {
                 "Fit Mode": "Fit Mode",
                 "Filter": "Filter",
                 "Filter Value": "Filter Value"
+            },
+            "modals": {
+                "loadProject": {
+                    "title": "Load Project",
+                    "body": "Select a project to load. This will overwrite your current workspace."
+                },
+                "saveProject": {
+                    "title": "Save Project",
+                    "nameLabel": "Project Name:",
+                    "placeholder": "Enter a name for your project...",
+                    "existing": "Existing Projects:",
+                    "cancel": "Cancel",
+                    "save": "Save Project"
+                },
+                "notification": {
+                    "title": "Success",
+                    "ok": "OK"
+                },
+                "confirmOverwrite": {
+                    "title": "Confirm Overwrite",
+                    "body": "A project with this name already exists. Do you want to overwrite it?",
+                    "cancel": "Cancel",
+                    "overwrite": "Overwrite"
+                },
+                "help": {
+                    "title": "How to Use the Effect Builder",
+                    "interface": "Interface Overview",
+                    "canvas": "The Canvas & Toolbar",
+                    "advanced": "Advanced Shapes & Tools",
+                    "reactivity": "Audio & Sensor Reactivity",
+                    "saving": "Saving, Loading & Exporting",
+                    "installing": "Installing Custom Effects in SignalRGB",
+                    "gotIt": "Got it!"
+                },
+                "about": {
+                    "title": "About Effect Builder",
+                    "version": "Version:",
+                    "projectHome": "Project Home:",
+                    "viewGithub": "View on GitHub",
+                    "termsPrivacy": "Terms & Privacy:",
+                    "termsLink": "Terms of Usage",
+                    "privacyLink": "Privacy Policy",
+                    "credits": "Credits & Inspirations",
+                    "developers": "For Developers & Contributors",
+                    "close": "Close"
+                },
+                "terms": {
+                    "title": "Terms of Usage",
+                    "accept": "I Accept"
+                },
+                "privacy": {
+                    "title": "Privacy Policy",
+                    "close": "Close"
+                },
+                "import": {
+                    "title": "Import from Meta Tags",
+                    "body": "Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.",
+                    "cancel": "Cancel",
+                    "importBtn": "Import Effect"
+                },
+                "share": {
+                    "title": "Share Your Effect",
+                    "body": "Anyone with this link can view and load your effect.",
+                    "copy": "Copy"
+                },
+                "exportOptions": {
+                    "title": "Export Properties",
+                    "body": "Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.",
+                    "cancel": "Cancel",
+                    "copyCode": "Copy Code",
+                    "generateZip": "Generate .zip File",
+                    "exposeAll": "Expose All",
+                    "hardcodeAll": "Hardcode All",
+                    "presets": "Presets:",
+                    "presetAnimation": "Animation",
+                    "presetColors": "Colors",
+                    "presetGeometry": "Geometry",
+                    "presetGradients": "Gradients",
+                    "presetMinimal": "Minimal (User-Friendly)",
+                    "presetStatic": "Static (No Animation)"
+                },
+                "acceptTerms": {
+                    "title": "Terms & Privacy",
+                    "body": "By using this tool, you agree to the <a href=\"#\" data-bs-toggle=\"modal\" data-bs-target=\"#terms-modal\" data-bs-dismiss=\"modal\">Terms of Usage</a> and acknowledge our <a href=\"#\" data-bs-toggle=\"modal\" data-bs-target=\"#privacy-policy-modal\" data-bs-dismiss=\"modal\">Privacy Policy</a>.",
+                    "accept": "I Accept"
+                },
+                "copyProps": {
+                    "title": "Copy Properties",
+                    "body": "Select the property groups you want to copy from the source object.",
+                    "cancel": "Cancel",
+                    "copyBtn": "Copy to Clipboard",
+                    "pos": "Position (X, Y)",
+                    "size": "Size (Width, Height)",
+                    "rot": "Rotation & Rotation Speed",
+                    "fill": "Fill Style (Type, Colors, Gradient)",
+                    "anim": "Fill Animation (Mode, Speed, Direction)",
+                    "colAnim": "Color Animation (Cycle Colors & Speed)",
+                    "shape": "Shape Type",
+                    "shapeSpecific": "Shape-Specific Properties"
+                },
+                "pixelEditor": {
+                    "title": "Pixel Art Editor",
+                    "width": "Grid Width",
+                    "height": "Grid Height",
+                    "applySize": "Apply New Size",
+                    "tools": "Tools:",
+                    "paint": "Paint",
+                    "fill": "Fill",
+                    "flipH": "Flip Horizontal",
+                    "flipV": "Flip Vertical",
+                    "selectedFill": "Selected Fill",
+                    "rawData": "View Raw Data",
+                    "jsonLabel": "JSON Data (Advanced)",
+                    "cancel": "Cancel",
+                    "apply": "Apply Changes"
+                },
+                "pasteSprite": {
+                    "title": "Paste Sprite Sheet",
+                    "body": "Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.",
+                    "frameWidth": "Single Frame Width",
+                    "frameHeight": "Single Frame Height",
+                    "downsample": "Downsample to frame dimensions (for hi-res pixel art)",
+                    "append": "Append to existing frames (instead of replacing)",
+                    "pasteBtn": "Paste from Clipboard"
+                },
+                "pixelGallery": {
+                    "title": "Community Pixel Art",
+                    "searchPlaceholder": "Search by effect name or creator..."
+                },
+                "uploadGif": {
+                    "title": "Upload GIF Options",
+                    "body": "Specify the target pixel art dimensions for your animation.",
+                    "targetWidth": "Target Width",
+                    "targetHeight": "Target Height",
+                    "maxColors": "Max Colors (2-32)",
+                    "reduceText": "Reduces the GIF's palette to the specified number of colors.",
+                    "append": "Append to existing frames (instead of replacing)",
+                    "originalInfo": "Original GIF Info:",
+                    "dims": "Dimensions:",
+                    "colors": "Unique Colors:",
+                    "process": "..."
+                },
+                "colorMapper": {
+                    "title": "Map Colors",
+                    "body": "Assign the most common colors from the first frame to the available slots in your object's palette.",
+                    "preview": "First Frame Preview",
+                    "assignments": "Color Assignments",
+                    "cancel": "Cancel",
+                    "process": "Process Image"
+                },
+                "editColor": {
+                    "title": "Edit Color",
+                    "done": "Done"
+                },
+                "selectColor": {
+                    "title": "Select Color"
+                },
+                "gifSearch": {
+                    "title": "Search for GIFs",
+                    "placeholder": "Search for GIFs...",
+                    "search": "Search",
+                    "close": "Close"
+                }
+            },
+            "gradientPicker": {
+                "color": "Color:",
+                "hex": "HEX",
+                "position": "Position:",
+                "help": "<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down"
             },
             "values": {
                 "Rectangle": "Rectangle",
@@ -788,6 +958,7 @@ window.translations = {
                 "Segments": "Segmentos",
                 "Segment Angle": "Ángulo de Segmento",
                 "General Settings": "Configuración General",
+                "Global Overrides": "Configuración Global",
                 "Number of Rows": "Filas",
                 "Number of Columns": "Columnas",
                 "Line Width": "Ancho de Línea",
@@ -852,6 +1023,175 @@ window.translations = {
                 "Fit Mode": "Modo de Ajuste",
                 "Filter": "Filtro",
                 "Filter Value": "Valor de Filtro"
+            },
+            "modals": {
+                "loadProject": {
+                    "title": "Cargar Proyecto",
+                    "body": "Selecciona un proyecto para cargar. Esto sobrescribirá tu espacio de trabajo actual."
+                },
+                "saveProject": {
+                    "title": "Guardar Proyecto",
+                    "nameLabel": "Nombre del Proyecto:",
+                    "placeholder": "Introduce un nombre para tu proyecto...",
+                    "existing": "Proyectos Existentes:",
+                    "cancel": "Cancelar",
+                    "save": "Guardar Proyecto"
+                },
+                "notification": {
+                    "title": "Éxito",
+                    "ok": "OK"
+                },
+                "confirmOverwrite": {
+                    "title": "Confirmar Sobrescritura",
+                    "body": "Ya existe un proyecto con este nombre. ¿Quieres sobrescribirlo?",
+                    "cancel": "Cancelar",
+                    "overwrite": "Sobrescribir"
+                },
+                "help": {
+                    "title": "Cómo Usar el Constructor de Efectos",
+                    "interface": "Resumen de la Interfaz",
+                    "canvas": "El Lienzo y Barra de Herramientas",
+                    "advanced": "Formas y Herramientas Avanzadas",
+                    "reactivity": "Reactividad de Audio y Sensores",
+                    "saving": "Guardar, Cargar y Exportar",
+                    "installing": "Instalar Efectos Personalizados en SignalRGB",
+                    "gotIt": "¡Entendido!"
+                },
+                "about": {
+                    "title": "Acerca del Constructor de Efectos",
+                    "version": "Versión:",
+                    "projectHome": "Página del Proyecto:",
+                    "viewGithub": "Ver en GitHub",
+                    "termsPrivacy": "Términos y Privacidad:",
+                    "termsLink": "Términos de Uso",
+                    "privacyLink": "Política de Privacidad",
+                    "credits": "Créditos e Inspiraciones",
+                    "developers": "Para Desarrolladores y Colaboradores",
+                    "close": "Cerrar"
+                },
+                "terms": {
+                    "title": "Términos de Uso",
+                    "accept": "Acepto"
+                },
+                "privacy": {
+                    "title": "Política de Privacidad",
+                    "close": "Cerrar"
+                },
+                "import": {
+                    "title": "Importar desde Meta Tags",
+                    "body": "Pega el bloque completo de etiquetas <strong>&lt;meta&gt;</strong> de un archivo de efecto antiguo a continuación. Esto sobrescribirá tu espacio de trabajo actual.",
+                    "cancel": "Cancelar",
+                    "importBtn": "Importar Efecto"
+                },
+                "share": {
+                    "title": "Compartir tu Efecto",
+                    "body": "Cualquiera con este enlace puede ver y cargar tu efecto.",
+                    "copy": "Copiar"
+                },
+                "exportOptions": {
+                    "title": "Exportar Propiedades",
+                    "body": "Selecciona qué propiedades serán editables por los usuarios en SignalRGB. Las propiedades no marcadas se codificarán de forma rígida en el efecto.",
+                    "cancel": "Cancelar",
+                    "copyCode": "Copiar Código",
+                    "generateZip": "Generar Archivo .zip",
+                    "exposeAll": "Exponer Todo",
+                    "hardcodeAll": "Codificar Todo",
+                    "presets": "Preajustes:",
+                    "presetAnimation": "Animación",
+                    "presetColors": "Colores",
+                    "presetGeometry": "Geometría",
+                    "presetGradients": "Gradientes",
+                    "presetMinimal": "Mínimo (Fácil)",
+                    "presetStatic": "Estático (Sin Animación)"
+                },
+                "acceptTerms": {
+                    "title": "Términos y Privacidad",
+                    "body": "Al usar esta herramienta, aceptas los <a href=\"#\" data-bs-toggle=\"modal\" data-bs-target=\"#terms-modal\" data-bs-dismiss=\"modal\">Términos de Uso</a> y reconoces nuestra <a href=\"#\" data-bs-toggle=\"modal\" data-bs-target=\"#privacy-policy-modal\" data-bs-dismiss=\"modal\">Política de Privacidad</a>.",
+                    "accept": "Acepto"
+                },
+                "copyProps": {
+                    "title": "Copiar Propiedades",
+                    "body": "Selecciona los grupos de propiedades que deseas copiar del objeto fuente.",
+                    "cancel": "Cancelar",
+                    "copyBtn": "Copiar al Portapapeles",
+                    "pos": "Posición (X, Y)",
+                    "size": "Tamaño (Ancho, Alto)",
+                    "rot": "Rotación y Velocidad",
+                    "fill": "Estilo de Relleno (Tipo, Colores, Gradiente)",
+                    "anim": "Animación de Relleno (Modo, Velocidad, Dirección)",
+                    "colAnim": "Animación de Color (Ciclo y Velocidad)",
+                    "shape": "Tipo de Forma",
+                    "shapeSpecific": "Propiedades Específicas de la Forma"
+                },
+                "pixelEditor": {
+                    "title": "Editor de Pixel Art",
+                    "width": "Ancho de Cuadrícula",
+                    "height": "Alto de Cuadrícula",
+                    "applySize": "Aplicar Nuevo Tamaño",
+                    "tools": "Herramientas:",
+                    "paint": "Pintar",
+                    "fill": "Rellenar",
+                    "flipH": "Voltear Horizontal",
+                    "flipV": "Voltear Vertical",
+                    "selectedFill": "Relleno Seleccionado",
+                    "rawData": "Ver Datos Sin Procesar",
+                    "jsonLabel": "Datos JSON (Avanzado)",
+                    "cancel": "Cancelar",
+                    "apply": "Aplicar Cambios"
+                },
+                "pasteSprite": {
+                    "title": "Pegar Hoja de Sprites",
+                    "body": "Introduce las dimensiones de un **cuadro único**. El código detectará automáticamente el número de filas y columnas en la hoja de sprites que pegues.",
+                    "frameWidth": "Ancho de Cuadro Único",
+                    "frameHeight": "Alto de Cuadro Único",
+                    "downsample": "Reducir a dimensiones del cuadro (para pixel art de alta resolución)",
+                    "append": "Añadir a cuadros existentes (en lugar de reemplazar)",
+                    "pasteBtn": "Pegar desde Portapapeles"
+                },
+                "pixelGallery": {
+                    "title": "Pixel Art de la Comunidad",
+                    "searchPlaceholder": "Buscar por nombre de efecto o creador..."
+                },
+                "uploadGif": {
+                    "title": "Opciones de Carga de GIF",
+                    "body": "Especifica las dimensiones de pixel art objetivo para tu animación.",
+                    "targetWidth": "Ancho Objetivo",
+                    "targetHeight": "Alto Objetivo",
+                    "maxColors": "Máx Colores (2-32)",
+                    "reduceText": "Reduce la paleta del GIF al número especificado de colores.",
+                    "append": "Añadir a cuadros existentes (en lugar de reemplazar)",
+                    "originalInfo": "Info Original del GIF:",
+                    "dims": "Dimensiones:",
+                    "colors": "Colores Únicos:",
+                    "process": "..."
+                },
+                "colorMapper": {
+                    "title": "Mapear Colores",
+                    "body": "Asigna los colores más comunes del primer cuadro a las ranuras disponibles en la paleta de tu objeto.",
+                    "preview": "Vista Previa del Primer Cuadro",
+                    "assignments": "Asignaciones de Color",
+                    "cancel": "Cancelar",
+                    "process": "Procesar Imagen"
+                },
+                "editColor": {
+                    "title": "Editar Color",
+                    "done": "Hecho"
+                },
+                "selectColor": {
+                    "title": "Seleccionar Color"
+                },
+                "gifSearch": {
+                    "title": "Buscar GIFs",
+                    "placeholder": "Buscar GIFs...",
+                    "search": "Buscar",
+                    "close": "Cerrar"
+                }
+            },
+            "gradientPicker": {
+                "color": "Color:",
+                "hex": "HEX",
+                "position": "Posición:",
+                "help": "<strong>Añadir:</strong> Clic en espacio vacío | <strong>Editar:</strong> Clic en input HEX o doble clic en marcador | <strong>Eliminar:</strong> Arrastrar marcador abajo"
             },
              "values": {
                 "Rectangle": "Rectángulo",
