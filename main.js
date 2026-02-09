@@ -830,8 +830,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- I18n Initialization ---
     if (typeof i18next !== 'undefined') {
+        const savedLang = localStorage.getItem('srgb_lang') || 'en';
         i18next.init({
-            lng: 'en', // Default language
+            lng: savedLang, // Load from storage or default to 'en'
             fallbackLng: 'en',
             debug: false,
             resources: window.translations || {}
@@ -907,9 +908,21 @@ document.addEventListener('DOMContentLoaded', function () {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const lang = e.target.getAttribute('data-lang');
+            // Save to local storage
+            localStorage.setItem('srgb_lang', lang);
+
             i18next.changeLanguage(lang, (err, t) => {
                 if (err) return console.log('something went wrong loading', err);
                 updateTranslations();
+
+                // Explicitly close the dropdown
+                const dropdownToggle = document.getElementById('languageDropdown');
+                if (dropdownToggle) {
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
             });
         });
     });
@@ -10160,7 +10173,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
 
             if (querySnapshot.empty && commentList.innerHTML === '') {
-                commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">No comments yet. Be the first!</p>';
+                const noCommentsText = (typeof i18next !== 'undefined') ? i18next.t('comments.noComments', "No comments yet. Be the first!") : "No comments yet. Be the first!";
+                commentList.innerHTML = `<p id="no-comments-placeholder" class="text-muted">${noCommentsText}</p>`;
                 return;
             }
 
