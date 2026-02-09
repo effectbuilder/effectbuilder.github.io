@@ -828,6 +828,92 @@ async function setVersionWithCaching() {
 document.addEventListener('DOMContentLoaded', function () {
     setVersionWithCaching();
 
+    // --- I18n Initialization ---
+    if (typeof i18next !== 'undefined') {
+        i18next.init({
+            lng: 'en', // Default language
+            fallbackLng: 'en',
+            debug: false,
+            resources: window.translations || {}
+        }, function(err, t) {
+            if (err) return console.error('i18next init error:', err);
+            updateTranslations();
+        });
+    }
+
+    function updateTranslations() {
+        // Translate elements with data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const keyString = element.getAttribute('data-i18n');
+            if (keyString) {
+                const parts = keyString.split(';');
+                parts.forEach(part => {
+                    if (part.startsWith('[')) {
+                        const match = part.match(/\[(.*?)\](.*)/);
+                        if (match) {
+                            const attr = match[1];
+                            const k = match[2];
+                            const translated = i18next.t(k);
+                            element.setAttribute(attr, translated);
+
+                            // Special handling for Bootstrap tooltips
+                            if (attr === 'title') {
+                                // If the element has a tooltip instance, update it
+                                const tooltip = bootstrap.Tooltip.getInstance(element);
+                                if (tooltip) {
+                                    // Update the title attribute which Bootstrap uses
+                                    element.setAttribute('data-bs-original-title', translated);
+                                }
+                            }
+                        }
+                    } else {
+                        // If it's a button with an icon, we only want to replace the text node
+                        if (element.children.length > 0) {
+                            // Find the first text node
+                            let textNode = null;
+                            element.childNodes.forEach(node => {
+                                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
+                                    textNode = node;
+                                }
+                            });
+
+                            if (textNode) {
+                                textNode.textContent = ' ' + i18next.t(part);
+                            } else {
+                                // Fallback if no text node found, append text or just leave it?
+                                // For now, let's just append if it's "New" button e.g.
+                                // <i class="..."></i> New
+                                // The text node is " New".
+                            }
+                        } else {
+                            element.textContent = i18next.t(part);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Re-render the form if it exists
+        if (typeof renderForm === 'function' && typeof configStore !== 'undefined' && configStore.length > 0) {
+             renderForm();
+             if (typeof updateFormValuesFromObjects === 'function') {
+                updateFormValuesFromObjects();
+             }
+        }
+    }
+
+    // Language Switcher Event Listener
+    document.querySelectorAll('.lang-switch').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const lang = e.target.getAttribute('data-lang');
+            i18next.changeLanguage(lang, (err, t) => {
+                if (err) return console.log('something went wrong loading', err);
+                updateTranslations();
+            });
+        });
+    });
+
     /**
      * Handles the click event for liking or unliking an effect.
      * This function now only sends the update to Firestore; the real-time
@@ -4168,7 +4254,7 @@ document.addEventListener('DOMContentLoaded', function () {
             labelEl.className = 'form-label';
             if (label) {
                 const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
-                labelEl.textContent = cleanLabel;
+                labelEl.textContent = (typeof i18next !== 'undefined') ? i18next.t('properties.' + cleanLabel, cleanLabel) : cleanLabel;
                 labelEl.title = description || `Controls the ${cleanLabel.toLowerCase()}`;
             }
             labelEl.dataset.bsToggle = 'tooltip';
@@ -4218,7 +4304,8 @@ document.addEventListener('DOMContentLoaded', function () {
             vals.forEach(val => {
                 const option = document.createElement('option');
                 option.value = val;
-                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
+                const displayVal = val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
+                option.textContent = (typeof i18next !== 'undefined') ? i18next.t('values.' + displayVal, displayVal) : displayVal;
                 if (val === defaultValue) option.selected = true;
                 select.appendChild(option);
             });
@@ -4237,7 +4324,7 @@ document.addEventListener('DOMContentLoaded', function () {
             checkLabel.htmlFor = controlId;
             if (label) {
                 const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
-                checkLabel.textContent = cleanLabel;
+                checkLabel.textContent = (typeof i18next !== 'undefined') ? i18next.t('properties.' + cleanLabel, cleanLabel) : cleanLabel;
             }
             checkGroup.appendChild(check);
             checkGroup.appendChild(checkLabel);
@@ -5233,7 +5320,7 @@ document.addEventListener('DOMContentLoaded', function () {
         generalLeftGroup.className = 'd-flex align-items-center';
         const generalHeaderText = document.createElement('span');
         generalHeaderText.className = 'fs-5 fw-semibold';
-        generalHeaderText.textContent = 'General Settings';
+        generalHeaderText.textContent = (typeof i18next !== 'undefined') ? i18next.t('properties.General Settings', 'General Settings') : 'General Settings';
         generalLeftGroup.appendChild(generalHeaderText);
         generalHeaderBar.appendChild(generalLeftGroup);
         const generalRightGroup = document.createElement('div');
