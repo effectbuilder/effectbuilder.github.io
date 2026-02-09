@@ -1,6 +1,82 @@
 // gallery.js - COMPLETE FILE (with Cards & Lazy Loading)
 
 document.addEventListener('DOMContentLoaded', function () {
+    // --- I18n Initialization ---
+    if (typeof i18next !== 'undefined') {
+        i18next.init({
+            lng: 'en', // Default language
+            fallbackLng: 'en',
+            debug: false,
+            resources: window.translations || {}
+        }, function(err, t) {
+            if (err) return console.error('i18next init error:', err);
+            updateTranslations();
+        });
+    }
+
+    function updateTranslations() {
+        // Translate elements with data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const keyString = element.getAttribute('data-i18n');
+            if (keyString) {
+                const parts = keyString.split(';');
+                parts.forEach(part => {
+                    if (part.startsWith('[')) {
+                        const match = part.match(/\[(.*?)\](.*)/);
+                        if (match) {
+                            const attr = match[1];
+                            const k = match[2];
+                            const translated = i18next.t(k);
+                            element.setAttribute(attr, translated);
+                        }
+                    } else {
+                        // For buttons with icons, try to update text node only
+                        if (element.children.length > 0) {
+                            let textNode = null;
+                            element.childNodes.forEach(node => {
+                                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
+                                    textNode = node;
+                                }
+                            });
+                            if (textNode) {
+                                textNode.textContent = ' ' + i18next.t(part);
+                            } else {
+                                // element.textContent = i18next.t(part);
+                            }
+                        } else {
+                            element.textContent = i18next.t(part);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Re-render gallery cards to apply translations to dynamic content
+        // Only if we have projects loaded
+        const galleryList = document.getElementById('gallery-project-list');
+        if (galleryList && galleryList.children.length > 0 && !galleryList.querySelector('#initial-loading-spinner')) {
+             // We need to re-render the current set of projects.
+             // Since we don't have the raw project data easily accessible here without fetching again or storing it,
+             // a simple reload of the public gallery (which fetches) is the safest way to ensure consistency.
+             // However, fetching again might be overkill.
+             // Ideally, we'd store `currentProjectData` globally.
+             // For now, let's just trigger a reload if the user switches language.
+             loadPublicGallery();
+        }
+    }
+
+    // Language Switcher Event Listener
+    document.querySelectorAll('.lang-switch').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const lang = e.target.getAttribute('data-lang');
+            i18next.changeLanguage(lang, (err, t) => {
+                if (err) return console.log('something went wrong loading', err);
+                updateTranslations();
+            });
+        });
+    });
+
     const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -129,7 +205,8 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleLikeAction(docId) {
         const user = window.auth.currentUser;
         if (!user) {
-            alert("You must be logged in to like or unlike an effect.");
+            const msg = (typeof i18next !== 'undefined') ? i18next.t('gallery.loginToLike', 'You must be logged in to like or unlike an effect.') : 'You must be logged in to like or unlike an effect.';
+            alert(msg);
             return;
         }
 
@@ -341,10 +418,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isOwner || isAdmin) {
                 const isFeatured = project.featured === true;
                 
-                const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>Edit</button></li>` : '';
-                const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? '<i class="bi bi-star-fill me-2"></i>Un-feature' : '<i class="bi bi-star me-2"></i>Feature'}</button></li>` : '';
-                const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
-                const deleteHTML = isAdmin ? `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger" id="admin-delete-btn-${project.docId}"><i class="bi bi-trash me-2"></i>Delete</button></li>` : '';
+                const editTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.edit', 'Edit') : 'Edit';
+                const featureTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.feature', 'Feature') : 'Feature';
+                const unfeatureTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.unfeature', 'Un-feature') : 'Un-feature';
+                const regenTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.regenThumb', 'Regen Thumb') : 'Regen Thumb';
+                const deleteTxt = (typeof i18next !== 'undefined') ? i18next.t('controls.delete', 'Delete') : 'Delete';
+
+                const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>${editTxt}</button></li>` : '';
+                const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? `<i class="bi bi-star-fill me-2"></i>${unfeatureTxt}` : `<i class="bi bi-star me-2"></i>${featureTxt}`}</button></li>` : '';
+                const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>${regenTxt}</a></li>` : '';
+                const deleteHTML = isAdmin ? `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger" id="admin-delete-btn-${project.docId}"><i class="bi bi-trash me-2"></i>${deleteTxt}</button></li>` : '';
 
                 // MODIFIED: Matches the provided image (Light Grey Circle, Dark Dots)
                 // Uses 'btn-light' for the color and flexbox for perfect centering
@@ -376,6 +459,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const card = document.createElement('div');
             card.className = 'card shadow-sm h-100';
             
+            // Translations for card content
+            const byTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.by', 'By') : 'By';
+            const anonTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.anonymous', 'Anonymous') : 'Anonymous';
+            const loadTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.load', 'Load') : 'Load';
+            const likeTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.like', 'Like') : 'Like';
+            const likedTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.liked', 'Liked') : 'Liked';
+            const unlikeTxt = (typeof i18next !== 'undefined') ? i18next.t('gallery.unlike', 'Unlike') : 'Unlike';
+
             // Note: We create a parent 'position-relative' div to hold the Link AND the Menu separate
             card.innerHTML = `
                 <div class="position-relative">
@@ -393,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title text-truncate">${project.name}</h5>
-                    <small class="card-subtitle mb-2 text-body-secondary">By ${project.creatorName || 'Anonymous'}</small>
+                    <small class="card-subtitle mb-2 text-body-secondary">${byTxt} ${project.creatorName || anonTxt}</small>
                     <p class="card-text small text-body-secondary flex-grow-1" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="${description}">
                         ${description}
                     </p>
@@ -406,9 +497,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                 </div>
                 <div class="card-footer d-flex gap-2">
-                    <a href="./?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>Load</a>
-                    <button class="btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'} w-100" id="gallery-like-btn-${project.docId}" title="${userHasLiked ? 'Unlike' : 'Like'}">
-                        ${userHasLiked ? '<i class="bi bi-heart-fill"></i> Liked' : '<i class="bi bi-heart"></i> Like'}
+                    <a href="./?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>${loadTxt}</a>
+                    <button class="btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'} w-100" id="gallery-like-btn-${project.docId}" title="${userHasLiked ? unlikeTxt : likeTxt}">
+                        ${userHasLiked ? `<i class="bi bi-heart-fill"></i> ${likedTxt}` : `<i class="bi bi-heart"></i> ${likeTxt}`}
                     </button>
                 </div>
             `;

@@ -4963,7 +4963,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createObjectPanel(obj, objectConfigs, activeCollapseStates, activeTabStates) {
         const id = obj.id;
-        const objectName = obj.name || `Object ${id}`;
+        const defaultName = (typeof i18next !== 'undefined') ? i18next.t('controls.objectDefaultName', 'Object') : 'Object';
+        const objectName = obj.name || `${defaultName} ${id}`;
         const fieldset = document.createElement('fieldset');
         fieldset.className = 'border p-2 mb-3 rounded bg-body-tertiary';
         fieldset.dataset.objectId = id;
@@ -5138,12 +5139,17 @@ document.addEventListener('DOMContentLoaded', function () {
         lockButton.type = 'button';
         lockButton.dataset.id = id;
         lockButton.dataset.bsToggle = 'tooltip';
-        lockButton.title = isLocked ? 'Unlock Object' : 'Lock Object';
+        const lockTitle = isLocked
+            ? ((typeof i18next !== 'undefined') ? i18next.t('controls.unlock', 'Unlock Object') : 'Unlock Object')
+            : ((typeof i18next !== 'undefined') ? i18next.t('controls.lock', 'Lock Object') : 'Lock Object');
+        lockButton.title = lockTitle;
         lockButton.innerHTML = `<i class="bi ${isLocked ? 'bi-lock-fill' : 'bi-unlock-fill'}"></i>`;
         controlsGroup.appendChild(lockButton);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
-        dropdown.innerHTML = `<button class="btn btn-sm btn-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>Duplicate</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul>`;
+        const duplicateText = (typeof i18next !== 'undefined') ? i18next.t('controls.duplicate', 'Duplicate') : 'Duplicate';
+        const deleteText = (typeof i18next !== 'undefined') ? i18next.t('controls.delete', 'Delete') : 'Delete';
+        dropdown.innerHTML = `<button class="btn btn-sm btn-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>${duplicateText}</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>${deleteText}</a></li></ul>`;
         controlsGroup.appendChild(dropdown);
         const collapseIcon = document.createElement('span');
         collapseIcon.className = `legend-button ${showObject ? '' : 'collapsed'} ms-2`;
