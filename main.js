@@ -5203,7 +5203,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const icon = document.createElement('i');
                 icon.className = `bi ${controlGroupMap[groupName].icon} me-2`;
                 tabButton.appendChild(icon);
-                tabButton.appendChild(document.createTextNode(groupName.replace(/-/g, ' & ')));
+                const translatedGroupName = (typeof i18next !== 'undefined') ? i18next.t('groups.' + groupName, groupName.replace(/-/g, ' & ')) : groupName.replace(/-/g, ' & ');
+                tabButton.appendChild(document.createTextNode(translatedGroupName));
                 tabItem.appendChild(tabButton);
                 tabNav.appendChild(tabItem);
                 const pane = document.createElement('div');
@@ -8351,17 +8352,17 @@ document.addEventListener('DOMContentLoaded', function () {
         switch (type) {
             case 'success':
                 toastHeader.classList.add('bg-success');
-                toastTitle.textContent = 'Success';
+                toastTitle.textContent = (typeof i18next !== 'undefined') ? i18next.t('toasts.success', 'Success') : 'Success';
                 toastIcon.classList.add('bi-check-circle-fill');
                 break;
             case 'danger':
                 toastHeader.classList.add('bg-danger');
-                toastTitle.textContent = 'Error';
+                toastTitle.textContent = (typeof i18next !== 'undefined') ? i18next.t('toasts.error', 'Error') : 'Error';
                 toastIcon.classList.add('bi-exclamation-triangle-fill');
                 break;
             default: // 'info'
                 toastHeader.classList.add('bg-primary');
-                toastTitle.textContent = 'Notification';
+                toastTitle.textContent = (typeof i18next !== 'undefined') ? i18next.t('toasts.notification', 'Notification') : 'Notification';
                 toastIcon.classList.add('bi-info-circle-fill');
                 break;
         }

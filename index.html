@@ -136,50 +136,50 @@
             <div id="right-panel" class="d-flex flex-column h-100">
                 <div id="toolbar" class="bg-body-tertiary p-2 rounded d-flex flex-wrap">
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group" aria-label="History actions">
-                        <button class="btn btn-secondary" id="undo-btn" data-bs-toggle="tooltip" title="Undo (Ctrl+Z)" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
-                        <button class="btn btn-secondary" id="redo-btn" data-bs-toggle="tooltip" title="Redo (Ctrl+Y)" disabled><i class="bi bi-arrow-clockwise"></i></button>
+                        <button class="btn btn-secondary" id="undo-btn" data-bs-toggle="tooltip" title="Undo (Ctrl+Z)" disabled data-i18n="[title]toolbar.undo"><i class="bi bi-arrow-counterclockwise"></i></button>
+                        <button class="btn btn-secondary" id="redo-btn" data-bs-toggle="tooltip" title="Redo (Ctrl+Y)" disabled data-i18n="[title]toolbar.redo"><i class="bi bi-arrow-clockwise"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" id="copy-props-btn" data-bs-toggle="tooltip" title="Copy Properties"><i class="bi bi-clipboard-plus"></i></button>
-                        <button type="button" class="btn btn-secondary" id="paste-props-btn" data-bs-toggle="tooltip" title="Paste Properties" disabled><i class="bi bi-clipboard-check"></i></button>
+                        <button type="button" class="btn btn-secondary" id="copy-props-btn" data-bs-toggle="tooltip" title="Copy Properties" data-i18n="[title]toolbar.copyProps"><i class="bi bi-clipboard-plus"></i></button>
+                        <button type="button" class="btn btn-secondary" id="paste-props-btn" data-bs-toggle="tooltip" title="Paste Properties" disabled data-i18n="[title]toolbar.pasteProps"><i class="bi bi-clipboard-check"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-left" data-bs-toggle="tooltip" title="Align Left to Screen"><i class="bi bi-align-start"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-h-center" data-bs-toggle="tooltip" title="Align Horizontal Center to Screen"><i class="bi bi-align-center"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-right" data-bs-toggle="tooltip" title="Align Right to Screen"><i class="bi bi-align-end"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-left" data-bs-toggle="tooltip" title="Align Left to Screen" data-i18n="[title]toolbar.alignLeft"><i class="bi bi-align-start"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-h-center" data-bs-toggle="tooltip" title="Align Horizontal Center to Screen" data-i18n="[title]toolbar.alignHCenter"><i class="bi bi-align-center"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-right" data-bs-toggle="tooltip" title="Align Right to Screen" data-i18n="[title]toolbar.alignRight"><i class="bi bi-align-end"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-top" data-bs-toggle="tooltip" title="Align Top to Screen"><i class="bi bi-align-top"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-v-center" data-bs-toggle="tooltip" title="Align Vertical Center to Screen"><i class="bi bi-align-middle"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-bottom" data-bs-toggle="tooltip" title="Align Bottom to Screen"><i class="bi bi-align-bottom"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-top" data-bs-toggle="tooltip" title="Align Top to Screen" data-i18n="[title]toolbar.alignTop"><i class="bi bi-align-top"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-v-center" data-bs-toggle="tooltip" title="Align Vertical Center to Screen" data-i18n="[title]toolbar.alignVCenter"><i class="bi bi-align-middle"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="align-screen-bottom" data-bs-toggle="tooltip" title="Align Bottom to Screen" data-i18n="[title]toolbar.alignBottom"><i class="bi bi-align-bottom"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="match-width" data-bs-toggle="tooltip" title="Match Width of First Selected"><i class="bi bi-arrows-expand-vertical"></i> W</button>
-                        <button type="button" class="btn btn-secondary" data-action="match-height" data-bs-toggle="tooltip" title="Match Height of First Selected"><i class="bi bi-arrows-expand"></i> H</button>
-                        <button type="button" class="btn btn-secondary" data-action="match-both" data-bs-toggle="tooltip" title="Match Size of First Selected"><i class="bi bi-fullscreen"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="fit-canvas" data-bs-toggle="tooltip" title="Fit to Canvas"><i class="bi bi-arrows-fullscreen"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="match-width" data-bs-toggle="tooltip" title="Match Width of First Selected" data-i18n="[title]toolbar.matchWidth"><i class="bi bi-arrows-expand-vertical"></i> W</button>
+                        <button type="button" class="btn btn-secondary" data-action="match-height" data-bs-toggle="tooltip" title="Match Height of First Selected" data-i18n="[title]toolbar.matchHeight"><i class="bi bi-arrows-expand"></i> H</button>
+                        <button type="button" class="btn btn-secondary" data-action="match-both" data-bs-toggle="tooltip" title="Match Size of First Selected" data-i18n="[title]toolbar.matchSize"><i class="bi bi-fullscreen"></i></button>
+                        <button type="button" class="btn btn-secondary" data-action="fit-canvas" data-bs-toggle="tooltip" title="Fit to Canvas" data-i18n="[title]toolbar.fitCanvas"><i class="bi bi-arrows-fullscreen"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" id="constrain-btn" data-bs-toggle="tooltip" title="Snap to Canvas"><i class="bi bi-magnet-fill"></i></button>
-                        <button type="button" class="btn btn-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" title="Match Text Size to Cell Height" disabled><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
-                        <button id="startAudioBtn" class="btn btn-primary">Start Listening</button>
+                        <button type="button" class="btn btn-secondary" id="constrain-btn" data-bs-toggle="tooltip" title="Snap to Canvas" data-i18n="[title]toolbar.snapCanvas"><i class="bi bi-magnet-fill"></i></button>
+                        <button type="button" class="btn btn-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" title="Match Text Size to Cell Height" disabled data-i18n="[title]toolbar.matchText"><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
+                        <button id="startAudioBtn" class="btn btn-primary" data-i18n="toolbar.startListening">Start Listening</button>
                     </div>
 
                     <div class="btn-group btn-group-sm me-2 mb-1 align-items-center" role="group">
-                        <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard">
-                            <i class="bi bi-clipboard-plus"></i> Paste Layout Screenshot
+                        <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard" data-i18n="[title]toolbar.pasteLayout">
+                            <i class="bi bi-clipboard-plus"></i> <span data-i18n="toolbar.pasteLayout">Paste Layout Screenshot</span>
                         </button>
 
-                        <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay">
+                        <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay" data-i18n="[title]toolbar.toggleOverlay">
                             <i class="bi bi-eye"></i>
                         </button>
 
-                        <button type="button" class="btn btn-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" title="Delete Layout Screenshot" disabled>
+                        <button type="button" class="btn btn-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" title="Delete Layout Screenshot" disabled data-i18n="[title]toolbar.deleteOverlay">
                             <i class="bi bi-trash"></i>
                         </button>
 
                         <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">
-                            <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity">
+                            <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity" data-i18n="[title]toolbar.overlayOpacity">
                         </div>
                     </div>
                 </div>
@@ -205,38 +205,38 @@
                 </div>
                 <div id="component-comments-section" class="m-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="text-body-emphasis mb-0">Comments</h4>
+                        <h4 class="text-body-emphasis mb-0" data-i18n="comments.header">Comments</h4>
                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="true" aria-controls="comment-collapse-wrapper" title="Toggle Comments">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
 
                     <div class="collapse show" id="comment-collapse-wrapper">
-                        <div class="alert alert-info small p-2" role="alert">
+                        <div class="alert alert-info small p-2" role="alert" data-i18n="comments.publicNotice">
                             <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
                         </div>
                         <div id="comment-list" class="pe-2 mb-3" style="max-height: 400px; overflow-y: auto;">
                             <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                Loading comments...
+                                <span data-i18n="comments.loading">Loading comments...</span>
                             </p>
-                            <p id="comments-save-prompt" class="text-muted" style="display: none;">
+                            <p id="comments-save-prompt" class="text-muted" style="display: none;" data-i18n="comments.savePrompt">
                                 Save this component to the cloud to enable comments.
                             </p>
                         </div>
 
                         <form id="comment-form" class="pe-2" style="display: none;">
                             <div class="mb-2">
-                                <label for="comment-textarea" class="form-label form-label-sm">Add a comment</label>
-                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." required></textarea>
+                                <label for="comment-textarea" class="form-label form-label-sm" data-i18n="comments.addComment">Add a comment</label>
+                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." data-i18n="[placeholder]comments.placeholder" required></textarea>
                             </div>
-                            <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
+                            <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm" data-i18n="comments.post">
                                 <i class="bi bi-send me-1"></i> Post Comment
                             </button>
                         </form>
 
                         <div id="comment-login-prompt" class="alert alert-info" style="display: none;">
-                            Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
+                            <span data-i18n="comments.signinPrompt">Please sign in to post a comment.</span> <a href="#" id="comment-login-link" data-i18n="nav.signin">sign in</a>
                         </div>
                     </div>
                 </div>
