@@ -16,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.10.0/i18next.min.js"></script>
+    <script src="languages.js"></script>
     <script type="module" src="firebase.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -39,37 +41,46 @@
             <div class="ms-auto d-flex align-items-center">
 
                 <div class="btn-group me-3" role="group" aria-label="Project management actions">
-                    <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
-                    <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
-                    <button class="btn btn-primary" id="save-ws-btn" data-bs-toggle="tooltip" title="Save current workspace to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
-                    <button class="btn btn-secondary" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
-                    <button class="btn btn-secondary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
-                    <button class="btn btn-secondary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
+                    <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace" data-i18n="[title]nav.new;nav.new"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
+                    <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled data-i18n="[title]nav.open;nav.open"><i class="bi bi-folder2-open me-1"></i> Open</button>
+                    <button class="btn btn-primary" id="save-ws-btn" data-bs-toggle="tooltip" title="Save current workspace to the cloud" disabled data-i18n="[title]nav.save;nav.save"><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
+                    <button class="btn btn-secondary" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled data-i18n="[title]nav.share;nav.share"><i class="bi bi-share me-1"></i> Share</button>
+                    <button class="btn btn-secondary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file" data-i18n="[title]nav.export;nav.export"> <i class="bi bi-download me-1"></i> Export </button>
+                    <button class="btn btn-secondary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed." data-i18n="[title]nav.import;nav.import"><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Community">
-                    <a href="./gallery.html" class="btn btn-primary" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</a>
-                    <a href="./showcase.html" class="btn btn-primary" title="Browse the Effect Showcase page"> <i class="bi bi-view-list me-1"></i> Effect Showcase </a>
+                    <a href="./gallery.html" class="btn btn-primary" title="Browse the Community Gallery" data-i18n="[title]nav.gallery;nav.gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</a>
+                    <a href="./showcase.html" class="btn btn-primary" title="Browse the Effect Showcase page" data-i18n="[title]nav.showcase;nav.showcase"> <i class="bi bi-view-list me-1"></i> Effect Showcase </a>
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Editor">
-                    <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
+                    <a href="./builder" class="btn btn-dark" title="Component Builder" data-i18n="[title]nav.builder;nav.builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
 
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
-                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
-                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
-                    <a class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
+                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help" data-i18n="[title]nav.help"><i class="bi bi-question-circle"></i></button>
+                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About" data-i18n="[title]nav.about"><i class="bi bi-info-circle"></i></button>
+                    <a class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub" data-i18n="[title]nav.report">
                         <i class="bi bi-github"></i>
                     </a>
-                    <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Change Language">
+                            <i class="bi bi-translate"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item lang-switch" href="#" data-lang="en">English</a></li>
+                            <li><a class="dropdown-item lang-switch" href="#" data-lang="es">Español</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme" data-i18n="[title]nav.theme">
                         <i class="bi" id="theme-icon"></i>
                     </button>
                 </div>
 
                 <div id="auth-notification-block" class="d-flex align-items-center">
 
-                    <button class="btn btn-success" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
+                    <button class="btn btn-success" id="login-btn" data-i18n="nav.signin"><i class="bi bi-google me-2"></i>Sign In</button>
 
                     <div class="btn-group d-none" id="user-session-group" role="group" aria-label="User actions">
 
@@ -99,7 +110,7 @@
                             <span id="user-display"></span>
                         </span>
 
-                        <button class="btn btn-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
+                        <button class="btn btn-danger" id="logout-btn" title="Sign Out" data-i18n="[title]nav.signout"><i class="bi bi-box-arrow-right"></i></button>
                     </div>
 
                 </div>
@@ -112,12 +123,12 @@
             <div id="left-panel" class="h-100 p-3 border-end bg-body-tertiary" style="overflow: auto;">
                 <div class="h-100 d-flex flex-column">
                     <div class="flex-grow-1 overflow-auto pe-2">
-                        <h4 class="text-body-emphasis">Controls</h4>
+                        <h4 class="text-body-emphasis" data-i18n="controls.title">Controls</h4>
                         <form id="controls-form"></form>
                     </div>
                     <div class="mt-3 d-flex gap-2">
-                        <button class="btn btn-success w-100" id="add-object-btn" data-bs-toggle="tooltip" title="Add a new default object to the scene"><i class="bi bi-plus-circle"></i> Add Object</button>
-                        <button class="btn btn-primary w-100" id="add-polyline-btn" data-bs-toggle="tooltip" title="Draw a new polyline"><i class="bi bi-pen"></i> Add Polyline</button>
+                        <button class="btn btn-success w-100" id="add-object-btn" data-bs-toggle="tooltip" title="Add a new default object to the scene" data-i18n="[title]controls.addObject;controls.addObject"><i class="bi bi-plus-circle"></i> Add Object</button>
+                        <button class="btn btn-primary w-100" id="add-polyline-btn" data-bs-toggle="tooltip" title="Draw a new polyline" data-i18n="[title]controls.addPolyline;controls.addPolyline"><i class="bi bi-pen"></i> Add Polyline</button>
                     </div>
                 </div>
             </div>
