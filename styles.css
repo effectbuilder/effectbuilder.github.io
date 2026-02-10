@@ -516,3 +516,76 @@ body {
 .btn-kebab::after {
     display: none;
 }
+
+/* --------------------------------------------------------
+   GTranslate Custom Styling (Bootstrap Dark Theme)
+   -------------------------------------------------------- */
+
+/* 1. Target the selector inside the wrapper */
+.gtranslate_wrapper select {
+    /* Base Button Styling */
+    background-color: #2b3035 !important;   /* Bootstrap Dark Gray */
+    color: #fff !important;                 /* White Text */
+    border: 1px solid #495057 !important;   /* Dark Border */
+    border-radius: 6px !important;          /* Bootstrap Rounded Corners */
+    padding: 6px 36px 6px 12px !important;  /* Padding (Right extra for arrow) */
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    cursor: pointer !important;
+    outline: none !important;
+    
+    /* 2. Custom White Arrow (Replaces default black arrow) */
+    appearance: none !important;            /* Hides native browser arrow */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 12px 12px !important;
+}
+
+/* 3. Hover Effect */
+.gtranslate_wrapper select:hover {
+    background-color: #343a40 !important;
+    border-color: #6c757d !important;
+}
+
+/* 4. Focus/Active Effect (Blue Glow) */
+.gtranslate_wrapper select:focus {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* 5. Hide the floating popup if it ever tries to appear */
+#goog-gt-tt {
+    display: none !important;
+}
+
+/* STABILIZE THE GOOGLE GLOBE (Robust Version) */
+
+/* 1. Target the first DIV inside your wrapper */
+/* This catches the container regardless of its weird class name */
+#google_translate_element > div {
+    z-index: 10000 !important;
+    position: fixed !important;
+    
+    /* Hardware acceleration to stop flickering */
+    transform: translate3d(0, 0, 0) !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    
+    /* Position settings */
+    bottom: 20px !important;
+    right: 20px !important;
+    top: auto !important;
+    left: auto !important;
+}
+
+/* 2. Target the SVG (The actual globe graphic) */
+/* This ensures the vector graphic itself is stable */
+#google_translate_element svg {
+    transform: translateZ(0); 
+    shape-rendering: geometricPrecision;
+    width: 48px !important; /* Optional: Enforce a stable size */
+    height: 48px !important;
+}
