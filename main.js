@@ -6439,191 +6439,1408 @@ document.addEventListener('DOMContentLoaded', function () {
      * @returns {object[]} An array of default configuration objects.
      */
     // Update this for a new property
+    /**
+     * Generates a default set of configuration properties for a new object.
+     * @param {number} newId - The ID for the new object.
+     * @returns {object[]} An array of default configuration objects.
+     */
     function getDefaultObjectConfig(newId) {
+        // Helper for translation with fallback
+        const t = (key, text) => (typeof i18next !== 'undefined' ? i18next.t(key, text) : text);
+        
+        // Translate the default object name (e.g., "Object" -> "Objeto")
+        const objName = t('controls.objectDefaultName', 'Object');
+
         return [
             // Geometry & Transform
-            { property: `obj${newId}_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'rectangle', values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline,gif', description: 'The basic shape of the object.' },
-            { property: `obj${newId}_x`, label: `Object ${newId}: X Position`, type: 'number', default: '10', min: '0', max: '320', description: 'The horizontal position of the object on the canvas.' },
-            { property: `obj${newId}_y`, label: `Object ${newId}: Y Position`, type: 'number', default: '10', min: '0', max: '200', description: 'The vertical position of the object on the canvas.' },
-            { property: `obj${newId}_width`, label: `Object ${newId}: Width`, type: 'number', default: '50', min: '2', max: '320', description: 'The width of the object.' },
-            { property: `obj${newId}_height`, label: `Object ${newId}: Height`, type: 'number', default: '38', min: '2', max: '200', description: 'The height of the object.' },
-            { property: `obj${newId}_rotation`, label: `Object ${newId}: Rotation`, type: 'number', default: '0', min: '-360', max: '360', description: 'The static rotation of the object in degrees.' },
+            {
+                property: `obj${newId}_shape`,
+                label: `${objName} ${newId}: Shape`,
+                type: 'combobox',
+                default: 'rectangle',
+                values: 'rectangle,circle,ring,polygon,star,text,oscilloscope,tetris,fire,fire-radial,pixel-art,audio-visualizer,spawner,strimer,polyline,gif',
+                description: t('descriptions.Shape', 'The basic shape of the object.')
+            },
+            {
+                property: `obj${newId}_x`,
+                label: `${objName} ${newId}: X Position`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '320',
+                description: t('descriptions.X Position', 'The horizontal position of the object on the canvas.')
+            },
+            {
+                property: `obj${newId}_y`,
+                label: `${objName} ${newId}: Y Position`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Y Position', 'The vertical position of the object on the canvas.')
+            },
+            {
+                property: `obj${newId}_width`,
+                label: `${objName} ${newId}: Width`,
+                type: 'number',
+                default: '50',
+                min: '2',
+                max: '320',
+                description: t('descriptions.Width', 'The width of the object.')
+            },
+            {
+                property: `obj${newId}_height`,
+                label: `${objName} ${newId}: Height`,
+                type: 'number',
+                default: '38',
+                min: '2',
+                max: '200',
+                description: t('descriptions.Height', 'The height of the object.')
+            },
+            {
+                property: `obj${newId}_rotation`,
+                label: `${objName} ${newId}: Rotation`,
+                type: 'number',
+                default: '0',
+                min: '-360',
+                max: '360',
+                description: t('descriptions.Rotation', 'The static rotation of the object in degrees.')
+            },
 
             // Fill Style & Animation
-            { property: `obj${newId}_fillShape`, label: `Object ${newId}: Fill Shape`, type: 'boolean', default: 'false', description: 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.' },
-            { property: `obj${newId}_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'linear', values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic,cycle-all-blocks', description: 'The type of color fill or gradient to use.' },
-            { property: `obj${newId}_gradientStops`, label: `Object ${newId}: Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]', description: 'The colors and positions of the gradient. The default is a fiery gradient.' },
-            { property: `obj${newId}_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.' },
-            { property: `obj${newId}_animationMode`, label: `Object ${newId}: Animation Mode`, type: 'combobox', values: 'loop,bounce,bounce-reversed,bounce-random', default: 'loop', description: 'Determines how the gradient animation behaves.' },
-            { property: `obj${newId}_animationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '50', min: '0', max: '100', description: 'Master speed for particle systems, gradient scroll, and other animations.' },
-            { property: `obj${newId}_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false', description: 'Animates the colors by cycling through the color spectrum.' },
-            { property: `obj${newId}_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which colors cycle when "Cycle Colors" is enabled.' },
-            { property: `obj${newId}_rotationSpeed`, label: `Object ${newId}: Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the object. Overrides static rotation.' },
-            { property: `obj${newId}_scrollDir`, label: `Object ${newId}: Scroll Direction`, type: 'combobox', values: 'right,left,up,down', default: 'right', description: 'The direction the gradient animation moves.' },
-            { property: `obj${newId}_phaseOffset`, label: `Object ${newId}: Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the gradient animation for each item in a grid, seismic wave, or Tetris block, creating a cascading effect.' },
+            {
+                property: `obj${newId}_fillShape`,
+                label: `${objName} ${newId}: Fill Shape`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Fill Shape', 'Fills the interior of the shape with the selected fill style. For polylines, this will close the path.')
+            },
+            {
+                property: `obj${newId}_gradType`,
+                label: `${objName} ${newId}: Fill Type`,
+                type: 'combobox',
+                default: 'linear',
+                values: 'none,solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic,cycle-all-blocks',
+                description: t('descriptions.Fill Type', 'The type of color fill or gradient to use.')
+            },
+            {
+                property: `obj${newId}_gradientStops`,
+                label: `${objName} ${newId}: Gradient Colors`,
+                type: 'gradientpicker',
+                default: '[{"color":"#FFA500","position":0},{"color":"#FF4500","position":0.5},{"color":"#8B0000","position":1}]',
+                description: t('descriptions.Gradient Colors', 'The colors and positions of the gradient. The default is a fiery gradient.')
+            },
+            {
+                property: `obj${newId}_useSharpGradient`,
+                label: `${objName} ${newId}: Use Sharp Gradient`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Use Sharp Gradient', 'If checked, creates a hard line between colors in Linear/Radial gradients instead of a smooth blend.')
+            },
+            {
+                property: `obj${newId}_animationMode`,
+                label: `${objName} ${newId}: Animation Mode`,
+                type: 'combobox',
+                values: 'loop,bounce,bounce-reversed,bounce-random',
+                default: 'loop',
+                description: t('descriptions.Animation Mode', 'Determines how the gradient animation behaves.')
+            },
+            {
+                property: `obj${newId}_animationSpeed`,
+                label: `${objName} ${newId}: Animation Speed`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Animation Speed', 'Master speed for particle systems, gradient scroll, and other animations.')
+            },
+            {
+                property: `obj${newId}_cycleColors`,
+                label: `${objName} ${newId}: Cycle Colors`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Cycle Colors', 'Animates the colors by cycling through the color spectrum.')
+            },
+            {
+                property: `obj${newId}_cycleSpeed`,
+                label: `${objName} ${newId}: Color Cycle Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Color Cycle Speed', 'The speed at which colors cycle when "Cycle Colors" is enabled.')
+            },
+            {
+                property: `obj${newId}_rotationSpeed`,
+                label: `${objName} ${newId}: Rotation Speed`,
+                type: 'number',
+                default: '0',
+                min: '-100',
+                max: '100',
+                description: t('descriptions.Rotation Speed', 'The continuous rotation speed of the object. Overrides static rotation.')
+            },
+            {
+                property: `obj${newId}_scrollDir`,
+                label: `${objName} ${newId}: Scroll Direction`,
+                type: 'combobox',
+                values: 'right,left,up,down',
+                default: 'right',
+                description: t('descriptions.Scroll Direction', 'The direction the gradient animation moves.')
+            },
+            {
+                property: `obj${newId}_phaseOffset`,
+                label: `${objName} ${newId}: Phase Offset`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Phase Offset', 'Offsets the gradient animation for each item in a grid, seismic wave, or Tetris block, creating a cascading effect.')
+            },
 
             // Shape-Specific Properties
-            { property: `obj${newId}_sides`, label: `Object ${newId}: Sides`, type: 'number', default: '6', min: '3', max: '50', description: '(Polygon) The number of sides for the polygon.' },
-            { property: `obj${newId}_points`, label: `Object ${newId}: Points`, type: 'number', default: '5', min: '3', max: '50', description: '(Star) The number of points on the star.' },
-            { property: `obj${newId}_starInnerRadius`, label: `Object ${newId}: Inner Radius %`, type: 'number', default: '50', min: '1', max: '99', description: '(Star) The size of the inner points as a percentage of the outer radius.' },
-            { property: `obj${newId}_innerDiameter`, label: `Object ${newId}: Inner Diameter`, type: 'number', default: '25', min: '1', max: '318', description: '(Ring) The diameter of the inner hole of the ring.' },
-            { property: `obj${newId}_numberOfSegments`, label: `Object ${newId}: Segments`, type: 'number', default: '12', min: '1', max: '50', description: '(Ring) The number of individual segments that make up the ring.' },
-            { property: `obj${newId}_angularWidth`, label: `Object ${newId}: Segment Angle`, type: 'number', min: '1', max: '360', default: '20', description: '(Ring) The width of each ring segment, in degrees.' },
-            { property: `obj${newId}_numberOfRows`, label: `Object ${newId}: Number of Rows`, type: 'number', default: '1', min: '1', max: '100', description: '(Grid) The number of vertical cells in the grid.' },
-            { property: `obj${newId}_numberOfColumns`, label: `Object ${newId}: Number of Columns`, type: 'number', default: '1', min: '1', max: '100', description: '(Grid) The number of horizontal cells in the grid.' },
-            { property: `obj${newId}_text`, label: `Object ${newId}: Text`, type: 'textfield', default: 'New Text', description: '(Text) The content displayed within the text object.' },
-            { property: `obj${newId}_fontSize`, label: `Object ${newId}: Font Size`, type: 'number', default: '15', min: '2', max: '100', description: '(Text) The size of the text.' },
-            { property: `obj${newId}_textAlign`, label: `Object ${newId}: Justification`, type: 'combobox', values: 'left,center,right', default: 'center', description: '(Text) The horizontal alignment of the text.' },
-            { property: `obj${newId}_pixelFont`, label: `Object ${newId}: Pixel Font Style`, type: 'combobox', values: 'small,large', default: 'small', description: '(Text) The style of the pixelated font.' },
-            { property: `obj${newId}_textAnimation`, label: `Object ${newId}: Text Animation`, type: 'combobox', values: 'none,marquee,typewriter,wave', default: 'none', description: '(Text) The animation style for the text.' },
-            { property: `obj${newId}_textAnimationSpeed`, label: `Object ${newId}: Text Scroll Speed`, type: 'number', min: '1', max: '100', default: '10', description: '(Text) The speed of the text animation.' },
-            { property: `obj${newId}_showTime`, label: `Object ${newId}: Show Current Time`, type: 'boolean', default: 'false', description: 'Overrides the text content to show the current time.' },
-            { property: `obj${newId}_showDate`, label: `Object ${newId}: Show Current Date`, type: 'boolean', default: 'false', description: 'Overrides the text content to show the current date.' },
-            { property: `obj${newId}_lineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '1', min: '1', max: '20', description: '(Oscilloscope) The thickness of the oscilloscope line.' },
-            { property: `obj${newId}_waveType`, label: `Object ${newId}: Wave Type`, type: 'combobox', default: 'sine', values: 'sine,square,sawtooth,triangle,earthquake', description: '(Oscilloscope) The shape of the wave being displayed.' },
-            { property: `obj${newId}_frequency`, label: `Object ${newId}: Frequency / Wave Peaks`, type: 'number', default: '5', min: '1', max: '50', description: '(Oscilloscope) The number of wave peaks displayed across the shape.' },
-            { property: `obj${newId}_oscDisplayMode`, label: `Object ${newId}: Display Mode`, type: 'combobox', default: 'linear', values: 'linear,radial,seismic', description: '(Oscilloscope) The layout of the oscilloscope animation.' },
-            { property: `obj${newId}_pulseDepth`, label: `Object ${newId}: Pulse Depth`, type: 'number', default: '50', min: '0', max: '100', description: 'The intensity of the wave\'s amplitude or pulse effect.' },
-            { property: `obj${newId}_enableWaveAnimation`, label: `Object ${newId}: Enable Wave Animation`, type: 'boolean', default: 'true', description: 'Toggles the movement of the oscilloscope wave.' },
-            { property: `obj${newId}_oscAnimationSpeed`, label: `Object ${newId}: Wave Animation Speed`, type: 'number', min: '0', max: '100', default: '10', description: 'Controls the speed of the oscilloscope wave movement, independent of the fill animation.' },
-            { property: `obj${newId}_waveStyle`, label: `Object ${newId}: Seismic Wave Style`, type: 'combobox', default: 'wavy', values: 'wavy,round', description: '(Oscilloscope) The style of the seismic wave.' },
-            { property: `obj${newId}_waveCount`, label: `Object ${newId}: Seismic Wave Count`, type: 'number', default: '5', min: '1', max: '20', description: '(Oscilloscope) The number of seismic waves to display.' },
-            { property: `obj${newId}_tetrisBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '10', min: '1', max: '50', description: '(Tetris) The number of blocks in the animation cycle.' },
-            { property: `obj${newId}_tetrisAnimation`, label: `Object ${newId}: Drop Physics`, type: 'combobox', values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed,mix,mix-gravity,mix-gravity-reversed', default: 'gravity', description: '(Tetris) The physics governing how the blocks fall.' },
-            { property: `obj${newId}_tetrisSpeed`, label: `Object ${newId}: Drop/Fade-in Speed`, type: 'number', default: '5', min: '1', max: '100', description: '(Tetris) The speed of the drop animation.' },
-            { property: `obj${newId}_tetrisBounce`, label: `Object ${newId}: Bounce Factor`, type: 'number', default: '50', min: '0', max: '90', description: '(Tetris) How much the blocks bounce on impact.' },
-            { property: `obj${newId}_tetrisHoldTime`, label: `Object ${newId}: Hold Time`, type: 'number', default: '50', min: '0', max: '200', description: '(Tetris) For fade-in-out, the time blocks remain visible before fading out.' },
-            { property: `obj${newId}_tetrisMixColorMode`, label: `Object ${newId}: Mix Color Mode`, type: 'combobox', values: 'Average,Custom', default: 'Average', description: '(Tetris Mix) Color used when blocks meet/exit center.' },
-            { property: `obj${newId}_tetrisCustomMixColor`, label: `Object ${newId}: Custom Mix Color`, type: 'color', default: '#FFFFFF', description: '(Tetris Mix) The specific color to use if Mode is Custom.' },
-            { property: `obj${newId}_tetrisBlurEdges`, label: `Object ${newId}: Blur Edges`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.' },
-            { property: `obj${newId}_tetrisHold`, label: `Object ${newId}: Hold at Ends`, type: 'boolean', default: 'false', description: '(Tetris/Comet) Pauses the comet at the start and end of its path.' },
-            { property: `obj${newId}_fireSpread`, label: `Object ${newId}: Fire Spread %`, type: 'number', default: '100', min: '1', max: '100', description: '(Fire Radial) Controls how far the flames spread from the center.' },
-            { property: `obj${newId}_pixelArtFrames`, label: `Object ${newId}: Pixel Art Frames`, type: 'pixelarttable', default: '[{"data":"[[1]]","duration":1}]', description: '(Pixel Art) Manage animation frames.' },
+            {
+                property: `obj${newId}_sides`,
+                label: `${objName} ${newId}: Sides`,
+                type: 'number',
+                default: '6',
+                min: '3',
+                max: '50',
+                description: t('descriptions.Sides', '(Polygon) The number of sides for the polygon.')
+            },
+            {
+                property: `obj${newId}_points`,
+                label: `${objName} ${newId}: Points`,
+                type: 'number',
+                default: '5',
+                min: '3',
+                max: '50',
+                description: t('descriptions.Points', '(Star) The number of points on the star.')
+            },
+            {
+                property: `obj${newId}_starInnerRadius`,
+                label: `${objName} ${newId}: Inner Radius %`,
+                type: 'number',
+                default: '50',
+                min: '1',
+                max: '99',
+                description: t('descriptions.Inner Radius %', '(Star) The size of the inner points as a percentage of the outer radius.')
+            },
+            {
+                property: `obj${newId}_innerDiameter`,
+                label: `${objName} ${newId}: Inner Diameter`,
+                type: 'number',
+                default: '25',
+                min: '1',
+                max: '318',
+                description: t('descriptions.Inner Diameter', '(Ring) The diameter of the inner hole of the ring.')
+            },
+            {
+                property: `obj${newId}_numberOfSegments`,
+                label: `${objName} ${newId}: Segments`,
+                type: 'number',
+                default: '12',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Segments', '(Ring) The number of individual segments that make up the ring.')
+            },
+            {
+                property: `obj${newId}_angularWidth`,
+                label: `${objName} ${newId}: Segment Angle`,
+                type: 'number',
+                min: '1',
+                max: '360',
+                default: '20',
+                description: t('descriptions.Segment Angle', '(Ring) The width of each ring segment, in degrees.')
+            },
+            {
+                property: `obj${newId}_numberOfRows`,
+                label: `${objName} ${newId}: Number of Rows`,
+                type: 'number',
+                default: '1',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Number of Rows', '(Grid) The number of vertical cells in the grid.')
+            },
+            {
+                property: `obj${newId}_numberOfColumns`,
+                label: `${objName} ${newId}: Number of Columns`,
+                type: 'number',
+                default: '1',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Number of Columns', '(Grid) The number of horizontal cells in the grid.')
+            },
+            {
+                property: `obj${newId}_text`,
+                label: `${objName} ${newId}: Text`,
+                type: 'textfield',
+                default: 'New Text',
+                description: t('descriptions.Text', '(Text) The content displayed within the text object.')
+            },
+            {
+                property: `obj${newId}_fontSize`,
+                label: `${objName} ${newId}: Font Size`,
+                type: 'number',
+                default: '15',
+                min: '2',
+                max: '100',
+                description: t('descriptions.Font Size', '(Text) The size of the text.')
+            },
+            {
+                property: `obj${newId}_textAlign`,
+                label: `${objName} ${newId}: Justification`,
+                type: 'combobox',
+                values: 'left,center,right',
+                default: 'center',
+                description: t('descriptions.Justification', '(Text) The horizontal alignment of the text.')
+            },
+            {
+                property: `obj${newId}_pixelFont`,
+                label: `${objName} ${newId}: Pixel Font Style`,
+                type: 'combobox',
+                values: 'small,large',
+                default: 'small',
+                description: t('descriptions.Pixel Font Style', '(Text) The style of the pixelated font.')
+            },
+            {
+                property: `obj${newId}_textAnimation`,
+                label: `${objName} ${newId}: Text Animation`,
+                type: 'combobox',
+                values: 'none,marquee,typewriter,wave',
+                default: 'none',
+                description: t('descriptions.Text Animation', '(Text) The animation style for the text.')
+            },
+            {
+                property: `obj${newId}_textAnimationSpeed`,
+                label: `${objName} ${newId}: Text Scroll Speed`,
+                type: 'number',
+                min: '1',
+                max: '100',
+                default: '10',
+                description: t('descriptions.Text Scroll Speed', '(Text) The speed of the text animation.')
+            },
+            {
+                property: `obj${newId}_showTime`,
+                label: `${objName} ${newId}: Show Current Time`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Show Current Time', 'Overrides the text content to show the current time.')
+            },
+            {
+                property: `obj${newId}_showDate`,
+                label: `${objName} ${newId}: Show Current Date`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Show Current Date', 'Overrides the text content to show the current date.')
+            },
+            {
+                property: `obj${newId}_lineWidth`,
+                label: `${objName} ${newId}: Line Width`,
+                type: 'number',
+                default: '1',
+                min: '1',
+                max: '20',
+                description: t('descriptions.Line Width', '(Oscilloscope) The thickness of the oscilloscope line.')
+            },
+            {
+                property: `obj${newId}_waveType`,
+                label: `${objName} ${newId}: Wave Type`,
+                type: 'combobox',
+                default: 'sine',
+                values: 'sine,square,sawtooth,triangle,earthquake',
+                description: t('descriptions.Wave Type', '(Oscilloscope) The shape of the wave being displayed.')
+            },
+            {
+                property: `obj${newId}_frequency`,
+                label: `${objName} ${newId}: Frequency`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Frequency', '(Oscilloscope) The number of wave peaks displayed across the shape.')
+            },
+            {
+                property: `obj${newId}_oscDisplayMode`,
+                label: `${objName} ${newId}: Display Mode`,
+                type: 'combobox',
+                default: 'linear',
+                values: 'linear,radial,seismic',
+                description: t('descriptions.Display Mode', '(Oscilloscope) The layout of the oscilloscope animation.')
+            },
+            {
+                property: `obj${newId}_pulseDepth`,
+                label: `${objName} ${newId}: Pulse Depth`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Pulse Depth', 'The intensity of the wave\'s amplitude or pulse effect.')
+            },
+            {
+                property: `obj${newId}_enableWaveAnimation`,
+                label: `${objName} ${newId}: Enable Wave Animation`,
+                type: 'boolean',
+                default: 'true',
+                description: t('descriptions.Enable Wave Animation', 'Toggles the movement of the oscilloscope wave.')
+            },
+            {
+                property: `obj${newId}_oscAnimationSpeed`,
+                label: `${objName} ${newId}: Wave Animation Speed`,
+                type: 'number',
+                min: '0',
+                max: '100',
+                default: '10',
+                description: t('descriptions.Wave Animation Speed', 'Controls the speed of the oscilloscope wave movement, independent of the fill animation.')
+            },
+            {
+                property: `obj${newId}_waveStyle`,
+                label: `${objName} ${newId}: Wave Style`,
+                type: 'combobox',
+                default: 'wavy',
+                values: 'wavy,round',
+                description: t('descriptions.Wave Style', '(Oscilloscope) The style of the seismic wave.')
+            },
+            {
+                property: `obj${newId}_waveCount`,
+                label: `${objName} ${newId}: Wave Count`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '20',
+                description: t('descriptions.Wave Count', '(Oscilloscope) The number of seismic waves to display.')
+            },
+            {
+                property: `obj${newId}_tetrisBlockCount`,
+                label: `${objName} ${newId}: Block Count`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Block Count', '(Tetris) The number of blocks in the animation cycle.')
+            },
+            {
+                property: `obj${newId}_tetrisAnimation`,
+                label: `${objName} ${newId}: Drop Physics`,
+                type: 'combobox',
+                values: 'gravity,linear,gravity-fade,fade-in-stack,fade-in-out,comet,comet-gravity,comet-gravity-reversed,mix,mix-gravity,mix-gravity-reversed',
+                default: 'gravity',
+                description: t('descriptions.Drop Physics', '(Tetris) The physics governing how the blocks fall.')
+            },
+            {
+                property: `obj${newId}_tetrisSpeed`,
+                label: `${objName} ${newId}: Drop/Fade-in Speed`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Drop/Fade-in Speed', '(Tetris) The speed of the drop animation.')
+            },
+            {
+                property: `obj${newId}_tetrisBounce`,
+                label: `${objName} ${newId}: Bounce Factor`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '90',
+                description: t('descriptions.Bounce Factor', '(Tetris) How much the blocks bounce on impact.')
+            },
+            {
+                property: `obj${newId}_tetrisHoldTime`,
+                label: `${objName} ${newId}: Hold Time`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Hold Time', '(Tetris) For fade-in-out, the time blocks remain visible before fading out.')
+            },
+            {
+                property: `obj${newId}_tetrisMixColorMode`,
+                label: `${objName} ${newId}: Mix Color Mode`,
+                type: 'combobox',
+                values: 'Average,Custom',
+                default: 'Average',
+                description: t('descriptions.Mix Color Mode', '(Tetris Mix) Color used when blocks meet/exit center.')
+            },
+            {
+                property: `obj${newId}_tetrisCustomMixColor`,
+                label: `${objName} ${newId}: Custom Mix Color`,
+                type: 'color',
+                default: '#FFFFFF',
+                description: t('descriptions.Custom Mix Color', '(Tetris Mix) The specific color to use if Mode is Custom.')
+            },
+            {
+                property: `obj${newId}_tetrisBlurEdges`,
+                label: `${objName} ${newId}: Blur Edges`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Blur Edges', '(Tetris/Comet) Blurs the leading and trailing edges of the comet for a softer look.')
+            },
+            {
+                property: `obj${newId}_tetrisHold`,
+                label: `${objName} ${newId}: Hold at Ends`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Hold at Ends', '(Tetris/Comet) Pauses the comet at the start and end of its path.')
+            },
+            {
+                property: `obj${newId}_fireSpread`,
+                label: `${objName} ${newId}: Spread`,
+                type: 'number',
+                default: '100',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Spread', '(Fire Radial) Controls how far the flames spread from the center.')
+            },
+            {
+                property: `obj${newId}_pixelArtFrames`,
+                label: `${objName} ${newId}: Pixel Art Data`,
+                type: 'pixelarttable',
+                default: '[{"data":"[[1]]","duration":1}]',
+                description: t('descriptions.Pixel Art Data', '(Pixel Art) Manage animation frames.')
+            },
 
             // Stroke Fill
-            { property: `obj${newId}_enableStroke`, label: `Object ${newId}: Enable Stroke`, type: 'boolean', default: 'false', description: 'Enables a stroke (outline) for the shape.' },
-            { property: `obj${newId}_strokeWidth`, label: `Object ${newId}: Stroke Width`, type: 'number', default: '2', min: '1', max: '50', description: 'The thickness of the shape\'s stroke.' },
-            { property: `obj${newId}_strokeGradType`, label: `Object ${newId}: Stroke Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic', description: 'The type of color fill or gradient to use for the stroke.' },
-            { property: `obj${newId}_strokeGradientStops`, label: `Object ${newId}: Stroke Gradient Colors`, type: 'gradientpicker', default: '[{"color":"#FFFFFF","position":0}]', description: 'The colors and positions of the stroke gradient.' },
-            { property: `obj${newId}_strokeUseSharpGradient`, label: `Object ${newId}: Stroke Use Sharp Gradient`, type: 'boolean', default: 'false', description: 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.' },
-            { property: `obj${newId}_strokeAnimationMode`, label: `Object ${newId}: Stroke Animation Mode`, type: 'combobox', values: 'loop,bounce', default: 'loop', description: 'Determines how the stroke gradient animation behaves.' },
-            { property: `obj${newId}_strokeAnimationSpeed`, label: `Object ${newId}: Stroke Animation Speed`, type: 'number', default: '2', min: '0', max: '100', description: 'Controls the scroll speed of the stroke gradient animation.' },
-            { property: `obj${newId}_strokeCycleColors`, label: `Object ${newId}: Cycle Stroke Colors`, type: 'boolean', default: 'false', description: 'Animates the stroke colors by cycling through the color spectrum.' },
-            { property: `obj${newId}_strokeCycleSpeed`, label: `Object ${newId}: Stroke Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100', description: 'The speed at which stroke colors cycle when "Cycle Stroke Colors" is enabled.' },
-            { property: `obj${newId}_strokeRotationSpeed`, label: `Object ${newId}: Stroke Rotation Speed`, type: 'number', default: '0', min: '-100', max: '100', description: 'The continuous rotation speed of the stroke\'s conic gradient pattern.' },
-            { property: `obj${newId}_strokeScrollDir`, label: `Object ${newId}: Stroke Scroll Direction`, type: 'combobox', default: 'right', values: 'right,left,up,down,along-path,along-path-reversed', description: 'The direction the stroke gradient animation moves. "Along Path" is for Polylines only.' },
-            { property: `obj${newId}_strokePhaseOffset`, label: `Object ${newId}: Stroke Phase Offset`, type: 'number', default: '10', min: '0', max: '100', description: 'Offsets the stroke gradient animation for each item in a grid, creating a cascading effect.' },
+            {
+                property: `obj${newId}_enableStroke`,
+                label: `${objName} ${newId}: Enable Stroke`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Stroke', 'Enables a stroke (outline) for the shape.')
+            },
+            {
+                property: `obj${newId}_strokeWidth`,
+                label: `${objName} ${newId}: Stroke Width`,
+                type: 'number',
+                default: '2',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Stroke Width', 'The thickness of the shape\'s stroke.')
+            },
+            {
+                property: `obj${newId}_strokeGradType`,
+                label: `${objName} ${newId}: Stroke Type`,
+                type: 'combobox',
+                default: 'solid',
+                values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic',
+                description: t('descriptions.Stroke Type', 'The type of color fill or gradient to use for the stroke.')
+            },
+            {
+                property: `obj${newId}_strokeGradientStops`,
+                label: `${objName} ${newId}: Stroke Gradient Colors`,
+                type: 'gradientpicker',
+                default: '[{"color":"#FFFFFF","position":0}]',
+                description: t('descriptions.Stroke Gradient Colors', 'The colors and positions of the stroke gradient.')
+            },
+            {
+                property: `obj${newId}_strokeUseSharpGradient`,
+                label: `${objName} ${newId}: Stroke Use Sharp Gradient`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Stroke Use Sharp Gradient', 'If checked, creates a hard line between colors in the stroke gradient instead of a smooth blend.')
+            },
+            {
+                property: `obj${newId}_strokeAnimationMode`,
+                label: `${objName} ${newId}: Stroke Animation Mode`,
+                type: 'combobox',
+                values: 'loop,bounce',
+                default: 'loop',
+                description: t('descriptions.Stroke Animation Mode', 'Determines how the stroke gradient animation behaves.')
+            },
+            {
+                property: `obj${newId}_strokeAnimationSpeed`,
+                label: `${objName} ${newId}: Stroke Animation Speed`,
+                type: 'number',
+                default: '2',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Stroke Animation Speed', 'Controls the scroll speed of the stroke gradient animation.')
+            },
+            {
+                property: `obj${newId}_strokeCycleColors`,
+                label: `${objName} ${newId}: Cycle Stroke Colors`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Cycle Stroke Colors', 'Animates the stroke colors by cycling through the color spectrum.')
+            },
+            {
+                property: `obj${newId}_strokeCycleSpeed`,
+                label: `${objName} ${newId}: Stroke Color Cycle Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Stroke Color Cycle Speed', 'The speed at which stroke colors cycle when "Cycle Stroke Colors" is enabled.')
+            },
+            {
+                property: `obj${newId}_strokeRotationSpeed`,
+                label: `${objName} ${newId}: Stroke Rotation Speed`,
+                type: 'number',
+                default: '0',
+                min: '-100',
+                max: '100',
+                description: t('descriptions.Stroke Rotation Speed', 'The continuous rotation speed of the stroke\'s conic gradient pattern.')
+            },
+            {
+                property: `obj${newId}_strokeScrollDir`,
+                label: `${objName} ${newId}: Stroke Scroll Direction`,
+                type: 'combobox',
+                default: 'right',
+                values: 'right,left,up,down,along-path,along-path-reversed',
+                description: t('descriptions.Stroke Scroll Direction', 'The direction the stroke gradient animation moves. "Along Path" is for Polylines only.')
+            },
+            {
+                property: `obj${newId}_strokePhaseOffset`,
+                label: `${objName} ${newId}: Stroke Phase Offset`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Stroke Phase Offset', 'Offsets the stroke gradient animation for each item in a grid, creating a cascading effect.')
+            },
 
             // Audio Reactivity
-            { property: `obj${newId}_enableAudioReactivity`, label: `Object ${newId}: Enable Sound Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sound.' },
-            { property: `obj${newId}_audioTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Flash', values: 'none,Flash,Size,Rotation,Path Speed', description: 'Which property of the object will be affected by the sound.' },
-            { property: `obj${newId}_audioMetric`, label: `Object ${newId}: Audio Metric`, type: 'combobox', default: 'volume', values: 'volume,bass,mids,highs', description: 'Which part of the audio spectrum to react to.' },
-            { property: `obj${newId}_beatThreshold`, label: `Object ${newId}: Beat Threshold`, type: 'number', default: '30', min: '1', max: '100', description: 'Sensitivity for beat detection. Higher values are MORE sensitive.' },
-            { property: `obj${newId}_audioSensitivity`, label: `Object ${newId}: Sensitivity`, type: 'number', default: '50', min: '0', max: '200', description: 'How strongly the object reacts to the audio metric.' },
-            { property: `obj${newId}_audioSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '50', min: '0', max: '99', description: 'Smooths out the reaction to prevent flickering. Higher values are smoother.' },
+            {
+                property: `obj${newId}_enableAudioReactivity`,
+                label: `${objName} ${newId}: Enable Sound Reactivity`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Sound Reactivity', 'Enables the object to react to sound.')
+            },
+            {
+                property: `obj${newId}_audioTarget`,
+                label: `${objName} ${newId}: Reactive Property`,
+                type: 'combobox',
+                default: 'Flash',
+                values: 'none,Flash,Size,Rotation,Path Speed',
+                description: t('descriptions.Reactive Property', 'Which property of the object will be affected by the sound.')
+            },
+            {
+                property: `obj${newId}_audioMetric`,
+                label: `${objName} ${newId}: Audio Metric`,
+                type: 'combobox',
+                default: 'volume',
+                values: 'volume,bass,mids,highs',
+                description: t('descriptions.Audio Metric', 'Which part of the audio spectrum to react to.')
+            },
+            {
+                property: `obj${newId}_beatThreshold`,
+                label: `${objName} ${newId}: Beat Threshold`,
+                type: 'number',
+                default: '30',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Beat Threshold', 'Sensitivity for beat detection. Higher values are MORE sensitive.')
+            },
+            {
+                property: `obj${newId}_audioSensitivity`,
+                label: `${objName} ${newId}: Sensitivity`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Sensitivity', 'How strongly the object reacts to the audio metric.')
+            },
+            {
+                property: `obj${newId}_audioSmoothing`,
+                label: `${objName} ${newId}: Smoothing`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '99',
+                description: t('descriptions.Smoothing', 'Smooths out the reaction to prevent flickering. Higher values are smoother.')
+            },
 
             // Audio Visualizer
-            { property: `obj${newId}_vizDynamicRange`, label: `Object ${newId}: Dynamic Range`, type: 'boolean', default: 'false', description: '(Visualizer) Automatically adjusts the frequency range to focus on active audio, ignoring silent higher frequencies.' },
-            { property: `obj${newId}_vizSmoothing`, label: `Object ${newId}: Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Visualizer) How smoothly the bars react to audio changes. Higher is smoother.' },
-            { property: `obj${newId}_vizDrawStyle`, label: `Object ${newId}: Draw Style`, type: 'combobox', default: 'Line', values: 'Bars,Line,Area', description: '(Visualizer) How the frequencies are rendered.' },
-            { property: `obj${newId}_vizLayout`, label: `Object ${newId}: Layout`, type: 'combobox', default: 'Linear', values: 'Linear,Circular,Polyline,Circular Polyline', description: '(Visualizer) The overall layout of the visualizer.' },
-            { property: `obj${newId}_vizStyle`, label: `Object ${newId}: Style`, type: 'combobox', default: 'bottom', values: 'bottom,center,top', description: '(Visualizer) The alignment of the visualizer bars.' },
-            { property: `obj${newId}_vizInnerRadius`, label: `Object ${newId}: Inner Radius %`, type: 'number', default: '40', min: '0', max: '95', description: '(Visualizer) Sets the radius of the empty inner circle.' },
-            { property: `obj${newId}_vizLineWidth`, label: `Object ${newId}: Line Width`, type: 'number', default: '2', min: '1', max: '20', description: '(Visualizer) The thickness of the line for the Line/Area draw styles.' },
-            { property: `obj${newId}_vizAutoScale`, label: `Object ${newId}: Auto-Scale Height`, type: 'boolean', default: 'true', description: '(Visualizer) If checked, the tallest bar will always reach the top of the shape.' },
-            { property: `obj${newId}_vizBarCount`, label: `Object ${newId}: Bar Count`, type: 'number', default: '32', min: '2', max: '128', description: '(Visualizer) The number of frequency bars to display.' },
-            { property: `obj${newId}_vizBarSpacing`, label: `Object ${newId}: Bar Spacing`, type: 'number', default: '2', min: '0', max: '20', description: '(Visualizer) The space between each bar in pixels.' },
-            { property: `obj${newId}_vizMaxBarHeight`, label: `Object ${newId}: Max Bar Height %`, type: 'number', default: '100', min: '5', max: '100', description: '(Visualizer) Sets the maximum possible length for any visualizer bar.' },
-            { property: `obj${newId}_vizUseSegments`, label: `Object ${newId}: Use LED Segments`, type: 'boolean', default: 'false', description: '(Visualizer) Renders bars as discrete segments instead of solid blocks.' },
-            { property: `obj${newId}_vizSegmentCount`, label: `Object ${newId}: Segment Count`, type: 'number', default: '16', min: '2', max: '64', description: '(Visualizer) The number of vertical LED segments the bar is divided into.' },
-            { property: `obj${newId}_vizSegmentSpacing`, label: `Object ${newId}: Segment Spacing`, type: 'number', default: '1', min: '0', max: '10', description: '(Visualizer) The spacing between segments in a bar.' },
-            { property: `obj${newId}_vizBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Visualizer) Multiplier for the lowest frequency bars.' },
-            { property: `obj${newId}_vizTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '125', min: '0', max: '200', description: '(Visualizer) Multiplier for the highest frequency bars.' },
+            {
+                property: `obj${newId}_vizDynamicRange`,
+                label: `${objName} ${newId}: Dynamic Range`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Dynamic Range', '(Visualizer) Automatically adjusts the frequency range to focus on active audio, ignoring silent higher frequencies.')
+            },
+            {
+                property: `obj${newId}_vizSmoothing`,
+                label: `${objName} ${newId}: Smoothing`,
+                type: 'number',
+                default: '60',
+                min: '0',
+                max: '99',
+                description: t('descriptions.Smoothing', '(Visualizer) How smoothly the bars react to audio changes. Higher is smoother.')
+            },
+            {
+                property: `obj${newId}_vizDrawStyle`,
+                label: `${objName} ${newId}: Draw Style`,
+                type: 'combobox',
+                default: 'Line',
+                values: 'Bars,Line,Area',
+                description: t('descriptions.Draw Style', '(Visualizer) How the frequencies are rendered.')
+            },
+            {
+                property: `obj${newId}_vizLayout`,
+                label: `${objName} ${newId}: Layout`,
+                type: 'combobox',
+                default: 'Linear',
+                values: 'Linear,Circular,Polyline,Circular Polyline',
+                description: t('descriptions.Layout', '(Visualizer) The overall layout of the visualizer.')
+            },
+            {
+                property: `obj${newId}_vizStyle`,
+                label: `${objName} ${newId}: Visualizer Style`,
+                type: 'combobox',
+                default: 'bottom',
+                values: 'bottom,center,top',
+                description: t('descriptions.Visualizer Style', '(Visualizer) The alignment of the visualizer bars.')
+            },
+            {
+                property: `obj${newId}_vizInnerRadius`,
+                label: `${objName} ${newId}: Inner Radius %`,
+                type: 'number',
+                default: '40',
+                min: '0',
+                max: '95',
+                description: t('descriptions.Inner Radius %', '(Visualizer) Sets the radius of the empty inner circle.')
+            },
+            {
+                property: `obj${newId}_vizLineWidth`,
+                label: `${objName} ${newId}: Line Width`,
+                type: 'number',
+                default: '2',
+                min: '1',
+                max: '20',
+                description: t('descriptions.Line Width', '(Visualizer) The thickness of the line for the Line/Area draw styles.')
+            },
+            {
+                property: `obj${newId}_vizAutoScale`,
+                label: `${objName} ${newId}: Auto Scale`,
+                type: 'boolean',
+                default: 'true',
+                description: t('descriptions.Auto Scale', '(Visualizer) If checked, the tallest bar will always reach the top of the shape.')
+            },
+            {
+                property: `obj${newId}_vizBarCount`,
+                label: `${objName} ${newId}: Bar Count`,
+                type: 'number',
+                default: '32',
+                min: '2',
+                max: '128',
+                description: t('descriptions.Bar Count', '(Visualizer) The number of frequency bars to display.')
+            },
+            {
+                property: `obj${newId}_vizBarSpacing`,
+                label: `${objName} ${newId}: Bar Spacing`,
+                type: 'number',
+                default: '2',
+                min: '0',
+                max: '20',
+                description: t('descriptions.Bar Spacing', '(Visualizer) The space between each bar in pixels.')
+            },
+            {
+                property: `obj${newId}_vizMaxBarHeight`,
+                label: `${objName} ${newId}: Max Bar Height`,
+                type: 'number',
+                default: '100',
+                min: '5',
+                max: '100',
+                description: t('descriptions.Max Bar Height', '(Visualizer) Sets the maximum possible length for any visualizer bar.')
+            },
+            {
+                property: `obj${newId}_vizUseSegments`,
+                label: `${objName} ${newId}: Use Segments`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Use Segments', '(Visualizer) Renders bars as discrete segments instead of solid blocks.')
+            },
+            {
+                property: `obj${newId}_vizSegmentCount`,
+                label: `${objName} ${newId}: Segment Count`,
+                type: 'number',
+                default: '16',
+                min: '2',
+                max: '64',
+                description: t('descriptions.Segment Count', '(Visualizer) The number of vertical LED segments the bar is divided into.')
+            },
+            {
+                property: `obj${newId}_vizSegmentSpacing`,
+                label: `${objName} ${newId}: Segment Spacing`,
+                type: 'number',
+                default: '1',
+                min: '0',
+                max: '10',
+                description: t('descriptions.Segment Spacing', '(Visualizer) The spacing between segments in a bar.')
+            },
+            {
+                property: `obj${newId}_vizBassLevel`,
+                label: `${objName} ${newId}: Bass Level`,
+                type: 'number',
+                default: '100',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Bass Level', '(Visualizer) Multiplier for the lowest frequency bars.')
+            },
+            {
+                property: `obj${newId}_vizTrebleBoost`,
+                label: `${objName} ${newId}: Treble Boost`,
+                type: 'number',
+                default: '125',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Treble Boost', '(Visualizer) Multiplier for the highest frequency bars.')
+            },
 
             // Sensor Reactivity
-            { property: `obj${newId}_enableSensorReactivity`, label: `Object ${newId}: Enable Sensor Reactivity`, type: 'boolean', default: 'false', description: 'Enables the object to react to sensor data.' },
-            { property: `obj${newId}_sensorTarget`, label: `Object ${newId}: Reactive Property`, type: 'combobox', default: 'Sensor Meter', values: 'Sensor Meter,Time Plot', description: 'Selects the specific effect that the object will perform in response to sensor data.' },
-            { property: `obj${newId}_sensorValueSource`, label: `Object ${newId}: Sensor Value`, type: 'combobox', default: 'value', values: 'value,min,max', description: 'The source of the data value to use from the selected sensor (current, min, or max).' },
-            { property: `obj${newId}_userSensor`, label: `Object ${newId}: Sensor`, type: 'sensor', default: 'CPU Load', description: 'The hardware sensor to monitor for reactivity.' },
-            { property: `obj${newId}_timePlotLineThickness`, label: `Object ${newId}: Line Thickness`, type: 'number', default: '1', min: '1', max: '50', description: '(Time Plot) Sets the thickness of the time-plot line.' },
-            { property: `obj${newId}_timePlotFillArea`, label: `Object ${newId}: Fill Area`, type: 'boolean', default: 'false', description: '(Time Plot) Fills the area under the time plot line.' },
-            { property: `obj${newId}_sensorColorMode`, label: `Object ${newId}: Color Mode`, type: 'combobox', default: 'None', values: 'None,Value-Based Gradient,Thresholds', description: '(Sensor Meter) The coloring method for the sensor meter.' },
-            { property: `obj${newId}_sensorMidThreshold`, label: `Object ${newId}: Mid Threshold`, type: 'number', default: '50', min: '0', max: '100', description: 'The sensor value at which the color changes from green to orange.' },
-            { property: `obj${newId}_sensorMaxThreshold`, label: `Object ${newId}: Max Threshold`, type: 'number', default: '90', min: '0', max: '100', description: 'The sensor value at which the color changes from orange to red.' },
-            { property: `obj${newId}_sensorMeterShowValue`, label: `Object ${newId}: Show Value`, type: 'boolean', default: 'false', description: '(Sensor Meter) Displays the current sensor value as text on the meter.' },
-            { property: `obj${newId}_timePlotAxesStyle`, label: `Object ${newId}: Axes Style`, type: 'combobox', default: 'None', values: 'None,Lines Only,Lines and Values', description: '(Time Plot) Sets the style for the X and Y axes.' },
-            { property: `obj${newId}_timePlotTimeScale`, label: `Object ${newId}: Time Scale (Seconds)`, type: 'number', default: '5', min: '1', max: '30', description: '(Time Plot) The total duration in seconds displayed across the width of the chart.' },
+            {
+                property: `obj${newId}_enableSensorReactivity`,
+                label: `${objName} ${newId}: Enable Sensor Reactivity`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Sensor Reactivity', 'Enables the object to react to sensor data.')
+            },
+            {
+                property: `obj${newId}_sensorTarget`,
+                label: `${objName} ${newId}: Sensor Target`,
+                type: 'combobox',
+                default: 'Sensor Meter',
+                values: 'Sensor Meter,Time Plot',
+                description: t('descriptions.Sensor Target', 'Selects the specific effect that the object will perform in response to sensor data.')
+            },
+            {
+                property: `obj${newId}_sensorValueSource`,
+                label: `${objName} ${newId}: Sensor Value`,
+                type: 'combobox',
+                default: 'value',
+                values: 'value,min,max',
+                description: t('descriptions.Sensor Value', 'The source of the data value to use from the selected sensor (current, min, or max).')
+            },
+            {
+                property: `obj${newId}_userSensor`,
+                label: `${objName} ${newId}: User Sensor`,
+                type: 'sensor',
+                default: 'CPU Load',
+                description: t('descriptions.User Sensor', 'The hardware sensor to monitor for reactivity.')
+            },
+            {
+                property: `obj${newId}_timePlotLineThickness`,
+                label: `${objName} ${newId}: Line Thickness`,
+                type: 'number',
+                default: '1',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Line Thickness', '(Time Plot) Sets the thickness of the time-plot line.')
+            },
+            {
+                property: `obj${newId}_timePlotFillArea`,
+                label: `${objName} ${newId}: Fill Area`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Fill Area', '(Time Plot) Fills the area under the time plot line.')
+            },
+            {
+                property: `obj${newId}_sensorColorMode`,
+                label: `${objName} ${newId}: Color Mode`,
+                type: 'combobox',
+                default: 'None',
+                values: 'None,Value-Based Gradient,Thresholds',
+                description: t('descriptions.Color Mode', '(Sensor Meter) The coloring method for the sensor meter.')
+            },
+            {
+                property: `obj${newId}_sensorMidThreshold`,
+                label: `${objName} ${newId}: Mid Threshold`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Mid Threshold', 'The sensor value at which the color changes from green to orange.')
+            },
+            {
+                property: `obj${newId}_sensorMaxThreshold`,
+                label: `${objName} ${newId}: Max Threshold`,
+                type: 'number',
+                default: '90',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Max Threshold', 'The sensor value at which the color changes from orange to red.')
+            },
+            {
+                property: `obj${newId}_sensorMeterShowValue`,
+                label: `${objName} ${newId}: Show Value`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Show Value', '(Sensor Meter) Displays the current sensor value as text on the meter.')
+            },
+            {
+                property: `obj${newId}_timePlotAxesStyle`,
+                label: `${objName} ${newId}: Axes Style`,
+                type: 'combobox',
+                default: 'None',
+                values: 'None,Lines Only,Lines and Values',
+                description: t('descriptions.Axes Style', '(Time Plot) Sets the style for the X and Y axes.')
+            },
+            {
+                property: `obj${newId}_timePlotTimeScale`,
+                label: `${objName} ${newId}: Time Scale`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '30',
+                description: t('descriptions.Time Scale', '(Time Plot) The total duration in seconds displayed across the width of the chart.')
+            },
 
             // Strimer
-            { property: `obj${newId}_strimerRows`, label: `Object ${newId}: Rows`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of horizontal rows.' },
-            { property: `obj${newId}_strimerColumns`, label: `Object ${newId}: Columns`, type: 'number', default: '4', min: '1', max: '50', description: '(Strimer) Number of vertical columns.' },
-            { property: `obj${newId}_strimerBlockCount`, label: `Object ${newId}: Block Count`, type: 'number', default: '4', min: '1', max: '100', description: '(Strimer) Number of animated blocks per column.' },
-            { property: `obj${newId}_strimerBlockSize`, label: `Object ${newId}: Block Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Strimer) Height of each block in pixels.' },
-            { property: `obj${newId}_strimerAnimation`, label: `Object ${newId}: Animation`, type: 'combobox', default: 'Bounce', values: 'Bounce,Loop,Cascade,Audio Meter,Snake', description: '(Strimer) The primary animation style for the blocks.' },
-            { property: `obj${newId}_strimerDirection`, label: `Object ${newId}: Direction`, type: 'combobox', default: 'Random', values: 'Up,Down,Random', description: '(Strimer) The initial direction of the blocks.' },
-            { property: `obj${newId}_strimerEasing`, label: `Object ${newId}: Easing`, type: 'combobox', default: 'Linear', values: 'Linear,Ease-In,Ease-Out,Ease-In-Out', description: '(Strimer) The acceleration curve of the block movement.' },
-            { property: `obj${newId}_strimerAnimationSpeed`, label: `Object ${newId}: Animation Speed`, type: 'number', default: '20', min: '0', max: '100', description: '(Strimer) The speed of the block movement, independent of the fill animation.' },
-            { property: `obj${newId}_strimerSnakeDirection`, label: `Object ${newId}: Snake Direction`, type: 'combobox', default: 'Vertical', values: 'Horizontal,Vertical', description: '(Strimer) The direction of the snake.' },
-            { property: `obj${newId}_strimerBlockSpacing`, label: `Object ${newId}: Block Spacing`, type: 'number', default: '5', min: '0', max: '50', description: '(Cascade) The vertical spacing between blocks in a cascade.' },
-            { property: `obj${newId}_strimerGlitchFrequency`, label: `Object ${newId}: Glitch Frequency`, type: 'number', default: '0', min: '0', max: '100', description: '(Glitch) How often blocks stutter or disappear. 0 is off.' },
-            { property: `obj${newId}_strimerPulseSync`, label: `Object ${newId}: Sync Columns`, type: 'boolean', default: 'true', description: '(Pulse) If checked, all columns pulse together.' },
-            { property: `obj${newId}_strimerAudioSensitivity`, label: `Object ${newId}: Audio Sensitivity`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplies the height of the audio bars.' },
-            { property: `obj${newId}_strimerBassLevel`, label: `Object ${newId}: Bass Level %`, type: 'number', default: '100', min: '0', max: '200', description: '(Audio Meter) Multiplier for the bass column(s).' },
-            { property: `obj${newId}_strimerTrebleBoost`, label: `Object ${newId}: Treble Boost %`, type: 'number', default: '150', min: '0', max: '200', description: '(Audio Meter) Multiplier for the treble/volume columns.' },
-            { property: `obj${newId}_strimerAudioSmoothing`, label: `Object ${newId}: Audio Smoothing`, type: 'number', default: '60', min: '0', max: '99', description: '(Audio Meter) Smooths out the bar movement.' },
-            { property: `obj${newId}_strimerPulseSpeed`, label: `Object ${newId}: Pulse Speed`, type: 'number', default: '0', min: '0', max: '100', description: '(Modifier) Speed of the breathing/pulse effect. 0 is off.' },
+            {
+                property: `obj${newId}_strimerRows`,
+                label: `${objName} ${newId}: Number of Rows`,
+                type: 'number',
+                default: '4',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Number of Rows', '(Strimer) Number of horizontal rows.')
+            },
+            {
+                property: `obj${newId}_strimerColumns`,
+                label: `${objName} ${newId}: Number of Columns`,
+                type: 'number',
+                default: '4',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Number of Columns', '(Strimer) Number of vertical columns.')
+            },
+            {
+                property: `obj${newId}_strimerBlockCount`,
+                label: `${objName} ${newId}: Block Count`,
+                type: 'number',
+                default: '1',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Block Count', '(Strimer) Number of active blocks.')
+            },
+            {
+                property: `obj${newId}_strimerBlockSize`,
+                label: `${objName} ${newId}: Block Size`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Block Size', '(Strimer) Size of each block.')
+            },
+            {
+                property: `obj${newId}_strimerAnimation`,
+                label: `${objName} ${newId}: Animation Mode`,
+                type: 'combobox',
+                values: 'move,pulse,snake,matrix',
+                default: 'move',
+                description: t('descriptions.Animation Mode', '(Strimer) Animation type.')
+            },
+            {
+                property: `obj${newId}_strimerAnimationSpeed`,
+                label: `${objName} ${newId}: Animation Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Animation Speed', '(Strimer) Speed of the animation.')
+            },
+            {
+                property: `obj${newId}_strimerDirection`,
+                label: `${objName} ${newId}: Direction`,
+                type: 'combobox',
+                values: 'horizontal,vertical',
+                default: 'horizontal',
+                description: t('descriptions.Direction', '(Strimer) Direction of movement.')
+            },
+            {
+                property: `obj${newId}_strimerEasing`,
+                label: `${objName} ${newId}: Easing`,
+                type: 'combobox',
+                values: 'linear,ease-in-out',
+                default: 'linear',
+                description: t('descriptions.Easing', '(Strimer) Animation smoothing.')
+            },
+            {
+                property: `obj${newId}_strimerBlockSpacing`,
+                label: `${objName} ${newId}: Block Spacing`,
+                type: 'number',
+                default: '2',
+                min: '0',
+                max: '20',
+                description: t('descriptions.Block Spacing', '(Strimer) Space between blocks.')
+            },
+            {
+                property: `obj${newId}_strimerGlitchFrequency`,
+                label: `${objName} ${newId}: Glitch Frequency`,
+                type: 'number',
+                default: '0',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Glitch Frequency', '(Strimer) Probability of random glitches.')
+            },
+            {
+                property: `obj${newId}_strimerPulseSync`,
+                label: `${objName} ${newId}: Pulse Sync`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Pulse Sync', '(Strimer) Sync pulse animation across all rows.')
+            },
+            {
+                property: `obj${newId}_strimerAudioSensitivity`,
+                label: `${objName} ${newId}: Sensitivity`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Sensitivity', '(Strimer) Audio sensitivity.')
+            },
+            {
+                property: `obj${newId}_strimerBassLevel`,
+                label: `${objName} ${newId}: Bass Level`,
+                type: 'number',
+                default: '100',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Bass Level', '(Strimer) Bass reactivity.')
+            },
+            {
+                property: `obj${newId}_strimerTrebleBoost`,
+                label: `${objName} ${newId}: Treble Boost`,
+                type: 'number',
+                default: '100',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Treble Boost', '(Strimer) Treble reactivity.')
+            },
+            {
+                property: `obj${newId}_strimerAudioSmoothing`,
+                label: `${objName} ${newId}: Smoothing`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '99',
+                description: t('descriptions.Smoothing', '(Strimer) Audio smoothing.')
+            },
+            {
+                property: `obj${newId}_strimerPulseSpeed`,
+                label: `${objName} ${newId}: Pulse Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Pulse Speed', '(Strimer) Speed of the pulse effect.')
+            },
+            {
+                property: `obj${newId}_strimerSnakeDirection`,
+                label: `${objName} ${newId}: Snake Direction`,
+                type: 'combobox',
+                values: 'left-right,right-left,top-bottom,bottom-top',
+                default: 'left-right',
+                description: t('descriptions.Snake Direction', '(Strimer) Direction of the snake animation.')
+            },
 
             // Spawner
-            { property: `obj${newId}_spawn_shapeType`, label: `Object ${newId}: Particle Shape`, type: 'combobox', values: 'rectangle,circle,polygon,star,sparkle,custom,matrix,random', default: 'circle', description: '(Spawner) The geometric shape of the emitted particles.' },
-            { property: `obj${newId}_spawn_animation`, label: `Object ${newId}: Emitter Style`, type: 'combobox', values: 'explode,fountain,rain,flow', default: 'explode', description: '(Spawner) The behavior and direction of particle emission.' },
-            { property: `obj${newId}_spawn_count`, label: `Object ${newId}: Max Particles`, type: 'number', default: '100', min: '1', max: '500', description: '(Spawner) The maximum number of particles on screen at once.' },
-            { property: `obj${newId}_spawn_spawnRate`, label: `Object ${newId}: Spawn Rate`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) How many new particles are created per second.' },
-            { property: `obj${newId}_spawn_lifetime`, label: `Object ${newId}: Lifetime (s)`, type: 'number', default: '3', min: '0.1', max: '20', description: '(Spawner) How long each particle lasts, in seconds.' },
-            { property: `obj${newId}_spawn_speed`, label: `Object ${newId}: Initial Speed`, type: 'number', default: '50', min: '0', max: '500', description: '(Spawner) The average starting speed of newly created particles.' },
-            { property: `obj${newId}_spawn_speedVariance`, label: `Object ${newId}: Initial Speed Variance (±)`, type: 'number', default: '0', min: '0', max: '500', description: '(Spawner) Adds randomness to the initial speed of each particle.' },
-            { property: `obj${newId}_spawn_size`, label: `Object ${newId}: Particle Size`, type: 'number', default: '10', min: '1', max: '100', description: '(Spawner) The size of each particle in pixels.' },
-            { property: `obj${newId}_spawn_size_randomness`, label: `Object ${newId}: Size Randomness %`, type: 'number', default: '0', min: '0', max: '100', description: '(Spawner) How much to vary each particle\'s size.' },
-            { property: `obj${newId}_spawn_gravity`, label: `Object ${newId}: Gravity`, type: 'number', default: '0', min: '-200', max: '200', description: '(Spawner) A constant downward (or upward) force applied to particles.' },
-            { property: `obj${newId}_spawn_spread`, label: `Object ${newId}: Spread Angle`, type: 'number', default: '360', min: '0', max: '360', description: '(Spawner) The angle (in degrees) for Explode or Fountain emitters.' },
-            { property: `obj${newId}_spawn_rotationSpeed`, label: `Object ${newId}: Particle Rotation Speed`, type: 'number', default: '0', min: '-360', max: '360', description: '(Spawner) The average rotational speed of each particle in degrees per second.' },
-            { property: `obj${newId}_spawn_rotationVariance`, label: `Object ${newId}: Rotation Variance (±deg/s)`, type: 'number', default: '0', min: '0', max: '360', description: '(Spawner) Sets the random range for rotation speed.' },
-            { property: `obj${newId}_spawn_initialRotation_random`, label: `Object ${newId}: Random Initial Rotation`, type: 'boolean', default: 'false', description: '(Spawner) If checked, each particle starts at a random angle.' },
-            { property: `obj${newId}_spawn_svg_path`, label: `Object ${newId}: Custom SVG Path`, type: 'textfield', default: 'M -20 -20 L 20 -20 L 20 20 L -20 20 Z', description: '(Spawner) The SVG `d` attribute path data for the custom particle shape.' },
-            { property: `obj${newId}_spawn_matrixCharSet`, label: `Object ${newId}: Matrix Character Set`, type: 'combobox', default: 'katakana', values: 'katakana,numbers,binary,ascii', description: '(Spawner) The set of characters to use for the Matrix particle type.' },
-            { property: `obj${newId}_spawn_enableTrail`, label: `Object ${newId}: Enable Trail`, type: 'boolean', default: 'false', description: '(Spawner/Trail) Enables a fading trail behind each particle.' },
-            { property: `obj${newId}_spawn_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '15', min: '1', max: '50', description: '(Spawner) The number of segments or characters in a particle\'s trail.' },
-            { property: `obj${newId}_spawn_trailSpacing`, label: `Object ${newId}: Trail Spacing`, type: 'number', default: '1', min: '0.1', max: '10', step: '0.1', description: '(Spawner/Trail) Multiplier for the distance between trail segments.' },
-            { property: `obj${newId}_spawn_matrixEnableGlow`, label: `Object ${newId}: Enable Character Glow`, type: 'boolean', default: 'false', description: '(Spawner/Matrix) Adds a glow effect to the matrix characters.' },
-            { property: `obj${newId}_spawn_matrixGlowSize`, label: `Object ${newId}: Character Glow Size`, type: 'number', default: '10', min: '0', max: '50', description: '(Spawner/Matrix) The size and intensity of the glow effect.' },
+            {
+                property: `obj${newId}_spawn_count`,
+                label: `${objName} ${newId}: Count`,
+                type: 'number',
+                default: '50',
+                min: '1',
+                max: '500',
+                description: t('descriptions.Count', '(Spawner) Number of particles.')
+            },
+            {
+                property: `obj${newId}_spawn_spawnRate`,
+                label: `${objName} ${newId}: Spawn Rate`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Spawn Rate', '(Spawner) Particles spawned per second.')
+            },
+            {
+                property: `obj${newId}_spawn_lifetime`,
+                label: `${objName} ${newId}: Lifetime`,
+                type: 'number',
+                default: '2',
+                min: '0.1',
+                max: '10',
+                description: t('descriptions.Lifetime', '(Spawner) Particle lifetime in seconds.')
+            },
+            {
+                property: `obj${newId}_spawn_speed`,
+                label: `${objName} ${newId}: Speed`,
+                type: 'number',
+                default: '50',
+                min: '0',
+                max: '500',
+                description: t('descriptions.Speed', '(Spawner) Particle speed.')
+            },
+            {
+                property: `obj${newId}_spawn_speedVariance`,
+                label: `${objName} ${newId}: Speed Variance`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Speed Variance', '(Spawner) Randomness in speed.')
+            },
+            {
+                property: `obj${newId}_spawn_gravity`,
+                label: `${objName} ${newId}: Gravity`,
+                type: 'number',
+                default: '0',
+                min: '-100',
+                max: '100',
+                description: t('descriptions.Gravity', '(Spawner) Gravity applied to particles.')
+            },
+            {
+                property: `obj${newId}_spawn_size`,
+                label: `${objName} ${newId}: Size`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Size', '(Spawner) Particle size.')
+            },
+            {
+                property: `obj${newId}_spawn_size_randomness`,
+                label: `${objName} ${newId}: Size Randomness`,
+                type: 'number',
+                default: '0',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Size Randomness', '(Spawner) Randomness in size.')
+            },
+            {
+                property: `obj${newId}_spawn_rotationSpeed`,
+                label: `${objName} ${newId}: Rotation Speed`,
+                type: 'number',
+                default: '0',
+                min: '-360',
+                max: '360',
+                description: t('descriptions.Rotation Speed', '(Spawner) Rotation speed of particles.')
+            },
+            {
+                property: `obj${newId}_spawn_rotationVariance`,
+                label: `${objName} ${newId}: Rotation Variance`,
+                type: 'number',
+                default: '0',
+                min: '0',
+                max: '360',
+                description: t('descriptions.Rotation Variance', '(Spawner) Randomness in rotation.')
+            },
+            {
+                property: `obj${newId}_spawn_initialRotation_random`,
+                label: `${objName} ${newId}: Initial Rotation Random`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Initial Rotation Random', '(Spawner) Randomize initial rotation.')
+            },
+            {
+                property: `obj${newId}_spawn_matrixCharSet`,
+                label: `${objName} ${newId}: Matrix Char Set`,
+                type: 'textfield',
+                default: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                description: t('descriptions.Matrix Char Set', '(Spawner) Characters for Matrix effect.')
+            },
+            {
+                property: `obj${newId}_spawn_matrixTrailLength`,
+                label: `${objName} ${newId}: Trail Length`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Trail Length', '(Spawner) Length of the particle trail.')
+            },
+            {
+                property: `obj${newId}_spawn_matrixEnableGlow`,
+                label: `${objName} ${newId}: Enable Glow`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Glow', '(Spawner) Add glow effect.')
+            },
+            {
+                property: `obj${newId}_spawn_matrixGlowSize`,
+                label: `${objName} ${newId}: Glow Size`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Glow Size', '(Spawner) Size of the glow.')
+            },
+            {
+                property: `obj${newId}_spawn_matrixGlowColor`,
+                label: `${objName} ${newId}: Glow Color`,
+                type: 'color',
+                default: '#00FF00',
+                description: t('descriptions.Glow Color', '(Spawner) Color of the glow.')
+            },
+            {
+                property: `obj${newId}_spawn_svg_path`,
+                label: `${objName} ${newId}: SVG Path`,
+                type: 'textarea',
+                default: '',
+                description: t('descriptions.SVG Path', '(Spawner) Custom SVG path for particles.')
+            },
+            {
+                property: `obj${newId}_spawn_enableTrail`,
+                label: `${objName} ${newId}: Enable Trail`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Trail', '(Spawner) Enable trails for particles.')
+            },
+            {
+                property: `obj${newId}_spawn_trailLength`,
+                label: `${objName} ${newId}: Trail Length`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Trail Length', '(Spawner) Length of the trail.')
+            },
+            {
+                property: `obj${newId}_spawn_trailSpacing`,
+                label: `${objName} ${newId}: Trail Spacing`,
+                type: 'number',
+                default: '2',
+                min: '1',
+                max: '20',
+                description: t('descriptions.Trail Spacing', '(Spawner) Spacing between trail points.')
+            },
+            {
+                property: `obj${newId}_spawn_spread`,
+                label: `${objName} ${newId}: Spread`,
+                type: 'number',
+                default: '100',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Spread', '(Spawner) Spread angle of particles.')
+            },
+            {
+                property: `obj${newId}_spawn_audioTarget`,
+                label: `${objName} ${newId}: Reactive Property`,
+                type: 'combobox',
+                default: 'none',
+                values: 'none,Spawn Rate,Speed,Size,Gravity',
+                description: t('descriptions.Reactive Property', 'Which property of the spawner reacts to audio.')
+            },
+            {
+                property: `obj${newId}_spawn_shapeType`,
+                label: `${objName} ${newId}: Shape`,
+                type: 'combobox',
+                default: 'circle',
+                values: 'circle,square,triangle,star,image,text,svg',
+                description: t('descriptions.Shape', '(Spawner) Shape of individual particles.')
+            },
+            {
+                property: `obj${newId}_spawn_animation`,
+                label: `${objName} ${newId}: Animation Mode`,
+                type: 'combobox',
+                default: 'fountain',
+                values: 'fountain,rain,snow,fireworks,matrix,spiral',
+                description: t('descriptions.Animation Mode', '(Spawner) Type of particle animation.')
+            },
+
+            // GIF Settings
+            {
+                property: `obj${newId}_gifUrl`,
+                label: `${objName} ${newId}: GIF URL`,
+                type: 'textfield',
+                default: '',
+                description: t('descriptions.GIF URL', 'URL of the GIF to display.')
+            },
+            {
+                property: `obj${newId}_gifFit`,
+                label: `${objName} ${newId}: Fit Mode`,
+                type: 'combobox',
+                default: 'contain',
+                values: 'contain,cover,fill',
+                description: t('descriptions.Fit Mode', 'How the GIF fits within the object bounds.')
+            },
+            {
+                property: `obj${newId}_gifFilter`,
+                label: `${objName} ${newId}: Filter`,
+                type: 'combobox',
+                default: 'none',
+                values: 'none,grayscale,sepia,invert,blur,brightness,contrast,hue-rotate,saturate',
+                description: t('descriptions.Filter', 'CSS filter to apply to the GIF.')
+            },
+            {
+                property: `obj${newId}_gifFilterValue`,
+                label: `${objName} ${newId}: Filter Value`,
+                type: 'number',
+                default: '100',
+                min: '0',
+                max: '200',
+                description: t('descriptions.Filter Value', 'Intensity of the applied filter.')
+            },
 
             // Polyline
-            { property: `obj${newId}_polylineCurveStyle`, label: `Object ${newId}: Curve Style`, type: 'combobox', default: 'straight', values: 'straight,loose-curve,tight-curve', description: '(Polyline) The style of the line segments.' },
-            { property: `obj${newId}_polylineNodes`, label: `Object ${newId}: Nodes`, type: 'nodetable', default: '[{"x":50,"y":50},{"x":150,"y":100}]', description: '(Polyline) The coordinate data for the polyline nodes.' },
-            { property: `obj${newId}_pathAnim_enable`, label: `Object ${newId}: Enable Animation`, type: 'boolean', default: 'false', description: 'Enables an object that travels along the path.' },
-            { property: `obj${newId}_pathAnim_shape`, label: `Object ${newId}: Shape`, type: 'combobox', default: 'circle', values: 'circle,rectangle,star,polygon', description: 'The shape of the traveling object.' },
-            { property: `obj${newId}_pathAnim_size`, label: `Object ${newId}: Size`, type: 'number', default: '10', min: '1', max: '100', description: 'The size of the traveling object in pixels.' },
-            { property: `obj${newId}_pathAnim_speed`, label: `Object ${newId}: Speed`, type: 'number', default: '50', min: '0', max: '1000', description: 'How fast the object travels along the path (pixels per second).' },
-            { property: `obj${newId}_pathAnim_gradType`, label: `Object ${newId}: Fill Type`, type: 'combobox', default: 'solid', values: 'solid,linear,radial,conic,alternating,random,rainbow,rainbow-radial,rainbow-conic' },
-            { property: `obj${newId}_pathAnim_useSharpGradient`, label: `Object ${newId}: Use Sharp Gradient`, type: 'boolean', default: 'false' },
-            { property: `obj${newId}_pathAnim_gradColor1`, label: `Object ${newId}: Color 1`, type: 'color', default: '#FFFFFF' },
-            { property: `obj${newId}_pathAnim_gradColor2`, label: `Object ${newId}: Color 2`, type: 'color', default: '#00BFFF' },
-            { property: `obj${newId}_pathAnim_animationMode`, label: `Object ${newId}: Fill Animation`, type: 'combobox', values: 'loop,bounce', default: 'loop' },
-            { property: `obj${newId}_pathAnim_animationSpeed`, label: `Object ${newId}: Fill Speed`, type: 'number', default: '10', min: '0', max: '100' },
-            { property: `obj${newId}_pathAnim_behavior`, label: `Object ${newId}: Behavior`, type: 'combobox', values: 'Loop,Ping-Pong', default: 'Loop', description: 'How the object behaves when it reaches the end of the path.' },
-            { property: `obj${newId}_pathAnim_objectCount`, label: `Object ${newId}: Object Count`, type: 'number', default: '1', min: '1', max: '100', description: 'The number of objects to animate along the path.' },
-            { property: `obj${newId}_pathAnim_objectSpacing`, label: `Object ${newId}: Object Spacing`, type: 'number', default: '25', min: '0', max: '200', description: 'The distance between each object when Object Count is greater than 1.' },
-            { property: `obj${newId}_pathAnim_scrollDir`, label: `Object ${newId}: Scroll Direction`, type: 'combobox', values: 'right,left,up,down', default: 'right' },
-            { property: `obj${newId}_pathAnim_cycleColors`, label: `Object ${newId}: Cycle Colors`, type: 'boolean', default: 'false' },
-            { property: `obj${newId}_pathAnim_cycleSpeed`, label: `Object ${newId}: Color Cycle Speed`, type: 'number', default: '10', min: '0', max: '100' },
-            { property: `obj${newId}_pathAnim_trail`, label: `Object ${newId}: Trail`, type: 'combobox', values: 'None,Fade,Solid', default: 'None', description: 'Adds a trail behind the moving object.' },
-            { property: `obj${newId}_pathAnim_trailLength`, label: `Object ${newId}: Trail Length`, type: 'number', default: '20', min: '1', max: '200', description: 'The length of the trail.' },
-            { property: `obj${newId}_pathAnim_trailColor`, label: `Object ${newId}: Trail Color`, type: 'combobox', values: 'Inherit,Rainbow', default: 'Inherit', description: 'The color style of the trail.' },
+            {
+                property: `obj${newId}_polylineNodes`,
+                label: `${objName} ${newId}: Nodes`,
+                type: 'nodetable',
+                default: '[{"x":0,"y":0}]',
+                description: t('descriptions.Nodes', 'The list of points defining the polyline.')
+            },
+            {
+                property: `obj${newId}_polylineCurveStyle`,
+                label: `${objName} ${newId}: Curve Style`,
+                type: 'combobox',
+                default: 'linear',
+                values: 'linear,bezier,catmull-rom',
+                description: t('descriptions.Curve Style', 'Smoothing style for the polyline.')
+            },
 
-            //GIF
-            { property: `obj${newId}_gifUrl`, label: `Object ${newId}: Image/GIF URL`, type: 'textfield', default: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDBsdDVibmc0cjF1amoxbDFmOGU1eGY0OHNrbmptejd4eHc4OWg0cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hqIaXesRGpP44/giphy.webp', description: 'URL of the image or GIF.' },
-            { property: `obj${newId}_gifFit`, label: `Object ${newId}: Fit Mode`, type: 'combobox', values: 'contain,cover,fill,none', default: 'contain', description: 'How the image should resize to fit the box.' },
-            { property: `obj${newId}_gifFilter`, label: `Object ${newId}: CSS Filter`, type: 'combobox', values: 'None,Brightness,Contrast,Hue-Rotate,Invert,Saturate,Sepia', default: 'None', description: 'Apply a CSS filter effect.' },
-            { property: `obj${newId}_gifFilterValue`, label: `Object ${newId}: Filter Intensity`, type: 'number', default: '50', min: '0', max: '100', description: 'Intensity of the selected filter.' },
+            // Path Animation
+            {
+                property: `obj${newId}_pathAnim_enable`,
+                label: `${objName} ${newId}: Enable Path Animation`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Path Animation', 'Enables objects moving along the path.')
+            },
+            {
+                property: `obj${newId}_pathAnim_shape`,
+                label: `${objName} ${newId}: Shape`,
+                type: 'combobox',
+                default: 'circle',
+                values: 'circle,square,triangle,star',
+                description: t('descriptions.Shape', 'Shape of the moving objects.')
+            },
+            {
+                property: `obj${newId}_pathAnim_size`,
+                label: `${objName} ${newId}: Size`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '100',
+                description: t('descriptions.Size', 'Size of the moving objects.')
+            },
+            {
+                property: `obj${newId}_pathAnim_speed`,
+                label: `${objName} ${newId}: Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Speed', 'Speed of movement along the path.')
+            },
+            {
+                property: `obj${newId}_pathAnim_behavior`,
+                label: `${objName} ${newId}: Behavior`,
+                type: 'combobox',
+                default: 'loop',
+                values: 'loop,bounce,one-shot',
+                description: t('descriptions.Behavior', 'Movement behavior.')
+            },
+            {
+                property: `obj${newId}_pathAnim_objectCount`,
+                label: `${objName} ${newId}: Count`,
+                type: 'number',
+                default: '5',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Count', 'Number of moving objects.')
+            },
+            {
+                property: `obj${newId}_pathAnim_objectSpacing`,
+                label: `${objName} ${newId}: Spacing`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Spacing', 'Spacing between moving objects.')
+            },
+            {
+                property: `obj${newId}_pathAnim_gradType`,
+                label: `${objName} ${newId}: Fill Type`,
+                type: 'combobox',
+                default: 'solid',
+                values: 'solid,linear,radial,conic,alternating,random,rainbow',
+                description: t('descriptions.Fill Type', 'Fill type for moving objects.')
+            },
+            {
+                property: `obj${newId}_pathAnim_gradColor1`,
+                label: `${objName} ${newId}: Color 1`,
+                type: 'color',
+                default: '#FF0000',
+                description: t('descriptions.Color 1', 'Primary color.')
+            },
+            {
+                property: `obj${newId}_pathAnim_gradColor2`,
+                label: `${objName} ${newId}: Color 2`,
+                type: 'color',
+                default: '#00FF00',
+                description: t('descriptions.Color 2', 'Secondary color.')
+            },
+            {
+                property: `obj${newId}_pathAnim_useSharpGradient`,
+                label: `${objName} ${newId}: Use Sharp Gradient`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Use Sharp Gradient', 'Sharp color transitions.')
+            },
+            {
+                property: `obj${newId}_pathAnim_animationMode`,
+                label: `${objName} ${newId}: Animation Mode`,
+                type: 'combobox',
+                default: 'loop',
+                values: 'loop,bounce',
+                description: t('descriptions.Animation Mode', 'Color animation mode.')
+            },
+            {
+                property: `obj${newId}_pathAnim_animationSpeed`,
+                label: `${objName} ${newId}: Animation Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Animation Speed', 'Color animation speed.')
+            },
+            {
+                property: `obj${newId}_pathAnim_scrollDir`,
+                label: `${objName} ${newId}: Scroll Direction`,
+                type: 'combobox',
+                default: 'right',
+                values: 'right,left,up,down',
+                description: t('descriptions.Scroll Direction', 'Color scroll direction.')
+            },
+            {
+                property: `obj${newId}_pathAnim_cycleColors`,
+                label: `${objName} ${newId}: Cycle Colors`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Cycle Colors', 'Cycle through colors.')
+            },
+            {
+                property: `obj${newId}_pathAnim_cycleSpeed`,
+                label: `${objName} ${newId}: Cycle Speed`,
+                type: 'number',
+                default: '10',
+                min: '0',
+                max: '100',
+                description: t('descriptions.Color Cycle Speed', 'Color cycle speed.')
+            },
+            {
+                property: `obj${newId}_pathAnim_trail`,
+                label: `${objName} ${newId}: Enable Trail`,
+                type: 'boolean',
+                default: 'false',
+                description: t('descriptions.Enable Trail', 'Enable trails.')
+            },
+            {
+                property: `obj${newId}_pathAnim_trailLength`,
+                label: `${objName} ${newId}: Trail Length`,
+                type: 'number',
+                default: '10',
+                min: '1',
+                max: '50',
+                description: t('descriptions.Trail Length', 'Length of trails.')
+            },
+            {
+                property: `obj${newId}_pathAnim_trailColor`,
+                label: `${objName} ${newId}: Trail Color`,
+                type: 'color',
+                default: '#FFFFFF',
+                description: t('descriptions.Trail Color', 'Color of trails.')
+            }
         ];
     }
 
