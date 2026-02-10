@@ -54,6 +54,23 @@
                     <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
 
+                <div class="d-flex align-items-center">
+
+                    <div class="gtranslate_wrapper me-3"></div>
+
+                    <script>
+                        window.gtranslateSettings = {
+                            "default_language": "en",
+                            "native_language_names": true,
+                            "detect_browser_language": true,
+                            "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
+                            "wrapper_selector": ".gtranslate_wrapper"
+                        }
+                    </script>
+                    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
+
+                </div>
+
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
@@ -188,7 +205,7 @@
                 <div class="d-flex align-items-center px-4">
                     <button class="btn btn-sm btn-outline-danger" id="like-effect-btn" data-bs-toggle="tooltip" title="Like this effect" disabled>
                         <i class="bi bi-heart"></i>
-                        <span id="like-effect-btn-label">Like</span>
+                        <span id="like-effect-btn-label"></span>
                         <span id="like-count-display" class="badge bg-danger ms-2" style="display: none; font-size: 0.9em;">0</span>
                     </button>
                 </div>

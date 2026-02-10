@@ -3445,7 +3445,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (likeBtn) {
                 likeBtn.classList.toggle('btn-danger', isLiked);
                 likeBtn.classList.toggle('btn-outline-danger', !isLiked); // <-- Fixed bug from my previous code
-                likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
+                likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i>' : '<i class="bi bi-heart me-1"></i>';
                 likeBtn.title = isLiked ? "Unlike this effect" : "Like this effect";
             }
 
@@ -3454,9 +3454,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 navLikeBtn.classList.toggle('btn-danger', isLiked);
                 navLikeBtn.classList.toggle('btn-outline-danger', !isLiked);
                 navLikeBtn.querySelector('i').className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1';
-                if (navLikeLabel) {
-                    navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
-                }
+                // if (navLikeLabel) {
+                //     navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+                // }
                 const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
                 if (tooltip) {
                     tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
@@ -3615,9 +3615,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 icon.className = isLiked ? 'bi bi-heart-fill me-1' : 'bi bi-heart me-1'; // <-- MODIFIED (added me-1)
             }
 
-            if (navLikeLabel) { // <-- ADDED BLOCK
-                navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
-            }
+            // if (navLikeLabel) { // <-- ADDED BLOCK
+            //     navLikeLabel.textContent = isLiked ? 'Liked' : 'Like';
+            // }
 
             const tooltip = bootstrap.Tooltip.getInstance(likeEffectBtn);
             if (tooltip) {
