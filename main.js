@@ -3214,8 +3214,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const data = projectDoc.data();
-            const likedBy = data.likedBy || {};
-            const likerUids = Object.keys(likedBy);
+            let likedBy = data.likedBy || [];
+            if (!Array.isArray(likedBy) && typeof likedBy === 'object') {
+                likedBy = Object.keys(likedBy);
+            }
+            const likerUids = likedBy;
 
             if (likerUids.length === 0) {
                 showToast(`No users have liked "${projectName}" yet.`, 'info');
@@ -3399,8 +3402,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const data = projectDoc.data();
-                const likedBy = data.likedBy || {};
-                const isCurrentlyLiked = likedBy.hasOwnProperty(user.uid);
+                let likedBy = data.likedBy || [];
+                if (!Array.isArray(likedBy) && typeof likedBy === 'object') {
+                    likedBy = Object.keys(likedBy);
+                }
+                const isCurrentlyLiked = likedBy.includes(user.uid);
 
                 projectOwnerId = data.userId; // Get the owner's ID
                 newLikesCount = data.likes || 0;
@@ -3408,12 +3414,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (isCurrentlyLiked) {
                     // UNLIKE ACTION
                     newLikesCount = Math.max(0, newLikesCount - 1);
-                    delete likedBy[user.uid];
+                    likedBy = likedBy.filter(uid => uid !== user.uid);
                     action = 'unliked';
                 } else {
                     // LIKE ACTION
                     newLikesCount += 1;
-                    likedBy[user.uid] = true;
+                    if (!likedBy.includes(user.uid)) likedBy.push(user.uid);
                     action = 'liked';
                 }
 
@@ -3673,11 +3679,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const data = docSnap.data();
-            const likedBy = data.likedBy || {};
+            let likedBy = data.likedBy || [];
+            if (!Array.isArray(likedBy) && typeof likedBy === 'object') {
+                likedBy = Object.keys(likedBy);
+            }
             const likeCount = data.likes || 0;
 
             const user = window.auth.currentUser;
-            currentUserHasLiked = user ? likedBy.hasOwnProperty(user.uid) : false;
+            currentUserHasLiked = user ? likedBy.includes(user.uid) : false;
 
             if (likeCountDisplay) {
                 likeCountDisplay.textContent = likeCount;
