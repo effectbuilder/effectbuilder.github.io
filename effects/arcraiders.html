@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ARC Raiders: Blueprint Protocol</title>
+    <meta description="Arc Raiders inspired effect. Fully customizable with multiple animation modes and audio reactivity." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="stripe_x" label="Global Position X" type="number" min="-200" max="320" default="20">
+    <meta property="stripe_y" label="Global Position Y" type="number" min="-200" max="200" default="-50">
+    <meta property="stripe_width" label="Stripe Thickness" type="number" min="1" max="50" default="11">
+    <meta property="stripe_gap" label="Stripe Gap" type="number" min="0" max="20" default="5">
+    <meta property="slope_angle" label="Diagonal Angle" type="number" min="0" max="90" default="24">
+    <meta property="curve_radius" label="Curve Smoothness" type="number" min="10" max="200" default="200">
+    <meta property="curve_y_start" label="Curve Vertical Point" type="number" min="0" max="200" default="140">
+    <meta property="end_angle" label="Curve End Angle (Relative)" type="number" min="-90" max="90" default="-18">
+
+    <meta property="anim_enter" label="Entrance Animation" type="combobox" values="Static,Draw Down,Draw Up,Scan" default="Draw Down">
+    <meta property="anim_exit" label="Exit Animation" type="combobox" values="None,Draw Off,Fade,Dissolve" default="Draw Off">
+    <meta property="anim_speed" label="Cycle Speed" type="number" min="1" max="100" default="20">
+    <meta property="move_dir" label="Stripes Movement" type="combobox" values="None,Left,Right" default="None">
+    <meta property="move_speed" label="Movement Speed" type="number" min="0" max="100" default="20">
+    <meta property="audio_strength" label="Trigger Sensitivity" type="number" min="0" max="100" default="60">
+
+    <meta property="show_grid" label="Show Grid" type="boolean" default="true">
+    <meta property="grid_speed" label="Grid Speed" type="number" min="0" max="100" default="5">
+    <meta property="grid_size" label="Grid Size" type="number" min="10" max="100" default="40">
+    <meta property="grid_color" label="Grid Color" type="color" default="#0055ff">
+    <meta property="bg_color" label="Background Color" type="color" default="#000022">
+
+    <meta property="stripe_color_1" label="Stripe 1 (Front/Curve)" type="color" default="#5fe5ff">
+    <meta property="stripe_color_2" label="Stripe 2" type="color" default="#37f173">
+    <meta property="stripe_color_3" label="Stripe 3" type="color" default="#ffb713">
+    <meta property="stripe_color_4" label="Stripe 4 (Back)" type="color" default="#f6001f">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+<script>
+    // -------------------------------------------------------------------
+    // BROWSER COMPATIBILITY LAYER
+    // -------------------------------------------------------------------
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+        function simulateAudio() {
+            const time = Date.now() / 1000; 
+            const dataArray = new Array(128).fill(0);
+            const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+            const bassVal = Math.pow(beat, 4) * 255; 
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+            window.engine.audio.freq = dataArray;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    } else {
+        document.getElementById('start-overlay').style.display = 'none';
+    }
+</script>
+
+<script>
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let time = 0;
+    
+    // Strobe State
+    let activeFlashIndex = -1;
+    let flashTimer = 0;
+    let maxBass = 0.5; 
+
+    // Animation Phase (0.0 to 1.0)
+    let animPhase = 0;
+    
+    // Movement Offset
+    let movementX = 0;
+
+    function drawGrid(width, height, offset, gridSize, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Vertical
+        for (let x = offset % gridSize; x < width; x += gridSize) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, height);
+        }
+        // Horizontal
+        for (let y = offset % gridSize; y < height; y += gridSize) {
+            ctx.moveTo(0, y); ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+    }
+
+    function drawStripes(w, h, offsetX) {
+        // Properties
+        const startX_base = typeof stripe_x !== 'undefined' ? stripe_x : 20;
+        const startY = typeof stripe_y !== 'undefined' ? stripe_y : -50;
+        const thickness = typeof stripe_width !== 'undefined' ? stripe_width : 11;
+        const gap = typeof stripe_gap !== 'undefined' ? stripe_gap : 5;
+        const angleDeg = typeof slope_angle !== 'undefined' ? slope_angle : 24;
+        const radius = typeof curve_radius !== 'undefined' ? curve_radius : 200;
+        const breakY = typeof curve_y_start !== 'undefined' ? curve_y_start : 140;
+        const endAngleRelative = typeof end_angle !== 'undefined' ? end_angle : -18;
+        
+        const enterMode = typeof anim_enter !== 'undefined' ? anim_enter : "Draw Down";
+        const exitMode = typeof anim_exit !== 'undefined' ? anim_exit : "Draw Off";
+
+        const c1 = typeof stripe_color_1 !== 'undefined' ? stripe_color_1 : "#5fe5ff";
+        const c2 = typeof stripe_color_2 !== 'undefined' ? stripe_color_2 : "#37f173";
+        const c3 = typeof stripe_color_3 !== 'undefined' ? stripe_color_3 : "#ffb713";
+        const c4 = typeof stripe_color_4 !== 'undefined' ? stripe_color_4 : "#f6001f";
+        const colors = [c1, c2, c3, c4];
+
+        // Calculations
+        const angleRad = angleDeg * (Math.PI / 180);
+        const slope = Math.tan(angleRad);
+        const endAngleRad = (angleDeg + endAngleRelative) * (Math.PI / 180);
+        const endSlope = Math.tan(endAngleRad);
+        const totalStride = (thickness + gap) / Math.cos(angleRad); 
+
+        // Apply Movement Offset
+        const startX = startX_base + offsetX;
+
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'round'; 
+        ctx.shadowBlur = 0;
+
+        const approxLen = h * 1.5; 
+
+        // --- CYCLE TIMING LOGIC ---
+        let currentStage = "Enter"; 
+        let stageProgress = 0.0;    
+
+        if (enterMode === "Scan") {
+            currentStage = "Scan";
+            stageProgress = animPhase;
+        } else if (exitMode === "None") {
+            currentStage = "Enter";
+            stageProgress = animPhase;
+        } else {
+            if (animPhase < 0.45) {
+                currentStage = "Enter";
+                stageProgress = animPhase / 0.45;
+            } else if (animPhase < 0.55) {
+                currentStage = "Hold";
+                stageProgress = (animPhase - 0.45) / 0.10;
+            } else {
+                currentStage = "Exit";
+                stageProgress = (animPhase - 0.55) / 0.45;
+            }
+        }
+
+        for (let i = 3; i >= 0; i--) {
+            let drawColor = colors[i];
+            if (i === activeFlashIndex && flashTimer > 0) {
+                drawColor = "#FFFFFF";
+            }
+            
+            ctx.globalAlpha = 1.0;
+            ctx.setLineDash([]);
+            ctx.lineDashOffset = 0;
+
+            // --- ANIMATION STATE CALCULATION ---
+            if (currentStage === "Enter") {
+                if (enterMode === "Static") {
+                    ctx.setLineDash([]);
+                } else {
+                    let k = (enterMode === "Draw Down") ? (3 - i) : i; 
+                    let startT = k * 0.25;
+                    let endT = (k + 1) * 0.25;
+                    let lineP = 0;
+                    if (stageProgress > endT) lineP = 1;
+                    else if (stageProgress > startT) lineP = (stageProgress - startT) / 0.25;
+
+                    if (enterMode === "Draw Down") {
+                        ctx.setLineDash([lineP * approxLen, approxLen]);
+                    } else if (enterMode === "Draw Up") {
+                        ctx.setLineDash([approxLen, approxLen]);
+                        ctx.lineDashOffset = (1.0 - lineP) * approxLen;
+                    }
+                }
+            } else if (currentStage === "Hold") {
+                ctx.setLineDash([]);
+            } else if (currentStage === "Exit") {
+                let k = (enterMode === "Draw Down") ? (3 - i) : i;
+                let startT = k * 0.25;
+                let endT = (k + 1) * 0.25;
+                let lineP = 0; 
+                
+                if (stageProgress > endT) lineP = 1;
+                else if (stageProgress > startT) lineP = (stageProgress - startT) / 0.25;
+
+                if (exitMode === "Draw Off") {
+                    if (enterMode === "Draw Down") {
+                         ctx.setLineDash([approxLen * (1-lineP), approxLen]);
+                    } else {
+                         ctx.setLineDash([approxLen, approxLen]);
+                         ctx.lineDashOffset = (lineP) * approxLen;
+                    }
+                } else if (exitMode === "Fade") {
+                    ctx.globalAlpha = 1.0 - lineP;
+                    ctx.setLineDash([]);
+                } else if (exitMode === "Dissolve") {
+                    const dashSize = 20;
+                    const gapSize = lineP * 100;
+                    if (lineP >= 1) ctx.globalAlpha = 0;
+                    else {
+                        ctx.setLineDash([dashSize, gapSize]);
+                        ctx.lineDashOffset = Math.random() * 50;
+                    }
+                }
+            } else if (currentStage === "Scan") {
+                let scanP = stageProgress; 
+                const scanLen = approxLen * 0.25; 
+                ctx.setLineDash([scanLen, approxLen]); 
+                ctx.lineDashOffset = - (scanP * (approxLen + scanLen)) + scanLen;
+            }
+
+            // --- DRAWING ---
+            const xOffset = startX + (i * totalStride);
+            ctx.strokeStyle = drawColor;
+            ctx.lineWidth = thickness;
+            ctx.beginPath();
+            
+            const originX = xOffset + (startY * slope);
+            const originY = startY;
+            ctx.moveTo(originX, originY);
+
+            if (i > 0) {
+                const endY = h + 100;
+                const endX = xOffset + (endY * slope);
+                ctx.lineTo(endX, endY);
+            } else {
+                const cornerX = xOffset + (breakY * slope);
+                const cornerY = breakY;
+                const targetY = h + 200;
+                const targetX = cornerX + (targetY - cornerY) * endSlope;
+                ctx.arcTo(cornerX, cornerY, targetX, targetY, radius);
+                ctx.lineTo(targetX, targetY);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+        ctx.setLineDash([]);
+    }
+
+    function animate() {
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const speed = typeof grid_speed !== 'undefined' ? grid_speed : 5;
+        const gSize = typeof grid_size !== 'undefined' ? grid_size : 40;
+        const gColor = typeof grid_color !== 'undefined' ? grid_color : "#0055ff";
+        const bgColor = typeof bg_color !== 'undefined' ? bg_color : "#000022";
+        const sens = typeof audio_strength !== 'undefined' ? audio_strength : 60;
+        
+        const enableGrid = typeof show_grid !== 'undefined' ? show_grid : true;
+        
+        // Animation Phase
+        const aSpeed = typeof anim_speed !== 'undefined' ? anim_speed : 20;
+        animPhase += (aSpeed / 2000); 
+        if (animPhase > 1) animPhase = 0;
+
+        // --- MOVEMENT UPDATE (Seamless Loop) ---
+        const moveDir = typeof move_dir !== 'undefined' ? move_dir : "None";
+        const mSpeed = typeof move_speed !== 'undefined' ? move_speed : 20;
+        
+        const loopWidth = 320; 
+
+        if (moveDir === "Left") {
+            movementX -= (mSpeed * 0.1);
+        } else if (moveDir === "Right") {
+            movementX += (mSpeed * 0.1);
+        }
+        
+        while (movementX < 0) movementX += loopWidth;
+        while (movementX >= loopWidth) movementX -= loopWidth;
+
+        // Audio Processing
+        let bass = 0;
+        if (window.engine && window.engine.audio && window.engine.audio.freq) {
+            const freq = window.engine.audio.freq;
+            bass = (freq[0] + freq[1] + freq[2]) / (3 * 255.0);
+        }
+
+        // Auto-Gain Logic
+        maxBass *= 0.99; 
+        if (bass > maxBass) maxBass = bass;
+        if (maxBass < 0.1) maxBass = 0.1;
+
+        const relativeThresh = 0.95 * (1.0 - (sens / 100));
+        const actualThreshold = maxBass * relativeThresh;
+        
+        if (bass > actualThreshold && flashTimer <= 0 && bass > 0.05) {
+            activeFlashIndex = Math.floor(Math.random() * 4);
+            flashTimer = 4; 
+        }
+
+        if (flashTimer > 0) {
+            flashTimer--;
+        } else {
+            activeFlashIndex = -1;
+        }
+
+        // Draw
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+
+        if (enableGrid) {
+            const offset = (time * speed) % gSize;
+            drawGrid(width, height, offset, gSize, gColor);
+        }
+        
+        // Triple Buffer Draw for seamless loop
+        drawStripes(width, height, movementX);
+        drawStripes(width, height, movementX - loopWidth);
+        drawStripes(width, height, movementX + loopWidth);
+        
+        time += 0.05;
+        requestAnimationFrame(animate);
+    }
+    
+    function resize() {
+        canvas.width = 320;
+        canvas.height = 200;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>
