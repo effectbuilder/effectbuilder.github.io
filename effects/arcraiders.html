@@ -2,8 +2,10 @@
 <html>
 <head>
     <title>ARC Raiders: Blueprint Protocol</title>
-    <meta description="Inspired by the visual aesthetic of the game 'Arc Raiders', this effect features a dynamic blueprint grid with animated diagonal stripes that move and react to audio input." />
-    <meta publisher="José Miranda" />
+    <meta description="A high-fidelity tactical HUD visualization featuring seamless scrolling telemetry, rhythmic signal processing, and customizable blueprint geometry. Inspired by ARC Raiders." />
+    <meta publisher="Jose Miranda" />
+
+    <meta property="color_profile" label="Color Profile" type="combobox" values="Custom,ARC Standard,Cotton Candy,Cyberpunk City,Deep Ocean,Glacial Ice,Golden Age,High Voltage,Matrix Code,Neon Tokyo,Night Vision,Red Alert,Royal Guard,Rust and Dust,Solar Flare,Stealth Grey,Synthwave,Thermal Heatmap,Toxic Hazard,Ultraviolet,Vampire Hunter" default="ARC Standard" tooltip="Select a preset theme or choose 'Custom' to use the pickers below.">
 
     <meta property="stripe_width" label="Stripe Thickness" type="number" min="1" max="50" default="11" tooltip="Sets the width of each individual stripe line.">
     <meta property="stripe_gap" label="Stripe Gap" type="number" min="0" max="20" default="5" tooltip="Sets the spacing between the stripes.">
@@ -25,13 +27,13 @@
     <meta property="show_grid" label="Show Grid" type="boolean" default="true" tooltip="Toggles the visibility of the background blueprint grid.">
     <meta property="grid_speed" label="Grid Speed" type="number" min="0" max="100" default="5" tooltip="Controls how fast the background grid scrolls.">
     <meta property="grid_size" label="Grid Size" type="number" min="10" max="100" default="40" tooltip="Sets the size of the grid squares.">
-    <meta property="grid_color" label="Grid Color" type="color" default="#0055ff" tooltip="Sets the color of the grid lines.">
+    <meta property="grid_color" label="Manual Grid Color" type="color" default="#0055ff" tooltip="Sets the color of the grid lines (Only used if Color Profile is Custom).">
     <meta property="bg_color" label="Background Color" type="color" default="#000000" tooltip="Sets the solid background color behind the effect.">
 
-    <meta property="stripe_color_1" label="Stripe 1 (Front/Curve)" type="color" default="#5fe5ff" tooltip="Color of the front-most stripe (the one that curves).">
-    <meta property="stripe_color_2" label="Stripe 2" type="color" default="#37f173" tooltip="Color of the second stripe.">
-    <meta property="stripe_color_3" label="Stripe 3" type="color" default="#ffb713" tooltip="Color of the third stripe.">
-    <meta property="stripe_color_4" label="Stripe 4 (Back)" type="color" default="#f6001f" tooltip="Color of the back-most stripe.">
+    <meta property="stripe_color_1" label="Custom Stripe 1 (Front)" type="color" default="#5fe5ff" tooltip="Only used if Color Profile is set to 'Custom'.">
+    <meta property="stripe_color_2" label="Custom Stripe 2" type="color" default="#37f173" tooltip="Only used if Color Profile is set to 'Custom'.">
+    <meta property="stripe_color_3" label="Custom Stripe 3" type="color" default="#ffb713" tooltip="Only used if Color Profile is set to 'Custom'.">
+    <meta property="stripe_color_4" label="Custom Stripe 4 (Back)" type="color" default="#f6001f" tooltip="Only used if Color Profile is set to 'Custom'.">
 
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
@@ -93,6 +95,31 @@
     // Movement Offset
     let movementX = 0;
 
+    // --- COLOR PROFILES DATA ---
+    const PROFILES = {
+        "Custom": null, // Uses manual pickers
+        "ARC Standard": ["#5fe5ff", "#37f173", "#ffb713", "#f6001f"],
+        "Cotton Candy": ["#ffb7b2", "#ffdac1", "#e2f0cb", "#b5ead7"],
+        "Cyberpunk City": ["#00ffff", "#ff00ff", "#8a2be2", "#0000ff"],
+        "Deep Ocean": ["#00ffff", "#00bfff", "#1e90ff", "#00008b"],
+        "Glacial Ice": ["#ffffff", "#e0ffff", "#afeeee", "#b0e0e6"],
+        "Golden Age": ["#ffd700", "#ffb713", "#ffa500", "#daa520"],
+        "High Voltage": ["#ffff00", "#0000ff", "#ffffff", "#ff0000"],
+        "Matrix Code": ["#00ff00", "#003300", "#00cc00", "#001100"],
+        "Neon Tokyo": ["#ff0099", "#ff6600", "#ccff00", "#00ffff"],
+        "Night Vision": ["#00ff00", "#32cd32", "#008000", "#006400"],
+        "Red Alert": ["#ff0000", "#ff4500", "#b22222", "#8b0000"],
+        "Royal Guard": ["#ffd700", "#800080", "#4b0082", "#ffffff"],
+        "Rust and Dust": ["#cd853f", "#8b4513", "#a0522d", "#d2691e"],
+        "Solar Flare": ["#ffff00", "#ffcc00", "#ff8c00", "#ff4500"],
+        "Stealth Grey": ["#ffffff", "#d3d3d3", "#a9a9a9", "#696969"],
+        "Synthwave": ["#ff00ff", "#00ffff", "#ffff00", "#ff0099"],
+        "Thermal Heatmap": ["#0000ff", "#00ffff", "#ffff00", "#ff0000"],
+        "Toxic Hazard": ["#ccff00", "#99ff33", "#66ff66", "#33cc33"],
+        "Ultraviolet": ["#e0b0ff", "#da70d6", "#9932cc", "#4b0082"],
+        "Vampire Hunter": ["#ff0000", "#000000", "#444444", "#8b0000"]
+    };
+
     function drawGrid(width, height, offset, gridSize, color) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
@@ -108,7 +135,7 @@
         ctx.stroke();
     }
 
-    function drawStripes(w, h, offsetX) {
+    function drawStripes(w, h, offsetX, colors) {
         // Properties - Hardcoded Defaults for Position
         const startX_base = 20; 
         const startY = -50;     
@@ -122,13 +149,7 @@
         
         const enterMode = typeof anim_enter !== 'undefined' ? anim_enter : "Draw Down";
         const exitMode = typeof anim_exit !== 'undefined' ? anim_exit : "Draw Off";
-
-        const c1 = typeof stripe_color_1 !== 'undefined' ? stripe_color_1 : "#5fe5ff";
-        const c2 = typeof stripe_color_2 !== 'undefined' ? stripe_color_2 : "#37f173";
-        const c3 = typeof stripe_color_3 !== 'undefined' ? stripe_color_3 : "#ffb713";
-        const c4 = typeof stripe_color_4 !== 'undefined' ? stripe_color_4 : "#f6001f";
-        const colors = [c1, c2, c3, c4];
-
+        
         // Calculations
         const angleRad = angleDeg * (Math.PI / 180);
         const slope = Math.tan(angleRad);
@@ -139,7 +160,7 @@
         // Apply Movement Offset
         const startX = startX_base + offsetX;
 
-        ctx.lineCap = 'round';
+        ctx.lineCap = 'round'; 
         ctx.lineJoin = 'round'; 
         ctx.shadowBlur = 0;
 
@@ -268,8 +289,29 @@
 
         const speed = typeof grid_speed !== 'undefined' ? grid_speed : 5;
         const gSize = typeof grid_size !== 'undefined' ? grid_size : 40;
-        const gColor = typeof grid_color !== 'undefined' ? grid_color : "#0055ff";
-        const bgColor = typeof bg_color !== 'undefined' ? bg_color : "#000022";
+        
+        // --- COLOR LOGIC ---
+        const profileName = typeof color_profile !== 'undefined' ? color_profile : "Custom";
+        const manualGridColor = typeof grid_color !== 'undefined' ? grid_color : "#0055ff";
+        let activeColors = [];
+        let activeGridColor = manualGridColor;
+
+        if (profileName !== "Custom" && PROFILES[profileName]) {
+            activeColors = PROFILES[profileName];
+            // If using a profile, override grid color with the primary (first) color of that profile
+            // or maybe the last one for contrast? Let's use the first one (Front stripe).
+            activeGridColor = activeColors[0];
+        } else {
+            // Manual
+            const c1 = typeof stripe_color_1 !== 'undefined' ? stripe_color_1 : "#5fe5ff";
+            const c2 = typeof stripe_color_2 !== 'undefined' ? stripe_color_2 : "#37f173";
+            const c3 = typeof stripe_color_3 !== 'undefined' ? stripe_color_3 : "#ffb713";
+            const c4 = typeof stripe_color_4 !== 'undefined' ? stripe_color_4 : "#f6001f";
+            activeColors = [c1, c2, c3, c4];
+            activeGridColor = manualGridColor;
+        }
+
+        const bgColor = typeof bg_color !== 'undefined' ? bg_color : "#000000";
         const sens = typeof audio_strength !== 'undefined' ? audio_strength : 60;
         
         const enableGrid = typeof show_grid !== 'undefined' ? show_grid : true;
@@ -291,7 +333,7 @@
             // Map 0-100 slider to 0-320 pixels
             movementX = (manualPos / 100) * loopWidth;
         } else {
-            // AUTO MODE
+            // AUTO MODE (Strict)
             if (moveDir === "Left") {
                 movementX -= (mSpeed * 0.1);
             } else if (moveDir === "Right") {
@@ -337,13 +379,13 @@
 
         if (enableGrid) {
             const offset = (time * speed) % gSize;
-            drawGrid(width, height, offset, gSize, gColor);
+            drawGrid(width, height, offset, gSize, activeGridColor);
         }
         
         // Triple Buffer Draw for seamless loop
-        drawStripes(width, height, movementX);
-        drawStripes(width, height, movementX - loopWidth);
-        drawStripes(width, height, movementX + loopWidth);
+        drawStripes(width, height, movementX, activeColors);
+        drawStripes(width, height, movementX - loopWidth, activeColors);
+        drawStripes(width, height, movementX + loopWidth, activeColors);
         
         time += 0.05;
         requestAnimationFrame(animate);
