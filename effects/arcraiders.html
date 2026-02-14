@@ -44,9 +44,6 @@
     <canvas id="effect-canvas" width="320" height="200"></canvas>
 
 <script>
-    // -------------------------------------------------------------------
-    // BROWSER COMPATIBILITY LAYER
-    // -------------------------------------------------------------------
     if (typeof window.engine === 'undefined') {
         const metaTags = document.querySelectorAll('meta[property]');
         metaTags.forEach(meta => {
@@ -60,9 +57,7 @@
                 window[propName] = finalValue;
             }
         });
-
         window.engine = { audio: { freq: new Array(128).fill(0) } };
-
         function simulateAudio() {
             const time = Date.now() / 1000; 
             const dataArray = new Array(128).fill(0);
@@ -73,31 +68,21 @@
             requestAnimationFrame(simulateAudio);
         }
         simulateAudio();
-    } else {
-        document.getElementById('start-overlay').style.display = 'none';
     }
 </script>
 
 <script>
     const canvas = document.getElementById('effect-canvas');
     const ctx = canvas.getContext('2d');
-
     let time = 0;
-    
-    // Strobe State
     let activeFlashIndex = -1;
     let flashTimer = 0;
     let maxBass = 0.5; 
-
-    // Animation Phase (0.0 to 1.0)
     let animPhase = 0;
-    
-    // Movement Offset
     let movementX = 0;
 
-    // --- COLOR PROFILES DATA ---
     const PROFILES = {
-        "Custom": null, // Uses manual pickers
+        "Custom": null,
         "ARC Standard": ["#5fe5ff", "#37f173", "#ffb713", "#f6001f"],
         "Cotton Candy": ["#ffb7b2", "#ffdac1", "#e2f0cb", "#b5ead7"],
         "Cyberpunk City": ["#00ffff", "#ff00ff", "#8a2be2", "#0000ff"],
@@ -124,11 +109,9 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        // Vertical
         for (let x = offset % gridSize; x < width; x += gridSize) {
             ctx.moveTo(x, 0); ctx.lineTo(x, height);
         }
-        // Horizontal
         for (let y = offset % gridSize; y < height; y += gridSize) {
             ctx.moveTo(0, y); ctx.lineTo(width, y);
         }
@@ -136,81 +119,47 @@
     }
 
     function drawStripes(w, h, offsetX, colors) {
-        // Properties - Hardcoded Defaults for Position
         const startX_base = 20; 
         const startY = -50;     
-        
         const thickness = typeof stripe_width !== 'undefined' ? stripe_width : 11;
         const gap = typeof stripe_gap !== 'undefined' ? stripe_gap : 5;
         const angleDeg = typeof slope_angle !== 'undefined' ? slope_angle : 24;
         const radius = typeof curve_radius !== 'undefined' ? curve_radius : 200;
         const breakY = typeof curve_y_start !== 'undefined' ? curve_y_start : 140;
         const endAngleRelative = typeof end_angle !== 'undefined' ? end_angle : -18;
-        
         const enterMode = typeof anim_enter !== 'undefined' ? anim_enter : "Draw Down";
         const exitMode = typeof anim_exit !== 'undefined' ? anim_exit : "Draw Off";
         
-        // Calculations
         const angleRad = angleDeg * (Math.PI / 180);
         const slope = Math.tan(angleRad);
-        const endAngleRad = (angleDeg + endAngleRelative) * (Math.PI / 180);
-        const endSlope = Math.tan(endAngleRad);
         const totalStride = (thickness + gap) / Math.cos(angleRad); 
-
-        // Apply Movement Offset
         const startX = startX_base + offsetX;
+        const approxLen = h * 2.0; // Slightly longer for safe coverage
+
+        let currentStage = "Enter", stageProgress = 0.0;    
+        if (enterMode === "Scan") { currentStage = "Scan"; stageProgress = animPhase; }
+        else if (exitMode === "None") { currentStage = "Enter"; stageProgress = animPhase; }
+        else {
+            if (animPhase < 0.45) { currentStage = "Enter"; stageProgress = animPhase / 0.45; }
+            else if (animPhase < 0.55) { currentStage = "Hold"; stageProgress = (animPhase - 0.45) / 0.10; }
+            else { currentStage = "Exit"; stageProgress = (animPhase - 0.55) / 0.45; }
+        }
 
         ctx.lineCap = 'round'; 
         ctx.lineJoin = 'round'; 
-        ctx.shadowBlur = 0;
-
-        const approxLen = h * 1.5; 
-
-        // --- CYCLE TIMING LOGIC ---
-        let currentStage = "Enter"; 
-        let stageProgress = 0.0;    
-
-        if (enterMode === "Scan") {
-            currentStage = "Scan";
-            stageProgress = animPhase;
-        } else if (exitMode === "None") {
-            currentStage = "Enter";
-            stageProgress = animPhase;
-        } else {
-            if (animPhase < 0.45) {
-                currentStage = "Enter";
-                stageProgress = animPhase / 0.45;
-            } else if (animPhase < 0.55) {
-                currentStage = "Hold";
-                stageProgress = (animPhase - 0.45) / 0.10;
-            } else {
-                currentStage = "Exit";
-                stageProgress = (animPhase - 0.55) / 0.45;
-            }
-        }
 
         for (let i = 3; i >= 0; i--) {
             let drawColor = colors[i];
-            if (i === activeFlashIndex && flashTimer > 0) {
-                drawColor = "#FFFFFF";
-            }
-            
+            if (i === activeFlashIndex && flashTimer > 0) drawColor = "#FFFFFF";
             ctx.globalAlpha = 1.0;
             ctx.setLineDash([]);
             ctx.lineDashOffset = 0;
 
-            // --- ANIMATION STATE CALCULATION ---
             if (currentStage === "Enter") {
-                if (enterMode === "Static") {
-                    ctx.setLineDash([]);
-                } else {
+                if (enterMode === "Static") ctx.setLineDash([]);
+                else {
                     let k = (enterMode === "Draw Down") ? (3 - i) : i; 
-                    let startT = k * 0.25;
-                    let endT = (k + 1) * 0.25;
-                    let lineP = 0;
-                    if (stageProgress > endT) lineP = 1;
-                    else if (stageProgress > startT) lineP = (stageProgress - startT) / 0.25;
-
+                    let lineP = Math.max(0, Math.min(1, (stageProgress - k * 0.25) / 0.25));
                     if (enterMode === "Draw Down") {
                         ctx.setLineDash([lineP * approxLen, approxLen]);
                     } else if (enterMode === "Draw Up") {
@@ -218,17 +167,9 @@
                         ctx.lineDashOffset = (1.0 - lineP) * approxLen;
                     }
                 }
-            } else if (currentStage === "Hold") {
-                ctx.setLineDash([]);
             } else if (currentStage === "Exit") {
                 let k = (enterMode === "Draw Down") ? (3 - i) : i;
-                let startT = k * 0.25;
-                let endT = (k + 1) * 0.25;
-                let lineP = 0; 
-                
-                if (stageProgress > endT) lineP = 1;
-                else if (stageProgress > startT) lineP = (stageProgress - startT) / 0.25;
-
+                let lineP = Math.max(0, Math.min(1, (stageProgress - k * 0.25) / 0.25));
                 if (exitMode === "Draw Off") {
                     if (enterMode === "Draw Down") {
                          ctx.setLineDash([approxLen * (1-lineP), approxLen]);
@@ -238,168 +179,92 @@
                     }
                 } else if (exitMode === "Fade") {
                     ctx.globalAlpha = 1.0 - lineP;
-                    ctx.setLineDash([]);
                 } else if (exitMode === "Dissolve") {
-                    const dashSize = 20;
-                    const gapSize = lineP * 100;
                     if (lineP >= 1) ctx.globalAlpha = 0;
-                    else {
-                        ctx.setLineDash([dashSize, gapSize]);
-                        ctx.lineDashOffset = Math.random() * 50;
-                    }
+                    else { ctx.setLineDash([20, lineP * 100]); ctx.lineDashOffset = Math.random() * 50; }
                 }
             } else if (currentStage === "Scan") {
-                let scanP = stageProgress; 
                 const scanLen = approxLen * 0.25; 
                 ctx.setLineDash([scanLen, approxLen]); 
-                ctx.lineDashOffset = - (scanP * (approxLen + scanLen)) + scanLen;
+                ctx.lineDashOffset = - (stageProgress * (approxLen + scanLen)) + scanLen;
             }
 
-            // --- DRAWING ---
             const xOffset = startX + (i * totalStride);
             ctx.strokeStyle = drawColor;
             ctx.lineWidth = thickness;
             ctx.beginPath();
-            
-            const originX = xOffset + (startY * slope);
-            const originY = startY;
-            ctx.moveTo(originX, originY);
+            ctx.moveTo(xOffset + (startY * slope), startY);
 
             if (i > 0) {
-                const endY = h + 100;
-                const endX = xOffset + (endY * slope);
-                ctx.lineTo(endX, endY);
+                ctx.lineTo(xOffset + ((h + 100) * slope), h + 100);
             } else {
+                const endAngleRad = (angleDeg + endAngleRelative) * (Math.PI / 180);
+                const endSlope = Math.tan(endAngleRad);
                 const cornerX = xOffset + (breakY * slope);
                 const cornerY = breakY;
                 const targetY = h + 200;
-                const targetX = cornerX + (targetY - cornerY) * endSlope;
-                ctx.arcTo(cornerX, cornerY, targetX, targetY, radius);
-                ctx.lineTo(targetX, targetY);
+                ctx.arcTo(cornerX, cornerY, cornerX + (targetY - cornerY) * endSlope, targetY, radius);
+                ctx.lineTo(cornerX + (targetY - cornerY) * endSlope, targetY);
             }
             ctx.stroke();
-            ctx.globalAlpha = 1.0;
         }
         ctx.setLineDash([]);
     }
 
     function animate() {
-        const width = canvas.width;
-        const height = canvas.height;
-
-        const speed = typeof grid_speed !== 'undefined' ? grid_speed : 5;
-        const gSize = typeof grid_size !== 'undefined' ? grid_size : 40;
-        
-        // --- COLOR LOGIC ---
+        const width = canvas.width, height = canvas.height;
         const profileName = typeof color_profile !== 'undefined' ? color_profile : "Custom";
         const manualGridColor = typeof grid_color !== 'undefined' ? grid_color : "#0055ff";
-        let activeColors = [];
-        let activeGridColor = manualGridColor;
+        let activeColors, activeGridColor;
 
         if (profileName !== "Custom" && PROFILES[profileName]) {
             activeColors = PROFILES[profileName];
-            // If using a profile, override grid color with the primary (first) color of that profile
-            // or maybe the last one for contrast? Let's use the first one (Front stripe).
             activeGridColor = activeColors[0];
         } else {
-            // Manual
-            const c1 = typeof stripe_color_1 !== 'undefined' ? stripe_color_1 : "#5fe5ff";
-            const c2 = typeof stripe_color_2 !== 'undefined' ? stripe_color_2 : "#37f173";
-            const c3 = typeof stripe_color_3 !== 'undefined' ? stripe_color_3 : "#ffb713";
-            const c4 = typeof stripe_color_4 !== 'undefined' ? stripe_color_4 : "#f6001f";
-            activeColors = [c1, c2, c3, c4];
+            activeColors = [stripe_color_1, stripe_color_2, stripe_color_3, stripe_color_4];
             activeGridColor = manualGridColor;
         }
 
         const bgColor = typeof bg_color !== 'undefined' ? bg_color : "#000000";
         const sens = typeof audio_strength !== 'undefined' ? audio_strength : 60;
-        
-        const enableGrid = typeof show_grid !== 'undefined' ? show_grid : true;
-        
-        // Animation Phase
         const aSpeed = typeof anim_speed !== 'undefined' ? anim_speed : 20;
-        animPhase += (aSpeed / 2000); 
-        if (animPhase > 1) animPhase = 0;
+        animPhase = (animPhase + aSpeed / 2000) % 1;
 
-        // --- MOVEMENT LOGIC ---
         const moveDir = typeof move_dir !== 'undefined' ? move_dir : "None";
         const mSpeed = typeof move_speed !== 'undefined' ? move_speed : 20;
-        const manualPos = typeof manual_pos !== 'undefined' ? manual_pos : 0;
-        
         const loopWidth = 320; 
 
         if (mSpeed === 0) {
-            // MANUAL MODE
-            // Map 0-100 slider to 0-320 pixels
-            movementX = (manualPos / 100) * loopWidth;
+            movementX = (manual_pos / 100) * loopWidth;
         } else {
-            // AUTO MODE (Strict)
-            if (moveDir === "Left") {
-                movementX -= (mSpeed * 0.1);
-            } else if (moveDir === "Right") {
-                movementX += (mSpeed * 0.1);
-            }
-            
-            // Normalize movementX to stay within [0, loopWidth]
-            while (movementX < 0) movementX += loopWidth;
-            while (movementX >= loopWidth) movementX -= loopWidth;
+            if (moveDir === "Left") movementX -= (mSpeed * 0.1);
+            else if (moveDir === "Right") movementX += (mSpeed * 0.1);
+            movementX = (movementX % loopWidth + loopWidth) % loopWidth;
         }
 
-        // Audio Processing
         let bass = 0;
-        if (sens > 0 && window.engine && window.engine.audio && window.engine.audio.freq) {
-            const freq = window.engine.audio.freq;
-            bass = (freq[0] + freq[1] + freq[2]) / (3 * 255.0);
-        } else {
-            bass = 0; // Force silence if sens is 0
+        if (sens > 0 && window.engine.audio.freq) {
+            bass = (window.engine.audio.freq[0] + window.engine.audio.freq[1] + window.engine.audio.freq[2]) / (3 * 255.0);
         }
-
-        // Auto-Gain Logic
-        maxBass *= 0.99; 
-        if (bass > maxBass) maxBass = bass;
-        if (maxBass < 0.1) maxBass = 0.1;
-
-        const relativeThresh = 0.95 * (1.0 - (sens / 100));
-        const actualThreshold = maxBass * relativeThresh;
-        
-        if (bass > actualThreshold && flashTimer <= 0 && bass > 0.05) {
+        maxBass = Math.max(0.1, maxBass * 0.99, bass);
+        if (bass > maxBass * (0.95 * (1.0 - sens / 100)) && flashTimer <= 0 && bass > 0.05) {
             activeFlashIndex = Math.floor(Math.random() * 4);
             flashTimer = 4; 
         }
+        if (flashTimer > 0) flashTimer--; else activeFlashIndex = -1;
 
-        if (flashTimer > 0) {
-            flashTimer--;
-        } else {
-            activeFlashIndex = -1;
-        }
-
-        // Draw
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, width, height);
-
-        if (enableGrid) {
-            const offset = (time * speed) % gSize;
-            drawGrid(width, height, offset, gSize, activeGridColor);
+        if (typeof show_grid === 'undefined' || show_grid) {
+            drawGrid(width, height, (time * grid_speed) % grid_size, grid_size, activeGridColor);
         }
         
-        // Triple Buffer Draw for seamless loop
-        drawStripes(width, height, movementX, activeColors);
-        drawStripes(width, height, movementX - loopWidth, activeColors);
-        drawStripes(width, height, movementX + loopWidth, activeColors);
+        [-loopWidth, 0, loopWidth].forEach(offset => drawStripes(width, height, movementX + offset, activeColors));
         
         time += 0.05;
         requestAnimationFrame(animate);
     }
-    
-    function resize() {
-        canvas.width = 320;
-        canvas.height = 200;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    requestAnimationFrame(animate);
-
+    animate();
 </script>
 </body>
 </html>
