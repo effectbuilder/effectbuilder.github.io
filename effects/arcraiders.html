@@ -2,35 +2,36 @@
 <html>
 <head>
     <title>ARC Raiders: Blueprint Protocol</title>
-    <meta description="Arc Raiders inspired effect. Fully customizable with multiple animation modes and audio reactivity." />
+    <meta description="Inspired by the visual aesthetic of the game 'Arc Raiders', this effect features a dynamic blueprint grid with animated diagonal stripes that move and react to audio input." />
     <meta publisher="Jose Miranda" />
 
-    <meta property="stripe_x" label="Global Position X" type="number" min="-200" max="320" default="20">
-    <meta property="stripe_y" label="Global Position Y" type="number" min="-200" max="200" default="-50">
-    <meta property="stripe_width" label="Stripe Thickness" type="number" min="1" max="50" default="11">
-    <meta property="stripe_gap" label="Stripe Gap" type="number" min="0" max="20" default="5">
-    <meta property="slope_angle" label="Diagonal Angle" type="number" min="0" max="90" default="24">
-    <meta property="curve_radius" label="Curve Smoothness" type="number" min="10" max="200" default="200">
-    <meta property="curve_y_start" label="Curve Vertical Point" type="number" min="0" max="200" default="140">
-    <meta property="end_angle" label="Curve End Angle (Relative)" type="number" min="-90" max="90" default="-18">
+    <meta property="stripe_width" label="Stripe Thickness" type="number" min="1" max="50" default="11" tooltip="Sets the width of each individual stripe line.">
+    <meta property="stripe_gap" label="Stripe Gap" type="number" min="0" max="20" default="5" tooltip="Sets the spacing between the stripes.">
+    <meta property="slope_angle" label="Diagonal Angle" type="number" min="0" max="90" default="24" tooltip="Controls the angle of the main diagonal lines.">
+    <meta property="curve_radius" label="Curve Smoothness" type="number" min="10" max="200" default="200" tooltip="Adjusts how round the curve transition is on the front stripe.">
+    <meta property="curve_y_start" label="Curve Vertical Point" type="number" min="0" max="200" default="140" tooltip="Sets the vertical position (Y-axis) where the front stripe begins to curve.">
+    <meta property="end_angle" label="Curve End Angle (Relative)" type="number" min="-90" max="90" default="-45" tooltip="Controls the angle of the tail after the curve. Value is relative to the Diagonal Angle.">
 
-    <meta property="anim_enter" label="Entrance Animation" type="combobox" values="Static,Draw Down,Draw Up,Scan" default="Draw Down">
-    <meta property="anim_exit" label="Exit Animation" type="combobox" values="None,Draw Off,Fade,Dissolve" default="Draw Off">
-    <meta property="anim_speed" label="Cycle Speed" type="number" min="1" max="100" default="20">
-    <meta property="move_dir" label="Stripes Movement" type="combobox" values="None,Left,Right" default="None">
-    <meta property="move_speed" label="Movement Speed" type="number" min="0" max="100" default="20">
-    <meta property="audio_strength" label="Trigger Sensitivity" type="number" min="0" max="100" default="60">
+    <meta property="anim_enter" label="Entrance Animation" type="combobox" values="Static,Draw Down,Draw Up,Scan" default="Draw Down" tooltip="Choose how the stripes appear on screen.">
+    <meta property="anim_exit" label="Exit Animation" type="combobox" values="None,Draw Off,Fade,Dissolve" default="Draw Off" tooltip="Choose how the stripes disappear after being drawn.">
+    <meta property="anim_speed" label="Cycle Speed" type="number" min="1" max="100" default="6" tooltip="Controls how fast the Entry/Exit animation loop plays.">
+    
+    <meta property="move_dir" label="Stripes Movement" type="combobox" values="None,Left,Right" default="Right" tooltip="Scrolls the entire stripe pattern continuously across the screen. You MUST select Left or Right for Movement Speed to work.">
+    <meta property="move_speed" label="Movement Speed" type="number" min="0" max="100" default="10" tooltip="Sets the speed of the continuous scrolling movement. Set to 0 to use Manual Position.">
+    <meta property="manual_pos" label="Manual Position (If Speed 0)" type="number" min="0" max="100" default="0" tooltip="Manually sets the scroll position of the stripes (0-100%). Only works when Movement Speed is 0.">
+    
+    <meta property="audio_strength" label="Trigger Sensitivity" type="number" min="0" max="100" default="60" tooltip="Controls how easily audio beats trigger the white flash effect. Set to 0 to disable audio reactivity.">
 
-    <meta property="show_grid" label="Show Grid" type="boolean" default="true">
-    <meta property="grid_speed" label="Grid Speed" type="number" min="0" max="100" default="5">
-    <meta property="grid_size" label="Grid Size" type="number" min="10" max="100" default="40">
-    <meta property="grid_color" label="Grid Color" type="color" default="#0055ff">
-    <meta property="bg_color" label="Background Color" type="color" default="#000022">
+    <meta property="show_grid" label="Show Grid" type="boolean" default="true" tooltip="Toggles the visibility of the background blueprint grid.">
+    <meta property="grid_speed" label="Grid Speed" type="number" min="0" max="100" default="5" tooltip="Controls how fast the background grid scrolls.">
+    <meta property="grid_size" label="Grid Size" type="number" min="10" max="100" default="40" tooltip="Sets the size of the grid squares.">
+    <meta property="grid_color" label="Grid Color" type="color" default="#0055ff" tooltip="Sets the color of the grid lines.">
+    <meta property="bg_color" label="Background Color" type="color" default="#000000" tooltip="Sets the solid background color behind the effect.">
 
-    <meta property="stripe_color_1" label="Stripe 1 (Front/Curve)" type="color" default="#5fe5ff">
-    <meta property="stripe_color_2" label="Stripe 2" type="color" default="#37f173">
-    <meta property="stripe_color_3" label="Stripe 3" type="color" default="#ffb713">
-    <meta property="stripe_color_4" label="Stripe 4 (Back)" type="color" default="#f6001f">
+    <meta property="stripe_color_1" label="Stripe 1 (Front/Curve)" type="color" default="#5fe5ff" tooltip="Color of the front-most stripe (the one that curves).">
+    <meta property="stripe_color_2" label="Stripe 2" type="color" default="#37f173" tooltip="Color of the second stripe.">
+    <meta property="stripe_color_3" label="Stripe 3" type="color" default="#ffb713" tooltip="Color of the third stripe.">
+    <meta property="stripe_color_4" label="Stripe 4 (Back)" type="color" default="#f6001f" tooltip="Color of the back-most stripe.">
 
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
@@ -108,9 +109,10 @@
     }
 
     function drawStripes(w, h, offsetX) {
-        // Properties
-        const startX_base = typeof stripe_x !== 'undefined' ? stripe_x : 20;
-        const startY = typeof stripe_y !== 'undefined' ? stripe_y : -50;
+        // Properties - Hardcoded Defaults for Position
+        const startX_base = 20; 
+        const startY = -50;     
+        
         const thickness = typeof stripe_width !== 'undefined' ? stripe_width : 11;
         const gap = typeof stripe_gap !== 'undefined' ? stripe_gap : 5;
         const angleDeg = typeof slope_angle !== 'undefined' ? slope_angle : 24;
@@ -277,26 +279,37 @@
         animPhase += (aSpeed / 2000); 
         if (animPhase > 1) animPhase = 0;
 
-        // --- MOVEMENT UPDATE (Seamless Loop) ---
+        // --- MOVEMENT LOGIC ---
         const moveDir = typeof move_dir !== 'undefined' ? move_dir : "None";
         const mSpeed = typeof move_speed !== 'undefined' ? move_speed : 20;
+        const manualPos = typeof manual_pos !== 'undefined' ? manual_pos : 0;
         
         const loopWidth = 320; 
 
-        if (moveDir === "Left") {
-            movementX -= (mSpeed * 0.1);
-        } else if (moveDir === "Right") {
-            movementX += (mSpeed * 0.1);
+        if (mSpeed === 0) {
+            // MANUAL MODE
+            // Map 0-100 slider to 0-320 pixels
+            movementX = (manualPos / 100) * loopWidth;
+        } else {
+            // AUTO MODE
+            if (moveDir === "Left") {
+                movementX -= (mSpeed * 0.1);
+            } else if (moveDir === "Right") {
+                movementX += (mSpeed * 0.1);
+            }
+            
+            // Normalize movementX to stay within [0, loopWidth]
+            while (movementX < 0) movementX += loopWidth;
+            while (movementX >= loopWidth) movementX -= loopWidth;
         }
-        
-        while (movementX < 0) movementX += loopWidth;
-        while (movementX >= loopWidth) movementX -= loopWidth;
 
         // Audio Processing
         let bass = 0;
-        if (window.engine && window.engine.audio && window.engine.audio.freq) {
+        if (sens > 0 && window.engine && window.engine.audio && window.engine.audio.freq) {
             const freq = window.engine.audio.freq;
             bass = (freq[0] + freq[1] + freq[2]) / (3 * 255.0);
+        } else {
+            bass = 0; // Force silence if sens is 0
         }
 
         // Auto-Gain Logic
