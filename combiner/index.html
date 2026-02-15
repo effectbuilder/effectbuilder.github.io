@@ -92,15 +92,36 @@
             display: inline-block; font-size: 0.7rem; background: #444; color: #aaa; padding: 2px 6px; border-radius: 4px; margin-top: 5px;
         }
 
+        /* --- UPDATED VIEWPORT BACKGROUND --- */
         #viewport {
-            flex-grow: 1; display: flex; align-items: center; justify-content: center;
-            background: #050505; position: relative;
-            background-image: radial-gradient(#1a1a1a 1px, transparent 1px); background-size: 20px 20px;
-            padding: 40px; box-sizing: border-box; overflow: hidden;
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background-color: #080808;
+            
+            /* Professional Grid Pattern */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center;
+
+            position: relative;
+            /* padding: 40px;  */
+            box-sizing: border-box; 
+            overflow: hidden;
         }
+        
         canvas#master-canvas {
-            box-shadow: 0 0 50px rgba(0,0,0,0.8); image-rendering: pixelated; 
-            aspect-ratio: 16 / 9; width: 100%; height: auto; max-height: 100%; object-fit: contain;
+            box-shadow: 0 0 60px rgba(0,0,0,0.9); 
+            image-rendering: pixelated; 
+            aspect-ratio: 16 / 9; 
+            width: 100%; 
+            height: auto; 
+            max-height: 100%; 
+            object-fit: contain;
+            border: 1px solid #222;
         }
         #hidden-sandbox { position: absolute; top: -9999px; left: -9999px; visibility: hidden; }
         iframe { width: 320px; height: 200px; border: none; }
@@ -411,8 +432,8 @@ class Compositor {
 
         const w = this.width;
         const h = this.height;
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillRect(0,0,w,h);
+        this.ctx.fillStyle = "#000"; // Clear logic is handled by CSS bg, but canvas needs wipe
+        this.ctx.clearRect(0,0,w,h);
 
         this.layers.forEach((l, i) => {
             if (!l.canvas) {
@@ -589,6 +610,8 @@ const exporter = {
             RAW_LAYERS.forEach((lData, i) => {
                 const iframe = document.createElement('iframe');
                 document.getElementById('sandbox').appendChild(iframe);
+                
+                // --- FIX FOR EXPORT: Pre-seed complete mock engine ---
                 iframe.contentWindow.engine = { 
                     audio: { freq: new Array(200).fill(0), level: -20, density: 0.5 },
                     getSensorValue: () => 0 
@@ -648,10 +671,14 @@ const exporter = {
         loop() {
             if (window.engine && window.engine.audio) {
                 const data = window.engine.audio.freq;
+                // Sync data to all children
                 this.layers.forEach(l => {
                     if (l.window.engine && l.window.engine.audio) {
+                        // Safe copy
                         const len = Math.min(data.length, l.window.engine.audio.freq.length);
                         for(let k=0; k<len; k++) l.window.engine.audio.freq[k] = data[k];
+                        
+                        // Sync extras if available
                         if(window.engine.audio.level !== undefined) l.window.engine.audio.level = window.engine.audio.level;
                         if(window.engine.audio.density !== undefined) l.window.engine.audio.density = window.engine.audio.density;
                     }
