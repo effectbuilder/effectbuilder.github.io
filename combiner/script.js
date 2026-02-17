@@ -682,35 +682,44 @@ class Compositor {
             const propsList = layer.props.map(p => p.label).join(', ');
 
             div.innerHTML = `
-                <div class="card-header">
-                    <span class="layer-title">${idx + 1}. ${layer.name.substring(0, 15)}...</span>
-                    <div class="actions">
-                        <button class="icon-btn" onclick="compositor.moveLayer(${idx}, -1)">▲</button>
-                        <button class="icon-btn" onclick="compositor.moveLayer(${idx}, 1)">▼</button>
-                        <button class="icon-btn btn-close" onclick="compositor.removeLayer(${idx})">✖</button>
-                    </div>
-                </div>
-                <label>
-                    <input type="checkbox" ${layer.enabled ? 'checked' : ''} 
-                    onchange="compositor.updateLayerProp(${idx}, 'enabled', this.checked); compositor.renderUI();"> ${t('layer_enabled')}
-                </label>
-                <label>${t('layer_opacity')}: <span id="op-val-${idx}">${Math.round(layer.opacity * 100)}%</span></label>
-                <input type="range" min="0" max="1" step="0.05" value="${layer.opacity}" 
-                    oninput="compositor.updateLayerProp(${idx}, 'opacity', parseFloat(this.value)); document.getElementById('op-val-${idx}').innerText = Math.round(this.value*100) + '%'">
-                <label>${t('layer_blend')}</label>
-                <select onchange="compositor.updateLayerProp(${idx}, 'blend', this.value)">
-                    <option value="source-over" ${layer.blend === 'source-over' ? 'selected' : ''}>${t('blend_normal')}</option>
-                    <option value="screen" ${layer.blend === 'screen' ? 'selected' : ''}>${t('blend_screen')}</option>
-                    <option value="overlay" ${layer.blend === 'overlay' ? 'selected' : ''}>${t('blend_overlay')}</option>
-                    <option value="multiply" ${layer.blend === 'multiply' ? 'selected' : ''}>${t('blend_multiply')}</option>
-                    <option value="difference" ${layer.blend === 'difference' ? 'selected' : ''}>${t('blend_difference')}</option>
-                    <option value="lighter" ${layer.blend === 'lighter' ? 'selected' : ''}>${t('blend_lighter')}</option>
-                </select>
-                <div style="margin-top:8px; border-top:1px solid #444; padding-top:5px;">
-                    <span style="font-size:0.7rem; color:#888;">${t('layer_controls')}</span><br>
-                    <span class="prop-badge">${propsList || "None"}</span>
-                </div>
-            `;
+    <div class="card-header">
+        <span class="layer-title">${idx + 1}. ${layer.name.substring(0, 15)}...</span>
+        <div class="actions">
+            <button class="icon-btn" onclick="compositor.moveLayer(${idx}, -1)">▲</button>
+            <button class="icon-btn" onclick="compositor.moveLayer(${idx}, 1)">▼</button>
+            <button class="icon-btn btn-close" onclick="compositor.removeLayer(${idx})">✖</button>
+        </div>
+    </div>
+    <label>
+        <input type="checkbox" ${layer.enabled ? 'checked' : ''} 
+        onchange="compositor.updateLayerProp(${idx}, 'enabled', this.checked); compositor.renderUI();"> 
+        <span data-i18n="layer_enabled">Enabled</span>
+    </label>
+    <label>
+        <span data-i18n="layer_opacity">Opacity</span>: 
+        <span id="op-val-${idx}">${Math.round(layer.opacity * 100)}%</span>
+    </label>
+    <input type="range" min="0" max="1" step="0.05" value="${layer.opacity}" 
+        oninput="compositor.updateLayerProp(${idx}, 'opacity', parseFloat(this.value)); document.getElementById('op-val-${idx}').innerText = Math.round(this.value*100) + '%'">
+    
+    <label data-i18n="layer_blend">Blend Mode</label>
+    <select onchange="compositor.updateLayerProp(${idx}, 'blend', this.value)">
+        <option value="source-over" ${layer.blend === 'source-over' ? 'selected' : ''} data-i18n="blend_normal">Normal</option>
+        <option value="screen" ${layer.blend === 'screen' ? 'selected' : ''} data-i18n="blend_screen">Screen</option>
+        <option value="overlay" ${layer.blend === 'overlay' ? 'selected' : ''} data-i18n="blend_overlay">Overlay</option>
+        <option value="multiply" ${layer.blend === 'multiply' ? 'selected' : ''} data-i18n="blend_multiply">Multiply</option>
+        <option value="difference" ${layer.blend === 'difference' ? 'selected' : ''} data-i18n="blend_difference">Difference</option>
+        <option value="lighter" ${layer.blend === 'lighter' ? 'selected' : ''} data-i18n="blend_lighter">Lighter</option>
+    </select>
+
+    <div style="margin-top:8px; border-top:1px solid #444; padding-top:5px;">
+        <span style="font-size:0.7rem; color:#888;" data-i18n="layer_controls">Detected Controls:</span><br>
+        <span class="prop-badge">${propsList || "None"}</span>
+    </div>
+`;
+
+            // IMPORTANT: After injecting the HTML, tell the scanner to look for new tags
+            I18N.updateStaticUI();
             container.appendChild(div);
         });
     }
@@ -1001,14 +1010,18 @@ function changeLanguage(lang) {
 let compositor;
 
 window.onload = async () => {
-    // 1. UI First
+    // 1. Initialize I18N and WAIT for JSON to load
     if (typeof I18N !== 'undefined') {
-        I18N.init();
+        await I18N.init(); 
+        
+        // SYNC DROPDOWN: Ensure the selector shows the correct saved language
         const selector = document.getElementById('lang-selector');
-        if (selector) selector.value = I18N.cur;
+        if (selector) {
+            selector.value = I18N.cur;
+        }
     }
 
-    // 2. Systems Second
+    // 2. Initialize other systems
     try {
         await IDB.init();
         await Library.checkMigration();
@@ -1016,6 +1029,6 @@ window.onload = async () => {
 
     compositor = new Compositor();
 
-    // 3. User Data LAST
+    // 3. Load User Project Data
     Persistence.load();
 };
