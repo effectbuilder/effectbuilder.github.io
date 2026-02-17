@@ -602,11 +602,15 @@ class Compositor {
         const w = this.width;
         const h = this.height;
         const count = this.layers.length;
+
+        // Grid calculations
         let gridCols = Math.ceil(Math.sqrt(count));
         let gridRows = Math.ceil(count / gridCols);
 
         this.layers.forEach((layer, index) => {
+            // Default rect is full screen (used for Background/Layer 0)
             let r = { x: 0, y: 0, w: w, h: h };
+
             if (this.layout === 'SIDE_BY_SIDE' && count > 0) {
                 const sw = w / count;
                 r = { x: sw * index, y: 0, w: sw, h: h };
@@ -623,10 +627,29 @@ class Compositor {
                 r = { x: col * cw, y: row * ch, w: cw, h: ch };
             }
             else if (this.layout === 'PIP') {
+                // Index 0 is background. Index > 0 are PiP overlays.
                 if (index > 0) {
-                    const pw = w * 0.25, ph = h * 0.25, pad = 10;
-                    const si = index - 1;
-                    r = { x: w - pw - pad, y: h - ph - pad - (si * (ph + pad)), w: pw, h: ph };
+                    const pad = 10;
+                    // Shrink thumbnails if we have many layers (6+ layers = smaller thumbs)
+                    const scale = count > 5 ? 0.15 : 0.25;
+                    const pw = w * scale;
+                    const ph = h * scale;
+
+                    const si = index - 1; // Stack Index (0-based for the PiPs)
+
+                    // Calculate how many fit in one vertical column
+                    // Math.max(1, ...) prevents division by zero if window is tiny
+                    const maxPerCol = Math.max(1, Math.floor((h - pad) / (ph + pad)));
+
+                    const col = Math.floor(si / maxPerCol); // 0 = rightmost col, 1 = next col left
+                    const row = si % maxPerCol;             // 0 = bottom, 1 = above bottom...
+
+                    r = {
+                        x: w - (pw + pad) * (col + 1),
+                        y: h - ph - pad - (row * (ph + pad)),
+                        w: pw,
+                        h: ph
+                    };
                 }
             }
             layer.rect = r;
@@ -889,9 +912,23 @@ const exporter = {
             }
             else if (mode === 'PiP') {
                 if (index > 0) {
-                    const pw = w * 0.25, ph = h * 0.25, pad = 10;
+                    const pad = 10;
+                    const scale = count > 5 ? 0.15 : 0.25;
+                    const pw = w * scale;
+                    const ph = h * scale;
+                    
                     const si = index - 1;
-                    r = { x: w - pw - pad, y: h - ph - pad - (si * (ph + pad)), w: pw, h: ph };
+                    const maxPerCol = Math.max(1, Math.floor((h - pad) / (ph + pad)));
+                    
+                    const col = Math.floor(si / maxPerCol);
+                    const row = si % maxPerCol;
+
+                    r = { 
+                        x: w - (pw + pad) * (col + 1), 
+                        y: h - ph - pad - (row * (ph + pad)), 
+                        w: pw, 
+                        h: ph 
+                    };
                 }
             }
             return r;
@@ -1012,8 +1049,8 @@ let compositor;
 window.onload = async () => {
     // 1. Initialize I18N and WAIT for JSON to load
     if (typeof I18N !== 'undefined') {
-        await I18N.init(); 
-        
+        await I18N.init();
+
         // SYNC DROPDOWN: Ensure the selector shows the correct saved language
         const selector = document.getElementById('lang-selector');
         if (selector) {
