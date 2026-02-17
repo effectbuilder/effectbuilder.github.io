@@ -13,29 +13,72 @@ body {
     width: 450px;
     background: #1a1a1a;
     border-right: 1px solid #333;
-    padding: 20px;
-    padding-top: 0; /* Remove top padding so the header sits perfectly at the top */
+    /* Use flexbox to manage 100% height without overflow */
     display: flex;
     flex-direction: column;
-    z-index: 10;
     height: 100vh;
     box-sizing: border-box;
     flex-shrink: 0;
+    overflow: hidden; /* Prevent the sidebar itself from scrolling */
 }
 
 #sidebar-scroll-area {
     flex-grow: 1;
     overflow-y: auto;
-    padding-right: 10px;
-    margin-bottom: 15px;
+    padding: 0 20px; /* Move horizontal padding here */
+    padding-right: 10px; /* Less padding on right for the scrollbar */
+    margin-bottom: 0;
 }
 
 #sidebar-footer {
     flex-shrink: 0;
     border-top: 1px solid #333;
-    padding-top: 15px;
+    padding: 15px 20px; /* Match the 20px horizontal padding */
     display: flex;
     gap: 10px;
+    background: #1a1a1a;
+}
+
+/* Custom Scrollbar Styling */
+#sidebar-scroll-area::-webkit-scrollbar {
+    width: 8px;
+    /* Slimmer for a modern look */
+}
+
+#sidebar-scroll-area::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    /* Matches the sidebar background */
+}
+
+#sidebar-scroll-area::-webkit-scrollbar-thumb {
+    background: #333;
+    /* Subtler gray for the thumb */
+    border-radius: 10px;
+    border: 2px solid #1a1a1a;
+    /* Creates a padding effect around the thumb */
+}
+
+#sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #00eaff;
+    /* Cyan accent on hover to match your brand */
+}
+
+/* For the Library Modal Grid */
+.lib-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.lib-grid::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.lib-grid::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 10px;
+}
+
+.lib-grid::-webkit-scrollbar-thumb:hover {
+    background: #00eaff;
 }
 
 /* Header & Logo Styles */
@@ -43,16 +86,16 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 15px;
     border-bottom: 1px solid #333;
-    padding-bottom: 15px;
-    /* Added for fixing the header */
     position: sticky;
     top: 0;
-    background: #1a1a1a; /* Must match sidebar background to hide elements scrolling under */
-    z-index: 11; /* Higher than other sidebar elements */
-    padding-top: 20px; /* Move the sidebar's top padding here instead */
+    background: #1a1a1a;
+    z-index: 11;
     width: 100%;
+    /* Standardize padding to match scroll area */
+    padding: 20px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
 }
 
 .app-header img {
