@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SRGB Effect Combiner</title>
+    <title>SRGB Effect Combiner (Turbo + Sort + No Dupes)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { margin: 0; background: #111; color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; height: 100vh; }
@@ -82,7 +82,7 @@
         #btn-clear { flex-grow: 1; background: #331111; color: #ff5555; font-weight: bold; border: 1px solid #552222; padding: 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
         #btn-clear:hover { background: #551111; border-color: #ff3333; color: #fff; }
 
-        .file-upload { border: 2px dashed #444; padding: 15px; text-align: center; color: #888; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 0.9rem; display: block; }
+        .file-upload { border: 2px dashed #444; padding: 15px; text-align: center; color: #888; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 0.9rem; display: block; margin-bottom: 8px; }
         .file-upload:hover { border-color: #00eaff; color: #fff; background: #222; }
         input[type="file"] { display: none; }
         input[type="range"] { width: 100%; accent-color: #00eaff; height: 4px; margin-bottom: 10px; cursor: pointer; }
@@ -92,23 +92,23 @@
             display: inline-block; font-size: 0.7rem; background: #444; color: #aaa; padding: 2px 6px; border-radius: 4px; margin-top: 5px;
         }
 
-        /* --- UPDATED VIEWPORT BACKGROUND --- */
+        /* Library Button */
+        .btn-lib { width: 100%; background: #222; color: #00eaff; border: 1px solid #333; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; font-size: 0.85rem; }
+        .btn-lib:hover { background: #333; border-color: #00eaff; }
+
+        /* --- VIEWPORT --- */
         #viewport {
             flex-grow: 1; 
             display: flex; 
             align-items: center; 
             justify-content: center;
             background-color: #080808;
-            
-            /* Professional Grid Pattern */
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 40px 40px;
             background-position: center;
-
             position: relative;
-            /* padding: 40px;  */
             box-sizing: border-box; 
             overflow: hidden;
         }
@@ -123,8 +123,119 @@
             object-fit: contain;
             border: 1px solid #222;
         }
+        
         #hidden-sandbox { position: absolute; top: -9999px; left: -9999px; visibility: hidden; }
-        iframe { width: 320px; height: 200px; border: none; }
+        iframe { width: 640px; height: 360px; border: none; }
+
+        /* --- LIBRARY MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 1000;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #1a1a1a; width: 90%; max-width: 1200px; height: 90vh;
+            border: 1px solid #333; border-radius: 12px; display: flex; flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .modal-header {
+            padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
+            background: #222; border-radius: 12px 12px 0 0;
+            flex-shrink: 0;
+        }
+        .modal-header h2 { margin: 0; color: #eee; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        .count-badge { color: #888; font-size: 0.9rem; font-weight: normal; }
+
+        .lib-grid {
+            flex-grow: 1; 
+            padding: 30px;
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+            grid-auto-rows: min-content; 
+            gap: 20px;
+            align-content: start;
+            overflow-y: auto; 
+            min-height: 0;
+        }
+
+        /* Drag & Drop Overlay */
+        .drop-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 234, 255, 0.15); border: 3px dashed #00eaff;
+            z-index: 50; pointer-events: none; display: none;
+            align-items: center; justify-content: center;
+            border-radius: 12px;
+        }
+        .drop-overlay::after {
+            content: "Drop HTML files here";
+            color: #00eaff; font-size: 2rem; font-weight: bold; text-shadow: 0 0 10px #000;
+        }
+        .modal-content.drag-active .drop-overlay { display: flex; }
+
+        /* Card Styles */
+        .lib-card {
+            background: #252525; border: 2px solid #333; border-radius: 8px; overflow: hidden;
+            cursor: pointer; transition: transform 0.1s; position: relative;
+            display: flex; flex-direction: column;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            min-height: 220px; height: auto;
+        }
+        .lib-card:hover { transform: translateY(-3px); border-color: #555; }
+        
+        .lib-card.selected { border-color: #00eaff; box-shadow: 0 0 10px rgba(0,234,255,0.2); }
+        .lib-card.selected::after {
+            content: "✔"; position: absolute; top: 8px; left: 8px;
+            background: #00eaff; color: #000; border-radius: 50%;
+            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .lib-thumb-container {
+            width: 100%; aspect-ratio: 16/9; background: #000; border-bottom: 1px solid #333;
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .lib-thumb {
+            width: 100%; height: 100%; object-fit: contain; display: block;
+        }
+        .thumb-placeholder {
+            color: #666; font-size: 0.8rem; font-style: italic;
+        }
+
+        .lib-info { padding: 12px; font-size: 0.85rem; color: #eee; text-align: left; background: #2a2a2a; flex-grow: 1; }
+        .lib-title { font-weight: bold; margin-bottom: 4px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+        .lib-desc { font-size: 0.75rem; color: #888; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+
+        .lib-delete {
+            position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.8); 
+            color: #f55; border: 1px solid #f55; border-radius: 4px; 
+            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.2s; font-size: 14px; z-index: 5;
+        }
+        .lib-card:hover .lib-delete { opacity: 1; }
+        .lib-delete:hover { background: #f55; color: #fff; }
+        
+        .btn-modal-action { padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; margin-left: 10px; transition: 0.2s; }
+        .btn-clear-lib { background: #311; color: #f55; border: 1px solid #522; }
+        .btn-clear-lib:hover { background: #511; color: #fff; }
+        
+        .btn-add-sel { background: #00eaff; color: #000; border: none; opacity: 0.5; pointer-events: none; }
+        .btn-add-sel.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 10px rgba(0,234,255,0.3); }
+        .btn-add-sel:hover { background: #00cce6; }
+
+        #loading-indicator { display: none; margin-right: 15px; color: #00eaff; font-weight: bold; font-size: 0.9rem; }
+
+        /* Sort Select Style */
+        .sort-select {
+            background: #333; color: #fff; border: 1px solid #444; 
+            padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; 
+            margin-left: 15px; cursor: pointer;
+        }
+        .sort-select:focus { border-color: #00eaff; outline: none; }
+
     </style>
 </head>
 <body>
@@ -132,8 +243,8 @@
     <div id="sidebar">
         <div id="sidebar-scroll-area">
             <div class="app-header">
-                <img src="../logo.png" alt="SRGB Logo">
-                <h2>SRGB Effect Combiner</h2>
+                <div style="width:32px; height:32px; background:#00eaff; border-radius:50%;"></div>
+                <h2>SRGB Combiner</h2>
             </div>
             
             <h3>1. Metadata</h3>
@@ -146,6 +257,7 @@
                 + Add HTML Effects
                 <input type="file" multiple accept=".html" onchange="compositor.handleUpload(this.files)">
             </label>
+            <button class="btn-lib" onclick="Library.open()">📂 Open Effect Library</button>
 
             <h3>3. Preview Layout</h3>
             <div class="control-group">
@@ -174,12 +286,451 @@
 
     <div id="hidden-sandbox"></div>
 
+    <div id="lib-modal" class="modal-overlay" onclick="if(event.target === this) Library.close()">
+        <div class="modal-content" id="modal-content">
+            <div class="drop-overlay"></div>
+            <div class="modal-header">
+                <div style="display:flex; align-items:center;">
+                    <h2>Library <span id="lib-count" class="count-badge">(0)</span></h2>
+                    <select id="lib-sort" class="sort-select" onchange="Library.setSort(this.value)">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="alpha-asc">Name (A-Z)</option>
+                        <option value="alpha-desc">Name (Z-A)</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span id="loading-indicator">Processing...</span>
+                    <button id="btn-add-sel" class="btn-modal-action btn-add-sel" onclick="Library.addSelectedToWorkspace()">Add Selected (0)</button>
+                    <button class="btn-modal-action btn-clear-lib" onclick="Library.clearAll()">🗑 Clear</button>
+                    <button class="icon-btn btn-close" onclick="Library.close()" style="width:30px; height:30px; font-size:1.2rem; margin-left:10px;">✖</button>
+                </div>
+            </div>
+            <div id="lib-grid" class="lib-grid">
+                </div>
+        </div>
+    </div>
+
 <script>
+// --- INDEXED DB MANAGER ---
+const IDB = {
+    dbName: 'SRGB_Library_DB',
+    storeName: 'effects',
+    db: null,
+
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = (e) => {
+                this.db = e.target.result;
+                resolve();
+            };
+            request.onerror = (e) => reject(e);
+        });
+    },
+
+    async getAll() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(this.storeName, 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    async add(item) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            const req = store.put(item);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    async delete(id) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            const req = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    async clear() {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            const req = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+};
+
+// --- LIBRARY MANAGER ---
+const Library = {
+    KEY: 'srgb_effect_library_v1',
+    fileQueue: [],
+    activeWorkers: 0,
+    concurrency: 5, // Process 5 at a time
+    selectedIds: new Set(),
+    sortOrder: 'date-desc', // Default sort
+    
+    async checkMigration() {
+        const oldKey = 'srgb_effect_library_v1';
+        const oldData = localStorage.getItem(oldKey);
+        if (oldData) {
+            try {
+                const items = JSON.parse(oldData);
+                if (Array.isArray(items) && items.length > 0) {
+                    for (const item of items) await IDB.add(item);
+                    localStorage.removeItem(oldKey); 
+                }
+            } catch (e) { console.error("Migration failed", e); }
+        }
+    },
+
+    async open() {
+        this.selectedIds.clear();
+        this.updateSelectionUI();
+        document.getElementById('lib-modal').style.display = 'flex';
+        document.getElementById('lib-sort').value = this.sortOrder; // Sync UI
+        await this.render();
+        this.initDragDrop();
+    },
+
+    close() {
+        document.getElementById('lib-modal').style.display = 'none';
+    },
+
+    setSort(val) {
+        this.sortOrder = val;
+        this.render(); // Re-render with new sort order
+    },
+
+    async render() {
+        const grid = document.getElementById('lib-grid');
+        grid.innerHTML = "";
+        
+        try {
+            const db = await IDB.getAll();
+            document.getElementById('lib-count').innerText = `(${db.length})`;
+            
+            if (db.length === 0) {
+                grid.innerHTML = "<p style='color:#666; width:100%; text-align:center; margin-top:50px;'>No effects saved.<br><br>Drag & drop .html files here to add them.</p>";
+                return;
+            }
+
+            // --- SORTING LOGIC ---
+            db.sort((a, b) => {
+                const nameA = (a.title || a.name).toLowerCase();
+                const nameB = (b.title || b.name).toLowerCase();
+                
+                switch(this.sortOrder) {
+                    case 'date-desc': return b.date - a.date;
+                    case 'date-asc': return a.date - b.date;
+                    case 'alpha-asc': return nameA.localeCompare(nameB);
+                    case 'alpha-desc': return nameB.localeCompare(nameA);
+                    default: return 0;
+                }
+            });
+
+            // Render Cards
+            db.forEach(item => {
+                this.addCardToGrid(item, grid);
+            });
+        } catch(e) {
+            console.error("Render failed", e);
+        }
+    },
+
+    // Helper to append a single card
+    addCardToGrid(item, gridElement = null) {
+        const grid = gridElement || document.getElementById('lib-grid');
+        
+        // Remove empty message if exists
+        if(grid.querySelector('p')) grid.innerHTML = "";
+
+        const card = document.createElement('div');
+        card.className = `lib-card ${this.selectedIds.has(item.id) ? 'selected' : ''}`;
+        card.id = `card-${item.id}`;
+        
+        const thumbSrc = item.thumb || ""; 
+        const displayName = item.title || item.name;
+        const displayDesc = item.desc || "";
+
+        card.innerHTML = `
+            <div class="lib-delete" onclick="event.stopPropagation(); Library.remove('${item.id}')">✖</div>
+            <div class="lib-thumb-container" id="thumb-con-${item.id}">
+                <img src="${thumbSrc}" class="lib-thumb">
+            </div>
+            <div class="lib-info">
+                <div class="lib-title" title="${displayName}">${displayName}</div>
+                <div class="lib-desc" title="${displayDesc}">${displayDesc}</div>
+            </div>
+        `;
+        
+        card.onclick = () => {
+            this.toggleSelection(item.id);
+        };
+        
+        grid.appendChild(card);
+    },
+
+    toggleSelection(id) {
+        if (this.selectedIds.has(id)) {
+            this.selectedIds.delete(id);
+            document.getElementById(`card-${id}`).classList.remove('selected');
+        } else {
+            this.selectedIds.add(id);
+            document.getElementById(`card-${id}`).classList.add('selected');
+        }
+        this.updateSelectionUI();
+    },
+
+    updateSelectionUI() {
+        const btn = document.getElementById('btn-add-sel');
+        const count = this.selectedIds.size;
+        btn.innerText = `Add Selected (${count})`;
+        
+        if (count > 0) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    },
+
+    async addSelectedToWorkspace() {
+        const db = await IDB.getAll();
+        const selected = db.filter(item => this.selectedIds.has(item.id));
+        
+        selected.forEach(item => {
+            compositor.createLayer(item.title || item.name, item.html);
+        });
+        
+        this.close();
+    },
+
+    async remove(id) {
+        if(!confirm("Delete this effect?")) return;
+        await IDB.delete(id);
+        this.selectedIds.delete(id);
+        const card = document.getElementById(`card-${id}`);
+        if(card) card.remove();
+        this.updateSelectionUI();
+        
+        // Update count
+        const db = await IDB.getAll();
+        document.getElementById('lib-count').innerText = `(${db.length})`;
+    },
+
+    async clearAll() {
+        if(confirm("Delete ALL saved effects?")) {
+            await IDB.clear();
+            this.selectedIds.clear();
+            this.render();
+            this.updateSelectionUI();
+        }
+    },
+
+    // --- FILE HANDLING WITH DUPLICATE CHECK ---
+    async handleFiles(files) {
+        // 1. Get existing items to check duplicates
+        const allItems = await IDB.getAll();
+        const existingNames = new Set(allItems.map(i => i.name));
+        
+        const arr = Array.from(files).filter(file => {
+            // DUPLICATE CHECK: Skip if name already exists
+            if(existingNames.has(file.name)) {
+                return false;
+            }
+            return true;
+        });
+
+        if(arr.length === 0) return;
+
+        this.fileQueue.push(...arr);
+        this.updateStatus();
+        this.processQueue();
+    },
+
+    async processQueue() {
+        while (this.fileQueue.length > 0 && this.activeWorkers < this.concurrency) {
+            const file = this.fileQueue.shift();
+            this.activeWorkers++;
+            this.updateStatus();
+
+            this.processOneFile(file).then((newItem) => {
+                this.activeWorkers--;
+                this.updateStatus();
+                // Live Update: Add the new card immediately
+                if(newItem && document.getElementById('lib-modal').style.display === 'flex') {
+                    this.addCardToGrid(newItem);
+                    // Update count
+                    const countEl = document.getElementById('lib-count');
+                    const cur = parseInt(countEl.innerText.replace('(','').replace(')','')) || 0;
+                    countEl.innerText = `(${cur+1})`;
+                }
+                this.processQueue(); 
+            });
+        }
+    },
+
+    updateStatus() {
+        const el = document.getElementById('loading-indicator');
+        const remaining = this.fileQueue.length + this.activeWorkers;
+        if (remaining > 0) {
+            el.style.display = 'inline-block';
+            el.innerText = `Processing: ${remaining} left...`;
+        } else {
+            el.style.display = 'none';
+        }
+    },
+
+    processOneFile(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let htmlContent = e.target.result;
+                const id = Date.now() + Math.random().toString(36).substr(2);
+                
+                // 1. Extract Meta
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, "text/html");
+                let title = file.name;
+                const titleTag = doc.querySelector('title');
+                if(titleTag && titleTag.innerText) title = titleTag.innerText;
+                let desc = "";
+                const descTag = doc.querySelector('meta[description]') || doc.querySelector('meta[name="description"]');
+                if(descTag) desc = descTag.getAttribute('description') || descTag.getAttribute('content');
+
+                const metaTags = doc.querySelectorAll('meta[property]');
+                
+                // 2. Generate Setup Script (Engine + Variables)
+                let setupScript = `
+                <script>
+                    console.log=function(){}; console.warn=function(){}; console.error=function(){};
+                    window.onerror=function(){return true;};
+                    
+                    window.engine = { 
+                        audio: { freq: new Array(128).fill(0), level: 0.5, density: 0.5 },
+                        getSensorValue: () => 0 
+                    };
+                `;
+
+                metaTags.forEach(meta => {
+                    const prop = meta.getAttribute('property');
+                    const def = meta.getAttribute('default');
+                    const type = meta.getAttribute('type');
+                    if(prop && def !== null) {
+                        let val = `"${def}"`; 
+                        if(type === 'number') val = parseFloat(def);
+                        else if(type === 'boolean') val = (def === 'true' || def === '1');
+                        setupScript += `try{window["${prop}"] = ${val};}catch(e){}\n`;
+                    }
+                });
+                
+                setupScript += `
+                    function _simAudio() {
+                        if(!window.engine) return;
+                        const t = Date.now()/1000;
+                        const d = window.engine.audio.freq;
+                        const beat = (Math.sin(t*Math.PI*4)+1)/2;
+                        d[0] = Math.pow(beat,4)*255;
+                        requestAnimationFrame(_simAudio);
+                    }
+                    _simAudio();
+                <\/script>`;
+
+                // 3. Inject
+                let injectedHtml = htmlContent;
+                if (injectedHtml.toLowerCase().includes('<head>')) {
+                    injectedHtml = injectedHtml.replace(/<head>/i, '<head>' + setupScript);
+                } else {
+                    injectedHtml = setupScript + injectedHtml;
+                }
+
+                // 4. Render
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'absolute';
+                iframe.style.top = '-9999px';
+                iframe.width = 640; 
+                iframe.height = 360; 
+                document.body.appendChild(iframe);
+
+                const iframeDoc = iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(injectedHtml);
+                iframeDoc.close();
+
+                // 5. Capture (200ms)
+                setTimeout(() => {
+                    let thumb = "";
+                    try {
+                        const cans = iframe.contentDocument.getElementsByTagName('canvas');
+                        if (cans.length > 0) {
+                            const srcCanvas = cans[0];
+                            const tCanvas = document.createElement('canvas');
+                            tCanvas.width = 320; tCanvas.height = 180;
+                            const tCtx = tCanvas.getContext('2d');
+                            tCtx.drawImage(srcCanvas, 0, 0, 320, 180);
+                            thumb = tCanvas.toDataURL('image/jpeg', 0.85);
+                        }
+                    } catch(err) { }
+
+                    const item = {
+                        id: id,
+                        name: file.name,
+                        title: title,
+                        desc: desc,
+                        html: htmlContent, // Save clean
+                        thumb: thumb,
+                        date: Date.now()
+                    };
+                    
+                    IDB.add(item).finally(() => {
+                        iframe.remove();
+                        resolve(item); // Return item for live UI update
+                    });
+
+                }, 200); 
+            };
+            reader.readAsText(file);
+        });
+    },
+
+    initDragDrop() {
+        const modalContent = document.getElementById('modal-content');
+        modalContent.ondragover = (e) => { e.preventDefault(); modalContent.classList.add('drag-active'); };
+        modalContent.ondragleave = (e) => { e.preventDefault(); modalContent.classList.remove('drag-active'); };
+        modalContent.ondrop = (e) => {
+            e.preventDefault();
+            modalContent.classList.remove('drag-active');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                this.handleFiles(e.dataTransfer.files);
+            }
+        };
+    }
+};
+
 // --- LOCAL STORAGE MANAGER ---
 const Persistence = {
     KEY: 'srgb_combiner_state_v1',
-    
     save() {
+        if(!compositor) return;
         const state = {
             meta: {
                 title: document.getElementById('meta-title').value,
@@ -189,7 +740,7 @@ const Persistence = {
             layout: compositor.layout,
             layers: compositor.layers.map(l => ({
                 name: l.name,
-                content: l.content, // Raw HTML string
+                content: l.content, 
                 enabled: l.enabled,
                 opacity: l.opacity,
                 blend: l.blend
@@ -197,24 +748,18 @@ const Persistence = {
         };
         localStorage.setItem(this.KEY, JSON.stringify(state));
     },
-
     load() {
         const raw = localStorage.getItem(this.KEY);
         if (!raw) return;
         try {
             const state = JSON.parse(raw);
-            
-            // Restore Metadata
             if(state.meta) {
                 document.getElementById('meta-title').value = state.meta.title || "";
                 document.getElementById('meta-publisher').value = state.meta.publisher || "";
                 document.getElementById('meta-desc').value = state.meta.desc || "";
             }
-
-            // Restore Layers
             if (state.layers && Array.isArray(state.layers)) {
                 state.layers.forEach(l => {
-                    // Re-create the layer from content
                     compositor.createLayer(l.name, l.content, {
                         enabled: l.enabled,
                         opacity: l.opacity,
@@ -222,19 +767,11 @@ const Persistence = {
                     });
                 });
             }
-
-            // Restore Layout (Must be done after layers to update UI correctly)
-            if(state.layout) {
-                compositor.setLayout(state.layout);
-            }
-
-        } catch(e) {
-            console.error("Failed to load saved state:", e);
-        }
+            if(state.layout) compositor.setLayout(state.layout);
+        } catch(e) { console.error(e); }
     },
-
     clear() {
-        if(confirm("Are you sure you want to clear the project? This cannot be undone.")) {
+        if(confirm("Clear project workspace?")) {
             localStorage.removeItem(this.KEY);
             location.reload();
         }
@@ -250,7 +787,6 @@ class Compositor {
         this.height = 360;
         this.masterCanvas.width = this.width;
         this.masterCanvas.height = this.height;
-
         this.layers = []; 
         this.layout = 'LAYERED';
         this.loop = this.loop.bind(this);
@@ -262,70 +798,50 @@ class Compositor {
             const reader = new FileReader();
             reader.onload = (e) => {
                 this.createLayer(file.name, e.target.result);
-                Persistence.save(); // Save after upload
+                Persistence.save(); 
             };
             reader.readAsText(file);
         });
     }
 
-    // Updated createLayer to accept optional 'restoredState' for loading settings
     createLayer(name, htmlContent, restoredState = null) {
         const id = Date.now() + Math.random();
-        
-        // 1. Parse Metadata
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, "text/html");
+        
+        let niceName = name;
+        if(doc.querySelector('title') && doc.querySelector('title').innerText) {
+            niceName = doc.querySelector('title').innerText;
+        }
+
         const metaTags = doc.querySelectorAll('meta[property]');
         const extractedProps = [];
-        
         metaTags.forEach(tag => {
             const prop = tag.getAttribute('property');
-            if(prop) {
-                extractedProps.push({
-                    name: prop,
-                    label: tag.getAttribute('label') || prop,
-                    type: tag.getAttribute('type') || 'text',
-                    min: tag.getAttribute('min'),
-                    max: tag.getAttribute('max'),
-                    default: tag.getAttribute('default'),
-                    values: tag.getAttribute('values')
-                });
-            }
+            if(prop) extractedProps.push({
+                name: prop, label: tag.getAttribute('label') || prop, type: tag.getAttribute('type') || 'text',
+                min: tag.getAttribute('min'), max: tag.getAttribute('max'), default: tag.getAttribute('default'), values: tag.getAttribute('values')
+            });
         });
 
-        // 2. Create Sandbox
         const iframe = document.createElement('iframe');
         iframe.id = `frame-${id}`;
         document.getElementById('hidden-sandbox').appendChild(iframe);
-        
-        // Inject Mock Engine
-        iframe.contentWindow.engine = { 
-            audio: { freq: new Array(128).fill(0) },
-            getSensorValue: () => 0 
-        };
+        iframe.contentWindow.engine = { audio: { freq: new Array(128).fill(0) }, getSensorValue: () => 0 };
 
         const iframeDoc = iframe.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
+        iframeDoc.open(); iframeDoc.write(htmlContent); iframeDoc.close();
 
-        // Determine initial settings (Load from state or default)
         let defaultBlend = (this.layout === 'LAYERED' && this.layers.length > 0) ? 'screen' : 'source-over';
         
         const layer = {
-            id: id,
-            name: name,
-            content: htmlContent, 
-            props: extractedProps, 
-            iframe: iframe,
-            window: iframe.contentWindow,
-            sourceCanvas: null,
+            id: id, name: niceName, content: htmlContent, props: extractedProps, 
+            iframe: iframe, window: iframe.contentWindow, sourceCanvas: null,
             enabled: restoredState ? restoredState.enabled : true,
             opacity: restoredState ? restoredState.opacity : 1.0,
             blend: restoredState ? restoredState.blend : defaultBlend,
             rect: { x: 0, y: 0, w: this.width, h: this.height }
         };
-
         this.layers.push(layer);
         this.updateLayout();
         this.renderUI();
@@ -338,7 +854,7 @@ class Compositor {
             this.layers.splice(index, 1);
             this.updateLayout();
             this.renderUI();
-            Persistence.save(); // Save changes
+            Persistence.save();
         }
     }
 
@@ -350,7 +866,7 @@ class Compositor {
         this.layers[newIndex] = temp;
         this.updateLayout();
         this.renderUI();
-        Persistence.save(); // Save changes
+        Persistence.save();
     }
 
     setLayout(mode) {
@@ -360,7 +876,6 @@ class Compositor {
             this.layers.forEach(l => l.blend = 'source-over');
         }
         this.updateLayout();
-        
         document.querySelectorAll('.layout-grid button, #btn-pip').forEach(b => b.classList.remove('active'));
         if(mode === 'LAYERED') document.getElementById('btn-layered').classList.add('active');
         if(mode === 'SIDE_BY_SIDE') document.getElementById('btn-side').classList.add('active');
@@ -368,14 +883,13 @@ class Compositor {
         if(mode === 'GRID') document.getElementById('btn-grid').classList.add('active');
         if(mode === 'PIP') document.getElementById('btn-pip').classList.add('active');
         this.renderUI();
-        Persistence.save(); // Save changes
+        Persistence.save();
     }
 
-    // Helper for updating layer properties from UI
     updateLayerProp(index, key, value) {
         if(this.layers[index]) {
             this.layers[index][key] = value;
-            Persistence.save(); // Auto-save on slider/select change
+            Persistence.save();
         }
     }
 
@@ -432,7 +946,7 @@ class Compositor {
 
         const w = this.width;
         const h = this.height;
-        this.ctx.fillStyle = "#000"; // Clear logic is handled by CSS bg, but canvas needs wipe
+        this.ctx.fillStyle = "#000";
         this.ctx.clearRect(0,0,w,h);
 
         this.layers.forEach((l, i) => {
@@ -516,8 +1030,8 @@ const exporter = {
         // 1. Meta Tags
         let metaTags = `
     <title>${title}</title>
-    <meta name="description" content="${desc}" />
-    <meta name="publisher" content="${pub}" />
+    <meta description="${desc}">
+    <meta publisher="${pub}">
     <meta property="layoutMode" label="Layout Mode" type="combobox" values="Layered,Side by Side,Vertical,Grid,PiP" default="${currentLayoutName}">`;
 
         compositor.layers.forEach((l, i) => {
@@ -564,7 +1078,7 @@ const exporter = {
     <canvas id="master"></canvas>
     <div id="sandbox"></div>
 
-<script>
+<` + `script>
     // BROWSER COMPATIBILITY
     if (typeof window.engine === 'undefined') {
         const metaTags = document.querySelectorAll('meta[property]');
@@ -665,7 +1179,7 @@ const exporter = {
         mapBlend(val) {
             if(val === 'Normal') return 'source-over';
             if(val === 'Lighter') return 'lighter';
-            return val.toLowerCase();
+            return val.charAt(0).toUpperCase() + val.slice(1);
         },
 
         loop() {
@@ -728,7 +1242,7 @@ const exporter = {
     };
     
     window.onload = () => app.init();
-<\/script>
+<` + `/script>
 </body>
 </html>`;
 
@@ -753,10 +1267,21 @@ const exporter = {
     },
 };
 
-const compositor = new Compositor();
+// --- INITIALIZATION ---
+let compositor; 
 
-// Initial Load from Storage
-window.onload = () => {
+window.onload = async () => {
+    // 1. Initialize IndexedDB
+    try {
+        await IDB.init();
+        // 2. Migrate old data if present
+        await Library.checkMigration();
+    } catch(e) {
+        console.error("Critical DB Init Failure:", e);
+    }
+    
+    // 3. Start App
+    compositor = new Compositor();
     Persistence.load();
 };
 </script>
