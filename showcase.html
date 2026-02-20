@@ -53,7 +53,7 @@
                         <label for="tag-filter" class="form-label small fw-bold text-muted mb-1">Filter by Tag</label>
                         <select class="form-select" id="tag-filter">
                             <option value="">All Categories</option>
-                            </select>
+                        </select>
                     </div>
                     <div class="col-6 col-md-4">
                         <label for="sort-order" class="form-label small fw-bold text-muted mb-1">Sort Order</label>
@@ -93,12 +93,15 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0 d-flex justify-content-center align-items-center" id="effect-iframe-container" style="background-color: #000; width: 320px; height: 200px;">
-                    <iframe id="effect-iframe" style="width: 320px; height: 200px; border: none; flex-shrink: 0;" title="Effect Preview" scrolling="no"></iframe>
+                    <iframe id="effect-preview-iframe" style="width: 320px; height: 200px; border: none; flex-shrink: 0;" title="Effect Preview" scrolling="no"></iframe>
                 </div>
                 <div class="modal-footer justify-content-between">
                     <div>
                         <button type="button" class="btn btn-outline-info" id="effect-share-btn">
                             <i class="bi bi-link-45deg me-1"></i> Copy Share Link
+                        </button>
+                        <button type="button" class="btn btn-outline-danger ms-2" id="effect-record-btn">
+                            <i class="bi bi-camera-video me-1"></i>
                         </button>
                     </div>
                     <div>
