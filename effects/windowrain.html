@@ -5,26 +5,25 @@
     <meta description="Realistic rain dripping down a window pane with refracting translucent drops, color themes, and beat-reactive lightning." />
     <meta publisher="José Miranda" />
 
-    <meta property="theme" label="Color Theme" type="combobox" values="Custom,Blood Moon,Candy,Cyberpunk,Deep Space,Desert,Forest,Ghost,Glacier,Inferno,Matrix,Midnight,Neon City,Ocean,Outrun,Royal,Sunset,Synthwave,Thunderstorm,Toxic,Vaporwave" default="Neon City">
+<meta property="theme" label="Color Theme" tooltip="Select a pre-defined color palette or choose 'Custom' to use your own colors." type="combobox" values="Custom,Blood Moon,Candy,Cyberpunk,Deep Space,Desert,Forest,Ghost,Glacier,Inferno,Matrix,Midnight,Neon City,Ocean,Outrun,Royal,Sunset,Synthwave,Thunderstorm,Toxic,Vaporwave" default="Neon City">
     
-    <meta property="custom1" label="Custom Color 1" type="color" default="#FF007F">
-    <meta property="custom2" label="Custom Color 2" type="color" default="#7000FF">
-    <meta property="custom3" label="Custom Color 3" type="color" default="#00F0FF">
-    <meta property="customBg" label="Custom Background" type="color" default="#0A0A2A">
+    <meta property="custom1" label="Custom Color 1" tooltip="Primary out-of-focus background light (requires Custom theme)." type="color" default="#FF007F">
+    <meta property="custom2" label="Custom Color 2" tooltip="Secondary out-of-focus background light (requires Custom theme)." type="color" default="#7000FF">
+    <meta property="custom3" label="Custom Color 3" tooltip="Tertiary out-of-focus background light (requires Custom theme)." type="color" default="#00F0FF">
+    <meta property="customBg" label="Custom Background" tooltip="The base dark background color of the night sky (requires Custom theme)." type="color" default="#0A0A2A">
 
-    <meta property="water_color" label="Water Tint (Custom Mode)" type="color" default="#C8DCFF">
+    <meta property="water_color" label="Water Tint (Custom Mode)" tooltip="The translucent color tint applied to the water drops (requires Custom theme)." type="color" default="#C8DCFF">
 
-    <meta property="intensity" label="Rain Intensity" type="number" min="1" max="100" default="100">
-    <meta property="wind" label="Wind Direction" type="number" min="-50" max="50" default="0">
+    <meta property="intensity" label="Rain Intensity" tooltip="Controls how frequently new raindrops land on the glass." type="number" min="1" max="100" default="100">
+    <meta property="wind" label="Wind Direction" tooltip="Pushes falling drops horizontally. Negative values push left, positive push right." type="number" min="-50" max="50" default="0">
     
-    <meta property="drop_size" label="Drop Size" type="number" min="10" max="200" default="100">
-    <meta property="drop_speed" label="Terminal Velocity" type="number" min="10" max="200" default="100">
-    <meta property="gravity_scale" label="Gravity Acceleration" type="number" min="10" max="200" default="100">
-    <meta property="meander_amount" label="Snaking/Meander" type="number" min="0" max="50" default="40">
+    <meta property="drop_size" label="Drop Size" tooltip="Scales the overall size and volume of the raindrops." type="number" min="10" max="200" default="100">
+    <meta property="drop_speed" label="Terminal Velocity" tooltip="Adjusts the maximum speed that drops can reach while sliding down the glass." type="number" min="10" max="200" default="100">
+    <meta property="gravity_scale" label="Gravity Acceleration" tooltip="Controls how quickly drops accelerate downwards once they become heavy enough to fall." type="number" min="10" max="200" default="100">
+    <meta property="meander_amount" label="Snaking/Meander" tooltip="Adjusts how much the drops wiggle and snake left-to-right as they find paths down the glass." type="number" min="0" max="50" default="40">
 
-    <meta property="audio_reactive" label="Audio Reactive" type="boolean" default="true">
-    <meta property="bass_sensitivity" label="Bass Sensitivity (Lightning)" type="number" min="1" max="100" default="70">
-
+    <meta property="audio_reactive" label="Audio Reactive" tooltip="Enables bright lightning flashes and bursts of rain synchronized to the bass." type="boolean" default="true">
+    <meta property="bass_sensitivity" label="Bass Sensitivity (Lightning)" tooltip="How loud the bass needs to be to trigger a lightning strike. Lower values trigger more easily." type="number" min="1" max="100" default="70">
     <style>
         body, html {
             margin: 0;
