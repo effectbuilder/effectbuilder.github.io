@@ -39,10 +39,10 @@ async function getDownloadCount(filename) {
 async function incrementDownloadCount(filename) {
     const docId = getSafeDocId(filename);
     const docRef = doc(db, "showcase_stats", docId);
-    
+
     // Optimistic UI Update
     const countSpan = document.getElementById(`count-${getSafeDocId(filename)}`);
-    if(countSpan) {
+    if (countSpan) {
         let current = parseInt(countSpan.textContent) || 0;
         countSpan.textContent = current + 1;
     }
@@ -87,16 +87,16 @@ document.addEventListener('DOMContentLoaded', function () {
         "bouncingCubes.html", "clouds.html", "polyPlanet.html",
         "serenityWaves.html", "systemBouncer.html", "picasso.html",
         "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html",
-        "DigitalDecay.html", "KineticSand.html", "arcraiders.html","windowrain.html"
+        "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html"
     ];
 
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
-    
+
     // --- STATE MANAGEMENT ---
     let allEffects = []; // Stores the full list of effect objects
     let statsLoaded = false; // Flag to check if we have popularity data
-    
+
     // UI Elements
     const searchInput = document.getElementById('effect-search-input');
     const sortSelect = document.getElementById('sort-order');
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const codePreviewModal = codePreviewModalEl ? new bootstrap.Modal(codePreviewModalEl) : null;
     const codePreviewTitle = document.getElementById('code-preview-title');
     const codePreviewContent = document.getElementById('code-preview-content');
-    
+
     const effectViewModalEl = document.getElementById('effect-view-modal');
     const effectViewModal = effectViewModalEl ? new bootstrap.Modal(effectViewModalEl) : null;
     const effectViewTitle = document.getElementById('effect-view-title');
@@ -148,10 +148,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (!prop) return;
 
                     const label = meta.getAttribute('label') || prop;
-                    const type = meta.getAttribute('type'); 
+                    const type = meta.getAttribute('type');
                     const tooltip = meta.getAttribute('tooltip') || '';
                     const def = meta.getAttribute('default') || '-';
-                    
+
                     let valueDesc = '';
                     if (type === 'number') {
                         valueDesc = `${meta.getAttribute('min')} to ${meta.getAttribute('max')} (Default: ${def})`;
@@ -160,8 +160,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else if (type === 'list') {
                         const values = meta.getAttribute('values');
                         const valList = values ? values.split(',') : [];
-                        valueDesc = valList.length > 3 ? 
-                            `Select: ${valList.slice(0,3).join(', ')}...` : 
+                        valueDesc = valList.length > 3 ?
+                            `Select: ${valList.slice(0, 3).join(', ')}...` :
                             `Select: ${valList.join(', ')}`;
                     } else if (type === 'color') {
                         valueDesc = `Color Picker (Hex)`;
@@ -183,17 +183,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const textToAnalyze = `${title} ${description} ${filename}`.toLowerCase();
             const addTag = (t) => { if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t); };
 
-            if (textToAnalyze.match(/audio|sound|music|beat|freq|mic|visualizer|spect|vu meter|rhythm/)) {
-                const audioMeta = doc.querySelector('meta[property="audio_reactive"]');
-                if (audioMeta || !tags.some(t => t.toLowerCase().includes('sound'))) {
-                   if(!tags.includes('Sound Responsive')) tags.unshift('Sound Responsive');
-                }
+            // Check for the meta tag explicitly
+            const audioMeta = doc.querySelector('meta[property="audio_reactive"]');
+            const hasAudioKeywords = textToAnalyze.match(/audio|sound|music|beat|freq|mic|visualizer|spect|vu meter|rhythm/);
+
+            // Apply the tag if EITHER condition is met
+            if (audioMeta || hasAudioKeywords) {
+                if (!tags.includes('Sound Responsive')) tags.unshift('Sound Responsive');
             }
             if (textToAnalyze.match(/mouse|click|drag|interactive|cursor|touch/)) addTag('Interactive');
             if (textToAnalyze.match(/rainbow|color cycle|gradient|hues|spectrum/)) addTag('Rainbow');
             if (textToAnalyze.match(/fractal|mandelbrot|julia|math|geometry/)) addTag('Fractal');
             if (textToAnalyze.match(/particle|swarm|dots|dust|starfield/)) addTag('Particles');
-            
+
             if (structuredControls.length > 0 && !tags.includes('Customizable')) {
                 tags.push('Customizable');
             }
@@ -218,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 1. Fetch Metadata
         const effects = await Promise.all(effectFilenames.map((f, i) => fetchEffectMetadata(f, i)));
         allEffects = effects.filter(effect => effect !== null);
-        
+
         // 2. Build Filter Options
         populateTagFilter();
 
@@ -233,17 +235,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const promises = allEffects.map(async (effect) => {
             const count = await getDownloadCount(effect.filename);
             effect.downloads = count;
-            
+
             // Update individual badge if visible
             const badge = document.getElementById(`count-${getSafeDocId(effect.filename)}`);
-            if(badge) badge.textContent = count;
+            if (badge) badge.textContent = count;
         });
 
         await Promise.allSettled(promises);
         statsLoaded = true;
-        
+
         // If the user has selected "Most Popular" while we were loading, re-sort now
-        if(sortSelect.value === 'downloads') {
+        if (sortSelect.value === 'downloads') {
             updateGalleryDisplay();
         }
     }
@@ -251,9 +253,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function populateTagFilter() {
         const uniqueTags = new Set();
         allEffects.forEach(e => e.tags.forEach(t => uniqueTags.add(t)));
-        
+
         const sortedTags = Array.from(uniqueTags).sort();
-        
+
         sortedTags.forEach(tag => {
             const opt = document.createElement('option');
             opt.value = tag;
@@ -271,11 +273,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 1. Filter
         let filtered = allEffects.filter(e => {
-            const matchesSearch = !searchTerm || 
-                e.title.toLowerCase().includes(searchTerm) || 
+            const matchesSearch = !searchTerm ||
+                e.title.toLowerCase().includes(searchTerm) ||
                 e.description.toLowerCase().includes(searchTerm) ||
                 e.tags.some(t => t.toLowerCase().includes(searchTerm));
-            
+
             const matchesTag = !selectedTag || e.tags.includes(selectedTag);
 
             return matchesSearch && matchesTag;
@@ -313,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
             previewContainer.className = 'card-img-top position-relative overflow-hidden';
             previewContainer.style.height = '180px';
             previewContainer.style.backgroundColor = '#000';
-            
+
             // --- LAZY LOADING FIX: USE IMG TAG ---
             const img = document.createElement('img');
             img.src = effect.staticUrl;
@@ -365,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let tagsHtml = '';
             if (effect.tags.length > 0) {
                 tagsHtml = `<div class="mb-2">`;
-                effect.tags.slice(0, 3).forEach(tag => { 
+                effect.tags.slice(0, 3).forEach(tag => {
                     let cls = 'bg-secondary';
                     if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
                     else if (tag === 'Customizable') cls = 'bg-warning text-dark';
@@ -397,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const btnGroup = document.createElement('div');
             btnGroup.className = 'btn-group';
-            
+
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn btn-sm btn-outline-primary';
             viewBtn.innerHTML = '<i class="bi bi-eye"></i>';
@@ -446,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const scale = 2.0;
         effectIframe.style.width = '320px'; effectIframe.style.height = '200px';
         effectIframe.style.transform = `scale(${scale})`;
-        effectIframeContainer.style.width = `${320*scale}px`; effectIframeContainer.style.height = `${200*scale}px`;
+        effectIframeContainer.style.width = `${320 * scale}px`; effectIframeContainer.style.height = `${200 * scale}px`;
 
         // Inject Details
         const detailsId = 'effect-details-section';
@@ -458,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function () {
         detailsDiv.className = 'p-3 border-top pt-3';
 
         let tagsHtml = '';
-        if(effect.tags.length) {
+        if (effect.tags.length) {
             tagsHtml = `<div class="mb-3"><h6 class="fw-bold">Tags:</h6>`;
             effect.tags.forEach(tag => {
                 let cls = 'bg-secondary';
@@ -500,32 +502,32 @@ document.addEventListener('DOMContentLoaded', function () {
         const oldHtml = btn.innerHTML;
         btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
         btn.disabled = true;
-        
+
         // Update local model first
         effect.downloads = (effect.downloads || 0) + 1;
         // Update UI
         const badge = document.getElementById(`count-${getSafeDocId(effect.filename)}`);
-        if(badge) badge.textContent = effect.downloads;
-        
+        if (badge) badge.textContent = effect.downloads;
+
         // Fire and forget increment
         incrementDownloadCount(effect.filename);
 
         try {
-            const [htmlRes, imgRes] = await Promise.all([ fetch(effect.effectUrl), fetch(effect.staticUrl) ]);
+            const [htmlRes, imgRes] = await Promise.all([fetch(effect.effectUrl), fetch(effect.staticUrl)]);
             if (!htmlRes.ok) throw new Error('HTML fetch failed');
-            
+
             const zip = new JSZip();
             zip.file(effect.filename, await htmlRes.text());
             if (imgRes.ok) zip.file(effect.staticUrl.split('/').pop(), await imgRes.blob());
 
-            const blob = await zip.generateAsync({type:'blob'});
+            const blob = await zip.generateAsync({ type: 'blob' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = effect.filename.replace('.html', '.zip');
             a.click();
             URL.revokeObjectURL(url);
-        } catch (err) { console.error(err); alert('Download failed.'); } 
+        } catch (err) { console.error(err); alert('Download failed.'); }
         finally { btn.innerHTML = oldHtml; btn.disabled = false; }
     }
 
@@ -563,17 +565,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // Hash Handler
     window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
-        if(!hash) return;
+        if (!hash) return;
         const found = allEffects.find(e => e.filename === hash);
-        if(found) handleViewEffect(found);
+        if (found) handleViewEffect(found);
     });
 
     // Start
     initializeGallery().then(() => {
         const hash = window.location.hash.substring(1);
-        if(hash) {
+        if (hash) {
             const found = allEffects.find(e => e.filename === hash);
-            if(found) setTimeout(() => handleViewEffect(found), 500);
+            if (found) setTimeout(() => handleViewEffect(found), 500);
         }
     });
 });
