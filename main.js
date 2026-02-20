@@ -2883,67 +2883,67 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const srgbLinkBtn = document.getElementById('generate-srgb-link-btn');
+    // const srgbLinkBtn = document.getElementById('generate-srgb-link-btn');
 
-    srgbLinkBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        const allProps = getControlValues();
+    // srgbLinkBtn.addEventListener('click', (event) => {
+    //     event.preventDefault();
+    //     const allProps = getControlValues();
 
-        const effectTitle = allProps['title'] || 'My Effect';
-        const urlSafeTitle = encodeURIComponent(effectTitle);
-        const baseUrl = `https://go.signalrgb.com/app/effect/apply/${urlSafeTitle}`;
+    //     const effectTitle = allProps['title'] || 'My Effect';
+    //     const urlSafeTitle = encodeURIComponent(effectTitle);
+    //     const baseUrl = `https://go.signalrgb.com/app/effect/apply/${urlSafeTitle}`;
 
-        let params = [];
-        const currentState = getControlValues();
+    //     let params = [];
+    //     const currentState = getControlValues();
 
-        for (const key in currentState) {
-            if (!currentState.hasOwnProperty(key)) {
-                continue;
-            }
+    //     for (const key in currentState) {
+    //         if (!currentState.hasOwnProperty(key)) {
+    //             continue;
+    //         }
 
-            const isDifferentFromBaseline = !baselineStateForURL.hasOwnProperty(key) || String(currentState[key]) !== String(baselineStateForURL[key]);
+    //         const isDifferentFromBaseline = !baselineStateForURL.hasOwnProperty(key) || String(currentState[key]) !== String(baselineStateForURL[key]);
 
-            // Compare the current value to the baseline value.
-            // If the baseline doesn't have the key, or if the values are different, it's a change.
-            if (isDifferentFromBaseline || dirtyProperties.has(key)) {
+    //         // Compare the current value to the baseline value.
+    //         // If the baseline doesn't have the key, or if the values are different, it's a change.
+    //         if (isDifferentFromBaseline || dirtyProperties.has(key)) {
 
-                // Filter out metadata that shouldn't be in the link's query string.
-                if (key === 'title' || key === 'description' || key === 'publisher') {
-                    continue;
-                }
+    //             // Filter out metadata that shouldn't be in the link's query string.
+    //             if (key === 'title' || key === 'description' || key === 'publisher') {
+    //                 continue;
+    //             }
 
-                let value = currentState[key];
+    //             let value = currentState[key];
 
-                // Format the value for the URL.
-                if (typeof value === 'boolean') {
-                    value = value ? 'true' : 'false';
-                } else if (typeof value === 'number') {
-                    value = String(value);
-                }
+    //             // Format the value for the URL.
+    //             if (typeof value === 'boolean') {
+    //                 value = value ? 'true' : 'false';
+    //             } else if (typeof value === 'number') {
+    //                 value = String(value);
+    //             }
 
-                if (typeof value === 'string') {
-                    if (value.startsWith('#')) {
-                        value = `%23${value.substring(1)}`;
-                    }
-                    value = value.replace(/ /g, '%20');
-                }
+    //             if (typeof value === 'string') {
+    //                 if (value.startsWith('#')) {
+    //                     value = `%23${value.substring(1)}`;
+    //                 }
+    //                 value = value.replace(/ /g, '%20');
+    //             }
 
-                params.push(`${key}=${value}`);
-            }
-        }
+    //             params.push(`${key}=${value}`);
+    //         }
+    //     }
 
-        const queryString = params.join('&');
-        const finalUrl = `${baseUrl}?${queryString}`;
+    //     const queryString = params.join('&');
+    //     const finalUrl = `${baseUrl}?${queryString}`;
 
-        window.open(finalUrl, '_blank');
+    //     window.open(finalUrl, '_blank');
 
-        const modalBody = 'This link has been opened in a new tab. It will only work if the corresponding effect is already installed in your SignalRGB library.\n\nThe link has also been copied to your clipboard.';
-        showToast(modalBody, 'success');
+    //     const modalBody = 'This link has been opened in a new tab. It will only work if the corresponding effect is already installed in your SignalRGB library.\n\nThe link has also been copied to your clipboard.';
+    //     showToast(modalBody, 'success');
 
-        navigator.clipboard.writeText(finalUrl).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
-    });
+    //     navigator.clipboard.writeText(finalUrl).catch(err => {
+    //         console.error('Failed to copy text: ', err);
+    //     });
+    // });
 
     document.getElementById('startAudioBtn').addEventListener('click', setupAudio);
 
@@ -3665,10 +3665,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const componentDocRef = window.doc(window.db, "projects", componentId);
 
         likeListenerUnsubscribe = window.onSnapshot(componentDocRef, (docSnap) => {
+            // 1. Reset everything if document doesn't exist
             if (!docSnap.exists()) {
                 currentUserHasLiked = false;
                 if (likeCountDisplay) likeCountDisplay.textContent = '0';
-                updateLikeButtonUI(); // Will reset to disabled/zero state
+                if (document.getElementById('view-count-display')) document.getElementById('view-count-display').style.display = 'none';
+                if (document.getElementById('download-count-display')) document.getElementById('download-count-display').style.display = 'none';
+                updateLikeButtonUI();
                 return;
             }
 
@@ -3681,16 +3684,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (likeCountDisplay) {
                 likeCountDisplay.textContent = likeCount;
+                likeCountDisplay.style.display = likeCount > 0 ? 'inline-block' : 'none';
             }
 
-            updateLikeButtonUI();
+            // 2. Add this block to handle Views and Downloads
+            const viewCount = data.viewCount || 0;
+            const downloadCount = data.downloadCount || 0;
 
-        }, (error) => {
-            console.error("Error loading like data:", error);
-            currentUserHasLiked = false;
-            if (likeCountDisplay) likeCountDisplay.textContent = '0';
-            updateLikeButtonUI();
+            const viewDisplay = document.getElementById('view-count-display');
+            const downloadDisplay = document.getElementById('download-count-display');
+
+            if (viewDisplay) {
+                viewDisplay.querySelector('span').textContent = viewCount;
+                viewDisplay.style.display = viewCount > 0 ? 'inline-flex' : 'none';
+            }
+            if (downloadDisplay) {
+                downloadDisplay.querySelector('span').textContent = downloadCount;
+                downloadDisplay.style.display = downloadCount > 0 ? 'inline-flex' : 'none';
+            }
         });
+    }
+
+    async function incrementViewCount(docId) {
+        if (!docId) return;
+        try {
+            const docRef = window.doc(window.db, "projects", docId);
+            await window.updateDoc(docRef, {
+                viewCount: window.increment(1)
+            });
+        } catch (err) {
+            console.warn("Could not increment view count:", err);
+        }
     }
 
 
@@ -8585,24 +8609,6 @@ document.addEventListener('DOMContentLoaded', function () {
         e.target.value = null;
     });
     // --- END: NEW Upload from File Logic ---
-
-    /**
-     * SHARE BUTTON: Opens a modal with the share link if the project is saved.
-     */
-    shareBtn.addEventListener('click', () => {
-        if (!currentProjectDocId) {
-            showToast("Please save the effect before sharing.", 'info');
-            return; // Stop if not saved
-        }
-
-        // If saved, populate the input and show the modal
-        const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${currentProjectDocId}`;
-        const shareLinkInput = document.getElementById('share-link-input');
-        shareLinkInput.value = shareUrl;
-
-        const shareModal = new bootstrap.Modal(document.getElementById('share-modal'));
-        shareModal.show();
-    });
 
     /**
       * COPY SHARE LINK BUTTON: Copies the link from the share modal.

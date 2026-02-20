@@ -42,46 +42,44 @@
                     <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
                     <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
                     <button class="btn btn-primary" id="save-ws-btn" data-bs-toggle="tooltip" title="Save current workspace to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
-                    <button class="btn btn-secondary" id="share-btn" data-bs-toggle="tooltip" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
-                    <button class="btn btn-secondary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
-                    <button class="btn btn-secondary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button>
+                    <button class="btn btn-primary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
+                    <!-- <button class="btn btn-primary" id="generate-srgb-link-btn" data-bs-toggle="tooltip" title="Generate SignalRGB Link. Only works if the effect is already installed."><i class="bi bi-link-45deg"></i>Import to SignalRGB</button> -->
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Community">
-                    <a href="./gallery.html" class="btn btn-primary" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i> Community Gallery</a>
+                    <a href="./gallery.html" class="btn btn-primary" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i>Gallery</a>
                     <a href="./showcase.html" class="btn btn-primary" title="Browse the Effect Showcase page"> <i class="bi bi-view-list me-1"></i> Effect Showcase </a>
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Editor">
                     <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
 
-                <div class="d-flex align-items-center">
-
-                    <div class="gtranslate_wrapper me-3"></div>
-
-                    <script>
-                        window.gtranslateSettings = {
-                            "default_language": "en",
-                            "native_language_names": true,
-                            "detect_browser_language": true,
-                            "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
-                            "wrapper_selector": ".gtranslate_wrapper"
-                        }
-                    </script>
-                    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
-
-                </div>
-
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
                 <div class="btn-group me-3" role="group" aria-label="Help and settings">
-                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i></button>
-                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i></button>
-                    <a class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
-                        <i class="bi bi-github"></i>
-                    </a>
+                    <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i>Help</button>
+                    <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i>About</button>
+                    <!-- <a class="btn btn-secondary" id="contact-btn" href="https://github.com/effectbuilder/effectbuilder.github.io/issues/new/choose" target="_blank" rel="noopener" title="Report Bug / Request Feature on GitHub">
+                        <i class="bi bi-github"></i>Github
+                    </a> -->
                     <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
-                        <i class="bi" id="theme-icon"></i>
+                        <i class="bi" id="theme-icon"></i>Theme
                     </button>
+                    <div class="d-flex align-items-center">
+
+                        <div class="gtranslate_wrapper me-3"></div>
+
+                        <script>
+                            window.gtranslateSettings = {
+                                "default_language": "en",
+                                "native_language_names": true,
+                                "detect_browser_language": true,
+                                "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
+                                "wrapper_selector": ".gtranslate_wrapper"
+                            }
+                        </script>
+                        <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
+
+                    </div>
                 </div>
 
                 <div id="auth-notification-block" class="d-flex align-items-center">
@@ -202,12 +200,21 @@
 
                 <hr>
 
-                <div class="d-flex align-items-center px-4">
+                <div class="d-flex align-items-center px-4 gap-3">
                     <button class="btn btn-sm btn-outline-danger" id="like-effect-btn" data-bs-toggle="tooltip" title="Like this effect" disabled>
                         <i class="bi bi-heart"></i>
                         <span id="like-effect-btn-label"></span>
                         <span id="like-count-display" class="badge bg-danger ms-2" style="display: none; font-size: 0.9em;">0</span>
                     </button>
+
+                    <span class="text-body-secondary small align-items-center" id="view-count-display" style="display: none;" title="Views">
+                        <i class="bi bi-eye-fill"></i> <span class="ms-1">0</span>
+                    </span>
+                    <span class="text-body-secondary small align-items-center" id="download-count-display" style="display: none;" title="Downloads">
+                        <i class="bi bi-download"></i> <span class="ms-1">0</span>
+                    </span>
+                    <button class="btn btn-sm btn-primary" id="share-btn" data-bs-toggle="modal" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
+                    <button class="btn btn-sm btn-primary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Download this effect </button>
                 </div>
                 <div id="component-comments-section" class="m-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">

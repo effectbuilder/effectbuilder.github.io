@@ -49,4 +49,3 @@ window.documentId = documentId; // This exports the actual function
 window.writeBatch = writeBatch;
 window.arrayUnion = arrayUnion;
 window.arrayRemove = arrayRemove;
-window.documentId = documentId; // This exports a constant string 'documentId'

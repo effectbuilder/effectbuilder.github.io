@@ -589,3 +589,25 @@ body {
     width: 48px !important; /* Optional: Enforce a stable size */
     height: 48px !important;
 }
+
+/* Style the GTranslate Select Dropdown to match Bootstrap Secondary buttons */
+.gtranslate_wrapper select {
+    background-color: #6c757d !important; /* Bootstrap btn-secondary color */
+    color: white !important;
+    border: 1px solid #6c757d !important;
+    border-radius: 0.375rem !important; /* Standard Bootstrap radius */
+    padding: 0.375rem 0.75rem !important;
+    font-size: 1rem !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.gtranslate_wrapper select:hover {
+    background-color: #5c636a !important; /* Darker secondary on hover */
+    border-color: #565e64 !important;
+}
+
+/* Optional: Hide the powered by text if you want a cleaner look */
+.gt_powered_by {
+    display: none !important;
+}
