@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Window Rain</title>
-    <meta description="Realistic rain dripping down a window pane with refracting translucent drops, continuous streaks, color themes, and beat-reactive lightning." />
+    <meta description="Realistic rain dripping down a window pane with refracting translucent drops, color themes, and beat-reactive lightning." />
     <meta publisher="José Miranda" />
 
     <meta property="theme" label="Color Theme" type="combobox" values="Custom,Blood Moon,Candy,Cyberpunk,Deep Space,Desert,Forest,Ghost,Glacier,Inferno,Matrix,Midnight,Neon City,Ocean,Outrun,Royal,Sunset,Synthwave,Thunderstorm,Toxic,Vaporwave" default="Neon City">
@@ -18,14 +18,12 @@
     <meta property="wind" label="Wind Direction" type="number" min="-50" max="50" default="0">
     
     <meta property="drop_size" label="Drop Size" type="number" min="10" max="200" default="100">
-    <meta property="drop_speed" label="Terminal Velocity" type="number" min="10" max="200" default="20">
-    <meta property="gravity_scale" label="Gravity Acceleration" type="number" min="10" max="200" default="40">
-    <meta property="meander_amount" label="Snaking/Meander" type="number" min="0" max="50" default="0">
-    
-    <meta property="streak_opacity" label="Streak Visibility" type="number" min="0" max="100" default="10">
+    <meta property="drop_speed" label="Terminal Velocity" type="number" min="10" max="200" default="100">
+    <meta property="gravity_scale" label="Gravity Acceleration" type="number" min="10" max="200" default="100">
+    <meta property="meander_amount" label="Snaking/Meander" type="number" min="0" max="50" default="40">
 
     <meta property="audio_reactive" label="Audio Reactive" type="boolean" default="true">
-    <meta property="bass_sensitivity" label="Bass Sensitivity (Lightning)" type="number" min="1" max="80" default="70">
+    <meta property="bass_sensitivity" label="Bass Sensitivity (Lightning)" type="number" min="1" max="100" default="70">
 
     <style>
         body, html {
@@ -89,12 +87,6 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         const width = 320;
         const height = 200;
-
-        // Offscreen canvas for continuous streaks
-        const sCanvas = document.createElement('canvas');
-        sCanvas.width = width;
-        sCanvas.height = height;
-        const sCtx = sCanvas.getContext('2d', { alpha: true });
 
         // Offscreen canvas to capture background for refraction
         const bgCanvas = document.createElement('canvas');
@@ -196,29 +188,12 @@
                 const meander = Math.sin((this.y + this.snakingOffset) * 0.05) * 0.6 * settings.meanderMulti;
                 this.x += (settings.wind + meander) * dt * 60;
 
-                // Fast squared distance check to avoid Math.hypot overhead
                 const dx = this.x - this.lastTrailX;
                 const dy = this.y - this.lastTrailY;
                 const sqDist = dx * dx + dy * dy;
 
                 if (this.vy > 0.5 * settings.speedMulti && sqDist > 1.0) {
-                    if (settings.streakOpacity > 0.001) {
-                        sCtx.globalCompositeOperation = 'source-over';
-                        sCtx.lineCap = 'round';
-                        sCtx.strokeStyle = `rgba(0, 0, 0, ${settings.streakOpacity})`;
-                        sCtx.lineWidth = this.r * 0.8;
-                        sCtx.beginPath();
-                        sCtx.moveTo(this.lastTrailX, this.lastTrailY);
-                        sCtx.lineTo(this.x, this.y);
-                        sCtx.stroke();
-                        
-                        sCtx.strokeStyle = `rgba(${waterRGB.r}, ${waterRGB.g}, ${waterRGB.b}, ${settings.streakOpacity})`;
-                        sCtx.lineWidth = this.r * 1.0;
-                        sCtx.beginPath();
-                        sCtx.moveTo(this.lastTrailX, this.lastTrailY);
-                        sCtx.lineTo(this.x, this.y);
-                        sCtx.stroke();
-                    }
+                    // Occasionally leave a tiny droplet behind in the path
                     if (Math.random() > 0.85) {
                         drops.push(new Drop(this.x, this.y - this.r * 1.5, (Math.random() * 0.4 + 0.3) * settings.sizeMulti, false));
                     }
@@ -296,10 +271,6 @@
             const dt = Math.min((time - lastTime) / 1000, 0.05);
             lastTime = time;
 
-            // Opacity slider ranges 0-100. We map it to 0.00 to 0.03 for ultra-fine steps.
-            const rawOpacity = getProp('streak_opacity', 60);
-            const mappedOpacity = (rawOpacity / 100) * 0.03;
-
             const settings = {
                 themeName: getProp('theme', 'Neon City'),
                 custom1: getProp('custom1', '#FF007F'),
@@ -307,13 +278,12 @@
                 custom3: getProp('custom3', '#00F0FF'),
                 customBg: getProp('customBg', '#0A0A2A'),
                 customWater: getProp('water_color', '#C8DCFF'),
-                intensity: getProp('intensity', 60) / 100,
-                wind: getProp('wind', 5) / 50,
+                intensity: getProp('intensity', 100) / 100,
+                wind: getProp('wind', 0) / 50,
                 sizeMulti: getProp('drop_size', 100) / 100,
                 speedMulti: getProp('drop_speed', 100) / 100,
                 gravityMulti: getProp('gravity_scale', 100) / 100,
-                meanderMulti: getProp('meander_amount', 100) / 100,
-                streakOpacity: mappedOpacity,
+                meanderMulti: getProp('meander_amount', 40) / 100,
                 audioReactive: getProp('audio_reactive', true),
                 bassSens: getProp('bass_sensitivity', 70) / 100
             };
@@ -353,11 +323,7 @@
                 drops.push(new Drop(Math.random() * width, -15, (Math.random() * 1.5 + 1.5) * settings.sizeMulti, true));
             }
 
-            sCtx.globalCompositeOperation = 'destination-out';
-            sCtx.fillStyle = `rgba(255, 255, 255, ${dt * 0.3})`;
-            sCtx.fillRect(0, 0, width, height);
-
-            // Fast AABB Collision detection
+            // Update & Collision check
             for (let i = drops.length - 1; i >= 0; i--) {
                 const d1 = drops[i];
                 d1.update(dt, settings, waterRGB);
@@ -368,7 +334,6 @@
                         const dy = d1.y - d2.y;
                         const rSum = d1.r + d2.r;
                         
-                        // AABB preliminary check before expensive distance math
                         if (Math.abs(dx) < rSum && Math.abs(dy) < rSum) {
                             if (dx * dx + dy * dy < rSum * rSum) {
                                 d1.mass += d2.mass;
@@ -381,6 +346,7 @@
                         }
                     }
                 }
+                // Memory cleanup
                 if (d1.y > height + 20 || d1.x < -20 || d1.x > width + 20 || d1.mass < 0.1) {
                     drops.splice(i, 1);
                 }
@@ -406,13 +372,17 @@
             bgCtx.clearRect(0, 0, width, height);
             bgCtx.drawImage(canvas, 0, 0);
 
-            // --- 3. DRAW STREAKS & DROPS ---
+            // --- 3. DRAW DROPS IN LAYERS ---
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1.0;
-            ctx.drawImage(sCanvas, 0, 0);
             
+            // Layer 1: Draw static/inactive drops (background layer)
             for (const d of drops) { 
-                d.draw(ctx, waterRGB); 
+                if (!d.active) d.draw(ctx, waterRGB); 
+            }
+            // Layer 2: Draw active/falling drops (foreground layer)
+            for (const d of drops) { 
+                if (d.active) d.draw(ctx, waterRGB); 
             }
             
             requestAnimationFrame(animate);
