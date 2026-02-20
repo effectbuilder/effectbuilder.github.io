@@ -759,7 +759,7 @@ class Shape {
             }
             tempCtx.fillStyle = tempGrad;
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            const pattern = this.ctx.createPattern(tempCanvas, 'no-repeat');
+            const pattern = this.ctx.createPattern(tempCanvas, 'repeat');
             const matrix = new DOMMatrix();
             const directionMultiplier = (scrollDirection === 'left' || scrollDirection === 'up') ? 1 : -1;
             const scrollOffset = effectiveProgress * patternSize * directionMultiplier;
@@ -779,13 +779,51 @@ class Shape {
                 const hue = (position * 360 + hueOffset) % 360;
                 const color = `hsl(${hue}, 100%, 50%)`;
                 if (useSharpGradient && i > 0) {
-                    const prev_hue = (((i - 1) / numStops) * 360 + hueOffset) % 360;
+                    const prev_hue = (((i - 1) / numSteps) * 360 + hueOffset) % 360;
                     grad.addColorStop(position - 0.0001, `hsl(${prev_hue}, 100%, 50%)`);
                 }
                 grad.addColorStop(position, color);
             }
             return grad;
         }
+    }
+
+    _getRandomStrokeColorForElement(elementIndex) {
+        if (this.strokeCycleColors) {
+            const hue = (this.strokeHue1 + elementIndex * this.strokePhaseOffset) % 360;
+            return `hsl(${hue}, 100%, 50%)`;
+        }
+
+        if (this.strokeGradType !== 'random' || !this.strokeGradient.stops || this.strokeGradient.stops.length === 0) {
+            return this.strokeGradient.stops?.[0]?.color || '#FFFFFF';
+        }
+
+        if (!this.randomStrokeElementState) {
+            this.randomStrokeElementState = {};
+        }
+
+        if (!this.randomStrokeElementState[elementIndex]) {
+            const randomIndex = Math.floor(Math.random() * this.strokeGradient.stops.length);
+            this.randomStrokeElementState[elementIndex] = {
+                color: this.strokeGradient.stops[randomIndex].color,
+                timer: Math.random() * 5 + 5
+            };
+        }
+
+        const state = this.randomStrokeElementState[elementIndex];
+
+        if (this.lastDeltaTime > 0) {
+            const flickerSpeed = (this.strokeAnimationSpeed || 0) * this.lastDeltaTime;
+            state.timer -= flickerSpeed;
+        }
+
+        if (state.timer <= 0) {
+            const randomIndex = Math.floor(Math.random() * this.strokeGradient.stops.length);
+            state.color = this.strokeGradient.stops[randomIndex].color;
+            state.timer = Math.random() * 5 + 5; // Reset timer
+        }
+
+        return state.color;
     }
 
     _getGradientColorAt(progress, stops) {
@@ -2212,6 +2250,8 @@ class Shape {
                 return this._createRadialGradient(progress, { ...options, width: this.width, height: this.height });
             case 'conic':
                 return this._createConicGradient(progress, { ...options, type: 'stroke' });
+            case 'random':
+                return this._getRandomStrokeColorForElement(phase);
             default: // solid, alternating, random
                 return this._getStaticColor(phase, { type: this.strokeGradType, stops: stopsToRender });
         }
@@ -3380,6 +3420,12 @@ class Shape {
             }
         }
 
+        if (this.strokeGradType === 'random' && this.randomStrokeElementState) {
+            for (const key in this.randomStrokeElementState) {
+                this.randomStrokeElementState[key].timer -= strokeAnimSpeed * 1;
+            }
+        }
+
         this.hue1 += cycleSpeed * 20;
         this.hue2 += cycleSpeed * 20;
         this.strokeHue1 += strokeCycleSpeed * 20;
@@ -3585,7 +3631,7 @@ class Shape {
         // Flash opacity is now applied on a case-by-case basis within each shape's drawing logic
         // to avoid affecting UI elements like the polyline placeholder.
 
-        const applyStrokeInside = () => {
+        const applyStrokeInside = (phase = 0) => {
             if (this.enableStroke && this.strokeWidth > 0) {
                 const strokeStyle = this._createLocalStrokeStyle();
                 this.ctx.save();
@@ -4381,7 +4427,7 @@ class Shape {
                         this.ctx.arc(0, 0, iR, endAngle, startAngle, true);
                         this.ctx.closePath();
                         this._drawFill(i);
-                        applyStrokeInside();
+                        applyStrokeInside(i);
                     }
                 }
             } else if (this.shape === 'rectangle' && (this.numberOfRows > 1 || this.numberOfColumns > 1)) {
@@ -4402,7 +4448,7 @@ class Shape {
                             this._drawFill(cellIndex);
                         }
 
-                        applyStrokeInside();
+                        applyStrokeInside(cellIndex);
                     }
                 }
             } else if (this.shape === 'polyline') {
