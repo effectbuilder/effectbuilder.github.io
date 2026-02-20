@@ -112,10 +112,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const effectViewModalEl = document.getElementById('effect-view-modal');
     const effectViewModal = effectViewModalEl ? new bootstrap.Modal(effectViewModalEl) : null;
     const effectViewTitle = document.getElementById('effect-view-title');
-    const effectIframe = document.getElementById('effect-iframe');
+
+    // FIX: Change 'effect-iframe' to 'effect-preview-iframe'
+    const effectIframe = document.getElementById('effect-preview-iframe');
+
     const effectIframeContainer = document.getElementById('effect-iframe-container');
     const effectDownloadBtn = document.getElementById('effect-download-btn');
     const effectShareBtn = document.getElementById('effect-share-btn');
+    const effectRecordBtn = document.getElementById('effect-record-btn');
 
     async function fetchEffectMetadata(filename, index) {
         const effectUrl = `${effectsFolder}/${filename}`;
@@ -443,6 +447,12 @@ document.addEventListener('DOMContentLoaded', function () {
             effectShareBtn.replaceWith(newBtn);
             newBtn.addEventListener('click', () => handleShareLink(newBtn, effect.filename));
         }
+        if (effectRecordBtn) {
+            const newBtn = effectRecordBtn.cloneNode(true);
+            effectRecordBtn.replaceWith(newBtn);
+            // Pass the button element so we can change its text while recording
+            newBtn.addEventListener('click', () => recordEffectPreview(effect.title, newBtn));
+        }
 
         // Iframe Scaling
         const scale = 2.0;
@@ -569,6 +579,79 @@ document.addEventListener('DOMContentLoaded', function () {
         const found = allEffects.find(e => e.filename === hash);
         if (found) handleViewEffect(found);
     });
+
+    /**
+     * Records a 5-second video from the effect preview canvas immediately.
+     */
+    async function recordEffectPreview(effectName, btnElement) {
+        const effectIframe = document.getElementById('effect-preview-iframe');
+
+        if (!effectIframe) {
+            console.error("Effect preview iframe not found.");
+            return;
+        }
+
+        try {
+            const canvas = effectIframe.contentDocument.querySelector('canvas');
+            if (!canvas) {
+                alert("Please wait a moment for the effect to fully load before recording.");
+                return;
+            }
+
+            // Update button UI to show recording state
+            const originalBtnHtml = btnElement.innerHTML;
+            btnElement.innerHTML = `<span class="spinner-grow spinner-grow-sm me-2" role="status" aria-hidden="true"></span>`;
+            btnElement.classList.replace('btn-outline-danger', 'btn-danger');
+            btnElement.disabled = true;
+
+            const stream = canvas.captureStream(30);
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9'
+            });
+
+            const chunks = [];
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${effectName.replace(/\s+/g, '_')}_preview.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+
+                // Restore button UI
+                btnElement.innerHTML = originalBtnHtml;
+                btnElement.classList.replace('btn-danger', 'btn-outline-danger');
+                btnElement.disabled = false;
+            };
+
+            mediaRecorder.start();
+
+            // Stop exactly after 5 seconds
+            setTimeout(() => {
+                if (mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                }
+            }, 5000);
+
+        } catch (err) {
+            console.error("Recording failed.", err);
+            alert("Recording failed. This may be due to browser security restrictions on cross-origin iframes.");
+
+            // Restore button UI on error
+            if (btnElement) {
+                btnElement.innerHTML = `<i class="bi bi-camera-video me-1"></i> Record 5s Video`;
+                btnElement.classList.replace('btn-danger', 'btn-outline-danger');
+                btnElement.disabled = false;
+            }
+        }
+    }
 
     // Start
     initializeGallery().then(() => {
