@@ -19,7 +19,6 @@ const COLLECTIONS_TO_BACKUP = [
     'notifications',                // From Effect Builder
     'srgb-component-comments',      // Comments on components
     'srgb-effect-comments',         // Comments on effects
-    'artifacts',                    // Dont know what this is but it is in firestore
     'showcase_stats',               // Statistics for the showcase page
     'srgb-effect-notifications'     // Notifications related to effects
 ];
@@ -63,8 +62,17 @@ function showAccessDenied() {
 function setupAuthListeners() {
     loginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+
         try {
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            // This is the specific Google Token required for Drive API
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential.accessToken;
+
+            if (token) {
+                sessionStorage.setItem('googleDriveToken', token);
+            }
         } catch (error) {
             console.error("Error during sign-in:", error);
             showToast('Login Error', error.message, 'danger');
@@ -74,35 +82,29 @@ function setupAuthListeners() {
     logoutBtn.addEventListener('click', async () => {
         try {
             await signOut(auth);
-            showToast('Logged Out', 'You have been signed out.', 'info');
+            sessionStorage.removeItem('googleDriveToken');
         } catch (error) {
             console.error("Error during sign-out:", error);
-            showToast('Logout Error', error.message, 'danger');
         }
     });
 
     onAuthStateChanged(auth, (user) => {
-        const isLoggedIn = !!user;
-        const defaultIcon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktcGVyc29uLWNpcmNsZSIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNMTFhMyAzIDAgMTEtNiAwIDMgMyAwIDAxNiAweiIvPgogIDxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTAgOGE4IDggMCAxMDE2IDBBOCA4IDAgMDAwIDh6bTgtN2E3IDcgMCAwMTcgNzdhNyA3IDAgMDEtNyA3QTcgNyAwIDAxMSA4YTcgNyAwIDAxNy03eiIvPjwvIHN2Zz4=';
-
-        if (isLoggedIn) {
-            // Update the Navbar UI
-            if (userDisplay) userDisplay.textContent = user.displayName || user.email;
-            if (userPhoto) userPhoto.src = user.photoURL || defaultIcon;
-            if (userSessionGroup) userSessionGroup.classList.remove('d-none');
-            if (loginBtn) loginBtn.classList.add('d-none');
-
-            // --- Admin Permission Check ---
+        if (user) {
             if (user.uid === ADMIN_UID) {
                 showAdminContent();
+                userDisplay.textContent = user.displayName || user.email;
+                userPhoto.src = user.photoURL || '';
+                userSessionGroup.classList.remove('d-none');
+                loginBtn.classList.add('d-none');
             } else {
                 showAccessDenied();
             }
         } else {
-            // Not logged in, show access denied
-            if (userSessionGroup) userSessionGroup.classList.add('d-none');
-            if (loginBtn) loginBtn.classList.remove('d-none');
-            showAccessDenied();
+            loadingEl.classList.add('d-none');
+            deniedEl.classList.add('d-none');
+            contentEl.classList.add('d-none');
+            userSessionGroup.classList.add('d-none');
+            loginBtn.classList.remove('d-none');
         }
     });
 }
@@ -190,7 +192,9 @@ async function handleDownloadZip() {
         // Trigger the download
         triggerZipDownload(zipBlob, filename);
 
-        showToast('Success', 'The backup download has started.', 'success');
+        showToast('Cloud Sync', 'Uploading backup to Google Drive...', 'info');
+        await uploadToDrive(zipBlob, filename);
+        showToast('Success', 'Backup sucessfully uploaded!', 'success');
 
     } catch (error) {
         console.error("Error creating zip backup:", error);
@@ -202,6 +206,83 @@ async function handleDownloadZip() {
     }
 }
 
+/**
+ * Finds a folder by name or creates it if it doesn't exist.
+ * Returns the folder ID.
+ */
+async function getOrCreateFolder(token, folderName) {
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
+        `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+    )}`;
+
+    // 1. Search for the folder
+    const searchRes = await fetch(searchUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const searchData = await searchRes.json();
+
+    if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id; // Return existing folder ID
+    }
+
+    // 2. Create the folder if not found
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: folderName,
+            mimeType: 'application/vnd.google-apps.folder'
+        })
+    });
+    const folder = await createRes.json();
+    return folder.id;
+}
+
+/**
+ * Uploads the blob to a specific folder in Google Drive
+ */
+async function uploadToDrive(zipBlob, filename) {
+    const token = sessionStorage.getItem('googleDriveToken');
+    if (!token) {
+        showToast('Drive Error', 'Please sign in again to enable Drive upload.', 'danger');
+        return;
+    }
+
+    try {
+        // Step 1: Get or create the destination folder
+        const folderId = await getOrCreateFolder(token, 'SRGB_Backups');
+
+        // Step 2: Prepare multipart upload with the 'parents' field
+        const metadata = {
+            name: filename,
+            mimeType: 'application/zip',
+            parents: [folderId] // This line puts it in the specific folder
+        };
+
+        const formData = new FormData();
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('file', zipBlob);
+
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (response.ok) {
+            showToast('Cloud Backup', `Saved to 'SRGB_Backups' folder!`, 'success');
+        } else {
+            const err = await response.json();
+            throw new Error(err.error.message);
+        }
+    } catch (error) {
+        console.error("Drive Error:", error);
+        showToast('Drive Failed', error.message, 'danger');
+    }
+}
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
