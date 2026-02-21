@@ -17,8 +17,11 @@ const COLLECTIONS_TO_BACKUP = [
     'bans',                         // From Effect Builder
     'admins',                       // From Effect Builder
     'notifications',                // From Effect Builder
-    'srgb-component-comments',     // Comments on components
-    'srgb-effect-comments'          // Comments on effects
+    'srgb-component-comments',      // Comments on components
+    'srgb-effect-comments',         // Comments on effects
+    'artifacts',                    // Dont know what this is but it is in firestore
+    'showcase_stats',               // Statistics for the showcase page
+    'srgb-effect-notifications'     // Notifications related to effects
 ];
 
 // --- DOM ELEMENTS ---
