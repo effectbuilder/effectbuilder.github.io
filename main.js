@@ -3702,6 +3702,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 downloadDisplay.querySelector('span').textContent = downloadCount;
                 downloadDisplay.style.display = downloadCount > 0 ? 'inline-flex' : 'none';
             }
+            updateLikeButtonUI();
         });
     }
 
