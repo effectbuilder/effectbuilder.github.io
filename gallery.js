@@ -149,16 +149,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!projectDoc.exists()) throw new Error("Project not found.");
 
                 const data = projectDoc.data();
-                const likedBy = data.likedBy || {};
+                // Ensure likedBy is an array
+                let likedBy = [];
+                if (Array.isArray(data.likedBy)) {
+                    likedBy = data.likedBy;
+                } else if (typeof data.likedBy === 'object' && data.likedBy !== null) {
+                    // Convert legacy map to array
+                    likedBy = Object.keys(data.likedBy);
+                }
+
                 let newLikesCount = data.likes || 0;
                 projectOwnerId = data.userId; // Get owner for notification
 
                 if (action === 'liked') {
                     newLikesCount = newLikesCount + 1;
-                    likedBy[user.uid] = true; // Add user's UID to the map
+                    if (!likedBy.includes(user.uid)) {
+                        likedBy.push(user.uid);
+                    }
                 } else {
                     newLikesCount = Math.max(0, newLikesCount - 1);
-                    delete likedBy[user.uid]; // Remove user's UID from the map
+                    likedBy = likedBy.filter(uid => uid !== user.uid);
                 }
 
                 // Commit the changes
@@ -330,7 +340,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const viewCount = project.viewCount || 0;
             const downloadCount = project.downloadCount || 0;
             const likeCount = project.likes || 0;
-            const userHasLiked = currentUser && project.likedBy && project.likedBy[currentUser.uid];
+
+            // Check if likedBy is array or map (handle legacy data)
+            let userHasLiked = false;
+            if (currentUser && project.likedBy) {
+                if (Array.isArray(project.likedBy)) {
+                    userHasLiked = project.likedBy.includes(currentUser.uid);
+                } else {
+                    userHasLiked = !!project.likedBy[currentUser.uid];
+                }
+            }
 
             // --- Create Admin Actions Dropdown ---
             // --- 1. Create Admin Actions Dropdown (Top Right Kebab) ---
@@ -473,8 +492,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 1. Add filter
             if (currentFilter === 'liked' && user) {
-                // This is the key: query for the map field containing the user's UID
-                queryConstraints.push(window.where(`likedBy.${user.uid}`, "==", true));
+                // Use array-contains for array based storage
+                queryConstraints.push(window.where("likedBy", "array-contains", user.uid));
             }
 
             // 2. Add sorting
