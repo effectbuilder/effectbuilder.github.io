@@ -201,7 +201,7 @@ function updateLikeButtonUI() {
             tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike component' : 'Like component' });
         }
 
-    // --- State 2: Component not loaded or user is logged out (Reset/Disabled state) ---
+        // --- State 2: Component not loaded or user is logged out (Reset/Disabled state) ---
     } else {
         likeBtn.disabled = true;
         likeBtn.classList.remove('btn-danger'); // Remove solid color
@@ -217,7 +217,7 @@ function updateLikeButtonUI() {
         if (tooltip) {
             tooltip.setContent({ '.tooltip-inner': 'Like component' });
         }
-        
+
         if (viewCountDisplay) viewCountDisplay.textContent = "0";
     }
 
@@ -241,7 +241,7 @@ function loadLikeData(componentId) {
     const componentDocRef = doc(db, "srgb-components", componentId);
 
     likeListenerUnsubscribe = onSnapshot(componentDocRef, (docSnap) => {
-       if (!docSnap.exists()) {
+        if (!docSnap.exists()) {
             updateLikeButtonUI();
             if (viewCountDisplay) viewCountDisplay.textContent = "0"; // Reset views
             return;
@@ -259,7 +259,7 @@ function loadLikeData(componentId) {
         }
 
         updateLikeButtonUI();
-        
+
         const viewCount = data.viewCount || 0;
         if (viewCountDisplay) {
             viewCountDisplay.textContent = viewCount;
@@ -298,7 +298,7 @@ async function handleLikeComponent() {
 
     try {
         await updateDoc(componentDocRef, updateData);
-        
+
         // --- The optimistic UI update is removed ---
         // The onSnapshot listener will now automatically handle the UI change.
 
@@ -306,7 +306,7 @@ async function handleLikeComponent() {
         // and not liking your own component
         if (newLikedState) {
             const componentOwnerId = componentState.ownerId; // From loaded state
-            
+
             if (componentOwnerId && componentOwnerId !== user.uid) {
                 await addDoc(collection(db, "notifications"), {
                     recipientId: componentOwnerId,
@@ -1536,8 +1536,7 @@ async function performSave(isNew, isForking = false) {
         ...componentState,
         wiring: firestoreWiring,
         ledCount: (componentState.leds || []).length,
-        ownerId: user.uid,
-        ownerName: user.displayName,
+        // ownerId and ownerName removed from here to handle conditionally below
         lastUpdated: serverTimestamp(),
         imageUrl: componentState.imageUrl || null,
         guideImageUrl: componentState.guideImageUrl || null,
@@ -1558,6 +1557,11 @@ async function performSave(isNew, isForking = false) {
         if (isNew) {
             // --- NEW COMPONENT (or FORK/SaveAsNew) PATH ---
             dataToSave.createdAt = serverTimestamp();
+
+            // Set ownership only on NEW entries
+            dataToSave.ownerId = user.uid;
+            dataToSave.ownerName = user.displayName;
+
             docRef = doc(componentsCollection); // Let Firestore generate a new ID
             await setDoc(docRef, dataToSave);
             currentComponentId = docRef.id;
@@ -1565,16 +1569,30 @@ async function performSave(isNew, isForking = false) {
         } else {
             // --- OVERWRITE PATH ---
             docRef = doc(componentsCollection, currentComponentId);
-            dataToSave.createdAt = componentState.createdAt || serverTimestamp(); // Preserve original create date
+            dataToSave.createdAt = componentState.createdAt || serverTimestamp();
+
+            // LOGIC: If user is admin AND overwriting, do NOT include ownerName/Id in dataToSave.
+            // updateDoc will only update the fields present in the object, 
+            // thus preserving the original owner.
+            if (currentUserIsAdmin) {
+                delete dataToSave.ownerId;
+                delete dataToSave.ownerName;
+            } else {
+                // If not an admin, they are overwriting their own work, so we refresh the names 
+                // (Optional: you could also omit these if you assume the owner hasn't changed)
+                dataToSave.ownerId = user.uid;
+                dataToSave.ownerName = user.displayName;
+            }
+
             await updateDoc(docRef, dataToSave);
         }
 
-        componentState.createdAt = dataToSave.createdAt; // Ensure state has create date
+        componentState.createdAt = dataToSave.createdAt;
         componentState.originalDbName = componentState.name;
 
         loadComments(currentComponentId);
 
-        // 5. Update metadata (no change here)
+        // 5. Update metadata
         try {
             const filterDocRef = doc(db, "srgb-components-metadata", "filters");
             const metadataUpdate = {

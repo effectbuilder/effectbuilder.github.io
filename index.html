@@ -51,7 +51,7 @@
                 </div>
                 <div class="btn-group me-3" role="group" aria-label="Editor">
                     <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
-                </div> 
+                </div>
 
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
 
@@ -64,22 +64,20 @@
                     <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
                         <i class="bi" id="theme-icon"></i> Theme
                     </button>
-                    <div class="d-flex align-items-center">
+                </div>
 
-                        <div class="gtranslate_wrapper me-3"></div>
-
-                        <script>
-                            window.gtranslateSettings = {
-                                "default_language": "en",
-                                "native_language_names": true,
-                                "detect_browser_language": true,
-                                "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
-                                "wrapper_selector": ".gtranslate_wrapper"
-                            }
-                        </script>
-                        <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
-
-                    </div>
+                <div class="d-flex align-items-center">
+                    <div class="gtranslate_wrapper me-3"></div>
+                    <script>
+                        window.gtranslateSettings = {
+                            "default_language": "en",
+                            "native_language_names": true,
+                            "detect_browser_language": true,
+                            "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
+                            "wrapper_selector": ".gtranslate_wrapper"
+                        }
+                    </script>
+                    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
                 </div>
 
                 <div id="auth-notification-block" class="d-flex align-items-center">
@@ -173,18 +171,15 @@
                         <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard">
                             <i class="bi bi-clipboard-plus"></i> Paste Layout Screenshot
                         </button>
-
                         <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay">
                             <i class="bi bi-eye"></i>
                         </button>
-
                         <button type="button" class="btn btn-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" title="Delete Layout Screenshot" disabled>
                             <i class="bi bi-trash"></i>
                         </button>
-
-                        <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">
-                            <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity">
-                        </div>
+                    </div>
+                    <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">
+                        <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity">
                     </div>
                 </div>
                 <div id="right-panel-top" class="d-flex flex-column" style="overflow: auto; min-height: 0;">
