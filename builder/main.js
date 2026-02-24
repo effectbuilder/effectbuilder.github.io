@@ -1536,7 +1536,6 @@ async function performSave(isNew, isForking = false) {
         ...componentState,
         wiring: firestoreWiring,
         ledCount: (componentState.leds || []).length,
-        // ownerId and ownerName removed from here to handle conditionally below
         lastUpdated: serverTimestamp(),
         imageUrl: componentState.imageUrl || null,
         guideImageUrl: componentState.guideImageUrl || null,
@@ -1562,6 +1561,10 @@ async function performSave(isNew, isForking = false) {
             dataToSave.ownerId = user.uid;
             dataToSave.ownerName = user.displayName;
 
+            // FIX: Update local componentState so subsequent saves know we are the owner
+            componentState.ownerId = user.uid;
+            componentState.ownerName = user.displayName;
+
             docRef = doc(componentsCollection); // Let Firestore generate a new ID
             await setDoc(docRef, dataToSave);
             currentComponentId = docRef.id;
@@ -1572,14 +1575,10 @@ async function performSave(isNew, isForking = false) {
             dataToSave.createdAt = componentState.createdAt || serverTimestamp();
 
             // LOGIC: If user is admin AND overwriting, do NOT include ownerName/Id in dataToSave.
-            // updateDoc will only update the fields present in the object, 
-            // thus preserving the original owner.
             if (currentUserIsAdmin) {
                 delete dataToSave.ownerId;
                 delete dataToSave.ownerName;
             } else {
-                // If not an admin, they are overwriting their own work, so we refresh the names 
-                // (Optional: you could also omit these if you assume the owner hasn't changed)
                 dataToSave.ownerId = user.uid;
                 dataToSave.ownerName = user.displayName;
             }
@@ -1619,7 +1618,7 @@ async function performSave(isNew, isForking = false) {
 
 /**
  * Gatekeeper function for saving.
- * Checks permissions and name changes, then asks user for confirmation
+ * Checks permissions, then asks user for confirmation
  * before calling performSave().
  */
 async function handleSaveComponent() {
@@ -1637,38 +1636,27 @@ async function handleSaveComponent() {
     const isNewComponent = (currentComponentId === null);
     const isOwnerOrAdmin = !isNewComponent && (user.uid === componentState.ownerId || user.uid === ADMIN_UID);
     const isForking = !isNewComponent && !isOwnerOrAdmin;
-    const nameChanged = (newName !== originalName);
 
     // --- 3. Route the save logic ---
     if (isNewComponent) {
         // A. It's a brand new component. Save it.
-        // console.log("Save Route: New Component");
         performSave(true, false); // isNew=true, isForking=false
 
     } else if (isForking) {
         // B. User is not owner. Force a fork (save as new).
-        // console.log("Save Route: Forking");
         performSave(true, true); // isNew=true, isForking=true
 
     } else if (isOwnerOrAdmin) {
-        // C. User is the owner.
-        if (nameChanged) {
-            // C1. Name changed: Save as New AUTOMATICALLY. No questions asked.
-            // console.log("Save Route: Owner Save As New (Name Changed) - Automatic");
-            performSave(true, false); // isNew=true, isForking=false
+        // C. User is the owner or admin. Overwrite existing.
+        const overwrite = confirm(
+            'This component already exists.\n\n' +
+            'Click "OK" to OVERWRITE it with your current changes.\n' +
+            '(Click "Cancel" to do nothing).'
+        );
+        if (overwrite) {
+            performSave(false, false); // isNew=false, isForking=false
         } else {
-            // C2. Name is the same: Ask to Overwrite (This is the only time we ask)
-            const overwrite = confirm(
-                'This component already exists.\n\n' +
-                'Click "OK" to OVERWRITE it with your current changes.\n' +
-                '(Click "Cancel" to do nothing).'
-            );
-            if (overwrite) {
-                // console.log("Save Route: Owner Overwrite (Same Name)");
-                performSave(false, false); // isNew=false, isForking=false
-            } else {
-                showToast('Save Cancelled', 'No changes were saved.', 'info');
-            }
+            showToast('Save Cancelled', 'No changes were saved.', 'info');
         }
     } else {
         // Fallback for any unhandled case
@@ -2834,6 +2822,34 @@ function setupToolbarListeners() {
         toggleImageVisibleBtn.addEventListener('click', toggleImageVisibility);
     } else { console.warn("Image Visibility button not found."); }
     // --- END IMAGE GUIDE LISTENERS ---
+
+    // --- MIRROR MODAL INIT ---
+    let mirrorModal = null;
+    const mirrorModalEl = document.getElementById('mirror-selected-modal');
+    if (mirrorModalEl) {
+        mirrorModal = new bootstrap.Modal(mirrorModalEl);
+    }
+    const mirrorSelectedBtn = document.getElementById('mirror-selected-btn');
+    const confirmMirrorBtn = document.getElementById('confirm-mirror-btn');
+
+    if (mirrorSelectedBtn && confirmMirrorBtn) {
+        mirrorSelectedBtn.addEventListener('click', () => {
+            if (selectedLedIds.size === 0) {
+                showToast('Action Blocked', 'Select one or more LEDs to mirror.', 'warning');
+            } else {
+                if (mirrorModal) mirrorModal.show();
+            }
+        });
+
+        confirmMirrorBtn.addEventListener('click', () => {
+            const axis = document.getElementById('mirror-direction').value;
+            const duplicate = document.getElementById('mirror-duplicate').checked;
+            handleMirrorSelected(axis, duplicate);
+            if (mirrorModal) mirrorModal.hide();
+        });
+    } else {
+        console.warn("Mirror buttons not found.");
+    }
 }
 
 function setTool(toolName) {
@@ -2976,7 +2992,15 @@ function setupKeyboardListeners() {
             case 'H':
                 toggleImageVisibility();
                 break;
-
+            case 'm':
+            case 'M':
+                if (selectedLedIds.size > 0) {
+                    const mirrorModalInstance = bootstrap.Modal.getInstance(document.getElementById('mirror-selected-modal')) || new bootstrap.Modal(document.getElementById('mirror-selected-modal'));
+                    mirrorModalInstance.show();
+                } else {
+                    showToast('Action Blocked', 'Select one or more LEDs to mirror.', 'warning');
+                }
+                break;
             default:
                 // If no shortcut was matched, don't prevent default
                 shortcutHandled = false;
@@ -3718,6 +3742,125 @@ function handleRotateSelected(angleDeg) {
         showToast('Rotation Complete', `Rotated ${selectedLedIds.size} LEDs by ${rotationType}. Hold Shift for other direction.`, 'success');
         autoSaveState();
         drawCanvas();
+    }
+}
+
+/**
+ * Mirrors the currently selected LEDs and their wiring.
+ * If duplicating, mirrors adjacent to the selection. If not, mirrors across the centroid.
+ * @param {string} axis - 'horizontal' or 'vertical'
+ * @param {boolean} duplicate - True to clone, false to just move existing.
+ */
+function handleMirrorSelected(axis, duplicate) {
+    if (selectedLedIds.size === 0) return;
+
+    let mirrorLineX, mirrorLineY;
+
+    if (duplicate) {
+        // --- DUPLICATE MODE: Mirror line is at the outer edge + 1 grid space ---
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        componentState.leds.forEach(led => {
+            if (led && selectedLedIds.has(led.id)) {
+                if (led.x > maxX) maxX = led.x;
+                if (led.y > maxY) maxY = led.y;
+            }
+        });
+
+        if (maxX === -Infinity || maxY === -Infinity) return;
+
+        mirrorLineX = maxX + GRID_SIZE;
+        mirrorLineY = maxY + GRID_SIZE;
+    } else {
+        // --- MOVE MODE: Mirror line is exactly at the centroid of the selection ---
+        const center = getSelectionCenter();
+        if (!center) return;
+
+        mirrorLineX = center.centerX;
+        mirrorLineY = center.centerY;
+    }
+
+    let stateChanged = false;
+
+    if (duplicate) {
+        const idMapping = new Map(); // Maps oldId -> newId
+        const newLeds = [];
+        let newLedCounter = 0;
+
+        // 1. Create mirrored LEDs
+        componentState.leds.forEach(led => {
+            if (led && selectedLedIds.has(led.id)) {
+                let newX = led.x;
+                let newY = led.y;
+
+                if (axis === 'horizontal') {
+                    newX = mirrorLineX + (mirrorLineX - led.x);
+                } else if (axis === 'vertical') {
+                    newY = mirrorLineY + (mirrorLineY - led.y);
+                }
+
+                // Snap to grid
+                newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+                newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+
+                const newId = `mirror-${Date.now()}-${newLedCounter++}`;
+                idMapping.set(led.id, newId);
+
+                newLeds.push({ id: newId, x: newX, y: newY });
+            }
+        });
+
+        // 2. Duplicate wiring for the mirrored LEDs
+        const newCircuits = [];
+        componentState.wiring.forEach(circuit => {
+            if (!Array.isArray(circuit)) return;
+            const mirroredCircuitFragment = [];
+            circuit.forEach(ledId => {
+                if (idMapping.has(ledId)) {
+                    mirroredCircuitFragment.push(idMapping.get(ledId));
+                }
+            });
+            if (mirroredCircuitFragment.length > 0) {
+                newCircuits.push(mirroredCircuitFragment);
+            }
+        });
+
+        // 3. Apply changes to state
+        componentState.leds.push(...newLeds);
+        componentState.wiring.push(...newCircuits);
+
+        // 4. Swap selection to the new mirrored LEDs
+        selectedLedIds.clear();
+        newLeds.forEach(led => selectedLedIds.add(led.id));
+        stateChanged = true;
+
+    } else {
+        // 1. Just move the existing LEDs
+        componentState.leds.forEach(led => {
+            if (led && selectedLedIds.has(led.id)) {
+                let newX = led.x;
+                let newY = led.y;
+
+                if (axis === 'horizontal') {
+                    newX = mirrorLineX + (mirrorLineX - led.x);
+                } else if (axis === 'vertical') {
+                    newY = mirrorLineY + (mirrorLineY - led.y);
+                }
+
+                led.x = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+                led.y = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+                stateChanged = true;
+            }
+        });
+        // Selection remains on the same LEDs
+    }
+
+    if (stateChanged) {
+        showToast('Mirror Complete', `${duplicate ? 'Duplicated and mirrored' : 'Mirrored'} ${selectedLedIds.size} LEDs.`, 'success');
+        autoSaveState();
+        drawCanvas();
+        updateLedCount();
     }
 }
 
