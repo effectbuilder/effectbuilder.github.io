@@ -2,10 +2,10 @@
 <html>
 <head>
     <title>Window Rain</title>
-    <meta description="Realistic rain dripping down a window pane with refracting translucent drops, color themes, and beat-reactive lightning." />
+    <meta description="Realistic rain dripping down a window pane with translucent drops, color themes, and beat-reactive lightning." />
     <meta publisher="José Miranda" />
 
-<meta property="theme" label="Color Theme" tooltip="Select a pre-defined color palette or choose 'Custom' to use your own colors." type="combobox" values="Custom,Blood Moon,Candy,Cyberpunk,Deep Space,Desert,Forest,Ghost,Glacier,Inferno,Matrix,Midnight,Neon City,Ocean,Outrun,Royal,Sunset,Synthwave,Thunderstorm,Toxic,Vaporwave" default="Neon City">
+    <meta property="theme" label="Color Theme" tooltip="Select a pre-defined color palette or choose 'Custom' to use your own colors." type="combobox" values="Custom,Blood Moon,Candy,Cyberpunk,Deep Space,Desert,Forest,Ghost,Glacier,Inferno,Matrix,Midnight,Neon City,Ocean,Outrun,Royal,Sunset,Synthwave,Thunderstorm,Toxic,Vaporwave" default="Neon City">
     
     <meta property="custom1" label="Custom Color 1" tooltip="Primary out-of-focus background light (requires Custom theme)." type="color" default="#FF007F">
     <meta property="custom2" label="Custom Color 2" tooltip="Secondary out-of-focus background light (requires Custom theme)." type="color" default="#7000FF">
@@ -87,11 +87,9 @@
         const width = 320;
         const height = 200;
 
-        // Offscreen canvas to capture background for refraction
-        const bgCanvas = document.createElement('canvas');
-        bgCanvas.width = width;
-        bgCanvas.height = height;
-        const bgCtx = bgCanvas.getContext('2d', { alpha: false });
+        // Dual performance caps to prevent simulation deadlock
+        const MAX_STATIC_DROPS = 200;
+        const MAX_ACTIVE_DROPS = 100;
 
         let drops = [];
         let bokehs = [];
@@ -99,7 +97,6 @@
         let lightningFlash = 0;
         let lastBass = 0;
 
-        // Palettes defined as: [Color1, Color2, Color3, Background, WaterTint]
         const palettes = {
             "Blood Moon": ["#880000", "#FF0000", "#FF5500", "#1A0000", "#FFCCCC"],
             "Candy": ["#FFB6C1", "#FF69B4", "#FF1493", "#2A0011", "#FFE0E5"],
@@ -193,7 +190,7 @@
 
                 if (this.vy > 0.5 * settings.speedMulti && sqDist > 1.0) {
                     // Occasionally leave a tiny droplet behind in the path
-                    if (Math.random() > 0.85) {
+                    if (Math.random() > 0.85 && drops.length < (MAX_STATIC_DROPS + MAX_ACTIVE_DROPS)) {
                         drops.push(new Drop(this.x, this.y - this.r * 1.5, (Math.random() * 0.4 + 0.3) * settings.sizeMulti, false));
                     }
                     this.mass -= 0.01 * settings.sizeMulti;
@@ -212,27 +209,14 @@
                 ctx.beginPath();
                 ctx.ellipse(this.x, this.y, rx, ry, 0, 0, Math.PI * 2);
 
-                // Dark outer rim
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.stroke();
 
-                ctx.clip(); 
-
-                // Refraction (Magnification effect)
-                const zoom = 0.6;
-                const sx = this.x - (rx * zoom);
-                const sy = this.y - (ry * zoom);
-                const sw = rx * 2 * zoom;
-                const sh = ry * 2 * zoom;
-                ctx.drawImage(bgCanvas, sx, sy, sw, sh, this.x - rx, this.y - ry, rx * 2, ry * 2);
-
-                // Tint
                 ctx.globalAlpha = 0.35;
                 ctx.fillStyle = `rgba(${waterRGB.r}, ${waterRGB.g}, ${waterRGB.b}, 1.0)`;
                 ctx.fill();
 
-                // FAKED Inner Shadow (High performance replacement for shadowBlur)
                 ctx.globalAlpha = 1.0;
                 ctx.beginPath();
                 ctx.ellipse(this.x - 1, this.y - 1, rx + 1, ry + 1, 0, 0, Math.PI * 2);
@@ -242,7 +226,6 @@
 
                 ctx.restore();
 
-                // Specular Highlight
                 if (this.r > 1) {
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                     ctx.lineWidth = Math.max(0.5, this.r * 0.25);
@@ -300,26 +283,43 @@
                 initBackground(themeColors || palettes["Neon City"]);
             }
 
+            // Count current drop types
+            let staticCount = 0;
+            let activeCount = 0;
+            for (let i = 0; i < drops.length; i++) {
+                if (drops[i].active) {
+                    activeCount++;
+                } else {
+                    staticCount++;
+                }
+            }
+
             let bassLevel = 0;
-            if (settings.audioReactive && engine.audio && engine.audio.freq) {
-                const freq = engine.audio.freq;
+            if (settings.audioReactive && window.engine.audio && window.engine.audio.freq) {
+                const freq = window.engine.audio.freq;
                 bassLevel = (freq[0] + freq[1] + freq[2]) / (3 * 255);
                 if (bassLevel - lastBass > (1.0 - settings.bassSens) * 0.5 + 0.05) {
                     lightningFlash = 1.0;
                     if (Math.random() > 0.5) {
                         for(let i=0; i<Math.floor(settings.intensity * 10); i++) {
-                            drops.push(new Drop(Math.random() * width, -10, (Math.random() * 2 + 1.5) * settings.sizeMulti, true));
+                            if (activeCount < MAX_ACTIVE_DROPS) {
+                                drops.push(new Drop(Math.random() * width, -10, (Math.random() * 2 + 1.5) * settings.sizeMulti, true));
+                                activeCount++;
+                            }
                         }
                     }
                 }
                 lastBass = bassLevel;
             }
 
-            if (Math.random() < settings.intensity * 0.4) {
+            // Spawning independent of each other
+            if (staticCount < MAX_STATIC_DROPS && Math.random() < settings.intensity * 0.4) {
                 drops.push(new Drop(Math.random() * width, Math.random() * height, (Math.random() * 1.2 + 0.5) * settings.sizeMulti, false));
+                staticCount++;
             }
-            if (Math.random() < settings.intensity * 0.08) {
+            if (activeCount < MAX_ACTIVE_DROPS && Math.random() < settings.intensity * 0.08) {
                 drops.push(new Drop(Math.random() * width, -15, (Math.random() * 1.5 + 1.5) * settings.sizeMulti, true));
+                activeCount++;
             }
 
             // Update & Collision check
@@ -367,19 +367,13 @@
                 lightningFlash -= dt * 3.0; 
             }
 
-            // --- 2. CAPTURE BACKGROUND FOR REFRACTION ---
-            bgCtx.clearRect(0, 0, width, height);
-            bgCtx.drawImage(canvas, 0, 0);
-
-            // --- 3. DRAW DROPS IN LAYERS ---
+            // --- 2. DRAW DROPS IN LAYERS ---
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1.0;
             
-            // Layer 1: Draw static/inactive drops (background layer)
             for (const d of drops) { 
                 if (!d.active) d.draw(ctx, waterRGB); 
             }
-            // Layer 2: Draw active/falling drops (foreground layer)
             for (const d of drops) { 
                 if (d.active) d.draw(ctx, waterRGB); 
             }
