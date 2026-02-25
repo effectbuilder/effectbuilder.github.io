@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRGB Interactive Effect Builder</title>
+    <title>SRGB Effect Builder</title>
     <meta property="og:title" content="SRGB Interactive Effect Builder">
     <meta property="og:description" content="A tool for creating and sharing visual effects for SignalRGB.">
     <meta property="og:type" content="website">
@@ -31,10 +31,22 @@
 <body class="d-flex flex-column vh-100">
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="./">
-                <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
-                SRGB Interactive Effect Builder
-            </a>
+            <div class="dropdown  me-3" style="position: relative; display: inline-block;">
+                <a class="navbar-brand d-flex align-items-center me-0" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" style="cursor: pointer; margin: 0; padding-right: 0;">
+                    <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
+                    <span>SRGB Effect Builder</span>
+                    <span style="font-size: 0.6em; margin-left: 8px; opacity: 0.8;">▼</span>
+                </a>
+
+                <ul class="dropdown-menu shadow" style="right: 0; left: auto; margin-top: 10px; min-width: 220px;">
+                    <li><a class="dropdown-item active" href="./">SRGB Effect Builder</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="./builder">SRGB Component Builder</a></li>
+                    <li><a class="dropdown-item" href="./combiner/">SRGB Effect Combiner</a></li>
+                </ul>
+            </div>
 
             <div class="ms-auto d-flex align-items-center">
 
@@ -48,9 +60,6 @@
                 <div class="btn-group me-3" role="group" aria-label="Community">
                     <a href="./gallery.html" class="btn btn-primary" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i>Gallery</a>
                     <a href="./showcase.html" class="btn btn-primary" title="Browse the Effect Showcase page"> <i class="bi bi-view-list me-1"></i> Effect Showcase </a>
-                </div>
-                <div class="btn-group me-3" role="group" aria-label="Editor">
-                    <a href="./builder" class="btn btn-dark" title="Component Builder"><i class="bi bi-view-list me-1"></i> Component Builder</a>
                 </div>
 
                 <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">

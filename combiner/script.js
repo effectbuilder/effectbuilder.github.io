@@ -1043,6 +1043,25 @@ function changeLanguage(lang) {
     }
 }
 
+function toggleDropdown(event) {
+    event.stopPropagation(); // Stops the click from reaching the window instantly
+    document.getElementById("toolDropdownMenu").classList.toggle("show");
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function (event) {
+    // Only close if clicking outside the toggle AND outside the menu itself
+    if (!event.target.closest('.dropdown-toggle') && !event.target.closest('.dropdown-menu')) {
+        var dropdowns = document.getElementsByClassName("dropdown-menu");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
 // --- INITIALIZATION ---
 let compositor;
 
