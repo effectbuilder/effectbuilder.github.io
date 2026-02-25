@@ -30,9 +30,15 @@
             padding: 0;
             background-color: #000;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
         }
         canvas {
             display: block;
+            width: 100vw;
+            height: 100vh;
+            /* Ensures scaling doesn't blur perfectly horizontal/vertical pixel edges if applicable */
+            image-rendering: optimizeSpeed; 
         }
         #start-overlay { display: none; }
     </style>
@@ -84,10 +90,10 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
+        // JS engine resolution explicitly locked
         const width = 320;
         const height = 200;
 
-        // Dual performance caps to prevent simulation deadlock
         const MAX_STATIC_DROPS = 200;
         const MAX_ACTIVE_DROPS = 100;
 
@@ -189,7 +195,6 @@
                 const sqDist = dx * dx + dy * dy;
 
                 if (this.vy > 0.5 * settings.speedMulti && sqDist > 1.0) {
-                    // Occasionally leave a tiny droplet behind in the path
                     if (Math.random() > 0.85 && drops.length < (MAX_STATIC_DROPS + MAX_ACTIVE_DROPS)) {
                         drops.push(new Drop(this.x, this.y - this.r * 1.5, (Math.random() * 0.4 + 0.3) * settings.sizeMulti, false));
                     }
@@ -283,7 +288,6 @@
                 initBackground(themeColors || palettes["Neon City"]);
             }
 
-            // Count current drop types
             let staticCount = 0;
             let activeCount = 0;
             for (let i = 0; i < drops.length; i++) {
@@ -312,7 +316,6 @@
                 lastBass = bassLevel;
             }
 
-            // Spawning independent of each other
             if (staticCount < MAX_STATIC_DROPS && Math.random() < settings.intensity * 0.4) {
                 drops.push(new Drop(Math.random() * width, Math.random() * height, (Math.random() * 1.2 + 0.5) * settings.sizeMulti, false));
                 staticCount++;
@@ -322,7 +325,6 @@
                 activeCount++;
             }
 
-            // Update & Collision check
             for (let i = drops.length - 1; i >= 0; i--) {
                 const d1 = drops[i];
                 d1.update(dt, settings, waterRGB);
@@ -345,13 +347,11 @@
                         }
                     }
                 }
-                // Memory cleanup
                 if (d1.y > height + 20 || d1.x < -20 || d1.x > width + 20 || d1.mass < 0.1) {
                     drops.splice(i, 1);
                 }
             }
 
-            // --- 1. DRAW BACKGROUND ---
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = themeColors[3]; 
@@ -367,7 +367,6 @@
                 lightningFlash -= dt * 3.0; 
             }
 
-            // --- 2. DRAW DROPS IN LAYERS ---
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1.0;
             
