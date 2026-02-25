@@ -15,8 +15,21 @@
         <div id="sidebar-scroll-area">
             <div class="app-header">
                 <img src="../logo.png" alt="Logo" class="me-2" style="height: 2em;">
-                <div style="flex-grow:1;">
-                    <h2 data-i18n="title">SRGB Effect Combiner</h2>
+
+                <div class="dropdown" style="display: inline-block; position: relative; margin-right: auto;">
+                    <h2 id="toolDropdown" class="dropdown-toggle" onclick="toggleDropdown(event)" style="cursor: pointer; margin: 0; display: inline-flex; align-items: center;">
+                        <span data-i18n="title">SRGB Effect Combiner</span>
+                        <span style="font-size: 0.5em; margin-left: 8px;">▼</span>
+                    </h2>
+
+                    <ul id="toolDropdownMenu" class="dropdown-menu shadow">
+                        <li><a class="dropdown-item active" href="./">SRGB Effect Combiner</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="../builder/">SRGB Component Builder</a></li>
+                        <li><a class="dropdown-item" href="../">SRGB Effect Builder</a></li>
+                    </ul>
                 </div>
 
                 <select id="lang-selector" onchange="changeLanguage(this.value)" style="width:auto; margin-bottom:0;">
@@ -34,11 +47,11 @@
             <textarea id="meta-desc" rows="2" data-i18n-ph="meta_desc_p" oninput="Persistence.save()">A custom composite effect.</textarea>
 
             <h3 data-i18n="source_header">2. Source Files</h3>
-<label class="file-upload" id="btn-upload-label">
-    <span data-i18n="btn_add_files">+ Add HTML Effects</span>
-    <input type="file" multiple accept=".html" onchange="compositor.handleUpload(this.files)">
-</label>
-<button class="btn-lib" data-i18n="btn_open_lib" onclick="Library.open()">Open Effect Library</button>
+            <label class="file-upload" id="btn-upload-label">
+                <span data-i18n="btn_add_files">+ Add HTML Effects</span>
+                <input type="file" multiple accept=".html" onchange="compositor.handleUpload(this.files)">
+            </label>
+            <button class="btn-lib" data-i18n="btn_open_lib" onclick="Library.open()">Open Effect Library</button>
 
             <h3 data-i18n="layout_header">3. Preview Layout</h3>
             <div class="control-group">

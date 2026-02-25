@@ -658,3 +658,75 @@ iframe {
     border-color: #00eaff;
     outline: none;
 }
+
+/* Dropdown Menu (Hidden by default) */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    background-color: #2b2b2b; /* Change to match your app's theme */
+    min-width: 250px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    z-index: 1000;
+    list-style-type: none;
+    padding: 0.5rem 0;
+    margin: 0.5rem 0 0 0;
+    border-radius: 6px;
+    border: 1px solid #444;
+}
+
+/* Show the dropdown menu when toggled */
+.dropdown-menu.show {
+    display: block;
+}
+
+/* Dropdown Items */
+.dropdown-item {
+    color: #fff; /* Change to match your app's theme */
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+    background-color: #444; /* Hover color */
+}
+
+/* Active Item */
+.dropdown-item.active {
+    background-color: #007bff; /* Blue accent for current page */
+    color: white;
+}
+
+/* Divider */
+.dropdown-divider {
+    height: 0;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    border-top: 1px solid #555;
+    border-bottom: none;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;    /* Aligns right edge of menu to right edge of H2 container */
+    left: auto;  /* Overrides any default left alignment */
+    background-color: #2b2b2b;
+    min-width: 220px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    z-index: 1000;
+    list-style-type: none;
+    padding: 0.5rem 0;
+    margin-top: 8px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    white-space: nowrap; /* Prevents text wrapping inside the menu */
+}
+
+.dropdown-menu.show {
+    display: block;
+}
