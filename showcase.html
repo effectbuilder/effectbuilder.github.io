@@ -20,10 +20,22 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="./">
-                <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
-                SRGB Interactive Effect Builder
-            </a>
+            <div class="dropdown  me-3" style="position: relative; display: inline-block;">
+                <a class="navbar-brand d-flex align-items-center me-0" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" style="cursor: pointer; margin: 0; padding-right: 0;">
+                    <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
+                    <span>SRGB Effect Builder</span>
+                    <span style="font-size: 0.6em; margin-left: 8px; opacity: 0.8;">▼</span>
+                </a>
+
+                <ul class="dropdown-menu shadow" style="right: 0; left: auto; margin-top: 10px; min-width: 220px;">
+                    <li><a class="dropdown-item active" href="./">SRGB Effect Builder</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="./builder">SRGB Component Builder</a></li>
+                    <li><a class="dropdown-item" href="./combiner/">SRGB Effect Combiner</a></li>
+                </ul>
+            </div>
             <div class="ms-auto d-flex align-items-center">
                 <a href="#" class="btn btn-outline-success me-3" data-bs-toggle="modal" data-bs-target="#installation-modal">
                     <i class="bi bi-download me-2"></i>How to Install

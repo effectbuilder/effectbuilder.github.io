@@ -27,14 +27,26 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="./">
-                <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
-                SRGB Interactive Effect Builder
-            </a>
+            <div class="dropdown  me-3" style="position: relative; display: inline-block;">
+                <a class="navbar-brand d-flex align-items-center me-0" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" style="cursor: pointer; margin: 0; padding-right: 0;">
+                    <img src="logo.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
+                    <span>SRGB Effect Builder</span>
+                    <span style="font-size: 0.6em; margin-left: 8px; opacity: 0.8;">▼</span>
+                </a>
+
+                <ul class="dropdown-menu shadow" style="right: 0; left: auto; margin-top: 10px; min-width: 220px;">
+                    <li><a class="dropdown-item active" href="./">SRGB Effect Builder</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="./builder">SRGB Component Builder</a></li>
+                    <li><a class="dropdown-item" href="./combiner/">SRGB Effect Combiner</a></li>
+                </ul>
+            </div>
             <div class="ms-auto d-flex align-items-center">
                 <a href="./" class="btn btn-primary me-3"><i class="bi bi-pencil-square me-2"></i>Back to Editor</a>
                 <!-- GTranslate -->
-                
+
                 <div class="d-flex align-items-center">
                     <div class="gtranslate_wrapper me-3"></div>
                     <script>window.gtranslateSettings = { "default_language": "en", "native_language_names": true, "detect_browser_language": true, "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"], "wrapper_selector": ".gtranslate_wrapper" }</script>
@@ -62,7 +74,7 @@
             <div class="col-12">
                 <h2 class="mb-3"><i class="bi bi-view-list me-2"></i>Community Gallery</h2>
                 <p class="text-body-secondary">Browse public effects created by the community. Click the "Load" button on any effect to open it in the editor.</p>
-                
+
                 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
                     <ul class="nav nav-tabs border-bottom-0" id="gallery-filter-tabs">
                         <li class="nav-item">
@@ -85,7 +97,8 @@
                         </ul>
                     </div>
                 </div>
-                <hr class="mt-0"> <div class="row g-4" id="gallery-project-list">
+                <hr class="mt-0">
+                <div class="row g-4" id="gallery-project-list">
                     <div class="col-12 text-center p-4" id="initial-loading-spinner">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading...</span>
