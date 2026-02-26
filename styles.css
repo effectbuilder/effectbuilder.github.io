@@ -611,3 +611,50 @@ body {
 .gt_powered_by {
     display: none !important;
 }
+
+/* Make the brand area look like a clickable button on hover */
+.brand-dropdown-toggle {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Subtle background highlight. Adjust the rgba values if you want it brighter */
+.brand-dropdown-toggle:hover,
+.brand-dropdown-toggle[aria-expanded="true"] {
+    background-color: rgba(255, 255, 255, 0.1); 
+}
+
+/* Base style for the chevron icon */
+.dropdown-indicator {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    transition: transform 0.3s ease-in-out; /* Makes the rotation smooth */
+}
+
+/* Rotate the arrow 180 degrees when the menu is open */
+.brand-dropdown-toggle[aria-expanded="true"] .dropdown-indicator {
+    transform: rotate(-180deg);
+    color: var(--bs-primary); /* Highlights the arrow in blue when open */
+}
+
+/* Creates a radar-like ripple effect */
+@keyframes load-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.8);
+        background-color: rgba(13, 110, 253, 0.2);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(13, 110, 253, 0);
+        background-color: transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        background-color: transparent;
+    }
+}
+
+/* Apply this class to the element you want to grab attention */
+.pulse-on-load {
+    /* Runs the 1.5 second animation exactly 2 times, then stops forever */
+    animation: load-pulse 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) 2; 
+    border-radius: 0.5rem; /* Keeps the glowing outline rounded */
+}
