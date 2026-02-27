@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prism Laser</title>
+    <meta description="A physics-based simulation of a laser beam refracting and dispersing through a rotating prism." />
+    <meta publisher="José Miranda" />
+
+    <meta property="prismSides" label="Prism Shape" type="combobox" values="Triangle,Square,Pentagon,Hexagon" default="Triangle" tooltip="Choose the geometric shape of the central rotating prism.">
+    <meta property="rotationSpeed" label="Rotation Speed" type="number" min="0" max="100" default="1" tooltip="Controls how fast the prism rotates in the center of the screen.">
+    <meta property="glassDensity" label="Glass Density (IOR)" type="number" min="10" max="40" default="20" tooltip="Adjusts the Index of Refraction (IOR). Higher density bends light sharper and traps it inside longer.">
+    <meta property="internalReflections" label="Max Bounces" type="number" min="1" max="50" default="50" tooltip="Sets the maximum number of times a laser beam can bounce inside the prism before fading out.">
+    <meta property="prismColor" label="Prism Tint" type="color" default="#000000" tooltip="Sets the base background tint of the solid prism shape.">
+
+    <meta property="laserLayout" label="Laser Layout" type="combobox" values="Left Side,Left and Right,Rotating Ring" default="Left and Right" tooltip="Select how the laser emitters are positioned around the canvas.">
+    <meta property="laserCount" label="Number of Lasers" type="number" min="1" max="20" default="3" tooltip="The total number of laser beams being fired at the prism.">
+    <meta property="laserWidth" label="Laser Thickness" type="number" min="1" max="10" default="1" tooltip="Adjusts the thickness of the laser beams.">
+    <meta property="autoMove" label="Automatic Laser Aim" type="boolean" default="true" tooltip="If enabled, lasers will automatically wave and sweep across the prism.">
+
+    <meta property="dispersionAmount" label="Chromatic Dispersion" type="number" min="0" max="100" default="100" tooltip="Controls how widely the colors spread apart when the laser fractures inside the prism.">
+    <meta property="colorTheme" label="Dispersion Colors" type="combobox" values="Rainbow,Cyberpunk,Vaporwave,Neon,Sunset,Ocean,Deep Sea,Forest,Magma,Ice,Cotton Candy,Toxic,Blood,Gold,Amethyst,Emerald,Patriot,Spooky,Monochrome,Fire and Ice,Custom" default="Rainbow" tooltip="Select the color palette the laser splits into upon hitting the prism.">
+    <meta property="custom1" label="Custom Color 1" type="color" default="#ff0000" tooltip="The first custom color used when the Custom theme is selected.">
+    <meta property="custom2" label="Custom Color 2" type="color" default="#00ff00" tooltip="The second custom color used when the Custom theme is selected.">
+    <meta property="custom3" label="Custom Color 3" type="color" default="#0000ff" tooltip="The third custom color used when the Custom theme is selected.">
+
+    <meta property="glowIntensity" label="Glow Strength" type="number" min="0" max="100" default="1" tooltip="Adjusts the bloom and ambient glow cast by the lasers.">
+    <meta property="audioPulse" label="Audio Reactive Pulse" type="boolean" default="true" tooltip="If enabled, laser thickness and rotation speed will pulse to the bass of your audio.">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { 
+            display: block; 
+            width: 100vw; 
+            height: 100vh; 
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #start-overlay { display: none; }
+    </style>
+</head>
+<body>
+    <div id="start-overlay"></div>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+<script>
+    // -------------------------------------------------------------------
+    // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+    // -------------------------------------------------------------------
+    
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+        function simulateAudio() {
+            const time = Date.now() / 1000; 
+            const dataArray = new Array(128).fill(0);
+            
+            // Bass: Strong pulses
+            const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+            const bassVal = Math.pow(beat, 4) * 255; 
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+            // Treble
+            for (let i = 10; i < 40; i++) {
+                const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                dataArray[i] = wave * 150 + (Math.random() * 50); 
+            }
+            window.engine.audio.freq = dataArray;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    } else {
+        document.getElementById('start-overlay').style.display = 'none';
+    }
+</script>
+
+<script>
+    // -------------------------------------------------------------------
+    // CORE PHYSICS & RENDERING
+    // -------------------------------------------------------------------
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 320;
+    canvas.height = 200;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    let time = 0;
+    let prismAngle = 0;
+    let bassSmoothed = 0;
+    let currentSpectrum = [];
+    let mainBeamColor = '#ffffff';
+
+    // Builds the IOR array and sets the main laser beam color based on the selected theme
+    function buildSpectrum(themeName, c1, c2, c3) {
+        let colors = [];
+        
+        if (themeName === 'Rainbow') colors = ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#8800ff'];
+        else if (themeName === 'Cyberpunk') colors = ['#ff003c', '#fcee0a', '#00ffff', '#ff00ff', '#05d9e8'];
+        else if (themeName === 'Vaporwave') colors = ['#ff71ce', '#01cdfe', '#05ffa1', '#b967ff', '#fffb96'];
+        else if (themeName === 'Neon') colors = ['#ff0099', '#f3f315', '#83f52c', '#ff6600', '#6e0dd0'];
+        else if (themeName === 'Sunset') colors = ['#ff4e50', '#fc913a', '#f9d423', '#ede574', '#e1f5c4'];
+        else if (themeName === 'Ocean') colors = ['#00a8c6', '#40c0cb', '#f6f6f6', '#8cece1', '#a0e8af'];
+        else if (themeName === 'Deep Sea') colors = ['#000080', '#0000c8', '#0000ff', '#0080ff', '#00ffff'];
+        else if (themeName === 'Forest') colors = ['#134e13', '#228b22', '#32cd32', '#7cfc00', '#adff2f'];
+        else if (themeName === 'Magma') colors = ['#ff0000', '#ff4500', '#ff8c00', '#ffd700', '#ffff00'];
+        else if (themeName === 'Ice') colors = ['#e0ffff', '#afeeee', '#40e0d0', '#48d1cc', '#00ced1'];
+        else if (themeName === 'Cotton Candy') colors = ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff'];
+        else if (themeName === 'Toxic') colors = ['#39ff14', '#ccff00', '#9dff00', '#00ff00', '#7fff00'];
+        else if (themeName === 'Blood') colors = ['#8a0303', '#bc0505', '#ff0000', '#ff4c4c', '#ff7f7f'];
+        else if (themeName === 'Gold') colors = ['#b8860b', '#daa520', '#ffd700', '#f0e68c', '#eee8aa'];
+        else if (themeName === 'Amethyst') colors = ['#4b0082', '#8a2be2', '#9400d3', '#9932cc', '#ba55d3'];
+        else if (themeName === 'Emerald') colors = ['#006400', '#008000', '#2e8b57', '#3cb371', '#20b2aa'];
+        else if (themeName === 'Patriot') colors = ['#ff0000', '#ffffff', '#0000ff'];
+        else if (themeName === 'Spooky') colors = ['#ff7518', '#800080', '#32cd32', '#ff4500', '#ba55d3'];
+        else if (themeName === 'Monochrome') colors = ['#ffffff', '#cccccc', '#999999', '#666666', '#333333'];
+        else if (themeName === 'Fire and Ice') colors = ['#ff4500', '#ff8c00', '#ffffff', '#00ced1', '#1e90ff'];
+        else if (themeName === 'Custom') colors = [c1, c2, c3];
+        else colors = ['#ff0000', '#00ff00', '#0000ff']; 
+
+        // Set the primary laser color dynamically based on the theme
+        if (themeName === 'Rainbow' || themeName === 'Monochrome') {
+            mainBeamColor = '#ffffff'; // White light splits perfectly
+        } else {
+            mainBeamColor = colors[0]; // Use the dominant color of the palette
+        }
+
+        currentSpectrum = [];
+        const count = colors.length;
+        for (let i = 0; i < count; i++) {
+            let offset = 0;
+            if (count > 1) {
+                offset = -0.15 + (0.3 * (i / (count - 1)));
+            }
+            currentSpectrum.push({ color: colors[i], iorOffset: offset });
+        }
+    }
+
+    function getAudioData() {
+        if (typeof window.engine !== 'undefined' && window.engine.audio && window.engine.audio.freq) {
+            const freq = window.engine.audio.freq;
+            let bass = 0;
+            if (freq.length > 2) {
+                bass = (Math.abs(freq[0]) + Math.abs(freq[1]) + Math.abs(freq[2])) / (3 * 255);
+            }
+            return { bass: isNaN(bass) ? 0 : bass };
+        }
+        return { bass: 0 };
+    }
+
+    // Line segment intersection
+    function rayIntersectSegment(rx, ry, dx, dy, x1, y1, x2, y2) {
+        const v1x = rx - x1;
+        const v1y = ry - y1;
+        const v2x = x2 - x1;
+        const v2y = y2 - y1;
+        const v3x = -dy;
+        const v3y = dx;
+
+        const dot = v2x * v3x + v2y * v3y;
+        if (Math.abs(dot) < 0.000001) return null;
+
+        const t1 = (v2x * v1y - v2y * v1x) / dot;
+        const t2 = (v1x * v3x + v1y * v3y) / dot;
+
+        if (t1 > 0.005 && t2 >= 0 && t2 <= 1) {
+            let nx = -v2y;
+            let ny = v2x;
+            const len = Math.sqrt(nx * nx + ny * ny);
+            nx /= len;
+            ny /= len;
+
+            return {
+                t: t1,
+                x: rx + dx * t1,
+                y: ry + dy * t1,
+                nx: nx,
+                ny: ny
+            };
+        }
+        return null;
+    }
+
+    // Snell's Law and Total Internal Reflection
+    function refractOrReflect(ix, iy, nx, ny, n1, n2) {
+        let dotIncNorm = ix * nx + iy * ny;
+        if (dotIncNorm > 0) {
+            nx = -nx;
+            ny = -ny;
+            dotIncNorm = -dotIncNorm;
+        }
+
+        const eta = n1 / n2;
+        const c1 = -dotIncNorm;
+        const c2 = 1.0 - eta * eta * (1.0 - c1 * c1);
+
+        if (c2 < 0) {
+            return { type: 'reflect', dx: ix + 2 * c1 * nx, dy: iy + 2 * c1 * ny };
+        } else {
+            const rootC2 = Math.sqrt(c2);
+            return { type: 'refract', dx: eta * ix + (eta * c1 - rootC2) * nx, dy: eta * iy + (eta * c1 - rootC2) * ny };
+        }
+    }
+
+    // Recursive Ray Tracing
+    function traceRay(originX, originY, dirX, dirY, color, ior, inside, bouncesLeft, polygon, ctx, beamWidth) {
+        if (bouncesLeft < 0) return;
+
+        let closestHit = null;
+        let minDist = Infinity;
+
+        for (let i = 0; i < polygon.length; i++) {
+            const p1 = polygon[i];
+            const p2 = polygon[(i + 1) % polygon.length];
+            const hit = rayIntersectSegment(originX, originY, dirX, dirY, p1.x, p1.y, p2.x, p2.y);
+            if (hit && hit.t < minDist) {
+                minDist = hit.t;
+                closestHit = hit;
+            }
+        }
+
+        let endX = originX + dirX * 1000;
+        let endY = originY + dirY * 1000;
+
+        if (closestHit) {
+            endX = closestHit.x;
+            endY = closestHit.y;
+        }
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(0.5, beamWidth * 0.95);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        if (closestHit) {
+            const n1 = inside ? ior : 1.0;
+            const n2 = inside ? 1.0 : ior;
+            const result = refractOrReflect(dirX, dirY, closestHit.nx, closestHit.ny, n1, n2);
+
+            const nextInside = (result.type === 'reflect') ? inside : !inside;
+            
+            traceRay(
+                closestHit.x, closestHit.y, 
+                result.dx, result.dy, 
+                color, ior, nextInside, bouncesLeft - 1, 
+                polygon, ctx, ctx.lineWidth
+            );
+        }
+    }
+
+    function generatePolygon(cx, cy, radius, sides, angleOffset) {
+        const poly = [];
+        for (let i = 0; i < sides; i++) {
+            const angle = angleOffset + (i / sides) * Math.PI * 2;
+            poly.push({
+                x: cx + Math.cos(angle) * radius,
+                y: cy + Math.sin(angle) * radius
+            });
+        }
+        return poly;
+    }
+
+    function update() {
+        const audio = getAudioData();
+        
+        const isAudioPulse = window.audioPulse !== undefined ? window.audioPulse : true;
+        const isAutoMove = window.autoMove !== undefined ? window.autoMove : true;
+        
+        let pSides = 3;
+        if (window.prismSides === 'Square') pSides = 4;
+        else if (window.prismSides === 'Pentagon') pSides = 5;
+        else if (window.prismSides === 'Hexagon') pSides = 6;
+        
+        const rSpeed = (window.rotationSpeed !== undefined ? window.rotationSpeed : 1) / 1000;
+        const baseWidth = window.laserWidth !== undefined ? window.laserWidth : 1;
+        const lCount = window.laserCount !== undefined ? window.laserCount : 3;
+        const layout = window.laserLayout !== undefined ? window.laserLayout : 'Left and Right';
+        
+        const dispersionMult = (window.dispersionAmount !== undefined ? window.dispersionAmount : 100) / 25;
+        const maxBounces = window.internalReflections !== undefined ? window.internalReflections : 50;
+        const baseIOR = (window.glassDensity !== undefined ? window.glassDensity : 10) / 10.0;
+        
+        const glowStr = window.glowIntensity !== undefined ? window.glowIntensity : 1;
+        const pColor = window.prismColor || '#001133';
+
+        const theme = window.colorTheme || 'Rainbow';
+        const c1 = window.custom1 || '#ff0000';
+        const c2 = window.custom2 || '#00ff00';
+        const c3 = window.custom3 || '#0000ff';
+        
+        // Build spectrum and assign dynamic mainBeamColor
+        buildSpectrum(theme, c1, c2, c3);
+
+        let targetBass = isAudioPulse ? audio.bass : 0;
+        if (isNaN(targetBass) || !isFinite(targetBass)) targetBass = 0;
+        
+        bassSmoothed += (targetBass - bassSmoothed) * 0.2;
+        if (isNaN(bassSmoothed) || !isFinite(bassSmoothed)) bassSmoothed = 0;
+        bassSmoothed = Math.max(0, Math.min(2, bassSmoothed));
+
+        let dynBeamWidth = baseWidth + (bassSmoothed * 5);
+        dynBeamWidth = Math.max(0.1, dynBeamWidth);
+
+        const currentRotSpeed = rSpeed + (bassSmoothed * 0.05);
+
+        prismAngle += currentRotSpeed;
+        time += 0.05;
+
+        // Clear Canvas
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
+        ctx.fillRect(0, 0, width, height);
+
+        // Setup Prism Shape
+        const cx = width / 2;
+        const cy = height / 2;
+        const prismRadius = Math.max(10, 50 + (bassSmoothed * 10)); 
+        const prismPoly = generatePolygon(cx, cy, prismRadius, pSides, prismAngle);
+
+        // Draw Prism Background
+        ctx.fillStyle = pColor;
+        ctx.beginPath();
+        ctx.moveTo(prismPoly[0].x, prismPoly[0].y);
+        for (let i = 1; i < pSides; i++) ctx.lineTo(prismPoly[i].x, prismPoly[i].y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 + bassSmoothed * 0.5})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.shadowBlur = (glowStr / 100) * 20 + (bassSmoothed * 15);
+        ctx.shadowColor = mainBeamColor; // Glow reflects the main beam color
+
+        // Fire Lasers
+        for (let l = 0; l < lCount; l++) {
+            
+            let laserOriginX, laserOriginY;
+            let laserTargetX = cx, laserTargetY = cy;
+            
+            if (layout === 'Rotating Ring') {
+                let angle = (l / lCount) * Math.PI * 2;
+                if (isAutoMove) angle += time * 0.2; 
+                
+                let emitRadius = Math.max(width, height) * 0.8;
+                laserOriginX = cx + Math.cos(angle) * emitRadius;
+                laserOriginY = cy + Math.sin(angle) * emitRadius;
+                
+                if (isAutoMove) {
+                    laserTargetX += Math.sin(time * 0.5 + l) * 20;
+                    laserTargetY += Math.cos(time * 0.5 + l) * 20;
+                }
+                
+            } else if (layout === 'Left and Right') {
+                let isRight = (l % 2 !== 0); 
+                let sideCount = Math.ceil(lCount / 2);
+                let sideIndex = Math.floor(l / 2);
+                
+                laserOriginX = isRight ? width - 10 : 10;
+                let spreadY = 0;
+                if (sideCount > 1) spreadY = (sideIndex / (sideCount - 1) - 0.5) * (height * 0.7);
+                laserOriginY = (height / 2) + spreadY;
+                
+                if (isAutoMove) {
+                    let phase = l * 0.8; 
+                    laserOriginY += Math.sin(time * 0.3 + phase) * (height / 4);
+                    laserTargetX += Math.cos(time * 0.2 + phase) * 20;
+                    laserTargetY += Math.sin(time * 0.2 + phase) * 20;
+                }
+                
+            } else {
+                // Left Side
+                laserOriginX = 10;
+                let spreadY = 0;
+                if (lCount > 1) spreadY = (l / (lCount - 1) - 0.5) * (height * 0.7);
+                laserOriginY = (height / 2) + spreadY;
+                
+                if (isAutoMove) {
+                    let phase = l * 0.8; 
+                    laserOriginY += Math.sin(time * 0.3 + phase) * (height / 4);
+                    laserTargetX += Math.cos(time * 0.2 + phase) * 20;
+                    laserTargetY += Math.sin(time * 0.2 + phase) * 20;
+                }
+            }
+
+            let dirX = laserTargetX - laserOriginX;
+            let dirY = laserTargetY - laserOriginY;
+            const dirLen = Math.sqrt(dirX * dirX + dirY * dirY);
+            if (dirLen > 0) {
+                dirX /= dirLen;
+                dirY /= dirLen;
+            }
+
+            let hitDist = Infinity;
+            let hitPoint = null;
+
+            for (let i = 0; i < prismPoly.length; i++) {
+                const p1 = prismPoly[i];
+                const p2 = prismPoly[(i + 1) % pSides];
+                const hit = rayIntersectSegment(laserOriginX, laserOriginY, dirX, dirY, p1.x, p1.y, p2.x, p2.y);
+                if (hit && hit.t < hitDist) {
+                    hitDist = hit.t;
+                    hitPoint = hit;
+                }
+            }
+
+            let mainEndX = laserOriginX + dirX * 1000;
+            let mainEndY = laserOriginY + dirY * 1000;
+
+            if (hitPoint) {
+                mainEndX = hitPoint.x;
+                mainEndY = hitPoint.y;
+            }
+
+            ctx.strokeStyle = mainBeamColor; // Render main incoming beam based on Theme
+            ctx.lineWidth = dynBeamWidth;
+            ctx.beginPath();
+            ctx.moveTo(laserOriginX, laserOriginY);
+            ctx.lineTo(mainEndX, mainEndY);
+            ctx.stroke();
+
+            if (hitPoint) {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(hitPoint.x, hitPoint.y, dynBeamWidth * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                for (let i = 0; i < currentSpectrum.length; i++) {
+                    const spec = currentSpectrum[i];
+                    const dynamicIOR = baseIOR + (spec.iorOffset * dispersionMult);
+                    const result = refractOrReflect(dirX, dirY, hitPoint.nx, hitPoint.ny, 1.0, dynamicIOR);
+                    
+                    if (result.type === 'refract') {
+                        ctx.shadowColor = spec.color;
+                        traceRay(
+                            hitPoint.x, hitPoint.y, 
+                            result.dx, result.dy, 
+                            spec.color, dynamicIOR, true, maxBounces, 
+                            prismPoly, ctx, Math.max(0.5, dynBeamWidth * 0.7)
+                        );
+                    }
+                }
+            }
+        } 
+
+        ctx.shadowBlur = 0; 
+        requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+</script>
+</body>
+</html>
