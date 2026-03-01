@@ -324,8 +324,11 @@
             let targetFrontHeight = 0.1;
 
             if (bAudioSensitive && audioData) {
-                const logIndex = (x / (x_amount - 1));
-                const maxLog = Math.log(200);
+                    // Calculate distance from the center for a mirrored effect
+                    const halfX = (x_amount - 1) / 2;
+                    const logIndex = Math.abs(x - halfX) / halfX;
+                    
+                    const maxLog = Math.log(200);
                 const audioBin = Math.floor(Math.exp(logIndex * maxLog)) - 1;
                 const finalBin = Math.max(0, Math.min(199, audioBin));
                 let amp = (Math.abs(audioData[finalBin]) / 128.0); 

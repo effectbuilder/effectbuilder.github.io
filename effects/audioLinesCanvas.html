@@ -2,45 +2,61 @@
 <html>
 
 <head>
-    <title>Audio Lines (Canvas Version)</title>
-    <meta description="A 3D audio visualizer with flowing frequency lines.">
+    <title>Audio Lines (Canvas Mesh Version)</title>
+    <meta description="A 3D audio visualizer with flowing frequency mesh.">
     <meta publisher="José Miranda">
 
     <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor" default="Rainbow">
     <meta property="customColor" label="Custom Color" type="color" default="#ff0000" min="0" max="360">
     <meta property="backgroundColor" label="Background Color" type="color" default="#000000" min="0" max="360">
+    <meta property="colorShiftSpeed" label="Palette Scroll Speed" type="number" min="0" max="100" default="40">
 
-    <meta property="coordMode" label="Coordinate Mode" type="combobox" default="Cartesian" values="Cartesian,Cylindrical">
-    <meta property="innerRadius" label="Inner Radius Offset (%)" type="number" min="0" max="100" default="50">
+    <meta property="mirrorMode" label="Mirror Mode" type="combobox" default="None" values="None,High Freq,Low Freq">
+    <meta property="coordMode" label="Coordinate Mode" type="combobox" default="Cylindrical" values="Cartesian,Cylindrical">
+    <meta property="innerRadius" label="Inner Radius Offset (%)" type="number" min="0" max="100" default="0">
 
-    <meta property="frequencyCount" label="Frequency Lines (X-axis)" type="number" min="10" max="200" default="80">
-    <meta property="lineLength" label="Line Length (Z-axis)" type="number" min="10" max="100" default="40">
+    <meta property="frequencyCount" label="Frequency Lines (X-axis)" type="number" min="10" max="200" default="110">
+    <meta property="lineLength" label="Line Length (Z-axis)" type="number" min="10" max="100" default="100">
     <meta property="spacing" label="Spacing (%)" type="number" min="0" max="100" default="10">
 
     <meta property="isAudioSensitive" label="Audio Reactive" type="boolean" default="true">
-    <meta property="logScale" label="Logarithmic Scale" type="boolean" default="false">
+    <meta property="logScale" label="Logarithmic Scale" type="boolean" default="true">
     <meta property="audioSensitivity" label="Audio Sensitivity" type="number" min="1" max="100" default="10">
-    <meta property="shiftSpeed" label="Wave Speed (Shifts/sec)" type="number" min="1" max="100" default="20">
-    <meta property="smoothing" label="Smoothing" type="number" min="0" max="99" default="50">
+    <meta property="shiftSpeed" label="Wave Speed (Shifts/sec)" type="number" min="1" max="100" default="42">
+    <meta property="smoothing" label="Smoothing" type="number" min="0" max="99" default="14">
 
-    <meta property="bloomEnabled" label="Enable Glow" type="boolean" default="true">
-    <meta property="bloomStrength" label="Glow Strength" type="number" min="0" max="300" default="150">
-    <meta property="bloomRadius" label="Glow Radius" type="number" min="0" max="100" default="50">
+    <meta property="wireframeEnabled" label="Cross-Hatch Mesh" type="boolean" default="false">
+    <meta property="dynamicThickness" label="Dynamic Line Thickness" type="boolean" default="false">
+    <meta property="cameraPulse" label="Bass Camera Pulse" type="boolean" default="true">
+
+    <meta property="bloomEnabled" label="Enable Glow" type="boolean" default="false">
+    <meta property="bloomStrength" label="Glow Strength" type="number" min="0" max="300" default="131">
+    <meta property="bloomRadius" label="Glow Radius" type="number" min="0" max="100" default="45">
 
     <meta property="manualCamera" label="Manual Camera" type="boolean" default="false">
     <meta property="cameraRotationSpeed" label="Orbit Speed" type="number" min="-100" max="100" default="10">
     <meta property="cameraAngle" label="Camera Angle" type="number" min="0" max="360" default="60">
     <meta property="cameraHeight" label="Camera Height" type="number" min="1" max="50" default="25">
-    <meta property="cameraZoom" label="Camera Zoom" type="number" min="1" max="100" default="30">
+    <meta property="cameraZoom" label="Camera Zoom" type="number" min="1" max="100" default="81">
 
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
     </style>
 </head>
 
 <body>
-    <canvas id="effect-canvas" width="320" height="200"></canvas>
+    <canvas id="effect-canvas"></canvas>
     <script>
         // --- Browser Test Mode Fallbacks ---
         var isBrowserTest = false;
@@ -50,13 +66,21 @@
             var palette = "Rainbow";
             var customColor = "#ff0000";
             var backgroundColor = "#000000";
+            var colorShiftSpeed = 20;
             var frequencyCount = 80;
             var lineLength = 40;
             var spacing = 10;
+            var mirrorMode = "None";
+            var coordMode = "Cartesian";
+            var innerRadius = 0;
             var isAudioSensitive = true;
+            var logScale = false;
             var audioSensitivity = 10;
             var shiftSpeed = 20;
             var smoothing = 50;
+            var wireframeEnabled = true;
+            var dynamicThickness = true;
+            var cameraPulse = true;
             var bloomEnabled = true;
             var bloomStrength = 150;
             var bloomRadius = 50;
@@ -65,21 +89,18 @@
             var cameraAngle = 60;
             var cameraHeight = 25;
             var cameraZoom = 30;
-            var logScale = false;
-            var coordMode = "Cartesian";
-            var innerRadius = 50;
 
             var engine = {
-                audio: {
-                    freq: new Int8Array(200)
-                }
+                audio: { freq: new Int8Array(200) }
             };
 
             setInterval(() => {
                 if (isAudioSensitive) {
                     const time = Date.now() * 0.01;
                     for (let i = 0; i < 200; i++) {
-                        const amplitude = (Math.sin(i * 0.1 + time) + 1) / 2;
+                        // Create a fake beat on low frequencies
+                        const isBass = i < 10 ? Math.sin(time * 0.5) > 0.8 : false;
+                        const amplitude = isBass ? 1.0 : (Math.sin(i * 0.1 + time) + 1) / 2;
                         const falloff = 1 - (i / 200);
                         engine.audio.freq[i] = (amplitude * falloff * 127) * 2 - 128;
                     }
@@ -120,7 +141,7 @@
         let currentHeights = [];
         let smoothedHeights = [];
         let seeds = [];
-        let lineColors = [];
+        let paletteCache = [];
 
         let lastXAmount = 0;
         let lastZAmount = 0;
@@ -128,6 +149,7 @@
         let orbitAngle = 0;
         let lastFrameTime = 0;
         let lastShiftTime = 0;
+        let currentPulse = 0;
         let lastPalette = "";
         let lastCustomColor = "";
 
@@ -155,8 +177,7 @@
         }
 
         function HSLToRGB(h, s, l) {
-            s /= 100;
-            l /= 100;
+            s /= 100; l /= 100;
             const k = n => (n + h / 30) % 12;
             const a = s * Math.min(l, 1 - l);
             const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
@@ -208,31 +229,30 @@
             lastPalette = selectedPaletteName;
             lastCustomColor = customColor;
 
-            const x_amount = parseInt(frequencyCount) || 80;
-            lineColors = [];
+            paletteCache = [];
+            const resolution = 256; 
 
-            for (let x = 0; x < x_amount; x++) {
+            for (let i = 0; i < resolution; i++) {
                 let colorStr;
                 if (selectedPaletteName === "Custom") {
                     const rgb = hexToRgb(customColor || "#00aaff");
                     const hsl = RGBToHSL(rgb.r, rgb.g, rgb.b);
-                    hsl.l = Math.random() * 50 + 30;
+                    hsl.l = 30 + (Math.sin((i / resolution) * Math.PI * 2) + 1) * 25; 
                     const finalRgb = HSLToRGB(hsl.h, hsl.s, hsl.l);
                     colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
                 } else {
                     const selectedPalette = wledPalettes[selectedPaletteName];
-                    const colorIndex = (x / (x_amount - 1)) * (selectedPalette.length - 1);
+                    const colorIndex = (i / (resolution - 1)) * (selectedPalette.length - 1);
                     const colorA = hexToRgb(selectedPalette[Math.floor(colorIndex)]);
                     const colorB = hexToRgb(selectedPalette[Math.ceil(colorIndex)]);
                     const lerpFactor = colorIndex - Math.floor(colorIndex);
                     const finalRgb = lerpColor(colorA, colorB, lerpFactor);
                     colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
                 }
-                lineColors.push(colorStr);
+                paletteCache.push(colorStr);
             }
         }
 
-        // 3D to 2D Perspective Projection function
         function project(px, py, pz, camX, camY, camZ, fov, width, height) {
             const dx = -camX, dy = -camY, dz = -camZ;
             const mag = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -275,9 +295,17 @@
             const z_amount = parseInt(lineLength) || 40;
             const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
             const bAudioSensitive = isAudioSensitive;
+            const bLogScale = logScale;
             const mode = coordMode || "Cartesian";
+            const bMirrorMode = mirrorMode || "None";
             const sensitivity = parseInt(audioSensitivity) || 10;
             const radiusFactor = (parseInt(innerRadius) || 0) / 100.0;
+
+            // Optional Feature Flags
+            const bWireframe = typeof wireframeEnabled !== 'undefined' ? wireframeEnabled : true;
+            const bDynamicThick = typeof dynamicThickness !== 'undefined' ? dynamicThickness : true;
+            const bPulse = typeof cameraPulse !== 'undefined' ? cameraPulse : true;
+            const shiftSpeedColors = parseInt(colorShiftSpeed) || 20;
 
             if (x_amount !== lastXAmount || z_amount !== lastZAmount || currentSpacing !== lastSpacing) {
                 init(); return;
@@ -289,21 +317,40 @@
             const lerpFactor = 1.0 - Math.pow(decayFactor, deltaTime * 60.0);
             const audioData = (engine && engine.audio && engine.audio.freq) ? engine.audio.freq : null;
 
+            // Camera Bass Pulse Logic
+            let bassAmp = 0;
+            if (bAudioSensitive && audioData) {
+                for (let i = 0; i < 5; i++) bassAmp += Math.abs(audioData[i]) / 128.0;
+                bassAmp /= 5.0;
+            }
+            currentPulse += (bassAmp - currentPulse) * lerpFactor;
+            
             for (let x = 0; x < x_amount; x++) {
                 let targetFrontHeight = 0.1;
 
                 if (bAudioSensitive && audioData) {
-                    const logIndex = (x / (x_amount - 1));
+                    let logIndex;
+                    const halfX = (x_amount - 1) / 2;
                     const maxLog = Math.log(200);
+
+                    if (bMirrorMode === "High Freq") {
+                        logIndex = 1.0 - (Math.abs(x - halfX) / halfX);
+                    } else if (bMirrorMode === "Low Freq") {
+                        logIndex = Math.abs(x - halfX) / halfX;
+                    } else { 
+                        logIndex = (x / (x_amount - 1));
+                    }
+
                     const audioBin = Math.floor(Math.exp(logIndex * maxLog)) - 1;
                     const finalBin = Math.max(0, Math.min(199, audioBin));
                     let amp = Math.abs(audioData[finalBin]) / 128.0;
 
-                    if (logScale) {
-                        const k = 50;
+                    if (bLogScale) {
+                        const k = 50; 
                         amp = Math.log1p(amp * k) / Math.log1p(k);
                     }
                     targetFrontHeight = 0.1 + (amp * sensitivity);
+
                 } else if (!bAudioSensitive) {
                     const jumpAmount = Math.abs(Math.sin(cubeTime * 2 + seeds[x] * 10));
                     targetFrontHeight = 0.1 + jumpAmount * (sensitivity / 2);
@@ -312,8 +359,8 @@
                 currentHeights[x][0] += (targetFrontHeight - currentHeights[x][0]) * lerpFactor;
             }
 
-            const shiftInterval = 1000 / (parseInt(shiftSpeed) || 20);
-            if (currentTime - lastShiftTime > shiftInterval) {
+            const shiftInt = 1000 / (parseInt(shiftSpeed) || 20);
+            if (currentTime - lastShiftTime > shiftInt) {
                 lastShiftTime = currentTime;
                 for (let x = 0; x < x_amount; x++) {
                     for (let z = z_amount - 1; z > 0; z--) {
@@ -323,7 +370,9 @@
                 }
             }
 
-            const zoom = parseInt(cameraZoom) || 30;
+            // Apply camera pulse to zoom
+            const pulseZoomOffset = bPulse ? (currentPulse * 15) : 0;
+            const zoom = (parseInt(cameraZoom) || 30) - pulseZoomOffset;
             const camHeight = parseInt(cameraHeight) || 25;
             let camX, camY, camZ;
 
@@ -340,7 +389,6 @@
                 camY = camHeight;
             }
 
-            // --- Offset calculations restored here ---
             const fov = Math.max(canvas.width, canvas.height) * 0.8;
             const totalXWidth = (x_amount - 1) * currentSpacing;
             const totalZWidth = (z_amount - 1) * currentSpacing;
@@ -348,15 +396,11 @@
             const zOffset = totalZWidth / 2;
             const baseRadiusOffset = zOffset * radiusFactor;
 
-            const bBloom = typeof bloomEnabled !== 'undefined' ? bloomEnabled : true;
-
-            // Reset composite operation to normal layering
-            ctx.globalCompositeOperation = "source-over";
-
+            // Generate 3D and 2D Point Map
+            const pts3D = [];
+            const pts2D = [];
             for (let x = 0; x < x_amount; x++) {
-                ctx.beginPath();
-                let hasStartedLine = false;
-
+                pts3D[x] = []; pts2D[x] = [];
                 const base_xPos = (x * currentSpacing) - xOffset;
 
                 for (let z = 0; z < z_amount; z++) {
@@ -374,39 +418,120 @@
                         zPos = (z * currentSpacing) - zOffset;
                     }
 
-                    const screenPt = project(xPos, yPos, zPos, camX, camY, camZ, fov, canvas.width, canvas.height);
+                    pts3D[x][z] = { x: xPos, y: yPos, z: zPos };
+                    pts2D[x][z] = project(xPos, yPos, zPos, camX, camY, camZ, fov, canvas.width, canvas.height);
+                }
+            }
 
-                    if (screenPt) {
-                        if (!hasStartedLine) {
-                            ctx.moveTo(screenPt.x, screenPt.y);
-                            hasStartedLine = true;
-                        } else {
-                            ctx.lineTo(screenPt.x, screenPt.y);
-                        }
+            // Build Draw List for Z-Sorting
+            const drawList = [];
+
+            // Add Z-Lines
+            for (let x = 0; x < x_amount; x++) {
+                const midZ = Math.floor(z_amount / 2);
+                const mid3D = pts3D[x][midZ];
+                let avgHeight = 0;
+                const path2D = [];
+                for (let z = 0; z < z_amount; z++) {
+                    avgHeight += pts3D[x][z].y;
+                    path2D.push(pts2D[x][z]);
+                }
+                avgHeight /= z_amount;
+
+                const dx = mid3D.x - camX, dy = mid3D.y - camY, dz = mid3D.z - camZ;
+                drawList.push({
+                    type: 'z', index: x,
+                    path: path2D, distSq: dx * dx + dy * dy + dz * dz,
+                    avgHeight: avgHeight
+                });
+            }
+
+            // Add X-Lines (Wireframe)
+            if (bWireframe) {
+                for (let z = 0; z < z_amount; z++) {
+                    const midX = Math.floor(x_amount / 2);
+                    const mid3D = pts3D[midX][z];
+                    let avgHeight = 0;
+                    const path2D = [];
+                    for (let x = 0; x < x_amount; x++) {
+                        avgHeight += pts3D[x][z].y;
+                        path2D.push(pts2D[x][z]);
+                    }
+                    avgHeight /= x_amount;
+
+                    const dx = mid3D.x - camX, dy = mid3D.y - camY, dz = mid3D.z - camZ;
+                    drawList.push({
+                        type: 'x', index: z,
+                        path: path2D, distSq: dx * dx + dy * dy + dz * dz,
+                        avgHeight: avgHeight
+                    });
+                }
+            }
+
+            // Sort from Furthest to Closest
+            drawList.sort((a, b) => b.distSq - a.distSq);
+
+            const bBloom = typeof bloomEnabled !== 'undefined' ? bloomEnabled : true;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+
+            // Render Sorted Lines
+            for (const item of drawList) {
+                let normalizedPos = (item.type === 'z') ? (item.index / (x_amount - 1)) : (item.index / (z_amount - 1));
+                
+                // Color Scrolling
+                const scrollOffset = (cubeTime * shiftSpeedColors / 100.0);
+                let finalPos = (normalizedPos - scrollOffset) % 1.0;
+                if (finalPos < 0) finalPos += 1.0;
+                const colorIndex = Math.floor(finalPos * (paletteCache.length - 1));
+                const strokeColor = paletteCache[colorIndex];
+
+                // Dynamic Thickness
+                let baseWidth = 1.0;
+                let glowWidth = 4.0;
+                if (bDynamicThick) {
+                    // Lowered the multiplier from 2.0 to 0.5 to make the scaling gentler
+                    let extraThickness = Math.max(0, item.avgHeight - 0.1) * 0.5;
+                    
+                    // Cap the maximum extra thickness so it never blows out
+                    extraThickness = Math.min(1.0, extraThickness); 
+                    
+                    const thicknessMult = 1.0 + extraThickness; 
+                    baseWidth *= thicknessMult;
+                    glowWidth *= thicknessMult;
+                }
+
+                ctx.beginPath();
+                let started = false;
+                for (const pt of item.path) {
+                    if (pt) {
+                        if (!started) { ctx.moveTo(pt.x, pt.y); started = true; }
+                        else { ctx.lineTo(pt.x, pt.y); }
                     }
                 }
 
-                if (hasStartedLine) {
-                    ctx.strokeStyle = lineColors[x];
+                if (started) {
+                    ctx.strokeStyle = strokeColor;
 
                     if (bBloom) {
-                        // Pass 1: The soft outer glow
-                        ctx.shadowColor = lineColors[x];
+                        // Soft Outer Glow
+                        ctx.shadowColor = strokeColor;
                         ctx.shadowBlur = (parseInt(bloomStrength) || 150) / 10;
                         ctx.globalAlpha = 0.15;
-                        ctx.lineWidth = 4.0;
+                        ctx.lineWidth = glowWidth;
                         ctx.stroke();
 
-                        // Pass 2: The crisp bright core
+                        // Crisp Bright Core
                         ctx.shadowBlur = 0;
                         ctx.globalAlpha = 0.9;
-                        ctx.lineWidth = 1.0;
+                        ctx.lineWidth = baseWidth;
                         ctx.stroke();
                     } else {
-                        // Standard drawing if bloom is off
+                        // Standard drawing
                         ctx.shadowBlur = 0;
                         ctx.globalAlpha = 1.0;
-                        ctx.lineWidth = 1.5;
+                        ctx.lineWidth = baseWidth * 1.5;
                         ctx.stroke();
                     }
                 }
