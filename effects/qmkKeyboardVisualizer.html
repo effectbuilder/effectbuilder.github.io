@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>QMK Keyboard Visualizer</title>
+    <meta description="Advanced QMK Matrix Visualizer with Heatmap, Ripples, and Color Palettes." />
+    <meta publisher="Jose Miranda" />
+    <meta property="keyboardPreset" label="Keyboard Preset" type="list" values="Akko 5075 QMK Keyboard,Alpaca WhiteFox Eclipse QMK Keyboard,DZTech-60RGB Keyboard,DZTech-65RGB-V3 Keyboard,GG QMK ISO Keyboard TKL AZERTY French,Epomaker TH96 QMK,Ergodox EZ Glow QMK,Feker-IK75,Framework 16 Keyboard,Framework Macropad,GMMK 2 65 ANSI QMK Keyboard,GMMK 2 65 ISO QMK Keyboard,GMMK 2 96 ANSI QMK Keyboard,GMMK 2 96 ISO QMK Keyboard,GMMK 3 QMK Keyboard,GMMK Numpad QMK,GMMK Pro QMK Keyboard,Freja 65 QMK Keyboard,IDOBAO ID67 QMK Keyboard,Inland KB83 QMK Keyboard,KBDCraft Adam0110 QMK Keyboard-Test,KBDCraft Adam0110 QMK Keyboard,KBDFans KBD67 RGBMKII QMK Keyboard,KBDFans KBD67 V2 QMK ISO Keyboard,KPRepublic BM60 Poker Rev 2,Keychron C1 Pro QMK ANSI Keyboard,Keychron C2 Pro QMK ANSI Keyboard,Keychron C3 Pro QMK ANSI Keyboard,Keychron K10 HE QMK ANSI Keyboard,Keychron K2 HE QMK ANSI Keyboard,Keychron K2 HE QMK ISO Keyboard,Keychron K4 HE QMK ANSI Keyboard,Keychron K8 HE QMK ANSI Keyboard,Keychron K8 HE QMK ISO Keyboard,Keychron K10 Max QMK ANSI Keyboard,Keychron K10 Max QMK ISO Keyboard,Keychron K10 v2 QMK ANSI Keyboard,Keychron K1 Max QMK Keyboard,Keychron K2 Max QMK ANSI Keyboard,Keychron K2 Max QMK ISO Keyboard,Keychron K5 Max QMK ANSI Keyboard,Keychron K5 Max QMK ISO Keyboard,Keychron K8Max QMK ANSI Keyboard,Keychron K10Pro QMK ANSI Keyboard,Keychron K10Pro QMK ISO Keyboard,Keychron K12 Pro QMK ANSI Keyboard,Keychron K1 Pro QMK Keyboard,Keychron K2 Pro QMK ANSI Keyboard,Keychron K2 Pro QMK ISO DE Keyboard,Keychron K3 Pro QMK ANSI Keyboard,Keychron K3 Pro QMK ISO Keyboard,Keychron K4 Pro ANSI Keyboard,Keychron K4 Pro ISO DE Keyboard,Keychron K5 Pro QMK ANSI Keyboard,Keychron K6 Pro ANSI Keyboard,Keychron K8Pro QMK ANSI Keyboard,Keychron K8Pro QMK ISO DE Keyboard,Keychron K10V2 QMK ANSI Keyboard,Keychron K10V2 QMK ISO Keyboard,Keychron K2v2 QMK ANSI Keyboard,Keychron K4v2 QMK ANSI Keyboard,Keychron K8 TKL QMK ISO Keyboard,Keychron K8 TKL Version 2 QMK ANSI Keyboard,Keychron Q1 HE QMK ANSI Keyboard,Keychron Q1 HE QMK ISO Keyboard,Keychron Q3 HE QMK ANSI Encoder Keyboard,Keychron Q5 HE QMK ANSI Encoder Keyboard,Keychron Q6 HE QMK ANSI ISO Keyboard,Keychron Q0 Max QMK Keyboard,Keychron Q12 Max QMK ANSI Encoder Keyboard,Keychron Q1 Max QMK ANSI Encoder Keyboard,Keychron Q1 Max QMK ISO Encoder Keyboard,Keychron Q2 Max QMK ANSI Encoder Keyboard,Keychron Q3 Max QMK ANSI Keyboard,Keychron Q3 Max QMK ISO Keyboard,Keychron Q5 Max QMK ANSI Encoder Keyboard,Keychron Q65 Max QMK ANSI Encoder Keyboard,Keychron Q6 Max QMK ANSI Keyboard,Keychron Q6 Max QMK ISO Keyboard,Keychron Q8 Max QMK ANSI Keyboard,Keychron Q0 Plus QMK ANSI Keyboard,Keychron Q1 Pro QMK ANSI Encoder Keyboard,Keychron Q1 Pro QMK ISO Encoder Keyboard,Keychron Q2 Pro QMK ANSI Keyboard,Keychron Q3 Pro SE QMK ANSI Keyboard,Keychron Q3 Pro SE QMK ISO Keyboard,Keychron Q5 Pro QMK ANSI Keyboard,Keychron Q5 Pro QMK ISO Keyboard,Keychron Q6 Pro QMK ANSI Keyboard,Keychron Q6 Pro QMK ISO Keyboard,Keychron Q8 Pro QMK ANSI Keyboard,Keychron Q0 QMK ANSI Keyboard,Keychron Q10 QMK ANSI Keyboard,Keychron Q12 QMK ANSI Keyboard,Keychron Q1v1 QMK ANSI Keyboard,Keychron Q1v1 QMK ISO Keyboard,Keychron Q1v2 QMK ANSI Encoder Keyboard,Keychron Q1v2 QMK ISO Encoder Keyboard,Keychron Q2 QMK ANSI Encoder Keyboard,Keychron Q2 QMK ANSI Keyboard,Keychron Q3 QMK ANSI Encoder Keyboard,Keychron Q3 QMK ANSI Keyboard,Keychron Q3 QMK ISO Keyboard,Keychron Q4 QMK ANSI Keyboard,Keychron Q5 QMK ANSI Encoder Keyboard,Keychron Q5 QMK ANSI Keyboard,Keychron Q5 QMK ISO Encoder Keyboard,Keychron Q65 QMK ANSI Encoder Keyboard,Keychron Q6 QMK ANSI ISO Keyboard,Keychron V1 Max QMK ANSI Encoder Keyboard,Keychron V1 Max QMK ISO Encoder Keyboard,Keychron V3 Max QMK ANSI Encoder Keyboard,Keychron V3 Max QMK ISO Keyboard,Keychron V5 Max QMK ANSI Encoder Keyboard,Keychron V5 Max QMK ISO Encoder Keyboard,Keychron V6 Max QMK ANSI Keyboard,Keychron V6 Max QMK ISO Keyboard,Keychron V1 QMK ANSI Encoder Keyboard,Keychron V1 QMK ANSI Keyboard,Keychron V1 QMK ISO Keyboard,Keychron V2 QMK ANSI Keyboard,Keychron V3 QMK ANSI Keyboard,Keychron V3 QMK ISO Keyboard,Keychron V4 QMK ANSI Keyboard,Keychron V4 QMK ISO Keyboard,Keychron V5 QMK ANSI Encoder Keyboard,Keychron V5 QMK ANSI Keyboard,Keychron V5 QMK ISO Encoder Keyboard,Keychron V6 QMK ANSI Keyboard,Keychron V6 QMK ISO Keyboard,Lemokey L1 ANSI Keyboard,Lemokey L3 ANSI Keyboard,Lemokey P1 HE ANSI Keyboard,Lemokey P1 Pro ANSI Keyboard,Lemokey P1 Pro ISO Keyboard,Drop ALT V2 QMK Keyboard,Drop CSTM80 QMK Keyboard,Drop SHIFT V2 QMK Keyboard,Massdrop ALT QMK Keyboard,Massdrop CTRL QMK Keyboard,Massdrop CTRL V2 QMK Keyboard,Massdrop SENSE75 QMK Keyboard,Monsgeek M1 V3 Keyboard,Monsgeek M1 V5 ANSI Keyboard,Monsgeek M1 V5 ISO Keyboard,Monsgeek M3 Keyboard TKL,Monsgeek M7 QMK ANSI Keyboard,NCR-80 Hotswap Keyboard,NuPhy Air75v2 QMK Keyboard,NuPhy Air96v2 QMK ANSI Keyboard,NuPhy Gem80 GMK Keyboard,NuPhy Halo75v2 QMK Keyboard,NuPhy Halo96v2 QMK Keyboard,pulsar XBOARD QS sRGB 240206,SW EAVE65,System76 Launch-1 QMK Keyboard,XBows KnightPlus QMK ANSI Keyboard,XBows KnightPlus QMK ANSI Numpad,XBows Nature QMK ANSI Keyboard,YMDK Melody96rgb QMK Keyboard,YMDK YMD09 QMK Keyboard,Yunzii AL80 QMK ANSI Keyboard,nerdytec CYKEY QMK ANSI Keyboard,nerdytec CYKEY QMK ISO Keyboard,Custom URL" default="Keychron Q5 Pro QMK ANSI Keyboard" />
+    <meta property="customUrl" label="Custom Raw URL" type="textfield" default="" />
+    <meta property="dummy" label="Keyboard not found? Check here:" type="textfield" default="https://github.com/SRGBmods/qmk-plugins" />
+    <meta property="drawDebug" label="Draw Layout (Testing)" type="boolean" default="false" />
+    <meta property="effectType" label="Effect Style" type="combobox" values="None,Explode Flash,Flash,Gradient Pulse,Heatmap,Knight Rider Bar,Lightning Strike,Ripples,Row Column Flash,Spiral Flash,Spotlight Locator,Star Emitter" default="Heatmap" />
+    <meta property="effectScale" label="Effect Scale (%)" type="number" min="50" max="500" default="100" />
+    <meta property="fadeSpeed" label="Anim Speed" type="number" min="1" max="10" default="3" />
+    <meta property="vibrationAmount" label="Line Thickness (%)" type="number" min="1" max="100" default="10" />
+    <meta property="keyCooldownMs" label="Input Cooldown (ms)" type="number" min="1" max="500" default="300" />
+    <meta property="colorMode" label="Effect Color Mode" type="combobox" values="Uniform Cycle,Random Palette" default="Uniform Cycle" />
+    <meta property="colorPalette" label="Color Palette" type="combobox" values="Custom,Rainbow,Berry,Blue,Chocolate,Coffee,Cyan,Fire,Forest,Gold,Gold Rush,Green,Greyscale,Ice,Indigo,Lime,Magenta,Mint,Nature,Neon,Ocean,Orange,Pink,Purple,Red,Rose,Ruby,Sky,Sunset,Synthwave,Teal,Violet,Yellow" default="Rainbow" />
+    <meta property="customCol1" label="Custom: Low/Start" type="color" default="#0000FF" />
+    <meta property="customCol2" label="Custom: High/End" type="color" default="#FF0000" />
+</head>
+
+<body style="margin: 0; padding: 0; background: #000; overflow: hidden; width:320px; height:200px">
+    <canvas id="effect-canvas"></canvas>
+</body>
+
+<script>
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const PRESETS = {
+        "Akko 5075 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Akko/Akko_5075_QMK_Keyboard.js",
+        "Alpaca WhiteFox Eclipse QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Alpaca/Alpaca_WhiteFox_Eclipse_QMK_Keyboard.js",
+        "DZTech-60RGB Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/DZTech/DZTech-60RGB_Keyboard.js",
+        "DZTech-65RGB-V3 Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/DZTech/DZTech-65RGB-V3_Keyboard.js",
+        "GG QMK ISO Keyboard TKL AZERTY French": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/DesignedByGG/GG_QMK_ISO_Keyboard_TKL_AZERTY_French.js",
+        "Epomaker TH96 QMK": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Epomaker/Epomaker_TH96_QMK.js",
+        "Ergodox EZ Glow QMK": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Ergodox_EZ/Ergodox_EZ_Glow_QMK.js",
+        "Feker-IK75": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Feker/Feker-IK75.js",
+        "Framework 16 Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Framework/Framework_16_Keyboard.js",
+        "Framework Macropad": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Framework/Framework_Macropad.js",
+        "GMMK 2 65 ANSI QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_2_65_ANSI_QMK_Keyboard.js",
+        "GMMK 2 65 ISO QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_2_65_ISO_QMK_Keyboard.js",
+        "GMMK 2 96 ANSI QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_2_96_ANSI_QMK_Keyboard.js",
+        "GMMK 2 96 ISO QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_2_96_ISO_QMK_Keyboard.js",
+        "GMMK 3 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_3_QMK_Keyboard.js",
+        "GMMK Numpad QMK": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_Numpad_QMK.js",
+        "GMMK Pro QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/GMMK/GMMK_Pro_QMK_Keyboard.js",
+        "Freja 65 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Helheim Designs/Freja_65_QMK_Keyboard.js",
+        "IDOBAO ID67 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/IDOBAO/IDOBAO_ID67_QMK_Keyboard.js",
+        "Inland KB83 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Inland/Inland_KB83_QMK_Keyboard.js",
+        "KBDCraft Adam0110 QMK Keyboard-Test": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/KBDCraft/KBDCraft_Adam0110_QMK_Keyboard-Test.js",
+        "KBDCraft Adam0110 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/KBDCraft/KBDCraft_Adam0110_QMK_Keyboard.js",
+        "KBDFans KBD67 RGBMKII QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/KBDFans/KBDFans_KBD67_RGBMKII_QMK_Keyboard.js",
+        "KBDFans KBD67 V2 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/KBDFans/KBDFans_KBD67_V2_QMK_ISO_Keyboard.js",
+        "KPRepublic BM60 Poker Rev 2": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/KPRepublic/KPRepublic_BM60_Poker_Rev_2.js",
+        "Keychron C1 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/C Series/Keychron_C1_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron C2 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/C Series/Keychron_C2_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron C3 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/C Series/Keychron_C3_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K10 HE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K10_HE_QMK_ANSI_Keyboard.js",
+        "Keychron K2 HE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K2_HE_QMK_ANSI_Keyboard.js",
+        "Keychron K2 HE QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K2_HE_QMK_ISO_Keyboard.js",
+        "Keychron K4 HE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K4_HE_QMK_ANSI_Keyboard.js",
+        "Keychron K8 HE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K8_HE_QMK_ANSI_Keyboard.js",
+        "Keychron K8 HE QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/HE/Keychron_K8_HE_QMK_ISO_Keyboard.js",
+        "Keychron K10 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K10_Max_QMK_ANSI_Keyboard.js",
+        "Keychron K10 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K10_Max_QMK_ISO_Keyboard.js",
+        "Keychron K10 v2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K10_v2_QMK_ANSI_Keyboard.js",
+        "Keychron K1 Max QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K1_Max_QMK_Keyboard.js",
+        "Keychron K2 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K2_Max_QMK_ANSI_Keyboard.js",
+        "Keychron K2 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K2_Max_QMK_ISO_Keyboard.js",
+        "Keychron K5 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K5_Max_QMK_ANSI_Keyboard.js",
+        "Keychron K5 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K5_Max_QMK_ISO_Keyboard.js",
+        "Keychron K8Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Max/Keychron_K8Max_QMK_ANSI_Keyboard.js",
+        "Keychron K10Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K10Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K10Pro QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K10Pro_QMK_ISO_Keyboard.js",
+        "Keychron K12 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K12_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K1 Pro QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K1_Pro_QMK_Keyboard.js",
+        "Keychron K2 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K2_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K2 Pro QMK ISO DE Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K2_Pro_QMK_ISO_DE_Keyboard.js",
+        "Keychron K3 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K3_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K3 Pro QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K3_Pro_QMK_ISO_Keyboard.js",
+        "Keychron K4 Pro ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K4_Pro_ANSI_Keyboard.js",
+        "Keychron K4 Pro ISO DE Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K4_Pro_ISO_DE_Keyboard.js",
+        "Keychron K5 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K5_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K6 Pro ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K6_Pro_ANSI_Keyboard.js",
+        "Keychron K8Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K8Pro_QMK_ANSI_Keyboard.js",
+        "Keychron K8Pro QMK ISO DE Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Pro/Keychron_K8Pro_QMK_ISO_DE_Keyboard.js",
+        "Keychron K10V2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K10V2_QMK_ANSI_Keyboard.js",
+        "Keychron K10V2 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K10V2_QMK_ISO_Keyboard.js",
+        "Keychron K2v2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K2v2_QMK_ANSI_Keyboard.js",
+        "Keychron K4v2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K4v2_QMK_ANSI_Keyboard.js",
+        "Keychron K8 TKL QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K8_TKL_QMK_ISO_Keyboard.js",
+        "Keychron K8 TKL Version 2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/K Series/Standard/Keychron_K8_TKL_Version_2_QMK_ANSI_Keyboard.js",
+        "Keychron Q1 HE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/HE/Keychron_Q1_HE_QMK_ANSI_Keyboard.js",
+        "Keychron Q1 HE QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/HE/Keychron_Q1_HE_QMK_ISO_Keyboard.js",
+        "Keychron Q3 HE QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/HE/Keychron_Q3_HE_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q5 HE QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/HE/Keychron_Q5_HE_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q6 HE QMK ANSI ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/HE/Keychron_Q6_HE_QMK_ANSI_ISO_Keyboard.js",
+        "Keychron Q0 Max QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q0_Max_QMK_Keyboard.js",
+        "Keychron Q12 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q12_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q1 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q1_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q1 Max QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q1_Max_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron Q2 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q2_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q3 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q3_Max_QMK_ANSI_Keyboard.js",
+        "Keychron Q3 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q3_Max_QMK_ISO_Keyboard.js",
+        "Keychron Q5 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q5_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q65 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q65_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q6 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q6_Max_QMK_ANSI_Keyboard.js",
+        "Keychron Q6 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q6_Max_QMK_ISO_Keyboard.js",
+        "Keychron Q8 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Max/Keychron_Q8_Max_QMK_ANSI_Keyboard.js",
+        "Keychron Q0 Plus QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Plus/Keychron_Q0_Plus_QMK_ANSI_Keyboard.js",
+        "Keychron Q1 Pro QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q1_Pro_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q1 Pro QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q1_Pro_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron Q2 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q2_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron Q3 Pro SE QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q3_Pro_SE_QMK_ANSI_Keyboard.js",
+        "Keychron Q3 Pro SE QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q3_Pro_SE_QMK_ISO_Keyboard.js",
+        "Keychron Q5 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q5_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron Q5 Pro QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q5_Pro_QMK_ISO_Keyboard.js",
+        "Keychron Q6 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q6_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron Q6 Pro QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q6_Pro_QMK_ISO_Keyboard.js",
+        "Keychron Q8 Pro QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Pro/Keychron_Q8_Pro_QMK_ANSI_Keyboard.js",
+        "Keychron Q0 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q0_QMK_ANSI_Keyboard.js",
+        "Keychron Q10 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q10_QMK_ANSI_Keyboard.js",
+        "Keychron Q12 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q12_QMK_ANSI_Keyboard.js",
+        "Keychron Q1v1 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q1v1_QMK_ANSI_Keyboard.js",
+        "Keychron Q1v1 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q1v1_QMK_ISO_Keyboard.js",
+        "Keychron Q1v2 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q1v2_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q1v2 QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q1v2_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron Q2 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q2_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q2_QMK_ANSI_Keyboard.js",
+        "Keychron Q3 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q3_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q3 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q3_QMK_ANSI_Keyboard.js",
+        "Keychron Q3 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q3_QMK_ISO_Keyboard.js",
+        "Keychron Q4 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q4_QMK_ANSI_Keyboard.js",
+        "Keychron Q5 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q5_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q5 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q5_QMK_ANSI_Keyboard.js",
+        "Keychron Q5 QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q5_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron Q65 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q65_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron Q6 QMK ANSI ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/Q Series/Standard/Keychron_Q6_QMK_ANSI_ISO_Keyboard.js",
+        "Keychron V1 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V1_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron V1 Max QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V1_Max_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron V3 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V3_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron V3 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V3_Max_QMK_ISO_Keyboard.js",
+        "Keychron V5 Max QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V5_Max_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron V5 Max QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V5_Max_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron V6 Max QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V6_Max_QMK_ANSI_Keyboard.js",
+        "Keychron V6 Max QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Max/Keychron_V6_Max_QMK_ISO_Keyboard.js",
+        "Keychron V1 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V1_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron V1 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V1_QMK_ANSI_Keyboard.js",
+        "Keychron V1 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V1_QMK_ISO_Keyboard.js",
+        "Keychron V2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V2_QMK_ANSI_Keyboard.js",
+        "Keychron V3 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V3_QMK_ANSI_Keyboard.js",
+        "Keychron V3 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V3_QMK_ISO_Keyboard.js",
+        "Keychron V4 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V4_QMK_ANSI_Keyboard.js",
+        "Keychron V4 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V4_QMK_ISO_Keyboard.js",
+        "Keychron V5 QMK ANSI Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V5_QMK_ANSI_Encoder_Keyboard.js",
+        "Keychron V5 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V5_QMK_ANSI_Keyboard.js",
+        "Keychron V5 QMK ISO Encoder Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V5_QMK_ISO_Encoder_Keyboard.js",
+        "Keychron V6 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V6_QMK_ANSI_Keyboard.js",
+        "Keychron V6 QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Keychron/V Series/Standard/Keychron_V6_QMK_ISO_Keyboard.js",
+        "Lemokey L1 ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Lemokey/Lemokey_L1_ANSI_Keyboard.js",
+        "Lemokey L3 ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Lemokey/Lemokey_L3_ANSI_Keyboard.js",
+        "Lemokey P1 HE ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Lemokey/Lemokey_P1_HE_ANSI_Keyboard.js",
+        "Lemokey P1 Pro ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Lemokey/Lemokey_P1_Pro_ANSI_Keyboard.js",
+        "Lemokey P1 Pro ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Lemokey/Lemokey_P1_Pro_ISO_Keyboard.js",
+        "Drop ALT V2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Drop_ALT_V2_QMK_Keyboard.js",
+        "Drop CSTM80 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Drop_CSTM80_QMK_Keyboard.js",
+        "Drop SHIFT V2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Drop_SHIFT_V2_QMK_Keyboard.js",
+        "Massdrop ALT QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Massdrop_ALT_QMK_Keyboard.js",
+        "Massdrop CTRL QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Massdrop_CTRL_QMK_Keyboard.js",
+        "Massdrop CTRL V2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Massdrop_CTRL_V2_QMK_Keyboard.js",
+        "Massdrop SENSE75 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Massdrop/Massdrop_SENSE75_QMK_Keyboard.js",
+        "Monsgeek M1 V3 Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Monsgeek/Monsgeek_M1_V3_Keyboard.js",
+        "Monsgeek M1 V5 ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Monsgeek/Monsgeek_M1_V5_ANSI_Keyboard.js",
+        "Monsgeek M1 V5 ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Monsgeek/Monsgeek_M1_V5_ISO_Keyboard.js",
+        "Monsgeek M3 Keyboard TKL": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Monsgeek/Monsgeek_M3_Keyboard_TKL.js",
+        "Monsgeek M7 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Monsgeek/Monsgeek_M7_QMK_ANSI_Keyboard.js",
+        "NCR-80 Hotswap Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/NCR/NCR-80_Hotswap_Keyboard.js",
+        "NuPhy Air75v2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Nuphy/NuPhy_Air75v2_QMK_Keyboard.js",
+        "NuPhy Air96v2 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Nuphy/NuPhy_Air96v2_QMK_ANSI_Keyboard.js",
+        "NuPhy Gem80 GMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Nuphy/NuPhy_Gem80_GMK_Keyboard.js",
+        "NuPhy Halo75v2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Nuphy/NuPhy_Halo75v2_QMK_Keyboard.js",
+        "NuPhy Halo96v2 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Nuphy/NuPhy_Halo96v2_QMK_Keyboard.js",
+        "pulsar XBOARD QS sRGB 240206": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Pulsar/pulsar_XBOARD QS_sRGB_240206.js",
+        "SW EAVE65": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Swagkeys/SW_EAVE65.js",
+        "System76 Launch-1 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/System76/System76_Launch-1_QMK_Keyboard.js",
+        "XBows KnightPlus QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/XBows/XBows_KnightPlus_QMK_ANSI_Keyboard.js",
+        "XBows KnightPlus QMK ANSI Numpad": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/XBows/XBows_KnightPlus_QMK_ANSI_Numpad.js",
+        "XBows Nature QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/XBows/XBows_Nature_QMK_ANSI_Keyboard.js",
+        "YMDK Melody96rgb QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/YMDK/YMDK_Melody96rgb_QMK_Keyboard.js",
+        "YMDK YMD09 QMK Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/YMDK/YMDK_YMD09_QMK_Keyboard.js",
+        "Yunzii AL80 QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/Yunzii/Yunzii_AL80_QMK_ANSI_Keyboard.js",
+        "nerdytec CYKEY QMK ANSI Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/nerdytec/nerdytec_CYKEY_QMK_ANSI_Keyboard.js",
+        "nerdytec CYKEY QMK ISO Keyboard": "https://raw.githubusercontent.com/SRGBmods/qmk-plugins/main/nerdytec/nerdytec_CYKEY_QMK_ISO_Keyboard.js"
+    };
+
+    // --- PALETTE DEFINITIONS (Low -> High) ---
+    const PALETTES = {
+        // All palettes now use 3 or more color stops
+        "Fire": ["#000000", "#AA0000", "#FF6600", "#FFFF00", "#FFFFFF"], // Black -> Dark Red -> Orange -> Yellow -> White (5 stops)
+        "Ocean": ["#000055", "#0000AA", "#00FFFF", "#88FFFF", "#FFFFFF"], // Deep Blue -> Mid Blue -> Cyan -> Light Cyan -> White (5 stops)
+        "Greyscale": ["#000000", "#444444", "#888888", "#CCCCCC", "#FFFFFF"], // Black -> Dark Gray -> Mid Gray -> Light Gray -> White (5 stops)
+        "Nature": ["#003300", "#006400", "#77AA00", "#AAFF00", "#FFFFFF"], // Dark -> Mid -> Olive -> Lime -> White (5 stops)
+
+        "Ice": ["#0000FF", "#00AAFF", "#00FFFF", "#AAFFFF", "#FFFFFF"], // Blue -> Sky -> Cyan -> Light Cyan -> White (5 stops)
+        "Sunset": ["#330033", "#CC0066", "#FF6600", "#FFCC00"], // Violet -> Magenta -> Orange -> Yellow
+        "Neon": ["#000000", "#00FF00", "#FF00FF", "#00FFFF"], // Black -> Green -> Magenta -> Cyan
+        "Berry": ["#880088", "#FF00FF", "#00FFFF", "#FFFFFF"], // Violet -> Magenta -> Cyan -> White
+        "Gold": ["#553300", "#FFCC00", "#FFFF88", "#FFFFFF"], // Brown -> Gold -> Pale Yellow -> White
+        "Red": ["#220000", "#FF4444", "#FF0000", "#FF8888"], // Dark Red -> Bright Red -> Deep Red -> Light Red
+        "Orange": ["#442200", "#FF8800", "#FFFF00", "#FFFFFF"], // Dark Brown -> Orange -> Yellow -> White
+        "Yellow": ["#444400", "#FFFF00", "#FFFFFF"], // Dark Yellow -> Bright Yellow -> White
+        "Lime": ["#002200", "#AAFF00", "#00FF00"], // Dark Green -> Lime -> Bright Green
+        "Green": ["#004400", "#00FF00", "#FFFFFF"], // Dark Green -> Green -> White
+        "Teal": ["#002222", "#00AAAA", "#00FFFF"], // Dark Teal -> Medium Teal -> Cyan
+        "Cyan": ["#004444", "#00FFFF", "#FFFFFF"], // Dark Cyan -> Bright Cyan -> White
+        "Sky": ["#002244", "#00CCFF", "#FFFFFF"], // Dark Blue -> Sky Blue -> White
+        "Blue": ["#000044", "#0000FF", "#00FFFF"], // Dark Blue -> Blue -> Cyan
+        "Indigo": ["#110044", "#4B0082", "#8800FF"], // Deep Indigo -> Indigo -> Violet
+        "Violet": ["#220044", "#8800FF", "#FF00FF"], // Dark Violet -> Bright Violet -> Magenta
+        "Purple": ["#220022", "#800080", "#FF00FF"], // Dark Purple -> Purple -> Magenta
+        "Magenta": ["#440044", "#FF00FF", "#FFFFFF"], // Dark Magenta -> Bright Magenta -> White
+        "Pink": ["#440022", "#FF66AA", "#FFFFFF"], // Dark Pink -> Pink -> White
+        "Rose": ["#440011", "#FF0066", "#FF00FF"], // Dark Rose -> Rose -> Magenta
+        "Chocolate": ["#331100", "#8B4513", "#AA6633"], // Dark Brown -> Chocolate -> Light Brown
+        "Coffee": ["#221100", "#553311", "#886644"], // Dark Coffee -> Coffee -> Latte
+        "Mint": ["#004040", "#B0E0E6", "#008080"], // Dark Teal -> Powder Blue -> Teal
+        "Ruby": ["#400000", "#F08080", "#800000"], // Dark Maroon -> Light Coral -> Maroon
+        "Gold Rush": ["#403000", "#FFD700", "#B8860B"], // Dark Gold -> Gold -> Dark Goldenrod
+        "Synthwave": ["#4B0082", "#FF69B4", "#00FFFF"], // Indigo -> Hot Pink -> Cyan
+        "Forest": ["#003300", "#228B22", "#90EE90"] // Dark Forest -> Forest Green -> Light Green
+    };
+
+    // --- STATE ---
+    let KEY_DB = {};
+    let RAW_KEYS = [];
+    let HIT_COUNTS = {};
+    let maxHits = 1;
+
+    let unitScaleX = 0;
+    let unitScaleY = 0;
+
+    let activeFlashes = [];
+    let activeRipples = [];
+    let activeKnightBars = [];
+    let activeParticles = [];
+    let activeRowColumnFlashes = [];
+    let activeLightningStrikes = [];
+    let activeSpotlight = null;
+    let touchDots = [];
+
+    let currentUrl = "";
+    let statusText = "Waiting for Data...";
+    let isError = false;
+
+    let globalColorCycle = 0;
+    const cycleDuration = 30000;
+
+    // --- KEY STATE MANAGEMENT ---
+    let lastKeyPressTime = performance.now();
+    let LAST_TRIGGER_TIME = {};
+    let KEY_STATE = {};
+    let lastKeyPressedName = "NONE";
+
+    let normalizedScale = 1.0;
+    let minUX = 0; // New global minimum X (unit)
+    let minUY = 0; // New global minimum Y (unit)
+    // ----------------------------
+
+    // --- COLOR HELPERS ---
+    function hexToRgb(hex) {
+        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+            return r + r + g + g + b + b;
+        });
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+
+    function lerp(start, end, t) {
+        return start * (1 - t) + end * t;
+    }
+
+    function lerpColor(c1, c2, t) {
+        const rgb1 = hexToRgb(c1);
+        const rgb2 = hexToRgb(c2);
+        const r = Math.round(lerp(rgb1.r, rgb2.r, t));
+        const g = Math.round(lerp(rgb1.g, rgb2.g, t));
+        const b = Math.round(lerp(rgb1.b, rgb2.b, t));
+        return `rgb(${r},${g},${b})`;
+    }
+
+    function getColorFromPalette(t) {
+        const val = Math.max(0, Math.min(1, t));
+
+        if (colorPalette === "Custom") {
+            return lerpColor(customCol1, customCol2, val);
+        }
+        else if (colorPalette === "Rainbow") {
+            const hue = (1.0 - val) * 240;
+            return `hsl(${hue}, 100%, 50%)`;
+        }
+        else if (PALETTES[colorPalette]) {
+            const p = PALETTES[colorPalette];
+
+            // --- Multi-Stop Gradient Logic ---
+            if (p.length === 2) {
+                // Standard two-color LERP
+                return lerpColor(p[0], p[1], val);
+            } else if (p.length > 2) {
+                // Piecewise LERP for multi-color stops
+                const numSegments = p.length - 1;
+                const segmentWidth = 1 / numSegments;
+
+                // Determine which segment the value falls into
+                let segmentIndex = Math.floor(val / segmentWidth);
+                segmentIndex = Math.min(segmentIndex, numSegments - 1); // Clamp max index
+
+                // Calculate local progress (0 to 1) within that segment
+                const segmentStart = segmentIndex * segmentWidth;
+                const localT = (val - segmentStart) / segmentWidth;
+
+                // Interpolate between the start and end color of the segment
+                return lerpColor(p[segmentIndex], p[segmentIndex + 1], localT);
+            }
+        }
+        return "#FFFFFF";
+    }
+
+    function mapKeyCode(e) {
+        let searchName = "";
+        const code = e.code.toUpperCase();
+
+        searchName = e.key.toUpperCase();
+
+        let keyId = null;
+        for (const id in KEY_DB) {
+            const key = KEY_DB[id];
+            if (key.name.toUpperCase() === searchName) {
+                keyId = id;
+                break;
+            }
+        }
+        return keyId;
+    }
+
+    function triggerKey(key) {
+        const currentTime = performance.now();
+
+        const cooldownValue = (typeof keyCooldownMs === 'number' && keyCooldownMs > 0) ? keyCooldownMs : 100;
+
+        // --- COOLDOWN CHECK ---
+        if (LAST_TRIGGER_TIME[key.id] &&
+            (currentTime - LAST_TRIGGER_TIME[key.id] < cooldownValue)) {
+            return;
+        }
+
+        // 1. Log Time and Update State
+        const deltaTime = currentTime - lastKeyPressTime;
+        lastKeyPressTime = currentTime;
+        LAST_TRIGGER_TIME[key.id] = currentTime;
+        lastKeyPressedName = key.name.toUpperCase();
+
+        console.log(`[TRIGGERED] Key: ${lastKeyPressedName} | Time since last press: ${deltaTime.toFixed(2)} ms`);
+
+        // 2. Update Heatmap Stats
+        const count = (HIT_COUNTS[key.id] || 0) + 1;
+        HIT_COUNTS[key.id] = count;
+        if (count > maxHits) maxHits = count;
+
+        // --- Determine Color Factor ---
+        let colorFactor = 1.0;
+        if (colorMode === "Random Palette") {
+            colorFactor = Math.random();
+        }
+
+        // 3. Trigger Selected Effect
+        if (effectType === "Flash") {
+            const idx = activeFlashes.findIndex(e => e.id === key.id);
+            if (idx > -1) activeFlashes.splice(idx, 1);
+            activeFlashes.push(new Flash(key.x, key.y, key.w, key.h, key.id, colorFactor));
+        }
+        else if (effectType === "Explode Flash") {
+            const idx = activeFlashes.findIndex(e => e.id === key.id);
+            if (idx > -1) activeFlashes.splice(idx, 1);
+            activeFlashes.push(new ExplodeFlash(key.x, key.y, key.w, key.h, key.id, colorFactor));
+        }
+        else if (effectType === "Gradient Pulse") {
+            const idx = activeFlashes.findIndex(e => e.id === key.id);
+            if (idx > -1) activeFlashes.splice(idx, 1);
+            activeFlashes.push(new Flash(key.x, key.y, key.w, key.h, key.id, colorFactor, 300));
+        }
+        else if (effectType === "Knight Rider Bar") {
+            activeKnightBars.push(new KnightBar(key.x, key.y, key.w, key.h, colorFactor));
+        }
+        else if (effectType === "Spiral Flash") {
+            activeFlashes.push(new SpiralFlash(key.x, key.y, key.w, key.h, key.id, colorFactor));
+        }
+        else if (effectType === "Star Emitter") {
+            const particleCount = 20;
+            for (let i = 0; i < particleCount; i++) {
+                activeParticles.push(new StarParticle(key.cX, key.cY, key.w, colorFactor));
+            }
+        }
+        else if (effectType === "Row Column Flash") { // *** NEW LOGIC ***
+            activeRowColumnFlashes.push(new RowColumnFlash(key.uX, key.uY, colorFactor));
+        }
+        else if (effectType === "Ripples") {
+            activeRipples.push(new GlobalRipple(key.cX, key.cY, colorFactor));
+        }
+        else if (effectType === "Row Column Flash") {
+            activeRowColumnFlashes.push(new RowColumnFlash(key.uX, key.uY, colorFactor));
+        }
+        else if (effectType === "Lightning Strike") {
+            activeLightningStrikes.push(new LightningStrike(key.cX, key.cY, key.w, colorFactor));
+        }
+        else if (effectType === "Lightning Strike") {
+            activeLightningStrikes.push(new LightningStrike(key.cX, key.cY, key.w, colorFactor));
+        }
+        else if (effectType === "Spotlight Locator") {
+            // Duration is inversely proportional to fadeSpeed.
+            // Slowest speed (1) yields ~5000ms. Fastest speed (10) yields ~500ms.
+            const speedFactor = (11 - fadeSpeed);
+            const durationMs = 500 + (speedFactor * 450);
+
+            activeSpotlight = {
+                cX: key.cX,
+                cY: key.cY,
+                startTime: performance.now(), // New: Track when the effect started
+                duration: durationMs,         // New: Total time the effect should live
+                fixedColorT: colorFactor
+            };
+        }
+    }
+
+    // --- EFFECTS CLASSES ---
+
+    // Base Flash (Square, fades over key)
+    function Flash(x, y, w, h, id, colorT = 1.0, lifetime = 100) {
+        this.x = x; this.y = y; this.w = w; this.h = h;
+        this.id = id; this.lifetime = lifetime;
+        this.fixedColorT = colorT;
+        this.type = 'Flash';
+    }
+    Flash.prototype.update = function () { this.lifetime -= (fadeSpeed * 1.5); };
+
+    // Explode Flash (Square, grows smoothly before fading, FIXED POSITION)
+    function ExplodeFlash(x, y, w, h, id, colorT = 1.0) {
+        Flash.call(this, x, y, w, h, id, colorT, 100);
+        this.initialX = x; // New: Store original fixed X
+        this.initialY = y; // New: Store original fixed Y
+        this.initialW = w;
+        this.initialH = h;
+        this.maxSizeFactor = 1.8;
+        this.type = 'ExplodeFlash';
+        this.time = 0;
+    }
+    ExplodeFlash.prototype = Object.create(Flash.prototype);
+    ExplodeFlash.prototype.update = function () {
+        this.lifetime -= (fadeSpeed * 1.5);
+        this.time += (fadeSpeed * 1.5);
+
+        // Calculate the size only. Do NOT update this.x or this.y.
+        const progress = (100 - this.lifetime) / 100;
+        const scaleFactor = 1.5 * (1.0 + Math.sin(progress * Math.PI) * (this.maxSizeFactor - 1.0));
+
+        // Update width/height properties only.
+        this.w = this.initialW * scaleFactor;
+        this.h = this.initialH * scaleFactor;
+    };
+
+    // Spiral Flash (FINAL FIX: Total Rotations controlled by effectScale, independent of fadeSpeed)
+    function SpiralFlash(x, y, w, h, id, colorT = 1.0) {
+        Flash.call(this, x, y, w, h, id, colorT, 100);
+        this.cX = x + w / 2;
+        this.cY = y + h / 2;
+        this.initialW = w;
+        this.initialH = h;
+        this.distance = 0;
+
+        // 1. Store the random starting angle (Fixed once)
+        this.startAngle = Math.random() * 2 * Math.PI;
+
+        // Angle used for drawing, initialized to startAngle
+        this.orbitAngle = this.startAngle;
+
+        // Store the max distance based on effectScale (Scale is only size now)
+        this.maxDistance = w * 0.5 * normalizedScale;
+
+        // Store the speed factor for rotation
+        this.rotationSpeedFactor = (fadeSpeed / 10); // Base speed derived from "Anim Speed"
+
+        this.type = 'SpiralFlash';
+    }
+    SpiralFlash.prototype = Object.create(Flash.prototype);
+    SpiralFlash.prototype.update = function () {
+        // We divide the fade factor by 10 to drastically slow down the counter reduction.
+        this.lifetime -= (fadeSpeed * 0.15);
+
+        // Normalized progress from 0 (start) to 1 (end) for distance scaling
+        const progress = (100 - this.lifetime) / 100;
+
+        // 1. SPIRAL DISTANCE: Only depends on initial size and scale setting
+        this.distance = progress * this.maxDistance;
+
+        // 2. ROTATION: Depends on rotationSpeedFactor (derived from fadeSpeed)
+        this.orbitAngle += this.rotationSpeedFactor * 0.1;
+
+        // Note: The object is removed when this.lifetime drops to 0, which now takes much longer.
+    };
+
+    // Global Ripple/Shockwave
+    function GlobalRipple(x, y, colorT = 1.0) {
+        this.x = x; this.y = y;
+        this.radius = 1;
+        this.alpha = 1.0;
+        this.fixedColorT = colorT;
+        this.type = 'GlobalRipple';
+    }
+    GlobalRipple.prototype.update = function () {
+        this.radius += (fadeSpeed * 1.5);
+    };
+
+    // REVISED: Ripple (A clean expanding ring localized to a key)
+    function KeyRipple(x, y, keyW, colorT = 1.0) {
+        this.x = x; this.y = y;
+        this.radius = 1;
+        this.alpha = 1.0;
+        this.fixedColorT = colorT;
+        this.type = 'KeyRipple';
+        this.maxRadius = keyW * 1.5; // Larger radius based on key size
+    }
+    KeyRipple.prototype.update = function () {
+        this.radius += (fadeSpeed * 3 * normalizedScale); // Faster expansion
+        if (this.radius > this.maxRadius) {
+            this.alpha -= (fadeSpeed * 0.05);
+        } else {
+            this.alpha = 1.0;
+        }
+    };
+
+    // Knight Rider Bar (Full-key rectangle animated sideways)
+    function KnightBar(x, y, w, h, colorT = 1.0) {
+        this.y = y;
+        this.w = w;
+        this.h = h;
+        this.lifetime = 100;
+        this.fixedColorT = colorT;
+        this.type = 'KnightBar';
+
+        const centerX = canvas.width * 0.3;
+        const keyCenter = x + (w / 2);
+
+        // Calculate how far the bar should travel (e.g., 3x the key width, scaled)
+        const travelDistance = (w * 3) * normalizedScale;
+
+        // Determine Start and End points based on side of screen
+        if (keyCenter < centerX) {
+            // LEFT SIDE KEY: Start at X, Move Right to X + Distance
+            // Motion: Left -> Right -> Left
+            this.startX = x;
+            this.endX = x + travelDistance;
+        } else {
+            // RIGHT SIDE KEY: Start at X (plus width to align right edge), Move Left to X - Distance
+            // Motion: Right -> Left -> Right
+            // We adjust startX so the bar begins flush with the right side of the key area
+            this.startX = x;
+            this.endX = x - travelDistance;
+        }
+
+        // Initialize position
+        this.x = this.startX;
+    }
+
+    KnightBar.prototype.update = function () {
+        this.lifetime -= (fadeSpeed * 1.5);
+
+        // 1. Calculate standardized time factor (0.0 to 1.0 to 0.0)
+        const normalizedTime = (100 - this.lifetime) * 2;
+        const cycleProgress = (normalizedTime % 200) / 100;
+
+        // Oscillator: Goes from 0 -> 1 -> 0
+        const oscillation = (cycleProgress <= 1.0) ? cycleProgress : (2.0 - cycleProgress);
+
+        // 2. Interpolate between Start and End based on oscillation
+        // If Left Key: 0 (Start) -> 1 (End/Right) -> 0 (Start)
+        // If Right Key: 0 (Start) -> 1 (End/Left) -> 0 (Start)
+        this.x = this.startX + (this.endX - this.startX) * oscillation;
+    };
+
+    // REVISED: Star Emitter Particle (Larger size with strong dependence on effectScale)
+    function StarParticle(x, y, keyW, colorT = 1.0) {
+        this.x = x;
+        this.y = y;
+        // Base size is 5 pixels. This will be multiplied by normalizedScale (e.g., 5 * 3.0 = 15px at 300%)
+        this.size = 5;
+        this.alpha = 1.0;
+        this.fixedColorT = colorT;
+        this.lifetime = 60;
+        this.type = 'StarParticle';
+
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = Math.random() * 5 + 1;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+    }
+    StarParticle.prototype.update = function () {
+        this.lifetime -= (fadeSpeed / 2);
+        this.alpha = this.lifetime / 60;
+        this.x += this.vx * normalizedScale;
+        this.y += this.vy * normalizedScale;
+        this.vy += 0.1;
+    };
+
+    // Row Column Flash (Flashes row and column across the whole board)
+    function RowColumnFlash(uX, uY, colorT = 1.0) {
+        this.uX = uX; // Unit X position (column index)
+        this.uY = uY; // Unit Y position (row index)
+        this.lifetime = 100;
+        this.fixedColorT = colorT;
+        this.type = 'RowColumnFlash';
+    }
+    RowColumnFlash.prototype.update = function () {
+        this.lifetime -= (fadeSpeed * 1.5);
+    };
+
+    // Lightning Strike (Jagged line jumping to neighbors)
+    function LightningStrike(startX, startY, keyW, colorT = 1.0) {
+        this.x = startX; this.y = startY;
+        this.keyW = keyW;
+        this.fixedColorT = colorT;
+        this.lifetime = 200; // Longer life to allow multiple jumps
+        this.jumpsRemaining = 5;
+        this.currentEnd = { x: startX, y: startY };
+        this.alpha = 1.0;
+        this.type = 'LightningStrike';
+
+        // Randomly select a nearby target Key ID
+        this.pickNewTarget = function (currentKey) {
+            if (this.jumpsRemaining <= 0) return null;
+
+            const neighbors = [];
+            const buffer = 1.5;
+
+            // Find keys within a small radius (e.g., 3 key units)
+            for (const id in KEY_DB) {
+                const key = KEY_DB[id];
+                const dist = Math.sqrt(Math.pow(key.uX - currentKey.uX, 2) + Math.pow(key.uY - currentKey.uY, 2));
+                if (dist > 0 && dist < buffer) {
+                    neighbors.push(key);
+                }
+            }
+
+            if (neighbors.length === 0) return null;
+
+            // Pick a random neighbor
+            return neighbors[Math.floor(Math.random() * neighbors.length)];
+        };
+
+        // Initial target is the starting key itself
+        this.targetKey = KEY_DB[getNearestKeyId(startX, startY)];
+        this.nextTarget = this.pickNewTarget(this.targetKey);
+    }
+
+    LightningStrike.prototype.update = function () {
+        this.lifetime -= (fadeSpeed * 1.5);
+        this.alpha = this.lifetime / 200;
+
+        if (this.alpha <= 0.5 && this.nextTarget && this.jumpsRemaining > 0) {
+            // Jump to the next target
+            this.jumpsRemaining--;
+            this.targetKey = this.nextTarget;
+            this.currentEnd = { x: this.nextTarget.cX, y: this.nextTarget.cY };
+
+            this.nextTarget = this.pickNewTarget(this.targetKey);
+            this.alpha = 1.0; // Restart alpha fade for visual "flash"
+            this.lifetime = 100; // Reset lifetime to prolong effect
+        }
+    };
+
+    // Helper function needed by LightningStrike constructor
+    function getNearestKeyId(x, y) {
+        let nearestId = null;
+        let minDistanceSq = Infinity;
+        for (const id in KEY_DB) {
+            const key = KEY_DB[id];
+            const distSq = Math.pow(key.cX - x, 2) + Math.pow(key.cY - y, 2);
+            if (distSq < minDistanceSq) {
+                minDistanceSq = distSq;
+                nearestId = id;
+            }
+        }
+        return nearestId;
+    }
+
+    // --- HELPERS ---
+    function drawRoundedRect(x, y, w, h, r, color, alpha = 1.0, stroke = false) {
+        if (w < 1 || h < 1) return;
+        const radius = 0;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+
+        if (stroke) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // --- FETCH & PARSE ---
+    async function fetchAndParse(url) {
+        if (!url) return;
+        statusText = "Fetching Keyboard Data...";
+        isError = false;
+        KEY_DB = {};
+        HIT_COUNTS = {};
+        maxHits = 1;
+
+        try {
+            const response = await fetch(url + "?t=" + Date.now());
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const text = await response.text();
+
+            if (text.trim().startsWith("<")) throw new Error("Received HTML, not JS.");
+            parseJS(text);
+        } catch (e) {
+            console.error(e);
+            statusText = "Load Error: " + e.message;
+            isError = true;
+        }
+    }
+
+    function parseJS(text) {
+        try {
+            let cleanCode = text.replace(/export\s+function/g, 'function')
+                .replace(/export\s+const/g, 'const')
+                .replace(/export\s+var/g, 'var')
+                .replace(/export\s+let/g, 'let');
+
+            const runner = new Function(`
+                const device = { log: function(){}, notify: function(){}, write: function(){}, read: function(){}, pause: function(){}, color: function(){ return [0,0,0]; }, getLastReadSize: function(){ return 0; } };
+                const shutdownMode = ""; const shutdownColor = ""; const LightingMode = ""; const forcedColor = "";
+                ${cleanCode}
+                return {
+                    pos: (typeof vKeyPositions !== 'undefined') ? vKeyPositions : [],
+                    names: (typeof vKeyNames !== 'undefined') ? vKeyNames : []
+                };
+            `);
+
+            const data = runner();
+            if (!data.pos || data.pos.length === 0) throw new Error("No key data found.");
+
+            processLayout(data.pos, data.names);
+            statusText = "";
+
+        } catch (e) {
+            console.error("Eval Error:", e);
+            statusText = "Parse Error: " + e.message;
+            isError = true;
+        }
+    }
+
+    function processLayout(rawCoords, names) {
+        RAW_KEYS = [];
+        rawCoords.forEach((pos, i) => {
+            const uX = parseFloat(pos[0]);
+            const uY = parseFloat(pos[1]);
+            if (isNaN(uX) || isNaN(uY)) return;
+            RAW_KEYS.push({
+                uX: uX, uY: uY,
+                name: names[i] || "Key",
+                id: i,
+                uW: 1, uH: 1
+            });
+        });
+        buildGridDictionary(RAW_KEYS);
+    }
+
+    function buildGridDictionary(keys) {
+        KEY_DB = {};
+        if (keys.length === 0) return;
+
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        keys.forEach(k => {
+            if (k.uX < minX) minX = k.uX;
+            if (k.uY < minY) minY = k.uY;
+            if (k.uX + 1 > maxX) maxX = k.uX + 1;
+            if (k.uY + 1 > maxY) maxY = k.uY + 1;
+        });
+
+        // --- NEW: Capture Global Unit Minimums ---
+        minUX = minX;
+        minUY = minY;
+
+        const boardW = maxX - minX;
+        const boardH = maxY - minY;
+
+        // Use fixed canvas dimensions 320x200
+        unitScaleX = canvas.width / boardW;
+        unitScaleY = canvas.height / boardH;
+
+        keys.forEach(k => {
+            const uid = k.id.toString();
+
+            // Calculate the precise pixel start and end points
+            const startX_precise = (k.uX - minX) * unitScaleX;
+            const endX_precise = startX_precise + unitScaleX;
+            const startY_precise = (k.uY - minY) * unitScaleY;
+            const endY_precise = startY_precise + unitScaleY;
+
+            // Use Math.round to define the integer pixel bounds.
+            // Start (x, y) is rounded down (floor) and End (endX, endY) is rounded (round)
+            // to minimize overlap, ensuring a seamless visual grid.
+            const x = Math.floor(startX_precise);
+            const y = Math.floor(startY_precise);
+
+            const w = Math.round(endX_precise) - x;
+            const h = Math.round(endY_precise) - y;
+
+            KEY_DB[uid] = {
+                id: uid, name: k.name,
+                x: x, y: y,
+                w: w, h: h, // Integer width/height based on bounded rounding
+                cX: Math.floor(x + w / 2),
+                cY: Math.floor(y + h / 2),
+                uX: k.uX,
+                uY: k.uY
+            };
+        });
+        console.log(`Grid Built. Scale: ${unitScaleX.toFixed(2)}, ${unitScaleY.toFixed(2)}`);
+    }
+
+    // --- INPUT HANDLER ---
+    function onCanvasTapped(rawX, rawY) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (rawX - rect.left) + (unitScaleX / 2);
+        const y = (rawY - rect.top) + (unitScaleY / 2);
+
+        if (drawDebug) touchDots.push({ x: x, y: y, color: "#FF0000" });
+
+        const buffer = 1;
+
+        for (const id in KEY_DB) {
+            const key = KEY_DB[id];
+            if (x >= key.x - buffer && x <= key.x + key.w + buffer &&
+                y >= key.y - buffer && y <= key.y + key.h + buffer) {
+
+                triggerKey(key);
+                if (drawDebug) touchDots.push({ x: key.cX, y: key.cY, color: "#00FF00" });
+                break;
+            }
+        }
+    }
+
+    // --- RENDER LOOP ---
+    function draw() {
+        // REMOVED: const g = 1;
+        const g = 0;
+        const radius = 0;
+
+        let targetUrl = (keyboardPreset === "Custom URL") ? customUrl : PRESETS[keyboardPreset];
+        if (targetUrl && targetUrl !== currentUrl) {
+            currentUrl = targetUrl;
+            fetchAndParse(currentUrl);
+        }
+
+        globalColorCycle = (performance.now() % cycleDuration) / cycleDuration;
+        const cycleT = (colorMode === "Uniform Cycle") ? globalColorCycle : 1.0;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (statusText) {
+            console.log(statusText)
+            // ctx.fillStyle = isError ? '#ff4444' : '#ffffff';
+            // ctx.font = '14px monospace';
+            // ctx.textAlign = 'center';
+            // ctx.fillText(statusText, canvas.width / 2, canvas.height / 2);
+        }
+
+        normalizedScale = (parseInt(effectScale) || 100) / 100.0;
+
+        // --- GLOBAL SPOTLIGHT CALCULATION AND FADE (PROCESSED ONCE PER FRAME) ---
+        let fadeAlpha = 1.0;
+        if (effectType === "Spotlight Locator" && activeSpotlight) {
+            const currentTime = performance.now();
+            const elapsedTime = currentTime - activeSpotlight.startTime;
+
+            // Calculate fade progress: 0.0 (start) to 1.0 (end)
+            const progress = Math.min(1.0, elapsedTime / activeSpotlight.duration);
+
+            fadeAlpha = 1.0 - progress; // The overall decay factor (1.0 -> 0.0)
+
+            // Remove the spotlight when the duration is complete
+            if (progress >= 1.0) {
+                activeSpotlight = null;
+            }
+        }
+        // --- END GLOBAL SPOTLIGHT CALCULATION ---
+
+        // 6. Draw Base Layout & Key-Specific Effects (Heatmap, and Spotlight)
+        for (const id in KEY_DB) {
+            const key = KEY_DB[id];
+            let keyColor = "#333333";
+            let keyAlpha = 1.0;
+            let drawEffectBackground = false;
+
+            // 6a. Draw debug outline/base layer. This happens FIRST.
+            if (drawDebug) {
+                // Draw the dark base (the "test layout" background) when debug is active.
+                drawRoundedRect(key.x, key.y, key.w, key.h, radius, "#333333", 1.0);
+            }
+
+            // 6b. Determine color and alpha based on effect
+            if (effectType === "Spotlight Locator" && activeSpotlight) {
+                const dx = key.cX - activeSpotlight.cX;
+                const dy = key.cY - activeSpotlight.cY;
+                const distSq = dx * dx + dy * dy;
+
+                // Max range is proportional to the keyboard layout size (correct scaling)
+                const totalKeySpanX = (canvas.width / unitScaleX) * unitScaleX;
+                const totalKeySpanY = (canvas.height / unitScaleY) * unitScaleY;
+
+                const maxRange = Math.min(totalKeySpanX, totalKeySpanY) * 0.8 * normalizedScale;
+
+                // Clamped distance: ensures distNormalized is 1.0 or less
+                const distNormalized = Math.min(1.0, Math.sqrt(distSq) / maxRange);
+
+                // Inverse falloff effect (1.0 close to key, 0.0 at maxRange)
+                let intensity = Math.pow(1.0 - distNormalized, 4);
+
+                // Apply the globally calculated time-based fade to the intensity
+                intensity = intensity * fadeAlpha;
+
+                // The light dies to zero when intensity is zero (keyAlpha = 0)
+                keyColor = getColorFromPalette(activeSpotlight.fixedColorT);
+                keyAlpha = intensity;
+
+                drawEffectBackground = true;
+            }
+            else if (effectType === "Heatmap") {
+                const hits = HIT_COUNTS[id] || 0;
+                if (hits > 0) {
+                    const intensity = Math.min(hits / maxHits, 1.0);
+                    keyColor = getColorFromPalette(intensity);
+                    keyAlpha = 0.4 + (intensity * 0.6);
+                    drawEffectBackground = true; // Draw the heatmap layer
+                } else {
+                    keyColor = "#000000";
+                    keyAlpha = 0;
+                }
+            } else if (effectType === "None") {
+                // If None is selected, draw a dark background if not in debug mode.
+                if (!drawDebug) {
+                    keyColor = "#333333";
+                    keyAlpha = 1.0;
+                    drawEffectBackground = true;
+                }
+            }
+
+            // 6c. Draw the calculated layer (Heatmap, or None background)
+            if (drawEffectBackground) {
+                drawRoundedRect(
+                    key.x, // Use full calculated x, no offset
+                    key.y, // Use full calculated y, no offset
+                    key.w, // Use full calculated width
+                    key.h, // Use full calculated height
+                    radius, keyColor, keyAlpha
+                );
+            }
+        }
+
+        // 7. Effects
+        for (let i = activeFlashes.length - 1; i >= 0; i--) {
+            const fx = activeFlashes[i];
+            const flashFactor = (colorMode === "Random Palette") ? fx.fixedColorT : cycleT;
+            const col = getColorFromPalette(flashFactor);
+
+            ctx.save();
+            // Use time-based alpha for Spiral Flash, or fixed counter for others
+            ctx.globalAlpha = Math.max(0, (fx.type === 'SpiralFlash' && typeof fx.alpha !== 'undefined') ? fx.alpha : fx.lifetime / 100);
+            ctx.fillStyle = col;
+
+            if (fx.type === 'SpiralFlash') {
+                // --- SPIRAL FLASH: Orbits around key center ---
+
+                // 1. Calculate the offset (distance) from the key center
+                const offsetX = fx.distance * Math.cos(fx.orbitAngle);
+                const offsetY = fx.distance * Math.sin(fx.orbitAngle);
+
+                // 2. Translate to the final center position (Key Center + Offset)
+                ctx.translate(fx.cX + offsetX, fx.cY + offsetY);
+
+                // 3. Draw the fixed-orientation rectangle centered on the new origin (0,0)
+                const rectW = fx.initialW;
+                const rectH = fx.initialH;
+
+                // Draw the key-sized rectangle relative to the translated origin
+                ctx.fillRect(-rectW / 2, -rectH / 2, rectW, rectH);
+            }
+            else if (fx.type === 'ExplodeFlash') {
+                // --- EXPLODE FLASH: Symmetrical growth from key center ---
+
+                // Calculate the size difference
+                const sizeDiffW = fx.w - fx.initialW;
+                const sizeDiffH = fx.h - fx.initialH;
+
+                // Calculate the drawing position (original top-left corner - offset)
+                const drawX = fx.initialX - sizeDiffW / 2;
+                const drawY = fx.initialY - sizeDiffH / 2;
+
+                drawRoundedRect(
+                    drawX, // Use full calculated x, no offset
+                    drawY, // Use full calculated y, no offset
+                    fx.w, // Use full calculated width
+                    fx.h, // Use full calculated height
+                    radius, col, fx.lifetime / 100
+                );
+            }
+            else {
+                // --- STANDARD FLASH / GRADIENT PULSE ---
+                drawRoundedRect(
+                    fx.x, // Use full calculated x, no offset
+                    fx.y, // Use full calculated y, no offset
+                    fx.w, // Use full calculated width
+                    fx.h, // Use full calculated height
+                    radius, col, fx.lifetime / 100
+                );
+            }
+
+            ctx.restore(); // Restore context after custom rendering
+
+            fx.update();
+            if (fx.lifetime <= 0) activeFlashes.splice(i, 1);
+        }
+
+        // 8. Active Effect: Ripple
+        if (effectType === "Ripples") {
+
+            // --- CALCULATE DYNAMIC RIPPLE LINE WIDTH ---
+            const thicknessFactor = (parseInt(vibrationAmount) || 10) / 100.0;
+            const baseRippleWidth = unitScaleY * 0.5 * thicknessFactor;
+
+            for (let i = activeRipples.length - 1; i >= 0; i--) {
+                const rip = activeRipples[i];
+                rip.update();
+
+                const rippleFactor = (colorMode === "Random Palette") ? rip.fixedColorT : cycleT;
+                const rippleColor = getColorFromPalette(rippleFactor);
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, rip.alpha);
+
+                // --- DIFFUSER / GLOW EFFECT ---
+                ctx.shadowBlur = 15 * normalizedScale;
+                ctx.shadowColor = rippleColor;
+
+                ctx.beginPath();
+                ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
+
+                // Draw the stroke/outline for all ripple types
+                ctx.globalAlpha = Math.max(0, rip.alpha);
+                ctx.strokeStyle = rippleColor;
+
+                ctx.lineWidth = baseRippleWidth * 0.5;
+
+                ctx.lineWidth = Math.max(1, ctx.lineWidth);
+
+                ctx.stroke();
+
+                ctx.restore();
+
+                // --- REMOVAL LOGIC: DISTANCE BASED ---
+                // Calculate distance to the furthest corner of the canvas from the ripple center
+                const distX = Math.max(rip.x, canvas.width - rip.x);
+                const distY = Math.max(rip.y, canvas.height - rip.y);
+                const maxDist = Math.sqrt(distX * distX + distY * distY);
+
+                // Remove only when the ring has completely passed the furthest corner
+                // We add a buffer (100px) to account for line thickness and glow
+                if (rip.radius > maxDist + 100) {
+                    activeRipples.splice(i, 1);
+                }
+            }
+        }
+
+        // 9. Active Effects: Knight Rider Bar
+        if (effectType === "Knight Rider Bar") {
+            for (let i = activeKnightBars.length - 1; i >= 0; i--) {
+                const bar = activeKnightBars[i];
+                const barFactor = (colorMode === "Random Palette") ? bar.fixedColorT : cycleT;
+                const col = getColorFromPalette(barFactor);
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, bar.lifetime / 100);
+                ctx.fillStyle = col;
+
+                ctx.fillRect(bar.x, bar.y, bar.w, bar.h); // Use full calculated w/h
+                ctx.restore();
+
+                bar.update();
+                if (bar.lifetime <= 0) activeKnightBars.splice(i, 1);
+            }
+        }
+
+        // 10. Active Effects: Star Emitter
+        if (effectType === "Star Emitter") {
+            for (let i = activeParticles.length - 1; i >= 0; i--) {
+                const particle = activeParticles[i];
+                const particleFactor = (colorMode === "Random Palette") ? particle.fixedColorT : cycleT;
+                const col = getColorFromPalette(particleFactor);
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, particle.alpha);
+                ctx.fillStyle = col;
+
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size * normalizedScale, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+
+                particle.update();
+                if (particle.lifetime <= 0) activeParticles.splice(i, 1);
+            }
+        }
+
+        // 11. Active Effects: Row Column Flash
+        if (effectType === "Row Column Flash") {
+            const baseThickness = unitScaleY;
+            const thicknessFactor = (parseInt(vibrationAmount) || 10) / 100.0;
+            const lineThickness = baseThickness * thicknessFactor;
+
+            for (let i = activeRowColumnFlashes.length - 1; i >= 0; i--) {
+                const rcf = activeRowColumnFlashes[i];
+                const rcfFactor = (colorMode === "Random Palette") ? rcf.fixedColorT : cycleT;
+                const col = getColorFromPalette(rcfFactor);
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, rcf.lifetime / 100);
+
+                // --- Draw Horizontal Bar (Row) ---
+                const hBarY = (rcf.uY - minUY) * unitScaleY + (unitScaleY / 2);
+                ctx.fillStyle = col;
+                ctx.fillRect(0, hBarY - lineThickness / 2, canvas.width, lineThickness);
+
+                // --- Draw Vertical Bar (Column) ---
+                const vBarX = (rcf.uX - minUX) * unitScaleX + (unitScaleX / 2);
+                ctx.fillRect(vBarX - lineThickness / 2, 0, lineThickness, canvas.height);
+
+                ctx.restore();
+
+                rcf.update();
+                if (rcf.lifetime <= 0) activeRowColumnFlashes.splice(i, 1);
+            }
+        }
+
+        // 12. Active Effects: Lightning Strike
+        if (effectType === "Lightning Strike") {
+            for (let i = activeLightningStrikes.length - 1; i >= 0; i--) {
+                const strike = activeLightningStrikes[i];
+                const strikeFactor = (colorMode === "Random Palette") ? strike.fixedColorT : cycleT;
+                const col = getColorFromPalette(strikeFactor);
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, strike.alpha * 0.9);
+                ctx.strokeStyle = col;
+
+                // Thickness of the line is now proportional to the base key size (unitScaleX)
+                ctx.lineWidth = unitScaleX * normalizedScale;
+                ctx.lineCap = 'round';
+
+                // Draw the main line segment
+                ctx.beginPath();
+                ctx.moveTo(strike.targetKey.cX, strike.targetKey.cY);
+                ctx.lineTo(strike.currentEnd.x, strike.currentEnd.y);
+                ctx.stroke();
+
+                ctx.restore();
+
+                strike.update();
+                if (strike.lifetime <= 0 && strike.jumpsRemaining <= 0) activeLightningStrikes.splice(i, 1);
+            }
+        }
+
+        // 13. Debug Dots
+        if (drawDebug) {
+            for (let i = touchDots.length - 1; i >= 0; i--) {
+                let dot = touchDots[i];
+                ctx.fillStyle = dot.color;
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 14. Display Last Key Pressed for Debugging
+        if (drawDebug) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Last Key: ${lastKeyPressedName}`, 10, 20);
+        }
+
+        window.requestAnimationFrame(draw);
+    }
+
+    // Set initial dimensions and start fetch on first execution
+    document.addEventListener('DOMContentLoaded', () => {
+        // Canvas dimensions are fixed at 320x200 in the HTML body
+        canvas.width = 320;
+        canvas.height = 200;
+
+        // Initial fetch to load layout data immediately
+        const initialUrl = (keyboardPreset === "Custom URL") ? customUrl : PRESETS[keyboardPreset];
+        fetchAndParse(initialUrl);
+
+        window.requestAnimationFrame(draw);
+    });
+</script>
+
+</html>
