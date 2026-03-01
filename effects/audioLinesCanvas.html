@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Audio Lines (Canvas Version)</title>
     <meta description="A 3D audio visualizer with flowing frequency lines.">
@@ -15,13 +16,13 @@
     <meta property="frequencyCount" label="Frequency Lines (X-axis)" type="number" min="10" max="200" default="80">
     <meta property="lineLength" label="Line Length (Z-axis)" type="number" min="10" max="100" default="40">
     <meta property="spacing" label="Spacing (%)" type="number" min="0" max="100" default="10">
-    
+
     <meta property="isAudioSensitive" label="Audio Reactive" type="boolean" default="true">
     <meta property="logScale" label="Logarithmic Scale" type="boolean" default="false">
     <meta property="audioSensitivity" label="Audio Sensitivity" type="number" min="1" max="100" default="10">
     <meta property="shiftSpeed" label="Wave Speed (Shifts/sec)" type="number" min="1" max="100" default="20">
     <meta property="smoothing" label="Smoothing" type="number" min="0" max="99" default="50">
-    
+
     <meta property="bloomEnabled" label="Enable Glow" type="boolean" default="true">
     <meta property="bloomStrength" label="Glow Strength" type="number" min="0" max="300" default="150">
     <meta property="bloomRadius" label="Glow Radius" type="number" min="0" max="100" default="50">
@@ -31,386 +32,391 @@
     <meta property="cameraAngle" label="Camera Angle" type="number" min="0" max="360" default="60">
     <meta property="cameraHeight" label="Camera Height" type="number" min="1" max="50" default="25">
     <meta property="cameraZoom" label="Camera Zoom" type="number" min="1" max="100" default="30">
-    
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
 </head>
+
 <body>
     <canvas id="effect-canvas" width="320" height="200"></canvas>
+    <script>
+        // --- Browser Test Mode Fallbacks ---
+        var isBrowserTest = false;
+        if (typeof engine === 'undefined') {
+            isBrowserTest = true;
 
-<script>
-    // --- Browser Test Mode Fallbacks ---
-    var isBrowserTest = false;
-    if (typeof engine === 'undefined') {
-        isBrowserTest = true; 
-        
-        var palette = "Rainbow";
-        var customColor = "#ff0000";
-        var backgroundColor = "#000000";
-        var frequencyCount = 80;
-        var lineLength = 40;
-        var spacing = 10;
-        var isAudioSensitive = true;
-        var audioSensitivity = 10;
-        var shiftSpeed = 20;
-        var smoothing = 50;
-        var bloomEnabled = true;
-        var bloomStrength = 150;
-        var bloomRadius = 50;
-        var manualCamera = false;
-        var cameraRotationSpeed = 10;
-        var cameraAngle = 60;
-        var cameraHeight = 25;
-        var cameraZoom = 30;
-        var logScale = false;
-        var coordMode = "Cartesian";
-        var innerRadius = 50;
+            var palette = "Rainbow";
+            var customColor = "#ff0000";
+            var backgroundColor = "#000000";
+            var frequencyCount = 80;
+            var lineLength = 40;
+            var spacing = 10;
+            var isAudioSensitive = true;
+            var audioSensitivity = 10;
+            var shiftSpeed = 20;
+            var smoothing = 50;
+            var bloomEnabled = true;
+            var bloomStrength = 150;
+            var bloomRadius = 50;
+            var manualCamera = false;
+            var cameraRotationSpeed = 10;
+            var cameraAngle = 60;
+            var cameraHeight = 25;
+            var cameraZoom = 30;
+            var logScale = false;
+            var coordMode = "Cartesian";
+            var innerRadius = 50;
 
-        var engine = {
-            audio: {
-                freq: new Int8Array(200)
-            }
-        };
-
-        setInterval(() => {
-            if (isAudioSensitive) {
-                const time = Date.now() * 0.01;
-                for (let i = 0; i < 200; i++) {
-                    const amplitude = (Math.sin(i * 0.1 + time) + 1) / 2;
-                    const falloff = 1 - (i / 200); 
-                    engine.audio.freq[i] = (amplitude * falloff * 127) * 2 - 128;
+            var engine = {
+                audio: {
+                    freq: new Int8Array(200)
                 }
-            }
-        }, 1000 / 60); 
-    }
+            };
 
-    const DEG_TO_RAD = Math.PI / 180;
-
-    // --- Palettes ---
-    const wledPalettes = {
-        "Custom": [], 
-        "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
-        "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
-        "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
-        "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
-        "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
-        "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
-        "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
-        "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
-        "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
-        "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
-        "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
-        "Holiday": ["#D92626", "#0E5D2D", "#F2B705", "#F2F2F2"],
-        "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
-        "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
-        "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
-        "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
-        "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
-        "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
-        "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
-    };
-
-    // --- Core Variables ---
-    const canvas = document.getElementById('effect-canvas');
-    const ctx = canvas.getContext('2d');
-    
-    let currentHeights = []; 
-    let smoothedHeights = []; 
-    let seeds = [];
-    let lineColors = [];
-    
-    let lastXAmount = 0;
-    let lastZAmount = 0;
-    let lastSpacing = 0; 
-    let orbitAngle = 0; 
-    let lastFrameTime = 0;
-    let lastShiftTime = 0;
-    let lastPalette = ""; 
-    let lastCustomColor = ""; 
-
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    function hexToRgb(hex) {
-        if (hex.length === 4) hex = "#" + hex[1]+hex[1] + hex[2]+hex[2] + hex[3]+hex[3];
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return {r, g, b};
-    }
-
-    function lerpColor(c1, c2, t) {
-        return {
-            r: Math.round(c1.r + (c2.r - c1.r) * t),
-            g: Math.round(c1.g + (c2.g - c1.g) * t),
-            b: Math.round(c1.b + (c2.b - c1.b) * t)
-        };
-    }
-
-    function HSLToRGB(h, s, l) {
-        s /= 100;
-        l /= 100;
-        const k = n => (n + h / 30) % 12;
-        const a = s * Math.min(l, 1 - l);
-        const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-        return { r: Math.round(255 * f(0)), g: Math.round(255 * f(8)), b: Math.round(255 * f(4)) };
-    }
-
-    function RGBToHSL(r, g, b) {
-        r /= 255; g /= 255; b /= 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-        if (max === min) { h = s = 0; } else {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch (max) {
-                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                case g: h = (b - r) / d + 2; break;
-                case b: h = (r - g) / d + 4; break;
-            }
-            h /= 6;
-        }
-        return { h: h * 360, s: s * 100, l: l * 100 };
-    }
-
-    function init() {
-        const x_amount = parseInt(frequencyCount) || 80;
-        const z_amount = parseInt(lineLength) || 40;
-        const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
-        
-        seeds.length = 0; 
-        currentHeights.length = 0; 
-        smoothedHeights.length = 0;
-        orbitAngle = 0;
-        
-        for (let x = 0; x < x_amount; x++) {
-            seeds.push(Math.random()); 
-            currentHeights[x] = new Float32Array(z_amount).fill(0.1);
-            smoothedHeights[x] = new Float32Array(z_amount).fill(0.1);
-        }
-
-        lastXAmount = x_amount;
-        lastZAmount = z_amount; 
-        lastSpacing = currentSpacing;
-        
-        updateColors();
-    }
-
-    function updateColors() {
-        const selectedPaletteName = palette || "Rainbow";
-        lastPalette = selectedPaletteName;
-        lastCustomColor = customColor; 
-        
-        const x_amount = parseInt(frequencyCount) || 80;
-        lineColors = [];
-
-        for (let x = 0; x < x_amount; x++) {
-            let colorStr;
-            if (selectedPaletteName === "Custom") {
-                const rgb = hexToRgb(customColor || "#00aaff");
-                const hsl = RGBToHSL(rgb.r, rgb.g, rgb.b);
-                hsl.l = Math.random() * 50 + 30; 
-                const finalRgb = HSLToRGB(hsl.h, hsl.s, hsl.l);
-                colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
-            } else {
-                const selectedPalette = wledPalettes[selectedPaletteName];
-                const colorIndex = (x / (x_amount - 1)) * (selectedPalette.length - 1);
-                const colorA = hexToRgb(selectedPalette[Math.floor(colorIndex)]);
-                const colorB = hexToRgb(selectedPalette[Math.ceil(colorIndex)]);
-                const lerpFactor = colorIndex - Math.floor(colorIndex);
-                const finalRgb = lerpColor(colorA, colorB, lerpFactor);
-                colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
-            }
-            lineColors.push(colorStr);
-        }
-    }
-
-    // 3D to 2D Perspective Projection function
-    function project(px, py, pz, camX, camY, camZ, fov, width, height) {
-        const dx = -camX, dy = -camY, dz = -camZ;
-        const mag = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        const fx = dx/mag, fy = dy/mag, fz = dz/mag; 
-
-        let rx = -fz, ry = 0, rz = fx;
-        const rmag = Math.sqrt(rx*rx + rz*rz);
-        if (rmag === 0) { rx = 1; rz = 0; } else { rx /= rmag; rz /= rmag; }
-
-        const ux = ry*fz - rz*fy;
-        const uy = rz*fx - rx*fz;
-        const uz = rx*fy - ry*fx;
-
-        const vx = px - camX, vy = py - camY, vz = pz - camZ;
-
-        const projX = vx*rx + vy*ry + vz*rz;
-        const projY = vx*ux + vy*uy + vz*uz;
-        const projZ = vx*fx + vy*fy + vz*fz; 
-
-        if (projZ <= 0.1) return null; 
-
-        const scale = fov / projZ;
-        return {
-            x: width / 2 + projX * scale,
-            y: height / 2 - projY * scale 
-        };
-    }
-
-    function animate(currentTime) {
-        requestAnimationFrame(animate);
-        
-        const deltaTime = lastFrameTime === 0 ? 0 : (currentTime - lastFrameTime) / 1000.0; 
-        lastFrameTime = currentTime;
-        const cubeTime = currentTime / 1000.0; 
-
-        ctx.fillStyle = backgroundColor || "#000000";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const x_amount = parseInt(frequencyCount) || 80;
-        const z_amount = parseInt(lineLength) || 40;
-        const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
-        const bAudioSensitive = isAudioSensitive;
-        const mode = coordMode || "Cartesian";
-        const sensitivity = parseInt(audioSensitivity) || 10;
-        const radiusFactor = (parseInt(innerRadius) || 50) / 100.0; 
-        
-        if (x_amount !== lastXAmount || z_amount !== lastZAmount || currentSpacing !== lastSpacing) {
-            init(); return; 
-        } else if (palette !== lastPalette || (palette === "Custom" && customColor !== lastCustomColor)) {
-            updateColors(); 
-        }
-
-        const decayFactor = 1.0 - ((parseInt(smoothing) || 50) / 100.0);
-        const lerpFactor = 1.0 - Math.pow(decayFactor, deltaTime * 60.0);
-        const audioData = (engine && engine.audio && engine.audio.freq) ? engine.audio.freq : null;
-
-        for (let x = 0; x < x_amount; x++) {
-            let targetFrontHeight = 0.1;
-
-            if (bAudioSensitive && audioData) {
-                const logIndex = (x / (x_amount - 1));
-                const maxLog = Math.log(200);
-                const audioBin = Math.floor(Math.exp(logIndex * maxLog)) - 1;
-                const finalBin = Math.max(0, Math.min(199, audioBin));
-                let amp = Math.abs(audioData[finalBin]) / 128.0; 
-
-                if (logScale) {
-                    const k = 50; 
-                    amp = Math.log1p(amp * k) / Math.log1p(k);
+            setInterval(() => {
+                if (isAudioSensitive) {
+                    const time = Date.now() * 0.01;
+                    for (let i = 0; i < 200; i++) {
+                        const amplitude = (Math.sin(i * 0.1 + time) + 1) / 2;
+                        const falloff = 1 - (i / 200);
+                        engine.audio.freq[i] = (amplitude * falloff * 127) * 2 - 128;
+                    }
                 }
-                targetFrontHeight = 0.1 + (amp * sensitivity);
-            } else if (!bAudioSensitive) {
-                const jumpAmount = Math.abs(Math.sin(cubeTime * 2 + seeds[x] * 10));
-                targetFrontHeight = 0.1 + jumpAmount * (sensitivity / 2); 
-            }
-            
-            currentHeights[x][0] += (targetFrontHeight - currentHeights[x][0]) * lerpFactor;
+            }, 1000 / 60);
         }
 
-        const shiftInterval = 1000 / (parseInt(shiftSpeed) || 20); 
-        if (currentTime - lastShiftTime > shiftInterval) {
-            lastShiftTime = currentTime;
+        const DEG_TO_RAD = Math.PI / 180;
+
+        // --- Palettes ---
+        const wledPalettes = {
+            "Custom": [],
+            "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+            "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+            "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+            "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+            "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+            "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+            "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+            "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+            "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+            "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+            "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+            "Holiday": ["#D92626", "#0E5D2D", "#F2B705", "#F2F2F2"],
+            "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+            "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+            "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+            "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+            "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+            "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+            "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+        };
+
+        // --- Core Variables ---
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentHeights = [];
+        let smoothedHeights = [];
+        let seeds = [];
+        let lineColors = [];
+
+        let lastXAmount = 0;
+        let lastZAmount = 0;
+        let lastSpacing = 0;
+        let orbitAngle = 0;
+        let lastFrameTime = 0;
+        let lastShiftTime = 0;
+        let lastPalette = "";
+        let lastCustomColor = "";
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function hexToRgb(hex) {
+            if (hex.length === 4) hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return { r, g, b };
+        }
+
+        function lerpColor(c1, c2, t) {
+            return {
+                r: Math.round(c1.r + (c2.r - c1.r) * t),
+                g: Math.round(c1.g + (c2.g - c1.g) * t),
+                b: Math.round(c1.b + (c2.b - c1.b) * t)
+            };
+        }
+
+        function HSLToRGB(h, s, l) {
+            s /= 100;
+            l /= 100;
+            const k = n => (n + h / 30) % 12;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return { r: Math.round(255 * f(0)), g: Math.round(255 * f(8)), b: Math.round(255 * f(4)) };
+        }
+
+        function RGBToHSL(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+
+        function init() {
+            const x_amount = parseInt(frequencyCount) || 80;
+            const z_amount = parseInt(lineLength) || 40;
+            const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
+
+            seeds.length = 0;
+            currentHeights.length = 0;
+            smoothedHeights.length = 0;
+            orbitAngle = 0;
+
             for (let x = 0; x < x_amount; x++) {
-                for (let z = z_amount - 1; z > 0; z--) {
-                    smoothedHeights[x][z] = smoothedHeights[x][z-1];
+                seeds.push(Math.random());
+                currentHeights[x] = new Float32Array(z_amount).fill(0.1);
+                smoothedHeights[x] = new Float32Array(z_amount).fill(0.1);
+            }
+
+            lastXAmount = x_amount;
+            lastZAmount = z_amount;
+            lastSpacing = currentSpacing;
+
+            updateColors();
+        }
+
+        function updateColors() {
+            const selectedPaletteName = palette || "Rainbow";
+            lastPalette = selectedPaletteName;
+            lastCustomColor = customColor;
+
+            const x_amount = parseInt(frequencyCount) || 80;
+            lineColors = [];
+
+            for (let x = 0; x < x_amount; x++) {
+                let colorStr;
+                if (selectedPaletteName === "Custom") {
+                    const rgb = hexToRgb(customColor || "#00aaff");
+                    const hsl = RGBToHSL(rgb.r, rgb.g, rgb.b);
+                    hsl.l = Math.random() * 50 + 30;
+                    const finalRgb = HSLToRGB(hsl.h, hsl.s, hsl.l);
+                    colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
+                } else {
+                    const selectedPalette = wledPalettes[selectedPaletteName];
+                    const colorIndex = (x / (x_amount - 1)) * (selectedPalette.length - 1);
+                    const colorA = hexToRgb(selectedPalette[Math.floor(colorIndex)]);
+                    const colorB = hexToRgb(selectedPalette[Math.ceil(colorIndex)]);
+                    const lerpFactor = colorIndex - Math.floor(colorIndex);
+                    const finalRgb = lerpColor(colorA, colorB, lerpFactor);
+                    colorStr = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
                 }
-                smoothedHeights[x][0] = currentHeights[x][0];
+                lineColors.push(colorStr);
             }
         }
 
-        const zoom = parseInt(cameraZoom) || 30;
-        const camHeight = parseInt(cameraHeight) || 25;
-        let camX, camY, camZ;
+        // 3D to 2D Perspective Projection function
+        function project(px, py, pz, camX, camY, camZ, fov, width, height) {
+            const dx = -camX, dy = -camY, dz = -camZ;
+            const mag = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            const fx = dx / mag, fy = dy / mag, fz = dz / mag;
 
-        if (manualCamera) { 
-            const angleRad = (parseInt(cameraAngle) || 0) * DEG_TO_RAD;
-            camX = Math.sin(angleRad) * zoom;
-            camZ = Math.cos(angleRad) * zoom;
-            camY = camHeight;
-        } else {
-            const speed = ((parseInt(cameraRotationSpeed) || 0) / 100) * 0.5; 
-            orbitAngle += speed * deltaTime; 
-            camX = Math.sin(orbitAngle) * zoom;
-            camZ = Math.cos(orbitAngle) * zoom;
-            camY = camHeight;
+            let rx = -fz, ry = 0, rz = fx;
+            const rmag = Math.sqrt(rx * rx + rz * rz);
+            if (rmag === 0) { rx = 1; rz = 0; } else { rx /= rmag; rz /= rmag; }
+
+            const ux = ry * fz - rz * fy;
+            const uy = rz * fx - rx * fz;
+            const uz = rx * fy - ry * fx;
+
+            const vx = px - camX, vy = py - camY, vz = pz - camZ;
+
+            const projX = vx * rx + vy * ry + vz * rz;
+            const projY = vx * ux + vy * uy + vz * uz;
+            const projZ = vx * fx + vy * fy + vz * fz;
+
+            if (projZ <= 0.1) return null;
+
+            const scale = fov / projZ;
+            return {
+                x: width / 2 + projX * scale,
+                y: height / 2 - projY * scale
+            };
         }
 
-        // --- Offset calculations restored here ---
-        const fov = Math.max(canvas.width, canvas.height) * 0.8; 
-        const totalXWidth = (x_amount - 1) * currentSpacing;
-        const totalZWidth = (z_amount - 1) * currentSpacing;
-        const xOffset = totalXWidth / 2;
-        const zOffset = totalZWidth / 2;
-        const baseRadiusOffset = zOffset * radiusFactor; 
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
 
-        const bBloom = typeof bloomEnabled !== 'undefined' ? bloomEnabled : true;
-        
-        // Reset composite operation to normal layering
-        ctx.globalCompositeOperation = "source-over";
+            const deltaTime = lastFrameTime === 0 ? 0 : (currentTime - lastFrameTime) / 1000.0;
+            lastFrameTime = currentTime;
+            const cubeTime = currentTime / 1000.0;
 
-        for (let x = 0; x < x_amount; x++) {
-            ctx.beginPath();
-            let hasStartedLine = false;
+            ctx.fillStyle = backgroundColor || "#000000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const base_xPos = (x * currentSpacing) - xOffset;
+            const x_amount = parseInt(frequencyCount) || 80;
+            const z_amount = parseInt(lineLength) || 40;
+            const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
+            const bAudioSensitive = isAudioSensitive;
+            const mode = coordMode || "Cartesian";
+            const sensitivity = parseInt(audioSensitivity) || 10;
+            const radiusFactor = (parseInt(innerRadius) || 0) / 100.0;
 
-            for (let z = 0; z < z_amount; z++) {
-                let yPos = (z === 0) ? currentHeights[x][0] : smoothedHeights[x][z];
-                yPos = Math.max(0.1, yPos);
-                
-                let xPos, zPos;
-                if (mode === "Cylindrical") {
-                    const angle = (x / x_amount) * 360 * DEG_TO_RAD;
-                    const radius = z * currentSpacing;
-                    xPos = (radius + baseRadiusOffset) * Math.cos(angle);
-                    zPos = (radius + baseRadiusOffset) * Math.sin(angle);
-                } else { 
-                    xPos = base_xPos;
-                    zPos = (z * currentSpacing) - zOffset;
+            if (x_amount !== lastXAmount || z_amount !== lastZAmount || currentSpacing !== lastSpacing) {
+                init(); return;
+            } else if (palette !== lastPalette || (palette === "Custom" && customColor !== lastCustomColor)) {
+                updateColors();
+            }
+
+            const decayFactor = 1.0 - ((parseInt(smoothing) || 50) / 100.0);
+            const lerpFactor = 1.0 - Math.pow(decayFactor, deltaTime * 60.0);
+            const audioData = (engine && engine.audio && engine.audio.freq) ? engine.audio.freq : null;
+
+            for (let x = 0; x < x_amount; x++) {
+                let targetFrontHeight = 0.1;
+
+                if (bAudioSensitive && audioData) {
+                    const logIndex = (x / (x_amount - 1));
+                    const maxLog = Math.log(200);
+                    const audioBin = Math.floor(Math.exp(logIndex * maxLog)) - 1;
+                    const finalBin = Math.max(0, Math.min(199, audioBin));
+                    let amp = Math.abs(audioData[finalBin]) / 128.0;
+
+                    if (logScale) {
+                        const k = 50;
+                        amp = Math.log1p(amp * k) / Math.log1p(k);
+                    }
+                    targetFrontHeight = 0.1 + (amp * sensitivity);
+                } else if (!bAudioSensitive) {
+                    const jumpAmount = Math.abs(Math.sin(cubeTime * 2 + seeds[x] * 10));
+                    targetFrontHeight = 0.1 + jumpAmount * (sensitivity / 2);
                 }
-                
-                const screenPt = project(xPos, yPos, zPos, camX, camY, camZ, fov, canvas.width, canvas.height);
-                
-                if (screenPt) {
-                    if (!hasStartedLine) {
-                        ctx.moveTo(screenPt.x, screenPt.y);
-                        hasStartedLine = true;
+
+                currentHeights[x][0] += (targetFrontHeight - currentHeights[x][0]) * lerpFactor;
+            }
+
+            const shiftInterval = 1000 / (parseInt(shiftSpeed) || 20);
+            if (currentTime - lastShiftTime > shiftInterval) {
+                lastShiftTime = currentTime;
+                for (let x = 0; x < x_amount; x++) {
+                    for (let z = z_amount - 1; z > 0; z--) {
+                        smoothedHeights[x][z] = smoothedHeights[x][z - 1];
+                    }
+                    smoothedHeights[x][0] = currentHeights[x][0];
+                }
+            }
+
+            const zoom = parseInt(cameraZoom) || 30;
+            const camHeight = parseInt(cameraHeight) || 25;
+            let camX, camY, camZ;
+
+            if (manualCamera) {
+                const angleRad = (parseInt(cameraAngle) || 0) * DEG_TO_RAD;
+                camX = Math.sin(angleRad) * zoom;
+                camZ = Math.cos(angleRad) * zoom;
+                camY = camHeight;
+            } else {
+                const speed = ((parseInt(cameraRotationSpeed) || 0) / 100) * 0.5;
+                orbitAngle += speed * deltaTime;
+                camX = Math.sin(orbitAngle) * zoom;
+                camZ = Math.cos(orbitAngle) * zoom;
+                camY = camHeight;
+            }
+
+            // --- Offset calculations restored here ---
+            const fov = Math.max(canvas.width, canvas.height) * 0.8;
+            const totalXWidth = (x_amount - 1) * currentSpacing;
+            const totalZWidth = (z_amount - 1) * currentSpacing;
+            const xOffset = totalXWidth / 2;
+            const zOffset = totalZWidth / 2;
+            const baseRadiusOffset = zOffset * radiusFactor;
+
+            const bBloom = typeof bloomEnabled !== 'undefined' ? bloomEnabled : true;
+
+            // Reset composite operation to normal layering
+            ctx.globalCompositeOperation = "source-over";
+
+            for (let x = 0; x < x_amount; x++) {
+                ctx.beginPath();
+                let hasStartedLine = false;
+
+                const base_xPos = (x * currentSpacing) - xOffset;
+
+                for (let z = 0; z < z_amount; z++) {
+                    let yPos = (z === 0) ? currentHeights[x][0] : smoothedHeights[x][z];
+                    yPos = Math.max(0.1, yPos);
+
+                    let xPos, zPos;
+                    if (mode === "Cylindrical") {
+                        const angle = (x / x_amount) * 360 * DEG_TO_RAD;
+                        const radius = z * currentSpacing;
+                        xPos = (radius + baseRadiusOffset) * Math.cos(angle);
+                        zPos = (radius + baseRadiusOffset) * Math.sin(angle);
                     } else {
-                        ctx.lineTo(screenPt.x, screenPt.y);
+                        xPos = base_xPos;
+                        zPos = (z * currentSpacing) - zOffset;
+                    }
+
+                    const screenPt = project(xPos, yPos, zPos, camX, camY, camZ, fov, canvas.width, canvas.height);
+
+                    if (screenPt) {
+                        if (!hasStartedLine) {
+                            ctx.moveTo(screenPt.x, screenPt.y);
+                            hasStartedLine = true;
+                        } else {
+                            ctx.lineTo(screenPt.x, screenPt.y);
+                        }
+                    }
+                }
+
+                if (hasStartedLine) {
+                    ctx.strokeStyle = lineColors[x];
+
+                    if (bBloom) {
+                        // Pass 1: The soft outer glow
+                        ctx.shadowColor = lineColors[x];
+                        ctx.shadowBlur = (parseInt(bloomStrength) || 150) / 10;
+                        ctx.globalAlpha = 0.15;
+                        ctx.lineWidth = 4.0;
+                        ctx.stroke();
+
+                        // Pass 2: The crisp bright core
+                        ctx.shadowBlur = 0;
+                        ctx.globalAlpha = 0.9;
+                        ctx.lineWidth = 1.0;
+                        ctx.stroke();
+                    } else {
+                        // Standard drawing if bloom is off
+                        ctx.shadowBlur = 0;
+                        ctx.globalAlpha = 1.0;
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
                     }
                 }
             }
-            
-            if (hasStartedLine) {
-                ctx.strokeStyle = lineColors[x];
-                
-                if (bBloom) {
-                    // Pass 1: The soft outer glow
-                    ctx.shadowColor = lineColors[x];
-                    ctx.shadowBlur = (parseInt(bloomStrength) || 150) / 10;
-                    ctx.globalAlpha = 0.15; 
-                    ctx.lineWidth = 4.0;
-                    ctx.stroke();
-
-                    // Pass 2: The crisp bright core
-                    ctx.shadowBlur = 0;
-                    ctx.globalAlpha = 0.9;
-                    ctx.lineWidth = 1.0;
-                    ctx.stroke();
-                } else {
-                    // Standard drawing if bloom is off
-                    ctx.shadowBlur = 0;
-                    ctx.globalAlpha = 1.0;
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                }
-            }
         }
-    }
 
-    init();
-    requestAnimationFrame(animate);
+        init();
+        requestAnimationFrame(animate);
 
-</script>
+    </script>
 </body>
+
 </html>
