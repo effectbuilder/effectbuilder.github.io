@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
         "serenityWaves.html", "systemBouncer.html", "picasso.html",
         "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html",
         "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html",
-        "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html"
+        "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html"
     ];
 
     const effectsFolder = "effects";
