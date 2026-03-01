@@ -781,7 +781,10 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-
+                        <div id="export-circuit-warning" class="alert alert-warning d-none mb-3">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Notice:</strong> This component contains multiple circuits. This may not be supported by all formats. Make sure to select a compatible export format and test your component after importing.
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Export Format:</label>
                             <div class="form-check">
