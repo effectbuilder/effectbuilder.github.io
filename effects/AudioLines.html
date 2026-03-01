@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Lines</title>
+    <meta description="A 3D audio visualizer with flowing frequency lines.">
+    <meta publisher="José Miranda">
+
+    <meta property="palette" label="Color Palette" type="combobox" values="Custom,Rainbow,America,Aurora,Beach,Breeze,Bumblebee,C9,Cloud,Fairy Light,Forest,Heat,Holiday,Lava,Ocean,Party,Pastel,Sakura,Sunset,Technicolor" default="Rainbow">
+    <meta property="customColor" label="Custom Color" type="color" default="#ff0000" min="0" max="360">
+    <meta property="backgroundColor" label="Background Color" type="color" default="#000000" min="0" max="360">
+
+    <meta property="coordMode" label="Coordinate Mode" type="combobox" default="Cartesian" values="Cartesian,Cylindrical">
+    <meta property="innerRadius" label="Inner Radius Offset (%)" type="number" min="0" max="100" default="50">
+
+    <meta property="frequencyCount" label="Frequency Lines (X-axis)" type="number" min="10" max="200" default="80">
+    <meta property="lineLength" label="Line Length (Z-axis)" type="number" min="10" max="100" default="40">
+    <meta property="spacing" label="Spacing (%)" type="number" min="0" max="100" default="10">
+    
+    <meta property="isAudioSensitive" label="Audio Reactive" type="boolean" default="true">
+    <meta property="logScale" label="Logarithmic Scale" type="boolean" default="false">
+    <meta property="audioSensitivity" label="Audio Sensitivity" type="number" min="1" max="100" default="10">
+    <meta property="shiftSpeed" label="Wave Speed (Shifts/sec)" type="number" min="1" max="100" default="20">
+    <meta property="smoothing" label="Smoothing" type="number" min="0" max="99" default="50">
+    
+    <meta property="manualCamera" label="Manual Camera" type="boolean" default="false">
+    <meta property="cameraRotationSpeed" label="Orbit Speed" type="number" min="-100" max="100" default="10">
+    <meta property="cameraAngle" label="Camera Angle" type="number" min="0" max="360" default="60">
+    <meta property="cameraHeight" label="Camera Height" type="number" min="1" max="50" default="25">
+    <meta property="cameraZoom" label="Camera Zoom" type="number" min="1" max="100" default="30">
+    
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+
+<script>
+    // --- Browser Test Mode Fallbacks ---
+    var isBrowserTest = false;
+    if (typeof engine === 'undefined') {
+        isBrowserTest = true; 
+        
+        var palette = "Rainbow";
+        var customColor = "#ff0000";
+        var backgroundColor = "#000000";
+        var frequencyCount = 80;
+        var lineLength = 40;
+        var spacing = 10;
+        var isAudioSensitive = true;
+        var audioSensitivity = 10;
+        var shiftSpeed = 20;
+        var smoothing = 50;
+        var manualCamera = false;
+        var cameraRotationSpeed = 10;
+        var cameraAngle = 60;
+        var cameraHeight = 25;
+        var cameraZoom = 30;
+        var logScale = false;
+        var coordMode = "Cartesian";
+        var innerRadius = 50;
+
+        // Mock the SignalRGB engine
+        var engine = {
+            audio: {
+                freq: new Int8Array(200) // 200 audio bins
+            }
+        };
+
+        // Mock audio data for browser testing
+        setInterval(() => {
+            if (isAudioSensitive) {
+                const time = Date.now() * 0.01;
+                for (let i = 0; i < 200; i++) {
+                    const amplitude = (Math.sin(i * 0.1 + time) + 1) / 2; // Sine wave
+                    const falloff = 1 - (i / 200); // More bass, less treble
+                    engine.audio.freq[i] = (amplitude * falloff * 127) * 2 - 128;
+                }
+            }
+        }, 1000 / 60); // 60 FPS
+    }
+    // --- End Fallbacks ---
+
+    const DEG_TO_RAD = Math.PI / 180;
+
+    const { THREE } = window;
+
+    // --- Palettes ---
+    const wledPalettes = {
+        "Custom": [], 
+        "Rainbow": ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF", "#FF0000"],
+        "Cloud": ["#FFFFFF", "#D0D0E0", "#A0A0C0", "#7070A0", "#404080", "#101060", "#000040"],
+        "Lava": ["#FF0000", "#FF4500", "#FFD700", "#000000", "#FFD700", "#FF4500", "#FF0000"],
+        "Ocean": ["#00008B", "#0000CD", "#00BFFF", "#FFFFFF", "#00BFFF", "#0000CD", "#00008B"],
+        "Forest": ["#006400", "#228B22", "#008000", "#556B2F", "#6B8E23", "#808000", "#006400"],
+        "Sunset": ["#FF4500", "#FFA500", "#FFD700", "#FFFF00", "#FF69B4", "#8A2BE2", "#4B0082"],
+        "Heat": ["#000000", "#FF0000", "#FFFF00", "#FFFFFF"],
+        "Party": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"],
+        "Beach": ["#FDB813", "#F6D55C", "#79AEC8", "#EDF5E1", "#33658A"],
+        "Pastel": ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF869A", "#D4A5A5"],
+        "America": ["#B22234", "#FFFFFF", "#3C3B6E"],
+        "Holiday": ["#D92626", "#0E5D2D", "#F2B705", "#F2F2F2"],
+        "Bumblebee": ["#000000", "#FEE12B", "#FEE12B", "#000000"],
+        "Fairy Light": ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+        "Technicolor": ["#FF0000", "#00FF00", "#0000FF", "#FFFFFF", "#000000"],
+        "Sakura": ["#FFC0CB", "#FFB6C1", "#DB7093", "#FFFFFF", "#FF1493"],
+        "Breeze": ["#87CEEB", "#ADD8E6", "#B0E0E6", "#FFFFFF"],
+        "C9": ["#FF0000", "#00FF00", "#0000FF", "#FFA500", "#FFFFFF"],
+        "Aurora": ["#00FF00", "#00FFFF", "#8A2BE2", "#00008B"]
+    };
+
+    // --- Global Variables ---
+    let camera, scene, renderer, lineGroup; 
+    
+    const seeds = [];
+    const color = new THREE.Color();
+    const tempHSL = {}; 
+    const canvas = document.getElementById('effect-canvas');
+    
+    let lineMeshes = []; // Array to hold all THREE.Line objects
+    let currentHeights = []; // 2D array [x][z] for target heights
+    let smoothedHeights = []; // 2D array [x][z] for visible heights
+    
+    let lastXAmount = 0;
+    let lastZAmount = 0.0;
+    let lastSpacing = 0.0; 
+    
+    let orbitAngle = 0; 
+    let lastFrameTime = 0;
+    let lastShiftTime = 0;
+    let lastPalette = ""; 
+    let lastCustomColor = ""; 
+
+    // --- Functions ---
+    function init() {
+        if (!THREE || !THREE.RoomEnvironment) {
+             const ctx = canvas.getContext('2d');
+             ctx.fillStyle = 'red';
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+             ctx.fillStyle = 'white';
+             ctx.font = '12px Arial';
+             ctx.textAlign = 'center';
+             ctx.fillText('Error: Failed to load THREE.js libs.', canvas.width / 2, canvas.height / 2);
+             return false;
+        }
+        
+        // Clean up previous scene
+        if (lineGroup) {
+            scene.remove(lineGroup);
+            lineMeshes.forEach(line => {
+                line.geometry.dispose();
+                line.material.dispose();
+            });
+        }
+        lineMeshes = [];
+        seeds.length = 0; 
+        currentHeights.length = 0; 
+        smoothedHeights.length = 0;
+        orbitAngle = 0;
+        lastFrameTime = 0;
+        lastShiftTime = 0;
+        
+        const x_amount = parseInt(frequencyCount) || 80;
+        const z_amount = parseInt(lineLength) || 40;
+        
+        const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
+        
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(canvas.width, canvas.height);
+        renderer.toneMapping = THREE.NeutralToneMapping; 
+
+        camera = new THREE.PerspectiveCamera(60, canvas.width / canvas.height, 0.1, 200);
+        camera.position.set(0, 25, 30);
+        camera.lookAt(0, 0, 0);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(backgroundColor || "#000000");
+        scene.environment = pmremGenerator.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+
+        lineGroup = new THREE.Group();
+        scene.add(lineGroup);
+
+        const totalXWidth = (x_amount - 1) * currentSpacing;
+        const totalZWidth = (z_amount - 1) * currentSpacing;
+        const xOffset = totalXWidth / 2;
+        const zOffset = totalZWidth / 2;
+
+        for (let x = 0; x < x_amount; x++) {
+            seeds.push(Math.random()); // One seed per frequency line
+            currentHeights[x] = new Array(z_amount).fill(0.1);
+            smoothedHeights[x] = new Array(z_amount).fill(0.1);
+            
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(z_amount * 3); // 3 vertices per point (x,y,z)
+
+            const xPos = (x * currentSpacing) - xOffset;
+
+            for (let z = 0; z < z_amount; z++) {
+                const zPos = (z * currentSpacing) - zOffset;
+                positions[z * 3 + 0] = xPos;
+                positions[z * 3 + 1] = 0.1; // y
+                positions[z * 3 + 2] = zPos;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setDrawRange(0, z_amount);
+
+            const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+            const line = new THREE.Line(geometry, material);
+            
+            lineGroup.add(line);
+            lineMeshes.push(line);
+        }
+        
+        lastXAmount = x_amount;
+        lastZAmount = z_amount; 
+        lastSpacing = currentSpacing;
+        
+        // Apply colors
+        updateColors();
+
+        return true;
+    }
+
+    function updateColors() {
+        const selectedPaletteName = palette || "Rainbow";
+        lastPalette = selectedPaletteName;
+        lastCustomColor = customColor; 
+
+        if (!lineMeshes.length) return; 
+        
+        const x_amount = parseInt(frequencyCount) || 80;
+        
+        for (let x = 0; x < x_amount; x++) {
+            if (x >= lineMeshes.length) break;
+            
+            const line = lineMeshes[x];
+            
+            if (selectedPaletteName === "Custom") {
+                color.set(customColor || "#00aaff");
+                color.getHSL(tempHSL);
+                tempHSL.l = Math.random() * 0.5 + 0.3; // 30% to 80%
+                color.setHSL(tempHSL.h, tempHSL.s, tempHSL.l);
+            } else {
+                const selectedPalette = wledPalettes[selectedPaletteName];
+                const colorIndex = (x / (x_amount - 1)) * (selectedPalette.length - 1);
+                const colorA = new THREE.Color(selectedPalette[Math.floor(colorIndex)]);
+                const colorB = new THREE.Color(selectedPalette[Math.ceil(colorIndex)]);
+                const lerpFactor = colorIndex - Math.floor(colorIndex);
+                color.copy(colorA).lerp(colorB, lerpFactor);
+            }
+            
+            line.material.color.set(color);
+        }
+    }
+
+    function animate(currentTime) {
+        requestAnimationFrame(animate);
+        
+        if (!renderer || !lineGroup) return; 
+        
+        const cubeTime = currentTime / 1000.0; // Time in seconds
+        
+        if (lastFrameTime === 0) lastFrameTime = currentTime;
+        const deltaTime = (currentTime - lastFrameTime) / 1000.0; 
+        lastFrameTime = currentTime;
+        
+        const bgColor = backgroundColor || "#000000";
+        if (scene.background.getHexString() !== bgColor.substring(1)) {
+            scene.background.set(bgColor);
+        }
+
+        // Read properties
+        const x_amount = parseInt(frequencyCount) || 80;
+        const z_amount = parseInt(lineLength) || 40;
+        const currentPalette = palette || "Rainbow";
+        const currentSpacing = 1.0 + (parseInt(spacing) || 10) / 100.0;
+        const currentCustomColor = customColor;
+        const bAudioSensitive = isAudioSensitive;
+        const bManualCamera = manualCamera;
+        const bLogScale = logScale;
+        const mode = coordMode || "Cartesian";
+        const smoothingValue = parseInt(smoothing) || 50; 
+        const sensitivity = (parseInt(audioSensitivity) || 10);
+        // --- NEW LINE ---
+        const radiusFactor = (parseInt(innerRadius) || 50) / 100.0; 
+        
+        // --- Property Change Logic ---
+        if (x_amount !== lastXAmount || 
+            z_amount !== lastZAmount || 
+            currentSpacing !== lastSpacing) {
+            init(); // Rebuild everything
+        
+        } else if (currentPalette !== lastPalette ||
+                   (currentPalette === "Custom" && currentCustomColor !== lastCustomColor)) {
+            updateColors(); // ...update the colors
+        }
+        
+        lastPalette = currentPalette;
+        lastCustomColor = currentCustomColor;
+
+
+        const zoom = parseInt(cameraZoom) || 15;
+        
+        // Calculate the interpolation factor based on smoothing value and Delta Time
+        const decayFactor = 1.0 - (smoothingValue / 100.0);
+        const lerpFactor = 1.0 - Math.pow(decayFactor, deltaTime * 60.0);
+        
+        // --- Get Audio Data ---
+        const audioData = (engine && engine.audio && engine.audio.freq) ? 
+                          new Int8Array(engine.audio.freq) : 
+                          null;
+
+        // --- Shift Data on Timer (Target Heights) ---
+        const shiftInterval = 1000 / (parseInt(shiftSpeed) || 20); // ms
+        
+        if (currentTime - lastShiftTime > shiftInterval) {
+            lastShiftTime = currentTime;
+
+            for (let x = 0; x < x_amount; x++) {
+                // Get new target height for the front row (z=0)
+                let newFrontHeight = 0.1;
+                if (bAudioSensitive && audioData) {
+                    const logIndex = (x / (x_amount - 1));
+                    const maxLog = Math.log(200);
+                    const audioBin = Math.floor(Math.exp(logIndex * maxLog)) - 1;
+                    const finalBin = Math.max(0, Math.min(199, audioBin));
+                    
+                    let amp = (Math.abs(audioData[finalBin]) / 128.0); // amp is 0.0 to 1.0
+
+                    if (bLogScale) {
+                        const k = 50; 
+                        amp = Math.log1p(amp * k) / Math.log1p(k);
+                    }
+                    newFrontHeight = 0.1 + (amp * sensitivity);
+                } else if (!bAudioSensitive) {
+                    // SINE WAVE MODE
+                    const jumpAmount = Math.abs(Math.sin(cubeTime * 2 + seeds[x] * 10));
+                    newFrontHeight = 0.1 + jumpAmount * (sensitivity / 2); 
+                }
+                
+                // Shift target heights back
+                for (let z = z_amount - 1; z > 0; z--) {
+                    currentHeights[x][z] = currentHeights[x][z-1];
+                }
+                // Put new target on the front row
+                currentHeights[x][0] = newFrontHeight;
+            }
+        }
+
+        // --- Camera Logic ---
+        if (bManualCamera) { 
+            const angleRad = (parseInt(cameraAngle) || 0) * (Math.PI / 180);
+            const height = parseInt(cameraHeight) || 15;
+            camera.position.x = Math.sin(angleRad) * zoom;
+            camera.position.z = Math.cos(angleRad) * zoom;
+            camera.position.y = height;
+            camera.lookAt(0, 0, 0);
+        } else {
+            const speed = ((parseInt(cameraRotationSpeed) || 0) / 100) * 0.5; 
+            orbitAngle += speed * deltaTime; 
+            camera.position.x = Math.sin(orbitAngle) * zoom;
+            camera.position.z = Math.cos(orbitAngle) * zoom;
+            camera.position.y = parseInt(cameraHeight) || 15; 
+            camera.lookAt(0, 0, 0);
+        }
+
+        // --- Animate Lines (Update Positions and Smoothing) ---
+        const totalXWidth = (x_amount - 1) * currentSpacing;
+        const totalZWidth = (z_amount - 1) * currentSpacing;
+        const xOffset = totalXWidth / 2;
+        const zOffset = totalZWidth / 2;
+        // --- MODIFIED CALCULATION ---
+        const baseRadiusOffset = zOffset * radiusFactor; 
+
+        for (let x = 0; x < x_amount; x++) {
+            if (x >= lineMeshes.length) continue;
+            
+            const line = lineMeshes[x];
+            const positions = line.geometry.attributes.position.array;
+
+            // Calculate base X-axis position for Cartesian mode
+            const base_xPos = (x * currentSpacing) - xOffset;
+
+            for (let z = 0; z < z_amount; z++) {
+                
+                // 1. Get Smoothed Height (Y-axis)
+                const targetHeight = currentHeights[x][z];
+                let currentSmoothed = smoothedHeights[x][z];
+                
+                currentSmoothed += (targetHeight - currentSmoothed) * lerpFactor;
+
+                smoothedHeights[x][z] = currentSmoothed;
+                
+                // 2. Calculate X and Z positions based on mode
+                let xPos, zPos;
+                
+                if (mode === "Cylindrical") {
+                    const angle = (x / x_amount) * 360 * DEG_TO_RAD;
+                    const radius = z * currentSpacing;
+                    
+                    xPos = (radius + baseRadiusOffset) * Math.cos(angle);
+                    zPos = (radius + baseRadiusOffset) * Math.sin(angle);
+                    
+                } else { // Cartesian
+                    const base_zPos = (z * currentSpacing) - zOffset;
+                    xPos = base_xPos;
+                    zPos = base_zPos;
+                }
+                
+                // 3. Update Position Array
+                positions[z * 3 + 0] = xPos;
+                positions[z * 3 + 1] = Math.max(0.1, currentSmoothed); // Y-height
+                positions[z * 3 + 2] = zPos;
+            }
+            
+            line.geometry.attributes.position.needsUpdate = true;
+            line.geometry.computeBoundingSphere(); 
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // Start
+    if (init()) {
+        animate(0);
+    }
+
+</script>
+</html>
