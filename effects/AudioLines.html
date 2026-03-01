@@ -293,7 +293,7 @@
         const mode = coordMode || "Cartesian";
         const smoothingValue = parseInt(smoothing) || 50; 
         const sensitivity = (parseInt(audioSensitivity) || 10);
-        const radiusFactor = (parseInt(innerRadius) || 50) / 100.0; 
+        const radiusFactor = (parseInt(innerRadius) || 0) / 100.0; 
         
         const bBloom = typeof bloomEnabled !== 'undefined' ? bloomEnabled : true;
         const bStrength = (parseInt(bloomStrength) || 150) / 100.0;
