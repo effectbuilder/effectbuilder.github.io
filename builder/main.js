@@ -1757,6 +1757,17 @@ function updateExportPreview() {
         const currentWiring = componentState.wiring || [];
         const ledCount = currentLeds.length;
 
+        const circuitWarning = document.getElementById('export-circuit-warning');
+        if (circuitWarning) {
+            // Count valid circuits (arrays that aren't empty)
+            const validCircuits = currentWiring.filter(circuit => Array.isArray(circuit) && circuit.length > 0);
+            if (validCircuits.length > 1) {
+                circuitWarning.classList.remove('d-none');
+            } else {
+                circuitWarning.classList.add('d-none');
+            }
+        }
+
         // Check if image is Base64
         const imageDataUrl = (componentState.imageUrl && componentState.imageUrl.startsWith('data:'))
             ? componentState.imageUrl
