@@ -331,11 +331,13 @@ const Library = {
 
                 metaTags.forEach(meta => {
                     const prop = meta.getAttribute('property');
-                    const def = meta.getAttribute('default');
                     const type = meta.getAttribute('type');
-                    if (prop && def !== null) {
+                    // Force a fallback to an empty string if default is missing
+                    const def = meta.getAttribute('default') !== null ? meta.getAttribute('default') : "";
+                    
+                    if (prop) {
                         let val = `"${def}"`;
-                        if (type === 'number') val = parseFloat(def);
+                        if (type === 'number') val = parseFloat(def) || 0;
                         else if (type === 'boolean') val = (def === 'true' || def === '1');
                         setupScript += `try{window["${prop}"] = ${val};}catch(e){}\n`;
                     }
@@ -791,7 +793,11 @@ const exporter = {
                     let tag = `\n    <meta property="${uniqueName}" label="${uniqueLabel}" type="${p.type}"`;
                     if (p.min) tag += ` min="${p.min}"`;
                     if (p.max) tag += ` max="${p.max}"`;
-                    if (p.default) tag += ` default="${p.default}"`;
+                    
+                    // ALWAYS write a default attribute, using an empty string if undefined
+                    const defVal = (p.default !== undefined && p.default !== null) ? p.default : "";
+                    tag += ` default="${defVal}"`;
+                    
                     if (p.values) tag += ` values="${p.values}"`;
                     tag += `>`;
                     metaTags += tag;
@@ -869,14 +875,28 @@ const exporter = {
                 const iframe = document.createElement('iframe');
                 document.getElementById('sandbox').appendChild(iframe);
                 
-                // --- FIX FOR EXPORT: Pre-seed complete mock engine ---
-                iframe.contentWindow.engine = { 
-                    audio: { freq: new Array(200).fill(0), level: -20, density: 0.5 },
-                    getSensorValue: () => 0 
-                };
+                // Build a script block to inject variables globally BEFORE the layer's scripts run
+                let scriptInjection = "\\n<script>\\n";
+                scriptInjection += "window.engine = { audio: { freq: new Array(200).fill(0), level: -20, density: 0.5 }, getSensorValue: () => 0 };\\n";
+                
+                if (lData.propNames) {
+                    lData.propNames.forEach(prop => {
+                        const globalName = "layer_" + i + "_" + prop;
+                        if (window[globalName] !== undefined) {
+                            // Safely stringify the value so it gets proper quotes, avoiding syntax errors
+                            scriptInjection += "window[\\"" + prop + "\\"] = " + JSON.stringify(window[globalName]) + ";\\n";
+                        }
+                    });
+                }
+                // Break up the closing script tag so the browser doesn't accidentally parse it early
+                scriptInjection += "<" + "/script>\\n";
 
                 const doc = iframe.contentWindow.document;
-                const html = decodeURIComponent(escape(atob(lData.content)));
+                let html = decodeURIComponent(escape(atob(lData.content)));
+                
+                // Inject the definitions directly into the head
+                html = html.replace(/<head>/i, '<head>' + scriptInjection);
+                
                 doc.open();
                 doc.write(html);
                 doc.close();
@@ -1000,6 +1020,31 @@ const exporter = {
     };
     
     window.onload = () => app.init();
+
+    // --- SIGNALRGB NATIVE INTERACTION PROXY ---
+    window.onCanvasTapped = function(rawX, rawY) {
+        app.layers.forEach(l => {
+            if (l.window && typeof l.window.onCanvasTapped === 'function') {
+                l.window.onCanvasTapped(rawX, rawY);
+            }
+        });
+    };
+
+    window.onCanvasDragged = function(rawX, rawY) {
+        app.layers.forEach(l => {
+            if (l.window && typeof l.window.onCanvasDragged === 'function') {
+                l.window.onCanvasDragged(rawX, rawY);
+            }
+        });
+    };
+
+    window.onCanvasReleased = function(rawX, rawY) {
+        app.layers.forEach(l => {
+            if (l.window && typeof l.window.onCanvasReleased === 'function') {
+                l.window.onCanvasReleased(rawX, rawY);
+            }
+        });
+    };
 <` + `/script>
 </body>
 </html>`;

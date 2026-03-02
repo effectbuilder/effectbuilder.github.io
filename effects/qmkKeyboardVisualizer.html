@@ -1235,6 +1235,41 @@
 
         window.requestAnimationFrame(draw);
     });
+
+    // --- COMBINER COMPATIBILITY HOOKS ---
+    // If running inside the Combiner's iframe, reach up and hook into the parent window
+    if (window.parent && window.parent !== window) {
+        
+        // 1. Hook SignalRGB Native Mouse/Touch Events
+        const originalTapped = window.parent.onCanvasTapped;
+        window.parent.onCanvasTapped = function(rawX, rawY) {
+            if (originalTapped) originalTapped(rawX, rawY); // Let other layers process the click first
+            if (typeof window.onCanvasTapped === 'function') window.onCanvasTapped(rawX, rawY);
+        };
+
+        const originalDragged = window.parent.onCanvasDragged;
+        window.parent.onCanvasDragged = function(rawX, rawY) {
+            if (originalDragged) originalDragged(rawX, rawY);
+            if (typeof window.onCanvasDragged === 'function') window.onCanvasDragged(rawX, rawY);
+        };
+
+        const originalReleased = window.parent.onCanvasReleased;
+        window.parent.onCanvasReleased = function(rawX, rawY) {
+            if (originalReleased) originalReleased(rawX, rawY);
+            if (typeof window.onCanvasReleased === 'function') window.onCanvasReleased(rawX, rawY);
+        };
+
+        // 2. Expose QMK functions so SignalRGB's engine can trigger them directly on the parent
+        // We wrap triggerKey so that if multiple QMK visualizers are combined, they don't overwrite each other
+        const originalTriggerKey = window.parent.triggerKey;
+        window.parent.triggerKey = function(key) {
+            if (originalTriggerKey) originalTriggerKey(key);
+            if (typeof window.triggerKey === 'function') window.triggerKey(key);
+        };
+        
+        window.parent.mapKeyCode = window.mapKeyCode;
+        window.parent.KEY_DB = window.KEY_DB;
+    }
 </script>
 
 </html>
