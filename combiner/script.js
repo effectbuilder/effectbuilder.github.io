@@ -596,6 +596,7 @@ class Compositor {
         this.renderUI();
         Persistence.save();
     }
+    
 
     updateLayerProp(index, key, value) {
         if (this.layers[index]) {
