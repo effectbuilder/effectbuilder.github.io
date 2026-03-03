@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Stellar Synapse</title>
+    <meta description="A high-fidelity 3D journey through the cosmos, mapping the 88 principal constellations using the Yale Bright Star Catalog. Features audio-reactive stellar pulses, magnitude-accurate scaling, and a neural-plexus architecture that bridges biological synapses with galactic structures." />
+    <meta publisher="José Miranda" />
+
+    <meta property="nodeCount" label="Node Count" type="number" min="50" max="400" default="150" tooltip="The total number of neural nodes rendered in the scene.">
+    <meta property="connectionDistance" label="Initial Connection Range" type="number" min="50" max="600" default="250" tooltip="How close nodes must be to each other at spawn to form a permanent line connection (Applies to None mode).">
+
+    <meta property="constellationMode" label="Constellation Mode" type="combobox" values="None,Random Constellations,Andromeda,Antlia,Apus,Aquarius,Aquila,Ara,Aries,Auriga,Bootes,Caelum,Camelopardalis,Cancer,Canes Venatici,Canis Major,Canis Minor,Capricornus,Carina,Cassiopeia,Centaurus,Cepheus,Cetus,Chamaeleon,Circinus,Columba,Coma Berenices,Corona Australis,Corona Borealis,Corvus,Crater,Crux,Cygnus,Delphinus,Dorado,Draco,Equuleus,Eridanus,Fornax,Gemini,Grus,Hercules,Horologium,Hydra,Hydrus,Indus,Lacerta,Leo,Leo Minor,Lepus,Libra,Lupus,Lynx,Lyra,Mensa,Microscopium,Monoceros,Musca,Norma,Octans,Ophiuchus,Orion,Pavo,Pegasus,Perseus,Phoenix,Pictor,Pisces,Piscis Austrinus,Puppis,Pyxis,Reticulum,Sagitta,Sagittarius,Scorpius,Sculptor,Scutum,Serpens,Sextans,Taurus,Telescopium,Triangulum,Triangulum Australe,Tucana,Ursa Major,Ursa Minor,Vela,Virgo,Volans,Vulpecula" default="Crux" tooltip="When active, spawns points strictly formatted as one of the 88 constellations by fetching data from the MarcvdSluys database and the Yale Bright Star Catalog.">
+
+    <meta property="flowSpeed" label="Forward Flow Speed" type="number" min="0" max="100" default="10" tooltip="The base speed at which the network flies toward the camera.">
+    <meta property="driftSpeed" label="Lateral Drift Amount" type="number" min="0" max="100" default="10" tooltip="How far the nodes organically wander and orbit from their core flight paths.">
+    <meta property="bassBoost" label="Bass Surge Speed" type="number" min="0" max="200" default="15" tooltip="The amount of extra forward speed injected into the network during heavy bass hits.">
+
+    <meta property="colorTheme" label="Color Theme" type="combobox" values="Neon Gold,Cyber Matrix,Void Blue,Crimson Deep,Pure White,Emerald City,Amethyst Void,Sunset Horizon,Deep Ocean,Blood Moon,Matrix Rain,Galactic Core,Rainbow,Color Cycle,Synthwave,Fire and Ice,Toxic Spill,Cotton Candy,Plasma Flare,Autumn Leaves" default="Rainbow" tooltip="The overall multi-color palette assigned to the nodes and connections.">
+    <meta property="colorSpeed" label="Color Cycle Speed" type="number" min="0" max="200" default="50" tooltip="How fast the colors shift when using dynamic themes like Rainbow or Color Cycle.">
+
+    <meta property="nodeSize" label="Base Node Size" type="number" min="1" max="20" default="3" tooltip="The physical size of the glowing dots.">
+    <meta property="lineThickness" label="Base Line Thickness" type="number" min="1" max="20" default="7" tooltip="The thickness of the glowing connections between nodes.">
+    <meta property="fov" label="Field of View (Depth)" type="number" min="50" max="500" default="100" tooltip="Changes the camera perspective. Lower values make the depth appear wider and more distorted.">
+
+    <meta property="bassFlashes" label="White Bass Flashes" type="boolean" default="true" tooltip="Occasionally flashes random nodes and their connections pure white during heavy bass hits.">
+    <meta property="bassThreshold" label="Bass Threshold" type="number" min="0" max="100" default="30" tooltip="The minimum bass level required to trigger white flashes.">
+</head>
+
+<body style="margin: 0; padding: 0; background: #000; overflow: hidden;">
+    <canvas id="neural-canvas" width="320" height="200"></canvas>
+
+    <script>
+        // --- Mandatory Compatibility Layer ---
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(128).fill(0);
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+                const bassVal = Math.pow(beat, 4) * 255;
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50);
+                }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+
+    <script>
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width; canvas.height = height;
+        let cx = width / 2; let cy = height / 2;
+
+        window.addEventListener('resize', () => {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+            cx = width / 2; cy = height / 2;
+        });
+
+        const MAX_Z = 1500;
+        const MIN_Z = 10;
+        let nodes = [];
+        let constGroups = [];
+        let lastNodeCount = 0;
+        let lastMode = "";
+        let globalTime = 0;
+        let globalSpawnCount = 0;
+
+        let bscData = {};
+        let linesData = {};
+        let dbLoaded = false;
+        let dbFailed = false;
+
+        async function loadConstellationDB() {
+            try {
+                const [linesRes, starsRes] = await Promise.all([
+                    fetch('https://raw.githubusercontent.com/MarcvdSluys/ConstellationLines/refs/heads/master/ConstellationLines.csv'),
+                    fetch('https://raw.githubusercontent.com/brettonw/YaleBrightStarCatalog/master/bsc5-short.json')
+                ]);
+                const linesCsv = await linesRes.text();
+                const starsJson = await starsRes.json();
+
+                starsJson.forEach(star => {
+                    if (star.HR && star.RA && star.Dec) {
+                        let raMatch = star.RA.match(/(\d+)h\s*(\d+)m\s*([\d\.]+)s/);
+                        let decMatch = star.Dec.match(/([\+\-])(\d+)°\s*(\d+)′\s*([\d\.]+)″/);
+                        if (raMatch && decMatch) {
+                            let raDeg = (parseFloat(raMatch[1]) + parseFloat(raMatch[2]) / 60 + parseFloat(raMatch[3]) / 3600) * 15;
+                            let sign = decMatch[1] === '-' ? -1 : 1;
+                            let decDeg = sign * (parseFloat(decMatch[2]) + parseFloat(decMatch[3]) / 60 + parseFloat(decMatch[4]) / 3600);
+                            bscData[parseInt(star.HR)] = { ra: raDeg, dec: decDeg, mag: parseFloat(star.V) || 5.0 };
+                        }
+                    }
+                });
+
+                const linesRaw = linesCsv.trim().split('\n');
+                let currentAbr = ""; // Track the active constellation
+
+                for (let i = 1; i < linesRaw.length; i++) {
+                    const parts = linesRaw[i].split(',').map(s => s.trim());
+
+                    // If the first column has a name, update the current abbreviation
+                    if (parts[0]) {
+                        currentAbr = parts[0];
+                    }
+
+                    // If we somehow don't have an abbreviation yet, skip
+                    if (!currentAbr) continue;
+
+                    if (!linesData[currentAbr]) linesData[currentAbr] = [];
+
+                    // The second column is the number of stars in this row
+                    const numStars = parseInt(parts[1]);
+
+                    // Start reading the actual stars at index 2
+                    for (let j = 0; j < numStars - 1; j++) {
+                        const hr1 = parseInt(parts[2 + j]);
+                        const hr2 = parseInt(parts[2 + j + 1]);
+
+                        // Connect them sequentially to form a continuous line
+                        if (!isNaN(hr1) && !isNaN(hr2)) {
+                            linesData[currentAbr].push([hr1, hr2]);
+                        }
+                    }
+                }
+                dbLoaded = true;
+            } catch (err) { dbFailed = true; }
+        }
+        loadConstellationDB();
+
+        const constellationMap = {
+            "Andromeda": "And", "Antlia": "Ant", "Apus": "Aps", "Aquarius": "Aqr", "Aquila": "Aql",
+            "Ara": "Ara", "Aries": "Ari", "Auriga": "Aur", "Bootes": "Boo", "Caelum": "Cae",
+            "Camelopardalis": "Cam", "Cancer": "Cnc", "Canes Venatici": "CVn", "Canis Major": "CMa",
+            "Canis Minor": "CMi", "Capricornus": "Cap", "Carina": "Car", "Cassiopeia": "Cas",
+            "Centaurus": "Cen", "Cepheus": "Cep", "Cetus": "Cet", "Chamaeleon": "Cha", "Circinus": "Cir",
+            "Columba": "Col", "Coma Berenices": "Com", "Corona Australis": "CrA", "Corona Borealis": "CrB",
+            "Corvus": "Crv", "Crater": "Crt", "Crux": "Cru", "Cygnus": "Cyg", "Delphinus": "Del",
+            "Dorado": "Dor", "Draco": "Dra", "Equuleus": "Equ", "Eridanus": "Eri", "Fornax": "For",
+            "Gemini": "Gem", "Grus": "Gru", "Hercules": "Her", "Horologium": "Hor", "Hydra": "Hya",
+            "Hydrus": "Hyi", "Indus": "Ind", "Lacerta": "Lac", "Leo": "Leo", "Leo Minor": "LMi",
+            "Lepus": "Lep", "Libra": "Lib", "Lupus": "Lup", "Lynx": "Lyn", "Lyra": "Lyr",
+            "Mensa": "Men", "Microscopium": "Mic", "Monoceros": "Mon", "Musca": "Mus", "Norma": "Nor",
+            "Octans": "Oct", "Ophiuchus": "Oph", "Orion": "Ori", "Pavo": "Pav", "Pegasus": "Peg",
+            "Perseus": "Per", "Phoenix": "Phe", "Pictor": "Pic", "Pisces": "Psc", "Piscis Austrinus": "PsA",
+            "Puppis": "Pup", "Pyxis": "Pyx", "Reticulum": "Ret", "Sagitta": "Sge", "Sagittarius": "Sgr",
+            "Scorpius": "Sco", "Sculptor": "Scl", "Scutum": "Sct", "Serpens": "Ser", "Sextans": "Sex",
+            "Taurus": "Tau", "Telescopium": "Tel", "Triangulum": "Tri", "Triangulum Australe": "TrA",
+            "Tucana": "Tuc", "Ursa Major": "UMa", "Ursa Minor": "UMi", "Vela": "Vel", "Virgo": "Vir",
+            "Volans": "Vol", "Vulpecula": "Vul"
+        };
+
+        const palettes = {
+            "Neon Gold": [[255, 250, 120], [255, 200, 50], [200, 150, 0]],
+            "Cyber Matrix": [[100, 255, 50], [0, 200, 100], [0, 150, 50]],
+            "Void Blue": [[50, 200, 255], [0, 100, 255], [100, 50, 255]],
+            "Crimson Deep": [[255, 50, 80], [200, 0, 50], [150, 0, 100]],
+            "Pure White": [[255, 255, 255], [200, 200, 255], [255, 255, 200]],
+            "Emerald City": [[50, 255, 100], [0, 200, 50], [100, 255, 0]],
+            "Amethyst Void": [[180, 50, 255], [100, 0, 200], [255, 100, 255]],
+            "Sunset Horizon": [[255, 100, 50], [255, 50, 100], [200, 0, 150]],
+            "Deep Ocean": [[20, 100, 255], [0, 50, 200], [0, 150, 150]],
+            "Blood Moon": [[200, 20, 20], [255, 100, 0], [150, 0, 50]],
+            "Matrix Rain": [[20, 200, 50], [0, 255, 100], [50, 150, 0]],
+            "Galactic Core": [[200, 100, 255], [100, 50, 200], [255, 150, 50]],
+            "Synthwave": [[255, 50, 255], [50, 255, 255], [150, 50, 255], [255, 150, 50]],
+            "Fire and Ice": [[255, 120, 30], [50, 200, 255], [255, 50, 50], [0, 100, 255]],
+            "Toxic Spill": [[100, 255, 50], [200, 50, 255], [150, 255, 0]],
+            "Cotton Candy": [[255, 150, 200], [150, 200, 255], [255, 200, 255]],
+            "Plasma Flare": [[255, 50, 200], [50, 255, 255], [200, 50, 255]],
+            "Autumn Leaves": [[255, 50, 0], [255, 150, 0], [255, 200, 50], [200, 50, 50]]
+        };
+
+        function hslToRgb(h, s, l) {
+            s /= 100; l /= 100;
+            const k = n => (n + h / 30) % 12;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return { r: Math.round(255 * f(0)), g: Math.round(255 * f(8)), b: Math.round(255 * f(4)) };
+        }
+
+        class Node {
+            constructor(index) {
+                this.index = index; this.partners = []; this.flashIntensity = 0;
+                this.reset(Math.random() * MAX_Z);
+            }
+            reset(startZ, nodesList, safeConnDist) {
+                this.spawnId = ++globalSpawnCount; this.flashIntensity = 0;
+                this.x = (Math.random() - 0.5) * 2500; this.y = (Math.random() - 0.5) * 1500;
+                this.z = startZ || MAX_Z;
+                this.phaseX = Math.random() * Math.PI * 2; this.phaseY = Math.random() * Math.PI * 2;
+                this.freqX = (Math.random() * 0.02 + 0.01) * (Math.random() > 0.5 ? 1 : -1);
+                this.freqY = (Math.random() * 0.02 + 0.01) * (Math.random() > 0.5 ? 1 : -1);
+                this.ampX = Math.random() * 1.5 + 0.5; this.ampY = Math.random() * 1.5 + 0.5;
+                this.partners = [];
+                if (nodesList) this.findPartners(nodesList, safeConnDist);
+            }
+            findPartners(nodesList, safeConnDist) {
+                let maxDistSq = (safeConnDist || 250) * (safeConnDist || 250);
+                let potential = [];
+                for (let i = 0; i < nodesList.length; i++) {
+                    if (nodesList[i] === this) continue;
+                    let dx = this.x - nodesList[i].x; let dy = this.y - nodesList[i].y; let dz = this.z - nodesList[i].z;
+                    let distSq = dx * dx + dy * dy + dz * dz;
+                    if (distSq < maxDistSq) potential.push({ node: nodesList[i], distSq: distSq, spawnId: nodesList[i].spawnId });
+                }
+                potential.sort((a, b) => a.distSq - b.distSq);
+                let maxConns = Math.floor(Math.random() * 3) + 2;
+                for (let i = 0; i < Math.min(maxConns, potential.length); i++) this.partners.push({ node: potential[i].node, spawnId: potential[i].spawnId });
+            }
+            update(zSpeed, driftRadiusMult, timeSpeed, nodesList, safeConnDist, bass, safeFlashes, safeBassThreshold) {
+                this.z -= zSpeed; this.phaseX += this.freqX * timeSpeed; this.phaseY += this.freqY * timeSpeed;
+                this.x += Math.sin(this.phaseX) * this.ampX * driftRadiusMult * timeSpeed;
+                this.y += Math.cos(this.phaseY) * this.ampY * driftRadiusMult * timeSpeed;
+                if (safeFlashes && bass > safeBassThreshold / 100 && this.flashIntensity <= 0 && Math.random() < 0.08) this.flashIntensity = 1.0;
+                if (this.flashIntensity > 0) this.flashIntensity -= 0.02;
+                if (this.z < MIN_Z) this.reset(MAX_Z, nodesList, safeConnDist);
+            }
+            getColor(themeName, colorSpeedParam) {
+                const timeOffset = globalTime * colorSpeedParam;
+                let baseColor;
+                if (themeName === "Rainbow") baseColor = hslToRgb(((this.z / MAX_Z) * 360 + timeOffset * 2) % 360, 100, 65);
+                else if (themeName === "Color Cycle") baseColor = hslToRgb((timeOffset) % 360, 100, 65);
+                else {
+                    const pal = palettes[themeName] || palettes["Synthwave"];
+                    const totalProgress = (this.index * 0.5 + timeOffset * 0.05);
+                    const idx = Math.floor(totalProgress) % pal.length;
+                    const nextIdx = (idx + 1) % pal.length; const blend = totalProgress % 1;
+                    baseColor = { r: pal[idx][0] + (pal[nextIdx][0] - pal[idx][0]) * blend, g: pal[idx][1] + (pal[nextIdx][1] - pal[idx][1]) * blend, b: pal[idx][2] + (pal[nextIdx][2] - pal[idx][2]) * blend };
+                }
+                if (this.flashIntensity > 0) return { r: Math.round(baseColor.r + (255 - baseColor.r) * this.flashIntensity), g: Math.round(baseColor.g + (255 - baseColor.g) * this.flashIntensity), b: Math.round(baseColor.b + (255 - baseColor.b) * this.flashIntensity) };
+                return baseColor;
+            }
+        }
+
+        class ConstellationGroup {
+            constructor(indexOffset) {
+                this.nodes = [];
+                this.indexOffset = indexOffset;
+                this.reset(Math.random() * MAX_Z);
+            }
+
+            reset(startZ) {
+                this.z = startZ || MAX_Z;
+                this.x = (Math.random() - 0.5) * 2500;
+                this.y = (Math.random() - 0.5) * 1500;
+                this.scale = Math.random() * 0.5 + 0.8;
+
+                let type = window.constellationMode || "None";
+                if (type === "Random Constellations") {
+                    const keys = Object.keys(constellationMap);
+                    type = keys[Math.floor(Math.random() * keys.length)];
+                }
+
+                this.nodes = [];
+                this.activeNodeCount = 0;
+
+                if (type !== "None" && dbLoaded) {
+                    const abr = constellationMap[type];
+                    if (!linesData[abr]) return;
+
+                    let uniqueStars = [];
+                    let hrToIndex = {};
+
+                    // 1. Gather all unique stars referenced in the pairs
+                    linesData[abr].forEach(pair => {
+                        pair.forEach(hr => {
+                            if (bscData[hr] && !uniqueStars.includes(hr)) {
+                                uniqueStars.push(hr);
+                            }
+                        });
+                    });
+
+                    this.activeNodeCount = uniqueStars.length;
+
+                    // 2. Create the exact amount of node instances required
+                    for (let i = 0; i < uniqueStars.length; i++) {
+                        const node = new Node(this.indexOffset + i);
+                        this.nodes.push(node);
+                        hrToIndex[uniqueStars[i]] = i;
+                    }
+
+                    let sumSin = 0, sumCos = 0, centerDec = 0;
+                    uniqueStars.forEach(hr => {
+                        let raRad = bscData[hr].ra * Math.PI / 180;
+                        sumSin += Math.sin(raRad);
+                        sumCos += Math.cos(raRad);
+                        centerDec += bscData[hr].dec;
+                    });
+
+                    let centerRA = Math.atan2(sumSin, sumCos) * 180 / Math.PI;
+                    if (centerRA < 0) centerRA += 360;
+                    centerDec /= uniqueStars.length;
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const cosA = Math.cos(angle);
+                    const sinA = Math.sin(angle);
+
+                    for (let i = 0; i < uniqueStars.length; i++) {
+                        let hr = uniqueStars[i];
+                        let star = bscData[hr];
+
+                        let diffRA = star.ra - centerRA;
+                        if (diffRA > 180) diffRA -= 360;
+                        if (diffRA < -180) diffRA += 360;
+
+                        let dx = -diffRA * Math.cos(centerDec * Math.PI / 180) * 35;
+                        let dy = -(star.dec - centerDec) * 35;
+
+                        let n = this.nodes[i];
+                        n.spawnId = ++globalSpawnCount;
+                        n.magnitude = star.mag;
+                        n.localX = (dx * cosA - dy * sinA) * this.scale;
+                        n.localY = (dx * sinA + dy * cosA) * this.scale;
+                        n.z = this.z;
+                        n.x = this.x + n.localX;
+                        n.y = this.y + n.localY;
+                        n.partners = [];
+                    }
+
+                    // FIX: Map the parsed pairs to the node partners
+                    for (let pair of linesData[abr]) {
+                        let i1 = hrToIndex[pair[0]];
+                        let i2 = hrToIndex[pair[1]];
+
+                        if (i1 !== undefined && i2 !== undefined) {
+                            let n1 = this.nodes[i1];
+                            let n2 = this.nodes[i2];
+
+                            // Push unidirectionally to prevent the stroke from overlapping itself visually
+                            n1.partners.push({ node: n2, spawnId: n2.spawnId });
+                        }
+                    }
+                }
+            }
+
+            update(zSpeed, bass, safeFlashes) {
+                this.z -= zSpeed;
+                if (this.z < MIN_Z) {
+                    this.reset(MAX_Z);
+                }
+                for (let i = 0; i < this.activeNodeCount; i++) {
+                    let n = this.nodes[i];
+                    n.z = this.z;
+                    n.x = this.x + n.localX;
+                    n.y = this.y + n.localY;
+
+                    if (safeFlashes && bass > 0.5 && n.flashIntensity <= 0 && Math.random() < 0.08) {
+                        n.flashIntensity = 1.0;
+                    }
+                    if (n.flashIntensity > 0) n.flashIntensity -= 0.02;
+                }
+            }
+
+            getActiveNodes() {
+                return this.nodes.slice(0, this.activeNodeCount);
+            }
+        }
+
+        function setupNodes(targetCount, mode) {
+            nodes = []; constGroups = []; const safeConnDist = window.connectionDistance || 250;
+            if (mode === "None") {
+                for (let i = 0; i < targetCount; i++) {
+                    let n = new Node(i); n.reset(Math.random() * MAX_Z, null, 0); nodes.push(n);
+                }
+                nodes.forEach(n => n.findPartners(nodes, safeConnDist));
+            } else {
+                let numGroups = Math.max(1, Math.floor(targetCount / 10));
+                for (let i = 0; i < numGroups; i++) constGroups.push(new ConstellationGroup(i * 200));
+            }
+            lastNodeCount = targetCount; lastMode = mode;
+        }
+
+        function draw() {
+            const safeNodeCount = window.nodeCount || 150;
+            const safeConnDist = window.connectionDistance || 250;
+            const safeFlowSpeed = window.flowSpeed !== undefined ? window.flowSpeed : 15;
+            const safeDriftSpeed = window.driftSpeed !== undefined ? window.driftSpeed : 20;
+            const safeBassBoost = window.bassBoost !== undefined ? window.bassBoost : 80;
+            const safeColorSpeed = window.colorSpeed !== undefined ? window.colorSpeed : 50;
+            const safeTheme = window.colorTheme || "Synthwave";
+            const safeNodeSize = window.nodeSize || 2;
+            const safeThickness = window.lineThickness || 2;
+            const safeFOV = window.fov || 250;
+            const safeBassFlashes = window.bassFlashes !== undefined ? window.bassFlashes : true;
+            const safeBassThreshold = window.bassThreshold !== undefined ? window.bassThreshold : 50;
+            const safeConstellationMode = window.constellationMode || "None";
+
+            if (safeConstellationMode !== "None" && !dbLoaded) {
+                ctx.globalCompositeOperation = "source-over"; ctx.fillStyle = "black"; ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = "white"; ctx.font = "14px sans-serif"; ctx.textAlign = "center";
+                ctx.fillText("Loading Constellation Database...", cx, cy);
+                if (dbFailed) { ctx.fillStyle = "red"; ctx.fillText("Failed to load external star data.", cx, cy + 20); }
+                window.requestAnimationFrame(draw); return;
+            }
+            if (safeNodeCount !== lastNodeCount || safeConstellationMode !== lastMode) setupNodes(safeNodeCount, safeConstellationMode);
+
+            globalTime += 0.016;
+            let bass = 0, mids = 0;
+            if (window.engine && window.engine.audio && window.engine.audio.freq) {
+                const freq = window.engine.audio.freq;
+                bass = Math.max(0, ((freq[0] || 0) + (freq[1] || 0) + (freq[2] || 0)) / 3 / 255);
+                let midSum = 0; for (let i = 10; i < 30; i++) midSum += Math.max(0, freq[i] || 0);
+                mids = Math.max(0, (midSum / 20) / 255);
+            }
+            const currentZSpeed = (safeFlowSpeed * 0.2) + (mids * safeFlowSpeed) + (bass * safeBassBoost);
+            const driftRadiusMult = safeDriftSpeed * 0.1; const timeSpeed = 1 + bass * 0.8;
+
+            ctx.globalCompositeOperation = "source-over"; ctx.fillStyle = "black"; ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = "lighter";
+
+            let activeRenderNodes = [];
+            if (safeConstellationMode === "None") {
+                nodes.forEach(n => n.update(currentZSpeed, driftRadiusMult, timeSpeed, nodes, safeConnDist, bass, safeBassFlashes, safeBassThreshold));
+                activeRenderNodes = nodes;
+            } else {
+                constGroups.forEach(g => { g.update(currentZSpeed, bass, safeBassFlashes, safeBassThreshold); activeRenderNodes.push(...g.getActiveNodes()); });
+            }
+
+            ctx.lineCap = "round";
+            activeRenderNodes.forEach(a => {
+                const scaleA = safeFOV / a.z; const xa = cx + a.x * scaleA, ya = cy + a.y * scaleA; const c = a.getColor(safeTheme, safeColorSpeed);
+                for (let p = a.partners.length - 1; p >= 0; p--) {
+                    const b = a.partners[p].node; if (b.spawnId !== a.partners[p].spawnId) { a.partners.splice(p, 1); continue; }
+                    const scaleB = safeFOV / b.z; const xb = cx + b.x * scaleB, yb = cy + b.y * scaleB;
+                    if ((xa < -100 || xa > width + 100 || ya < -100 || ya > height + 100) && (xb < -100 || xb > width + 100 || yb < -100 || yb > height + 100)) continue;
+                    const avgZ = (a.z + b.z) / 2, depthRatio = Math.max(0, 1 - (avgZ / MAX_Z));
+                    let lineOpacity = depthRatio * (0.4 + bass * 0.8); if (lineOpacity > 1) lineOpacity = 1;
+                    if (lineOpacity > 0.01) {
+                        ctx.beginPath(); const flashMax = Math.max(a.flashIntensity, b.flashIntensity);
+                        const r = Math.round(c.r + (255 - c.r) * flashMax); const g = Math.round(c.g + (255 - c.g) * flashMax); const bColor = Math.round(c.b + (255 - c.b) * flashMax);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${bColor}, ${lineOpacity})`;
+                        ctx.lineWidth = Math.min(20, (safeFOV / avgZ) * (safeThickness * 0.5) + (bass * depthRatio * safeThickness));
+                        ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+                    }
+                }
+                if (xa >= -50 && xa <= width + 50 && ya >= -50 && ya <= height + 50) {
+                    const depthRatio = Math.max(0, 1 - (a.z / MAX_Z));
+                    let nodeOpacity = Math.min(1, depthRatio * (0.8 + bass * 1.2));
+                    let magMult = a.magnitude !== undefined ? Math.max(0.3, (6.0 - a.magnitude) * 0.4) : 1.0;
+                    const currentSize = Math.max(0.1, (scaleA * safeNodeSize * magMult) + (bass * Math.max(0, depthRatio) * safeNodeSize * magMult * 2));
+                    if (nodeOpacity > 0.05) { ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${nodeOpacity})`; ctx.beginPath(); ctx.arc(xa, ya, currentSize, 0, Math.PI * 2); ctx.fill(); }
+                }
+            });
+            requestAnimationFrame(draw);
+        }
+        setupNodes(150, "None"); draw();
+    </script>
+</body>
+
+</html>
