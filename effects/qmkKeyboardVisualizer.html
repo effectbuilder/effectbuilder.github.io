@@ -20,7 +20,7 @@
     <meta property="customCol2" label="Custom: High/End" type="color" default="#FF0000" />
 </head>
 
-<body style="margin: 0; padding: 0; background: #000; overflow: hidden; width:320px; height:200px">
+<body style="margin: 0; padding: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh;">
     <canvas id="effect-canvas"></canvas>
 </body>
 
@@ -1224,10 +1224,18 @@
     }
 
     // Set initial dimensions and start fetch on first execution
+    // Set initial dimensions and start fetch on first execution
     document.addEventListener('DOMContentLoaded', () => {
-        // Canvas dimensions are fixed at 320x200 in the HTML body
-        canvas.width = 320;
-        canvas.height = 200;
+        // Dynamically size the canvas to match the parent window
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Rebuild coordinate grid if the window is resized
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (RAW_KEYS.length > 0) buildGridDictionary(RAW_KEYS);
+        });
 
         // Initial fetch to load layout data immediately
         const initialUrl = (keyboardPreset === "Custom URL") ? customUrl : PRESETS[keyboardPreset];
@@ -1240,26 +1248,7 @@
     // If running inside the Combiner's iframe, reach up and hook into the parent window
     if (window.parent && window.parent !== window) {
         
-        // 1. Hook SignalRGB Native Mouse/Touch Events
-        const originalTapped = window.parent.onCanvasTapped;
-        window.parent.onCanvasTapped = function(rawX, rawY) {
-            if (originalTapped) originalTapped(rawX, rawY); // Let other layers process the click first
-            if (typeof window.onCanvasTapped === 'function') window.onCanvasTapped(rawX, rawY);
-        };
-
-        const originalDragged = window.parent.onCanvasDragged;
-        window.parent.onCanvasDragged = function(rawX, rawY) {
-            if (originalDragged) originalDragged(rawX, rawY);
-            if (typeof window.onCanvasDragged === 'function') window.onCanvasDragged(rawX, rawY);
-        };
-
-        const originalReleased = window.parent.onCanvasReleased;
-        window.parent.onCanvasReleased = function(rawX, rawY) {
-            if (originalReleased) originalReleased(rawX, rawY);
-            if (typeof window.onCanvasReleased === 'function') window.onCanvasReleased(rawX, rawY);
-        };
-
-        // 2. Expose QMK functions so SignalRGB's engine can trigger them directly on the parent
+        // Expose QMK functions so SignalRGB's engine can trigger them directly on the parent
         // We wrap triggerKey so that if multiple QMK visualizers are combined, they don't overwrite each other
         const originalTriggerKey = window.parent.triggerKey;
         window.parent.triggerKey = function(key) {

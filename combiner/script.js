@@ -1022,29 +1022,27 @@ const exporter = {
     window.onload = () => app.init();
 
     // --- SIGNALRGB NATIVE INTERACTION PROXY ---
-    window.onCanvasTapped = function(rawX, rawY) {
-        app.layers.forEach(l => {
-            if (l.window && typeof l.window.onCanvasTapped === 'function') {
-                l.window.onCanvasTapped(rawX, rawY);
+    function dispatchLocalEvent(rawX, rawY, eventName) {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        let mode = window.layoutMode || "${currentLayoutName}";
+        
+        app.layers.forEach((l, i) => {
+            if (l.window && typeof l.window[eventName] === 'function') {
+                const r = app.getLayoutRect(i, app.layers.length, mode, w, h);
+                
+                // Map global master canvas coordinates to local iframe coordinates
+                const localX = ((rawX - r.x) / r.w) * l.window.innerWidth;
+                const localY = ((rawY - r.y) / r.h) * l.window.innerHeight;
+                
+                l.window[eventName](localX, localY);
             }
         });
-    };
+    }
 
-    window.onCanvasDragged = function(rawX, rawY) {
-        app.layers.forEach(l => {
-            if (l.window && typeof l.window.onCanvasDragged === 'function') {
-                l.window.onCanvasDragged(rawX, rawY);
-            }
-        });
-    };
-
-    window.onCanvasReleased = function(rawX, rawY) {
-        app.layers.forEach(l => {
-            if (l.window && typeof l.window.onCanvasReleased === 'function') {
-                l.window.onCanvasReleased(rawX, rawY);
-            }
-        });
-    };
+    window.onCanvasTapped = function(rawX, rawY) { dispatchLocalEvent(rawX, rawY, 'onCanvasTapped'); };
+    window.onCanvasDragged = function(rawX, rawY) { dispatchLocalEvent(rawX, rawY, 'onCanvasDragged'); };
+    window.onCanvasReleased = function(rawX, rawY) { dispatchLocalEvent(rawX, rawY, 'onCanvasReleased'); };
 <` + `/script>
 </body>
 </html>`;
