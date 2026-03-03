@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sky Map</title>
+    <meta description="A realistic 3D celestial sphere with 20 thematic 5-color profiles and audio-reactive constellations." />
+    <meta publisher="José Miranda">
+
+    <meta property="theme" label="Color Theme" type="combobox" values="Classic,Deep Space,Nebula,Supernova,Andromeda,Solar,Frozen,Void,Toxic,Electric,Sakura,Sunset,Aurora,Borealis,Matrix,Royal,Crimson,Gold,Monochrome,Vaporwave" default="Classic">
+    <meta property="speed" label="Rotation Speed" type="number" min="0" max="100" default="10">
+    <meta property="tilt" label="Celestial Tilt (Latitude)" type="number" min="-90" max="90" default="45">
+    <meta property="lineOpacity" label="Line Base Opacity" type="number" min="0" max="100" default="30">
+    <meta property="zoom" label="Zoom / FOV" type="number" min="50" max="500" default="200">
+    <meta property="audioReactive" label="Audio Reactive" type="boolean" default="true">
+    <meta property="starScale" label="Star Size Modifier" type="number" min="1" max="50" default="15">
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.7); font-size: 20px; pointer-events: none; letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">LOADING STAR CATALOG...</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+        // -------------------------------------------------------------------
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+            function simulateAudio() {
+                const time = Date.now() / 1000; 
+                const dataArray = new Array(128).fill(0);
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+                const bassVal = Math.pow(beat, 4) * 255; 
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50); 
+                }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const loadingText = document.getElementById('loading');
+
+        let width, height;
+        let timeCount = 0;
+        let bassLevel = 0;
+
+        const JSON_URL = "https://brettonw.github.io/YaleBrightStarCatalog/bsc5-short.json"; 
+        const CSV_URL = "https://raw.githubusercontent.com/MarcvdSluys/ConstellationLines/refs/heads/master/ConstellationLines.csv";
+
+        // 20 Themes with 5-color profiles (Line + 4 Star Tints)
+        const themes = {
+            "Classic":    { line: "#3388ff", s:[null, null, null, null] },
+            "Deep Space": { line: "#1a1a2e", s:["#0f3460", "#16213e", "#533483", "#e94560"] },
+            "Nebula":     { line: "#e94560", s:["#533483", "#950740", "#c3073f", "#6f2232"] },
+            "Supernova":  { line: "#ff4d00", s:["#ff9d00", "#ffcd3c", "#d4a373", "#faedcd"] },
+            "Andromeda":  { line: "#7b2cbf", s:["#9d4edd", "#c77dff", "#e0aaff", "#240046"] },
+            "Solar":      { line: "#ffbe0b", s:["#fb5607", "#ff006e", "#8338ec", "#3a86ff"] },
+            "Frozen":     { line: "#00f5d4", s:["#00bbf9", "#9b5de5", "#f15bb5", "#fee440"] },
+            "Void":       { line: "#480ca8", s:["#7209b7", "#3f37c9", "#4361ee", "#4cc9f0"] },
+            "Toxic":      { line: "#38b000", s:["#70e000", "#9ef01a", "#ccff33", "#004b23"] },
+            "Electric":   { line: "#0077b6", s:["#00b4d8", "#90e0ef", "#caf0f8", "#03045e"] },
+            "Sakura":     { line: "#ff8fab", s:["#ffc8dd", "#ffafcc", "#fb6f92", "#ffe5ec"] },
+            "Sunset":     { line: "#fb5607", s:["#ff006e", "#ff7b00", "#ff9500", "#ffbe0b"] },
+            "Aurora":     { line: "#00ff41", s:["#008f11", "#003b00", "#00ff00", "#10ff00"] },
+            "Borealis":   { line: "#4cc9f0", s:["#4361ee", "#3a0ca3", "#7209b7", "#f72585"] },
+            "Matrix":     { line: "#003b00", s:["#00ff41", "#008f11", "#002200", "#005500"] },
+            "Royal":      { line: "#ffd700", s:["#ffffff", "#c0c0c0", "#808080", "#d4af37"] },
+            "Crimson":    { line: "#660708", s:["#ba181b", "#e5383b", "#a4161a", "#161a1d"] },
+            "Gold":       { line: "#9c6644", s:["#ddb892", "#b08968", "#7f5539", "#ede0d4"] },
+            "Monochrome": { line: "#ffffff", s:["#888888", "#333333", "#cccccc", "#111111"] },
+            "Vaporwave":  { line: "#ff00ff", s:["#00ffff", "#7000ff", "#ff7b00", "#00ff00"] }
+        };
+
+        const stars = new Map();
+        const segments = [];
+
+        function resize() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function kelvinToRGB(kelvin) {
+            let temp = kelvin / 100;
+            let r, g, b;
+            if (temp <= 66) {
+                r = 255;
+                g = 99.47 * Math.log(temp) - 161.12;
+                b = temp <= 19 ? 0 : 138.52 * Math.log(temp - 10) - 305.04;
+            } else {
+                r = 329.7 * Math.pow(temp - 60, -0.133);
+                g = 288.1 * Math.pow(temp - 60, -0.075);
+                b = 255;
+            }
+            const clamp = (c) => Math.max(0, Math.min(255, Math.floor(c || 0)));
+            return `rgb(${clamp(r)}, ${clamp(g)}, ${clamp(b)})`;
+        }
+
+        class Star {
+            constructor(data) {
+                this.hr = parseInt(data.HR);
+                this.v = parseFloat(data.V) || 5.0; 
+                this.k = parseInt(data.K) || 6000;
+                let raMatch = data.RA.match(/(\d+)h\s*(\d+)m\s*([\d\.]+)s/);
+                let raDec = raMatch ? parseInt(raMatch[1]) + parseInt(raMatch[2])/60 + parseFloat(raMatch[3])/3600 : 0;
+                let decMatch = data.Dec.match(/([\+\-])(\d+)°\s*(\d+)′\s*([\d\.]+)″/);
+                let decDec = 0;
+                if (decMatch) {
+                    let sign = decMatch[1] === '-' ? -1 : 1;
+                    decDec = sign * (parseInt(decMatch[2]) + parseInt(decMatch[3])/60 + parseFloat(decMatch[4])/3600);
+                }
+                let theta = raDec * 15 * (Math.PI / 180);
+                let phi = decDec * (Math.PI / 180);
+                this.origX = Math.cos(phi) * Math.cos(theta);
+                this.origY = Math.sin(phi);
+                this.origZ = Math.cos(phi) * Math.sin(theta);
+                this.color = kelvinToRGB(this.k);
+                this.baseSize = Math.max(0.5, (7 - this.v) * 0.4);
+            }
+        }
+
+        async function fetchAndInitData() {
+            try {
+                const [jsonResponse, csvResponse] = await Promise.all([fetch(JSON_URL), fetch(CSV_URL)]);
+                const rawStarData = await jsonResponse.json();
+                const rawCsvData = await csvResponse.text();
+
+                rawStarData.forEach(d => { if (d.HR) stars.set(parseInt(d.HR), new Star(d)); });
+
+                // Chain parsing logic to connect points sequentially (A->B->C)
+                let lines = rawCsvData.trim().split('\n');
+                for (let i = 1; i < lines.length; i++) {
+                    let cols = lines[i].split(',').map(s => s.trim());
+                    
+                    // The second column dictates exactly how many stars are in this line sequence
+                    let numStars = parseInt(cols[1]);
+                    if (isNaN(numStars)) continue;
+
+                    // Connect them sequentially based on the count, ignoring the trailing empty columns
+                    for (let j = 0; j < numStars - 1; j++) {
+                        let hr1 = parseInt(cols[2 + j]);
+                        let hr2 = parseInt(cols[3 + j]);
+                        if (stars.has(hr1) && stars.has(hr2)) {
+                            segments.push([hr1, hr2]);
+                        }
+                    }
+                }
+                loadingText.style.display = "none";
+                requestAnimationFrame(animate);
+            } catch (err) { loadingText.innerText = "ERROR LOADING DATA."; }
+        }
+
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+        }
+
+        function animate() {
+            if (window.audioReactive && window.engine && window.engine.audio && window.engine.audio.freq) {
+                const freq = window.engine.audio.freq;
+                let bass = 0;
+                for (let i = 0; i < 5; i++) bass += freq[i];
+                bassLevel = bass / (5 * 255);
+            } else { bassLevel = 0; }
+
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, width, height);
+
+            const activeTheme = themes[window.theme] || themes["Classic"];
+            const sSpeed = (window.speed || 10) / 10000;
+            const cTilt = (window.tilt || 45) * (Math.PI / 180);
+            const cZoom = (window.zoom || 200);
+            const sScale = window.starScale || 15;
+            
+            const lineRGB = hexToRgb(activeTheme.line);
+            const baseOpac = (window.lineOpacity || 30) / 100;
+            const dynOpacity = Math.min(1.0, baseOpac + (bassLevel * 0.5));
+
+            timeCount += sSpeed;
+            const cosT = Math.cos(cTilt), sinT = Math.sin(cTilt);
+            const cosY = Math.cos(timeCount), sinY = Math.sin(timeCount);
+            const fov = Math.min(width, height) * (cZoom / 100);
+
+            stars.forEach(s => {
+                let x1 = s.origX * cosY - s.origZ * sinY;
+                let z1 = s.origX * sinY + s.origZ * cosY;
+                let y1 = s.origY;
+                s.x = x1; s.y = y1 * cosT - z1 * sinT; s.z = y1 * sinT + z1 * cosT;
+                s.screenX = (width / 2) + s.x * fov;
+                s.screenY = (height / 2) - s.y * fov;
+            });
+
+            // Draw Constellations with relaxed Z-clipping to prevent broken limbs
+            ctx.lineWidth = 1.5 + (bassLevel * 3);
+            ctx.strokeStyle = `rgba(${lineRGB}, ${dynOpacity})`;
+            ctx.beginPath();
+            segments.forEach(pair => {
+                let s1 = stars.get(pair[0]), s2 = stars.get(pair[1]);
+                if (s1.z > -0.4 && s2.z > -0.4) {
+                    ctx.moveTo(s1.screenX, s1.screenY);
+                    ctx.lineTo(s2.screenX, s2.screenY);
+                }
+            });
+            ctx.stroke();
+
+            // Draw Stars using the 5th color profile logic (Line + 4 tints)
+            stars.forEach(s => {
+                if (s.z > -0.2) {
+                    let depthAlpha = Math.min(1, (s.z + 0.2) * 2.0); 
+                    let dynamicSize = s.baseSize * (sScale / 10) * (1 + bassLevel);
+                    
+                    // Distribute stars among the 4 available tints in the profile
+                    const starCol = activeTheme.s[s.hr % 4] || s.color;
+
+                    ctx.beginPath();
+                    ctx.arc(s.screenX, s.screenY, dynamicSize, 0, Math.PI * 2);
+                    ctx.globalAlpha = depthAlpha;
+                    ctx.fillStyle = starCol;
+                    ctx.fill();
+
+                    if (s.v < 3.5) {
+                        ctx.shadowBlur = (6 - s.v) * 2.5 * (1 + bassLevel * 2);
+                        ctx.shadowColor = starCol;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            });
+            
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animate);
+        }
+
+        fetchAndInitData();
+    </script>
+</body>
+</html>
