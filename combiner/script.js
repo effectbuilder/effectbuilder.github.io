@@ -334,7 +334,7 @@ const Library = {
                     const type = meta.getAttribute('type');
                     // Force a fallback to an empty string if default is missing
                     const def = meta.getAttribute('default') !== null ? meta.getAttribute('default') : "";
-                    
+
                     if (prop) {
                         let val = `"${def}"`;
                         if (type === 'number') val = parseFloat(def) || 0;
@@ -579,9 +579,13 @@ class Compositor {
     setLayout(mode) {
         this.layout = mode;
         this.layers.forEach(l => l.enabled = true);
+
         if (mode === 'SIDE_BY_SIDE' || mode === 'VERTICAL' || mode === 'GRID') {
             this.layers.forEach(l => l.blend = 'source-over');
+        } else if (mode === 'LAYERED') {
+            this.layers.forEach(l => l.blend = 'screen');
         }
+
         this.updateLayout();
         document.querySelectorAll('.layout-grid button, #btn-pip').forEach(b => b.classList.remove('active'));
         if (mode === 'LAYERED') document.getElementById('btn-layered').classList.add('active');
@@ -793,11 +797,11 @@ const exporter = {
                     let tag = `\n    <meta property="${uniqueName}" label="${uniqueLabel}" type="${p.type}"`;
                     if (p.min) tag += ` min="${p.min}"`;
                     if (p.max) tag += ` max="${p.max}"`;
-                    
+
                     // ALWAYS write a default attribute, using an empty string if undefined
                     const defVal = (p.default !== undefined && p.default !== null) ? p.default : "";
                     tag += ` default="${defVal}"`;
-                    
+
                     if (p.values) tag += ` values="${p.values}"`;
                     tag += `>`;
                     metaTags += tag;
