@@ -6,7 +6,6 @@ window.tetrisGravityMultiplier = 4;
 window.textSpeedMultiplier = 1;
 
 // --- Giphy Search Integration ---
-const GIPHY_API_KEY = 'jqmZdx1G37Nr0QZ5dEtDzmzUxfCZsyeg'; // <-- IMPORTANT: PASTE YOUR GIPHY API KEY HERE
 let giphySearchOffset = 0;
 let currentGiphySearchTerm = '';
 let activeGifSearchObjectId = null;
@@ -964,10 +963,10 @@ document.addEventListener('DOMContentLoaded', function () {
             let url;
             if (term === '__trending__') {
                 // If the term is our special keyword, use the trending endpoint
-                url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&offset=${giphySearchOffset}`;
+                url = `https://us-central1-effect-builder.cloudfunctions.net/searchGifs?limit=${limit}&offset=${giphySearchOffset}`;
             } else {
                 // Otherwise, use the search endpoint as before
-                url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
+                url = `https://us-central1-effect-builder.cloudfunctions.net/searchGifs?q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
             }
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Giphy API responded with status ${response.status}`);
