@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dragon Skin</title>
+    <meta publisher="José Miranda">
+    <meta description="Immerse yourself in Dragon Skin, a highly customizable, audio-reactive procedural rendering engine. Featuring 21 stunning mythical color profiles, dynamic geometry, organic breathing animations, and deep sound responsiveness. Tailor every scale, twist, and flash to craft your perfect interactive visualizer." />
+    <meta property="theme" label="Color Theme" type="combobox" values="Custom,Amethyst Wyrm,Autumn Wyrm,Bone Dragon,Celestial Dragon,Crimson Drake,Cyberpunk Drake,Desert Basilisk,Emerald Serpent,Forest Guardian,Galaxy Serpent,Golden Emperor,Ice Leviathan,Magma Beast,Neon Wyrm,Ocean Sovereign,Obsidian Dragon,Pastel Dragon,Rainbow,Spectral Wyrm,Toxic Viper,Venomous Cobra" default="Toxic Viper" tooltip="Select from 21 unique mythical color palettes or define your own custom theme.">
+    <meta property="color_mode" label="Color Animation Mode" type="combobox" values="Linear,Radial In,Radial Out,Spiral,Conic,Random" default="Radial In" tooltip="Direction and pattern of the color gradient flow across the grid.">
+    <meta property="color_saturation" label="Color Saturation" type="number" min="0" max="100" default="100" tooltip="Adjust the intensity and richness of the active color theme.">
+    <meta property="color_lightness" label="Color Lightness" type="number" min="0" max="100" default="100" tooltip="Brighten or darken the overall exposure of the scales.">
+    <meta property="animate_colors" label="Animate Colors" type="boolean" default="true" tooltip="Toggle the continuous flowing animation of the color gradient.">
+    <meta property="color_speed" label="Color Animation Speed" type="number" min="0" max="100" default="17" tooltip="Set how quickly the colors shift and flow across the grid.">
+    <meta property="custom1" label="Custom Color 1" type="color" default="#aa0000" tooltip="Primary custom color (used when Theme is set to Custom).">
+    <meta property="custom2" label="Custom Color 2" type="color" default="#00aa00" tooltip="Secondary custom color (used when Theme is set to Custom).">
+    <meta property="custom3" label="Custom Color 3" type="color" default="#0000aa" tooltip="Tertiary custom color (used when Theme is set to Custom).">
+    <meta property="matte_shading" label="Matte Shading Depth" type="number" min="0" max="100" default="45" tooltip="Controls the depth, shadows, and 3D gradient effect applied to each shape.">
+
+    <meta property="grid_pattern" label="Grid Pattern" type="combobox" values="Normal,Circular,Spiral,Diamond Pattern,Vertical" default="Normal" tooltip="Choose the mathematical layout used to spawn the shapes across the canvas.">
+    <meta property="scale_shape" label="Scale Shape" type="combobox" values="Dagger,Dragon,Gauntlet Plate,Kite Shield,Roundel" default="Dragon" tooltip="Select the geometric design for the individual overlapping tiles.">
+    <meta property="reverse_layering" label="Reverse Layering" type="boolean" default="false" tooltip="Invert the rendering order so shapes draw back-to-front instead of front-to-back.">
+    <meta property="scale_size_slider" label="Scale Size" type="number" min="1" max="20" default="6" tooltip="Adjust the base radius and overall footprint of each individual shape.">
+    <meta property="overlap" label="Scale Overlap" type="number" min="30" max="100" default="37" tooltip="Control how tightly packed the shapes are. Lower values spread them out.">
+    <meta property="randomness" label="Placement Randomness" type="number" min="0" max="100" default="16" tooltip="Introduce chaotic XY offsets to make the pattern feel more organic and imperfect.">
+    <meta property="scale_angle" label="Global Grid Angle" type="number" min="-180" max="180" default="0" tooltip="Rotate the entire grid matrix from a global perspective.">
+    <meta property="object_rotation" label="Base Object Rotation" type="number" min="0" max="360" default="0" tooltip="Set the base starting angle for every individual shape.">
+    <meta property="radial_offset" label="Rotational Step Offset" type="number" min="-45" max="45" default="5" tooltip="Incremental twist applied to each successive shape in the pattern.">
+    <meta property="auto_rotate_shapes" label="Auto-Rotate Objects" type="boolean" default="false" tooltip="Toggle continuous spinning animation for individual shapes.">
+    <meta property="rotate_speed" label="Shape Rotation Speed" type="number" min="0" max="100" default="0" tooltip="Determine how fast the individual shapes spin (if auto-rotation is enabled).">
+
+    <meta property="breathe_speed" label="Breathing Speed" type="number" min="0" max="100" default="6" tooltip="Speed of the organic expanding and contracting phase motion.">
+    <meta property="flash_probability" label="Beat Flash Density" type="number" min="0" max="100" default="22" tooltip="Likelihood of a shape bursting with energy when an audio peak is detected.">
+    <meta property="flash_intensity" label="Flash Intensity" type="number" min="0" max="100" default="100" tooltip="Maximum opacity and brightness of the audio-reactive white flashes.">
+    <meta property="decay_speed" label="Flash Decay Speed" type="number" min="0" max="100" default="50" tooltip="How quickly the audio flashes fade back down into the base colors.">
+    <meta property="audio_bin" label="Audio Frequency Bin" type="number" min="0" max="199" default="0" tooltip="Select the specific audio frequency to react to (0 = Low Bass, 199 = High Treble).">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+    <script>
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+            window.engine = { audio: { freq: new Array(200).fill(0) } };
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(200).fill(0);
+                const beat = (Math.sin(time * Math.PI * 2.5) + 1) / 2;
+                const bassVal = Math.pow(beat, 25) * 255;
+                for (let i = 0; i < 200; i++) {
+                    dataArray[i] = bassVal;
+                }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const width = 320, height = 200;
+
+        const palettes = {
+            "Emerald Serpent": ["#001a08", "#004d1a", "#009933", "#00cc44", "#ccff33"],
+            "Crimson Drake": ["#1a0000", "#660000", "#cc0000", "#ff3300", "#ffcc00"],
+            "Amethyst Wyrm": ["#0d001a", "#330066", "#7700cc", "#9933ff", "#00ffff"],
+            "Obsidian Dragon": ["#000000", "#080808", "#1a1a1a", "#333333", "#4d4d4d"],
+            "Golden Emperor": ["#1a0d00", "#664400", "#ccaa00", "#ffdf00", "#ffffff"],
+            "Ice Leviathan": ["#00050d", "#002266", "#0088dd", "#00ffff", "#e6ffff"],
+            "Toxic Viper": ["#1a0022", "#440066", "#8800cc", "#00ff00", "#ccff00"],
+            "Celestial Dragon": ["#00001a", "#1a1a66", "#4d4dcc", "#8888ff", "#ffffff"],
+            "Magma Beast": ["#1a0500", "#882200", "#dd5500", "#ff8800", "#ffff00"],
+            "Forest Guardian": ["#000d00", "#0d4d00", "#2d8800", "#aaff00", "#ffffcc"],
+            "Ocean Sovereign": ["#00081a", "#003366", "#0099aa", "#00ffcc", "#ffffff"],
+            "Desert Basilisk": ["#1a0a00", "#663300", "#cc7700", "#ffaa33", "#ffedcc"],
+            "Neon Wyrm": ["#1a0033", "#ff00ff", "#00ffff", "#ffffff", "#00ffff"],
+            "Cyberpunk Drake": ["#000000", "#cc0044", "#330011", "#00ffcc", "#008877"],
+            "Pastel Dragon": ["#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff"],
+            "Galaxy Serpent": ["#050015", "#220044", "#cc0066", "#0088aa", "#00ffff"],
+            "Autumn Wyrm": ["#1a0800", "#662200", "#cc6600", "#ccaa00", "#ffe680"],
+            "Venomous Cobra": ["#050505", "#2d3300", "#668800", "#ccff00", "#ffffff"],
+            "Bone Dragon": ["#0a000a", "#222222", "#444444", "#bbbbbb", "#f5f5dc"],
+            "Spectral Wyrm": ["#000000", "#1a0033", "#0055ff", "#00ffcc", "#ffffff"],
+            "Rainbow": ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#8b00ff"]
+        };
+
+        let time = 0, autoRotateTime = 0, colorTime = 0, lastTime = performance.now(), cachedScales = [], lastParams = "";
+        let prevBass = 0;
+
+        const parsedPalettes = {};
+        for (const [key, hexArr] of Object.entries(palettes)) {
+            let colorsStr = [];
+            for (let i = 0; i < hexArr.length; i++) colorsStr.push(hexArr[i]);
+            for (let i = hexArr.length - 2; i >= 0; i--) colorsStr.push(hexArr[i]);
+            parsedPalettes[key] = colorsStr.map(hexToRgb);
+        }
+        let customPaletteCache = { key: "", colors: [] };
+
+        function hexToRgb(hex) {
+            let res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return res ? { r: parseInt(res[1], 16), g: parseInt(res[2], 16), b: parseInt(res[3], 16) } : { r: 0, g: 0, b: 0 };
+        }
+        function lerpColor(c1, c2, f) { return { r: c1.r + (c2.r - c1.r) * f, g: c1.g + (c2.g - c1.g) * f, b: c1.b + (c2.b - c1.b) * f }; }
+
+        function applyColorControl(rgb) {
+            const sat = (window.color_saturation ?? 100) / 100;
+            const lum = (window.color_lightness ?? 100) / 100;
+            const gray = (rgb.r + rgb.g + rgb.b) / 3;
+            return {
+                r: (gray + (rgb.r - gray) * sat) * lum,
+                g: (gray + (rgb.g - gray) * sat) * lum,
+                b: (gray + (rgb.b - gray) * sat) * lum
+            };
+        }
+
+        function adjustLightness(rgb, amt) {
+            if (amt > 0) return lerpColor(rgb, { r: 255, g: 255, b: 255 }, amt * 0.4);
+            return lerpColor(rgb, { r: 0, g: 0, b: 0 }, -amt * 1.0);
+        }
+
+        function toRgbStr(rgb, a = 1) { return `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${a})`; }
+        function fastRandom(seed, salt) {
+            let h = Math.sin(seed * 12.9898 + salt * 78.233) * 43758.5453;
+            return h - Math.floor(h);
+        }
+
+        function getPaletteColor(pName, customHexArr, t) {
+            let colors;
+            if (pName === "Custom") {
+                const customKey = customHexArr.join('');
+                if (customPaletteCache.key !== customKey) {
+                    let cStr = [];
+                    for (let i = 0; i < customHexArr.length; i++) cStr.push(customHexArr[i]);
+                    for (let i = customHexArr.length - 2; i >= 0; i--) cStr.push(customHexArr[i]);
+                    customPaletteCache = { key: customKey, colors: cStr.map(hexToRgb) };
+                }
+                colors = customPaletteCache.colors;
+            } else {
+                colors = parsedPalettes[pName] || parsedPalettes["Emerald Serpent"];
+            }
+
+            t = ((t % 1.0) + 1.0) % 1.0;
+            let st = t * (colors.length - 1), i = Math.floor(st), f = st - i;
+            return lerpColor(colors[i], colors[Math.min(i + 1, colors.length - 1)], f);
+        }
+
+        function generateShapePath(shape, r, seed) {
+            let pathCoords = [];
+            switch (shape) {
+                case "Dagger":
+                    pathCoords = [{ x: 0, y: -r * 1.8 }, { x: r * 0.2, y: -r * 0.2 }, { x: 0, y: r * 0.3 }, { x: -r * 0.2, y: -r * 0.2 }];
+                    break;
+                case "Kite Shield":
+                    pathCoords = [{ x: -r * 0.7, y: -r }, { x: r * 0.7, y: -r }, { x: r * 0.7, y: r * 0.1 }, { x: 0, y: r * 1.3 }, { x: -r * 0.7, y: r * 0.1 }];
+                    break;
+                case "Gauntlet Plate":
+                    pathCoords = [{ x: -r * 0.9, y: -r * 0.7 }];
+                    for (let i = 0; i <= 8; i++) {
+                        let t = i / 8, ang = (180 - t * 180) * Math.PI / 180;
+                        pathCoords.push({ x: Math.cos(ang) * r * 0.9, y: Math.sin(ang) * r * 0.4 + r * 0.6 });
+                    }
+                    pathCoords.push({ x: r * 0.9, y: -r * 0.7 });
+                    break;
+                case "Roundel":
+                    for (let i = 0; i < 16; i++) {
+                        let ang = (i / 16) * Math.PI * 2;
+                        pathCoords.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+                    }
+                    break;
+                default: // Dragon
+                    const internalJag = 0.15;
+                    pathCoords.push({ x: 0, y: -r * 0.8 }, { x: r * 0.6, y: -r * 0.3 });
+                    for (let i = 1; i <= 4; i++) {
+                        let t = i / 4, mt = 1 - t;
+                        let px = mt * mt * (r * 0.6) + 2 * mt * t * (r * 0.25), py = mt * mt * (-r * 0.3) + 2 * mt * t * (r * 0.4) + t * t * r;
+                        let jx = i < 4 ? (fastRandom(seed, i + 10) - 0.5) * r * 0.6 * internalJag : 0, jy = i < 4 ? (fastRandom(seed, i + 20) - 0.5) * r * 0.6 * internalJag : fastRandom(seed, 99) * r * 0.4 * internalJag;
+                        pathCoords.push({ x: px + jx, y: py + jy });
+                    }
+                    let lx = pathCoords[pathCoords.length - 1].x, ly = pathCoords[pathCoords.length - 1].y;
+                    for (let i = 1; i <= 4; i++) {
+                        let t = i / 4, mt = 1 - t;
+                        let px = mt * mt * lx + 2 * mt * t * (-r * 0.25) + t * t * (-r * 0.6), py = mt * mt * ly + 2 * mt * t * (r * 0.4) + t * t * (-r * 0.3);
+                        pathCoords.push({ x: px + (i < 4 ? (fastRandom(seed, i + 30) - 0.5) * r * 0.6 * internalJag : 0), y: py + (i < 4 ? (fastRandom(seed, i + 40) - 0.5) * r * 0.6 * internalJag : 0) });
+                    }
+            }
+            return pathCoords;
+        }
+
+        function buildGrid(r, overlapAmt, randAmt, pattern, reverse, gAngleDeg) {
+            cachedScales = [];
+            const centerX = width / 2, centerY = height / 2;
+            const os = 400;
+
+            const gAngle = gAngleDeg * Math.PI / 180;
+            const cosA = Math.cos(gAngle), sinA = Math.sin(gAngle);
+
+            function createScaleObj(bx, by, offsetX, offsetY, seed, radialAngle, sortOrder, index) {
+                const finalX = bx + offsetX;
+                const finalY = by + offsetY;
+
+                const relX = finalX - centerX;
+                const relY = finalY - centerY;
+                const dx = relX * cosA + relY * sinA;
+                const dy = -relX * sinA + relY * cosA;
+                const distFromCenter = Math.sqrt(dx * dx + dy * dy) / 220;
+                const cAngle = Math.atan2(dy, dx) / (Math.PI * 2) + 0.5;
+                const linearPos = (finalX * cosA + finalY * sinA) / 220;
+                const pathCoords = generateShapePath(window.scale_shape || "Dragon", r, seed);
+
+                return {
+                    x: finalX, y: finalY, bx, by, seed, flash: 0, radialAngle, sortOrder, index,
+                    distFromCenter, cAngle, linearPos, pathCoords
+                };
+            }
+
+            if (pattern === "Circular") {
+                const rings = 12;
+                let idx = 0;
+                for (let ring = 0; ring < rings; ring++) {
+                    const ringRadius = ring * (r * overlapAmt * 1.5);
+                    const count = (ring === 0) ? 1 : Math.max(1, Math.floor((Math.PI * 2 * ringRadius) / (r * overlapAmt * 1.5)));
+                    for (let i = 0; i < count; i++) {
+                        let angle = (i / count) * Math.PI * 2;
+                        let bx = centerX + Math.cos(angle) * ringRadius;
+                        let by = centerY + Math.sin(angle) * ringRadius;
+                        cachedScales.push(createScaleObj(bx, by, 0, 0, ring * 100 + i, angle - Math.PI / 2, ring, idx++));
+                    }
+                }
+            } else if (pattern === "Spiral") {
+                const n = 450;
+                const c = r * overlapAmt * 1.2;
+                for (let i = 0; i < n; i++) {
+                    const angle = i * 137.5 * Math.PI / 180;
+                    const radius = c * Math.sqrt(i);
+                    if (radius > Math.sqrt(width * width + height * height)) continue;
+                    let bx = centerX + Math.cos(angle) * radius;
+                    let by = centerY + Math.sin(angle) * radius;
+                    cachedScales.push(createScaleObj(bx, by, 0, 0, i, angle - Math.PI / 2, i, i));
+                }
+            } else {
+                const sx = r * overlapAmt * 1.8, sy = r * overlapAmt * 1.2;
+                let idx = 0;
+                for (let row = Math.ceil((height + os) / sy); row >= -os / sy; row--) {
+                    for (let col = -os / sx; col <= (width + os) / sx; col++) {
+                        let bx, by;
+                        if (pattern === "Diamond Pattern") {
+                            bx = (col - row) * (sx / 2) + centerX;
+                            by = (col + row) * (sy / 2);
+                        } else if (pattern === "Vertical") {
+                            bx = col * sx; by = row * sy;
+                        } else {
+                            bx = col * sx + (Math.abs(row) % 2 !== 0 ? sx / 2 : 0); by = row * sy;
+                        }
+                        let seed = col * 137 + row * 91;
+                        let offsetX = randAmt > 0 ? (fastRandom(seed, 1) - 0.5) * sx * randAmt : 0;
+                        let offsetY = randAmt > 0 ? (fastRandom(seed, 2) - 0.5) * sy * randAmt : 0;
+                        cachedScales.push(createScaleObj(bx, by, offsetX, offsetY, seed, 0, by + offsetY, idx++));
+                    }
+                }
+            }
+            cachedScales.sort((a, b) => reverse ? a.sortOrder - b.sortOrder : b.sortOrder - a.sortOrder);
+        }
+
+        function drawScale(ctx, s, r, phase, baseRGB, pattern, rotTime) {
+            ctx.save();
+            ctx.translate(s.x + Math.cos(phase * 0.8) * r * 0.05, s.y + Math.sin(phase) * (r * 0.15));
+
+            let rotation = (window.object_rotation || 0) * Math.PI / 180;
+            if (pattern === "Circular" || pattern === "Spiral") {
+                rotation += s.radialAngle;
+            }
+
+            if (window.auto_rotate_shapes) {
+                rotation += s.index * (window.radial_offset || 0) * Math.PI / 180;
+                rotation += rotTime;
+            }
+
+            ctx.rotate(rotation);
+
+            const currentFlash = s.flash * (window.flash_intensity / 100);
+            const shadeFactor = window.matte_shading / 100;
+
+            ctx.beginPath();
+            ctx.moveTo(s.pathCoords[0].x, s.pathCoords[0].y);
+            for (let i = 1; i < s.pathCoords.length; i++) ctx.lineTo(s.pathCoords[i].x, s.pathCoords[i].y);
+            ctx.closePath();
+
+            if (currentFlash < 1.0) {
+                if (shadeFactor > 0) {
+                    let darkEdge = adjustLightness(baseRGB, -0.6 * shadeFactor);
+                    let blackBottom = adjustLightness(baseRGB, -0.8 * shadeFactor);
+                    let grad = ctx.createLinearGradient(0, -r, 0, r);
+                    grad.addColorStop(0, toRgbStr(darkEdge));
+                    grad.addColorStop(0.35, toRgbStr(baseRGB));
+                    grad.addColorStop(0.85, toRgbStr(baseRGB));
+                    grad.addColorStop(1, toRgbStr(blackBottom));
+                    ctx.shadowColor = `rgba(0,0,0,${0.95 * shadeFactor})`;
+                    ctx.shadowBlur = r * 0.5 * shadeFactor;
+                    ctx.shadowOffsetY = r * 0.4 * shadeFactor;
+                    ctx.fillStyle = grad;
+                } else { ctx.fillStyle = toRgbStr(baseRGB); }
+                ctx.fill();
+            }
+            if (currentFlash > 0.001) {
+                ctx.globalAlpha = currentFlash; ctx.fillStyle = "#ffffff";
+                ctx.fill(); ctx.globalAlpha = 1.0;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(s.pathCoords[0].x, s.pathCoords[0].y);
+            for (let i = 1; i < s.pathCoords.length; i++) ctx.lineTo(s.pathCoords[i].x, s.pathCoords[i].y);
+            ctx.closePath();
+            ctx.strokeStyle = "rgba(0, 0, 0, 1.0)"; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.restore();
+        }
+
+        function animate(now) {
+            const dt = (now - lastTime) / 1000; lastTime = now;
+            const rMapped = (window.scale_size_slider + 5) * 5;
+            const overlap = (window.overlap || 50) / 100, rand = (window.randomness || 0) / 100;
+            const pattern = window.grid_pattern || "Normal";
+            const shape = window.scale_shape || "Dragon";
+            const reverse = window.reverse_layering || false;
+            const gAngleDeg = window.scale_angle || 0;
+
+            const currentParams = `${rMapped}_${overlap}_${rand}_${pattern}_${shape}_${reverse}_${gAngleDeg}`;
+            if (currentParams !== lastParams) {
+                buildGrid(rMapped, overlap, rand, pattern, reverse, gAngleDeg);
+                lastParams = currentParams;
+            }
+
+            let curBass = 0;
+            const targetBin = Math.min(199, Math.max(0, Math.floor(window.audio_bin || 0)));
+
+            if (window.engine?.audio?.freq && window.engine.audio.freq.length > targetBin) {
+                curBass = window.engine.audio.freq[targetBin] / 255;
+            }
+
+            const isPeak = (curBass - prevBass) > 0.1;
+            prevBass = curBass;
+
+            time += dt;
+
+            if (window.auto_rotate_shapes && (window.rotate_speed || 0) > 0) {
+                autoRotateTime += dt * (window.rotate_speed / 10);
+            } else {
+                autoRotateTime = 0;
+            }
+
+            if (window.animate_colors) colorTime += dt * (window.color_speed || 20) * 0.01;
+
+            const theme = window.theme || "Galaxy Serpent";
+            const custom = [window.custom1 || "#aa0000", window.custom2 || "#00aa00", window.custom3 || "#0000aa"];
+            const decayMult = (window.decay_speed <= 0) ? 1.0 : Math.pow(1.0 - (window.decay_speed / 100), dt * 10);
+            const currentBreathe = window.breathe_speed > 0 ? (time * (window.breathe_speed / 20) * 2.5) : 0;
+
+            ctx.fillStyle = "#010101"; ctx.fillRect(0, 0, width, height);
+            ctx.save();
+
+            const gAngle = gAngleDeg * Math.PI / 180;
+            const cosA = Math.cos(gAngle);
+            const sinA = Math.sin(gAngle);
+
+            ctx.translate(width / 2, height / 2); ctx.rotate(gAngle); ctx.translate(-width / 2, -height / 2);
+
+            const cMode = window.color_mode || "Linear";
+
+            // Culling margin: Needs to be large enough to cover the max stretch of shapes + breathing offsets
+            const renderMargin = rMapped * 3;
+
+            for (let s of cachedScales) {
+                s.flash *= decayMult;
+                if (isPeak && (window.flash_probability / 100) > 0 && fastRandom(s.seed, now) < (window.flash_probability / 100)) s.flash = 1.0;
+
+                // --- OPTIMIZATION: Frustum Culling ---
+                // Calculate where this shape will actually end up on the screen after canvas rotation
+                const dx = s.x - (width / 2);
+                const dy = s.y - (height / 2);
+                const screenX = dx * cosA - dy * sinA + (width / 2);
+                const screenY = dx * sinA + dy * cosA + (height / 2);
+
+                // Skip drawing if it's completely outside the visible canvas area
+                if (screenX < -renderMargin || screenX > width + renderMargin ||
+                    screenY < -renderMargin || screenY > height + renderMargin) {
+                    continue;
+                }
+
+                let phase = window.breathe_speed > 0 ? currentBreathe - (s.distFromCenter * 4) : 0;
+
+                let cPos;
+                if (cMode === "Radial In") {
+                    cPos = s.distFromCenter;
+                } else if (cMode === "Radial Out") {
+                    cPos = 1.0 - s.distFromCenter;
+                } else if (cMode === "Spiral") {
+                    cPos = (s.cAngle + s.distFromCenter) % 1.0;
+                } else if (cMode === "Conic") {
+                    cPos = s.cAngle;
+                } else if (cMode === "Random") {
+                    cPos = fastRandom(s.seed, 42);
+                } else {
+                    cPos = s.linearPos;
+                }
+
+                let baseRGB = applyColorControl(getPaletteColor(theme, custom, cPos + colorTime));
+                drawScale(ctx, s, rMapped, phase, baseRGB, pattern, autoRotateTime);
+            }
+            ctx.restore();
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+    </script>
+</body>
+
+</html>
