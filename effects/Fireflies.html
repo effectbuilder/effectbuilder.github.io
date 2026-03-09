@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firefly Glade</title>
+    <meta description="A swarm of bio-luminescent fireflies with fully customizable colors and audio-reactive white flares." />
+    <meta publisher="José Miranda" />
+
+    <meta property="profile" label="Color Profile" type="combobox" values="Custom,Biolume,Forest,Magma,Electric,Cyberpunk,Midnight,Nuclear,Sakura,Autumn,Arctic,Abyss,Neon,Gold,Fairy,Toxic,Vaporwave,Candy,Crimson,Ocean,Emerald" default="Biolume" tooltip="Choose a preset color theme or select Custom to use your own colors.">
+    
+    <meta property="customColor1" label="Firefly Core" type="color" default="#00FFCC" tooltip="The inner color of the firefly. Active only in Custom mode.">
+    <meta property="customColor2" label="Firefly Glow" type="color" default="#0066FF" tooltip="The outer halo color of the firefly. Active only in Custom mode.">
+    <meta property="customBG" label="Custom Background" type="color" default="#050510" tooltip="The background color of the canvas. Active only in Custom mode.">
+    
+    <meta property="fireflyCount" label="Swarm Density" type="number" min="10" max="300" default="100" tooltip="Adjusts how many fireflies are present in the swarm.">
+    <meta property="baseSpeed" label="Drift Speed" type="number" min="1" max="100" default="15" tooltip="Controls the natural movement speed of the fireflies.">
+    <meta property="glowSize" label="Glow Radius" type="number" min="5" max="50" default="20" tooltip="Changes the size of the light halo surrounding each firefly.">
+    <meta property="audio_sens" label="Audio Sensitivity" type="number" min="0" max="100" default="50" tooltip="Determines how much the fireflies react to your music.">
+    <meta property="beatWhite" label="Beat White Flare" type="number" min="0" max="100" default="70" tooltip="Controls the intensity of the white energy burst on bass hits.">
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+    <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+        // -------------------------------------------------------------------
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+            function simulateAudio() {
+                const time = Date.now() / 1000; 
+                const dataArray = new Array(128).fill(0);
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+                const bassVal = Math.pow(beat, 6) * 255; 
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50); 
+                }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+
+    <script>
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = 320;
+        const height = 200;
+
+        let fireflies = [];
+
+        const colorProfiles = {
+            "Biolume":   ["#aaff00", "#55ff00", "#001100"],
+            "Forest":    ["#22ff88", "#00ff44", "#020802"],
+            "Magma":     ["#ffaa00", "#ff4400", "#080200"],
+            "Electric":  ["#00ffff", "#0088ff", "#000208"],
+            "Cyberpunk": ["#ff00ff", "#00ffff", "#050008"],
+            "Midnight":  ["#5555ff", "#ffffff", "#000011"],
+            "Nuclear":   ["#ccff00", "#00ff00", "#050800"],
+            "Sakura":    ["#ffbbee", "#ff66aa", "#080002"],
+            "Autumn":    ["#ffcc00", "#ff6600", "#110800"],
+            "Arctic":    ["#ffffff", "#88ccff", "#020508"],
+            "Abyss":     ["#4400ff", "#000000", "#000002"],
+            "Neon":      ["#ffff00", "#ff00ff", "#000000"],
+            "Gold":      ["#ffeeaa", "#ffaa00", "#080500"],
+            "Fairy":     ["#ffffff", "#ffccff", "#080208"],
+            "Toxic":     ["#00ff00", "#aaff00", "#020400"],
+            "Vaporwave": ["#00d4ff", "#ff00bd", "#090210"],
+            "Candy":     ["#ff5588", "#55ffcc", "#050002"],
+            "Crimson":   ["#ff0000", "#880000", "#030000"],
+            "Ocean":     ["#0088ff", "#00ffee", "#000508"],
+            "Emerald":   ["#00ff88", "#008844", "#000401"]
+        };
+
+        class Firefly {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5);
+                this.vy = (Math.random() - 0.5);
+                this.phase = Math.random() * Math.PI * 2;
+                this.pulseSpeed = 0.02 + Math.random() * 0.04;
+            }
+
+            update(bass, treb) {
+                const speedMult = (baseSpeed / 10.0) + (bass * 8);
+                this.vx += (Math.random() - 0.5) * 0.15 + (Math.random() - 0.5) * bass;
+                this.vy += (Math.random() - 0.5) * 0.15 + (Math.random() - 0.5) * bass;
+                
+                const maxV = 1.2 + (bass * 2);
+                this.vx = Math.max(-maxV, Math.min(maxV, this.vx));
+                this.vy = Math.max(-maxV, Math.min(maxV, this.vy));
+
+                this.x += this.vx * speedMult;
+                this.y += this.vy * speedMult;
+
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+
+                this.phase += this.pulseSpeed + (treb * 0.15);
+            }
+
+            draw(colors, bass) {
+                const brightness = (Math.sin(this.phase) + 1) / 2;
+                const flareFactor = (beatWhite / 100) * bass;
+                const finalGlow = glowSize + (bass * 40);
+                
+                ctx.beginPath();
+                const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, finalGlow);
+                
+                grad.addColorStop(0, colors[0]);
+                if(flareFactor > 0.1) {
+                    grad.addColorStop(0.05 * flareFactor, "#ffffff");
+                }
+                grad.addColorStop(0.5, colors[1] + "00");
+                grad.addColorStop(1, "transparent");
+
+                ctx.fillStyle = grad;
+                ctx.globalAlpha = brightness + (flareFactor * 0.5);
+                ctx.arc(this.x, this.y, finalGlow, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#ffffff";
+                ctx.globalAlpha = Math.min(1.0, brightness + flareFactor);
+                ctx.fillRect(this.x - 0.5, this.y - 0.5, 1, 1);
+            }
+        }
+
+        function initSwarm() {
+            fireflies = [];
+            for (let i = 0; i < fireflyCount; i++) {
+                fireflies.push(new Firefly());
+            }
+        }
+
+        function render() {
+            if (fireflies.length !== fireflyCount) initSwarm();
+            
+            let currentColors;
+            if (profile === "Custom") {
+                currentColors = [customColor1, customColor2, customBG];
+            } else {
+                currentColors = colorProfiles[profile] || colorProfiles["Biolume"];
+            }
+            
+            let bass = 0;
+            let treb = 0;
+            if (window.engine && window.engine.audio.freq) {
+                const freq = window.engine.audio.freq;
+                const sens = audio_sens / 50;
+                bass = ((freq[0] + freq[1] + freq[2]) / 3 / 255) * sens;
+                treb = ((freq[40] + freq[41] + freq[42]) / 3 / 255) * sens;
+            }
+
+            // Draw Background
+            ctx.globalCompositeOperation = "source-over";
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = currentColors[2];
+            ctx.fillRect(0, 0, width, height);
+
+            // Subtle Background Audio Glow
+            if (bass > 0.1) {
+                ctx.fillStyle = "#ffffff";
+                ctx.globalAlpha = bass * 0.05;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            // Render Swarm
+            ctx.globalCompositeOperation = "lighter";
+            for (let f of fireflies) {
+                f.update(bass, treb);
+                f.draw(currentColors, bass);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        initSwarm();
+        render();
+    </script>
+</body>
+</html>
