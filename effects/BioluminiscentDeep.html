@@ -115,8 +115,8 @@
 
             const speed = (window.fluidSpeed || 5) / 1000;
             const scale = (window.swellScale || 85) / 60; 
-            const threshold = (121 - (window.agitation || 100)) / 100;
-            const audioSens = (window.audioImpact || 17) / 100;
+            const threshold = (121 - (window.agitation || 0)) / 100;
+            const audioSens = (window.audioImpact || 0) / 100;
             const flare = (window.whiteFlare || 80) / 255;
 
             const profileName = window.colorProfile || "Custom";
