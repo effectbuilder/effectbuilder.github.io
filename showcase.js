@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
         "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html",
         "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html",
         "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
-        "skyMap.html","stellarSynapse.html","Fireflies.html","BioluminiscentDeep.html","DragonSkin.html","DragonSkin2.html"
+        "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html"
     ];
 
     const effectsFolder = "effects";
@@ -438,22 +438,31 @@ document.addEventListener('DOMContentLoaded', function () {
         effectViewTitle.textContent = effect.title;
         effectIframe.src = effect.effectUrl;
 
-        // Reset Buttons
-        if (effectDownloadBtn) {
-            const newBtn = effectDownloadBtn.cloneNode(true);
-            effectDownloadBtn.replaceWith(newBtn);
-            newBtn.addEventListener('click', () => handleDownloadZip(effect, newBtn));
+        // --- RE-FETCH THE BUTTONS FROM THE DOM EVERY TIME ---
+        const shareBtn = document.getElementById('effect-share-btn');
+        const downloadBtn = document.getElementById('effect-download-btn');
+        const recordBtn = document.getElementById('effect-record-btn');
+
+        // Handle Share Button
+        if (shareBtn) {
+            const newShareBtn = shareBtn.cloneNode(true);
+            shareBtn.replaceWith(newShareBtn);
+            // This ensures the listener is bound to the SPECIFIC filename of this modal instance
+            newShareBtn.addEventListener('click', () => handleShareLink(newShareBtn, effect.filename));
         }
-        if (effectShareBtn) {
-            const newBtn = effectShareBtn.cloneNode(true);
-            effectShareBtn.replaceWith(newBtn);
-            newBtn.addEventListener('click', () => handleShareLink(newBtn, effect.filename));
+
+        // Handle Download Button
+        if (downloadBtn) {
+            const newDownloadBtn = downloadBtn.cloneNode(true);
+            downloadBtn.replaceWith(newDownloadBtn);
+            newDownloadBtn.addEventListener('click', () => handleDownloadZip(effect, newDownloadBtn));
         }
-        if (effectRecordBtn) {
-            const newBtn = effectRecordBtn.cloneNode(true);
-            effectRecordBtn.replaceWith(newBtn);
-            // Pass the button element so we can change its text while recording
-            newBtn.addEventListener('click', () => recordEffectPreview(effect.title, newBtn));
+
+        // Handle Record Button
+        if (recordBtn) {
+            const newRecordBtn = recordBtn.cloneNode(true);
+            recordBtn.replaceWith(newRecordBtn);
+            newRecordBtn.addEventListener('click', () => recordEffectPreview(effect.title, newRecordBtn));
         }
 
         // Iframe Scaling
@@ -544,13 +553,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function handleShareLink(btn, filename) {
+        // Ensure we are using the filename passed during the specific modal open event
         const url = `${window.location.origin}${window.location.pathname}#${filename}`;
+
         try {
             await navigator.clipboard.writeText(url);
-            const old = btn.innerHTML;
+            const oldHtml = btn.innerHTML;
             btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-            setTimeout(() => btn.innerHTML = old, 2000);
-        } catch (e) { console.error(e); }
+            btn.classList.replace('btn-outline-info', 'btn-info');
+
+            setTimeout(() => {
+                btn.innerHTML = oldHtml;
+                btn.classList.replace('btn-info', 'btn-outline-info');
+            }, 2000);
+        } catch (e) {
+            console.error("Clipboard copy failed:", e);
+        }
     }
 
     // --- EVENT LISTENERS ---
