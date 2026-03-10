@@ -1,4 +1,4 @@
-# SRGB Interactive Effect Builder
+# RGBJunkie Interactive Effect Builder
 
 A web-based, WYSIWYG tool designed to create and share complex animated effects for the SignalRGB platform without writing code from scratch.
 

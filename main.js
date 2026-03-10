@@ -103,7 +103,7 @@ const controlGroupMap = {
 const INITIAL_CONFIG_TEMPLATE = `
     <meta title="Untitled Efffect" />
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by José Miranda" />
-    <meta publisher="SRGB Interactive Effect Builder" />
+    <meta publisher="RGBJunkie Interactive Effect Builder" />
     <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
     <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
     <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
@@ -6410,7 +6410,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (workspace.docId) {
                 const newUrl = `${window.location.pathname}?effectId=${workspace.docId}`;
-                const effectTitle = getControlValues()['title'] || "SRGB Effect Builder";
+                const effectTitle = getControlValues()['title'] || "RGBJunkie Effect Builder";
                 window.history.pushState({ effectId: workspace.docId }, effectTitle, newUrl);
             }
             updateAll();
