@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('SignalRGB Effect Builder', () => {
+test.describe('RGBJunkie Effect Builder', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:8000', { waitUntil: 'domcontentloaded' });
     const acceptTermsButton = page.locator('#accept-terms-btn');
