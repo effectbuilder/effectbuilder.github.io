@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Neural Automata</title>
+    <meta title="Neural Automata">
+    <meta description="A demoscene algorithmic visualizer. Shifts between 20 distinct pixel shaders and vector engines, with deep, math-level audio reactivity." />
+    <meta publisher="José Miranda" />
+
+    <meta property="mutationMode" label="Algorithmic Engine" type="combobox" values="Auto-Cycle,XOR Munching Squares,Quantum Foam,Demoscene Plasma,Raycast Tunnel,Bitwise AND Grid,Interference Moire,Metaball Lava,Voronoi Cells,Modulo Labyrinth,Trig Web,Digital Rain,Boids Swarm,Lissajous Curves,Starfield Warp,Perlin Flow,Audio Mandala,Spirograph,Glitch Sorting,Cyber Radar,Neon Perspective" default="Auto-Cycle" tooltip="Lock the visualizer to a specific demoscene algorithm, or let it Auto-Cycle through all 20.">
+    <meta property="mutationRate" label="Auto-Cycle Rate" type="number" default="8" min="5" max="60" tooltip="Seconds before the engine swaps algorithms.">
+
+    <meta property="multiColor" label="Use Full Palette" type="boolean" default="true" tooltip="Forces all effects to draw using every color in your palette simultaneously.">
+    <meta property="globalSpeed" label="Animation Speed" type="number" default="50" min="1" max="100" tooltip="How fast the algorithms evolve mathematically over time.">
+    <meta property="trailFade" label="Trail Fade (Vector Modes)" type="number" default="15" min="1" max="100" tooltip="How fast old pixels fade to black in particle/vector modes. Lower = longer trails.">
+
+    <meta property="audioSensitivity" label="Audio Multiplier" type="number" default="35" min="0" max="100" tooltip="The overall intensity multiplier for audio reactions.">
+    <meta property="audioSmoothing" label="Audio Decay Smoothing" type="number" default="82" min="0" max="99" tooltip="Smoothes out sudden audio spikes so animations react naturally rather than violently.">
+    <meta property="bassThreshold" label="Bass Ignore Threshold" type="number" default="15" min="0" max="100" tooltip="Ignores low-level bass. Useful for keeping the visualizer calm during quiet parts of a song.">
+
+    <meta property="profile" label="Color Palette" type="combobox" values="Custom,Rainbow,Deep Mind,Cyberdyne,Mainframe,Matrix,Binary Sunset,Ghost in Shell,Neon Pulse,Plasma Core,Bio-Digital,Cold Logic,Hyper-Light,Shadow Net,Prism Core,Sentience,Electric Dreams,Void Thinker,Silicon Valley,Quantum Flow,Overclock,Neural Rainbow" default="Cyberdyne" tooltip="Select the color scheme.">
+    <meta property="color1" label="Color 1 (Custom)" type="color" default="#110044" tooltip="Deepest shadow color.">
+    <meta property="color2" label="Color 2 (Custom)" type="color" default="#5500aa" tooltip="Dark midtone.">
+    <meta property="color3" label="Color 3 (Custom)" type="color" default="#ff00ff" tooltip="Bright midtone.">
+    <meta property="color4" label="Color 4 (Custom)" type="color" default="#00ffff" tooltip="Primary highlight.">
+    <meta property="color5" label="Color 5 (Custom)" type="color" default="#ffffff" tooltip="Core flash color.">
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="start-overlay"></div>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+
+    <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+        // -------------------------------------------------------------------
+
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(128).fill(0);
+
+                // Bass: Strong pulses
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+                const bassVal = Math.pow(beat, 4) * 255;
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+                // Treble
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50);
+                }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        } else {
+            document.getElementById('start-overlay').style.display = 'none';
+        }
+    </script>
+
+    <script>
+        // -------------------------------------------------------------------
+        // SAFE PARAMETER FETCHER
+        // -------------------------------------------------------------------
+        function param(name, defaultVal) {
+            return typeof window[name] !== 'undefined' ? window[name] : defaultVal;
+        }
+
+        // -------------------------------------------------------------------
+        // COLOR MANAGEMENT (Pre-computed LUT for extreme speed)
+        // -------------------------------------------------------------------
+
+        const profiles = {
+            "Rainbow": ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"],
+            "Deep Mind": ["#00081a", "#001133", "#0055ff", "#00ffcc", "#ffffff"],
+            "Cyberdyne": ["#110000", "#330000", "#ff0000", "#ff5555", "#ffaaaa"],
+            "Mainframe": ["#001100", "#003300", "#00ff00", "#55ff55", "#aaffaa"],
+            "Matrix": ["#000a00", "#002200", "#00ff44", "#88ffaa", "#ffffff"],
+            "Binary Sunset": ["#110011", "#330033", "#ff00aa", "#ff8800", "#ffff00"],
+            "Ghost in Shell": ["#001111", "#003333", "#00ffff", "#88ffff", "#ffffff"],
+            "Neon Pulse": ["#0a0011", "#220044", "#ff00ff", "#aa00ff", "#00ffff"],
+            "Plasma Core": ["#110800", "#331100", "#ffaa00", "#ff5500", "#ff0000"],
+            "Bio-Digital": ["#051100", "#113300", "#55aa00", "#99ff00", "#ffffff"],
+            "Cold Logic": ["#000811", "#001122", "#005588", "#88ccff", "#ffffff"],
+            "Hyper-Light": ["#110011", "#440044", "#aa00aa", "#ff55ff", "#00ffff"],
+            "Shadow Net": ["#050505", "#111111", "#444444", "#888888", "#ffffff"],
+            "Prism Core": ["#0000ff", "#00ffff", "#00ff00", "#ffff00", "#ff0000"],
+            "Sentience": ["#0a000a", "#220022", "#aa00ff", "#5588ff", "#00aaff"],
+            "Electric Dreams": ["#000022", "#000066", "#44aaff", "#88ccff", "#ffffff"],
+            "Void Thinker": ["#020202", "#0a0a0a", "#0088aa", "#00ffcc", "#ffffff"],
+            "Silicon Valley": ["#110800", "#331a00", "#cc9900", "#ffcc55", "#ffffff"],
+            "Quantum Flow": ["#000811", "#002233", "#00ffcc", "#ff00aa", "#ff0066"],
+            "Overclock": ["#1a0000", "#440000", "#ff5500", "#ffcc00", "#ffffff"],
+            "Neural Rainbow": ["#ff0000", "#ff8800", "#ffff00", "#00ff00", "#00ffff"]
+        };
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
+        }
+
+        let currentPalette = [];
+        let colorLUT = new Uint8Array(256 * 3);
+
+        function updateColors(time) {
+            const currentProfile = param('profile', 'Cyberdyne');
+
+            if (currentProfile === "Custom") {
+                currentPalette = [
+                    hexToRgb(param('color1', '#110044')), hexToRgb(param('color2', '#5500aa')),
+                    hexToRgb(param('color3', '#ff00ff')), hexToRgb(param('color4', '#00ffff')),
+                    hexToRgb(param('color5', '#ffffff'))
+                ];
+            } else if (currentProfile === "Neural Rainbow") {
+                const h = time * 2;
+                currentPalette = [
+                    { r: Math.sin(h) * 127 + 128, g: Math.sin(h + 2) * 127 + 128, b: Math.sin(h + 4) * 127 + 128 },
+                    { r: Math.sin(h + 2) * 127 + 128, g: Math.sin(h + 4) * 127 + 128, b: Math.sin(h + 6) * 127 + 128 },
+                    { r: Math.sin(h + 4) * 127 + 128, g: Math.sin(h + 6) * 127 + 128, b: Math.sin(h + 8) * 127 + 128 },
+                    { r: Math.sin(h + 6) * 127 + 128, g: Math.sin(h + 8) * 127 + 128, b: Math.sin(h + 10) * 127 + 128 },
+                    { r: Math.sin(h + 8) * 127 + 128, g: Math.sin(h + 10) * 127 + 128, b: Math.sin(h + 12) * 127 + 128 }
+                ];
+            } else {
+                currentPalette = profiles[currentProfile].map(hexToRgb);
+            }
+
+            for (let i = 0; i < 256; i++) {
+                const mix = i / 255;
+                const len = currentPalette.length - 1;
+                const scaledMix = mix * len;
+                const index = Math.min(Math.floor(scaledMix), len - 1);
+                const fraction = scaledMix - index;
+                const cA = currentPalette[index];
+                const cB = currentPalette[index + 1] || cA;
+
+                colorLUT[i * 3] = cA.r + (cB.r - cA.r) * fraction;
+                colorLUT[i * 3 + 1] = cA.g + (cB.g - cA.g) * fraction;
+                colorLUT[i * 3 + 2] = cA.b + (cB.b - cA.b) * fraction;
+            }
+        }
+
+        function getCol(mix, bass) {
+            let idx = Math.floor(Math.max(0, Math.min(1, mix)) * 255);
+            let r = colorLUT[idx * 3]; let g = colorLUT[idx * 3 + 1]; let b = colorLUT[idx * 3 + 2];
+            // Flash to pure white safely on heavy bass drops
+            if (bass > 0.6) {
+                const w = Math.min(1.0, (bass - 0.6) * 2.5);
+                r += (255 - r) * w; g += (255 - g) * w; b += (255 - b) * w;
+            }
+            return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+        }
+
+        function applyColToPixel(pixels, pIdx, mix, bass) {
+            let idx = Math.floor(Math.max(0, Math.min(1, mix)) * 255);
+            let r = colorLUT[idx * 3]; let g = colorLUT[idx * 3 + 1]; let b = colorLUT[idx * 3 + 2];
+            if (bass > 0.6) {
+                const w = Math.min(1.0, (bass - 0.6) * 2.5);
+                r += (255 - r) * w; g += (255 - g) * w; b += (255 - b) * w;
+            }
+            pixels[pIdx] = r; pixels[pIdx + 1] = g; pixels[pIdx + 2] = b; pixels[pIdx + 3] = 255;
+        }
+
+        // -------------------------------------------------------------------
+        // SHARED ARCHITECTURE
+        // -------------------------------------------------------------------
+
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = false;
+
+        const width = 320;
+        const height = 200;
+        const cx = width / 2;
+        const cy = height / 2;
+
+        const modes = [
+            "XOR Munching Squares", "Quantum Foam", "Demoscene Plasma", "Raycast Tunnel",
+            "Bitwise AND Grid", "Interference Moire", "Metaball Lava", "Voronoi Cells",
+            "Modulo Labyrinth", "Trig Web", "Digital Rain", "Boids Swarm", "Lissajous Curves",
+            "Starfield Warp", "Perlin Flow", "Audio Mandala", "Spirograph",
+            "Glitch Sorting", "Cyber Radar", "Neon Perspective"
+        ];
+
+        let globalTime = 0;
+        let lastMutationTime = 0;
+        let activeMode = "";
+
+        let agents = [];
+        const imgData = ctx.createImageData(width, height);
+        const pixels = imgData.data;
+
+        let smoothedBass = 0;
+        let smoothedTreble = 0;
+
+        function initMode(mode) {
+            activeMode = mode;
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'source-over';
+
+            agents = [];
+
+            if (mode === "Metaball Lava" || mode === "Voronoi Cells") {
+                const count = mode === "Metaball Lava" ? 8 : 20;
+                for (let i = 0; i < count; i++) agents.push({ x: Math.random() * width, y: Math.random() * height, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3 });
+            }
+            else if (mode === "Boids Swarm" || mode === "Perlin Flow" || mode === "Digital Rain") {
+                for (let i = 0; i < 200; i++) {
+                    agents.push({ x: Math.random() * width, y: Math.random() * height, angle: Math.random() * Math.PI * 2, speed: Math.random() * 2 + 1 });
+                }
+            }
+            else if (mode === "Starfield Warp") {
+                for (let i = 0; i < 300; i++) agents.push({ x: (Math.random() - 0.5) * 2000, y: (Math.random() - 0.5) * 2000, z: Math.random() * 1000 });
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // THE 20 DEMOSCENE ENGINES
+        // -------------------------------------------------------------------
+
+        function executeEngine(bass, treble, audioData) {
+            const isMulti = param('multiColor', true);
+
+            // --- 1. PIXEL SHADERS (Pure Math-to-Pixel rendering) ---
+            const pixelModes = [
+                "XOR Munching Squares", "Quantum Foam", "Demoscene Plasma", "Raycast Tunnel",
+                "Bitwise AND Grid", "Interference Moire", "Metaball Lava", "Voronoi Cells",
+                "Modulo Labyrinth", "Trig Web"
+            ];
+
+            if (pixelModes.includes(activeMode)) {
+                const t = globalTime * (1 + bass * 0.5);
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        let val = 0;
+                        const px = x - cx; const py = y - cy;
+
+                        if (activeMode === "XOR Munching Squares") {
+                            // Audio modifies the bitwise offset and the color limits
+                            const bitShift = Math.floor(t * 30 + bass * 150);
+                            const modLimit = Math.floor(128 - bass * 64);
+                            val = ((x ^ y) ^ bitShift) % Math.max(1, modLimit) / modLimit;
+                        }
+                        else if (activeMode === "Quantum Foam") {
+                            // Audio directly alters spatial frequency
+                            const freqX = 0.05 + bass * 0.03;
+                            const freqY = 0.05 - treble * 0.02;
+                            val = Math.sin(px * freqX + t) * Math.cos(py * freqY - t) * Math.sin((px + py) * 0.02 + t);
+                            val = Math.abs(val) * (1.5 + bass);
+                        }
+                        else if (activeMode === "Demoscene Plasma") {
+                            // Audio dilates the wave scale
+                            const scale = 0.05 + bass * 0.04;
+                            const v = Math.sin(px * 0.02 + t) + Math.sin(py * 0.03 + t) + Math.sin(Math.sqrt(px * px + py * py) * scale - t * 2);
+                            val = (v + 3) / 6;
+                        }
+                        else if (activeMode === "Raycast Tunnel") {
+                            // Bass causes extreme focal shifts in depth
+                            const d = Math.max(1, Math.sqrt(px * px + py * py));
+                            const a = Math.atan2(py, px);
+                            const depthVal = (200 + bass * 300) / d;
+                            val = (Math.sin(depthVal + t * 5) + Math.cos(a * 5 + t * 2) + 2) / 4;
+                        }
+                        else if (activeMode === "Bitwise AND Grid") {
+                            const modLimit = Math.floor(64 + bass * 100);
+                            val = ((x & y) + Math.floor(t * 20)) % modLimit / modLimit;
+                        }
+                        else if (activeMode === "Interference Moire") {
+                            // Audio pushes the moire centers apart
+                            const spread = 50 + bass * 100;
+                            const d1 = Math.hypot(px - Math.sin(t) * spread, py);
+                            const d2 = Math.hypot(px + Math.sin(t) * spread, py);
+                            val = (Math.sin(d1 * 0.2 - t * 5) + Math.sin(d2 * 0.2 - t * 5) + 2) / 4;
+                        }
+                        else if (activeMode === "Modulo Labyrinth") {
+                            // Bass drives the multiplier offset, reconstructing the maze
+                            const sx = x + Math.floor(t * 15);
+                            const sy = y + Math.floor(t * 15);
+                            const modFactor = Math.max(1, 255 - Math.floor(bass * 150));
+                            val = ((sx * sy) % modFactor) / modFactor;
+                        }
+                        else if (activeMode === "Trig Web") {
+                            const f = 0.05 + bass * 0.05;
+                            val = Math.abs(Math.sin(px * f) + Math.cos(py * f) - Math.sin(t * 2));
+                        }
+                        else if (activeMode === "Metaball Lava") {
+                            let sum = 0;
+                            for (let i = 0; i < agents.length; i++) {
+                                const d = Math.max(1, Math.hypot(x - agents[i].x, y - agents[i].y));
+                                sum += (400 * (1 + bass * 3)) / d;
+                            }
+                            val = sum > 40 ? Math.min(1, sum / 100) : 0;
+                        }
+                        else if (activeMode === "Voronoi Cells") {
+                            let minDist = 10000; let closestIdx = 0;
+                            for (let i = 0; i < agents.length; i++) {
+                                const d = Math.hypot(x - agents[i].x, y - agents[i].y);
+                                if (d < minDist) { minDist = d; closestIdx = i; }
+                            }
+                            val = (closestIdx / agents.length) + (minDist * (0.01 + bass * 0.02));
+                        }
+
+                        // If multiColor is enabled, forcefully slide the pixel val through the whole palette over time
+                        let colorMix = isMulti ? (val + globalTime * 0.1) % 1.0 : val;
+                        if (colorMix < 0) colorMix += 1.0;
+
+                        applyColToPixel(pixels, (y * width + x) * 4, colorMix, bass);
+                    }
+                }
+
+                // Update physics for pixel modes that use agents
+                if (activeMode === "Voronoi Cells" || activeMode === "Metaball Lava") {
+                    agents.forEach(a => {
+                        // High bass kicks the agents into hyper-speed
+                        a.x += a.vx * (1 + bass * 5);
+                        a.y += a.vy * (1 + bass * 5);
+                        if (a.x < 0) { a.x += width; } else if (a.x > width) { a.x -= width; }
+                        if (a.y < 0) { a.y += height; } else if (a.y > height) { a.y -= height; }
+                    });
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+                return;
+            }
+
+            // --- 2. VECTOR & PARTICLE ENGINES (Canvas Path Math) ---
+
+            const tf = param('trailFade', 15) / 100;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = `rgba(0, 0, 0, ${tf})`;
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.lineWidth = 1.5 + bass * 3;
+
+            if (activeMode === "Digital Rain") {
+                agents.forEach((a, i) => {
+                    a.y += a.speed * (2 + bass * 8);
+                    if (a.y > height) { a.y = 0; a.x = Math.random() * width; }
+                    ctx.fillStyle = getCol(isMulti ? (i / agents.length + globalTime * 0.1) % 1 : bass, bass);
+                    ctx.fillRect(a.x, a.y, 2, 10 + bass * 20);
+                });
+            }
+            else if (activeMode === "Boids Swarm") {
+                const targetX = cx + Math.cos(globalTime * 0.7) * 80;
+                const targetY = cy + Math.sin(globalTime * 1.1) * 60;
+
+                agents.forEach((a, i) => {
+                    const tgtAng = Math.atan2(targetY - a.y, targetX - a.x) + Math.sin(globalTime + i * 0.1) * 0.5;
+                    let diff = tgtAng - a.angle;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    a.angle += diff * 0.1;
+
+                    a.x += Math.cos(a.angle) * a.speed * (1 + bass * 4);
+                    a.y += Math.sin(a.angle) * a.speed * (1 + bass * 4);
+
+                    if (a.x < 0) a.x += width;
+                    if (a.x > width) a.x -= width;
+                    if (a.y < 0) a.y += height;
+                    if (a.y > height) a.y -= height;
+
+                    ctx.fillStyle = getCol(isMulti ? (i / agents.length + globalTime * 0.2) % 1 : bass, bass);
+                    ctx.fillRect(a.x, a.y, 3 + bass * 3, 3 + bass * 3);
+                });
+            }
+            else if (activeMode === "Lissajous Curves") {
+                let prevX, prevY;
+                const pts = 300;
+                const freqX = 3; const freqY = 2;
+                if (!isMulti) ctx.beginPath();
+
+                for (let i = 0; i <= pts; i++) {
+                    const t = (i / pts) * Math.PI * 2;
+                    // Audio twists the entire knot structure
+                    const px = cx + Math.sin(t * freqX + globalTime * 1.5 + bass) * cx * (0.8 + bass * 0.2);
+                    const py = cy + Math.cos(t * freqY + Math.sin(globalTime) * 0.5 + treble) * cy * (0.8 + bass * 0.2);
+
+                    if (isMulti) {
+                        if (i > 0) {
+                            ctx.beginPath(); ctx.moveTo(prevX, prevY); ctx.lineTo(px, py);
+                            ctx.strokeStyle = getCol((i / pts + globalTime * 0.2) % 1, bass);
+                            ctx.stroke();
+                        }
+                        prevX = px; prevY = py;
+                    } else {
+                        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                }
+                if (!isMulti) {
+                    ctx.strokeStyle = getCol(Math.sin(globalTime) * 0.5 + 0.5, bass);
+                    ctx.stroke();
+                }
+            }
+            else if (activeMode === "Starfield Warp") {
+                const spd = (2 + (param('globalSpeed', 50) / 10)) + (bass * 100);
+                agents.forEach((a, i) => {
+                    a.z -= spd;
+                    if (a.z <= 0) { a.z = 1000; a.x = (Math.random() - 0.5) * 2000; a.y = (Math.random() - 0.5) * 2000; }
+                    const px = cx + (a.x / a.z) * 200; const py = cy + (a.y / a.z) * 200;
+                    ctx.fillStyle = getCol(isMulti ? (i / agents.length + globalTime * 0.2) % 1 : bass, bass);
+                    const s = Math.max(1, 400 / a.z);
+                    ctx.fillRect(px, py, s, s);
+                });
+            }
+            else if (activeMode === "Perlin Flow") {
+                agents.forEach((a, i) => {
+                    // Audio distorts the vector noise field
+                    const n = Math.sin(a.x * (0.02 + bass * 0.05) + globalTime) * Math.cos(a.y * (0.02 + bass * 0.05)) * Math.PI * 2;
+                    a.angle = n;
+                    a.x += Math.cos(a.angle) * a.speed * (1 + bass * 5);
+                    a.y += Math.sin(a.angle) * a.speed * (1 + bass * 5);
+                    if (a.x < 0 || a.x > width || a.y < 0 || a.y > height) { a.x = Math.random() * width; a.y = Math.random() * height; }
+                    ctx.fillStyle = getCol(isMulti ? (i / agents.length + globalTime * 0.2) % 1 : bass, bass);
+                    ctx.fillRect(a.x, a.y, 2, 2);
+                });
+            }
+            else if (activeMode === "Audio Mandala") {
+                let prevX, prevY;
+                const pts = 128;
+                if (!isMulti) ctx.beginPath();
+
+                for (let i = 0; i <= pts; i++) {
+                    const a = (i / pts) * Math.PI * 2 + globalTime * 0.5;
+                    // React directly to audio bins
+                    const r = 30 + (audioData[i % 64] / 255) * 150;
+                    const px = cx + Math.cos(a) * r; const py = cy + Math.sin(a) * r;
+
+                    if (isMulti) {
+                        if (i > 0) {
+                            ctx.beginPath(); ctx.moveTo(prevX, prevY); ctx.lineTo(px, py);
+                            ctx.strokeStyle = getCol((i / pts + globalTime * 0.2) % 1, bass);
+                            ctx.stroke();
+                        }
+                        prevX = px; prevY = py;
+                    } else {
+                        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                }
+                if (!isMulti) { ctx.strokeStyle = getCol(treble, bass); ctx.stroke(); }
+            }
+            else if (activeMode === "Spirograph") {
+                let prevX, prevY;
+                const pts = 400;
+                // Radiuses explode outward on bass
+                const R = 60 + bass * 80; const r = 22 + treble * 10; const d = 45 + bass * 20;
+                if (!isMulti) ctx.beginPath();
+
+                for (let i = 0; i <= pts; i++) {
+                    const t = (i / 40) * Math.PI * 2 + globalTime;
+                    const px = cx + (R - r) * Math.cos(t) + d * Math.cos((R - r) / r * t);
+                    const py = cy + (R - r) * Math.sin(t) - d * Math.sin((R - r) / r * t);
+
+                    if (isMulti) {
+                        if (i > 0) {
+                            ctx.beginPath(); ctx.moveTo(prevX, prevY); ctx.lineTo(px, py);
+                            ctx.strokeStyle = getCol((i / pts + globalTime * 0.2) % 1, bass);
+                            ctx.stroke();
+                        }
+                        prevX = px; prevY = py;
+                    } else {
+                        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                }
+                if (!isMulti) { ctx.strokeStyle = getCol(Math.sin(globalTime), bass); ctx.stroke(); }
+            }
+            else if (activeMode === "Glitch Sorting") {
+                // Audio dictates how many rows are glitched and how wide the corruption is
+                ctx.fillStyle = getCol(isMulti ? Math.random() : bass, bass);
+                ctx.fillRect(Math.random() * width, Math.random() * height, 40 + bass * 200, 10 + bass * 30);
+                const dt = ctx.getImageData(0, 0, width, height);
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width - 1; x++) {
+                        const i1 = (y * width + x) * 4; const i2 = (y * width + x + 1) * 4;
+                        // Bass lowers the sorting threshold, making it glitch more easily
+                        if (dt.data[i1] + dt.data[i1 + 1] > dt.data[i2] + dt.data[i2 + 1] - bass * 50 && Math.random() > 0.5) {
+                            pixels[i2] = dt.data[i1]; pixels[i2 + 1] = dt.data[i1 + 1]; pixels[i2 + 2] = dt.data[i1 + 2];
+                        } else {
+                            pixels[i1] = dt.data[i1]; pixels[i1 + 1] = dt.data[i1 + 1]; pixels[i1 + 2] = dt.data[i1 + 2];
+                        }
+                        pixels[i1 + 3] = 255; pixels[i2 + 3] = 255;
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+            }
+            else if (activeMode === "Cyber Radar") {
+                // Speed of radar depends on bass
+                const angle = globalTime * (3 + bass * 2);
+
+                if (isMulti) {
+                    const grad = ctx.createLinearGradient(cx, cy, cx + Math.cos(angle) * width, cy + Math.sin(angle) * width);
+                    grad.addColorStop(0, getCol(0.0, bass));
+                    grad.addColorStop(0.5, getCol(0.5, bass));
+                    grad.addColorStop(1, getCol(1.0, bass));
+                    ctx.strokeStyle = grad;
+                } else {
+                    ctx.strokeStyle = getCol(0.5, bass);
+                }
+
+                ctx.beginPath(); ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * width, cy + Math.sin(angle) * width);
+                ctx.stroke();
+
+                // Draw blips based on actual audio bins
+                for (let i = 0; i < 10; i++) {
+                    if (audioData[i * 5] > 100) {
+                        const r = i * 15 + bass * 20; // Blips push outward on bass
+                        ctx.fillStyle = getCol(isMulti ? i / 10 : treble, bass);
+                        ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 4 + bass * 5, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+            }
+            else if (activeMode === "Neon Perspective") {
+                if (!isMulti) { ctx.strokeStyle = getCol(treble, bass); ctx.beginPath(); }
+
+                let i = 0;
+                // Bass shifts the horizon line warp
+                for (let x = -width; x < width * 2; x += 30) {
+                    if (isMulti) { ctx.beginPath(); ctx.strokeStyle = getCol((i / 30) % 1, bass); }
+                    ctx.moveTo(cx, cy - bass * 20); ctx.lineTo(x, height);
+                    if (isMulti) ctx.stroke();
+                    i++;
+                }
+
+                // Bass dictates grid scroll speed
+                const offset = (globalTime * (50 + bass * 200)) % 20;
+                i = 0;
+                for (let y = 0; y < height - cy; y += 20) {
+                    if (isMulti) { ctx.beginPath(); ctx.strokeStyle = getCol((i / 10) % 1, bass); }
+                    const py = cy - bass * 20 + y + offset;
+                    ctx.moveTo(0, py); ctx.lineTo(width, py);
+                    if (isMulti) ctx.stroke();
+                    i++;
+                }
+                if (!isMulti) ctx.stroke();
+
+                // Synthwave sun pulses massively with bass
+                if (isMulti) {
+                    const grad = ctx.createLinearGradient(cx, cy - 20 - (40 + bass * 40), cx, cy - 20 + (40 + bass * 40));
+                    grad.addColorStop(0, getCol(0.2, bass));
+                    grad.addColorStop(1, getCol(0.8, bass));
+                    ctx.fillStyle = grad;
+                } else {
+                    ctx.fillStyle = getCol(bass, bass);
+                }
+                ctx.beginPath(); ctx.arc(cx, cy - 20 - bass * 20, 40 + bass * 40, Math.PI, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // -------------------------------------------------------------------
+        // RENDER LOOP
+        // -------------------------------------------------------------------
+
+        function render() {
+            const speedMult = param('globalSpeed', 50) / 50;
+            globalTime += 0.05 * speedMult;
+
+            updateColors(globalTime);
+
+            const now = Date.now();
+            const currentMutationMode = param('mutationMode', 'Auto-Cycle');
+            const currentMutationRate = param('mutationRate', 8);
+
+            if (currentMutationMode === "Auto-Cycle") {
+                if (now - lastMutationTime > currentMutationRate * 1000 || activeMode === "") {
+                    const randMode = modes[Math.floor(Math.random() * modes.length)];
+                    initMode(randMode);
+                    lastMutationTime = now;
+                }
+            } else {
+                if (activeMode !== currentMutationMode) initMode(currentMutationMode);
+            }
+
+            let rawBass = 0;
+            let rawTreble = 0;
+            let audioData = new Array(128).fill(0);
+
+            if (window.engine && window.engine.audio.freq) {
+                audioData = window.engine.audio.freq;
+                rawBass = (audioData[0] + audioData[1] + audioData[2]) / (3 * 255);
+                rawTreble = (audioData[20] + audioData[21] + audioData[22]) / (3 * 255);
+            }
+
+            const thresh = param('bassThreshold', 15) / 100;
+            if (rawBass < thresh) {
+                rawBass = 0;
+            } else {
+                rawBass = (rawBass - thresh) / (1 - thresh);
+            }
+
+            const smoothFactor = param('audioSmoothing', 82) / 100;
+            smoothedBass = (smoothedBass * smoothFactor) + (rawBass * (1 - smoothFactor));
+            smoothedTreble = (smoothedTreble * smoothFactor) + (rawTreble * (1 - smoothFactor));
+
+            const sensitivity = param('audioSensitivity', 35) / 100;
+            const finalBass = smoothedBass * sensitivity;
+            const finalTreble = smoothedTreble * sensitivity;
+
+            executeEngine(finalBass, finalTreble, audioData);
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+
+    </script>
+</body>
+
+</html>

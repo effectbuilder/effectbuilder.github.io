@@ -89,7 +89,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html",
         "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html",
         "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
-        "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html"
+        "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html",
+        "police.html","neuralAutomata.html"
     ];
 
     const effectsFolder = "effects";

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>High-Speed Pursuit</title>
+    <meta title="High-Speed Pursuit">
+    <meta description="A high-intensity emergency lighting simulator with multiple flash patterns and audio-reactive takedown lights." />
+    <meta publisher="José Miranda" />
+
+    <meta property="flashSpeed" label="Flash Speed" type="number" default="15" min="1" max="50" tooltip="Adjusts how fast the lights strobe.">
+    <meta property="bloomIntensity" label="Glow Strength" type="number" default="40" min="0" max="100" tooltip="Controls the brightness of the light bleed (Bloom).">
+    
+    <meta property="pattern" label="Flash Pattern" type="combobox" values="Alternating,Wig-Wag,Synchronized,Quad Flash,Phaser" default="Alternating" tooltip="Select the strobe behavior.">
+    <meta property="profile" label="Unit Profile" type="combobox" values="Custom,State Trooper,Interceptor,Undercover,Sheriff,Highways,Enforcer,Guardian,Nightwatch,Sentinel,Patrol,Pursuit,Rescue,First Responder,Valor,Liberty,Justice,Echelon,Apex,Rainbow Pursuit" default="State Trooper" tooltip="Select a color preset or choose Custom.">
+    
+    <meta property="color1" label="Primary Light" type="color" default="#FF0000" tooltip="Color for the left side/primary strobe.">
+    <meta property="color2" label="Secondary Light" type="color" default="#0000FF" tooltip="Color for the right side/secondary strobe.">
+    
+    <meta property="audioReactive" label="Audio Takedown" type="boolean" default="true" tooltip="Triggers white 'Takedown' lights on loud bass hits.">
+    <meta property="sensitivity" label="Audio Sensitivity" type="number" default="70" min="1" max="100" tooltip="How much bass is needed to trigger the takedown flash.">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pursuit-canvas" width="320" height="200"></canvas>
+
+<script>
+    // -------------------------------------------------------------------
+    // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+    // -------------------------------------------------------------------
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
+        function simulateAudio() {
+            const time = Date.now() / 1000; 
+            const dataArray = new Array(128).fill(0);
+            const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+            const bassVal = Math.pow(beat, 4) * 255; 
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+            for (let i = 10; i < 40; i++) {
+                const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                dataArray[i] = wave * 150 + (Math.random() * 50); 
+            }
+            window.engine.audio.freq = dataArray;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    }
+</script>
+
+<script>
+    const canvas = document.getElementById('pursuit-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const W = 320;
+    const H = 200;
+
+    const profiles = {
+        "State Trooper": ["#FF0000", "#0000FF"],
+        "Interceptor": ["#FF0000", "#FFFFFF"],
+        "Undercover": ["#0000FF", "#0000FF"],
+        "Sheriff": ["#FFCC00", "#0000FF"],
+        "Highways": ["#FF0000", "#FFCC00"],
+        "Enforcer": ["#FF0000", "#0000FF"],
+        "Guardian": ["#00FFFF", "#FFFFFF"],
+        "Nightwatch": ["#1111FF", "#FF0000"],
+        "Sentinel": ["#FFFFFF", "#FF0000"],
+        "Patrol": ["#FF0000", "#0000FF"],
+        "Pursuit": ["#FF0044", "#0044FF"],
+        "Rescue": ["#FF0000", "#FFFFFF"],
+        "First Responder": ["#FFCC00", "#FFFFFF"],
+        "Valor": ["#FF0000", "#0000FF"],
+        "Liberty": ["#FFFFFF", "#0000FF"],
+        "Justice": ["#FF0000", "#FFFFFF"],
+        "Echelon": ["#00FF00", "#0000FF"],
+        "Apex": ["#FF5500", "#FFFFFF"],
+        "Rainbow Pursuit": ["#FF00FF", "#00FFFF"]
+    };
+
+    let frame = 0;
+
+    function draw() {
+        const speed = window.flashSpeed || 15;
+        const bloom = (window.bloomIntensity || 40) / 100;
+        const curPattern = window.pattern || "Alternating";
+        const curProfile = window.profile || "State Trooper";
+        const isAudio = window.audioReactive;
+        const sens = (window.sensitivity || 70) / 100;
+
+        let c1, c2;
+        if (curProfile === "Custom") {
+            c1 = window.color1;
+            c2 = window.color2;
+        } else if (curProfile === "Rainbow Pursuit") {
+            const hue = (Date.now() / 20) % 360;
+            c1 = `hsl(${hue}, 100%, 50%)`;
+            c2 = `hsl(${(hue + 180) % 360}, 100%, 50%)`;
+        } else {
+            const colors = profiles[curProfile] || profiles["State Trooper"];
+            c1 = colors[0];
+            c2 = colors[1];
+        }
+
+        // Background Clear
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, W, H);
+
+        // Audio Detection (Bass)
+        let bass = 0;
+        if (engine.audio && engine.audio.freq) {
+            bass = (engine.audio.freq[0] + engine.audio.freq[1] + engine.audio.freq[2]) / 3 / 255;
+        }
+        const takedownActive = isAudio && (bass > (1.1 - sens));
+
+        // Timing Calculation
+        const t = (Date.now() / 1000) * speed;
+        let leftOn = false;
+        let rightOn = false;
+
+        switch(curPattern) {
+            case "Alternating":
+                leftOn = Math.sin(t) > 0;
+                rightOn = !leftOn;
+                break;
+            case "Wig-Wag":
+                // Rapid double flash then switch
+                const phase = t % 4;
+                if (phase < 1) leftOn = Math.sin(t * 10) > 0;
+                else if (phase >= 2 && phase < 3) rightOn = Math.sin(t * 10) > 0;
+                break;
+            case "Synchronized":
+                leftOn = rightOn = Math.sin(t) > 0;
+                break;
+            case "Quad Flash":
+                const qPhase = t % 2;
+                const strobe = Math.sin(t * 12) > 0;
+                if (qPhase < 1) leftOn = strobe;
+                else rightOn = strobe;
+                break;
+            case "Phaser":
+                leftOn = Math.sin(t * (1 + Math.sin(t*0.5))) > 0;
+                rightOn = Math.cos(t * (1 + Math.sin(t*0.5))) > 0;
+                break;
+        }
+
+        // Draw Lights
+        ctx.save();
+        
+        // Left Light
+        if (leftOn) {
+            drawLightUnit(0, 0, W/2, H, c1, bloom);
+        }
+        
+        // Right Light
+        if (rightOn) {
+            drawLightUnit(W/2, 0, W/2, H, c2, bloom);
+        }
+
+        // Audio Takedown Flash (Center High Intensity White)
+        if (takedownActive) {
+            const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W/2);
+            grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+            grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+            ctx.fillStyle = grad;
+            ctx.globalCompositeOperation = "screen";
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        ctx.restore();
+        requestAnimationFrame(draw);
+    }
+
+    function drawLightUnit(x, y, w, h, color, bloom) {
+        ctx.save();
+        
+        // Base Unit
+        ctx.fillStyle = color;
+        ctx.fillRect(x + w*0.1, y + h*0.2, w * 0.8, h * 0.6);
+
+        // Bloom/Glow
+        if (bloom > 0) {
+            ctx.globalCompositeOperation = "screen";
+            const grad = ctx.createRadialGradient(
+                x + w/2, y + h/2, 5,
+                x + w/2, y + h/2, w
+            );
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, "transparent");
+            
+            ctx.globalAlpha = bloom;
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, w, h);
+        }
+        
+        ctx.restore();
+    }
+
+    draw();
+</script>
+</body>
+</html>
