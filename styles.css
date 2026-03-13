@@ -658,3 +658,76 @@ body {
     animation: load-pulse 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) 2; 
     border-radius: 0.5rem; /* Keeps the glowing outline rounded */
 }
+
+/* -------------------------------------------------------- */
+/* 6. MOBILE RESPONSIVENESS (View-Only Mode)                */
+/* -------------------------------------------------------- */
+
+@media (max-width: 992px) {
+    /* Stack elements vertically if needed */
+    #main-split {
+        flex-direction: column !important;
+    }
+
+    /* Hide the controls panel to prioritize the canvas */
+    #left-panel {
+        display: none !important;
+    }
+
+    /* Make the canvas panel take the full width */
+    #right-panel {
+        width: 100% !important;
+        flex-grow: 1;
+    }
+
+    /* Ensure the canvas scales down to fit the screen */
+    #canvas-container,
+    #signalCanvas {
+        max-width: 100%;
+        height: auto !important;
+    }
+    
+    /* Hide the toolbar to maximize canvas viewing space */
+    #toolbar {
+        display: none !important;
+    }
+
+    /* 1. Show the title and author above the canvas */
+    #mobile-effect-header {
+        display: block !important;
+    }
+
+    /* 2. Keep the like/share buttons below the canvas, but center them nicely */
+    #effect-details-row {
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 1rem 0 !important;
+    }
+
+    /* Hide New, Open, and Save buttons on mobile */
+    #new-ws-btn,
+    #load-ws-btn,
+    #save-ws-btn {
+        display: none !important;
+    }
+}
+
+/* Extra small devices (phones) */
+@media (max-width: 576px) {
+    /* Hide the text on major action buttons to save space, keeping only the icons */
+    .navbar .btn i + span, 
+    .navbar .btn i + b,
+    .navbar .btn i + .me-1 {
+        display: none;
+    }
+    
+    .navbar-brand img {
+        height: 1.2em !important;
+    }
+    
+    /* Hide the coordinate tracker since there is no mouse hover on mobile */
+    #coords-display, 
+    .bi-crosshair {
+        display: none !important;
+    }
+}

@@ -5191,6 +5191,45 @@ document.addEventListener('DOMContentLoaded', function () {
         return fieldset;
     }
 
+    // Updates the mobile view HTML with the current effect's details
+    function updateMobileHeader(name, author, description) {
+        const nameEl = document.getElementById('mobile-effect-name');
+        const authorEl = document.getElementById('mobile-effect-author');
+        const descEl = document.getElementById('mobile-effect-description');
+
+        if (nameEl) nameEl.textContent = name || 'Untitled Effect';
+        if (authorEl) authorEl.textContent = author ? 'by ' + author : '';
+        if (descEl) descEl.textContent = description || '';
+    }
+
+    // Safely extracts the current values and passes them to the mobile header
+    function syncMobileHeader() {
+        let title = "Untitled Effect";
+        let publisher = "";
+        let desc = "";
+
+        // 1. Attempt to read from the live form values
+        if (typeof getControlValues === 'function') {
+            const vals = getControlValues();
+            if (vals.title !== undefined) title = vals.title;
+            if (vals.publisher !== undefined) publisher = vals.publisher;
+            if (vals.description !== undefined) desc = vals.description;
+        }
+
+        // 2. Fallback: If the form is currently rebuilding, grab it directly from the source data
+        if (!title || title === "Untitled Effect") {
+            const titleConf = configStore.find(c => c.name === 'title');
+            const pubConf = configStore.find(c => c.name === 'publisher');
+            const descConf = configStore.find(c => c.name === 'description');
+
+            if (titleConf) title = titleConf.default;
+            if (pubConf) publisher = pubConf.default;
+            if (descConf) desc = descConf.default;
+        }
+
+        updateMobileHeader(title, publisher, desc);
+    }
+
     /**
      * Renders the entire controls form based on the current `configStore` and `objects` state.
      * This function is responsible for dynamically building all the UI in the left panel.
@@ -5340,6 +5379,7 @@ document.addEventListener('DOMContentLoaded', function () {
         form.querySelectorAll('fieldset[data-object-id]').forEach(updateSensorControlVisibility);
 
         initializeFrameSorters();
+        syncMobileHeader();
     }
 
     function updateSensorControlVisibility(fieldset) {
@@ -6784,6 +6824,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateObjectsFromForm();
         syncConfigStoreWithForm();
         drawFrame();
+        syncMobileHeader();
     });
 
     form.addEventListener('click', (e) => {
@@ -10472,6 +10513,28 @@ document.addEventListener('DOMContentLoaded', function () {
             window.loadUserSpecificGalleryData();
         }
     });
+
+    // // --- NEW: Auto-collapse comments on mobile by default ---
+    // if (window.innerWidth <= 992) {
+    //     const commentCollapse = document.getElementById('comment-collapse-wrapper');
+    //     const commentToggleBtn = document.querySelector('[data-bs-target="#comment-collapse-wrapper"]');
+        
+    //     if (commentCollapse) {
+    //         commentCollapse.classList.remove('show'); // Removes the class that keeps it open
+    //     }
+        
+    //     if (commentToggleBtn) {
+    //         commentToggleBtn.classList.add('collapsed'); // Tells Bootstrap it is closed
+    //         commentToggleBtn.setAttribute('aria-expanded', 'false');
+            
+    //         // Flip the chevron icon to point down
+    //         const icon = commentToggleBtn.querySelector('i');
+    //         if (icon) {
+    //             icon.classList.remove('bi-chevron-up');
+    //             icon.classList.add('bi-chevron-down');
+    //         }
+    //     }
+    // }
 
     // Start the application.
     init();
