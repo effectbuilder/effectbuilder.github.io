@@ -323,7 +323,7 @@ function setupCanvasListeners(rightPanelTop) {
     canvas.addEventListener('mouseup', (e) => handleCanvasMouseUp(e));
     canvas.addEventListener('mouseleave', (e) => handleCanvasMouseLeave(e));
     canvas.addEventListener('wheel', (e) => handleCanvasWheel(e));
-    canvas.addEventListener('contextmenu', (e) => handleContextMenu(e)); // Use contextmenu for Right (2)
+    canvas.addEventListener('contextmenu', (e) => handleContextMenu(e));
 
     // --- NEW: TOUCH EVENT LISTENERS ---
     canvas.addEventListener('touchstart', handleCanvasTouchStart, { passive: false });
@@ -983,7 +983,6 @@ function handleCanvasWheel(e) {
 // --- NEW: TOUCH EVENT HANDLERS ---
 function handleCanvasTouchStart(e) {
     e.preventDefault(); 
-    
     if (e.touches.length === 1) {
         lastPanPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else if (e.touches.length === 2) {
@@ -1017,7 +1016,6 @@ function handleCanvasTouchMove(e) {
         );
 
         const zoomFactor = currentPinchDistance / initialPinchDistance;
-
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
@@ -1028,19 +1026,14 @@ function handleCanvasTouchMove(e) {
         const canvasMidY = (midY - rect.top) * scaleY;
 
         zoomAtPoint(canvasMidX, canvasMidY, zoomFactor);
-
         initialPinchDistance = currentPinchDistance; 
     }
 }
 
 function handleCanvasTouchEnd(e) {
     e.preventDefault();
-    if (e.touches.length < 2) {
-        initialPinchDistance = null;
-    }
-    if (e.touches.length === 0) {
-        lastPanPoint = null;
-    }
+    if (e.touches.length < 2) initialPinchDistance = null;
+    if (e.touches.length === 0) lastPanPoint = null;
 }
 // --- END TOUCH EVENT HANDLERS ---
 

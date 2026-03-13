@@ -13,8 +13,10 @@
 /* Ensure panels can scroll independently if content overflows */
 #left-panel {
     height: 100%;
-    overflow-y: auto;   /* Allow vertical scroll */
-    overflow-x: hidden;  /* Prevent horizontal scroll */
+    overflow-y: auto;
+    /* Allow vertical scroll */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
 }
 
 #right-panel {
@@ -38,7 +40,8 @@
     height: 100% !important;
     margin: 0 !important;
     border: none !important;
-    background-color: transparent; /* CHANGED - removed !important */
+    background-color: transparent;
+    /* CHANGED - removed !important */
     overflow: hidden !important;
     position: relative;
 }
@@ -144,18 +147,23 @@
 
 /* Set the default container background */
 #component-canvas-container {
-    /* Ensure the container uses the custom variable */
-    background-color: var(--srgb-canvas-bg);
+    max-width: 100% !important;
+    height: 100% !important;
+    flex-grow: 1 !important;
+    /* Forces the container to stretch to the bottom of the screen */
+    aspect-ratio: auto !important;
+    /* Removes the constrained box shape */
 }
 
 /* Ensure the tertiary background is defined by Bootstrap or your custom theme */
 [data-bs-theme="dark"] {
     /* (This should be set by Bootstrap, often a darker shade of primary background) */
-    --bs-tertiary-bg: #2b3035; 
+    --bs-tertiary-bg: #2b3035;
 }
+
 [data-bs-theme="light"] {
     /* (A lighter shade for panel/card backgrounds) */
-    --bs-tertiary-bg: #f8f9fa; 
+    --bs-tertiary-bg: #f8f9fa;
 }
 
 #component-canvas-container {
@@ -174,16 +182,19 @@
 
 /* --- Image Paste Zone --- */
 #image-paste-zone {
-    outline: none; /* Remove focus ring from contenteditable */
-    caret-color: transparent; /* Hide cursor */
+    outline: none;
+    /* Remove focus ring from contenteditable */
+    caret-color: transparent;
+    /* Hide cursor */
 }
 
 /* Hide placeholder when image is shown */
-#image-paste-zone img:not([style*="display: none"]) + #image-paste-placeholder {
+#image-paste-zone img:not([style*="display: none"])+#image-paste-placeholder {
     display: none;
 }
+
 /* Show placeholder when image is hidden */
-#image-paste-zone img[style*="display: none"] + #image-paste-placeholder {
+#image-paste-zone img[style*="display: none"]+#image-paste-placeholder {
     display: block;
 }
 
@@ -194,7 +205,7 @@
   This prevents the browser from inserting its own pasted
   image and messing up the layout.
 */
-#image-paste-zone > *:not(#image-preview):not(#image-paste-placeholder) {
+#image-paste-zone>*:not(#image-preview):not(#image-paste-placeholder) {
     display: none !important;
 }
 
@@ -207,16 +218,20 @@
 
 .comment-item {
     display: flex;
-    gap: 0.75rem; /* 12px */
-    margin-bottom: 1rem; /* 16px */
-    font-size: 0.875rem; /* 14px */
+    gap: 0.75rem;
+    /* 12px */
+    margin-bottom: 1rem;
+    /* 16px */
+    font-size: 0.875rem;
+    /* 14px */
 }
 
 .comment-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    flex-shrink: 0; /* Prevent avatar from shrinking */
+    flex-shrink: 0;
+    /* Prevent avatar from shrinking */
 }
 
 .comment-body {
@@ -226,7 +241,8 @@
 .comment-header {
     display: flex;
     align-items: baseline;
-    gap: 0.5rem; /* 8px */
+    gap: 0.5rem;
+    /* 8px */
     margin-bottom: 0.25rem;
 }
 
@@ -236,14 +252,17 @@
 }
 
 .comment-date {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.75rem;
+    /* 12px */
     color: var(--bs-secondary-color);
 }
 
 .comment-text {
     color: var(--bs-body-color);
-    white-space: pre-wrap; /* Respect newlines */
-    word-break: break-word; /* Break long words */
+    white-space: pre-wrap;
+    /* Respect newlines */
+    word-break: break-word;
+    /* Break long words */
 }
 
 .comment-delete a {
@@ -268,7 +287,8 @@
     transition: opacity 0.2s;
 }
 
-.btn-kebab:hover, .btn-kebab:focus {
+.btn-kebab:hover,
+.btn-kebab:focus {
     opacity: 1;
     color: var(--bs-primary);
 }
@@ -280,18 +300,24 @@
 /* 1. Target the selector inside the wrapper */
 .gtranslate_wrapper select {
     /* Base Button Styling */
-    background-color: #2b3035 !important;   /* Bootstrap Dark Gray */
-    color: #fff !important;                 /* White Text */
-    border: 1px solid #495057 !important;   /* Dark Border */
-    border-radius: 6px !important;          /* Bootstrap Rounded Corners */
-    padding: 6px 36px 6px 12px !important;  /* Padding (Right extra for arrow) */
+    background-color: #2b3035 !important;
+    /* Bootstrap Dark Gray */
+    color: #fff !important;
+    /* White Text */
+    border: 1px solid #495057 !important;
+    /* Dark Border */
+    border-radius: 6px !important;
+    /* Bootstrap Rounded Corners */
+    padding: 6px 36px 6px 12px !important;
+    /* Padding (Right extra for arrow) */
     font-size: 14px !important;
     line-height: 1.5 !important;
     cursor: pointer !important;
     outline: none !important;
-    
+
     /* 2. Custom White Arrow (Replaces default black arrow) */
-    appearance: none !important;            /* Hides native browser arrow */
+    appearance: none !important;
+    /* Hides native browser arrow */
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
@@ -321,15 +347,15 @@
 
 /* 1. Target the first DIV inside your wrapper */
 /* This catches the container regardless of its weird class name */
-#google_translate_element > div {
+#google_translate_element>div {
     z-index: 10000 !important;
     position: fixed !important;
-    
+
     /* Hardware acceleration to stop flickering */
     transform: translate3d(0, 0, 0) !important;
     will-change: transform;
     backface-visibility: hidden;
-    
+
     /* Position settings */
     bottom: 20px !important;
     right: 20px !important;
@@ -340,9 +366,10 @@
 /* 2. Target the SVG (The actual globe graphic) */
 /* This ensures the vector graphic itself is stable */
 #google_translate_element svg {
-    transform: translateZ(0); 
+    transform: translateZ(0);
     shape-rendering: geometricPrecision;
-    width: 48px !important; /* Optional: Enforce a stable size */
+    width: 48px !important;
+    /* Optional: Enforce a stable size */
     height: 48px !important;
 }
 
@@ -354,20 +381,20 @@
 /* Subtle background highlight */
 .brand-dropdown-toggle:hover,
 .brand-dropdown-toggle[aria-expanded="true"] {
-    background-color: rgba(255, 255, 255, 0.1); 
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Base style for the chevron icon */
 .dropdown-indicator {
     font-size: 0.8rem;
     opacity: 0.8;
-    transition: transform 0.3s ease-in-out; 
+    transition: transform 0.3s ease-in-out;
 }
 
 /* Rotate the arrow 180 degrees when the menu is open */
 .brand-dropdown-toggle[aria-expanded="true"] .dropdown-indicator {
     transform: rotate(-180deg);
-    color: var(--bs-primary); 
+    color: var(--bs-primary);
 }
 
 /* Creates a radar-like ripple effect */
@@ -376,10 +403,12 @@
         box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.8);
         background-color: rgba(13, 110, 253, 0.2);
     }
+
     70% {
         box-shadow: 0 0 0 15px rgba(13, 110, 253, 0);
         background-color: transparent;
     }
+
     100% {
         box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
         background-color: transparent;
@@ -389,8 +418,8 @@
 /* Apply this class to the element you want to grab attention */
 .pulse-on-load {
     /* Runs the 1.5 second animation exactly 2 times, then stops forever */
-    animation: load-pulse 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) 2; 
-    border-radius: 0.5rem; 
+    animation: load-pulse 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) 2;
+    border-radius: 0.5rem;
 }
 
 /* -------------------------------------------------------- */
@@ -398,6 +427,7 @@
 /* -------------------------------------------------------- */
 
 @media (max-width: 992px) {
+
     /* Stack elements vertically */
     #main-split {
         display: flex !important;
@@ -419,7 +449,8 @@
     #component-canvas-container {
         max-width: 100% !important;
         height: auto !important;
-        aspect-ratio: 5 / 3; /* Maintains the standard rectangle shape */
+        aspect-ratio: 5 / 3;
+        /* Maintains the standard rectangle shape */
     }
 
     #componentCanvas {
@@ -452,13 +483,45 @@
 
 /* Extra small devices */
 @media (max-width: 576px) {
+
     /* Hide the coordinate tracker */
-    #coords-display, 
+    #coords-display,
     .bi-crosshair {
         display: none !important;
     }
-    
+
     .navbar-brand img {
         height: 1.2em !important;
+    }
+}
+
+#component-canvas-container {
+    touch-action: none; /* CRITICAL: Prevents browser scrolling when touching canvas */
+}
+
+/* -------------------------------------------------------- */
+/* MOBILE RESPONSIVENESS (View-Only Mode)                   */
+/* -------------------------------------------------------- */
+@media (max-width: 992px) {
+    /* Stack elements vertically */
+    #main-split {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Hide the left controls panel and toolbar on mobile */
+    #left-panel, #toolbar {
+        display: none !important;
+    }
+
+    /* Expand the canvas panel to full width and height */
+    #right-panel {
+        width: 100% !important;
+        flex-grow: 1;
+    }
+
+    /* Hide New, Save, and Import buttons on mobile */
+    #new-component-btn, #save-component-btn, #import-json-btn {
+        display: none !important;
     }
 }
