@@ -2517,6 +2517,7 @@ function setupPropertyListeners() {
 
         // Save to local storage
         autoSaveState();
+        syncMobileHeader();
     });
 
     // ADDED Listener for Display Name
@@ -3110,18 +3111,36 @@ function handleAddMatrix() {
     updateLedCount();
 }
 
-// --- Rendering ---
+// Updates the mobile view HTML with the current component details
+function updateMobileHeader(name, brand, type) {
+    const nameEl = document.getElementById('mobile-comp-name');
+    const brandEl = document.getElementById('mobile-comp-brand');
+    const typeEl = document.getElementById('mobile-comp-type');
+
+    if (nameEl) nameEl.textContent = name || 'Untitled Component';
+    if (brandEl) brandEl.textContent = brand || 'Custom';
+    if (typeEl) typeEl.textContent = type || 'Other';
+}
+
+function syncMobileHeader() {
+    if (typeof componentState !== 'undefined' && componentState) {
+        updateMobileHeader(componentState.name, componentState.brand, componentState.type);
+    }
+}
+
 function updateUIFromState() {
     if (compNameInput) compNameInput.value = componentState?.name || '';
     if (compDisplayNameInput) compDisplayNameInput.value = componentState?.displayName || '';
     if (compBrandInput) compBrandInput.value = componentState?.brand || 'Custom';
-    if (compTypeInput) compTypeInput.value = componentState?.type || 'Strip'; if (componentState?.imageUrl && imagePreview) {
+    if (compTypeInput) compTypeInput.value = componentState?.type || 'Strip'; 
+    if (componentState?.imageUrl && imagePreview) {
         imagePreview.src = componentState.imageUrl; imagePreview.style.display = 'block';
     } else if (imagePreview) {
         imagePreview.src = '#'; imagePreview.style.display = 'none';
         if (compImageInput) compImageInput.value = '';
     }
     updateLedCount();
+    syncMobileHeader(); // <-- Push updates to the mobile UI
 }
 
 function handleAddStrip() {
