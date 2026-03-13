@@ -36,6 +36,9 @@ let imageGuideHandle = null; // 'move', 'scale', or 'rotate'
 const HANDLE_SIZE = 15; // Screen pixels
 // --- END NEW ---
 
+let initialPinchDistance = null;
+let lastPanPoint = null;
+
 // --- INITIALIZATION ---
 export function setupCanvas(appState) {
     canvas = appState.canvas;
@@ -321,6 +324,12 @@ function setupCanvasListeners(rightPanelTop) {
     canvas.addEventListener('mouseleave', (e) => handleCanvasMouseLeave(e));
     canvas.addEventListener('wheel', (e) => handleCanvasWheel(e));
     canvas.addEventListener('contextmenu', (e) => handleContextMenu(e)); // Use contextmenu for Right (2)
+
+    // --- NEW: TOUCH EVENT LISTENERS ---
+    canvas.addEventListener('touchstart', handleCanvasTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleCanvasTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleCanvasTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleCanvasTouchEnd, { passive: false });
 }
 
 function handleContextMenu(e) {
@@ -970,6 +979,70 @@ function handleCanvasWheel(e) {
     e.preventDefault(); const zoomIntensity = 0.1; const zoomDirection = e.deltaY < 0 ? 1 : -1;
     const zoomFactor = 1 + (zoomDirection * zoomIntensity); zoomAtPoint(e.offsetX, e.offsetY, zoomFactor);
 }
+
+// --- NEW: TOUCH EVENT HANDLERS ---
+function handleCanvasTouchStart(e) {
+    e.preventDefault(); 
+    
+    if (e.touches.length === 1) {
+        lastPanPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+        initialPinchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+    }
+}
+
+function handleCanvasTouchMove(e) {
+    e.preventDefault();
+
+    if (e.touches.length === 1 && lastPanPoint) {
+        // 1 Finger Pan
+        const currentPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        const dx = currentPoint.x - lastPanPoint.x;
+        const dy = currentPoint.y - lastPanPoint.y;
+
+        viewTransform.panX += dx;
+        viewTransform.panY += dy;
+
+        lastPanPoint = currentPoint;
+        drawCanvas();
+        
+    } else if (e.touches.length === 2 && initialPinchDistance) {
+        // 2 Finger Pinch-to-Zoom
+        const currentPinchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        const zoomFactor = currentPinchDistance / initialPinchDistance;
+
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const canvasMidX = (midX - rect.left) * scaleX;
+        const canvasMidY = (midY - rect.top) * scaleY;
+
+        zoomAtPoint(canvasMidX, canvasMidY, zoomFactor);
+
+        initialPinchDistance = currentPinchDistance; 
+    }
+}
+
+function handleCanvasTouchEnd(e) {
+    e.preventDefault();
+    if (e.touches.length < 2) {
+        initialPinchDistance = null;
+    }
+    if (e.touches.length === 0) {
+        lastPanPoint = null;
+    }
+}
+// --- END TOUCH EVENT HANDLERS ---
 
 // --- COORDINATE & VIEWPORT ---
 function screenToWorld(screenX, screenY) {
