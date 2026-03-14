@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skydimo Effect Builder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Skydimo LUA Builder</h1>
+        </header>
+
+        <div class="main-content">
+            <aside class="controls">
+                <div class="control-group">
+                    <label for="preset-name">Preset Name</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="preset-name" placeholder="My Cool Effect" style="flex-grow: 1; background: #1a1a1a; color: white; border: 1px solid #444; padding: 5px; border-radius: 4px;">
+                        <button id="save-preset-btn" style="background: #00ffcc; color: #121212; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Save</button>
+                    </div>
+                    <div id="presets-list" style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="effect-type">Effect Type</label>
+                    <select id="effect-type">
+                        <optgroup label="Standard Presets">
+                            <option value="solid">Solid Color</option>
+                            <option value="rainbow">Rainbow Flow</option>
+                            <option value="wave">Wave</option>
+                            <option value="scanner">Scanner (Bounce)</option>
+                            <option value="sweep">Sweep (Wrap)</option>
+                            <option value="breathing">Breathing</option>
+                        </optgroup>
+                        <optgroup label="Dynamic & Party">
+                            <option value="strobe">Strobe</option>
+                            <option value="sparkle">Sparkle</option>
+                            <option value="theater">Theater Chase</option>
+                            <option value="police">Police Chase (Dual)</option>
+                            <option value="fire">Fire Flicker</option>
+                        </optgroup>
+                        <optgroup label="Advanced Math">
+                            <option value="aurora">Aurora Borealis (Dual)</option>
+                            <option value="plasma">Plasma Field</option>
+                            <option value="heartbeat">Heartbeat Monitor</option>
+                            <option value="glitch">Cyber Glitch (Dual)</option>
+                            <option value="comet">Comet Trail</option>
+                            <option value="helix">DNA Helix (Dual)</option>
+                            <option value="ripple">Ripple Pulse</option>
+                        </optgroup>
+                        <optgroup label="Sine & Curve Effects">
+                            <option value="sine_pulse">Sine Pulse (Glow)</option>
+                            <option value="bounce_sine">Bouncing Sine (Snake)</option>
+                            <option value="dual_sine">Oscillating Dual Tone</option>
+                        </optgroup>
+                        <optgroup label="2D Matrix Effects">
+                            <option value="radial_pulse">2D Radial Pulse</option>
+                            <option value="diagonal_wave">2D Diagonal Wave</option>
+                            <option value="matrix_rain">2D Matrix Rain</option>
+                            <option value="grid_scan">2D XY Grid Scan</option>
+                            <option value="v_sweep">Vertical Sweep</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="temperature">Temperature</label>
+                        <input type="number" id="temperature-num" min="-100" max="100" value="0">
+                    </div>
+                    <input type="range" id="temperature" min="-100" max="100" value="0">
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="tint">Tint</label>
+                        <input type="number" id="tint-num" min="-100" max="100" value="0">
+                    </div>
+                    <input type="range" id="tint" min="-100" max="100" value="0">
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="brightness">Brightness</label>
+                        <input type="number" id="brightness-num" min="0" max="100" value="100">
+                    </div>
+                    <input type="range" id="brightness" min="0" max="100" value="100">
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="fps">FPS</label>
+                        <input type="number" id="fps-num" min="1" max="144" value="60">
+                    </div>
+                    <input type="range" id="fps" min="1" max="144" value="60">
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="speed">Speed</label>
+                        <input type="number" id="speed-num" min="0" max="2000" value="1000">
+                    </div>
+                    <input type="range" id="speed" min="0" max="2000" value="1000">
+                </div>
+
+                <div class="control-group">
+                    <label for="color">Primary Color</label>
+                    <input type="color" id="color" value="#0000ff">
+                </div>
+
+                <div class="control-group">
+                    <label for="color2">Secondary Color</label>
+                    <input type="color" id="color2" value="#ff0000">
+                </div>
+
+                <div class="control-group">
+                    <button id="reset-btn" style="background-color: #333; color: #ff5555; border: 1px solid #ff5555; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        Reset to Defaults
+                    </button>
+                </div>
+            </aside>
+
+            <section class="output-section">
+                <div class="preview-container">
+                    <label>Live Preview</label>
+                    <canvas id="preview-canvas" width="800" height="120"></canvas>
+                </div>
+
+                <div class="output-header">
+                    <label for="lua-output">Generated Output</label>
+                    <button id="copy-btn">Copy to Clipboard</button>
+                </div>
+                <textarea id="lua-output" readonly></textarea>
+            </section>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
