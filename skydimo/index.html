@@ -29,82 +29,54 @@
                 <div class="control-group">
                     <label for="effect-type">Effect Type</label>
                     <select id="effect-type">
-                        <optgroup label="Standard Presets">
+                        <optgroup label="Solid & Basic">
                             <option value="solid">Solid Color</option>
-                            <option value="rainbow">Rainbow Flow</option>
-                            <option value="wave">Wave</option>
-                            <option value="scanner">Scanner (Bounce)</option>
-                            <option value="sweep">Sweep (Wrap)</option>
-                            <option value="breathing">Breathing</option>
+                            <option value="rainbow">Rainbow</option>
                         </optgroup>
-                        <optgroup label="Dynamic & Party">
+                        
+                        <optgroup label="1D Wave & Motion">
+                            <option value="wave">Wave</option>
+                            <option value="scanner">Scanner</option>
+                            <option value="sweep">Sweep</option>
+                            <option value="breathing">Breathing</option>
                             <option value="strobe">Strobe</option>
+                            <option value="comet">Comet</option>
+                            <option value="sine_pulse">Sine Pulse</option>
+                            <option value="bounce_sine">Bounce Sine</option>
+                            <option value="fire">Fire</option>
                             <option value="sparkle">Sparkle</option>
                             <option value="theater">Theater Chase</option>
-                            <option value="police">Police Chase (Dual)</option>
-                            <option value="fire">Fire Flicker</option>
+                            <option value="police">Police Lights</option>
+                            <option value="glitch">Glitch</option>
                         </optgroup>
-                        <optgroup label="Advanced Math">
-                            <option value="aurora">Aurora Borealis (Dual)</option>
-                            <option value="plasma">Plasma Field</option>
-                            <option value="heartbeat">Heartbeat Monitor</option>
-                            <option value="glitch">Cyber Glitch (Dual)</option>
-                            <option value="comet">Comet Trail</option>
-                            <option value="helix">DNA Helix (Dual)</option>
-                            <option value="ripple">Ripple Pulse</option>
-                        </optgroup>
-                        <optgroup label="Sine & Curve Effects">
-                            <option value="sine_pulse">Sine Pulse (Glow)</option>
-                            <option value="bounce_sine">Bouncing Sine (Snake)</option>
-                            <option value="dual_sine">Oscillating Dual Tone</option>
-                        </optgroup>
-                        <optgroup label="2D Matrix Effects">
-                            <option value="radial_pulse">2D Radial Pulse</option>
-                            <option value="diagonal_wave">2D Diagonal Wave</option>
-                            <option value="matrix_rain">2D Matrix Rain</option>
-                            <option value="grid_scan">2D XY Grid Scan</option>
+
+                        <optgroup label="2D Patterns & Grids">
+                            <option value="matrix_rain">Matrix Rain</option>
+                            <option value="grid_scan">Grid Scan</option>
                             <option value="v_sweep">Vertical Sweep</option>
+                            <option value="radial_pulse">Radial Pulse</option>
+                            <option value="diagonal_wave">Diagonal Wave</option>
+                            <option value="aurora">Aurora</option>
+                            <option value="plasma">Plasma</option>
+                            <option value="heartbeat">Heartbeat</option>
+                            <option value="helix">Helix</option>
+                            <option value="dual_sine">Dual Sine</option>
+                            <option value="ripple">Ripple</option>
+                            <option value="radar">Radar Sweep</option>
+                            <option value="waterfall">Waterfall</option>
+                            <option value="vortex">Vortex</option>
+                            <option value="kaleidoscope">Kaleidoscope</option>
                         </optgroup>
                     </select>
                 </div>
 
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label for="temperature">Temperature</label>
-                        <input type="number" id="temperature-num" min="-100" max="100" value="0">
-                    </div>
-                    <input type="range" id="temperature" min="-100" max="100" value="0">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header">
-                        <label for="tint">Tint</label>
-                        <input type="number" id="tint-num" min="-100" max="100" value="0">
-                    </div>
-                    <input type="range" id="tint" min="-100" max="100" value="0">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header">
-                        <label for="brightness">Brightness</label>
-                        <input type="number" id="brightness-num" min="0" max="100" value="100">
-                    </div>
+                    <label for="brightness">Brightness (<span id="brightness-num">100</span>%)</label>
                     <input type="range" id="brightness" min="0" max="100" value="100">
                 </div>
 
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label for="fps">FPS</label>
-                        <input type="number" id="fps-num" min="1" max="144" value="60">
-                    </div>
-                    <input type="range" id="fps" min="1" max="144" value="60">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header">
-                        <label for="speed">Speed</label>
-                        <input type="number" id="speed-num" min="0" max="2000" value="1000">
-                    </div>
+                    <label for="speed">Speed (<span id="speed-num">1000</span>)</label>
                     <input type="range" id="speed" min="0" max="2000" value="1000">
                 </div>
 
@@ -128,7 +100,7 @@
             <section class="output-section">
                 <div class="preview-container">
                     <label>Live Preview</label>
-                    <canvas id="preview-canvas" width="800" height="120"></canvas>
+                    <canvas id="preview-canvas" width="800" height="300"></canvas>
                 </div>
 
                 <div class="output-header">
