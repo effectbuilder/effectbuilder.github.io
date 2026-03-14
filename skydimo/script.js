@@ -84,6 +84,10 @@ function loadState() {
 
 function generateSkydimoLua() {
     const type = elements.type.value;
+
+    // Get the display name from the selected option (e.g., "Matrix Rain")
+    const typeName = elements.type.options[elements.type.selectedIndex].text;
+    
     const brightness = document.getElementById('brightness').value;
     const speed = document.getElementById('speed').value;
     
@@ -98,7 +102,8 @@ function generateSkydimoLua() {
     const hue1Param = hueToSkydimo(rgbToHsv(r1, g1, b1));
     const hue2Param = hueToSkydimo(rgbToHsv(r2, g2, b2));
 
-    let luaCode = `-- Skydimo Exact Hue Mapping Script\nlocal cfg = {\n    brightness = ${brightness} / 100,\n    speed = ${speed} / 1000,\n    hue1 = ${hue1Param},\n    hue2 = ${hue2Param}\n}\n\n`;
+    // Dynamic header name based on selection
+    let luaCode = `-- Skydimo Effect: ${typeName}\nlocal cfg = {\n    brightness = ${brightness} / 100,\n    speed = ${speed} / 1000,\n    hue1 = ${hue1Param},\n    hue2 = ${hue2Param}\n}\n\n`;
 
     luaCode += `function get_hue(val)\n    return math.floor((val + 100) * 1.8) % 360\nend\n\n`;
     
