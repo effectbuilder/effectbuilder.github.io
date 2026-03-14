@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentSort = 'createdAt'; // 'createdAt', 'likes', 'downloadCount', 'name'
     let currentSortLabel = 'Newest';
     let isGalleryReady = false;
-    
+
     // --- DOM Elements for Lazy Loading ---
     const initialLoadingSpinner = document.getElementById('initial-loading-spinner');
     const loadMoreTrigger = document.getElementById('load-more-trigger');
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
             loginBtn.classList.remove('d-none');
             userSessionGroup.classList.add('d-none');
             if (likedTab) likedTab.style.display = 'none'; // Hide "My Liked" tab
-            
+
             // If user logged out while on "liked" tab, switch back to "all"
             if (currentFilter === 'liked') {
                 currentFilter = 'all';
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // === MODIFICATION END ===
         }
         // Reload the gallery to apply auth-specific views (like buttons)
-        loadPublicGallery(); 
+        loadPublicGallery();
     }
 
     if (window.auth) {
@@ -100,25 +100,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 const activeLink = filterTabs.querySelector('a.active');
                 if (activeLink) activeLink.classList.remove('active');
                 link.classList.add('active');
-                
+
                 currentFilter = link.dataset.filter;
                 loadPublicGallery(); // Reload the gallery with the new filter
             }
         });
     }
 
-    const sortDropdown = document.querySelector('.dropdown-menu');
+    const sortDropdown = document.getElementById('gallery-sort-menu');
     const sortLabel = document.getElementById('sort-by-label');
     if (sortDropdown) {
         sortDropdown.addEventListener('click', (e) => {
-            e.preventDefault();
             const link = e.target.closest('a.gallery-sort-option');
+
+            // Only prevent default navigation if they actually clicked a sorting option
             if (link) {
+                e.preventDefault();
                 currentSort = link.dataset.sort;
                 currentSortLabel = link.textContent;
-                if(sortLabel) sortLabel.textContent = currentSortLabel;
-                
-                loadPublicGallery(); // Reload the gallery with the new sort
+                if (sortLabel) sortLabel.textContent = currentSortLabel;
+
+                loadPublicGallery();
             }
         });
     }
@@ -224,17 +226,17 @@ document.addEventListener('DOMContentLoaded', function () {
     async function toggleFeaturedStatus(docIdToToggle) {
         // Find the button inside the dropdown
         const featureBtn = document.getElementById(`admin-feature-btn-${docIdToToggle}`);
-        if(featureBtn) {
+        if (featureBtn) {
             featureBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Toggling...';
             featureBtn.classList.add('disabled');
         }
-        
+
         try {
             const projectsRef = window.collection(window.db, "projects");
             const docToToggleRef = window.doc(projectsRef, docIdToToggle);
             const q = window.query(projectsRef, window.where("featured", "==", true));
             const currentlyFeaturedSnapshot = await window.getDocs(q);
-            
+
             await window.runTransaction(window.db, async (transaction) => {
                 const docToToggleSnap = await transaction.get(docToToggleRef);
                 if (!docToToggleSnap.exists()) throw new Error("Document does not exist!");
@@ -247,13 +249,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 transaction.update(docToToggleRef, { featured: newFeaturedState });
             });
-            
+
             // Reload the whole gallery to see the change
-            loadPublicGallery(); 
+            loadPublicGallery();
 
         } catch (error) {
             console.error("Error updating featured status: ", error);
-            if(featureBtn) {
+            if (featureBtn) {
                 featureBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
             }
         }
@@ -337,10 +339,10 @@ document.addEventListener('DOMContentLoaded', function () {
             let adminDropdownHTML = '';
             const isOwner = currentUser && currentUser.uid === project.userId;
             const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
-            
+
             if (isOwner || isAdmin) {
                 const isFeatured = project.featured === true;
-                
+
                 const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>Edit</button></li>` : '';
                 const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? '<i class="bi bi-star-fill me-2"></i>Un-feature' : '<i class="bi bi-star me-2"></i>Feature'}</button></li>` : '';
                 const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
@@ -375,17 +377,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const card = document.createElement('div');
             card.className = 'card shadow-sm h-100';
-            
+
             // Note: We create a parent 'position-relative' div to hold the Link AND the Menu separate
             card.innerHTML = `
                 <div class="position-relative">
                     <a href="./?effectId=${project.docId}" class="d-block">
-                        ${project.thumbnail ? 
-                            `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` : 
-                            `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
+                        ${project.thumbnail ?
+                    `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` :
+                    `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
                                 <i class="bi bi-image text-body-tertiary" style="font-size: 3rem;"></i>
                             </div>`
-                        }
+                }
                     </a>
                     ${project.featured === true ? '<span class="badge bg-warning text-dark position-absolute top-0 start-0 m-2 z-1"><i class="bi bi-star-fill me-1"></i>Featured</span>' : ''}
                     ${adminDropdownHTML} 
@@ -420,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const likeBtn = col.querySelector(`#gallery-like-btn-${project.docId}`);
             if (likeBtn) {
                 // Like button is disabled if user is not logged in
-                likeBtn.disabled = !currentUser; 
+                likeBtn.disabled = !currentUser;
                 likeBtn.addEventListener('click', () => handleLikeAction(project.docId));
             }
 
@@ -466,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             // === MODIFICATION START ===
             const user = window.auth.currentUser;
-            
+
             const queryConstraints = [
                 window.where("isPublic", "==", true)
             ];
@@ -484,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // or we must fetch all and sort client-side.
             // For now, let's keep the query simple. The 'liked' filter will just show results.
             // Let's refine this:
-            
+
             if (currentFilter === 'liked' && user) {
                 // When filtering by "liked", sorting by other fields (like 'likes' or 'createdAt') 
                 // requires a composite index in Firestore (e.g., `likedBy.USER_ID` and `likes`).
@@ -513,20 +515,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.collection(window.db, "projects"),
                 ...queryConstraints
             );
-            
+
             const querySnapshot = await window.getDocs(q);
-            
+
             if (initialLoadingSpinner) {
                 // Use .remove() for modern browsers
-                initialLoadingSpinner.remove(); 
+                initialLoadingSpinner.remove();
             }
 
             if (querySnapshot.empty) {
                 allLoaded = true;
                 loadMoreMessage.classList.remove('d-none');
                 if (galleryList.children.length === 0) {
-                     // Display "no effects" message inside the grid
-                     galleryList.innerHTML = '<div class="col-12"><p class="text-body-secondary text-center mt-4">No effects found.</p></div>';
+                    // Display "no effects" message inside the grid
+                    galleryList.innerHTML = '<div class="col-12"><p class="text-body-secondary text-center mt-4">No effects found.</p></div>';
                 }
             } else {
                 lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
@@ -548,30 +550,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function loadPublicGallery() {
-        galleryList.innerHTML = ''; 
+        galleryList.innerHTML = '';
         lastVisible = null;
         allLoaded = false;
         isLoading = false;
 
         // === FIX START: Enable Observer ===
-        isGalleryReady = true; 
+        isGalleryReady = true;
         // === FIX END ===
-        
+
         if (initialLoadingSpinner) {
             galleryList.appendChild(initialLoadingSpinner);
         }
 
-        loadMoreMessage.classList.add('d-none'); 
-        
+        loadMoreMessage.classList.add('d-none');
+
         loadMoreProjects();
     }
-    
+
     // --- Intersection Observer Setup ---
     function setupIntersectionObserver() {
         const options = {
             root: null,
             rootMargin: '0px',
-            threshold: 0.1 
+            threshold: 0.1
         };
 
         const observer = new IntersectionObserver((entries) => {

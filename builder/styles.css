@@ -462,3 +462,22 @@
         height: 1.2em !important;
     }
 }
+
+/* --- Featured Component Highlight --- */
+.card.border-warning {
+    border-width: 2px !important;
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.2); /* Subtle gold glow */
+}
+
+.featured-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20; /* Ensure it stays above the kebab menu and image */
+    pointer-events: none; /* Allows clicks to pass through to the image below */
+}
+
+/* Adjust the kebab menu position so it doesn't fight with the badge */
+.card.position-relative .dropdown {
+    z-index: 21;
+}

@@ -10,7 +10,8 @@ import {
     onSnapshot,
     updateDoc,
     writeBatch,
-    documentId // [MODIFIED] Import documentId instead of FieldPath
+    documentId,
+    serverTimestamp
 } from './firebase.js';
 
 // --- CONSTANTS ---
@@ -490,6 +491,15 @@ async function loadUserComponents(reset = false) {
     if (isGalleryLoading) return;
     isGalleryLoading = true;
 
+    let currentFeaturedId = null;
+    try {
+        const featuredRef = doc(db, "srgb-components-metadata", "featured");
+        const featuredSnap = await getDoc(featuredRef);
+        if (featuredSnap.exists()) {
+            currentFeaturedId = featuredSnap.data().componentId;
+        }
+    } catch (e) { console.error("Error fetching featured ID for gallery UI:", e); }
+
     if (!galleryComponentList) {
         console.error("Gallery list element not found.");
         isGalleryLoading = false;
@@ -517,7 +527,7 @@ async function loadUserComponents(reset = false) {
 
     try {
         const componentsCollection = collection(db, 'srgb-components');
-        
+
         // 1. Get Values
         const searchTerm = gallerySearchInput ? gallerySearchInput.value.trim().toLowerCase() : '';
         const filterType = galleryFilterType ? galleryFilterType.value : 'all';
@@ -538,7 +548,7 @@ async function loadUserComponents(reset = false) {
                 where('searchName', '<=', searchTerm + '\uf8ff'),
                 limit(50) // Fetch up to 50 matches (search is usually specific enough)
             );
-        } 
+        }
         // 3. BROWSE MODE (Normal Pagination)
         else {
             const queryConstraints = [
@@ -554,12 +564,12 @@ async function loadUserComponents(reset = false) {
             }
 
             if (lastVisibleComponent) queryConstraints.push(startAfter(lastVisibleComponent));
-            
+
             q = query(componentsCollection, ...queryConstraints);
         }
 
         const querySnapshot = await getDocs(q);
-        
+
         // Note: We remove the client-side .filter() because the server did the work!
         let finalDocs = querySnapshot.docs;
         if (searchTerm) {
@@ -577,6 +587,15 @@ async function loadUserComponents(reset = false) {
             const componentData = docSnap.data();
             const componentId = docSnap.id;
 
+            const isFeatured = componentId === currentFeaturedId;
+            const featuredBadgeHtml = isFeatured ? `
+                <div class="position-absolute top-0 start-0 mt-2 ms-2" style="z-index: 10;">
+                    <span class="badge rounded-pill bg-warning text-dark shadow-sm">
+                        <i class="bi bi-star-fill me-1"></i> Featured
+                    </span>
+                </div>
+            ` : '';
+
             // --- DEFINITIONS ---
             const ledCount = componentData.ledCount || (Array.isArray(componentData.leds) ? componentData.leds.length : 0);
             const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
@@ -591,12 +610,23 @@ async function loadUserComponents(reset = false) {
             // Only generate this HTML if the user is allowed to delete
             let kebabMenuHtml = '';
             if (user && (user.uid === ownerId || user.uid === ADMIN_UID)) {
+                // Only admins see the "Feature" option
+                const adminActions = user.uid === ADMIN_UID ? `
+                    <li>
+                        <button class="dropdown-item text-primary" data-component-id="${componentId}-feature">
+                            <i class="bi bi-star-fill me-2"></i>Set as Featured
+                        </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                ` : '';
+
                 kebabMenuHtml = `
                     <div class="dropdown position-absolute top-0 end-0 mt-2 me-2" style="z-index: 10;">
                         <button class="btn btn-light btn-sm rounded-circle shadow-sm opacity-75" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
+                            ${adminActions}
                             <li>
                                 <button class="dropdown-item text-danger" data-component-id="${componentId}-delete">
                                     <i class="bi bi-trash me-2"></i>Delete
@@ -630,32 +660,57 @@ async function loadUserComponents(reset = false) {
             // --- RENDER CARD ---
             // Added 'position-relative' to the card so the kebab menu is positioned correctly
             col.innerHTML = `
-                <div class="card h-100 bg-body-tertiary position-relative">
-                    ${kebabMenuHtml}
-                    ${imageHtml}
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title text-truncate" title="${componentName}">${componentName}</h5>
-                        <small class="card-subtitle text-muted mb-2">By: ${ownerName}</small>
-                        <div class="mb-3">
-                            <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
-                            <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
-                            <span class="badge bg-secondary">${ledCount} LEDs</span>
-                        </div>
-                        <div class="mt-auto">
-                            <button class="btn btn-primary w-100" data-component-id="${componentId}-load">
-                                <i class="bi bi-folder2-open me-1"></i> Load in Builder
-                            </button>
-                        </div>
+            <div class="card h-100 bg-body-tertiary position-relative ${isFeatured ? 'border border-warning' : ''}">
+                ${featuredBadgeHtml}
+                ${kebabMenuHtml}
+                ${imageHtml}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-truncate" title="${componentName}">${componentName}</h5>
+                    <small class="card-subtitle text-muted mb-2">By: ${ownerName}</small>
+                    <div class="mb-3">
+                        <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
+                        <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
+                        <span class="badge bg-secondary">${ledCount} LEDs</span>
                     </div>
-                    <div class="card-footer text-muted d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
-                        <span>${lastUpdated}</span>
-                        <div class="d-flex gap-3">
-                            <span title="Likes"><i class="bi bi-heart-fill text-danger me-1"></i> ${likeCount}</span>
-                            <span title="Views"><i class="bi bi-eye-fill text-secondary me-1"></i> ${viewCount}</span>
-                        </div>
+                    <div class="mt-auto">
+                        <button class="btn btn-primary w-100" data-component-id="${componentId}-load">
+                            <i class="bi bi-folder2-open me-1"></i> Load in Builder
+                        </button>
                     </div>
                 </div>
-            `;
+                <div class="card-footer text-muted d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
+                    <span>${lastUpdated}</span>
+                    <div class="d-flex gap-3">
+                        <span title="Likes"><i class="bi bi-heart-fill text-danger me-1"></i> ${likeCount}</span>
+                        <span title="Views"><i class="bi bi-eye-fill text-secondary me-1"></i> ${viewCount}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            // Still inside the forEach loop, after the HTML is injected
+            const featureButton = col.querySelector(`[data-component-id="${componentId}-feature"]`);
+            if (featureButton) {
+                // Inside gallery.js -> loadUserComponents() loop
+                featureButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const featuredRef = doc(db, "srgb-components-metadata", "featured");
+                        await setDoc(featuredRef, {
+                            componentId: componentId,
+                            featuredAt: serverTimestamp()
+                        }, { merge: true });
+
+                        showToast('Spotlight Updated', `"${componentName}" is now the featured component!`, 'success');
+
+                        // Refresh the gallery to update the badges visually
+                        loadUserComponents(true);
+                    } catch (error) {
+                        console.error("Error setting featured component:", error);
+                        showToast('Error', 'Could not update featured component.', 'danger');
+                    }
+                });
+            }
 
             galleryComponentList.appendChild(col);
 

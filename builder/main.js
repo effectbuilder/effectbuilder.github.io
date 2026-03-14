@@ -3132,7 +3132,7 @@ function updateUIFromState() {
     if (compNameInput) compNameInput.value = componentState?.name || '';
     if (compDisplayNameInput) compDisplayNameInput.value = componentState?.displayName || '';
     if (compBrandInput) compBrandInput.value = componentState?.brand || 'Custom';
-    if (compTypeInput) compTypeInput.value = componentState?.type || 'Strip'; 
+    if (compTypeInput) compTypeInput.value = componentState?.type || 'Strip';
     if (componentState?.imageUrl && imagePreview) {
         imagePreview.src = componentState.imageUrl; imagePreview.style.display = 'block';
     } else if (imagePreview) {
@@ -4558,6 +4558,22 @@ function getPointsForPolygon(vertices, gridSize) {
 }
 // --- END NEW HELPER FUNCTIONS ---
 
+/**
+ * Fetches the ID of the featured component from Firestore metadata.
+ * @returns {Promise<string|null>}
+ */
+async function getFeaturedComponentId() {
+    try {
+        const featuredRef = doc(db, "srgb-components-metadata", "featured");
+        const docSnap = await getDoc(featuredRef);
+        if (docSnap.exists()) {
+            return docSnap.data().componentId;
+        }
+    } catch (error) {
+        console.error("Error fetching featured component ID:", error);
+    }
+    return null;
+}
 
 
 
@@ -4638,16 +4654,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     // --- [END NEW] ---
 
-    // --- Check for URL parameter ---
     const urlParams = new URLSearchParams(window.location.search);
     const componentIdFromUrl = urlParams.get('id');
 
     if (componentIdFromUrl) {
-        // If an ID is in the URL, try to load it
-        loadComponentFromUrl(componentIdFromUrl);
+        loadComponentFromUrl(componentIdFromUrl); // Priority 1: Direct Link
     } else {
-        // Otherwise, load from autosave or start new
-        handleNewComponent(false);
+        const savedState = localStorage.getItem(AUTOSAVE_KEY);
+        if (savedState) {
+            handleNewComponent(false); // Priority 2: Unsaved Work
+        } else {
+            // Priority 3: Feature a community favorite
+            const featuredId = await getFeaturedComponentId();
+            if (featuredId) {
+                showToast('Welcome', 'Loading the featured community component...', 'info');
+                loadComponentFromUrl(featuredId);
+            } else {
+                handleNewComponent(false); // Priority 4: Fresh Canvas
+            }
+        }
     }
 
     // Show the welcome tutorial for new users ---
