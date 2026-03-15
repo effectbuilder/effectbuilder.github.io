@@ -938,11 +938,6 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {boolean} append If true, adds results to the existing list (for pagination).
      */
     async function searchGiphy(term, append = false) {
-        if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE') {
-            showToast("Giphy API key is not configured in main.js.", "danger");
-            return;
-        }
-
         const resultsContainer = document.getElementById('gif-results-container');
 
         if (!append) {
@@ -961,13 +956,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const limit = 12;
             let url;
-            if (term === '__trending__') {
-                // If the term is our special keyword, use the trending endpoint
-                url = `https://us-central1-effect-builder.cloudfunctions.net/searchGifs?limit=${limit}&offset=${giphySearchOffset}`;
-            } else {
-                // Otherwise, use the search endpoint as before
                 url = `https://us-central1-effect-builder.cloudfunctions.net/searchGifs?q=${encodeURIComponent(term)}&limit=${limit}&offset=${giphySearchOffset}`;
-            }
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Giphy API responded with status ${response.status}`);
             const data = await response.json();
@@ -10097,7 +10086,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const resultsContainer = document.getElementById('gif-results-container');
             // Only fetch if the modal is empty
             if (resultsContainer.innerHTML.trim() === '') {
-                currentGiphySearchTerm = '__trending__';
+                currentGiphySearchTerm = 'rgb';
                 performGiphySearchAndFill(currentGiphySearchTerm);
             }
         });
