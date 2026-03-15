@@ -1,76 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fan Tracer Pro</title>
+    <title>Fan Tracer Pro Max</title>
     <meta name="requires-audio" content="true">
-    <meta title="Fan Tracer Pro">
-    <meta description="Fan Tracer Pro delivers ultra-dense, audio-reactive light trails with surgical precision across your fans, AIOs, and cables. Featuring independent animation engines and high-visibility alignment guides, it transforms your hardware into a high-performance rhythmic masterpiece." />
+    <meta title="Fan Tracer Pro Max">
+    <meta description="Ultimate audio-reactive lighting engine with modular LED Matrix, absolute positioning, and pixel-perfect square grids." />
     <meta publisher="José Miranda" />
 
-    <meta property="showGuides" label="Show Path Guides" type="boolean" default="false" tooltip="Displays high-visibility solid white paths to help you align the effect with your physical hardware layout.">
-    <meta property="trailLength" label="Global Trail Length" type="number" default="12" min="0" max="50" tooltip="Controls how long the light trails persist before fading to black.">
-    <meta property="audioGain" label="Global Audio Gain" type="number" default="0" min="0" max="10" tooltip="Boosts the incoming audio signal if the reactive flashes feel too subtle.">
-    <meta property="flashDecay" label="Flash Decay Speed" type="number" default="92" min="50" max="99" tooltip="Controls the linger time of the white flash. Higher values make the flash stay visible longer.">
+    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
+    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Forest" tooltip="Global theme override for all components. Set to 'None' for individual control.">
+    <meta property="masterColor" label="[Master] Custom Color" type="color" default="#0000ff" tooltip="The color used when Master Profile is set to 'Custom'.">
+    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="77" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
+    <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">
+    <meta property="showGuides" label="Show Path Guides" type="boolean" default="false" tooltip="Toggle visibility of the structural layout lines.">
+    <meta property="showLabels" label="Show Object Names" type="boolean" default="true" tooltip="Toggle visibility of the names above/below each component.">
 
-    <meta property="fanCount" label="[Fans] Total Count" type="number" default="10" min="1" max="20" tooltip="Total number of fans in your horizontal array.">
-    <meta property="groupSize" label="[Fans] Group Size" type="number" default="1" min="1" max="4" tooltip="Determines how many fans are animated simultaneously in the sequence.">
-    <meta property="fanRadius" label="[Fans] Radius" type="number" default="14" min="5" max="100" tooltip="The radius of the circular path on each fan.">
-    <meta property="vOffset" label="[Fans] Y Offset" type="number" default="-68" min="-100" max="100" tooltip="Vertical positioning of the entire fan array.">
-    <meta property="showCircle" label="[Circle] Enable" type="boolean" default="true" tooltip="Toggle the circular spinning tracers on or off.">
-    <meta property="moveMode" label="[Circle] Pattern" type="combobox" values="Loop,Bounce,Figure 8" default="Bounce" tooltip="Animation movement style for the circles.">
-    <meta property="circleDots" label="[Circle] Dot Count" type="number" default="1" min="1" max="10" tooltip="Number of tracer dots per fan circle.">
-    <meta property="circleSize" label="[Circle] Dot Size" type="number" default="6" min="1" max="40" tooltip="The thickness of the circular tracers.">
-    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="13" min="0" max="100" tooltip="Movement speed. This remains constant regardless of audio.">
-    <meta property="fanAudio" label="[Circle] Flash Sensitivity" type="number" default="69" min="0" max="100" tooltip="Controls the intensity of the white flash on bass hits for circles.">
-    <meta property="fanProfile" label="[Circle] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Choose a color theme for the fan circles.">
-    <meta property="fanColor" label="[Circle] Custom Color" type="color" default="#0000ff" tooltip="Color used when 'Custom' profile is selected.">
+    <meta property="fanCount" label="[Fans] Total Count" type="number" default="11" min="1" max="20" tooltip="The number of fans to render in the top row.">
+    <meta property="fanRadius" label="[Fans] Radius" type="number" default="12" min="5" max="100" tooltip="The size of each fan circle.">
+    <meta property="fanTrail" label="[Fans] Trail Length" type="number" default="3" min="0" max="50" tooltip="How long the light trails persist behind the fan dots.">
+    <meta property="vOffset" label="[Fans] Y Offset" type="number" default="-65" min="-100" max="100" tooltip="Vertical adjustment for the entire fan row.">
+    <meta property="showCircle" label="[Circle] Enable" type="boolean" default="true" tooltip="Enable or disable the rotating fan light dots.">
+    <meta property="groupSize" label="[Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of dots moving together in a cluster.">
+    <meta property="moveMode" label="[Circle] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Figure 8,Sparkle,Sparkle (Rev)" default="Bounce" tooltip="The movement pattern for the fan LEDs.">
+    <meta property="circleDots" label="[Circle] Dot Count" type="number" default="4" min="1" max="10" tooltip="Number of light clusters per fan.">
+    <meta property="circleSize" label="[Circle] Dot Size" type="number" default="5" min="1" max="40" tooltip="The thickness of the fan light dots.">
+    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="41" min="0" max="100" tooltip="How fast the fan LEDs rotate.">
+    <meta property="fanProfile" label="[Circle] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Specific color theme for the fan circles.">
+    <meta property="fanColor" label="[Circle] Custom Color" type="color" default="#0500ff" tooltip="The color used for fans if Fan Profile is set to 'Custom'.">
 
-    <meta property="showRails" label="[Rails] Enable" type="boolean" default="true" tooltip="Toggle the top and bottom horizontal rail tracers.">
-    <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="23" min="5" max="100" tooltip="Vertical distance of the rails from the fan centers.">
-    <meta property="railMode" label="[Rails] Pattern" type="combobox" values="Loop,Bounce" default="Loop" tooltip="Movement style for the rails.">
-    <meta property="railDots" label="[Rails] Dot Count" type="number" default="1" min="1" max="10" tooltip="Number of dots moving across the rails.">
-    <meta property="railSize" label="[Rails] Dot Size" type="number" default="8" min="1" max="40" tooltip="Thickness of the rail dots.">
-    <meta property="railSpeed" label="[Rails] Speed" type="number" default="30" min="0" max="100" tooltip="Constant movement speed for rail dots.">
-    <meta property="railAudio" label="[Rails] Flash Sensitivity" type="number" default="50" min="0" max="100" tooltip="Controls the intensity of the white flash on bass hits for rails.">
-    <meta property="railProfile" label="[Rails] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for the fan rails.">
-    <meta property="railColor" label="[Rails] Custom Color" type="color" default="#00ff00" tooltip="Color used when 'Custom' profile is selected.">
+    <meta property="showRails" label="[Rails] Enable" type="boolean" default="true" tooltip="Toggle the linear light rails above and below fans.">
+    <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="18" min="5" max="100" tooltip="Vertical spacing between the fan center and the rails.">
+    <meta property="railTrail" label="[Rails] Trail Length" type="number" default="12" min="0" max="50" tooltip="Length of the trails on the fan rails.">
+    <meta property="railMode" label="[Rails] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Loop" tooltip="The animation pattern for the rail LEDs.">
+    <meta property="railDots" label="[Rails] Dot Count" type="number" default="1" min="1" max="10" tooltip="Number of dots moving along the rails.">
+    <meta property="railSize" label="[Rails] Dot Size" type="number" default="6" min="1" max="40" tooltip="Size of the light dots on the rails.">
+    <meta property="railSpeed" label="[Rails] Speed" type="number" default="30" min="0" max="100" tooltip="Movement speed of the rail LEDs.">
+    <meta property="railProfile" label="[Rails] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for the rails.">
+    <meta property="railColor" label="[Rails] Custom Color" type="color" default="#00ff00" tooltip="Custom color for rails if Profile is 'Custom'.">
 
-    <meta property="showAIO1" label="[AIO 1] Enable" type="boolean" default="true" tooltip="Toggle the first linear AIO cover component.">
-    <meta property="aio1X" label="[AIO 1] X Position" type="number" default="-100" min="-160" max="160" tooltip="Horizontal offset for AIO 1.">
-    <meta property="aio1Y" label="[AIO 1] Y Position" type="number" default="44" min="-100" max="100" tooltip="Vertical offset for AIO 1.">
-    <meta property="aio1Width" label="[AIO 1] Width" type="number" default="100" min="10" max="320" tooltip="Total length of the AIO 1 tracer.">
-    <meta property="aio1Mode" label="[AIO 1] Pattern" type="combobox" values="Loop,Bounce,Sparkle" default="Loop" tooltip="Animation logic for AIO 1.">
-    <meta property="aio1Audio" label="[AIO 1] Flash Sensitivity" type="number" default="100" min="0" max="100" tooltip="Controls the intensity of the white flash for AIO 1.">
-    <meta property="aio1Dots" label="[AIO 1] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of dots/particles on AIO 1.">
-    <meta property="aio1Speed" label="[AIO 1] Speed" type="number" default="10" min="0" max="100" tooltip="Movement speed for AIO 1.">
-    <meta property="aio1Profile" label="[AIO 1] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for AIO 1.">
+    <meta property="showMatrix" label="[Matrix] Enable" type="boolean" default="true" tooltip="Toggle the square LED matrix display.">
+    <meta property="matrixX" label="[Matrix] X Position" type="number" default="13" min="0" max="320" tooltip="Absolute horizontal position for the matrix.">
+    <meta property="matrixY" label="[Matrix] Y Position" type="number" default="84" min="0" max="200" tooltip="Absolute vertical position for the matrix.">
+    <meta property="matrixCols" label="[Matrix] Columns" type="number" default="16" min="4" max="64" tooltip="Number of LEDs horizontally.">
+    <meta property="matrixRows" label="[Matrix] Rows" type="number" default="16" min="2" max="32" tooltip="Number of LEDs vertically.">
+    <meta property="matrixCellSize" label="[Matrix] Cell Size" type="number" default="5" min="1" max="20" tooltip="Pixel size of each square LED. Total width = Columns x Cell Size.">
+    <meta property="matrixMode" label="[Matrix] Mode" type="combobox" values="Snake,Random,Text Marquee,Time,Date" default="Text Marquee" tooltip="Visual behavior for the matrix grid.">
+    <meta property="matrixText" label="[Matrix] Text" type="textfield" default="SIGNAL RGB" tooltip="Text to display in Marquee mode.">
+    <meta property="matrixFont" label="[Matrix] Font Family" type="combobox" values="VT323,Press Start 2P,Courier New,Arial" default="Courier New" tooltip="Select the font used for the Matrix text. Pixel fonts look best.">
+    <meta property="matrixFontSize" label="[Matrix] Font Scale (%)" type="number" default="75" min="30" max="150" tooltip="Adjust the size of the text relative to the grid height.">
+    <meta property="matrixTimeFormat" label="[Matrix] Time Format" type="combobox" values="12-Hour,24-Hour" default="12-Hour" tooltip="Toggle between standard 12-hour (AM/PM) or military 24-hour time.">
+    <meta property="matrixSpeed" label="[Matrix] Speed" type="number" default="10" min="0" max="100" tooltip="Animation and scroll speed for the matrix.">
+    <meta property="matrixTrail" label="[Matrix] Trail Length" type="number" default="0" min="0" max="50" tooltip="Persistence of matrix LED points.">
+    <meta property="matrixProfile" label="[Matrix] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Matrix" tooltip="Color theme for the matrix.">
+    <meta property="matrixColor" label="[Matrix] Custom Color" type="color" default="#00ff00" tooltip="Custom color for the matrix.">
+
+    <meta property="showAIO1" label="[AIO 1] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Cover 1.">
+    <meta property="aio1X" label="[AIO 1] X Position" type="number" default="10" min="0" max="320" tooltip="Absolute horizontal position for AIO 1.">
+    <meta property="aio1Y" label="[AIO 1] Y Position" type="number" default="181" min="0" max="200" tooltip="Absolute vertical position for AIO 1.">
+    <meta property="aio1Width" label="[AIO 1] Width" type="number" default="140" min="10" max="320" tooltip="Horizontal length of AIO 1.">
+    <meta property="aio1Trail" label="[AIO 1] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light on AIO 1.">
+    <meta property="aio1Mode" label="[AIO 1] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Loop" tooltip="Movement style for AIO 1.">
+    <meta property="aio1Dots" label="[AIO 1] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs on AIO 1.">
+    <meta property="aio1Speed" label="[AIO 1] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity for AIO 1.">
+    <meta property="aio1Profile" label="[AIO 1] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for AIO 1.">
     <meta property="aio1Color" label="[AIO 1] Custom Color" type="color" default="#00ff00" tooltip="Custom color for AIO 1.">
 
-    <meta property="showAIO2" label="[AIO 2] Enable" type="boolean" default="true" tooltip="Toggle the second linear AIO cover component.">
-    <meta property="aio2X" label="[AIO 2] X Position" type="number" default="-100" min="-160" max="160" tooltip="Horizontal offset for AIO 2.">
-    <meta property="aio2Y" label="[AIO 2] Y Position" type="number" default="66" min="-100" max="100" tooltip="Vertical offset for AIO 2.">
-    <meta property="aio2Width" label="[AIO 2] Width" type="number" default="100" min="10" max="320" tooltip="Total length of the AIO 2 tracer.">
-    <meta property="aio2Mode" label="[AIO 2] Pattern" type="combobox" values="Loop,Bounce,Sparkle" default="Loop" tooltip="Animation logic for AIO 2.">
-    <meta property="aio2Audio" label="[AIO 2] Flash Sensitivity" type="number" default="100" min="0" max="100" tooltip="Controls the intensity of the white flash for AIO 2.">
-    <meta property="aio2Dots" label="[AIO 2] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of dots/particles on AIO 2.">
-    <meta property="aio2Speed" label="[AIO 2] Speed" type="number" default="10" min="0" max="100" tooltip="Movement speed for AIO 2.">
-    <meta property="aio2Profile" label="[AIO 2] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for AIO 2.">
+    <meta property="showAIO2" label="[AIO 2] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Cover 2.">
+    <meta property="aio2X" label="[AIO 2] X Position" type="number" default="10" min="0" max="320" tooltip="Absolute horizontal position for AIO 2.">
+    <meta property="aio2Y" label="[AIO 2] Y Position" type="number" default="195" min="0" max="200" tooltip="Absolute vertical position for AIO 2.">
+    <meta property="aio2Width" label="[AIO 2] Width" type="number" default="140" min="10" max="320" tooltip="Horizontal length of AIO 2.">
+    <meta property="aio2Trail" label="[AIO 2] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light on AIO 2.">
+    <meta property="aio2Mode" label="[AIO 2] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Loop" tooltip="Movement style for AIO 2.">
+    <meta property="aio2Dots" label="[AIO 2] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs on AIO 2.">
+    <meta property="aio2Speed" label="[AIO 2] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity for AIO 2.">
+    <meta property="aio2Profile" label="[AIO 2] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for AIO 2.">
     <meta property="aio2Color" label="[AIO 2] Custom Color" type="color" default="#00ff00" tooltip="Custom color for AIO 2.">
 
-    <meta property="showStrimer" label="[Strimer] Enable" type="boolean" default="true" tooltip="Toggle the multi-line Strimer cable component.">
-    <meta property="strimerX" label="[Strimer] X Offset" type="number" default="101" min="-150" max="150" tooltip="Horizontal shift for the Strimer block.">
-    <meta property="strimerY" label="[Strimer] Y Offset" type="number" default="57" min="-100" max="100" tooltip="Vertical shift for the Strimer block.">
-    <meta property="strimerWidth" label="[Strimer] Width" type="number" default="100" min="10" max="320" tooltip="Width of the Strimer tracers. Set to match AIO Width for symmetry.">
-    <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="Number of parallel cable lines.">
-    <meta property="strimerMode" label="[Strimer] Pattern" type="combobox" values="Loop,Bounce,Sparkle" default="Sparkle" tooltip="Animation pattern for the Strimer cables.">
-    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="16" min="0" max="100" tooltip="Base movement speed for Strimer tracers.">
-    <meta property="strimerAudio" label="[Strimer] Flash Sensitivity" type="number" default="98" min="0" max="100" tooltip="Controls the intensity of the white flash for Strimer cables.">
-    <meta property="snakeLength" label="[Strimer] Snake Length" type="number" default="4" min="1" max="40" tooltip="Length of the tracer in Loop/Bounce modes.">
-    <meta property="sparkleAmount" label="[Strimer] Sparkle Amount" type="number" default="12" min="1" max="100" tooltip="Density of particles in Sparkle mode.">
-    <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for the Strimer component.">
-    <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color for Strimer.">
+    <meta property="showRam1" label="[RAM 1] Enable" type="boolean" default="true" tooltip="Toggle RAM Stick 1.">
+    <meta property="ram1X" label="[RAM 1] X Position" type="number" default="193" min="0" max="320" tooltip="Absolute horizontal position for RAM 1.">
+    <meta property="ram1Y" label="[RAM 1] Y Position" type="number" default="95" min="0" max="200" tooltip="Absolute vertical position for RAM 1.">
+    <meta property="ram1Height" label="[RAM 1] Height" type="number" default="100" min="10" max="320" tooltip="Vertical height of RAM 1.">
+    <meta property="ram1Trail" label="[RAM 1] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light on RAM 1.">
+    <meta property="ram1Mode" label="[RAM 1] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Loop (Rev)" tooltip="Animation style for RAM 1.">
+    <meta property="ram1Dots" label="[RAM 1] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs on RAM 1.">
+    <meta property="ram1Speed" label="[RAM 1] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed for RAM 1.">
+    <meta property="ram1Profile" label="[RAM 1] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for RAM 1.">
+    <meta property="ram1Color" label="[RAM 1] Custom Color" type="color" default="#ffff00" tooltip="Custom color for RAM 1.">
+
+    <meta property="showRam2" label="[RAM 2] Enable" type="boolean" default="true" tooltip="Toggle RAM Stick 2.">
+    <meta property="ram2X" label="[RAM 2] X Position" type="number" default="222" min="0" max="320" tooltip="Absolute horizontal position for RAM 2.">
+    <meta property="ram2Y" label="[RAM 2] Y Position" type="number" default="95" min="0" max="200" tooltip="Absolute vertical position for RAM 2.">
+    <meta property="ram2Height" label="[RAM 2] Height" type="number" default="100" min="10" max="320" tooltip="Vertical height of RAM 2.">
+    <meta property="ram2Trail" label="[RAM 2] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light on RAM 2.">
+    <meta property="ram2Mode" label="[RAM 2] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Loop (Rev)" tooltip="Animation style for RAM 2.">
+    <meta property="ram2Dots" label="[RAM 2] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs on RAM 2.">
+    <meta property="ram2Speed" label="[RAM 2] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed for RAM 2.">
+    <meta property="ram2Profile" label="[RAM 2] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for RAM 2.">
+    <meta property="ram2Color" label="[RAM 2] Custom Color" type="color" default="#0001ff" tooltip="Custom color for RAM 2.">
+
+    <meta property="showStrimer" label="[Strimer] Enable" type="boolean" default="true" tooltip="Toggle the vertical Strimer cable.">
+    <meta property="strimerX" label="[Strimer] X Position" type="number" default="250" min="0" max="320" tooltip="Absolute horizontal position for the Strimer.">
+    <meta property="strimerY" label="[Strimer] Y Position" type="number" default="175" min="0" max="200" tooltip="Absolute vertical position for the Strimer.">
+    <meta property="strimerWidth" label="[Strimer] Width" type="number" default="60" min="10" max="320" tooltip="Horizontal length of the Strimer.">
+    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of Strimer LEDs.">
+    <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="How many parallel cables to render in the Strimer.">
+    <meta property="strimerDots" label="[Strimer] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of active dots per Strimer line.">
+    <meta property="strimerMode" label="[Strimer] Style" type="combobox" values="Loop,Loop (Rev),Bounce,Sparkle,Sparkle (Rev)" default="Sparkle" tooltip="Animation style for the Strimer.">
+    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="16" min="0" max="100" tooltip="Movement speed for the Strimer LEDs.">
+    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="85" min="0" max="100" tooltip="Randomizes the starting position of each Strimer line.">
+    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="76" min="0" max="100" tooltip="Randomizes the individual speeds of Strimer lines.">
+    <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for the Strimer.">
+    <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color for the Strimer.">
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
         body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
         canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
@@ -78,208 +121,345 @@
 
 <body>
     <canvas id="effect-canvas" width="320" height="200"></canvas>
-
     <script>
         const canvas = document.getElementById('effect-canvas');
         const ctx = canvas.getContext('2d');
-        
-        let decayFan = 0, decayRail = 0, decayAio1 = 0, decayAio2 = 0, decayStr = 0;
-        let timeC = 0, timeR = 0, timeA1 = 0, timeA2 = 0, timeS = 0;
-        let trails = []; 
-        let aio1Sparkles = [], aio2Sparkles = [], strimerSparkles = [];
+        let decayFan = 0, decayRail = 0, decayAio1 = 0, decayAio2 = 0, decayRam1 = 0, decayRam2 = 0, decayStr = 0, decayMat = 0;
+        let timeC = 0, timeR = 0, timeA1 = 0, timeA2 = 0, timeRam1 = 0, timeRam2 = 0, timeS = 0, timeMat = 0;
+        let trails = [], sparklesStore = {}, strimerSeeds = [];
 
         const palettes = {
-            "Amethyst": ["#9932cc", "#4b0082"], "Bloodline": ["#8b0000", "#ff0000"], "Breeze": ["#00d2ff", "#3a7bd5"], "Candy": ["#ff0080", "#ff8c00"], "Cyber": ["#00ff99", "#bc00ff"], "Deep Sea": ["#001144", "#00ffff"], "Forest": ["#228b22", "#00ff00"], "Glacier": ["#0088ff", "#ffffff"], "Gold Rush": ["#ffd700", "#ffffff"], "Inferno": ["#ff4400", "#ffff00"], "Matrix": ["#00ff00", "#003300"], "Midnight": ["#2c3e50", "#000000"], "Neon Stream": ["#00ffff", "#ff00ff"], "Prism": ["#ff0000", "#00ff00", "#0000ff"], "Rainbow": ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"], "Sakura": ["#ffb7c5", "#ff1493"], "Sunset": ["#ff5e62", "#ff9966"], "Toxic Loop": ["#adff2f", "#00ff00"], "Vapor": ["#ff71ce", "#01cdfe"], "Volt": ["#ffff00", "#ffffff"]
+            "Amethyst": ["#9932cc", "#8a2be2", "#4b0082", "#ba55d3", "#e0b0ff"],
+            "Bloodline": ["#4a0000", "#8b0000", "#ff0000", "#ff4d4d", "#330000"],
+            "Breeze": ["#00d2ff", "#3a7bd5", "#00f2fe", "#4facfe", "#0072ff"],
+            "Candy": ["#ff0080", "#ff8c00", "#ff00ff", "#ff0055", "#ffd700"],
+            "Cyber": ["#00ff99", "#00ffff", "#bc00ff", "#ff00ff", "#33ff00", "#0099ff"],
+            "Deep Sea": ["#001144", "#00008b", "#0000ff", "#1e90ff", "#00ffff", "#00ced1"],
+            "Forest": ["#004400", "#228b22", "#00ff00", "#32cd32", "#adff2f", "#556b2f"],
+            "Glacier": ["#0088ff", "#b0e0e6", "#ffffff", "#afeeee", "#add8e6", "#00bfff"],
+            "Gold Rush": ["#b8860b", "#daa520", "#ffd700", "#fff8dc", "#ffdf00"],
+            "Inferno": ["#4b0000", "#ff0000", "#ff4500", "#ffa500", "#ffff00", "#ff8c00"],
+            "Matrix": ["#003b00", "#008f11", "#00ff41", "#00ff00", "#003300"],
+            "Midnight": ["#0c0c0c", "#1a1a1a", "#2c3e50", "#4b0082", "#000033"],
+            "Neon Stream": ["#00ffff", "#ff00ff", "#ffff00", "#00ff00", "#ff0000", "#0000ff"],
+            "Prism": ["#ffffff", "#00ffff", "#ff00ff", "#0000ff", "#ccff00", "#ffffff"],
+            "Rainbow": ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"],
+            "Sakura": ["#ffb7c5", "#ffc0cb", "#ff69b4", "#ff1493", "#db7093"],
+            "Sunset": ["#330066", "#800040", "#cc0000", "#ff4000", "#ff8c00", "#ffcc00"],
+            "Toxic Loop": ["#ccff00", "#39ff14", "#00fa9a", "#4b0082", "#ff00ff"],
+            "Vapor": ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff", "#fffb96"],
+            "Volt": ["#ffff00", "#ccff00", "#adff2f", "#ffffff", "#eee8aa"]
         };
 
-        if (typeof window.engine === 'undefined') {
-            const metaTags = document.querySelectorAll('meta[property]');
-            metaTags.forEach(meta => {
-                const propName = meta.getAttribute('property');
-                const propType = meta.getAttribute('type');
-                const defaultVal = meta.getAttribute('default');
-                if (propName) {
-                    let val = defaultVal;
-                    if (propType === 'number') val = parseFloat(defaultVal);
-                    else if (propType === 'boolean') val = (defaultVal === 'true' || defaultVal === '1');
-                    window[propName] = val;
+        function initProps() {
+            document.querySelectorAll('meta[property]').forEach(meta => {
+                const prop = meta.getAttribute('property');
+                const type = meta.getAttribute('type');
+                const def = meta.getAttribute('default');
+                if (prop && window[prop] === undefined) {
+                    if (type === 'number') window[prop] = parseFloat(def);
+                    else if (type === 'boolean') window[prop] = (def === 'true');
+                    else window[prop] = def;
                 }
             });
-            window.engine = { audio: { freq: new Array(128).fill(0) } };
         }
+        initProps();
 
-        function getAudioValue(sensitivity, currentDecay) {
-            if (!sensitivity) return 0;
+        function getAudioValue(currentDecay) {
+            if (!window.audioReactive || window.audioGain === 0) return 0; 
             let level = 0;
-            if (window.engine && window.engine.audio) {
-                const freq = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq;
-                if (freq && freq.length > 0) {
-                    for (let i = 0; i < 8; i++) level += freq[i];
-                    level = (level / (8 * 255));
+            try {
+                if (window.engine && engine.audio) {
+                    const freq = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq;
+                    if (freq) { for (let i = 0; i < 8; i++) level += freq[i]; level = (level / 2040); }
                 }
-            }
-            const gain = (window.audioGain === 0) ? 1.0 : window.audioGain;
-            let rawHit = Math.pow(level, 1.5) * (sensitivity / 50) * gain;
-            return Math.max(rawHit, currentDecay * (window.flashDecay / 100));
+            } catch (e) { }
+            let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+            return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
         }
 
         function getObjColor(profileName, customColor, idx, total, decayVal) {
             if (decayVal > 0.5) return "#ffffff";
-            if (profileName === "Custom") return customColor;
-            const colors = palettes[profileName] || palettes["Rainbow"];
-            if (profileName === "Rainbow") return `hsl(${(idx / total) * 360}, 100%, 50%)`;
+            let activeP = (window.masterProfile !== "None") ? window.masterProfile : profileName;
+            let activeC = (window.masterProfile !== "None") ? window.masterColor : customColor;
+            if (activeP === "Custom") return activeC;
+            const colors = palettes[activeP] || palettes["Rainbow"];
+            if (activeP === "Rainbow") return `hsl(${(idx / total) * 360}, 100%, 50%)`;
             return colors[idx % colors.length];
         }
 
         function getProgress(time, total, mode) {
-            if (mode === "Bounce") {
-                const phase = (time % (total * 2));
-                return phase > total ? (total * 2) - phase : phase;
-            }
+            if (mode.includes("(Rev)")) return total - (time % total);
+            if (mode === "Bounce") { const ph = (time % (total * 2)); return ph > total ? (total * 2) - ph : ph; }
             return time % total;
         }
 
-        function drawPathPoint(x, y, size, color, opacity = 1) {
-            const radius = Math.max(0.001, size / 2);
-            ctx.globalAlpha = opacity;
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
+        function handleSparkle(id, count, maxDots, isRev = false) {
+            if (!sparklesStore[id]) sparklesStore[id] = [];
+            const list = sparklesStore[id];
+            if (list.length < maxDots && Math.random() < 0.15) {
+                list.push({ pos: isRev ? 1.0 : 0.0, lineIdx: Math.floor(Math.random() * count) });
+            }
+            for (let i = list.length - 1; i >= 0; i--) {
+                list[i].pos += isRev ? -0.012 : 0.012;
+                if (list[i].pos > 1.0 || list[i].pos < 0.0) list.splice(i, 1);
+            }
+            return list;
+        }
+
+        function drawLabel(text, x, y) {
+            if (!window.showLabels) return;
+            ctx.globalAlpha = 1.0; ctx.fillStyle = "white"; ctx.font = "bold 8px Arial"; ctx.textAlign = "center";
+            ctx.fillText(text, x, y);
         }
 
         function draw() {
-            const w = 320, h = 200, midX = w/2, midY = h/2;
-            const count = Math.max(1, window.fanCount || 10);
-            const gSize = Math.max(1, window.groupSize || 1);
-            const fanAreaWidth = w / count;
-            const centerY = midY + (window.vOffset || -68);
-            const fRadius = Math.max(0.001, window.fanRadius || 14);
+            try {
+                const w = 320, h = 200, midX = w / 2, midY = h / 2;
+                initProps();
+                ctx.globalAlpha = 1.0; ctx.fillStyle = "black"; ctx.fillRect(0, 0, w, h);
 
-            ctx.globalAlpha = 1.0; ctx.fillStyle = "black"; ctx.fillRect(0, 0, w, h);
+                const count = window.fanCount || 11;
+                const dotRad = (window.circleSize || 6) / 2, fanGap = dotRad * 2;
+                const centerY = midY + window.vOffset;
+                const baseFRad = window.fanRadius || 16;
+                const rawW = (count * baseFRad * 2) + ((count - 1) * fanGap);
+                const scale = rawW > 310 ? 310 / rawW : 1.0;
+                const fRad = baseFRad * scale, scaledGap = fanGap * scale;
+                const fanSpacing = fRad * 2 + scaledGap;
+                const startX = (w - ((count * fRad * 2) + ((count - 1) * scaledGap))) / 2 + fRad;
 
-            if (window.showGuides) {
-                ctx.strokeStyle = "rgba(255, 255, 255, 1.0)";
-                ctx.lineWidth = 1;
-                for (let i = 0; i < count; i++) {
-                    const cx = (i * fanAreaWidth) + (fanAreaWidth / 2);
-                    ctx.beginPath(); ctx.arc(cx, centerY, fRadius, 0, Math.PI * 2); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(cx-fRadius, centerY-railDistance); ctx.lineTo(cx+fRadius, centerY-railDistance); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(cx-fRadius, centerY+railDistance); ctx.lineTo(cx+fRadius, centerY+railDistance); ctx.stroke();
-                }
-                if(showAIO1) { const s = midX+aio1X-aio1Width/2; ctx.beginPath(); ctx.moveTo(s, midY+aio1Y); ctx.lineTo(s+aio1Width, midY+aio1Y); ctx.stroke(); }
-                if(showAIO2) { const s = midX+aio2X-aio2Width/2; ctx.beginPath(); ctx.moveTo(s, midY+aio2Y); ctx.lineTo(s+aio2Width, midY+aio2Y); ctx.stroke(); }
-                if(showStrimer) { 
-                    const s = midX+strimerX-strimerWidth/2;
-                    for (let l = 0; l < strimerLines; l++) { 
-                        const ly = midY+strimerY + (l - strimerLines/2) * 6;
-                        ctx.beginPath(); ctx.moveTo(s, ly); ctx.lineTo(s+strimerWidth, ly); ctx.stroke(); 
+                if (window.showGuides) {
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1;
+                    for (let i = 0; i < count; i++) {
+                        const cx = startX + (i * fanSpacing);
+                        ctx.beginPath(); ctx.arc(cx, centerY, fRad, 0, Math.PI * 2); ctx.stroke();
+                        if (window.showRails) {
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, centerY - window.railDistance * scale); ctx.lineTo(cx + fRad, centerY - window.railDistance * scale); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, centerY + window.railDistance * scale); ctx.lineTo(cx + fRad, centerY + window.railDistance * scale); ctx.stroke();
+                        }
+                    }
+                    if (window.showAIO1) { ctx.beginPath(); ctx.moveTo(window.aio1X, window.aio1Y); ctx.lineTo(window.aio1X + window.aio1Width, window.aio1Y); ctx.stroke(); }
+                    if (window.showAIO2) { ctx.beginPath(); ctx.moveTo(window.aio2X, window.aio2Y); ctx.lineTo(window.aio2X + window.aio2Width, window.aio2Y); ctx.stroke(); }
+                    if (window.showRam1) { ctx.beginPath(); ctx.moveTo(window.ram1X, window.ram1Y); ctx.lineTo(window.ram1X, window.ram1Y + window.ram1Height); ctx.stroke(); }
+                    if (window.showRam2) { ctx.beginPath(); ctx.moveTo(window.ram2X, window.ram2Y); ctx.lineTo(window.ram2X, window.ram2Y + window.ram2Height); ctx.stroke(); }
+                    if (window.showStrimer) {
+                        const sl = window.strimerLines || 4;
+                        for (let l = 0; l < sl; l++) { 
+                            const ly = window.strimerY + (l - (sl - 1) / 2) * 6; 
+                            ctx.beginPath(); ctx.moveTo(window.strimerX, ly); ctx.lineTo(window.strimerX + window.strimerWidth, ly); ctx.stroke(); 
+                        }
+                    }
+                    if (window.showMatrix) {
+                        const cell = Math.floor(window.matrixCellSize);
+                        ctx.strokeRect(Math.floor(window.matrixX), Math.floor(window.matrixY), cell * window.matrixCols, cell * window.matrixRows);
                     }
                 }
-            }
 
-            decayFan = getAudioValue(window.fanAudio, decayFan);
-            decayRail = getAudioValue(window.railAudio, decayRail);
-            decayAio1 = getAudioValue(window.aio1Audio, decayAio1);
-            decayAio2 = getAudioValue(window.aio2Audio, decayAio2);
-            decayStr = getAudioValue(window.strimerAudio, decayStr);
+                if (window.showLabels) {
+                    for (let i = 0; i < count; i++) drawLabel(`Fan ${i + 1}`, startX + (i * fanSpacing), centerY + fRad + 20);
+                    if (window.showAIO1) drawLabel("AIO 1", window.aio1X + window.aio1Width / 2, window.aio1Y - 7);
+                    if (window.showAIO2) drawLabel("AIO 2", window.aio2X + window.aio2Width / 2, window.aio2Y - 7);
+                    if (window.showRam1) drawLabel("RAM 1", window.ram1X, window.ram1Y - 7);
+                    if (window.showRam2) drawLabel("RAM 2", window.ram2X, window.ram2Y - 7);
+                    if (window.showStrimer) drawLabel("Strimer", window.strimerX + window.strimerWidth / 2, window.strimerY - ((window.strimerLines || 4) * 3) - 7);
+                    if (window.showMatrix) {
+                        const cell = Math.floor(window.matrixCellSize);
+                        drawLabel("Matrix", Math.floor(window.matrixX) + (window.matrixCols * cell) / 2, Math.floor(window.matrixY) - 7);
+                    }
+                }
 
-            // CONSTANT SPEED (Movement ignores audio spikes)
-            let prevC = timeC, prevR = timeR;
-            timeC += (circleSpeed / 1000);
-            timeR += (railSpeed / 1000);
-            timeA1 += (aio1Speed / 1000);
-            timeA2 += (aio2Speed / 1000);
-            timeS += (strimerSpeed / 1000);
+                decayFan = getAudioValue(decayFan);
+                decayRail = getAudioValue(decayRail);
+                decayAio1 = getAudioValue(decayAio1);
+                decayAio2 = getAudioValue(decayAio2);
+                decayRam1 = getAudioValue(decayRam1);
+                decayRam2 = getAudioValue(decayRam2);
+                decayStr = getAudioValue(decayStr);
+                decayMat = getAudioValue(decayMat);
 
-            const drawFanSet = (t, pt, dCount, dSize, profile, customCol, isRail, dVal, rPos = 0) => {
-                const totalCycle = count / gSize;
-                const mode = isRail ? railMode : moveMode;
-                const isFig8 = !isRail && mode === "Figure 8";
-                const steps = isRail ? 4 : 8; 
+                timeC += (window.circleSpeed || 41) / 1000; 
+                timeR += (window.railSpeed || 30) / 1000;
+                timeA1 += (window.aio1Speed || 10) / 1000; 
+                timeA2 += (window.aio2Speed || 10) / 1000;
+                timeRam1 += (window.ram1Speed || 18) / 1000; 
+                timeRam2 += (window.ram2Speed || 18) / 1000;
+                timeS += (window.strimerSpeed || 16) / 1000;
+                timeMat += (window.matrixSpeed || 20) / 1000;
 
-                for(let s = 0; s < steps; s++) {
-                    const interpTime = pt + (t - pt) * (s / steps);
-                    const currentCycleProgress = getProgress(interpTime, totalCycle, (isFig8 ? "Loop" : mode));
-                    for (let d = 0; d < dCount; d++) {
-                        const offsetProg = (currentCycleProgress + (d / dCount) * totalCycle) % totalCycle;
-                        for (let g = 0; g < gSize; g++) {
-                            const fanIdx = (Math.floor(offsetProg * gSize) + g) % count;
-                            const localProg = (offsetProg * gSize) % 1;
-                            const cx = (fanIdx * fanAreaWidth) + (fanAreaWidth / 2);
-                            let x, y;
-                            if (!isRail) {
-                                let spinDir = (isFig8 && fanIdx % 2 === 1) ? -1 : 1;
-                                const angle = (localProg * Math.PI * 2 * spinDir) - Math.PI/2;
-                                x = cx + Math.cos(angle) * fRadius; y = centerY + Math.sin(angle) * fRadius;
-                            } else {
-                                x = cx - fRadius + (localProg * fRadius * 2); y = centerY + (rPos * railDistance);
+                // --- FANS/RAILS RENDER ---
+                if (window.showCircle) {
+                    if (window.moveMode.includes("Sparkle")) {
+                        handleSparkle('circle', count, (window.circleDots || 1) * count, window.moveMode.includes("(Rev)")).forEach(s => {
+                            const cx = startX + (s.lineIdx * fanSpacing);
+                            trails.push({ x: cx + Math.cos(s.pos * Math.PI * 2) * fRad, y: centerY + Math.sin(s.pos * Math.PI * 2) * fRad, size: window.circleSize * scale, color: getObjColor(window.fanProfile, window.fanColor, s.lineIdx, count, decayFan), born: Date.now(), len: window.fanTrail });
+                        });
+                    } else {
+                        const prog = getProgress(timeC, count, window.moveMode);
+                        for (let d = 0; d < window.circleDots; d++) {
+                            const dotPos = (prog + (d / window.circleDots) * count) % count;
+                            for (let g = 0; g < window.groupSize; g++) {
+                                const fIdx = (Math.floor(dotPos) + g) % count, cx = startX + (fIdx * fanSpacing);
+                                let dir = (window.moveMode === "Figure 8" && fIdx % 2 === 1) ? -1 : 1;
+                                if (window.moveMode === "Loop (Rev)") dir = -1;
+                                trails.push({ x: cx + Math.cos((dotPos % 1) * Math.PI * 2 * dir - Math.PI / 2) * fRad, y: centerY + Math.sin((dotPos % 1) * Math.PI * 2 * dir - Math.PI / 2) * fRad, size: window.circleSize * scale, color: getObjColor(window.fanProfile, window.fanColor, fIdx, count, decayFan), born: Date.now(), len: window.fanTrail });
                             }
-                            const col = getObjColor(profile, customCol, fanIdx, count, dVal);
-                            trails.push({x, y, size: dSize, color: col, born: Date.now()});
-                            if (s === steps - 1) drawPathPoint(x, y, dSize, col);
                         }
                     }
                 }
-            };
 
-            if (showCircle) drawFanSet(timeC, prevC, circleDots, circleSize, fanProfile, fanColor, false, decayFan);
-            if (showRails) {
-                drawFanSet(timeR, prevR, railDots, railSize, railProfile, railColor, true, decayRail, -1); 
-                drawFanSet(timeR, prevR, railDots, railSize, railProfile, railColor, true, decayRail, 1);  
-            }
+                if (window.showRails) {
+                    const renderR = (rp) => {
+                        const ry = centerY + rp * window.railDistance * scale;
+                        if (window.railMode.includes("Sparkle")) {
+                            handleSparkle('rail' + rp, count, window.railDots * count, window.railMode.includes("(Rev)")).forEach(s => {
+                                const cx = startX + (s.lineIdx * fanSpacing);
+                                trails.push({ x: cx - fRad + s.pos * fRad * 2, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, s.lineIdx, count, decayRail), born: Date.now(), len: window.railTrail });
+                            });
+                        } else {
+                            const p = getProgress(timeR, count, window.railMode);
+                            for (let d = 0; d < window.railDots; d++) {
+                                const dp = (p + (d / window.railDots) * count) % count, fIdx = Math.floor(dp) % count, cx = startX + (fIdx * fanSpacing);
+                                trails.push({ x: cx - fRad + (dp % 1) * fRad * 2, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, fIdx, count, decayRail), born: Date.now(), len: window.railTrail });
+                            }
+                        }
+                    };
+                    renderR(-1); renderR(1);
+                }
 
-            const processAIO = (show, x, y, width, tVal, dotCount, profile, customCol, mode, sparklesArray, dVal, idOff) => {
-                if (!show) return;
-                const ay = midY + y, axStart = midX + x - width/2;
-                if (mode === "Sparkle") {
-                    if (sparklesArray.length < dotCount && Math.random() < 0.1) sparklesArray.push({ pos: Math.random(), speed: (0.01 + Math.random() * 0.02) * (Math.random() < 0.5 ? 1 : -1), life: 1.0 });
-                    for (let i = sparklesArray.length - 1; i >= 0; i--) {
-                        let spk = sparklesArray[i]; spk.pos = (spk.pos + spk.speed + 1) % 1; spk.life -= 0.005;
-                        if (spk.life <= 0) { sparklesArray.splice(i, 1); continue; }
-                        drawPathPoint(axStart + spk.pos * width, ay, 5, getObjColor(profile, customCol, i, dotCount, dVal), spk.life);
+                // --- MATRIX ENGINE (CUSTOM FONT & SCALING) ---
+                if (window.showMatrix) {
+                    const c = window.matrixCols || 16, r = window.matrixRows || 16;
+                    const cell = Math.floor(window.matrixCellSize || 5);
+                    const mx = Math.floor(window.matrixX), my = Math.floor(window.matrixY);
+                    let pts = [];
+
+                    if (window.matrixMode === "Snake") {
+                        const t = Math.floor(timeMat * 15);
+                        for (let i = 0; i < 6; i++) {
+                            const idx = (t - i) % (c * r);
+                            pts.push({ x: idx % c, y: Math.floor(idx / c) });
+                        }
+                    } else if (window.matrixMode === "Random") {
+                        for (let i = 0; i < 3; i++) pts.push({ x: Math.floor(Math.random() * c), y: Math.floor(Math.random() * r) });
+                    } else {
+                        const is12h = (window.matrixTimeFormat || "12-Hour") === "12-Hour";
+                        let txt = (window.matrixMode === "Time") ? new Date().toLocaleTimeString([], { hour12: is12h, hour: 'numeric', minute: '2-digit' }) :
+                            (window.matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : window.matrixText;
+                        
+                        const res = 10; 
+                        const offC = new OffscreenCanvas(c * res, r * res);
+                        const ox = offC.getContext('2d', { willReadFrequently: true });
+                        
+                        ox.imageSmoothingEnabled = false; 
+                        
+                        const fontFam = window.matrixFont || "Courier New";
+                        const fontScale = (window.matrixFontSize || 75) / 100;
+                        
+                        ox.font = `${Math.floor(r * res * fontScale)}px '${fontFam}', monospace`;
+                        ox.textBaseline = "middle";
+                        ox.fillStyle = "white";
+                        
+                        const tw = ox.measureText(txt).width;
+                        const textCells = Math.ceil(tw / res);
+                        
+                        const scrollStep = Math.floor(timeMat * 15); 
+                        const offsetCells = scrollStep % (textCells + c);
+                        const sx = (c - offsetCells) * res; 
+                        
+                        ox.fillText(txt, sx, (r * res) / 2 + (res * 0.05));
+                        const data = ox.getImageData(0, 0, c * res, r * res).data;
+                        
+                        for (let y = 0; y < r; y++) {
+                            for (let x = 0; x < c; x++) {
+                                let alphaSum = 0;
+                                for (let dy = 2; dy <= 8; dy += 3) {
+                                    for (let dx = 2; dx <= 8; dx += 3) {
+                                        alphaSum += data[((y * res + dy) * c * res + (x * res + dx)) * 4 + 3];
+                                    }
+                                }
+                                if (alphaSum > 255 * 2.0) pts.push({ x, y });
+                            }
+                        }
                     }
-                } else {
-                    const aProg = getProgress(tVal, 1, mode), aDir = (mode === "Bounce" && (tVal % 2) > 1) ? -1 : 1;
-                    for (let d = 0; d < dotCount; d++) {
-                        const dx = axStart + ((aProg - (d * 0.05 * aDir) + 1) % 1) * width;
-                        const col = getObjColor(profile, customCol, d + idOff, dotCount, dVal);
-                        trails.push({x: dx, y: ay, size: 6, color: col, born: Date.now()});
-                        drawPathPoint(dx, ay, 6, col);
+
+                    pts.forEach(p => {
+                        trails.push({
+                            x: mx + p.x * cell, y: my + p.y * cell,
+                            size: cell, h: cell,
+                            color: getObjColor(window.matrixProfile, window.matrixColor, p.y, r, decayMat),
+                            born: Date.now(), len: window.matrixTrail, isRect: true
+                        });
+                    });
+                }
+
+                // --- AIO / RAM RENDER (ABSOLUTE) ---
+                const renderAbs = (id, type, show, x, y, len, dCnt, tVal, mode, prof, col, dV, tL) => {
+                    if (!show) return;
+                    if (mode.includes("Sparkle")) {
+                        handleSparkle(id, 1, dCnt, mode.includes("(Rev)")).forEach(s => {
+                            const rx = (type === 'h') ? x + s.pos * len : x;
+                            const ry = (type === 'h') ? y : y + s.pos * len;
+                            trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, 0, 1, dV), born: Date.now(), len: tL });
+                        });
+                    } else {
+                        const p = getProgress(tVal, 1, mode);
+                        for (let d = 0; d < dCnt; d++) {
+                            const dp = (p + d / dCnt) % 1;
+                            const rx = (type === 'h') ? x + dp * len : x;
+                            const ry = (type === 'h') ? y : y + dp * len;
+                            trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, d, dCnt, dV), born: Date.now(), len: tL });
+                        }
+                    }
+                };
+
+                renderAbs('aio1', 'h', window.showAIO1, window.aio1X, window.aio1Y, window.aio1Width, window.aio1Dots, timeA1, window.aio1Mode, window.aio1Profile, window.aio1Color, decayAio1, window.aio1Trail);
+                renderAbs('aio2', 'h', window.showAIO2, window.aio2X, window.aio2Y, window.aio2Width, window.aio2Dots, timeA2, window.aio2Mode, window.aio2Profile, window.aio2Color, decayAio2, window.aio2Trail);
+                renderAbs('ram1', 'v', window.showRam1, window.ram1X, window.ram1Y, window.ram1Height, window.ram1Dots, timeRam1, window.ram1Mode, window.ram1Profile, window.ram1Color, decayRam1, window.ram1Trail);
+                renderAbs('ram2', 'v', window.showRam2, window.ram2X, window.ram2Y, window.ram2Height, window.ram2Dots, timeRam2, window.ram2Mode, window.ram2Profile, window.ram2Color, decayRam2, window.ram2Trail);
+
+                // --- STRIMER RENDER (ABSOLUTE) ---
+                if (window.showStrimer) {
+                    const sl = window.strimerLines || 4, sd = window.strimerDots || 2, pc = (window.strimerPosVar || 0) / 100, sc = (window.strimerSpeedVar || 0) / 100;
+                    if (strimerSeeds.length !== sl) strimerSeeds = Array.from({ length: sl }, () => ({ p: Math.random(), s: 0.5 + Math.random() }));
+                    for (let l = 0; l < sl; l++) {
+                        const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
+                        const lT = timeS * (1 + (strimerSeeds[l].s - 1) * sc), lP = strimerSeeds[l].p * pc;
+                        
+                        if (window.strimerMode.includes("Sparkle")) {
+                            handleSparkle(`str${l}`, 1, sd, window.strimerMode.includes("(Rev)")).forEach(s => {
+                                trails.push({ x: window.strimerX + s.pos * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, decayStr), born: Date.now(), len: window.strimerTrail });
+                            });
+                        } else {
+                            const prog = getProgress(lT + lP, 1, window.strimerMode);
+                            for (let d = 0; d < sd; d++) {
+                                trails.push({ x: window.strimerX + ((prog + d / sd) % 1) * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, decayStr), born: Date.now(), len: window.strimerTrail });
+                            }
+                        }
                     }
                 }
-            };
-            processAIO(showAIO1, aio1X, aio1Y, aio1Width, timeA1, aio1Dots, aio1Profile, aio1Color, aio1Mode, aio1Sparkles, decayAio1, 0);
-            processAIO(showAIO2, aio2X, aio2Y, aio2Width, timeA2, aio2Dots, aio2Profile, aio2Color, aio2Mode, aio2Sparkles, decayAio2, 10);
 
-            if (showStrimer) {
-                const sBaseX = midX + strimerX, sBaseY = midY + strimerY, sLines = Math.max(1, strimerLines), spacing = 6;
-                const axStart = sBaseX - strimerWidth/2;
-                if (strimerMode === "Sparkle") {
-                    if (strimerSparkles.length < sparkleAmount && Math.random() < 0.2) strimerSparkles.push({ line: Math.floor(Math.random() * sLines), pos: Math.random(), speed: (0.01 + Math.random() * 0.03) * (Math.random() < 0.5 ? 1 : -1), life: 1.0 });
-                    for (let i = strimerSparkles.length - 1; i >= 0; i--) {
-                        let spk = strimerSparkles[i]; spk.pos = (spk.pos + spk.speed + 1) % 1; spk.life -= 0.01;
-                        if (spk.life <= 0) { strimerSparkles.splice(i, 1); continue; }
-                        drawPathPoint(axStart + spk.pos * strimerWidth, sBaseY + (spk.line - sLines/2) * spacing, 4, getObjColor(strimerProfile, strimerColor, spk.line, sLines, decayStr), spk.life);
+                // --- MASTER TRAIL PROCESSOR (0-LENGTH SAFETY INCLUDED) ---
+                const now = Date.now();
+                trails = trails.filter(t => (now - t.born) < (Math.max(0.1, t.len) * 40));
+
+                trails.forEach(t => {
+                    const duration = Math.max(0.1, t.len) * 40;
+                    const age = (now - t.born) / duration;
+
+                    if (t.isRect) {
+                        ctx.globalAlpha = 1 - age;
+                        ctx.fillStyle = t.color;
+                        ctx.fillRect(Math.floor(t.x), Math.floor(t.y), Math.floor(t.size), Math.floor(t.h));
+                    } else {
+                        ctx.globalAlpha = 1 - age;
+                        ctx.fillStyle = t.color;
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, Math.max(0.001, (t.size * (0.4 + 0.6 * (1 - age))) / 2), 0, Math.PI * 2);
+                        ctx.fill();
                     }
-                } else {
-                    const sDir = (strimerMode === "Bounce" && (timeS % (sLines * 2)) > sLines) ? -1 : 1;
-                    const sProg = getProgress(timeS, sLines, strimerMode);
-                    for (let s = 0; s < snakeLength; s++) {
-                        const segProg = (sProg - (s * 0.1 * sDir) + sLines) % sLines;
-                        const lineIdx = Math.floor(segProg), dirProg = (lineIdx % 2 === 1) ? (1 - (segProg % 1)) : (segProg % 1);
-                        const col = getObjColor(strimerProfile, strimerColor, lineIdx, sLines, decayStr);
-                        drawPathPoint(axStart + dirProg * strimerWidth, sBaseY + (lineIdx - sLines/2) * spacing, 4, col, 1 - (s/snakeLength));
-                    }
-                }
-            }
-
-            trails = trails.filter(t => (Date.now() - t.born) < (trailLength * 40));
-            trails.forEach(t => {
-                const age = (Date.now() - t.born) / (trailLength * 40);
-                drawPathPoint(t.x, t.y, t.size * (0.4 + 0.6 * (1-age)), t.color, 1 - age);
-            });
-
+                });
+            } catch (e) { }
             requestAnimationFrame(draw);
         }
         draw();
