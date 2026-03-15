@@ -2550,7 +2550,7 @@ class Shape {
                 if (useSharpGradient) {
                     tempGrad.addColorStop(0, seamlessStops[0].color);
                     for (let i = 1; i < seamlessStops.length; i++) {
-                        tempGrad.addColorStop(seamlessStops[i].position - 0.0001, seamlessStops[i - 1].color);
+                        tempGrad.addColorStop(Math.max(seamlessStops[i].position - 0.0001,0), seamlessStops[i - 1].color);
                         tempGrad.addColorStop(seamlessStops[i].position, seamlessStops[i].color);
                     }
                 } else {

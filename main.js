@@ -105,7 +105,7 @@ const INITIAL_CONFIG_TEMPLATE = `
     <meta description="Built with Effect Builder (https://joseamirandavelez.github.io/EffectBuilder/), by José Miranda" />
     <meta publisher="RGBJunkie Interactive Effect Builder" />
     <meta property="enableAnimation" label="Enable Animation" type="boolean" default="true" />
-    <meta property="enableSound" label="Enable Sound" type="boolean" default="false" />
+    <meta property="enableSound" label="Enable Sound" type="boolean" default="true" />
     <meta property="enablePalette" label="Enable Global Color Palette" type="boolean" default="false" />
     <meta property="globalGradientStops" label="Global Gradient" type="gradientpicker" default='[{"color":"#ff0000","position":0},{"color":"#00ff00","position":0.5},{"color":"#0000ff","position":1}]' />
     <meta property="enableGlobalCycle" label="Enable Global Color Cycle" type="boolean" default="false" />
