@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Fan Tracer Pro Max</title>
     <meta name="requires-audio" content="true">
@@ -7,13 +8,15 @@
     <meta description="Ultimate audio-reactive lighting engine with modular LED Matrix, absolute positioning, and pixel-perfect square grids." />
     <meta publisher="José Miranda" />
 
-    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
-    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Rainbow" tooltip="Global theme override for all components. Set to 'None' for individual control.">
-    <meta property="masterColor" label="[Master] Custom Color" type="color" default="#0000ff" tooltip="The color used when Master Profile is set to 'Custom'.">
-    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="77" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
-    <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">
     <meta property="showGuides" label="Show Path Guides" type="boolean" default="false" tooltip="Toggle visibility of the structural layout lines.">
     <meta property="showLabels" label="Show Object Names" type="boolean" default="true" tooltip="Toggle visibility of the names above/below each component.">
+    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
+    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Amethyst,Bloodline,Breeze,Candy,Custom,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Rainbow,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Forest" tooltip="Global theme override for all components. Set to 'None' for individual control.">
+    <meta property="masterColor" label="[Master] Custom Color 1" type="color" default="#0000ff" tooltip="The first color used when Master Profile is set to 'Custom'.">
+    <meta property="masterColor2" label="[Master] Custom Color 2" type="color" default="#ff0000" tooltip="The second color used when Master Profile is set to 'Custom'.">
+    <meta property="masterColor3" label="[Master] Custom Color 3" type="color" default="#00ff00" tooltip="The third color used when Master Profile is set to 'Custom'.">
+    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="77" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
+    <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">    
 
     <meta property="fanCount" label="[Fans] Total Count" type="number" default="11" min="1" max="20" tooltip="The number of fans to render in the top row.">
     <meta property="fanRadius" label="[Fans] Radius" type="number" default="12" min="5" max="100" tooltip="The size of each fan circle.">
@@ -44,7 +47,9 @@
     <meta property="matrixCols" label="[Matrix] Columns" type="number" default="16" min="4" max="64" tooltip="Number of LEDs horizontally.">
     <meta property="matrixRows" label="[Matrix] Rows" type="number" default="16" min="2" max="32" tooltip="Number of LEDs vertically.">
     <meta property="matrixCellSize" label="[Matrix] Cell Size" type="number" default="5" min="1" max="20" tooltip="Pixel size of each square LED. Total width = Columns x Cell Size.">
-    <meta property="matrixMode" label="[Matrix] Mode" type="combobox" values="Snake,Random,Text Marquee,Time,Date" default="Text Marquee" tooltip="Visual behavior for the matrix grid.">
+    <meta property="matrixMode" label="[Matrix] Mode" type="combobox" values="Snake,Random,Text Marquee,Time,Date,JSON Image" default="Text Marquee" tooltip="Visual behavior for the matrix grid.">
+    <meta property="matrixJSON" label="[Matrix] Pixel-Art Data" type="textfield" default="[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,1,1,1,0,0,0,0,0,0,0,0,0,0.5,0.5,0],[0,1,1,1,1,1,1,1,1,0,0,0,0.5,0.5,0,0],[0,1,1,1,1,1,1,1,1,1,1,0,0.5,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,0,0,0.5,0.5,0],[0,1,1,1,1,1,1,1,1,1,1,0,0.5,0.5,0,0],[0,1,1,1,1,1,1,1,1,1,0,0.5,0.5,0,0,0],[0,0,0,0,0,0,0,0,0,0,0.5,0.5,0,0,0,0],[0,0,0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0],[0,0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0,0],[0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0],[0,0,0,0.5,0,0,0,0.5,0,0,0,0.5,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]]" tooltip="Paste a 2D JSON array here when in JSON Image mode.">
+    <meta property="URL" label="Get Pixel-Art here!" type="textfield" default="https://pixelart.nolliergb.com/" tooltip="Text to display in Marquee mode.">
     <meta property="matrixText" label="[Matrix] Text" type="textfield" default="SIGNAL RGB" tooltip="Text to display in Marquee mode.">
     <meta property="matrixFont" label="[Matrix] Font Family" type="combobox" values="VT323,Press Start 2P,Courier New,Arial" default="Courier New" tooltip="Select the font used for the Matrix text. Pixel fonts look best.">
     <meta property="matrixFontSize" label="[Matrix] Font Scale (%)" type="number" default="75" min="30" max="150" tooltip="Adjust the size of the text relative to the grid height.">
@@ -114,8 +119,21 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            image-rendering: pixelated;
+        }
     </style>
 </head>
 
@@ -127,6 +145,8 @@
         let decayFan = 0, decayRail = 0, decayAio1 = 0, decayAio2 = 0, decayRam1 = 0, decayRam2 = 0, decayStr = 0, decayMat = 0;
         let timeC = 0, timeR = 0, timeA1 = 0, timeA2 = 0, timeRam1 = 0, timeRam2 = 0, timeS = 0, timeMat = 0;
         let trails = [], sparklesStore = {}, strimerSeeds = [];
+        let lastJsonString = "";
+        let cachedJson = [];
 
         const palettes = {
             "Amethyst": ["#9932cc", "#8a2be2", "#4b0082", "#ba55d3", "#e0b0ff"],
@@ -166,7 +186,7 @@
         initProps();
 
         function getAudioValue(currentDecay) {
-            if (!window.audioReactive || window.audioGain === 0) return 0; 
+            if (!window.audioReactive || window.audioGain === 0) return 0;
             let level = 0;
             try {
                 if (window.engine && engine.audio) {
@@ -182,10 +202,33 @@
             if (decayVal > 0.5) return "#ffffff";
             let activeP = (window.masterProfile !== "None") ? window.masterProfile : profileName;
             let activeC = (window.masterProfile !== "None") ? window.masterColor : customColor;
-            if (activeP === "Custom") return activeC;
-            const colors = palettes[activeP] || palettes["Rainbow"];
+
             if (activeP === "Rainbow") return `hsl(${(idx / total) * 360}, 100%, 50%)`;
-            return colors[idx % colors.length];
+
+            let colors = [];
+            if (activeP === "Custom") {
+                colors = [activeC, window.masterColor2 || "#ff0000", window.masterColor3 || "#00ff00"];
+            } else {
+                colors = palettes[activeP] || palettes["Rainbow"];
+            }
+
+            // Smooth Interpolation Math
+            const baseIdx = Math.floor(idx);
+            const i1 = baseIdx % colors.length;
+            const i2 = (baseIdx + 1) % colors.length;
+            const fraction = idx - baseIdx; // Get the decimal remainder
+
+            // Convert hex to RGB for blending
+            const hexToRgb = hex => hex.match(/\w\w/g).map(x => parseInt(x, 16));
+            const c1 = hexToRgb(colors[i1]);
+            const c2 = hexToRgb(colors[i2]);
+
+            // Blend the two RGB values
+            const r = Math.round(c1[0] + fraction * (c2[0] - c1[0]));
+            const g = Math.round(c1[1] + fraction * (c2[1] - c1[1]));
+            const b = Math.round(c1[2] + fraction * (c2[2] - c1[2]));
+
+            return `rgb(${r},${g},${b})`;
         }
 
         function getProgress(time, total, mode) {
@@ -245,9 +288,9 @@
                     if (window.showRam2) { ctx.beginPath(); ctx.moveTo(window.ram2X, window.ram2Y); ctx.lineTo(window.ram2X, window.ram2Y + window.ram2Height); ctx.stroke(); }
                     if (window.showStrimer) {
                         const sl = window.strimerLines || 4;
-                        for (let l = 0; l < sl; l++) { 
-                            const ly = window.strimerY + (l - (sl - 1) / 2) * 6; 
-                            ctx.beginPath(); ctx.moveTo(window.strimerX, ly); ctx.lineTo(window.strimerX + window.strimerWidth, ly); ctx.stroke(); 
+                        for (let l = 0; l < sl; l++) {
+                            const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
+                            ctx.beginPath(); ctx.moveTo(window.strimerX, ly); ctx.lineTo(window.strimerX + window.strimerWidth, ly); ctx.stroke();
                         }
                     }
                     if (window.showMatrix) {
@@ -278,11 +321,11 @@
                 decayStr = getAudioValue(decayStr);
                 decayMat = getAudioValue(decayMat);
 
-                timeC += (window.circleSpeed || 41) / 1000; 
+                timeC += (window.circleSpeed || 41) / 1000;
                 timeR += (window.railSpeed || 30) / 1000;
-                timeA1 += (window.aio1Speed || 10) / 1000; 
+                timeA1 += (window.aio1Speed || 10) / 1000;
                 timeA2 += (window.aio2Speed || 10) / 1000;
-                timeRam1 += (window.ram1Speed || 18) / 1000; 
+                timeRam1 += (window.ram1Speed || 18) / 1000;
                 timeRam2 += (window.ram2Speed || 18) / 1000;
                 timeS += (window.strimerSpeed || 16) / 1000;
                 timeMat += (window.matrixSpeed || 20) / 1000;
@@ -327,14 +370,38 @@
                     renderR(-1); renderR(1);
                 }
 
-                // --- MATRIX ENGINE (CUSTOM FONT & SCALING) ---
+                // --- MATRIX ENGINE ---
                 if (window.showMatrix) {
                     const c = window.matrixCols || 16, r = window.matrixRows || 16;
                     const cell = Math.floor(window.matrixCellSize || 5);
                     const mx = Math.floor(window.matrixX), my = Math.floor(window.matrixY);
                     let pts = [];
 
-                    if (window.matrixMode === "Snake") {
+                    if (window.matrixMode === "JSON Image") {
+                        if (window.matrixJSON !== lastJsonString) {
+                            try {
+                                cachedJson = JSON.parse(window.matrixJSON);
+                                lastJsonString = window.matrixJSON;
+                            } catch (e) {
+                                cachedJson = [];
+                            }
+                        }
+                        for (let y = 0; y < cachedJson.length && y < r; y++) {
+                            for (let x = 0; x < cachedJson[y].length && x < c; x++) {
+                                let val = cachedJson[y][x];
+
+                                // Apply the new format rules
+                                if (val === 0) {
+                                    pts.push({ x: x, y: y, explicitColor: "#000000", opacity: 1.0 });
+                                } else if (val === 1) {
+                                    pts.push({ x: x, y: y, explicitColor: "#ffffff", opacity: 1.0 });
+                                } else if (val === 0.5) {
+                                    // Uses the color engine (index 0 = Color 1) but sets 50% opacity
+                                    pts.push({ x: x, y: y, cIdx: 0, opacity: 0.5 });
+                                }
+                            }
+                        }
+                    } else if (window.matrixMode === "Snake") {
                         const t = Math.floor(timeMat * 15);
                         for (let i = 0; i < 6; i++) {
                             const idx = (t - i) % (c * r);
@@ -346,30 +413,28 @@
                         const is12h = (window.matrixTimeFormat || "12-Hour") === "12-Hour";
                         let txt = (window.matrixMode === "Time") ? new Date().toLocaleTimeString([], { hour12: is12h, hour: 'numeric', minute: '2-digit' }) :
                             (window.matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : window.matrixText;
-                        
-                        const res = 10; 
+
+                        const res = 10;
                         const offC = new OffscreenCanvas(c * res, r * res);
                         const ox = offC.getContext('2d', { willReadFrequently: true });
-                        
-                        ox.imageSmoothingEnabled = false; 
-                        
+
+                        ox.imageSmoothingEnabled = false;
                         const fontFam = window.matrixFont || "Courier New";
                         const fontScale = (window.matrixFontSize || 75) / 100;
-                        
+
                         ox.font = `${Math.floor(r * res * fontScale)}px '${fontFam}', monospace`;
                         ox.textBaseline = "middle";
                         ox.fillStyle = "white";
-                        
+
                         const tw = ox.measureText(txt).width;
                         const textCells = Math.ceil(tw / res);
-                        
-                        const scrollStep = Math.floor(timeMat * 15); 
+                        const scrollStep = Math.floor(timeMat * 15);
                         const offsetCells = scrollStep % (textCells + c);
-                        const sx = (c - offsetCells) * res; 
-                        
+                        const sx = (c - offsetCells) * res;
+
                         ox.fillText(txt, sx, (r * res) / 2 + (res * 0.05));
                         const data = ox.getImageData(0, 0, c * res, r * res).data;
-                        
+
                         for (let y = 0; y < r; y++) {
                             for (let x = 0; x < c; x++) {
                                 let alphaSum = 0;
@@ -384,10 +449,19 @@
                     }
 
                     pts.forEach(p => {
+                        const cIndex = p.cIdx !== undefined ? p.cIdx : p.y;
+
+                        // ANIMATION FIX: Removed Math.floor() to allow smooth fractional blending
+                        const flowSpeed = 2; // Lowered slightly so you can admire the smooth gradient
+                        const animatedIndex = cIndex - (timeMat * flowSpeed) + 1000000;
+
+                        const finalColor = p.explicitColor ? p.explicitColor : getObjColor(window.matrixProfile, window.matrixColor, animatedIndex, r, decayMat);
+
                         trails.push({
                             x: mx + p.x * cell, y: my + p.y * cell,
                             size: cell, h: cell,
-                            color: getObjColor(window.matrixProfile, window.matrixColor, p.y, r, decayMat),
+                            color: finalColor,
+                            baseOpacity: p.opacity !== undefined ? p.opacity : 1.0,
                             born: Date.now(), len: window.matrixTrail, isRect: true
                         });
                     });
@@ -425,7 +499,7 @@
                     for (let l = 0; l < sl; l++) {
                         const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
                         const lT = timeS * (1 + (strimerSeeds[l].s - 1) * sc), lP = strimerSeeds[l].p * pc;
-                        
+
                         if (window.strimerMode.includes("Sparkle")) {
                             handleSparkle(`str${l}`, 1, sd, window.strimerMode.includes("(Rev)")).forEach(s => {
                                 trails.push({ x: window.strimerX + s.pos * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, decayStr), born: Date.now(), len: window.strimerTrail });
@@ -439,20 +513,29 @@
                     }
                 }
 
-                // --- MASTER TRAIL PROCESSOR (0-LENGTH SAFETY INCLUDED) ---
-                const now = Date.now();
-                trails = trails.filter(t => (now - t.born) < (Math.max(0.1, t.len) * 40));
+                // --- MASTER TRAIL PROCESSOR (ANTI-FLICKER & 0-LENGTH SAFETY) ---
+                const renderTime = Date.now();
+
+                // Keep trails alive based on their length setting
+                trails = trails.filter(t => (renderTime - t.born) < (Math.max(0.1, t.len) * 40));
 
                 trails.forEach(t => {
                     const duration = Math.max(0.1, t.len) * 40;
-                    const age = (now - t.born) / duration;
+                    const timeAlive = renderTime - t.born;
+
+                    // ANTI-FLICKER FIX: If spawned in this exact frame (< 20ms ago), 
+                    // lock age to 0 so it renders at full brightness before fading.
+                    const age = timeAlive < 20 ? 0 : timeAlive / duration;
+
+                    // Calculate final transparency
+                    const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
 
                     if (t.isRect) {
-                        ctx.globalAlpha = 1 - age;
+                        ctx.globalAlpha = currentAlpha;
                         ctx.fillStyle = t.color;
                         ctx.fillRect(Math.floor(t.x), Math.floor(t.y), Math.floor(t.size), Math.floor(t.h));
                     } else {
-                        ctx.globalAlpha = 1 - age;
+                        ctx.globalAlpha = currentAlpha;
                         ctx.fillStyle = t.color;
                         ctx.beginPath();
                         ctx.arc(t.x, t.y, Math.max(0.001, (t.size * (0.4 + 0.6 * (1 - age))) / 2), 0, Math.PI * 2);
@@ -465,4 +548,5 @@
         draw();
     </script>
 </body>
+
 </html>
