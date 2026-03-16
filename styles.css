@@ -360,7 +360,7 @@ body {
 }
 
 #left-panel {
-    width: 650px;
+    width: 500px;
     flex-shrink: 0;
 }
 
