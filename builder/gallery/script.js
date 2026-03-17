@@ -1,6 +1,6 @@
 // --- IMPORT ---
 // [MODIFIED] Import timeAgo
-import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from './util.js';
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from '../util.js';
 import {
     auth, db,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
@@ -12,7 +12,7 @@ import {
     writeBatch,
     documentId,
     serverTimestamp
-} from './firebase.js';
+} from '../firebase.js';
 
 // --- CONSTANTS ---
 const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
@@ -691,7 +691,6 @@ async function loadUserComponents(reset = false) {
             // Still inside the forEach loop, after the HTML is injected
             const featureButton = col.querySelector(`[data-component-id="${componentId}-feature"]`);
             if (featureButton) {
-                // Inside gallery.js -> loadUserComponents() loop
                 featureButton.addEventListener('click', async (e) => {
                     e.preventDefault();
                     try {
