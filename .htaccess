@@ -1,3 +1,19 @@
+# Turn on the Rewrite Engine
+RewriteEngine On
+RewriteBase /
+
+# 1. Map the Custom 404 Page
 ErrorDocument 404 /404.html
 
-Redirect 301 /showcase.html /showcase
+# 2. Redirect showcase.html to the showcase folder (with trailing slash)
+# This prevents the server from guessing and ensures it finds the index file
+RewriteRule ^showcase\.html$ /showcase/ [R=301,L]
+
+# 3. Redirect gallery.html to the gallery folder
+RewriteRule ^gallery\.html$ /gallery/ [R=301,L]
+
+# 4. (Optional) Remove .html from other URLs automatically
+# This helps if you moved other pages that aren't in folders
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*)$ $1.html [NC,L]
