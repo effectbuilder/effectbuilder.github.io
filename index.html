@@ -566,11 +566,17 @@
                                                     Navigate to the correct folder on your PC. <strong>The path depends on your setup (especially if you use OneDrive or a custom installation).</strong> You may need to enable "Show hidden files" in your Windows Explorer settings.
 
                                                     <h6 class="mt-3 mb-1">Common Locations (try these in order):</h6>
-                                                    <p class="mb-1 fw-medium text-info">1. Standard Documents Location:</p>
-                                                    <code class="d-block p-2 bg-dark rounded text-white small">%userprofile%\Documents\WhirlwindFX\Effects\</code>
+                                                    <p class="mb-1 fw-medium text-warning">1. Standard Documents Location:</p>
+                                                    <div class="input-group mb-3">
+                                                        <code id="path-text-1" class="form-control bg-dark text-white border-secondary small d-flex align-items-center">%userprofile%\Documents\WhirlwindFX\Effects\</code>
+                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-1')">Copy</button>
+                                                    </div>
 
-                                                    <p class="mb-1 fw-medium text-info mt-2">2. OneDrive Sync Location (for users with OneDrive):</p>
-                                                    <code class="d-block p-2 bg-dark rounded text-white small">C:\Users\<span class="text-warning">&lt;YOUR_USERNAME&gt;</span>\OneDrive\Documents\WhirlwindFX\Effects\</code>
+                                                    <p class="mb-1 fw-medium text-warning mt-2">2. OneDrive Sync Location (for users with OneDrive):</p>
+                                                    <div class="input-group mb-3">
+                                                        <code id="path-text-2" class="form-control bg-dark text-white border-secondary small d-flex align-items-center overflow-hidden">C:\Users\%username%\OneDrive\Documents\WhirlwindFX\Effects\</code>
+                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-2')">Copy</button>
+                                                    </div>
                                                 </div>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
@@ -1188,6 +1194,27 @@
         <script src="Shape.js"></script>
         <script src="util.js"></script>
         <script src="main.js"></script>
+        <script>
+            function copyPath(event, elementId) {
+                const text = document.getElementById(elementId).innerText.trim();
+                const btn = event.currentTarget; // Using currentTarget is safer for buttons with icons
+
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btn.innerText;
+                    btn.innerText = 'Copied!';
+
+                    // Swap colors temporarily
+                    btn.classList.replace('btn-outline-warning', 'btn-success');
+
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.classList.replace('btn-success', 'btn-outline-warning');
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            }
+        </script>
 </body>
 
 </html>
