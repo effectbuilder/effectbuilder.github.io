@@ -251,7 +251,7 @@
         <div class="fan-module">
             <div class="fan-ring"></div>
             <div class="fan-hub"></div>
-            <svg class="blades-svg" viewBox="0 0 100 100">
+            <svg id="main-fan" class="blades-svg" viewBox="0 0 100 100">
                 <g transform="translate(50,50)">
                     <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(0)" />
                     <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(51.4)" />
@@ -266,9 +266,9 @@
 
         <img src="https://rgbjunkie.com/rgbjunkie.png" alt="RGB Junkie Logo" class="logo">
 
-        <div class="error-group" style="margin-bottom: 25px;">
-            <h1 class="error-code" style="margin-bottom: 25px;">404</h1>
-            <div class="status-tag">CONNECTION_LOST</div>
+        <div class="error-group">
+            <h1 id="status-header" class="error-code" style="margin-bottom: 25px;">404</h1>
+            <div id="status-sub" class="status-tag">CONNECTION_LOST</div>
         </div>
 
         <div id="manual-msg">
@@ -279,13 +279,64 @@
             <a href="https://rgbjunkie.com" class="btn">TAKE_ME_TO_THE_LIGHT</a>
         </div>
 
-        <div id="redirect-status">
-            <div class="term-line">> INITIALIZING_SYNC... [DONE]</div>
-            <div class="term-line">> SOURCE: effectbuilder.github.io</div>
-            <div class="term-line">> DEST: rgbjunkie.com</div>
-            <div class="term-line">> STATUS: Re-routing to the main lighting hub...</div>
+        <div id="redirect-ui" style="display:none; width: 100%;">
+            <p style="color: #88c0d0; font-family: monospace; margin-bottom: 10px;">> REROUTING_DATA_STREAM...</p>
+            <div style="width: 100%; height: 4px; background: #111; border-radius: 2px; overflow: hidden; margin-bottom: 20px;">
+                <div id="sync-bar" style="width: 0%; height: 100%; background: #00ffff; box-shadow: 0 0 10px #00ffff; transition: width 3s linear;"></div>
+            </div>
+            <div style="text-align: left; background: rgba(15,15,15,0.9); padding: 15px; border-radius: 5px; border-left: 3px solid #00ffff; font-size: 0.85rem;">
+                <div style="color: #666; margin-bottom: 5px;">SOURCE: effectbuilder.github.io</div>
+                <div style="color: #a3be8c;">TARGET: rgbjunkie.com [ESTABLISHED]</div>
+            </div>
         </div>
     </div>
+
+    <script>
+        // PARTICLE GENERATOR (Existing Logic)
+        const canvas = document.getElementById('vector-canvas');
+        for (let i = 0; i < 45; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.top = (Math.random() * 100) + 'vh';
+            p.style.height = (Math.floor(Math.random() * 140) + 80) + 'px';
+            p.style.animationDuration = (Math.random() * 4 + 3) + 's';
+            p.style.animationDelay = (Math.random() * -5) + 's';
+            let color = Math.random() > 0.5 ? '#00ffff' : '#ff00ff';
+            p.style.color = color;
+            p.style.boxShadow = `0 0 12px ${color}`;
+            canvas.appendChild(p);
+        }
+
+        // REDIRECT LOGIC
+        var currentHost = window.location.hostname;
+        if (currentHost.indexOf("github.io") !== -1) {
+            // Swap UI Elements
+            document.getElementById('manual-msg').style.display = 'none';
+            document.getElementById('redirect-ui').style.display = 'block';
+            
+            document.getElementById('status-header').innerText = "SYNC";
+            document.getElementById('status-header').style.fontSize = "5rem"; // Shrink slightly to fit word
+            document.getElementById('status-sub').innerText = "ESTABLISHING_LINK";
+
+            // Speed up the fan for the "Sync" process
+            document.getElementById('main-fan').style.animationDuration = "0.8s";
+
+            // Animate the progress bar
+            setTimeout(() => {
+                document.getElementById('sync-bar').style.width = "100%";
+            }, 100);
+
+            // Redirect after 3.5 seconds
+            var redirects = { "/showcase.html": "/showcase/", "/gallery.html": "/gallery/" };
+            var path = window.location.pathname;
+            var newPath = redirects[path] ? redirects[path] : path.replace(".html", "");
+
+            setTimeout(() => {
+                window.location.replace("https://rgbjunkie.com" + newPath + window.location.hash);
+            }, 3500);
+        }
+    </script>
     </div>
 
     <script>
