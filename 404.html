@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Moving to RGB Junkie...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #0d1117; /* Dark background to match RGB Junkie style */
+            color: #c9d1d9;
+            text-align: center;
+        }
+        .logo {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .loader {
+            border: 3px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        a { color: #58a6ff; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <img src="https://rgbjunkie.com/rgbjunkie.png" alt="RGB Junkie Logo" class="logo">
+
+    <h1>We've moved!</h1>
+    <p>
+        <span class="loader"></span>
+        Redirecting you to <strong>rgbjunkie.com</strong>...
+    </p>
+    <p><small>If you aren't redirected automatically, <a id="manual-link" href="https://rgbjunkie.com">click here</a>.</small></p>
+
+    <script type="text/javascript">
+        var newDomain = "https://rgbjunkie.com";
+        var path = window.location.pathname;
+        var hash = window.location.hash;
+
+        var redirects = {
+            "/showcase.html": "/showcase/",
+            "/gallery.html": "/gallery/",
+            "/showcase": "/showcase/",
+            "/gallery": "/gallery/"
+        };
+
+        var newPath = redirects[path] ? redirects[path] : path.replace(".html", "");
+        var finalURL = newDomain + newPath + hash;
+
+        // Set the manual link just in case
+        document.getElementById('manual-link').href = finalURL;
+
+        // Redirect after a short delay so they see the logo
+        setTimeout(function() {
+            window.location.replace(finalURL);
+        }, 2000);
+    </script>
+</body>
+</html>
