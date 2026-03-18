@@ -111,7 +111,7 @@
             height: 100%;
             border: 5px solid #ff0000;
             border-radius: 50%;
-            animation: rgbCycle 6s linear infinite;
+            animation: rgbCycle s linear infinite;
             box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 20px currentColor;
         }
 
@@ -128,8 +128,9 @@
         .blades-svg {
             width: 88%;
             height: 88%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 5s linear infinite;
             opacity: 0.95;
+            overflow: visible;
         }
 
         .blade-path {
@@ -252,14 +253,14 @@
             <div class="fan-ring"></div>
             <div class="fan-hub"></div>
             <svg id="main-fan" class="blades-svg" viewBox="0 0 100 100">
-                <g transform="translate(50,50)">
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(0)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(51.4)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(102.8)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(154.2)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(205.6)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(257)" />
-                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(308.4)" />
+                <g transform="translate(50,50) scale(1.2)">
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(0)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(51.4)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(102.8)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(154.2)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(205.6)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(257)" />
+                    <path class="blade-path" d="m -3.5 -42 c 0 0 13.393 -3.34 20.7 2.6 c 4.911 4.519 0.5 27 -2.2 31.7 c -4.5 7.5 -8.4 12 -14.7 18.4 c 1.9 -11.5 3.8 -16.2 3 -23.5 c -0.7 -7.4 -2 -15.3 -7.7 -26.8 c 0 0 -0.67 -1.96 0.9 -2.4 z" transform="rotate(308.4)" />
                 </g>
             </svg>
         </div>
