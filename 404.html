@@ -8,12 +8,13 @@
         :root {
             --bg-color: #050505;
             --accent-green: #a3be8c;
+            /* Sync the glow color to the RGB cycle in JS or keep a static neon cyan/magenta */
+            --neon-glow: rgba(0, 255, 255, 0.6);
         }
 
         body {
             font-family: 'Segoe UI', 'Courier New', monospace;
             margin: 0;
-            padding: 0;
             background-color: var(--bg-color);
             color: #d8dee9;
             display: flex;
@@ -23,7 +24,6 @@
             overflow: hidden;
         }
 
-        /* 1. Main Content Wrapper (The Case) */
         .case-interior {
             display: flex;
             flex-direction: column;
@@ -31,15 +31,15 @@
             text-align: center;
             width: 100%;
             max-width: 500px;
-            padding: 20px;
-            gap: 20px; /* Perfect spacing between all items */
+            padding: 40px 20px;
+            gap: 25px;
         }
 
-        /* 2. Realistic ARGB Fan */
+        /* 1. Realistic ARGB Fan Unit */
         .fan-module {
             position: relative;
-            width: 140px;
-            height: 140px;
+            width: 150px;
+            height: 150px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -49,82 +49,85 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border: 4px solid #ff0000;
+            border: 5px solid #ff0000;
             border-radius: 50%;
             animation: rgbCycle 6s linear infinite;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px currentColor;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 20px currentColor;
         }
 
         .fan-hub {
             position: absolute;
-            width: 35px;
-            height: 35px;
+            width: 42px;
+            height: 42px;
             background: radial-gradient(circle, #444 0%, #111 80%);
             border-radius: 50%;
-            z-index: 5;
+            z-index: 10;
             border: 1px solid #222;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
         .blades-svg {
-            width: 85%;
-            height: 85%;
-            animation: spin 2s linear infinite;
-            opacity: 0.9;
+            width: 88%;
+            height: 88%;
+            animation: spin 2.5s linear infinite;
+            opacity: 0.95;
         }
 
         .blade-path {
             animation: rgbCycle 6s linear infinite;
-            stroke: rgba(255,255,255,0.1);
-            stroke-width: 0.5;
+            stroke: rgba(255,255,255,0.05);
+            stroke-width: 0.3;
         }
 
-        /* 3. Text and Branding */
+        /* 2. Unified Branding & Neon Text */
         .logo {
             max-width: 280px;
             height: auto;
-            display: block;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.1));
         }
 
         .error-code {
-            font-size: 6rem;
+            font-size: 7rem;
             font-weight: 900;
             margin: 0;
             color: #fff;
-            line-height: 1;
-            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+            line-height: 0.9;
+            /* Unified Glow Effect */
+            text-shadow: 
+                0 0 10px #fff, 
+                0 0 20px var(--neon-glow), 
+                0 0 40px var(--neon-glow);
+            animation: neonPulse 2s ease-in-out infinite;
         }
 
         .status-tag {
             color: var(--accent-green);
-            letter-spacing: 4px;
+            letter-spacing: 5px;
             font-weight: bold;
             font-size: 1.1rem;
+            text-shadow: 0 0 10px rgba(163, 190, 140, 0.4);
         }
 
-        .message {
-            color: #666;
-            font-size: 0.95rem;
-            max-width: 350px;
-            margin: 0 auto;
-        }
-
-        /* 4. The Redirect Terminal */
+        /* 3. Redirect Terminal */
         #redirect-status {
             display: none;
-            background: #111;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 3px solid var(--accent-green);
+            background: rgba(15, 15, 15, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-green);
             text-align: left;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             width: 100%;
             box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* 5. Buttons */
+        .term-line { margin: 6px 0; color: #88c0d0; }
+
+        /* 4. Buttons */
         .btn {
             display: inline-block;
-            padding: 12px 30px;
+            padding: 14px 40px;
             background: transparent;
             color: #ff0000;
             border: 2px solid #ff0000;
@@ -132,19 +135,27 @@
             font-weight: bold;
             border-radius: 4px;
             animation: rgbCycle 6s linear infinite;
-            transition: transform 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.05); }
-
-        /* Animations */
+        /* Keyframes */
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes rgbCycle {
-            0%   { color: #ff0000; fill: #ff0000; border-color: #ff0000; filter: drop-shadow(0 0 5px #ff0000); }
-            33%  { color: #00ff00; fill: #00ff00; border-color: #00ff00; filter: drop-shadow(0 0 5px #00ff00); }
-            66%  { color: #0000ff; fill: #0000ff; border-color: #0000ff; filter: drop-shadow(0 0 5px #0000ff); }
-            100% { color: #ff0000; fill: #ff0000; border-color: #ff0000; filter: drop-shadow(0 0 5px #ff0000); }
+        
+        @keyframes neonPulse {
+            0%, 100% { opacity: 0.9; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-glow); }
+            50% { opacity: 1; text-shadow: 0 0 15px #fff, 0 0 30px var(--neon-glow), 0 0 50px var(--neon-glow); }
         }
+
+        @keyframes rgbCycle {
+            0%   { color: #ff0000; fill: #ff0000; border-color: #ff0000; }
+            33%  { color: #00ff00; fill: #00ff00; border-color: #00ff00; }
+            66%  { color: #0000ff; fill: #0000ff; border-color: #0000ff; }
+            100% { color: #ff0000; fill: #ff0000; border-color: #ff0000; }
+        }
+
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -156,13 +167,13 @@
             <div class="fan-hub"></div>
             <svg class="blades-svg" viewBox="0 0 100 100">
                 <g transform="translate(50,50)">
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(0)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(51)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(102)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(153)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(204)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(255)"/>
-                    <path class="blade-path" d="M0,-45 C15,-45 30,-30 30,-10 L0,0 Z" transform="rotate(306)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(0)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(51.4)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(102.8)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(154.2)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(205.6)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(257)"/>
+                    <path class="blade-path" d="M0,-46 C18,-46 32,-32 32,-10 L0,0 Z" transform="rotate(308.4)"/>
                 </g>
             </svg>
         </div>
@@ -171,19 +182,19 @@
         
         <div class="error-group">
             <h1 class="error-code">404</h1>
-            <div class="status-tag">SYSTEM_OFFLINE</div>
+            <div class="status-tag">HARDWARE_NOT_FOUND</div>
         </div>
 
-        <p class="message">The requested resource has been disconnected or moved to a new hardware address.</p>
+        <div id="manual-msg">
+            <p style="color: #888; margin-bottom: 30px;">The requested address returned a null response. System reboot recommended.</p>
+            <a href="https://rgbjunkie.com" class="btn">REBOOT_SYSTEM</a>
+        </div>
 
         <div id="redirect-status">
-            <div style="margin-bottom: 5px;">> INITIALIZING_REROUTE...</div>
-            <div style="color: #666;">> MAPPING: effectbuilder -> rgbjunkie</div>
-            <div style="animation: blink 1s infinite;">> RELOCATING_ASSETS...</div>
-        </div>
-
-        <div id="manual-action">
-            <a href="https://rgbjunkie.com" class="btn">REBOOT_TO_HOME</a>
+            <div class="term-line">> INITIALIZING_REROUTE... [DONE]</div>
+            <div class="term-line">> SOURCE: effectbuilder.github.io</div>
+            <div class="term-line">> DEST: rgbjunkie.com</div>
+            <div class="term-line">> STATUS: Relocating assets to new hardware... <span class="blink">_</span></div>
         </div>
 
     </div>
@@ -191,16 +202,17 @@
     <script>
         var currentHost = window.location.hostname;
         if (currentHost.indexOf("github.io") !== -1) {
-            document.getElementById('manual-action').style.display = 'none';
+            document.getElementById('manual-msg').style.display = 'none';
             document.getElementById('redirect-status').style.display = 'block';
             
             var redirects = { "/showcase.html": "/showcase/", "/gallery.html": "/gallery/" };
             var path = window.location.pathname;
+            var hash = window.location.hash;
             var newPath = redirects[path] ? redirects[path] : path.replace(".html", "");
             
             setTimeout(function() {
-                window.location.replace("https://rgbjunkie.com" + newPath + window.location.hash);
-            }, 3000);
+                window.location.replace("https://rgbjunkie.com" + newPath + hash);
+            }, 3500); // Slightly longer to appreciate the "Hardware" feel
         }
     </script>
 </body>
