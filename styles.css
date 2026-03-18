@@ -521,41 +521,6 @@ body {
    GTranslate Custom Styling (Bootstrap Dark Theme)
    -------------------------------------------------------- */
 
-/* 1. Target the selector inside the wrapper */
-.gtranslate_wrapper select {
-    /* Base Button Styling */
-    background-color: #2b3035 !important;   /* Bootstrap Dark Gray */
-    color: #fff !important;                 /* White Text */
-    border: 1px solid #495057 !important;   /* Dark Border */
-    border-radius: 6px !important;          /* Bootstrap Rounded Corners */
-    padding: 6px 36px 6px 12px !important;  /* Padding (Right extra for arrow) */
-    font-size: 14px !important;
-    line-height: 1.5 !important;
-    cursor: pointer !important;
-    outline: none !important;
-    
-    /* 2. Custom White Arrow (Replaces default black arrow) */
-    appearance: none !important;            /* Hides native browser arrow */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
-    background-size: 12px 12px !important;
-}
-
-/* 3. Hover Effect */
-.gtranslate_wrapper select:hover {
-    background-color: #343a40 !important;
-    border-color: #6c757d !important;
-}
-
-/* 4. Focus/Active Effect (Blue Glow) */
-.gtranslate_wrapper select:focus {
-    border-color: #86b7fe !important;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-}
-
 /* 5. Hide the floating popup if it ever tries to appear */
 #goog-gt-tt {
     display: none !important;
@@ -588,23 +553,6 @@ body {
     shape-rendering: geometricPrecision;
     width: 48px !important; /* Optional: Enforce a stable size */
     height: 48px !important;
-}
-
-/* Style the GTranslate Select Dropdown to match Bootstrap Secondary buttons */
-.gtranslate_wrapper select {
-    background-color: #6c757d !important; /* Bootstrap btn-secondary color */
-    color: white !important;
-    border: 1px solid #6c757d !important;
-    border-radius: 0.375rem !important; /* Standard Bootstrap radius */
-    padding: 0.375rem 0.75rem !important;
-    font-size: 1rem !important;
-    cursor: pointer;
-    transition: background-color 0.15s ease-in-out;
-}
-
-.gtranslate_wrapper select:hover {
-    background-color: #5c636a !important; /* Darker secondary on hover */
-    border-color: #565e64 !important;
 }
 
 /* Optional: Hide the powered by text if you want a cleaner look */
@@ -730,4 +678,54 @@ body {
     .bi-crosshair {
         display: none !important;
     }
+}
+
+/* Container - Matches the height of your other buttons exactly */
+.translate-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 38px; /* Standard Bootstrap btn-secondary is usually 38px or 40px */
+    margin-right: 1rem !important;
+}
+
+/* The actual dropdown menu */
+.gtranslate_wrapper select {
+    background-color: #6c757d !important; /* Standard Bootstrap secondary gray */
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important; /* Bootstrap default radius */
+    
+    /* Height and Line-Height are key for vertical alignment */
+    height: 38px !important; 
+    line-height: 38px !important; 
+    font-size: 14px !important;
+    cursor: pointer !important;
+    outline: none !important;
+
+    /* Padding: Pushes text right for the icon and left for the arrow */
+    padding: 0 32px 0 42px !important; 
+    width: 100% !important;
+
+    /* Custom Arrow */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 10px 10px !important;
+    
+    transition: background-color 0.15s ease-in-out !important;
+}
+
+/* The Icon positioning */
+.translate-icon {
+    position: absolute;
+    left: 12px;
+    z-index: 2;
+    pointer-events: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
 }
