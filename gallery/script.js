@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const editHTML = (isOwner || isAdmin) ? `<li><button class="dropdown-item" id="admin-edit-btn-${project.docId}"><i class="bi bi-pencil me-2"></i>Edit</button></li>` : '';
                 const featureHTML = isAdmin ? `<li><button class="dropdown-item" id="admin-feature-btn-${project.docId}">${isFeatured ? '<i class="bi bi-star-fill me-2"></i>Un-feature' : '<i class="bi bi-star me-2"></i>Feature'}</button></li>` : '';
-                const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="./?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
+                const regenHTML = isAdmin ? `<li><a class="dropdown-item" href="../?effectId=${project.docId}&action=regenThumbnail" target="_blank"><i class="bi bi-arrow-clockwise me-2"></i>Regen Thumb</a></li>` : '';
                 const deleteHTML = isAdmin ? `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item text-danger" id="admin-delete-btn-${project.docId}"><i class="bi bi-trash me-2"></i>Delete</button></li>` : '';
 
                 // MODIFIED: Matches the provided image (Light Grey Circle, Dark Dots)
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Note: We create a parent 'position-relative' div to hold the Link AND the Menu separate
             card.innerHTML = `
                 <div class="position-relative">
-                    <a href="./?effectId=${project.docId}" class="d-block">
+                    <a href="../?effectId=${project.docId}" class="d-block">
                         ${project.thumbnail ?
                     `<img src="${project.thumbnail}" class="card-img-top" style="aspect-ratio: 16/10; object-fit: cover;" alt="${project.name}">` :
                     `<div class="card-img-top d-flex align-items-center justify-content-center bg-body-secondary" style="aspect-ratio: 16/10;">
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                 </div>
                 <div class="card-footer d-flex gap-2">
-                    <a href="./?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>Load</a>
+                    <a href="../?effectId=${project.docId}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-down me-2"></i>Load</a>
                     <button class="btn ${userHasLiked ? 'btn-danger' : 'btn-outline-danger'} w-100" id="gallery-like-btn-${project.docId}" title="${userHasLiked ? 'Unlike' : 'Like'}">
                         ${userHasLiked ? '<i class="bi bi-heart-fill"></i> Liked' : '<i class="bi bi-heart"></i> Like'}
                     </button>
