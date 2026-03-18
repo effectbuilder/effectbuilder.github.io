@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,6 +9,7 @@
             --bg-color: #020202;
             --accent-green: #a3be8c;
             --neon-glow: rgba(0, 255, 255, 0.8);
+            --fan-speed: 2.5s; /* Consistent speed variable */
         }
 
         body {
@@ -26,10 +26,8 @@
 
         #vector-canvas {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1;
             pointer-events: none;
         }
@@ -37,39 +35,19 @@
         .particle {
             position: absolute;
             width: 2px;
-            /* Height is now set dynamically in JS */
-
-            /* FADES ONLY AT THE TOP */
             background: linear-gradient(to bottom, transparent, currentColor 40%);
-
-            /* MASK: Hard cut at the bottom (95%) to kill the halo */
             -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 95%, rgba(0, 0, 0, 0) 100%);
             mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 95%, rgba(0, 0, 0, 0) 100%);
-
             animation: move linear infinite;
         }
 
         @keyframes move {
-            0% {
-                transform: translateY(-300px);
-                opacity: 0;
-            }
-
-            15% {
-                opacity: 0.8;
-            }
-
-            85% {
-                opacity: 0.8;
-            }
-
-            100% {
-                transform: translateY(110vh);
-                opacity: 0;
-            }
+            0% { transform: translateY(-300px); opacity: 0; }
+            15% { opacity: 0.8; }
+            85% { opacity: 0.8; }
+            100% { transform: translateY(110vh); opacity: 0; }
         }
 
-        /* 2. Main Hardware Content */
         .case-interior {
             display: flex;
             flex-direction: column;
@@ -84,18 +62,6 @@
             background: radial-gradient(circle, rgba(2, 2, 2, 1) 30%, transparent 90%);
         }
 
-        h1.error-code {
-            font-size: 7rem;
-            font-weight: 900;
-            margin: 0 0 20px 0;
-            /* Top, Right, Bottom (20px), Left */
-            color: #fff;
-            line-height: 0.9;
-            text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-glow), 0 0 40px var(--neon-glow);
-            animation: neonPulse 2s ease-in-out infinite;
-        }
-
-        /* Hardware & Neon styling */
         .fan-module {
             position: relative;
             width: 150px;
@@ -111,7 +77,7 @@
             height: 100%;
             border: 5px solid #ff0000;
             border-radius: 50%;
-            animation: rgbCycle s linear infinite;
+            animation: rgbCycle 6s linear infinite; /* Fixed: Added 6s duration */
             box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 20px currentColor;
         }
 
@@ -128,7 +94,7 @@
         .blades-svg {
             width: 88%;
             height: 88%;
-            animation: spin 5s linear infinite;
+            animation: spin var(--fan-speed) linear infinite; /* Uses the variable */
             opacity: 0.95;
             overflow: visible;
         }
@@ -162,23 +128,6 @@
             font-size: 1.1rem;
         }
 
-        #redirect-status {
-            display: none;
-            background: rgba(15, 15, 15, 0.95);
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent-green);
-            text-align: left;
-            font-size: 0.9rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .term-line {
-            margin: 6px 0;
-            color: #88c0d0;
-        }
-
         .btn {
             display: inline-block;
             padding: 14px 40px;
@@ -192,60 +141,17 @@
             text-transform: uppercase;
         }
 
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes neonPulse {
-
-            0%,
-            100% {
-                opacity: 0.9;
-                text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-glow);
-            }
-
-            50% {
-                opacity: 1;
-                text-shadow: 0 0 15px #fff, 0 0 30px var(--neon-glow), 0 0 50px var(--neon-glow);
-            }
-        }
-
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes neonPulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 1; } }
         @keyframes rgbCycle {
-            0% {
-                color: #ff0000;
-                fill: #ff0000;
-                border-color: #ff0000;
-            }
-
-            33% {
-                color: #00ff00;
-                fill: #00ff00;
-                border-color: #00ff00;
-            }
-
-            66% {
-                color: #0000ff;
-                fill: #0000ff;
-                border-color: #0000ff;
-            }
-
-            100% {
-                color: #ff0000;
-                fill: #ff0000;
-                border-color: #ff0000;
-            }
+            0%, 100% { color: #ff0000; fill: #ff0000; border-color: #ff0000; }
+            33% { color: #00ff00; fill: #00ff00; border-color: #00ff00; }
+            66% { color: #0000ff; fill: #0000ff; border-color: #0000ff; }
         }
     </style>
 </head>
 
 <body>
-
     <div id="vector-canvas"></div>
 
     <div class="case-interior">
@@ -268,7 +174,7 @@
         <img src="https://rgbjunkie.com/rgbjunkie.png" alt="RGB Junkie Logo" class="logo">
 
         <div class="error-group">
-            <h1 id="status-header" class="error-code" style="margin-bottom: 25px;">404</h1>
+            <h1 id="status-header" class="error-code">404</h1>
             <div id="status-sub" class="status-tag">CONNECTION_LOST</div>
         </div>
 
@@ -293,15 +199,14 @@
     </div>
 
     <script>
-        // PARTICLE GENERATOR (Existing Logic)
         const canvas = document.getElementById('vector-canvas');
-        for (let i = 0; i < 45; i++) {
+        for (let i = 0; i < 50; i++) {
             let p = document.createElement('div');
             p.className = 'particle';
             p.style.left = Math.random() * 100 + 'vw';
             p.style.top = (Math.random() * 100) + 'vh';
             p.style.height = (Math.floor(Math.random() * 140) + 80) + 'px';
-            p.style.animationDuration = (Math.random() * 4 + 3) + 's';
+            p.style.animationDuration = (Math.random() * 1.5 + 3) + 's';
             p.style.animationDelay = (Math.random() * -5) + 's';
             let color = Math.random() > 0.5 ? '#00ffff' : '#ff00ff';
             p.style.color = color;
@@ -309,26 +214,20 @@
             canvas.appendChild(p);
         }
 
-        // REDIRECT LOGIC
-        var currentHost = window.location.hostname;
-        if (currentHost.indexOf("github.io") !== -1) {
-            // Swap UI Elements
+        if (window.location.hostname.indexOf("github.io") !== -1) {
             document.getElementById('manual-msg').style.display = 'none';
             document.getElementById('redirect-ui').style.display = 'block';
-
             document.getElementById('status-header').innerText = "SYNC";
-            document.getElementById('status-header').style.fontSize = "5rem"; // Shrink slightly to fit word
+            document.getElementById('status-header').style.fontSize = "5rem";
             document.getElementById('status-sub').innerText = "ESTABLISHING_LINK";
 
-            // Speed up the fan for the "Sync" process
-            document.getElementById('main-fan').style.animationDuration = "0.8s";
+            // Keeps speed identical or slightly tweaked for "loading" feel
+            document.getElementById('main-fan').style.animationDuration = "2.5s"; 
 
-            // Animate the progress bar
             setTimeout(() => {
                 document.getElementById('sync-bar').style.width = "100%";
             }, 100);
 
-            // Redirect after 3.5 seconds
             var redirects = { "/showcase.html": "/showcase/", "/gallery.html": "/gallery/" };
             var path = window.location.pathname;
             var newPath = redirects[path] ? redirects[path] : path.replace(".html", "");
@@ -338,42 +237,5 @@
             }, 3500);
         }
     </script>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('vector-canvas');
-        const count = 50;
-
-        for (let i = 0; i < count; i++) {
-            let p = document.createElement('div');
-            p.className = 'particle';
-
-            p.style.left = Math.random() * 100 + 'vw';
-            p.style.top = (Math.random() * 100) + 'vh';
-
-            // RANDOM LENGTH: Between 80px and 220px
-            p.style.height = (Math.floor(Math.random() * 140) + 80) + 'px';
-
-            p.style.animationDuration = (Math.random() * 1.5 + 3) + 's';
-            p.style.animationDelay = (Math.random() * -5) + 's';
-
-            let color = Math.random() > 0.5 ? '#00ffff' : '#ff00ff';
-
-            p.style.color = color;
-            p.style.boxShadow = `0 0 12px ${color}`;
-
-            canvas.appendChild(p);
-        }
-
-        if (window.location.hostname.indexOf("github.io") !== -1) {
-            document.getElementById('manual-msg').style.display = 'none';
-            document.getElementById('redirect-status').style.display = 'block';
-            var redirects = { "/showcase.html": "/showcase/", "/gallery.html": "/gallery/" };
-            var path = window.location.pathname;
-            var newPath = redirects[path] ? redirects[path] : path.replace(".html", "");
-            setTimeout(() => { window.location.replace("https://rgbjunkie.com" + newPath + window.location.hash); }, 3500);
-        }
-    </script>
 </body>
-
 </html>
