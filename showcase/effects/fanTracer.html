@@ -188,15 +188,26 @@
         initProps();
 
         function getAudioValue(currentDecay) {
-            if (!window.audioReactive || window.audioGain === 0) return 0;
+            // Updated to smoothly fade out if audio gain is turned to 0
+            if (!window.audioReactive || window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
             let level = 0;
             try {
                 if (window.engine && engine.audio) {
                     const freq = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq;
-                    if (freq) { for (let i = 0; i < 8; i++) level += freq[i]; level = (level / 2040); }
+                    // Check that the array actually has data before looping
+                    if (freq && freq.length > 0) { 
+                        for (let i = 0; i < 8; i++) {
+                            level += freq[i] || 0; // Safety fallback
+                        }
+                        level = (level / 2040); 
+                    }
                 }
             } catch (e) { }
             let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+            
+            // Prevent NaN from poisoning the entire visualizer
+            if (isNaN(rawHit)) rawHit = 0; 
+            
             return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
         }
 
@@ -338,7 +349,8 @@
                 }
 
                 const getLogBand = (bandIndex, totalBands, currentDecay) => {
-                    if (!freqDataGlobal || window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
+                    // Added length check to ensure array isn't empty
+                    if (!freqDataGlobal || window.audioGain === 0 || freqDataGlobal.length === 0) return currentDecay * ((window.flashDecay || 83) / 100);
                     const minBin = 1, maxBin = 64;
                     const logMin = Math.log(minBin), logMax = Math.log(maxBin);
                     
@@ -358,6 +370,10 @@
                     level = Math.min(1.0, level * trebleBoost);
                     
                     let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+                    
+                    // NaN Safety Catch
+                    if (isNaN(rawHit)) rawHit = 0;
+                    
                     return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
                 };
 
@@ -382,7 +398,8 @@
                 const logMax = Math.log(maxBin);
 
                 for (let l = 0; l < sl; l++) {
-                    if (!freqData || window.audioGain === 0) {
+                    // Added length check here as well
+                    if (!freqData || window.audioGain === 0 || freqData.length === 0) {
                         strimerDecays[l] = strimerDecays[l] * ((window.flashDecay || 83) / 100);
                         continue;
                     }
@@ -404,12 +421,14 @@
                     level = level / (255 * binsPerLine);
 
                     // 3. High-Frequency Energy Compensation (Y-Axis)
-                    // Progressively boosts the signal for the higher cables. 
-                    // l/sl gives a 0.0 to 1.0 gradient. We multiply that by 1.5 to give the top cable a 2.5x boost.
                     const trebleBoost = 1.0 + (l / sl) * 5;
                     level = Math.min(1.0, level * trebleBoost);
 
                     let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+                    
+                    // NaN Safety Catch
+                    if (isNaN(rawHit)) rawHit = 0;
+                    
                     strimerDecays[l] = Math.max(rawHit, strimerDecays[l] * ((window.flashDecay || 83) / 100));
                 }
 
