@@ -188,16 +188,14 @@
         initProps();
 
         function getAudioValue(currentDecay) {
-            // Updated to smoothly fade out if audio gain is turned to 0
             if (!window.audioReactive || window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
             let level = 0;
             try {
                 if (window.engine && engine.audio) {
                     const freq = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq;
-                    // Check that the array actually has data before looping
                     if (freq && freq.length > 0) { 
                         for (let i = 0; i < 8; i++) {
-                            level += freq[i] || 0; // Safety fallback
+                            level += freq[i] || 0; 
                         }
                         level = (level / 2040); 
                     }
@@ -205,7 +203,6 @@
             } catch (e) { }
             let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
             
-            // Prevent NaN from poisoning the entire visualizer
             if (isNaN(rawHit)) rawHit = 0; 
             
             return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
@@ -225,18 +222,15 @@
                 colors = palettes[activeP] || palettes["Rainbow"];
             }
 
-            // Smooth Interpolation Math
             const baseIdx = Math.floor(idx);
             const i1 = baseIdx % colors.length;
             const i2 = (baseIdx + 1) % colors.length;
-            const fraction = idx - baseIdx; // Get the decimal remainder
+            const fraction = idx - baseIdx;
 
-            // Convert hex to RGB for blending
             const hexToRgb = hex => hex.match(/\w\w/g).map(x => parseInt(x, 16));
             const c1 = hexToRgb(colors[i1]);
             const c2 = hexToRgb(colors[i2]);
 
-            // Blend the two RGB values
             const r = Math.round(c1[0] + fraction * (c2[0] - c1[0]));
             const g = Math.round(c1[1] + fraction * (c2[1] - c1[1]));
             const b = Math.round(c1[2] + fraction * (c2[2] - c1[2]));
@@ -270,16 +264,12 @@
         }
 
         function draw(currentTime) {
-            // 1. Calculate and cap deltaTime
             if (!currentTime) currentTime = 0;
             let deltaTime = (currentTime - lastTime) / 1000 || (1 / 60);
-            if (deltaTime > 0.25) deltaTime = 1 / 60; // Prevents massive jumps after sleep
+            if (deltaTime > 0.25) deltaTime = 1 / 60; 
             lastTime = currentTime;
 
-            // 2. Create an internal clock that pauses during sleep
             engineTime += deltaTime * 1000;
-
-            // 3. Multiplier to keep your current speed math exactly the same (based on 60fps)
             let frameMult = deltaTime * 60;
 
             try {
@@ -337,24 +327,20 @@
                     }
                 }
 
-                // --- GLOBAL AUDIO ENGINE ---
                 decayFan = getAudioValue(decayFan);
                 decayRail = getAudioValue(decayRail);
                 decayMat = getAudioValue(decayMat);
 
-                // --- DISCRETE LINEAR AUDIO ENGINE (LOGARITHMIC NORMALIZATION) ---
                 let freqDataGlobal = null;
                 if (window.audioReactive && window.engine && engine.audio) {
                     try { freqDataGlobal = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq; } catch(e){}
                 }
 
                 const getLogBand = (bandIndex, totalBands, currentDecay) => {
-                    // Added length check to ensure array isn't empty
                     if (!freqDataGlobal || window.audioGain === 0 || freqDataGlobal.length === 0) return currentDecay * ((window.flashDecay || 83) / 100);
                     const minBin = 1, maxBin = 64;
                     const logMin = Math.log(minBin), logMax = Math.log(maxBin);
                     
-                    // Logarithmic Splitting
                     const startLog = logMin + (bandIndex / totalBands) * (logMax - logMin);
                     const endLog = logMin + ((bandIndex + 1) / totalBands) * (logMax - logMin);
                     const startBin = Math.floor(Math.exp(startLog));
@@ -365,46 +351,38 @@
                     for (let i = startBin; i < endBin; i++) level += freqDataGlobal[i] || 0;
                     level = level / (255 * binsPerLine);
                     
-                    // Treble Boost Normalization
                     const trebleBoost = 1.0 + (bandIndex / totalBands) * 1.5;
                     level = Math.min(1.0, level * trebleBoost);
                     
                     let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
                     
-                    // NaN Safety Catch
                     if (isNaN(rawHit)) rawHit = 0;
                     
                     return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
                 };
 
-                // Map the 4 individual components to the 4 logarithmic frequency bands
-                decayAio1 = getLogBand(0, 4, decayAio1); // Band 0: Deep Bass
-                decayAio2 = getLogBand(1, 4, decayAio2); // Band 1: Low-Mids
-                decayRam1 = getLogBand(2, 4, decayRam1); // Band 2: High-Mids
-                decayRam2 = getLogBand(3, 4, decayRam2); // Band 3: Treble
+                decayAio1 = getLogBand(0, 4, decayAio1); 
+                decayAio2 = getLogBand(1, 4, decayAio2); 
+                decayRam1 = getLogBand(2, 4, decayRam1); 
+                decayRam2 = getLogBand(3, 4, decayRam2); 
 
-                // --- MULTI-BAND STRIMER AUDIO ENGINE (LOGARITHMIC NORMALIZATION) ---
                 const sl = window.strimerLines || 4;
                 let freqData = null;
                 if (window.audioReactive && window.engine && engine.audio) {
                     try { freqData = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq; } catch (e) { }
                 }
 
-                // 1. Define frequency range limits
-                // We start at bin 1 to ignore pure inaudible rumble, and cap at 64 to avoid dead static frequencies.
                 const minBin = 1;
                 const maxBin = 64;
                 const logMin = Math.log(minBin);
                 const logMax = Math.log(maxBin);
 
                 for (let l = 0; l < sl; l++) {
-                    // Added length check here as well
                     if (!freqData || window.audioGain === 0 || freqData.length === 0) {
                         strimerDecays[l] = strimerDecays[l] * ((window.flashDecay || 83) / 100);
                         continue;
                     }
 
-                    // 2. Logarithmic Splitting (X-Axis)
                     const startLog = logMin + (l / sl) * (logMax - logMin);
                     const endLog = logMin + ((l + 1) / sl) * (logMax - logMin);
 
@@ -417,22 +395,18 @@
                         level += freqData[i] || 0;
                     }
 
-                    // Average out the clustered bins so the grouped treble doesn't artificially peak above 1.0
                     level = level / (255 * binsPerLine);
 
-                    // 3. High-Frequency Energy Compensation (Y-Axis)
                     const trebleBoost = 1.0 + (l / sl) * 5;
                     level = Math.min(1.0, level * trebleBoost);
 
                     let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
                     
-                    // NaN Safety Catch
                     if (isNaN(rawHit)) rawHit = 0;
                     
                     strimerDecays[l] = Math.max(rawHit, strimerDecays[l] * ((window.flashDecay || 83) / 100));
                 }
 
-                // Update time increments to use the frame multiplier
                 timeC += ((window.circleSpeed || 41) / 1000) * frameMult;
                 timeR += ((window.railSpeed || 30) / 1000) * frameMult;
                 timeA1 += ((window.aio1Speed || 10) / 1000) * frameMult;
@@ -442,7 +416,6 @@
                 timeS += ((window.strimerSpeed || 16) / 1000) * frameMult;
                 timeMat += ((window.matrixSpeed || 20) / 1000) * frameMult;
 
-                // --- FANS/RAILS RENDER ---
                 if (window.showCircle) {
                     if (window.moveMode.includes("Sparkle")) {
                         handleSparkle('circle', count, (window.circleDots || 1) * count, window.moveMode.includes("(Rev)")).forEach(s => {
@@ -487,13 +460,11 @@
                         const ry = centerY + rp * window.railDistance * scale;
                         const mode = window.railMode;
 
-                        // 1. VU METER MODE FOR RAILS
                         if (mode.includes("VU Meter")) {
                             const audioBoost = 2.0;
                             const level = Math.max(0.05, Math.min(1.0, decayRail * audioBoost));
                             const isRev = mode.includes("(Rev)");
                             
-                            // Calculate the total physical continuous span of the rails
                             const railStartX = startX - fRad;
                             const railWidth = ((count - 1) * fanSpacing) + (fRad * 2);
                             
@@ -510,7 +481,6 @@
                             return;
                         }
 
-                        // 2. STANDARD RAIL MODES
                         if (mode.includes("Sparkle")) {
                             handleSparkle('rail' + rp, count, window.railDots * count, mode.includes("(Rev)")).forEach(s => {
                                 const cx = startX + (s.lineIdx * fanSpacing);
@@ -554,7 +524,6 @@
                     renderR(-1); renderR(1);
                 }
 
-                // --- MATRIX ENGINE ---
                 if (window.showMatrix) {
                     const c = window.matrixCols || 16, r = window.matrixRows || 16;
                     const cell = Math.floor(window.matrixCellSize || 5);
@@ -574,13 +543,11 @@
                             for (let x = 0; x < cachedJson[y].length && x < c; x++) {
                                 let val = cachedJson[y][x];
 
-                                // Apply the new format rules
                                 if (val === 0) {
                                     pts.push({ x: x, y: y, explicitColor: "#000000", opacity: 1.0 });
                                 } else if (val === 1) {
                                     pts.push({ x: x, y: y, explicitColor: "#ffffff", opacity: 1.0 });
                                 } else if (val === 0.5) {
-                                    // Uses the color engine (index 0 = Color 1) but sets 50% opacity
                                     pts.push({ x: x, y: y, cIdx: 0, opacity: 0.5 });
                                 }
                             }
@@ -599,7 +566,10 @@
                             (window.matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : window.matrixText;
 
                         const res = 10;
-                        const offC = new OffscreenCanvas(c * res, r * res);
+                        // FIX: OffscreenCanvas can cause silent ReferenceErrors in older CEF versions
+                        const offC = document.createElement('canvas');
+                        offC.width = c * res;
+                        offC.height = r * res;
                         const ox = offC.getContext('2d', { willReadFrequently: true });
 
                         ox.imageSmoothingEnabled = false;
@@ -634,11 +604,8 @@
 
                     pts.forEach(p => {
                         const cIndex = p.cIdx !== undefined ? p.cIdx : p.y;
-
-                        // ANIMATION FIX: Removed Math.floor() to allow smooth fractional blending
-                        const flowSpeed = 2; // Lowered slightly so you can admire the smooth gradient
+                        const flowSpeed = 2; 
                         const animatedIndex = cIndex - (timeMat * flowSpeed) + 1000000;
-
                         const finalColor = p.explicitColor ? p.explicitColor : getObjColor(window.matrixProfile, window.matrixColor, animatedIndex, r, decayMat);
 
                         trails.push({
@@ -651,13 +618,10 @@
                     });
                 }
 
-                // --- AIO / RAM RENDER (ABSOLUTE) ---
                 const renderAbs = (id, type, show, x, y, len, dCnt, tVal, mode, prof, col, dV, tL) => {
                     if (!show) return;
 
-                    // 1. VU METER MODE
                     if (mode.includes("VU Meter")) {
-                        // Boost the audio value by 2x for the meter, and ensure a 5% minimum idle state
                         const audioBoost = 2.0;
                         const level = Math.max(0.05, Math.min(1.0, dV * audioBoost)); 
                         const isRev = mode.includes("(Rev)");
@@ -666,20 +630,17 @@
                         const activeDots = Math.floor(dotsToDraw * level);
                         
                         for (let d = 0; d < activeDots; d++) {
-                            // If reversed, draw from the end of the line backwards
                             const index = isRev ? (dotsToDraw - 1 - d) : d;
                             const dp = index / dotsToDraw;
                             
                             const rx = (type === 'h') ? x + dp * len : x;
                             const ry = (type === 'h') ? y : y + dp * len;
                             
-                            // We still use 'd' for the color index so the base of the meter stays anchored to Color 1
                             trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, d, dotsToDraw, 0), born: engineTime, len: 1 });
                         }
                         return;
                     }
 
-                    // 2. VOLUME FILL (WIPE) MODE
                     if (mode.includes("Wipe")) {
                         const baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
                         const p = getProgress(tVal, 1, baseMode);
@@ -698,7 +659,6 @@
                         return;
                     }
 
-                    // 3. METEOR RAIN MODE
                     if (mode.includes("Meteor")) {
                         const mId = id + "_meteor";
                         if (!sparklesStore[mId]) sparklesStore[mId] = [];
@@ -710,7 +670,7 @@
                         }
                         for (let i = list.length - 1; i >= 0; i--) {
                             list[i].pos += isRev ? -list[i].speed : list[i].speed;
-                            list[i].speed *= 1.05; // gravity acceleration
+                            list[i].speed *= 1.05; 
 
                             const rx = (type === 'h') ? x + list[i].pos * len : x;
                             const ry = (type === 'h') ? y : y + list[i].pos * len;
@@ -724,7 +684,6 @@
                         return;
                     }
 
-                    // 4. STANDARD MODES (Sparkle, Loop, Bounce, Collide, Split)
                     if (mode.includes("Sparkle")) {
                         handleSparkle(id, 1, dCnt, mode.includes("(Rev)")).forEach(s => {
                             const rx = (type === 'h') ? x + s.pos * len : x;
@@ -766,7 +725,6 @@
                 renderAbs('ram1', 'v', window.showRam1, window.ram1X, window.ram1Y, window.ram1Height, window.ram1Dots, timeRam1, window.ram1Mode, window.ram1Profile, window.ram1Color, decayRam1, window.ram1Trail);
                 renderAbs('ram2', 'v', window.showRam2, window.ram2X, window.ram2Y, window.ram2Height, window.ram2Dots, timeRam2, window.ram2Mode, window.ram2Profile, window.ram2Color, decayRam2, window.ram2Trail);
 
-                // --- STRIMER RENDER (ABSOLUTE) ---
                 if (window.showStrimer) {
                     const sl = window.strimerLines || 4, sd = window.strimerDots || 2, pc = (window.strimerPosVar || 0) / 100, sc = (window.strimerSpeedVar || 0) / 100;
                     if (strimerSeeds.length !== sl) strimerSeeds = Array.from({ length: sl }, () => ({ p: Math.random(), s: 0.5 + Math.random() }));
@@ -775,12 +733,9 @@
                         const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
                         const lT = timeS * (1 + (strimerSeeds[l].s - 1) * sc), lP = strimerSeeds[l].p * pc;
                         const mode = window.strimerMode;
-
-                        // Grab the unique audio frequency decay just for this specific cable
                         const activeDecay = strimerDecays[l];
 
                         if (mode.includes("VU Meter")) {
-                            // Boost the audio value by 2x for the meter, and ensure a 5% minimum idle state
                             const audioBoost = 2.0;
                             const level = Math.max(0.05, Math.min(1.0, activeDecay * audioBoost));
                             const isRev = mode.includes("(Rev)");
@@ -789,10 +744,8 @@
                             const activeDots = Math.floor(dotsToDraw * level);
                             
                             for(let d = 0; d < activeDots; d++) {
-                                // If reversed, draw from the right side of the strimer backwards
                                 const index = isRev ? (dotsToDraw - 1 - d) : d;
                                 const dp = index / dotsToDraw;
-                                
                                 trails.push({ x: window.strimerX + dp * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, 0), born: engineTime, len: 1 });
                             }
                         }
@@ -821,7 +774,7 @@
                             }
                             for (let i = list.length - 1; i >= 0; i--) {
                                 list[i].pos += isRev ? -list[i].speed : list[i].speed;
-                                list[i].speed *= 1.05; // gravity
+                                list[i].speed *= 1.05; 
 
                                 if (list[i].pos > 1.0 || list[i].pos < 0.0) {
                                     list.splice(i, 1);
@@ -864,21 +817,16 @@
                     }
                 }
 
-                // --- MASTER TRAIL PROCESSOR (ANTI-FLICKER & 0-LENGTH SAFETY) ---
                 const renderTime = engineTime;
 
-                // Keep trails alive based on their length setting
                 trails = trails.filter(t => (renderTime - t.born) < (Math.max(0.1, t.len) * 40));
 
                 trails.forEach(t => {
                     const duration = Math.max(0.1, t.len) * 40;
                     const timeAlive = renderTime - t.born;
 
-                    // ANTI-FLICKER FIX: If spawned in this exact frame (< 20ms ago), 
-                    // lock age to 0 so it renders at full brightness before fading.
                     const age = timeAlive < 20 ? 0 : timeAlive / duration;
 
-                    // Calculate final transparency
                     const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
 
                     if (t.isRect) {
@@ -893,7 +841,10 @@
                         ctx.fill();
                     }
                 });
-            } catch (e) { }
+            } catch (e) { 
+                // FIX: Log out any future errors instead of silently failing
+                console.error("Render Loop Error:", e);
+            }
             requestAnimationFrame(draw);
         }
         draw();
