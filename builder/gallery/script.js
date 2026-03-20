@@ -350,7 +350,7 @@ async function handleNotificationClick(componentId, notificationId) {
 
     // 2. Redirect to the builder page with the component ID
     // (This is different from main.js, which loads it in-page)
-    window.location.href = `index.html?id=${componentId}`;
+    window.location.href = `../index.html?id=${componentId}`;
 }
 
 async function markAllNotificationsAsRead() {
@@ -720,7 +720,7 @@ async function loadUserComponents(reset = false) {
             }
 
             // --- EVENT LISTENERS ---
-            const loadUrl = `index.html?id=${componentId}`;
+            const loadUrl = `../index.html?id=${componentId}`;
             col.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', () => window.location.href = loadUrl);
             col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => window.location.href = loadUrl);
 
