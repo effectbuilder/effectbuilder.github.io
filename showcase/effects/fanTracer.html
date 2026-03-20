@@ -161,6 +161,7 @@
         let cachedJson = [];
         let lastTime = 0;
         let engineTime = 0;
+        let reducedFreq = []; // New global array for the filtered audio data
 
         const palettes = {
             "Amethyst": ["#9932cc", "#8a2be2", "#4b0082", "#ba55d3", "#e0b0ff"],
@@ -185,6 +186,16 @@
             "Volt": ["#ffff00", "#ccff00", "#adff2f", "#ffffff", "#eee8aa"]
         };
 
+        for (let key in palettes) {
+            if (key === "Rainbow") continue; 
+            let p = palettes[key];
+            let mirrored = [...p];
+            for (let i = p.length - 2; i >= 1; i--) {
+                mirrored.push(p[i]);
+            }
+            palettes[key] = mirrored;
+        }
+
         function initProps() {
             document.querySelectorAll('meta[property]').forEach(meta => {
                 const prop = meta.getAttribute('property');
@@ -200,44 +211,42 @@
         initProps();
 
         function getAudioValue(currentDecay) {
-            if (!window.audioReactive || window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
+            if (window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
             let level = 0;
-            try {
-                if (window.engine && engine.audio) {
-                    const freq = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq;
-                    if (freq && freq.length > 0) { 
-                        for (let i = 0; i < 8; i++) {
-                            level += freq[i] || 0; 
-                        }
-                        level = (level / 2040); 
-                    }
+            if (reducedFreq && reducedFreq.length > 0) {
+                let limit = Math.min(4, reducedFreq.length);
+                for (let i = 0; i < limit; i++) {
+                    level += Math.abs(reducedFreq[i]);
                 }
-            } catch (e) { }
-            let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+                // Max absolute value of Int8 is 128. Dividing normalizes to a 0.0 - 1.0 ratio
+                level = (level / limit) / 128; 
+            }
+            
+            let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
             if (isNaN(rawHit)) rawHit = 0; 
             return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
         }
 
-        // --- NEW SEAMLESS COLOR ENGINE ---
         function getObjColor(profileName, customColor, idx, total, decayVal) {
-            if (decayVal > 0.5) return "#ffffff"; // White flash on heavy bass hits
+            if (window.audioReactive && decayVal > 0.5) return "#ffffff"; 
             
             let isMasterActive = (window.masterProfile !== "None");
             let activeP = isMasterActive ? window.masterProfile : profileName;
 
-            // Handle pure Solid Color bypass
             if (activeP === "Custom" && !isMasterActive) {
                 return customColor;
             }
 
             let colors = [];
             if (activeP === "Custom" && isMasterActive) {
-                colors = [window.masterColor, window.masterColor2 || "#ff0000", window.masterColor3 || "#00ff00"];
+                const m1 = window.masterColor;
+                const m2 = window.masterColor2 || "#ff0000";
+                const m3 = window.masterColor3 || "#00ff00";
+                colors = [m1, m2, m3, m2];
             } else {
                 colors = palettes[activeP] || palettes["Rainbow"];
             }
 
-            // Calculate seamless spatial mapping ratio (0.0 to 1.0)
             let safeTotal = total || 1;
             let normalizedIdx = ((idx % safeTotal) + safeTotal) % safeTotal; 
             let t = normalizedIdx / safeTotal;
@@ -260,7 +269,6 @@
             const c1 = hexToRgb(colors[i1]);
             const c2 = hexToRgb(colors[i2]);
 
-            // Interpolate between the array boundaries perfectly
             const r = Math.round(c1[0] + fraction * (c2[0] - c1[0]));
             const g = Math.round(c1[1] + fraction * (c2[1] - c1[1]));
             const b = Math.round(c1[2] + fraction * (c2[2] - c1[2]));
@@ -301,6 +309,16 @@
 
             engineTime += deltaTime * 1000;
             let frameMult = deltaTime * 60;
+
+            // --- EXACT AUDIO EXTRACTION FROM EXAMPLE SCRIPT ---
+            if (window.engine && engine.audio && engine.audio.freq) {
+                var frequency = new Int8Array(engine.audio.freq);
+                reducedFreq = frequency.filter((element, index) => {
+                    return index % 4 === 0;
+                });
+            } else {
+                reducedFreq = [];
+            }
 
             try {
                 const w = 320, h = 200, midX = w / 2, midY = h / 2;
@@ -367,30 +385,30 @@
                 decayRail = getAudioValue(decayRail);
                 decayMat = getAudioValue(decayMat);
 
-                let freqDataGlobal = null;
-                if (window.audioReactive && window.engine && engine.audio) {
-                    try { freqDataGlobal = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq; } catch(e){}
-                }
-
                 const getLogBand = (bandIndex, totalBands, currentDecay) => {
-                    if (!freqDataGlobal || window.audioGain === 0 || freqDataGlobal.length === 0) return currentDecay * ((window.flashDecay || 83) / 100);
-                    const minBin = 1, maxBin = 64;
-                    const logMin = Math.log(minBin), logMax = Math.log(maxBin);
-                    
-                    const startLog = logMin + (bandIndex / totalBands) * (logMax - logMin);
-                    const endLog = logMin + ((bandIndex + 1) / totalBands) * (logMax - logMin);
-                    const startBin = Math.floor(Math.exp(startLog));
-                    const endBin = Math.max(startBin + 1, Math.floor(Math.exp(endLog)));
-                    const binsPerLine = endBin - startBin;
+                    if (window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
                     
                     let level = 0;
-                    for (let i = startBin; i < endBin; i++) level += freqDataGlobal[i] || 0;
-                    level = level / (255 * binsPerLine);
+                    if (reducedFreq && reducedFreq.length > 0) {
+                        const minBin = 1, maxBin = Math.max(2, reducedFreq.length);
+                        const logMin = Math.log(minBin), logMax = Math.log(maxBin);
+                        
+                        const startLog = logMin + (bandIndex / totalBands) * (logMax - logMin);
+                        const endLog = logMin + ((bandIndex + 1) / totalBands) * (logMax - logMin);
+                        const startBin = Math.floor(Math.exp(startLog));
+                        const endBin = Math.max(startBin + 1, Math.floor(Math.exp(endLog)));
+                        const binsPerLine = endBin - startBin;
+                        
+                        for (let i = startBin; i < endBin && i < reducedFreq.length; i++) {
+                            level += Math.abs(reducedFreq[i]);
+                        }
+                        level = (level / binsPerLine) / 128;
+                        
+                        const trebleBoost = 1.0 + (bandIndex / totalBands) * 1.5;
+                        level = Math.min(1.0, level * trebleBoost);
+                    }
                     
-                    const trebleBoost = 1.0 + (bandIndex / totalBands) * 1.5;
-                    level = Math.min(1.0, level * trebleBoost);
-                    
-                    let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+                    let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
                     if (isNaN(rawHit)) rawHit = 0;
                     return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
                 };
@@ -401,21 +419,18 @@
                 decayRam2 = getLogBand(3, 4, decayRam2); 
 
                 const sl = window.strimerLines || 4;
-                let freqData = null;
-                if (window.audioReactive && window.engine && engine.audio) {
-                    try { freqData = (typeof engine.audio.getFrequencyData === 'function') ? engine.audio.getFrequencyData() : engine.audio.freq; } catch (e) { }
-                }
-
-                const minBin = 1;
-                const maxBin = 64;
-                const logMin = Math.log(minBin);
-                const logMax = Math.log(maxBin);
 
                 for (let l = 0; l < sl; l++) {
-                    if (!freqData || window.audioGain === 0 || freqData.length === 0) {
+                    if (window.audioGain === 0 || reducedFreq.length === 0) {
                         strimerDecays[l] = strimerDecays[l] * ((window.flashDecay || 83) / 100);
                         continue;
                     }
+
+                    let level = 0;
+                    const minBin = 1;
+                    const maxBin = Math.max(2, reducedFreq.length);
+                    const logMin = Math.log(minBin);
+                    const logMax = Math.log(maxBin);
 
                     const startLog = logMin + (l / sl) * (logMax - logMin);
                     const endLog = logMin + ((l + 1) / sl) * (logMax - logMin);
@@ -424,17 +439,16 @@
                     const endBin = Math.max(startBin + 1, Math.floor(Math.exp(endLog)));
                     const binsPerLine = endBin - startBin;
 
-                    let level = 0;
-                    for (let i = startBin; i < endBin; i++) {
-                        level += freqData[i] || 0;
+                    for (let i = startBin; i < endBin && i < reducedFreq.length; i++) {
+                        level += Math.abs(reducedFreq[i]);
                     }
 
-                    level = level / (255 * binsPerLine);
+                    level = (level / binsPerLine) / 128;
 
                     const trebleBoost = 1.0 + (l / sl) * 5;
                     level = Math.min(1.0, level * trebleBoost);
 
-                    let rawHit = Math.pow(level, 1.2) * (window.audioGain / 50) * 2.5;
+                    let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
                     if (isNaN(rawHit)) rawHit = 0;
                     strimerDecays[l] = Math.max(rawHit, strimerDecays[l] * ((window.flashDecay || 83) / 100));
                 }
@@ -463,7 +477,7 @@
                             const activeProf = window.masterProfile !== "None" ? window.masterProfile : prof;
                             const activeCol = window.masterProfile !== "None" ? window.masterColor : col;
 
-                            if (activeProf === "Custom") {
+                            if (activeProf === "Custom" && window.masterProfile === "None") {
                                 ctx.strokeStyle = activeCol;
                             } else {
                                 try {
@@ -548,7 +562,7 @@
                             const activeProf = window.masterProfile !== "None" ? window.masterProfile : window.railProfile;
                             const activeCol = window.masterProfile !== "None" ? window.masterColor : window.railColor;
 
-                            if (activeProf === "Custom") {
+                            if (activeProf === "Custom" && window.masterProfile === "None") {
                                 ctx.strokeStyle = activeCol;
                             } else {
                                 try {
@@ -743,7 +757,7 @@
                         const activeProf = window.masterProfile !== "None" ? window.masterProfile : prof;
                         const activeCol = window.masterProfile !== "None" ? window.masterColor : col;
 
-                        if (activeProf === "Custom") {
+                        if (activeProf === "Custom" && window.masterProfile === "None") {
                             ctx.strokeStyle = activeCol;
                         } else {
                             try {
@@ -889,7 +903,7 @@
                             const activeProf = window.masterProfile !== "None" ? window.masterProfile : window.strimerProfile;
                             const activeCol = window.masterProfile !== "None" ? window.masterColor : window.strimerColor;
 
-                            if (activeProf === "Custom") {
+                            if (activeProf === "Custom" && window.masterProfile === "None") {
                                 ctx.strokeStyle = activeCol;
                             } else {
                                 try {
