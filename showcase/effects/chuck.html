@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>The Legendary Roundhouse</title>
+    <meta name="description" content="A multi-color audio-reactive tribute to the legend. Ultra-smooth color transitions and independent jumping movement." />
+    <meta name="publisher" content="José Miranda" />
+
+    <meta property="profile" label="Legendary Realm" type="combobox" values="Texas Sunset,Walker Frost,Delta Jungle,Missing Inferno,Octagon Void,Electric Ranger,Golden Fist,Forest Patrol,Deep Sea Vengeance,Cyber Strike,Toxic Kick,Blood Moon,Shadow Warrior,Neon City,Patriot,Synthwave,Magma,Amethyst,Custom,Rainbow" default="Rainbow" tooltip="Select a multi-color energy signature.">
+    
+    <meta property="movementMode" label="Legend Movement" type="combobox" values="Stationary,Sliding,Jumping" default="Jumping" tooltip="How the legend traverses the digital plane.">
+    
+    <meta property="customColor1" label="Custom Color 1" type="color" default="#ff0000" tooltip="First color for Custom profile.">
+    <meta property="customColor2" label="Custom Color 2" type="color" default="#ffd700" tooltip="Second color for Custom profile.">
+
+    <meta property="whiteFlash" label="White Flash on Beat" type="boolean" default="true" tooltip="Makes the Legend turn pure white during intense bass hits.">
+    <meta property="impactScale" label="Impact Magnitude" type="number" default="21" min="1" max="100" tooltip="How much the universe shakes when the beat drops.">
+    <meta property="particleDensity" label="Debris Density" type="number" default="100" min="0" max="100" tooltip="Amount of fractured reality particles flying from the impact.">
+    <meta property="kickSpeed" label="Rotation Speed" type="number" default="5" min="0" max="100" tooltip="How fast the aura of power rotates.">
+    <meta property="gridSpeed" label="Grid Movement Speed" type="number" default="23" min="0" max="100" tooltip="Controls how fast the reality grid flows.">
+    <meta property="showGrid" label="Reality Grid" type="boolean" default="true" tooltip="Shows a retro grid that bends to the impact.">
+
+    <style>
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; position: relative; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; position: absolute; top: 0; left: 0; z-index: 1; }
+        #gifContainer { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 2; }
+        #legendaryGif { position: absolute; display: none; transform: translate(-50%, -50%); transform-origin: center center; will-change: filter, transform; }
+    </style>
+</head>
+<body>
+    <canvas id="legendCanvas" width="320" height="200"></canvas>
+    <div id="gifContainer">
+        <img id="legendaryGif" src="https://mir-s3-cdn-cf.behance.net/project_modules/source/eb1e5c25057237.5633e9544922c.gif" crossorigin="anonymous" />
+    </div>
+
+    <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER
+        // -------------------------------------------------------------------
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+            function simulateAudio() {
+                const time = Date.now() / 1000; 
+                const dataArray = new Array(128).fill(0);
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+                const bassVal = Math.pow(beat, 8) * 255; 
+                dataArray[0] = bassVal; dataArray[1] = bassVal * 0.8;
+                for (let i = 2; i < 128; i++) { dataArray[i] = (Math.sin(time * 5 + i * 0.2) + 1) * 30 + (Math.random() * 20); }
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+
+        const canvas = document.getElementById('legendCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const W = 320; const H = 200;
+        const gifElement = document.getElementById('legendaryGif');
+        let isImgLoaded = false;
+        gifElement.onload = () => { isImgLoaded = true; gifElement.style.display = 'block'; };
+
+        let lastTime = 0; let engineTime = 0; let particles = []; 
+        let screenShake = { x: 0, y: 0 };
+        let legendPos = { x: W/2, y: H/2 };
+        let jumpCooldown = 0;
+
+        const colorProfiles = {
+            "Texas Sunset":     ["#FF4500", "#FFD700", "#FF00FF"],
+            "Walker Frost":     ["#00FFFF", "#0080FF", "#FFFFFF"],
+            "Delta Jungle":     ["#228B22", "#ADFF2F", "#8B4513"],
+            "Missing Inferno":  ["#FF0000", "#8B0000", "#FFD700"],
+            "Octagon Void":     ["#800080", "#4B0082", "#000000"],
+            "Electric Ranger":  ["#00FF00", "#00FFFF", "#0000FF"],
+            "Golden Fist":      ["#FFD700", "#DAA520", "#FFFFFF"],
+            "Forest Patrol":    ["#006400", "#228B22", "#F0E68C"],
+            "Deep Sea Vengeance":["#000080", "#0000FF", "#00CED1"],
+            "Cyber Strike":     ["#FF00FF", "#00FFFF", "#FFFFFF"],
+            "Toxic Kick":       ["#ADFF2F", "#00FF00", "#000000"],
+            "Blood Moon":       ["#8B0000", "#FF0000", "#1A1A1A"],
+            "Shadow Warrior":   ["#333333", "#000000", "#FF0000"],
+            "Neon City":        ["#FE019A", "#00FF00", "#39FF14"],
+            "Patriot":          ["#FF0000", "#FFFFFF", "#0000FF"],
+            "Synthwave":        ["#FF00FF", "#7209B7", "#4CC9F0"],
+            "Magma":            ["#FF8C00", "#FF0000", "#330000"],
+            "Amethyst":         ["#9400D3", "#9932CC", "#E6E6FA"],
+            "Rainbow":          ["#FF0000", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF"]
+        };
+
+        function getPalette() {
+            if (typeof profile !== 'undefined' && profile === "Custom") return [customColor1, customColor2, "#FFFFFF"];
+            return colorProfiles[profile] || colorProfiles["Rainbow"];
+        }
+
+        function drawGrid(impact, palette) {
+            if (typeof showGrid !== 'undefined' && !showGrid) return;
+            ctx.save();
+            ctx.strokeStyle = palette[0];
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.2 + (impact * 0.5);
+            
+            const gridSize = 20;
+            const bend = impact * 40;
+            const scrollOffset = (engineTime * (typeof gridSpeed !== 'undefined' ? gridSpeed : 23)) % gridSize;
+
+            for (let x = -gridSize * 2; x <= W + gridSize * 2; x += gridSize) {
+                ctx.beginPath();
+                for (let y = -gridSize; y <= H + gridSize; y += 10) {
+                    let posX = x + scrollOffset;
+                    const dx = posX - W/2;
+                    const dy = y - H/2;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const warp = Math.sin(dist * 0.05 - engineTime * 5) * bend;
+                    ctx.lineTo(posX + (dx/dist) * warp, y + (dy/dist) * warp);
+                }
+                ctx.stroke();
+            }
+            for (let y = -gridSize * 2; y <= H + gridSize * 2; y += gridSize) {
+                ctx.beginPath();
+                for (let x = -gridSize; x <= W + gridSize; x += 10) {
+                    let posY = y + scrollOffset;
+                    const dx = x - W/2;
+                    const dy = posY - H/2;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const warp = Math.sin(dist * 0.05 - engineTime * 5) * bend;
+                    ctx.lineTo(x + (dx/dist) * warp, posY + (dy/dist) * warp);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        class Particle {
+            constructor(x, y, color, impact) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * (10 + impact * 20);
+                this.vy = (Math.random() - 0.5) * (10 + impact * 20);
+                this.life = 1.0; this.decay = 0.02 + Math.random() * 0.05;
+                this.color = color; this.size = Math.random() * 4 + 1;
+            }
+            update(dt) { this.x += this.vx * dt * 60; this.y += this.vy * dt * 60; this.life -= this.decay; }
+            draw() {
+                ctx.fillStyle = this.color; ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1;
+            }
+        }
+
+        function update(currentTime) {
+            if (!currentTime) currentTime = 0;
+            let deltaTime = (currentTime - lastTime) / 1000 || (1/60);
+            if (deltaTime > 0.25) deltaTime = 1 / 60;
+            lastTime = currentTime; engineTime += deltaTime;
+
+            let rawFreq = (window.engine && window.engine.audio && window.engine.audio.freq) ? window.engine.audio.freq : new Array(128).fill(0);
+            const freq = new Int8Array(rawFreq);
+            const bass = (Math.abs(freq[0]) + Math.abs(freq[1]) + Math.abs(freq[2])) / (3 * 128);
+            const impact = Math.max(0, Math.pow(bass, 3) * (typeof impactScale !== 'undefined' ? impactScale / 50 : 0.42));
+
+            // MOVEMENT Logic - GIF Only
+            if (movementMode === "Sliding") {
+                legendPos.x = W/2 + Math.sin(engineTime * 1.5) * 100;
+                legendPos.y = H/2 + Math.cos(engineTime * 2.1) * 45;
+            } else if (movementMode === "Jumping") {
+                jumpCooldown -= deltaTime;
+                if (bass > 0.5 && jumpCooldown <= 0) {
+                    legendPos.x = 80 + Math.random() * (W - 160);
+                    legendPos.y = 60 + Math.random() * (H - 120);
+                    jumpCooldown = 0.3; 
+                }
+            } else {
+                legendPos.x = W/2;
+                legendPos.y = H/2;
+            }
+
+            ctx.fillStyle = "#000"; 
+            ctx.fillRect(0, 0, W, H);
+
+            screenShake.x = (Math.random() - 0.5) * impact * 20;
+            screenShake.y = (Math.random() - 0.5) * impact * 20;
+
+            const palette = getPalette();
+
+            ctx.save();
+            ctx.translate(screenShake.x, screenShake.y);
+            drawGrid(impact, palette);
+
+            const auraRadius = Math.max(0.1, 80 + impact * 150);
+            const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, auraRadius);
+            
+            // SMOOTH COLOR TRANSITION LOGIC
+            const colorStep = engineTime * 0.4;
+            palette.forEach((c, i) => {
+                let stop = (i / (palette.length - 1) + colorStep) % 1;
+                grad.addColorStop(stop, c);
+            });
+
+            ctx.globalCompositeOperation = "lighter";
+            ctx.save();
+            ctx.translate(W/2, H/2);
+            ctx.rotate(engineTime * (typeof kickSpeed !== 'undefined' ? kickSpeed / 10 : 0.5));
+            ctx.fillStyle = grad;
+            for(let i=0; i<8; i++) {
+                ctx.rotate(Math.PI / 4);
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-20 - impact*40, -200); ctx.lineTo(20 + impact*40, -200); ctx.fill();
+            }
+            ctx.restore();
+
+            if (impact > 0.1 && particles.length < 300) {
+                const pDens = typeof particleDensity !== 'undefined' ? particleDensity : 100;
+                for(let i=0; i < (pDens/10); i++) {
+                    particles.push(new Particle(W/2, H/2, palette[Math.floor(Math.random()*palette.length)], impact));
+                }
+            }
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update(deltaTime); particles[i].draw();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            ctx.restore();
+
+            ctx.globalCompositeOperation = "source-over";
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            for(let i=0; i<H; i+=2) ctx.fillRect(0, i, W, 1);
+
+            if (isImgLoaded) {
+                const baseScale = (window.innerHeight / 600) * 1.2; 
+                const totalScale = baseScale * (1 + impact * 0.15);
+                
+                const screenX = (legendPos.x / 320) * window.innerWidth;
+                const screenY = (legendPos.y / 200) * window.innerHeight;
+                const tx = screenX + (screenShake.x * (window.innerWidth / 320));
+                const ty = screenY + (screenShake.y * (window.innerHeight / 200));
+                
+                if (typeof whiteFlash !== 'undefined' && whiteFlash) {
+                    const brightness = 100 + (impact * 500);
+                    const contrast = 100 + (impact * 500);
+                    gifElement.style.filter = `brightness(${brightness}%) contrast(${contrast}%) hue-rotate(${engineTime*50}deg) drop-shadow(0 0 ${impact * 40}px white)`;
+                } else {
+                    gifElement.style.filter = 'none';
+                }
+                
+                gifElement.style.left = `${tx}px`;
+                gifElement.style.top = `${ty}px`;
+                gifElement.style.transform = `translate(-50%, -50%) scale(${totalScale})`;
+            }
+
+            requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>
