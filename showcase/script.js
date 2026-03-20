@@ -90,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html",
         "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
         "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html",
-        "police.html", "neuralAutomata.html", "fanTracer.html", "grandLineVoyage.html"
+        "police.html", "neuralAutomata.html", "fanTracer.html", "grandLineVoyage.html",
+        "chuck.html"
     ];
 
     const effectsFolder = "effects";
