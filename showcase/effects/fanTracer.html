@@ -11,11 +11,11 @@
     <meta property="showAlignment" label="Show Fan Alignment Dots" type="boolean" default="false" tooltip="Display high-visibility marker dots at 3 and 9 o'clock on every fan for precise physical alignment.">
     <meta property="showLabels" label="Show Object Names" type="boolean" default="false" tooltip="Toggle visibility of the names above/below each component.">
 
-    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="true" tooltip="Toggle audio-reactive white flashes globally.">
+    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
     <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="69" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
     <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">
 
-    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Global theme override for all components. Set to 'None' for individual control.">
+    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Sunset" tooltip="Global theme override for all components. Set to 'None' for individual control.">
     <meta property="masterColor" label="[Master] Custom Color 1" type="color" default="#0000ff" tooltip="The first color used when Master Profile is set to 'Custom'.">
     <meta property="masterColor2" label="[Master] Custom Color 2" type="color" default="#ff0000" tooltip="The second color used when Master Profile is set to 'Custom'.">
     <meta property="masterColor3" label="[Master] Custom Color 3" type="color" default="#00ff00" tooltip="The third color used when Master Profile is set to 'Custom'.">
@@ -30,7 +30,7 @@
     <meta property="showCircle" label="[Circle] Enable" type="boolean" default="true" tooltip="Enable or disable the rotating outer fan light dots.">
     <meta property="fanRadius" label="[Circle] Radius" type="number" default="20" min="5" max="100" tooltip="The size of each outer fan circle.">
     <meta property="moveMode" label="[Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="DNA Weave" tooltip="The movement pattern for the outer fan LEDs.">
-    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="36" min="0" max="100" tooltip="How fast the outer fan LEDs rotate.">
+    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="10" min="0" max="100" tooltip="How fast the outer fan LEDs rotate.">
     <meta property="circleDots" label="[Circle] Dot Count" type="number" default="4" min="1" max="10" tooltip="Number of light clusters per outer fan.">
     <meta property="groupSize" label="[Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of dots moving together in an outer cluster.">
     <meta property="circleSize" label="[Circle] Dot Size" type="number" default="5" min="1" max="40" tooltip="The thickness of the outer fan light dots.">
@@ -46,14 +46,14 @@
     <meta property="innerGroupSize" label="[Inner Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of inner dots moving together in a cluster.">
     <meta property="innerCircleSize" label="[Inner Circle] Dot Size" type="number" default="4" min="1" max="40" tooltip="The thickness of the inner fan light dots.">
     <meta property="innerFanTrail" label="[Inner Circle] Trail Length" type="number" default="3" min="0" max="50" tooltip="How long the light trails persist behind the inner dots.">
-    <meta property="innerFanProfile" label="[Inner Circle] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Specific color theme for the inner circles.">
+    <meta property="innerFanProfile" label="[Inner Circle] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Rainbow" tooltip="Specific color theme for the inner circles.">
     <meta property="innerFanColor" label="[Inner Circle] Custom Color" type="color" default="#ff00ff" tooltip="The color used for inner fans if Profile is set to 'Custom'.">
 
     <meta property="showRails" label="[Rails] Enable" type="boolean" default="true" tooltip="Toggle the linear light rails above and below fans.">
     <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="0" min="0" max="100" tooltip="Vertical spacing from the outer edge of the fan to the rails.">
-    <meta property="railMode" label="[Rails] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev)" default="VU Meter" tooltip="The animation pattern for the rail LEDs.">
-    <meta property="railSpeed" label="[Rails] Speed" type="number" default="30" min="0" max="100" tooltip="Movement speed of the rail LEDs.">
-    <meta property="railDots" label="[Rails] Dot Count" type="number" default="1" min="1" max="10" tooltip="Number of dots moving along the rails.">
+    <meta property="railMode" label="[Rails] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev)" default="Loop" tooltip="The animation pattern for the rail LEDs.">
+    <meta property="railSpeed" label="[Rails] Speed" type="number" default="66" min="0" max="100" tooltip="Movement speed of the rail LEDs.">
+    <meta property="railDots" label="[Rails] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of dots moving along the rails.">
     <meta property="railSize" label="[Rails] Dot Size" type="number" default="6" min="1" max="40" tooltip="Size of the light dots on the rails.">
     <meta property="railTrail" label="[Rails] Trail Length" type="number" default="12" min="0" max="50" tooltip="Length of the trails on the fan rails.">
     <meta property="railProfile" label="[Rails] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for the rails.">
@@ -65,12 +65,12 @@
     <meta property="aioWidth" label="[AIO Tubes] Length" type="number" default="200" min="10" max="320" tooltip="Horizontal length.">
     <meta property="aioLines" label="[AIO Tubes] Tube Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel AIO tubes.">
     <meta property="aioSpacing" label="[AIO Tubes] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between AIO tubes.">
-    <meta property="aioMode" label="[AIO Tubes] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="VU Meter" tooltip="Movement style.">
-    <meta property="aioSpeed" label="[AIO Tubes] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity.">
-    <meta property="aioSpeedVar" label="[AIO Tubes] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds of tubes.">
-    <meta property="aioPosVar" label="[AIO Tubes] Position Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the starting position of each tube.">
-    <meta property="aioDots" label="[AIO Tubes] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs per tube.">
-    <meta property="aioTrail" label="[AIO Tubes] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="aioMode" label="[AIO Tubes] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop" tooltip="Movement style.">
+    <meta property="aioSpeed" label="[AIO Tubes] Speed" type="number" default="4" min="0" max="100" tooltip="Movement velocity.">
+    <meta property="aioSpeedVar" label="[AIO Tubes] Speed Chaos" type="number" default="20" min="0" max="100" tooltip="Randomizes the individual speeds of tubes.">
+    <meta property="aioPosVar" label="[AIO Tubes] Position Chaos" type="number" default="38" min="0" max="100" tooltip="Randomizes the starting position of each tube.">
+    <meta property="aioDots" label="[AIO Tubes] Dot Count" type="number" default="2" min="1" max="20" tooltip="Number of active LEDs per tube.">
+    <meta property="aioTrail" label="[AIO Tubes] Trail Length" type="number" default="25" min="0" max="50" tooltip="Persistence of light.">
     <meta property="aioProfile" label="[AIO Tubes] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
     <meta property="aioColor" label="[AIO Tubes] Custom Color" type="color" default="#00ff00" tooltip="Custom color.">
 
@@ -80,12 +80,12 @@
     <meta property="ramHeight" label="[RAM Sticks] Height" type="number" default="65" min="10" max="320" tooltip="Vertical height.">
     <meta property="ramLines" label="[RAM Sticks] Stick Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel RAM sticks.">
     <meta property="ramSpacing" label="[RAM Sticks] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between RAM sticks.">
-    <meta property="ramMode" label="[RAM Sticks] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Meteor (Rev)" tooltip="Animation style.">
-    <meta property="ramSpeed" label="[RAM Sticks] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed.">
-    <meta property="ramSpeedVar" label="[RAM Sticks] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds of sticks.">
+    <meta property="ramMode" label="[RAM Sticks] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop (Rev)" tooltip="Animation style.">
+    <meta property="ramSpeed" label="[RAM Sticks] Speed" type="number" default="8" min="0" max="100" tooltip="Movement speed.">
+    <meta property="ramSpeedVar" label="[RAM Sticks] Speed Chaos" type="number" default="26" min="0" max="100" tooltip="Randomizes the individual speeds of sticks.">
     <meta property="ramPosVar" label="[RAM Sticks] Position Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the starting position of each stick.">
     <meta property="ramDots" label="[RAM Sticks] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs per stick.">
-    <meta property="ramTrail" label="[RAM Sticks] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="ramTrail" label="[RAM Sticks] Trail Length" type="number" default="15" min="0" max="50" tooltip="Persistence of light.">
     <meta property="ramProfile" label="[RAM Sticks] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
     <meta property="ramColor" label="[RAM Sticks] Custom Color" type="color" default="#ffff00" tooltip="Custom color.">
 
@@ -96,11 +96,11 @@
     <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="How many parallel cables.">
     <meta property="strimerSpacing" label="[Strimer] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between strimer cables.">
     <meta property="strimerMode" label="[Strimer] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop" tooltip="Animation style.">
-    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="16" min="0" max="100" tooltip="Movement speed.">
-    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="76" min="0" max="100" tooltip="Randomizes the individual speeds.">
-    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="85" min="0" max="100" tooltip="Randomizes the starting position.">
+    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="6" min="0" max="100" tooltip="Movement speed.">
+    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds.">
+    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="100" min="0" max="100" tooltip="Randomizes the starting position.">
     <meta property="strimerDots" label="[Strimer] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of active dots per line.">
-    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="12" min="0" max="50" tooltip="Persistence of light.">
     <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
     <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color.">
 
@@ -121,7 +121,6 @@
     <meta property="URL" label="Get Pixel-Art here!" type="textfield" default="https://pixelart.nolliergb.com/" tooltip="Tool for JSON generation.">
     <meta property="matrixProfile" label="[Matrix] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Matrix" tooltip="Color theme for the matrix.">
     <meta property="matrixColor" label="[Matrix] Custom Color" type="color" default="#00ff00" tooltip="Custom color for the matrix.">
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
