@@ -9,35 +9,39 @@
 
     <meta property="showGuides" label="Show Path Guides" type="boolean" default="false" tooltip="Toggle visibility of the structural layout lines.">
     <meta property="showAlignment" label="Show Fan Alignment Dots" type="boolean" default="false" tooltip="Display high-visibility marker dots at 3 and 9 o'clock on every fan for precise physical alignment.">
-    <meta property="showLabels" label="Show Object Names" type="boolean" default="true" tooltip="Toggle visibility of the names above/below each component.">
-    
+    <meta property="showLabels" label="Show Object Names" type="boolean" default="false" tooltip="Toggle visibility of the names above/below each component.">
+
     <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
-    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="77" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
+    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="69" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
     <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">
 
-    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Forest" tooltip="Global theme override for all components. Set to 'None' for individual control.">
+    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Global theme override for all components. Set to 'None' for individual control.">
     <meta property="masterColor" label="[Master] Custom Color 1" type="color" default="#0000ff" tooltip="The first color used when Master Profile is set to 'Custom'.">
     <meta property="masterColor2" label="[Master] Custom Color 2" type="color" default="#ff0000" tooltip="The second color used when Master Profile is set to 'Custom'.">
     <meta property="masterColor3" label="[Master] Custom Color 3" type="color" default="#00ff00" tooltip="The third color used when Master Profile is set to 'Custom'.">
 
-    <meta property="fanCount" label="[Fans] Total Count" type="number" default="11" min="1" max="20" tooltip="The number of fans to render in the top row.">
-    <meta property="vOffset" label="[Fans] Y Offset" type="number" default="-65" min="-100" max="100" tooltip="Vertical adjustment for the entire fan row.">
+    <meta property="fanCount1" label="[Row 1] Fan Count" type="number" default="5" min="1" max="10" tooltip="Number of fans in the top row.">
+    <meta property="hOffset1" label="[Row 1] X Offset" type="number" default="45" min="-100" max="100" tooltip="Horizontal shift for Row 1 to align with Row 2.">
+    <meta property="vOffset1" label="[Row 1] Y Offset" type="number" default="-72" min="-100" max="100" tooltip="Vertical adjustment for Row 1.">
+    <meta property="fanCount2" label="[Row 2] Fan Count" type="number" default="6" min="0" max="10" tooltip="Number of fans in the second row (Set to 0 to disable).">
+    <meta property="hOffset2" label="[Row 2] X Offset" type="number" default="24" min="-100" max="100" tooltip="Horizontal shift for Row 2 to align with Row 1.">
+    <meta property="vOffset2" label="[Row 2] Y Offset" type="number" default="-12" min="-100" max="100" tooltip="Vertical adjustment for Row 2.">
 
     <meta property="showCircle" label="[Circle] Enable" type="boolean" default="true" tooltip="Enable or disable the rotating outer fan light dots.">
-    <meta property="fanRadius" label="[Circle] Radius" type="number" default="12" min="5" max="100" tooltip="The size of each outer fan circle.">
-    <meta property="moveMode" label="[Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="Turbine Spool" tooltip="The movement pattern for the outer fan LEDs.">
-    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="41" min="0" max="100" tooltip="How fast the outer fan LEDs rotate.">
+    <meta property="fanRadius" label="[Circle] Radius" type="number" default="20" min="5" max="100" tooltip="The size of each outer fan circle.">
+    <meta property="moveMode" label="[Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="DNA Weave" tooltip="The movement pattern for the outer fan LEDs.">
+    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="36" min="0" max="100" tooltip="How fast the outer fan LEDs rotate.">
     <meta property="circleDots" label="[Circle] Dot Count" type="number" default="4" min="1" max="10" tooltip="Number of light clusters per outer fan.">
     <meta property="groupSize" label="[Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of dots moving together in an outer cluster.">
     <meta property="circleSize" label="[Circle] Dot Size" type="number" default="5" min="1" max="40" tooltip="The thickness of the outer fan light dots.">
-    <meta property="fanTrail" label="[Circle] Trail Length" type="number" default="3" min="0" max="50" tooltip="How long the light trails persist behind the outer fan dots.">
+    <meta property="fanTrail" label="[Circle] Trail Length" type="number" default="8" min="0" max="50" tooltip="How long the light trails persist behind the outer fan dots.">
     <meta property="fanProfile" label="[Circle] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Specific color theme for the outer fan circles.">
     <meta property="fanColor" label="[Circle] Custom Color" type="color" default="#0500ff" tooltip="The color used for outer fans if Fan Profile is set to 'Custom'.">
 
     <meta property="showInnerCircle" label="[Inner Circle] Enable" type="boolean" default="true" tooltip="Enable or disable a secondary inner ring of lights.">
     <meta property="innerFanRadius" label="[Inner Circle] Radius" type="number" default="6" min="1" max="100" tooltip="The radius of the inner light ring.">
     <meta property="innerMoveMode" label="[Inner Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="Camshaft Timing" tooltip="The movement pattern for the inner fan LEDs.">
-    <meta property="innerCircleSpeed" label="[Inner Circle] Speed" type="number" default="55" min="0" max="100" tooltip="How fast the inner fan LEDs rotate.">
+    <meta property="innerCircleSpeed" label="[Inner Circle] Speed" type="number" default="6" min="0" max="100" tooltip="How fast the inner fan LEDs rotate.">
     <meta property="innerCircleDots" label="[Inner Circle] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of light clusters per inner fan.">
     <meta property="innerGroupSize" label="[Inner Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of inner dots moving together in a cluster.">
     <meta property="innerCircleSize" label="[Inner Circle] Dot Size" type="number" default="4" min="1" max="40" tooltip="The thickness of the inner fan light dots.">
@@ -46,7 +50,7 @@
     <meta property="innerFanColor" label="[Inner Circle] Custom Color" type="color" default="#ff00ff" tooltip="The color used for inner fans if Profile is set to 'Custom'.">
 
     <meta property="showRails" label="[Rails] Enable" type="boolean" default="true" tooltip="Toggle the linear light rails above and below fans.">
-    <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="18" min="5" max="100" tooltip="Vertical spacing between the fan center and the rails.">
+    <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="0" min="0" max="100" tooltip="Vertical spacing from the outer edge of the fan to the rails.">
     <meta property="railMode" label="[Rails] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev)" default="VU Meter" tooltip="The animation pattern for the rail LEDs.">
     <meta property="railSpeed" label="[Rails] Speed" type="number" default="30" min="0" max="100" tooltip="Movement speed of the rail LEDs.">
     <meta property="railDots" label="[Rails] Dot Count" type="number" default="1" min="1" max="10" tooltip="Number of dots moving along the rails.">
@@ -55,70 +59,57 @@
     <meta property="railProfile" label="[Rails] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Color theme for the rails.">
     <meta property="railColor" label="[Rails] Custom Color" type="color" default="#00ff00" tooltip="Custom color for rails if Profile is 'Custom'.">
 
-    <meta property="showAIO1" label="[AIO 1] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Cover 1.">
-    <meta property="aio1X" label="[AIO 1] X Position" type="number" default="10" min="0" max="320" tooltip="Absolute horizontal position for AIO 1.">
-    <meta property="aio1Y" label="[AIO 1] Y Position" type="number" default="181" min="0" max="200" tooltip="Absolute vertical position for AIO 1.">
-    <meta property="aio1Width" label="[AIO 1] Width" type="number" default="140" min="10" max="320" tooltip="Horizontal length of AIO 1.">
-    <meta property="aio1Mode" label="[AIO 1] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="VU Meter" tooltip="Movement style for AIO 1.">
-    <meta property="aio1Speed" label="[AIO 1] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity for AIO 1.">
-    <meta property="aio1Dots" label="[AIO 1] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs on AIO 1.">
-    <meta property="aio1Trail" label="[AIO 1] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light on AIO 1.">
-    <meta property="aio1Profile" label="[AIO 1] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for AIO 1.">
-    <meta property="aio1Color" label="[AIO 1] Custom Color" type="color" default="#00ff00" tooltip="Custom color for AIO 1.">
+    <meta property="showAIO" label="[AIO Tubes] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Tubes.">
+    <meta property="aioX" label="[AIO Tubes] X Position" type="number" default="5" min="0" max="320" tooltip="Absolute horizontal position.">
+    <meta property="aioY" label="[AIO Tubes] Y Position" type="number" default="184" min="0" max="200" tooltip="Absolute vertical center position.">
+    <meta property="aioWidth" label="[AIO Tubes] Length" type="number" default="200" min="10" max="320" tooltip="Horizontal length.">
+    <meta property="aioLines" label="[AIO Tubes] Tube Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel AIO tubes.">
+    <meta property="aioSpacing" label="[AIO Tubes] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between AIO tubes.">
+    <meta property="aioMode" label="[AIO Tubes] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="VU Meter" tooltip="Movement style.">
+    <meta property="aioSpeed" label="[AIO Tubes] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity.">
+    <meta property="aioSpeedVar" label="[AIO Tubes] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds of tubes.">
+    <meta property="aioPosVar" label="[AIO Tubes] Position Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the starting position of each tube.">
+    <meta property="aioDots" label="[AIO Tubes] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs per tube.">
+    <meta property="aioTrail" label="[AIO Tubes] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="aioProfile" label="[AIO Tubes] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
+    <meta property="aioColor" label="[AIO Tubes] Custom Color" type="color" default="#00ff00" tooltip="Custom color.">
 
-    <meta property="showAIO2" label="[AIO 2] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Cover 2.">
-    <meta property="aio2X" label="[AIO 2] X Position" type="number" default="10" min="0" max="320" tooltip="Absolute horizontal position for AIO 2.">
-    <meta property="aio2Y" label="[AIO 2] Y Position" type="number" default="195" min="0" max="200" tooltip="Absolute vertical position for AIO 2.">
-    <meta property="aio2Width" label="[AIO 2] Width" type="number" default="140" min="10" max="320" tooltip="Horizontal length of AIO 2.">
-    <meta property="aio2Mode" label="[AIO 2] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Wipe" tooltip="Movement style for AIO 2.">
-    <meta property="aio2Speed" label="[AIO 2] Speed" type="number" default="10" min="0" max="100" tooltip="Movement velocity for AIO 2.">
-    <meta property="aio2Dots" label="[AIO 2] Dot Count" type="number" default="4" min="1" max="20" tooltip="Number of active LEDs on AIO 2.">
-    <meta property="aio2Trail" label="[AIO 2] Trail Length" type="number" default="10" min="0" max="50" tooltip="Persistence of light on AIO 2.">
-    <meta property="aio2Profile" label="[AIO 2] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for AIO 2.">
-    <meta property="aio2Color" label="[AIO 2] Custom Color" type="color" default="#00ff00" tooltip="Custom color for AIO 2.">
-
-    <meta property="showRam1" label="[RAM 1] Enable" type="boolean" default="true" tooltip="Toggle RAM Stick 1.">
-    <meta property="ram1X" label="[RAM 1] X Position" type="number" default="193" min="0" max="320" tooltip="Absolute horizontal position for RAM 1.">
-    <meta property="ram1Y" label="[RAM 1] Y Position" type="number" default="95" min="0" max="200" tooltip="Absolute vertical position for RAM 1.">
-    <meta property="ram1Height" label="[RAM 1] Height" type="number" default="100" min="10" max="320" tooltip="Vertical height of RAM 1.">
-    <meta property="ram1Mode" label="[RAM 1] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Meteor" tooltip="Animation style for RAM 1.">
-    <meta property="ram1Speed" label="[RAM 1] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed for RAM 1.">
-    <meta property="ram1Dots" label="[RAM 1] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs on RAM 1.">
-    <meta property="ram1Trail" label="[RAM 1] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light on RAM 1.">
-    <meta property="ram1Profile" label="[RAM 1] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for RAM 1.">
-    <meta property="ram1Color" label="[RAM 1] Custom Color" type="color" default="#ffff00" tooltip="Custom color for RAM 1.">
-
-    <meta property="showRam2" label="[RAM 2] Enable" type="boolean" default="true" tooltip="Toggle RAM Stick 2.">
-    <meta property="ram2X" label="[RAM 2] X Position" type="number" default="222" min="0" max="320" tooltip="Absolute horizontal position for RAM 2.">
-    <meta property="ram2Y" label="[RAM 2] Y Position" type="number" default="95" min="0" max="200" tooltip="Absolute vertical position for RAM 2.">
-    <meta property="ram2Height" label="[RAM 2] Height" type="number" default="100" min="10" max="320" tooltip="Vertical height of RAM 2.">
-    <meta property="ram2Mode" label="[RAM 2] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Meteor" tooltip="Animation style for RAM 2.">
-    <meta property="ram2Speed" label="[RAM 2] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed for RAM 2.">
-    <meta property="ram2Dots" label="[RAM 2] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs on RAM 2.">
-    <meta property="ram2Trail" label="[RAM 2] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light on RAM 2.">
-    <meta property="ram2Profile" label="[RAM 2] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for RAM 2.">
-    <meta property="ram2Color" label="[RAM 2] Custom Color" type="color" default="#0001ff" tooltip="Custom color for RAM 2.">
+    <meta property="showRam" label="[RAM Sticks] Enable" type="boolean" default="true" tooltip="Toggle RAM Sticks.">
+    <meta property="ramX" label="[RAM Sticks] X Position" type="number" default="251" min="0" max="320" tooltip="Absolute horizontal center position.">
+    <meta property="ramY" label="[RAM Sticks] Y Position" type="number" default="130" min="0" max="200" tooltip="Absolute vertical position.">
+    <meta property="ramHeight" label="[RAM Sticks] Height" type="number" default="65" min="10" max="320" tooltip="Vertical height.">
+    <meta property="ramLines" label="[RAM Sticks] Stick Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel RAM sticks.">
+    <meta property="ramSpacing" label="[RAM Sticks] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between RAM sticks.">
+    <meta property="ramMode" label="[RAM Sticks] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Meteor (Rev)" tooltip="Animation style.">
+    <meta property="ramSpeed" label="[RAM Sticks] Speed" type="number" default="18" min="0" max="100" tooltip="Movement speed.">
+    <meta property="ramSpeedVar" label="[RAM Sticks] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds of sticks.">
+    <meta property="ramPosVar" label="[RAM Sticks] Position Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the starting position of each stick.">
+    <meta property="ramDots" label="[RAM Sticks] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs per stick.">
+    <meta property="ramTrail" label="[RAM Sticks] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="ramProfile" label="[RAM Sticks] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
+    <meta property="ramColor" label="[RAM Sticks] Custom Color" type="color" default="#ffff00" tooltip="Custom color.">
 
     <meta property="showStrimer" label="[Strimer] Enable" type="boolean" default="true" tooltip="Toggle the vertical Strimer cable.">
-    <meta property="strimerX" label="[Strimer] X Position" type="number" default="250" min="0" max="320" tooltip="Absolute horizontal position for the Strimer.">
-    <meta property="strimerY" label="[Strimer] Y Position" type="number" default="175" min="0" max="200" tooltip="Absolute vertical position for the Strimer.">
-    <meta property="strimerWidth" label="[Strimer] Width" type="number" default="60" min="10" max="320" tooltip="Horizontal length of the Strimer.">
-    <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="How many parallel cables to render in the Strimer.">
-    <meta property="strimerMode" label="[Strimer] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="VU Meter" tooltip="Animation style for the Strimer.">
-    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="16" min="0" max="100" tooltip="Movement speed for the Strimer LEDs.">
-    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="76" min="0" max="100" tooltip="Randomizes the individual speeds of Strimer lines.">
-    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="85" min="0" max="100" tooltip="Randomizes the starting position of each Strimer line.">
-    <meta property="strimerDots" label="[Strimer] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of active dots per Strimer line.">
-    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of Strimer LEDs.">
-    <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme for the Strimer.">
-    <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color for the Strimer.">
+    <meta property="strimerX" label="[Strimer] X Position" type="number" default="0" min="0" max="320" tooltip="Absolute horizontal position.">
+    <meta property="strimerY" label="[Strimer] Y Position" type="number" default="145" min="0" max="200" tooltip="Absolute vertical center position.">
+    <meta property="strimerWidth" label="[Strimer] Width" type="number" default="100" min="10" max="320" tooltip="Horizontal length.">
+    <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="How many parallel cables.">
+    <meta property="strimerSpacing" label="[Strimer] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between strimer cables.">
+    <meta property="strimerMode" label="[Strimer] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop" tooltip="Animation style.">
+    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="16" min="0" max="100" tooltip="Movement speed.">
+    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="76" min="0" max="100" tooltip="Randomizes the individual speeds.">
+    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="85" min="0" max="100" tooltip="Randomizes the starting position.">
+    <meta property="strimerDots" label="[Strimer] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of active dots per line.">
+    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="8" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Custom,Rainbow,Amethyst,Bloodline,Breeze,Candy,Cyber,Deep Sea,Forest,Glacier,Gold Rush,Inferno,Matrix,Midnight,Neon Stream,Prism,Sakura,Sunset,Toxic Loop,Vapor,Volt" default="Custom" tooltip="Theme.">
+    <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color.">
 
     <meta property="showMatrix" label="[Matrix] Enable" type="boolean" default="true" tooltip="Toggle the square LED matrix display.">
-    <meta property="matrixX" label="[Matrix] X Position" type="number" default="13" min="0" max="320" tooltip="Absolute horizontal position for the matrix.">
-    <meta property="matrixY" label="[Matrix] Y Position" type="number" default="84" min="0" max="200" tooltip="Absolute vertical position for the matrix.">
+    <meta property="matrixX" label="[Matrix] X Position" type="number" default="0" min="0" max="320" tooltip="Absolute horizontal position for the matrix.">
+    <meta property="matrixY" label="[Matrix] Y Position" type="number" default="0" min="0" max="200" tooltip="Absolute vertical position for the matrix.">
     <meta property="matrixCols" label="[Matrix] Columns" type="number" default="16" min="4" max="64" tooltip="Number of LEDs horizontally.">
     <meta property="matrixRows" label="[Matrix] Rows" type="number" default="16" min="2" max="32" tooltip="Number of LEDs vertically.">
-    <meta property="matrixCellSize" label="[Matrix] Cell Size" type="number" default="5" min="1" max="20" tooltip="Pixel size of each square LED. Total width = Columns x Cell Size.">
+    <meta property="matrixCellSize" label="[Matrix] Cell Size" type="number" default="3" min="1" max="20" tooltip="Pixel size of each square LED. Total width = Columns x Cell Size.">
     <meta property="matrixMode" label="[Matrix] Mode" type="combobox" values="Date,JSON Image,Random,Snake,Text Marquee,Time" default="Text Marquee" tooltip="Visual behavior for the matrix grid.">
     <meta property="matrixSpeed" label="[Matrix] Speed" type="number" default="10" min="0" max="100" tooltip="Animation and scroll speed for the matrix.">
     <meta property="matrixTrail" label="[Matrix] Trail Length" type="number" default="0" min="0" max="50" tooltip="Persistence of matrix LED points.">
@@ -154,17 +145,61 @@
 <body>
     <canvas id="effect-canvas" width="320" height="200"></canvas>
     <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+        // -------------------------------------------------------------------
+        if (typeof engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+
+            engine = { audio: { freq: new Array(128).fill(0) } };
+
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(128).fill(0);
+
+                // Bass: Strong pulses
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+                const bassVal = Math.pow(beat, 4) * 255;
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+                // Treble
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50);
+                }
+                engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+    <script>
         const canvas = document.getElementById('effect-canvas');
         const ctx = canvas.getContext('2d');
-        let decayFan = 0, decayRail = 0, decayAio1 = 0, decayAio2 = 0, decayRam1 = 0, decayRam2 = 0, decayStr = 0, decayMat = 0;
-        let strimerDecays = new Array(20).fill(0);
-        let timeC = 0, timeInnerC = 0, timeR = 0, timeA1 = 0, timeA2 = 0, timeRam1 = 0, timeRam2 = 0, timeS = 0, timeMat = 0;
-        let trails = [], sparklesStore = {}, strimerSeeds = [];
+
+        let decayFan = 0, decayRail = 0, decayMat = 0;
+        let aioDecays = [], ramDecays = [], strimerDecays = [];
+        let aioSeeds = [], ramSeeds = [], strimerSeeds = [];
+
+        let timeC = 0, timeInnerC = 0, timeR = 0, timeAio = 0, timeRam = 0, timeS = 0, timeMat = 0;
+        let trails = [], sparklesStore = {};
+
         let lastJsonString = "";
         let cachedJson = [];
         let lastTime = 0;
         let engineTime = 0;
-        let reducedFreq = []; // New global array for the filtered audio data
+        let reducedFreq = [];
 
         const palettes = {
             "Amethyst": ["#9932cc", "#8a2be2", "#4b0082", "#ba55d3", "#e0b0ff"],
@@ -215,26 +250,75 @@
 
         function getAudioValue(currentDecay) {
             if (window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
-            let level = 0;
+
+            // 1. Find the global audio peak across the active musical range
+            let globalPeak = 0;
             if (reducedFreq && reducedFreq.length > 0) {
-                let limit = Math.min(4, reducedFreq.length);
-                for (let i = 0; i < limit; i++) {
-                    level += Math.abs(reducedFreq[i]);
+                const usableBins = Math.max(2, Math.floor(reducedFreq.length * 0.6));
+                for (let i = 1; i < usableBins; i++) {
+                    let val = Math.abs(reducedFreq[i]);
+                    if (val > globalPeak) globalPeak = val;
                 }
-                // Max absolute value of Int8 is 128. Dividing normalizes to a 0.0 - 1.0 ratio
-                level = (level / limit) / 128;
             }
+
+            let baseLevel = globalPeak / 128;
+
+            // 2. Apply random trigger chance (15% chance per frame to catch the spike)
+            // This makes the fans, rails, and matrix flash independently and chaotically
+            let isTriggered = Math.random() > 0.85;
+            let level = isTriggered ? baseLevel : baseLevel * 0.15;
 
             let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
             if (isNaN(rawHit)) rawHit = 0;
+
             return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
         }
 
-        function getObjColor(profileName, customColor, idx, total, decayVal) {
-            if (window.audioReactive && decayVal > 0.5) return "#ffffff";
+        function updateMultiLineDecays(decayArray, linesCount) {
+            if (!decayArray || decayArray.length < linesCount) {
+                decayArray.length = 0;
+                for (let i = 0; i < linesCount; i++) decayArray.push(0);
+            }
 
-            let isMasterActive = (window.masterProfile !== "None");
-            let activeP = isMasterActive ? window.masterProfile : profileName;
+            // 1. Find the global audio peak (overall track volume instead of specific frequencies)
+            let globalPeak = 0;
+            if (reducedFreq && reducedFreq.length > 0) {
+                // Scan the active musical range
+                const usableBins = Math.max(2, Math.floor(reducedFreq.length * 0.6));
+                for (let i = 1; i < usableBins; i++) {
+                    let val = Math.abs(reducedFreq[i]);
+                    if (val > globalPeak) globalPeak = val;
+                }
+            }
+
+            let baseLevel = globalPeak / 128;
+
+            // 2. Apply the audio energy randomly across the lines
+            for (let l = 0; l < linesCount; l++) {
+                if (window.audioGain === 0 || baseLevel === 0) {
+                    decayArray[l] = decayArray[l] * ((window.flashDecay || 83) / 100);
+                    continue;
+                }
+
+                // 15% chance per frame for this specific line to catch the full audio spike
+                // This prevents the lines from all flashing at the exact same time
+                let isTriggered = Math.random() > 0.85;
+
+                // If triggered, flash brightly. If not, barely react so it stays dynamic.
+                let level = isTriggered ? baseLevel : baseLevel * 0.15;
+
+                let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
+                if (isNaN(rawHit)) rawHit = 0;
+
+                decayArray[l] = Math.max(rawHit, decayArray[l] * ((window.flashDecay || 83) / 100));
+            }
+        }
+
+        function getObjColor(profileName, customColor, idx, total, decayVal) {
+            if (audioReactive && decayVal > 0.5) return "#ffffff";
+
+            let isMasterActive = (masterProfile !== "None");
+            let activeP = isMasterActive ? masterProfile : profileName;
 
             if (activeP === "Custom" && !isMasterActive) {
                 return customColor;
@@ -242,9 +326,9 @@
 
             let colors = [];
             if (activeP === "Custom" && isMasterActive) {
-                const m1 = window.masterColor;
-                const m2 = window.masterColor2 || "#ff0000";
-                const m3 = window.masterColor3 || "#00ff00";
+                const m1 = masterColor;
+                const m2 = masterColor2 || "#ff0000";
+                const m3 = masterColor3 || "#00ff00";
                 colors = [m1, m2, m3, m2];
             } else {
                 colors = palettes[activeP] || palettes["Rainbow"];
@@ -299,8 +383,20 @@
         }
 
         function drawLabel(text, x, y) {
-            if (!window.showLabels) return;
-            ctx.globalAlpha = 1.0; ctx.fillStyle = "white"; ctx.font = "bold 8px Arial"; ctx.textAlign = "center";
+            if (!showLabels) return;
+
+            ctx.globalAlpha = 1.0;
+            ctx.font = "bold 10px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // 1. Set up and draw the border
+            ctx.strokeStyle = "white"; // Border color
+            ctx.lineWidth = 1;         // Border thickness
+            ctx.strokeText(text, x, y);
+
+            // 2. Set up and draw the inner text fill
+            ctx.fillStyle = "red";
             ctx.fillText(text, x, y);
         }
 
@@ -313,8 +409,7 @@
             engineTime += deltaTime * 1000;
             let frameMult = deltaTime * 60;
 
-            // --- EXACT AUDIO EXTRACTION FROM EXAMPLE SCRIPT ---
-            if (window.engine && engine.audio && engine.audio.freq) {
+            if (engine && engine.audio && engine.audio.freq) {
                 var frequency = new Int8Array(engine.audio.freq);
                 reducedFreq = frequency.filter((element, index) => {
                     return index % 4 === 0;
@@ -328,76 +423,70 @@
                 initProps();
                 ctx.globalAlpha = 1.0; ctx.fillStyle = "black"; ctx.fillRect(0, 0, w, h);
 
-                const count = window.fanCount || 11;
-                const dotRad = (window.circleSize || 6) / 2, fanGap = dotRad * 2;
-                const centerY = midY + window.vOffset;
-                const baseFRad = window.fanRadius || 16;
-                const rawW = (count * baseFRad * 2) + ((count - 1) * fanGap);
+                const count1 = fanCount1 || 3;
+                const count2 = fanCount2 || 0;
+                const totalCount = count1 + count2;
+
+                const dotRad = (circleSize || 6) / 2;
+                const fanGap = dotRad * 2;
+                const baseFRad = fanRadius || 16;
+
+                const maxCount = Math.max(count1, count2);
+                const rawW = (maxCount * baseFRad * 2) + ((maxCount - 1) * fanGap);
                 const scale = rawW > 310 ? 310 / rawW : 1.0;
-                const fRad = baseFRad * scale, scaledGap = fanGap * scale;
+
+                const fRad = baseFRad * scale;
+                const scaledGap = fanGap * scale;
                 const fanSpacing = fRad * 2 + scaledGap;
-                const startX = (w - ((count * fRad * 2) + ((count - 1) * scaledGap))) / 2 + fRad;
 
-                if (window.showGuides) {
+                const startX1 = (w - ((count1 * fRad * 2) + ((count1 - 1) * scaledGap))) / 2 + fRad + (hOffset1 || 0);
+                const startX2 = count2 > 0 ? (w - ((count2 * fRad * 2) + ((count2 - 1) * scaledGap))) / 2 + fRad + (hOffset2 || 0) : 0;
+
+                const centerY1 = midY + vOffset1;
+                const centerY2 = midY + (vOffset2 || 50);
+
+                const getFanCoords = (fIdx) => {
+                    if (fIdx < count1) return { x: startX1 + (fIdx * fanSpacing), y: centerY1 };
+                    return { x: startX2 + ((fIdx - count1) * fanSpacing), y: centerY2 };
+                };
+
+                if (showGuides) {
                     ctx.strokeStyle = "white"; ctx.lineWidth = 1;
-                    for (let i = 0; i < count; i++) {
-                        const cx = startX + (i * fanSpacing);
-
-                        if (window.showCircle) {
-                            ctx.beginPath(); ctx.arc(cx, centerY, fRad, 0, Math.PI * 2); ctx.stroke();
-                        }
-                        if (window.showInnerCircle) {
-                            ctx.beginPath(); ctx.arc(cx, centerY, (window.innerFanRadius || 6) * scale, 0, Math.PI * 2); ctx.stroke();
-                        }
-                        if (window.showRails) {
-                            ctx.beginPath(); ctx.moveTo(cx - fRad, centerY - window.railDistance * scale); ctx.lineTo(cx + fRad, centerY - window.railDistance * scale); ctx.stroke();
-                            ctx.beginPath(); ctx.moveTo(cx - fRad, centerY + window.railDistance * scale); ctx.lineTo(cx + fRad, centerY + window.railDistance * scale); ctx.stroke();
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        const cx = coords.x, cy = coords.y;
+                        if (showCircle) { ctx.beginPath(); ctx.arc(cx, cy, fRad, 0, Math.PI * 2); ctx.stroke(); }
+                        if (showInnerCircle) { ctx.beginPath(); ctx.arc(cx, cy, (innerFanRadius || 6) * scale, 0, Math.PI * 2); ctx.stroke(); }
+                        if (showRails) {
+                            const railOffset = fRad + (railDistance * scale) + 2 * dotRad;
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, cy - railOffset); ctx.lineTo(cx + fRad, cy - railOffset); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, cy + railOffset); ctx.lineTo(cx + fRad, cy + railOffset); ctx.stroke();
                         }
                     }
-                    if (window.showAIO1) { ctx.beginPath(); ctx.moveTo(window.aio1X, window.aio1Y); ctx.lineTo(window.aio1X + window.aio1Width, window.aio1Y); ctx.stroke(); }
-                    if (window.showAIO2) { ctx.beginPath(); ctx.moveTo(window.aio2X, window.aio2Y); ctx.lineTo(window.aio2X + window.aio2Width, window.aio2Y); ctx.stroke(); }
-                    if (window.showRam1) { ctx.beginPath(); ctx.moveTo(window.ram1X, window.ram1Y); ctx.lineTo(window.ram1X, window.ram1Y + window.ram1Height); ctx.stroke(); }
-                    if (window.showRam2) { ctx.beginPath(); ctx.moveTo(window.ram2X, window.ram2Y); ctx.lineTo(window.ram2X, window.ram2Y + window.ram2Height); ctx.stroke(); }
-                    if (window.showStrimer) {
-                        const sl = window.strimerLines || 4;
+                    if (showAIO) {
+                        const lines = aioLines || 2;
+                        for (let l = 0; l < lines; l++) {
+                            const ly = aioY + (l - (lines - 1) / 2) * (aioSpacing || 14);
+                            ctx.beginPath(); ctx.moveTo(aioX, ly); ctx.lineTo(aioX + aioWidth, ly); ctx.stroke();
+                        }
+                    }
+                    if (showRam) {
+                        const lines = ramLines || 4;
+                        for (let l = 0; l < lines; l++) {
+                            const lx = ramX + (l - (lines - 1) / 2) * (ramSpacing || 10);
+                            ctx.beginPath(); ctx.moveTo(lx, ramY); ctx.lineTo(lx, ramY + ramHeight); ctx.stroke();
+                        }
+                    }
+                    if (showStrimer) {
+                        const sl = strimerLines || 4;
                         for (let l = 0; l < sl; l++) {
-                            const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
-                            ctx.beginPath(); ctx.moveTo(window.strimerX, ly); ctx.lineTo(window.strimerX + window.strimerWidth, ly); ctx.stroke();
+                            const ly = strimerY + (l - (sl - 1) / 2) * (strimerSpacing || 6);
+                            ctx.beginPath(); ctx.moveTo(strimerX, ly); ctx.lineTo(strimerX + strimerWidth, ly); ctx.stroke();
                         }
                     }
-                    if (window.showMatrix) {
-                        const cell = Math.floor(window.matrixCellSize);
-                        ctx.strokeRect(Math.floor(window.matrixX), Math.floor(window.matrixY), cell * window.matrixCols, cell * window.matrixRows);
-                    }
-                }
-
-                if (window.showAlignment) {
-                    ctx.fillStyle = "#ff00ff"; // High-visibility magenta stands out against the LEDs
-                    for (let i = 0; i < count; i++) {
-                        const cx = startX + (i * fanSpacing);
-
-                        // 9 o'clock position (Left)
-                        ctx.beginPath();
-                        ctx.arc(cx - fRad, centerY, 4, 0, Math.PI * 2);
-                        ctx.fill();
-
-                        // 3 o'clock position (Right)
-                        ctx.beginPath();
-                        ctx.arc(cx + fRad, centerY, 4, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-
-                if (window.showLabels) {
-                    for (let i = 0; i < count; i++) drawLabel(`Fan ${i + 1}`, startX + (i * fanSpacing), centerY + fRad + 20);
-                    if (window.showAIO1) drawLabel("AIO 1", window.aio1X + window.aio1Width / 2, window.aio1Y - 7);
-                    if (window.showAIO2) drawLabel("AIO 2", window.aio2X + window.aio2Width / 2, window.aio2Y - 7);
-                    if (window.showRam1) drawLabel("RAM 1", window.ram1X, window.ram1Y - 7);
-                    if (window.showRam2) drawLabel("RAM 2", window.ram2X, window.ram2Y - 7);
-                    if (window.showStrimer) drawLabel("Strimer", window.strimerX + window.strimerWidth / 2, window.strimerY - ((window.strimerLines || 4) * 3) - 7);
-                    if (window.showMatrix) {
-                        const cell = Math.floor(window.matrixCellSize);
-                        drawLabel("Matrix", Math.floor(window.matrixX) + (window.matrixCols * cell) / 2, Math.floor(window.matrixY) - 7);
+                    if (showMatrix) {
+                        const cell = Math.floor(matrixCellSize);
+                        ctx.strokeRect(Math.floor(matrixX), Math.floor(matrixY), cell * matrixCols, cell * matrixRows);
                     }
                 }
 
@@ -405,113 +494,45 @@
                 decayRail = getAudioValue(decayRail);
                 decayMat = getAudioValue(decayMat);
 
-                const getLogBand = (bandIndex, totalBands, currentDecay) => {
-                    if (window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
+                updateMultiLineDecays(aioDecays, aioLines || 2);
+                updateMultiLineDecays(ramDecays, ramLines || 4);
+                updateMultiLineDecays(strimerDecays, strimerLines || 4);
 
-                    let level = 0;
-                    if (reducedFreq && reducedFreq.length > 0) {
-                        const minBin = 1, maxBin = Math.max(2, reducedFreq.length);
-                        const logMin = Math.log(minBin), logMax = Math.log(maxBin);
-
-                        const startLog = logMin + (bandIndex / totalBands) * (logMax - logMin);
-                        const endLog = logMin + ((bandIndex + 1) / totalBands) * (logMax - logMin);
-                        const startBin = Math.floor(Math.exp(startLog));
-                        const endBin = Math.max(startBin + 1, Math.floor(Math.exp(endLog)));
-                        const binsPerLine = endBin - startBin;
-
-                        for (let i = startBin; i < endBin && i < reducedFreq.length; i++) {
-                            level += Math.abs(reducedFreq[i]);
-                        }
-                        level = (level / binsPerLine) / 128;
-
-                        const trebleBoost = 1.0 + (bandIndex / totalBands) * 1.5;
-                        level = Math.min(1.0, level * trebleBoost);
-                    }
-
-                    let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
-                    if (isNaN(rawHit)) rawHit = 0;
-                    return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
-                };
-
-                decayAio1 = getLogBand(0, 4, decayAio1);
-                decayAio2 = getLogBand(1, 4, decayAio2);
-                decayRam1 = getLogBand(2, 4, decayRam1);
-                decayRam2 = getLogBand(3, 4, decayRam2);
-
-                const sl = window.strimerLines || 4;
-
-                for (let l = 0; l < sl; l++) {
-                    if (window.audioGain === 0 || reducedFreq.length === 0) {
-                        strimerDecays[l] = strimerDecays[l] * ((window.flashDecay || 83) / 100);
-                        continue;
-                    }
-
-                    let level = 0;
-                    const minBin = 1;
-                    const maxBin = Math.max(2, reducedFreq.length);
-                    const logMin = Math.log(minBin);
-                    const logMax = Math.log(maxBin);
-
-                    const startLog = logMin + (l / sl) * (logMax - logMin);
-                    const endLog = logMin + ((l + 1) / sl) * (logMax - logMin);
-
-                    const startBin = Math.floor(Math.exp(startLog));
-                    const endBin = Math.max(startBin + 1, Math.floor(Math.exp(endLog)));
-                    const binsPerLine = endBin - startBin;
-
-                    for (let i = startBin; i < endBin && i < reducedFreq.length; i++) {
-                        level += Math.abs(reducedFreq[i]);
-                    }
-
-                    level = (level / binsPerLine) / 128;
-
-                    const trebleBoost = 1.0 + (l / sl) * 5;
-                    level = Math.min(1.0, level * trebleBoost);
-
-                    let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
-                    if (isNaN(rawHit)) rawHit = 0;
-                    strimerDecays[l] = Math.max(rawHit, strimerDecays[l] * ((window.flashDecay || 83) / 100));
-                }
-
-                timeC += ((window.circleSpeed || 41) / 1000) * frameMult;
-                timeInnerC += ((window.innerCircleSpeed || 55) / 1000) * frameMult;
-                timeR += ((window.railSpeed || 30) / 1000) * frameMult;
-                timeA1 += ((window.aio1Speed || 10) / 1000) * frameMult;
-                timeA2 += ((window.aio2Speed || 10) / 1000) * frameMult;
-                timeRam1 += ((window.ram1Speed || 18) / 1000) * frameMult;
-                timeRam2 += ((window.ram2Speed || 18) / 1000) * frameMult;
-                timeS += ((window.strimerSpeed || 16) / 1000) * frameMult;
-                timeMat += ((window.matrixSpeed || 20) / 1000) * frameMult;
+                timeC += ((circleSpeed || 41) / 1000) * frameMult;
+                timeInnerC += ((innerCircleSpeed || 55) / 1000) * frameMult;
+                timeR += ((railSpeed || 30) / 1000) * frameMult;
+                timeAio += ((aioSpeed || 10) / 1000) * frameMult;
+                timeRam += ((ramSpeed || 18) / 1000) * frameMult;
+                timeS += ((strimerSpeed || 16) / 1000) * frameMult;
+                timeMat += ((matrixSpeed || 20) / 1000) * frameMult;
 
                 const renderCircleRing = (show, mode, dots, size, speed, trail, radiusBase, groupSize, prof, col, idPrefix, tC) => {
                     if (!show) return;
                     const rRad = radiusBase * scale;
 
                     if (mode === "Solid Line") {
-                        for (let fIdx = 0; fIdx < count; fIdx++) {
-                            const cx = startX + (fIdx * fanSpacing);
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
+                            const cx = coords.x, cy = coords.y;
                             ctx.beginPath();
-                            ctx.arc(cx, centerY, rRad, 0, Math.PI * 2);
+                            ctx.arc(cx, cy, rRad, 0, Math.PI * 2);
                             ctx.lineWidth = Math.max(1, (size * scale) / 2);
 
-                            const activeProf = window.masterProfile !== "None" ? window.masterProfile : prof;
-                            const activeCol = window.masterProfile !== "None" ? window.masterColor : col;
+                            const activeProf = masterProfile !== "None" ? masterProfile : prof;
+                            const activeCol = masterProfile !== "None" ? masterColor : col;
 
-                            if (activeProf === "Custom" && window.masterProfile === "None") {
+                            if (activeProf === "Custom" && masterProfile === "None") {
                                 ctx.strokeStyle = activeCol;
                             } else {
                                 try {
-                                    const grad = ctx.createConicGradient((tC * 2) % (Math.PI * 2), cx, centerY);
+                                    const grad = ctx.createConicGradient((tC * 2) % (Math.PI * 2), cx, cy);
                                     const stops = 30;
                                     for (let i = 0; i <= stops; i++) {
-                                        grad.addColorStop(i / stops, getObjColor(prof, col, (i / stops) * count, count, decayFan));
+                                        grad.addColorStop(i / stops, getObjColor(prof, col, (i / stops) * totalCount, totalCount, decayFan));
                                     }
                                     ctx.strokeStyle = grad;
-                                } catch (e) {
-                                    ctx.strokeStyle = activeCol;
-                                }
+                                } catch (e) { ctx.strokeStyle = activeCol; }
                             }
-
                             ctx.globalAlpha = Math.min(1.0, Math.max(0.8, decayFan * 1.5));
                             ctx.stroke();
                         }
@@ -519,29 +540,20 @@
                     }
 
                     if (mode === "Turbine Spool") {
-                        // Cascading exponential acceleration across the fan array
-                        const cycleSpeed = 0.5; // How fast the wave of acceleration moves across the array
-                        const globalPhase = (tC * cycleSpeed) % count;
-                        
-                        for (let fIdx = 0; fIdx < count; fIdx++) {
-                            const cx = startX + (fIdx * fanSpacing);
-                            
-                            // Calculate local time for this specific fan
+                        const cycleSpeed = 0.5;
+                        const globalPhase = (tC * cycleSpeed) % totalCount;
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
                             let localTime = globalPhase - fIdx;
-                            if (localTime < 0) localTime += count; // Wrap around for a continuous loop
-                            
-                            // Use an exponential curve (power of 3) to simulate physical mass spooling up
+                            if (localTime < 0) localTime += totalCount;
                             let rotationAngle = Math.pow(localTime, 3) * Math.PI * 1.5;
-                            
                             for (let d = 0; d < dots; d++) {
                                 const dotOffset = (d / dots) * Math.PI * 2;
-                                trails.push({ 
-                                    x: cx + Math.cos(rotationAngle - Math.PI/2 + dotOffset) * rRad, 
-                                    y: centerY + Math.sin(rotationAngle - Math.PI/2 + dotOffset) * rRad, 
-                                    size: size * scale, 
-                                    color: getObjColor(prof, col, fIdx, count, decayFan), 
-                                    born: engineTime, 
-                                    len: trail 
+                                trails.push({
+                                    x: coords.x + Math.cos(rotationAngle - Math.PI / 2 + dotOffset) * rRad,
+                                    y: coords.y + Math.sin(rotationAngle - Math.PI / 2 + dotOffset) * rRad,
+                                    size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan),
+                                    born: engineTime, len: trail
                                 });
                             }
                         }
@@ -549,36 +561,25 @@
                     }
 
                     if (mode === "Camshaft Timing") {
-                        // Staggered, high-speed 360-degree snaps simulating piston strikes
-                        const strikeInterval = 2.0; // Seconds between strikes
+                        const strikeInterval = 2.0;
                         const phase = (engineTime / 1000) % strikeInterval;
-                        
-                        for (let fIdx = 0; fIdx < count; fIdx++) {
-                            const cx = startX + (fIdx * fanSpacing);
-                            
-                            // Stagger the strikes based on fan index so they fire sequentially
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
                             const stagger = (fIdx * 0.15) % strikeInterval;
                             let localPhase = phase - stagger;
                             if (localPhase < 0) localPhase += strikeInterval;
-                            
-                            let angle = -Math.PI / 2; // Default resting position at 12 o'clock
-                            
-                            // Execute a rapid 360 spin only during the first 0.4 seconds of its local phase
+                            let angle = -Math.PI / 2;
                             if (localPhase < 0.4) {
                                 let t = localPhase / 0.4;
-                                // Cubic ease-out formula creates a harsh "snap" that smoothly decelerates
                                 angle = -Math.PI / 2 + (1 - Math.pow(1 - t, 3)) * Math.PI * 2;
                             }
-                            
                             for (let d = 0; d < dots; d++) {
                                 const dotOffset = (d / dots) * Math.PI * 2;
-                                trails.push({ 
-                                    x: cx + Math.cos(angle + dotOffset) * rRad, 
-                                    y: centerY + Math.sin(angle + dotOffset) * rRad, 
-                                    size: size * scale, 
-                                    color: getObjColor(prof, col, fIdx, count, decayFan), 
-                                    born: engineTime, 
-                                    len: trail 
+                                trails.push({
+                                    x: coords.x + Math.cos(angle + dotOffset) * rRad,
+                                    y: coords.y + Math.sin(angle + dotOffset) * rRad,
+                                    size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan),
+                                    born: engineTime, len: trail
                                 });
                             }
                         }
@@ -586,114 +587,81 @@
                     }
 
                     if (mode === "DNA Weave") {
-                        // Fixed speed multiplier decoupled from fan count
-                        const p = (tC * 1.5) % count;
-
+                        const p = (tC * 1.5) % totalCount;
                         for (let d = 0; d < dots; d++) {
-                            // Spreads the segments evenly across the whole array
-                            const dp = (p + (d / dots) * count) % count;
+                            const dp = (p + (d / dots) * totalCount) % totalCount;
                             const fIdx = Math.floor(dp);
                             const fraction = dp % 1;
-                            const cx = startX + (fIdx * fanSpacing);
+                            const coords = getFanCoords(fIdx);
                             const isEven = (fIdx % 2 === 0);
 
                             const angle1 = Math.PI + (isEven ? -1 : 1) * (fraction * Math.PI);
                             trails.push({
-                                x: cx + Math.cos(angle1) * rRad,
-                                y: centerY + Math.sin(angle1) * rRad,
-                                size: size * scale,
-                                color: getObjColor(prof, col, 0, 2, decayFan),
-                                born: engineTime,
-                                len: trail * 1.5
+                                x: coords.x + Math.cos(angle1) * rRad, y: coords.y + Math.sin(angle1) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, 0, 2, decayFan), born: engineTime, len: trail * 1.5
                             });
 
                             const angle2 = Math.PI + (isEven ? 1 : -1) * (fraction * Math.PI);
                             trails.push({
-                                x: cx + Math.cos(angle2) * rRad,
-                                y: centerY + Math.sin(angle2) * rRad,
-                                size: size * scale,
-                                color: getObjColor(prof, col, 1, 2, decayFan),
-                                born: engineTime,
-                                len: trail * 1.5
+                                x: coords.x + Math.cos(angle2) * rRad, y: coords.y + Math.sin(angle2) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, 1, 2, decayFan), born: engineTime, len: trail * 1.5
                             });
                         }
                         return;
                     }
 
                     if (mode === "Infinity Snake") {
-                        // Exact same fixed speed multiplier as DNA Weave
-                        const p = (tC * 1.5) % (count * 2);
-
+                        const p = (tC * 1.5) % (totalCount * 2);
                         for (let d = 0; d < dots; d++) {
-                            // Keeps the body tightly packed so it looks like a continuous snake
-                            const dp = (p - (d * 0.2) + (count * 2)) % (count * 2);
-
-                            let isForward = dp < count;
-                            let fIdx = Math.floor(isForward ? dp : (count * 2) - dp - 1);
+                            const dp = (p - (d * 0.2) + (totalCount * 2)) % (totalCount * 2);
+                            let isForward = dp < totalCount;
+                            let fIdx = Math.floor(isForward ? dp : (totalCount * 2) - dp - 1);
                             let fraction = dp % 1;
-
                             if (!isForward) fraction = 1 - fraction;
 
-                            const cx = startX + (fIdx * fanSpacing);
+                            const coords = getFanCoords(fIdx);
                             const isEven = (fIdx % 2 === 0);
-
-                            let angle;
-                            if (isForward) {
-                                angle = Math.PI + (isEven ? -1 : 1) * (fraction * Math.PI);
-                            } else {
-                                angle = 0 + (isEven ? 1 : -1) * ((1 - fraction) * Math.PI);
-                            }
+                            let angle = isForward ? Math.PI + (isEven ? -1 : 1) * (fraction * Math.PI) : 0 + (isEven ? 1 : -1) * ((1 - fraction) * Math.PI);
 
                             trails.push({
-                                x: cx + Math.cos(angle) * rRad,
-                                y: centerY + Math.sin(angle) * rRad,
-                                size: size * scale,
-                                color: getObjColor(prof, col, isForward ? 0 : 2, 4, decayFan),
-                                born: engineTime,
-                                len: trail * 1.5
+                                x: coords.x + Math.cos(angle) * rRad, y: coords.y + Math.sin(angle) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, isForward ? 0 : 2, 4, decayFan), born: engineTime, len: trail * 1.5
                             });
                         }
                         return;
                     }
 
                     if (mode.includes("Sparkle")) {
-                        handleSparkle(idPrefix, count, (dots || 1) * count, mode.includes("(Rev)")).forEach(s => {
-                            const cx = startX + (s.lineIdx * fanSpacing);
-                            trails.push({ x: cx + Math.cos(s.pos * Math.PI * 2) * rRad, y: centerY + Math.sin(s.pos * Math.PI * 2) * rRad, size: size * scale, color: getObjColor(prof, col, s.lineIdx, count, decayFan), born: engineTime, len: trail });
+                        handleSparkle(idPrefix, totalCount, (dots || 1) * totalCount, mode.includes("(Rev)")).forEach(s => {
+                            const coords = getFanCoords(s.lineIdx);
+                            trails.push({
+                                x: coords.x + Math.cos(s.pos * Math.PI * 2) * rRad, y: coords.y + Math.sin(s.pos * Math.PI * 2) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, s.lineIdx, totalCount, decayFan), born: engineTime, len: trail
+                            });
                         });
                     } else {
                         let baseMode = mode;
-                        if (mode.includes("Collide") || mode.includes("Split")) {
-                            baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
-                        }
-                        const prog = getProgress(tC, count, baseMode);
+                        if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                        const prog = getProgress(tC, totalCount, baseMode);
                         for (let d = 0; d < dots; d++) {
-                            const dp = (prog + (d / dots) * count) % count;
+                            const dp = (prog + (d / dots) * totalCount) % totalCount;
                             let positions = [];
 
-                            if (mode.includes("Collide")) {
-                                positions.push(dp / 2);
-                                positions.push(count - (dp / 2));
-                            } else if (mode.includes("Split")) {
-                                positions.push((count / 2) - (dp / 2));
-                                positions.push((count / 2) + (dp / 2));
-                            } else {
-                                positions.push(dp);
-                            }
+                            if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(totalCount - (dp / 2)); }
+                            else if (mode.includes("Split")) { positions.push((totalCount / 2) - (dp / 2)); positions.push((totalCount / 2) + (dp / 2)); }
+                            else { positions.push(dp); }
 
                             positions.forEach(pos => {
                                 for (let g = 0; g < groupSize; g++) {
-                                    const fIdx = (Math.floor(pos) + g) % count;
-                                    const cx = startX + (fIdx * fanSpacing);
+                                    const fIdx = (Math.floor(pos) + g) % totalCount;
+                                    const coords = getFanCoords(fIdx);
                                     let dir = (mode === "Figure 8" && fIdx % 2 === 1) ? -1 : 1;
                                     if (mode === "Loop (Rev)") dir = -1;
+
                                     trails.push({
-                                        x: cx + Math.cos((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
-                                        y: centerY + Math.sin((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
-                                        size: size * scale,
-                                        color: getObjColor(prof, col, fIdx, count, decayFan),
-                                        born: engineTime,
-                                        len: trail
+                                        x: coords.x + Math.cos((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
+                                        y: coords.y + Math.sin((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
+                                        size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan), born: engineTime, len: trail
                                     });
                                 }
                             });
@@ -701,103 +669,102 @@
                     }
                 };
 
-                renderCircleRing(window.showCircle, window.moveMode, window.circleDots, window.circleSize, window.circleSpeed, window.fanTrail, window.fanRadius, window.groupSize, window.fanProfile, window.fanColor, 'circle', timeC);
-                renderCircleRing(window.showInnerCircle, window.innerMoveMode, window.innerCircleDots, window.innerCircleSize, window.innerCircleSpeed, window.innerFanTrail, window.innerFanRadius, window.innerGroupSize, window.innerFanProfile, window.innerFanColor, 'innerCircle', timeInnerC);
+                renderCircleRing(showCircle, moveMode, circleDots, circleSize, circleSpeed, fanTrail, fanRadius, groupSize, fanProfile, fanColor, 'circle', timeC);
+                renderCircleRing(showInnerCircle, innerMoveMode, innerCircleDots, innerCircleSize, innerCircleSpeed, innerFanTrail, innerFanRadius, innerGroupSize, innerFanProfile, innerFanColor, 'innerCircle', timeInnerC);
 
-                if (window.showRails) {
+                if (showRails) {
                     const renderR = (rp) => {
-                        const ry = centerY + rp * window.railDistance * scale;
-                        const mode = window.railMode;
+                        const mode = railMode;
+                        const railOffset = fRad + (railDistance * scale) + 2 * dotRad;
 
                         if (mode === "Solid Line") {
-                            const totalRailW = ((count - 1) * fanSpacing) + (fRad * 2);
-                            const startLx = startX - fRad;
-                            ctx.beginPath();
-                            ctx.moveTo(startLx, ry);
-                            ctx.lineTo(startLx + totalRailW, ry);
-                            ctx.lineWidth = Math.max(1, (window.railSize * scale) / 2);
+                            for (let rIdx = 0; rIdx < 2; rIdx++) {
+                                const isRow1 = rIdx === 0;
+                                const fCount = isRow1 ? count1 : count2;
+                                if (fCount <= 0) continue;
 
-                            const activeProf = window.masterProfile !== "None" ? window.masterProfile : window.railProfile;
-                            const activeCol = window.masterProfile !== "None" ? window.masterColor : window.railColor;
+                                const cy = isRow1 ? centerY1 : centerY2;
+                                const ry = cy + rp * railOffset;
+                                const rowStartX = isRow1 ? startX1 : startX2;
 
-                            if (activeProf === "Custom" && window.masterProfile === "None") {
-                                ctx.strokeStyle = activeCol;
-                            } else {
-                                try {
-                                    const grad = ctx.createLinearGradient(startLx, ry, startLx + totalRailW, ry);
-                                    const stops = 30;
-                                    for (let i = 0; i <= stops; i++) {
-                                        let sampleIdx = ((i / stops) * count) - (timeR * 5);
-                                        sampleIdx = (sampleIdx % 100000) + 100000;
-                                        grad.addColorStop(i / stops, getObjColor(window.railProfile, window.railColor, sampleIdx, count, decayRail));
-                                    }
-                                    ctx.strokeStyle = grad;
-                                } catch (e) {
+                                const totalRailW = ((fCount - 1) * fanSpacing) + (fRad * 2);
+                                const startLx = rowStartX - fRad;
+
+                                ctx.beginPath(); ctx.moveTo(startLx, ry); ctx.lineTo(startLx + totalRailW, ry);
+                                ctx.lineWidth = Math.max(1, (railSize * scale) / 2);
+
+                                const activeProf = masterProfile !== "None" ? masterProfile : railProfile;
+                                const activeCol = masterProfile !== "None" ? masterColor : railColor;
+
+                                if (activeProf === "Custom" && masterProfile === "None") {
                                     ctx.strokeStyle = activeCol;
+                                } else {
+                                    try {
+                                        const grad = ctx.createLinearGradient(startLx, ry, startLx + totalRailW, ry);
+                                        const stops = 30;
+                                        for (let i = 0; i <= stops; i++) {
+                                            let sampleIdx = ((i / stops) * totalCount) - (timeR * 5);
+                                            grad.addColorStop(i / stops, getObjColor(railProfile, railColor, (sampleIdx % 100000) + 100000, totalCount, decayRail));
+                                        }
+                                        ctx.strokeStyle = grad;
+                                    } catch (e) { ctx.strokeStyle = activeCol; }
                                 }
+                                ctx.globalAlpha = Math.min(1.0, Math.max(0.8, decayRail * 1.5));
+                                ctx.stroke();
                             }
-
-                            ctx.globalAlpha = Math.min(1.0, Math.max(0.8, decayRail * 1.5));
-                            ctx.stroke();
                             return;
                         }
 
                         if (mode.includes("VU Meter")) {
-                            const audioBoost = 2.0;
-                            const level = Math.max(0.05, Math.min(1.0, decayRail * audioBoost));
-                            const isRev = mode.includes("(Rev)");
+                            for (let rIdx = 0; rIdx < 2; rIdx++) {
+                                const isRow1 = rIdx === 0;
+                                const fCount = isRow1 ? count1 : count2;
+                                if (fCount <= 0) continue;
 
-                            const railStartX = startX - fRad;
-                            const railWidth = ((count - 1) * fanSpacing) + (fRad * 2);
+                                const cy = isRow1 ? centerY1 : centerY2;
+                                const ry = cy + rp * railOffset;
+                                const rowStartX = isRow1 ? startX1 : startX2;
 
-                            const dotsToDraw = Math.max(1, Math.floor(railWidth / 4));
-                            const activeDots = Math.floor(dotsToDraw * level);
+                                const level = Math.max(0.05, Math.min(1.0, decayRail * 2.0));
+                                const isRev = mode.includes("(Rev)");
+                                const railWidth = ((fCount - 1) * fanSpacing) + (fRad * 2);
+                                const dotsToDraw = Math.max(1, Math.floor(railWidth / 4));
+                                const activeDots = Math.floor(dotsToDraw * level);
 
-                            for (let d = 0; d < activeDots; d++) {
-                                const index = isRev ? (dotsToDraw - 1 - d) : d;
-                                const dp = index / dotsToDraw;
-                                const rx = railStartX + dp * railWidth;
-                                trails.push({ x: rx, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, d, dotsToDraw, 0), born: engineTime, len: 1 });
+                                for (let d = 0; d < activeDots; d++) {
+                                    const index = isRev ? (dotsToDraw - 1 - d) : d;
+                                    const rx = (rowStartX - fRad) + (index / dotsToDraw) * railWidth;
+                                    trails.push({ x: rx, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, d, dotsToDraw, decayRail), born: engineTime, len: 1 });
+                                }
                             }
                             return;
                         }
 
                         if (mode.includes("Sparkle")) {
-                            handleSparkle('rail' + rp, count, window.railDots * count, mode.includes("(Rev)")).forEach(s => {
-                                const cx = startX + (s.lineIdx * fanSpacing);
-                                trails.push({ x: cx - fRad + s.pos * fRad * 2, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, s.lineIdx, count, decayRail), born: engineTime, len: window.railTrail });
+                            handleSparkle('rail' + rp, totalCount, railDots * totalCount, mode.includes("(Rev)")).forEach(s => {
+                                const coords = getFanCoords(s.lineIdx);
+                                trails.push({ x: coords.x - fRad + s.pos * fRad * 2, y: coords.y + rp * railOffset, size: railSize * scale, color: getObjColor(railProfile, railColor, s.lineIdx, totalCount, decayRail), born: engineTime, len: railTrail });
                             });
                         } else {
                             let baseMode = mode;
-                            if (mode.includes("Collide") || mode.includes("Split")) {
-                                baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
-                            }
-                            const p = getProgress(timeR, count, baseMode);
+                            if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                            const p = getProgress(timeR, totalCount, baseMode);
 
-                            for (let d = 0; d < window.railDots; d++) {
-                                const dp = (p + (d / window.railDots) * count) % count;
+                            for (let d = 0; d < railDots; d++) {
+                                const dp = (p + (d / railDots) * totalCount) % totalCount;
                                 let positions = [];
 
-                                if (mode.includes("Collide")) {
-                                    positions.push(dp / 2);
-                                    positions.push(count - (dp / 2));
-                                } else if (mode.includes("Split")) {
-                                    positions.push((count / 2) - (dp / 2));
-                                    positions.push((count / 2) + (dp / 2));
-                                } else {
-                                    positions.push(dp);
-                                }
+                                if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(totalCount - (dp / 2)); }
+                                else if (mode.includes("Split")) { positions.push((totalCount / 2) - (dp / 2)); positions.push((totalCount / 2) + (dp / 2)); }
+                                else { positions.push(dp); }
 
                                 positions.forEach((val) => {
                                     if (val < 0) return;
                                     let fIdx = Math.floor(val);
                                     let remainder = val % 1;
-                                    if (val >= count) {
-                                        fIdx = count - 1;
-                                        remainder = 1.0;
-                                    }
-                                    const cx = startX + (fIdx * fanSpacing);
-                                    trails.push({ x: cx - fRad + remainder * fRad * 2, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, fIdx, count, decayRail), born: engineTime, len: window.railTrail });
+                                    if (val >= totalCount) { fIdx = totalCount - 1; remainder = 1.0; }
+                                    const coords = getFanCoords(fIdx);
+                                    trails.push({ x: coords.x - fRad + remainder * fRad * 2, y: coords.y + rp * railOffset, size: railSize * scale, color: getObjColor(railProfile, railColor, fIdx, totalCount, decayRail), born: engineTime, len: railTrail });
                                 });
                             }
                         }
@@ -805,60 +772,46 @@
                     renderR(-1); renderR(1);
                 }
 
-                if (window.showMatrix) {
-                    const c = window.matrixCols || 16, r = window.matrixRows || 16;
-                    const cell = Math.floor(window.matrixCellSize || 5);
-                    const mx = Math.floor(window.matrixX), my = Math.floor(window.matrixY);
+                if (showMatrix) {
+                    const c = matrixCols || 16, r = matrixRows || 16;
+                    const cell = Math.floor(matrixCellSize || 5);
+                    const mx = Math.floor(matrixX), my = Math.floor(matrixY);
                     let pts = [];
 
-                    if (window.matrixMode === "JSON Image") {
-                        if (window.matrixJSON !== lastJsonString) {
-                            try {
-                                cachedJson = JSON.parse(window.matrixJSON);
-                                lastJsonString = window.matrixJSON;
-                            } catch (e) {
-                                cachedJson = [];
-                            }
+                    if (matrixMode === "JSON Image") {
+                        if (matrixJSON !== lastJsonString) {
+                            try { cachedJson = JSON.parse(matrixJSON); lastJsonString = matrixJSON; } catch (e) { cachedJson = []; }
                         }
                         for (let y = 0; y < cachedJson.length && y < r; y++) {
                             for (let x = 0; x < cachedJson[y].length && x < c; x++) {
                                 let val = cachedJson[y][x];
-
-                                if (val === 0) {
-                                    pts.push({ x: x, y: y, explicitColor: "#000000", opacity: 1.0 });
-                                } else if (val === 1) {
-                                    pts.push({ x: x, y: y, explicitColor: "#ffffff", opacity: 1.0 });
-                                } else if (val === 0.5) {
-                                    pts.push({ x: x, y: y, cIdx: 0, opacity: 0.5 });
-                                }
+                                if (val === 0) pts.push({ x: x, y: y, explicitColor: "#000000", opacity: 1.0 });
+                                else if (val === 1) pts.push({ x: x, y: y, explicitColor: "#ffffff", opacity: 1.0 });
+                                else if (val === 0.5) pts.push({ x: x, y: y, cIdx: 0, opacity: 0.5 });
                             }
                         }
-                    } else if (window.matrixMode === "Snake") {
+                    } else if (matrixMode === "Snake") {
                         const t = Math.floor(timeMat * 15);
                         for (let i = 0; i < 6; i++) {
                             const idx = (t - i) % (c * r);
                             pts.push({ x: idx % c, y: Math.floor(idx / c) });
                         }
-                    } else if (window.matrixMode === "Random") {
+                    } else if (matrixMode === "Random") {
                         for (let i = 0; i < 3; i++) pts.push({ x: Math.floor(Math.random() * c), y: Math.floor(Math.random() * r) });
                     } else {
-                        const is12h = (window.matrixTimeFormat || "12-Hour") === "12-Hour";
-                        let txt = (window.matrixMode === "Time") ? new Date().toLocaleTimeString([], { hour12: is12h, hour: 'numeric', minute: '2-digit' }) :
-                            (window.matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : window.matrixText;
+                        const is12h = (matrixTimeFormat || "12-Hour") === "12-Hour";
+                        let txt = (matrixMode === "Time") ? new Date().toLocaleTimeString([], { hour12: is12h, hour: 'numeric', minute: '2-digit' }) :
+                            (matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : matrixText;
 
                         const res = 10;
-                        const offC = document.createElement('canvas');
-                        offC.width = c * res;
-                        offC.height = r * res;
+                        const offC = document.createElement('canvas'); offC.width = c * res; offC.height = r * res;
                         const ox = offC.getContext('2d', { willReadFrequently: true });
-
                         ox.imageSmoothingEnabled = false;
-                        const fontFam = window.matrixFont || "Courier New";
-                        const fontScale = (window.matrixFontSize || 75) / 100;
+                        const fontFam = matrixFont || "Courier New";
+                        const fontScale = (matrixFontSize || 75) / 100;
 
                         ox.font = `${Math.floor(r * res * fontScale)}px '${fontFam}', monospace`;
-                        ox.textBaseline = "middle";
-                        ox.fillStyle = "white";
+                        ox.textBaseline = "middle"; ox.fillStyle = "white";
 
                         const tw = ox.measureText(txt).width;
                         const textCells = Math.ceil(tw / res);
@@ -873,9 +826,7 @@
                             for (let x = 0; x < c; x++) {
                                 let alphaSum = 0;
                                 for (let dy = 2; dy <= 8; dy += 3) {
-                                    for (let dx = 2; dx <= 8; dx += 3) {
-                                        alphaSum += data[((y * res + dy) * c * res + (x * res + dx)) * 4 + 3];
-                                    }
+                                    for (let dx = 2; dx <= 8; dx += 3) { alphaSum += data[((y * res + dy) * c * res + (x * res + dx)) * 4 + 3]; }
                                 }
                                 if (alphaSum > 255 * 2.0) pts.push({ x, y });
                             }
@@ -884,297 +835,147 @@
 
                     pts.forEach(p => {
                         const cIndex = p.cIdx !== undefined ? p.cIdx : p.y;
-                        const flowSpeed = 2;
-                        const animatedIndex = cIndex - (timeMat * flowSpeed) + 1000000;
-                        const finalColor = p.explicitColor ? p.explicitColor : getObjColor(window.matrixProfile, window.matrixColor, animatedIndex, r, decayMat);
-
-                        trails.push({
-                            x: mx + p.x * cell, y: my + p.y * cell,
-                            size: cell, h: cell,
-                            color: finalColor,
-                            baseOpacity: p.opacity !== undefined ? p.opacity : 1.0,
-                            born: engineTime, len: window.matrixTrail, isRect: true
-                        });
+                        const animatedIndex = cIndex - (timeMat * 2) + 1000000;
+                        const finalColor = p.explicitColor ? p.explicitColor : getObjColor(matrixProfile, matrixColor, animatedIndex, r, decayMat);
+                        trails.push({ x: mx + p.x * cell, y: my + p.y * cell, size: cell, h: cell, color: finalColor, baseOpacity: p.opacity !== undefined ? p.opacity : 1.0, born: engineTime, len: matrixTrail, isRect: true });
                     });
                 }
 
-                const renderAbs = (id, type, show, x, y, len, dCnt, tVal, mode, prof, col, dV, tL, defaultSize) => {
+                const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, spacing, mode, timeVal, speedVar, posVar, dots, dotRadius, trail, prof, col, decays, seedsArr) => {
                     if (!show) return;
+                    // pc is multiplied by 4 for extreme start position staggering
+                    // sc is multiplied by 1.8 for drastic speed differences (kept under 2.0 to prevent reverse movement)
+                    const pc = (posVar || 0) / 25;
+                    const sc = ((speedVar || 0) / 100) * 1.8;
 
-                    if (mode === "Solid Line") {
-                        ctx.beginPath();
+                    if (seedsArr.length !== linesCount) {
+                        seedsArr.length = 0;
+                        for (let i = 0; i < linesCount; i++) seedsArr.push({ p: Math.random(), s: 0.5 + Math.random() });
+                    }
+
+                    for (let l = 0; l < linesCount; l++) {
+                        let lx = startX;
+                        let ly = startY;
                         if (type === 'h') {
-                            ctx.moveTo(x, y);
-                            ctx.lineTo(x + len, y);
+                            ly = startY + (l - (linesCount - 1) / 2) * spacing;
                         } else {
-                            ctx.moveTo(x, y);
-                            ctx.lineTo(x, y + len);
-                        }
-                        ctx.lineWidth = Math.max(1, defaultSize / 2);
-
-                        const activeProf = window.masterProfile !== "None" ? window.masterProfile : prof;
-                        const activeCol = window.masterProfile !== "None" ? window.masterColor : col;
-
-                        if (activeProf === "Custom" && window.masterProfile === "None") {
-                            ctx.strokeStyle = activeCol;
-                        } else {
-                            try {
-                                const grad = type === 'h' ? ctx.createLinearGradient(x, y, x + len, y) : ctx.createLinearGradient(x, y, x, y + len);
-                                const stops = 30;
-                                const dotApprox = dCnt || 10;
-                                for (let i = 0; i <= stops; i++) {
-                                    let sampleIdx = ((i / stops) * dotApprox) - (tVal * 5);
-                                    sampleIdx = (sampleIdx % 100000) + 100000;
-                                    grad.addColorStop(i / stops, getObjColor(prof, col, sampleIdx, dotApprox, dV));
-                                }
-                                ctx.strokeStyle = grad;
-                            } catch (e) {
-                                ctx.strokeStyle = activeCol;
-                            }
+                            lx = startX + (l - (linesCount - 1) / 2) * spacing;
                         }
 
-                        ctx.globalAlpha = Math.min(1.0, Math.max(0.8, dV * 1.5));
-                        ctx.stroke();
-                        return;
-                    }
-
-                    if (mode.includes("VU Meter")) {
-                        const audioBoost = 2.0;
-                        const level = Math.max(0.05, Math.min(1.0, dV * audioBoost));
-                        const isRev = mode.includes("(Rev)");
-
-                        const dotsToDraw = Math.max(1, Math.floor(len / 4));
-                        const activeDots = Math.floor(dotsToDraw * level);
-
-                        for (let d = 0; d < activeDots; d++) {
-                            const index = isRev ? (dotsToDraw - 1 - d) : d;
-                            const dp = index / dotsToDraw;
-
-                            const rx = (type === 'h') ? x + dp * len : x;
-                            const ry = (type === 'h') ? y : y + dp * len;
-
-                            trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, d, dotsToDraw, 0), born: engineTime, len: 1 });
-                        }
-                        return;
-                    }
-
-                    if (mode.includes("Wipe")) {
-                        const baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
-                        const p = getProgress(tVal, 1, baseMode);
-                        const isRev = mode.includes("(Rev)");
-                        const dotsToDraw = Math.max(1, Math.floor(len / 4));
-
-                        for (let d = 0; d < dotsToDraw; d++) {
-                            const dp = d / dotsToDraw;
-                            const shouldDraw = isRev ? (dp > (1 - p)) : (dp < p);
-                            if (shouldDraw) {
-                                const rx = (type === 'h') ? x + dp * len : x;
-                                const ry = (type === 'h') ? y : y + dp * len;
-                                trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, d, dotsToDraw, dV), born: engineTime, len: 1 });
-                            }
-                        }
-                        return;
-                    }
-
-                    if (mode.includes("Meteor")) {
-                        const mId = id + "_meteor";
-                        if (!sparklesStore[mId]) sparklesStore[mId] = [];
-                        const list = sparklesStore[mId];
-                        const isRev = mode.includes("(Rev)");
-
-                        if (list.length < dCnt && Math.random() < 0.1) {
-                            list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015 });
-                        }
-                        for (let i = list.length - 1; i >= 0; i--) {
-                            list[i].pos += isRev ? -list[i].speed : list[i].speed;
-                            list[i].speed *= 1.05;
-
-                            const rx = (type === 'h') ? x + list[i].pos * len : x;
-                            const ry = (type === 'h') ? y : y + list[i].pos * len;
-
-                            if (list[i].pos > 1.0 || list[i].pos < 0.0) {
-                                list.splice(i, 1);
-                            } else {
-                                trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, 0, 1, dV), born: engineTime, len: tL });
-                            }
-                        }
-                        return;
-                    }
-
-                    if (mode.includes("Sparkle")) {
-                        handleSparkle(id, 1, dCnt, mode.includes("(Rev)")).forEach(s => {
-                            const rx = (type === 'h') ? x + s.pos * len : x;
-                            const ry = (type === 'h') ? y : y + s.pos * len;
-                            trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, 0, 1, dV), born: engineTime, len: tL });
-                        });
-                    } else {
-                        let baseMode = mode;
-                        if (mode.includes("Collide") || mode.includes("Split")) {
-                            baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
-                        }
-                        const p = getProgress(tVal, 1, baseMode);
-
-                        for (let d = 0; d < dCnt; d++) {
-                            const dp = (p + d / dCnt) % 1;
-                            let positions = [];
-
-                            if (mode.includes("Collide")) {
-                                positions.push(dp / 2);
-                                positions.push(1 - (dp / 2));
-                            } else if (mode.includes("Split")) {
-                                positions.push(0.5 - (dp / 2));
-                                positions.push(0.5 + (dp / 2));
-                            } else {
-                                positions.push(dp);
-                            }
-
-                            positions.forEach((pos) => {
-                                const rx = (type === 'h') ? x + pos * len : x;
-                                const ry = (type === 'h') ? y : y + pos * len;
-                                trails.push({ x: rx, y: ry, size: 6, color: getObjColor(prof, col, d, dCnt, dV), born: engineTime, len: tL });
-                            });
-                        }
-                    }
-                };
-
-                renderAbs('aio1', 'h', window.showAIO1, window.aio1X, window.aio1Y, window.aio1Width, window.aio1Dots, timeA1, window.aio1Mode, window.aio1Profile, window.aio1Color, decayAio1, window.aio1Trail, 6);
-                renderAbs('aio2', 'h', window.showAIO2, window.aio2X, window.aio2Y, window.aio2Width, window.aio2Dots, timeA2, window.aio2Mode, window.aio2Profile, window.aio2Color, decayAio2, window.aio2Trail, 6);
-                renderAbs('ram1', 'v', window.showRam1, window.ram1X, window.ram1Y, window.ram1Height, window.ram1Dots, timeRam1, window.ram1Mode, window.ram1Profile, window.ram1Color, decayRam1, window.ram1Trail, 6);
-                renderAbs('ram2', 'v', window.showRam2, window.ram2X, window.ram2Y, window.ram2Height, window.ram2Dots, timeRam2, window.ram2Mode, window.ram2Profile, window.ram2Color, decayRam2, window.ram2Trail, 6);
-
-                if (window.showStrimer) {
-                    const sl = window.strimerLines || 4, sd = window.strimerDots || 2, pc = (window.strimerPosVar || 0) / 100, sc = (window.strimerSpeedVar || 0) / 100;
-                    if (strimerSeeds.length !== sl) strimerSeeds = Array.from({ length: sl }, () => ({ p: Math.random(), s: 0.5 + Math.random() }));
-
-                    for (let l = 0; l < sl; l++) {
-                        const ly = window.strimerY + (l - (sl - 1) / 2) * 6;
-                        const lT = timeS * (1 + (strimerSeeds[l].s - 1) * sc), lP = strimerSeeds[l].p * pc;
-                        const mode = window.strimerMode;
-                        const activeDecay = strimerDecays[l];
+                        const lT = timeVal * (1 + (seedsArr[l].s - 1) * sc);
+                        const lP = seedsArr[l].p * pc;
+                        const activeDecay = decays[l];
 
                         if (mode === "Solid Line") {
                             ctx.beginPath();
-                            ctx.moveTo(window.strimerX, ly);
-                            ctx.lineTo(window.strimerX + window.strimerWidth, ly);
-                            ctx.lineWidth = Math.max(1, 4 / 2);
+                            if (type === 'h') { ctx.moveTo(lx, ly); ctx.lineTo(lx + len, ly); }
+                            else { ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + len); }
+                            ctx.lineWidth = dotRadius;
+                            const activeProf = masterProfile !== "None" ? masterProfile : prof;
+                            const activeCol = masterProfile !== "None" ? masterColor : col;
 
-                            const activeProf = window.masterProfile !== "None" ? window.masterProfile : window.strimerProfile;
-                            const activeCol = window.masterProfile !== "None" ? window.masterColor : window.strimerColor;
-
-                            if (activeProf === "Custom" && window.masterProfile === "None") {
-                                ctx.strokeStyle = activeCol;
-                            } else {
+                            if (activeProf === "Custom" && masterProfile === "None") { ctx.strokeStyle = activeCol; } else {
                                 try {
-                                    const grad = ctx.createLinearGradient(window.strimerX, ly, window.strimerX + window.strimerWidth, ly);
+                                    const grad = (type === 'h') ? ctx.createLinearGradient(lx, ly, lx + len, ly) : ctx.createLinearGradient(lx, ly, lx, ly + len);
                                     const stops = 30;
                                     for (let i = 0; i <= stops; i++) {
                                         let sampleIdx = ((i / stops) * 10) - (lT * 15);
-                                        sampleIdx = (sampleIdx % 100000) + 100000;
-                                        grad.addColorStop(i / stops, getObjColor(window.strimerProfile, window.strimerColor, sampleIdx, 10, activeDecay));
+                                        grad.addColorStop(i / stops, getObjColor(prof, col, (sampleIdx % 100000) + 100000, 10, activeDecay));
                                     }
                                     ctx.strokeStyle = grad;
-                                } catch (e) {
-                                    ctx.strokeStyle = activeCol;
-                                }
+                                } catch (e) { ctx.strokeStyle = activeCol; }
                             }
-
                             ctx.globalAlpha = Math.min(1.0, Math.max(0.8, activeDecay * 1.5));
                             ctx.stroke();
                             continue;
                         }
 
                         if (mode.includes("VU Meter")) {
-                            const audioBoost = 2.0;
-                            const level = Math.max(0.05, Math.min(1.0, activeDecay * audioBoost));
+                            const level = Math.max(0.05, Math.min(1.0, activeDecay * 2.0));
                             const isRev = mode.includes("(Rev)");
-
-                            const dotsToDraw = Math.max(1, Math.floor(window.strimerWidth / 4));
+                            const dotsToDraw = Math.max(1, Math.floor(len / 4));
                             const activeDots = Math.floor(dotsToDraw * level);
-
                             for (let d = 0; d < activeDots; d++) {
                                 const index = isRev ? (dotsToDraw - 1 - d) : d;
-                                const dp = index / dotsToDraw;
-                                trails.push({ x: window.strimerX + dp * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, 0), born: engineTime, len: 1 });
+                                const pos = index / dotsToDraw;
+                                const rx = (type === 'h') ? lx + pos * len : lx;
+                                const ry = (type === 'h') ? ly : ly + pos * len;
+                                trails.push({ x: rx, y: ry, size: 4, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: 1 });
                             }
                         }
                         else if (mode.includes("Wipe")) {
                             const baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
                             const p = getProgress(lT + lP, 1, baseMode);
                             const isRev = mode.includes("(Rev)");
-                            const dotsToDraw = Math.max(1, Math.floor(window.strimerWidth / 4));
-
+                            const dotsToDraw = Math.max(1, Math.floor(len / 4));
                             for (let d = 0; d < dotsToDraw; d++) {
                                 const dp = d / dotsToDraw;
-                                const shouldDraw = isRev ? (dp > (1 - p)) : (dp < p);
-                                if (shouldDraw) {
-                                    trails.push({ x: window.strimerX + dp * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, activeDecay), born: engineTime, len: 1 });
+                                if (isRev ? (dp > (1 - p)) : (dp < p)) {
+                                    const rx = (type === 'h') ? lx + dp * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + dp * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: 1 });
                                 }
                             }
                         }
                         else if (mode.includes("Meteor")) {
-                            const mId = "str_meteor_" + l;
+                            const mId = idPrefix + "_meteor_" + l;
                             if (!sparklesStore[mId]) sparklesStore[mId] = [];
                             const list = sparklesStore[mId];
                             const isRev = mode.includes("(Rev)");
-
-                            if (list.length < sd && Math.random() < 0.1) {
-                                list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015 });
-                            }
+                            if (list.length < dots && Math.random() < 0.1) { list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015 }); }
                             for (let i = list.length - 1; i >= 0; i--) {
                                 list[i].pos += isRev ? -list[i].speed : list[i].speed;
                                 list[i].speed *= 1.05;
-
-                                if (list[i].pos > 1.0 || list[i].pos < 0.0) {
-                                    list.splice(i, 1);
-                                } else {
-                                    trails.push({ x: window.strimerX + list[i].pos * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, activeDecay), born: engineTime, len: window.strimerTrail });
+                                if (list[i].pos > 1.0 || list[i].pos < 0.0) { list.splice(i, 1); } else {
+                                    const rx = (type === 'h') ? lx + list[i].pos * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + list[i].pos * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: trail });
                                 }
                             }
                         }
                         else if (mode.includes("Sparkle")) {
-                            handleSparkle("str" + l, 1, sd, mode.includes("(Rev)")).forEach(s => {
-                                trails.push({ x: window.strimerX + s.pos * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, activeDecay), born: engineTime, len: window.strimerTrail });
+                            handleSparkle(idPrefix + "_" + l, 1, dots, mode.includes("(Rev)")).forEach(s => {
+                                const rx = (type === 'h') ? lx + s.pos * len : lx;
+                                const ry = (type === 'h') ? ly : ly + s.pos * len;
+                                trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: trail });
                             });
                         }
                         else {
                             let baseMode = mode;
-                            if (mode.includes("Collide") || mode.includes("Split")) {
-                                baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
-                            }
+                            if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
                             const prog = getProgress(lT + lP, 1, baseMode);
-
-                            for (let d = 0; d < sd; d++) {
-                                const dp = (prog + d / sd) % 1;
+                            for (let d = 0; d < dots; d++) {
+                                const dp = (prog + d / dots) % 1;
                                 let positions = [];
-
-                                if (mode.includes("Collide")) {
-                                    positions.push(dp / 2);
-                                    positions.push(1 - (dp / 2));
-                                } else if (mode.includes("Split")) {
-                                    positions.push(0.5 - (dp / 2));
-                                    positions.push(0.5 + (dp / 2));
-                                } else {
-                                    positions.push(dp);
-                                }
+                                if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(1 - (dp / 2)); }
+                                else if (mode.includes("Split")) { positions.push(0.5 - (dp / 2)); positions.push(0.5 + (dp / 2)); }
+                                else { positions.push(dp); }
 
                                 positions.forEach((pos) => {
-                                    trails.push({ x: window.strimerX + pos * window.strimerWidth, y: ly, size: 4, color: getObjColor(window.strimerProfile, window.strimerColor, l, sl, activeDecay), born: engineTime, len: window.strimerTrail });
+                                    const rx = (type === 'h') ? lx + pos * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + pos * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: trail });
                                 });
                             }
                         }
                     }
-                }
+                };
+
+                const aioDotRadius = aioSpacing - 2 || 2;
+                const ramDotRadius = ramSpacing - 2 || 2;
+                const strimerDotRadius = strimerSpacing - 2 || 2;
+
+                renderMultiLine('aio', 'h', showAIO, aioX, aioY, aioWidth, aioLines || 2, aioSpacing || 14, aioMode, timeAio, aioSpeedVar, aioPosVar, aioDots, aioDotRadius, aioTrail, aioProfile, aioColor, aioDecays, aioSeeds);
+                renderMultiLine('ram', 'v', showRam, ramX, ramY, ramHeight, ramLines || 4, ramSpacing || 10, ramMode, timeRam, ramSpeedVar, ramPosVar, ramDots, ramDotRadius, ramTrail, ramProfile, ramColor, ramDecays, ramSeeds);
+                renderMultiLine('str', 'h', showStrimer, strimerX, strimerY, strimerWidth, strimerLines || 4, strimerSpacing || 6, strimerMode, timeS, strimerSpeedVar, strimerPosVar, strimerDots, strimerDotRadius, strimerTrail, strimerProfile, strimerColor, strimerDecays, strimerSeeds);
 
                 const renderTime = engineTime;
-
                 trails = trails.filter(t => (renderTime - t.born) < (Math.max(0.1, t.len) * 40));
 
                 trails.forEach(t => {
                     const duration = Math.max(0.1, t.len) * 40;
                     const timeAlive = renderTime - t.born;
-
                     const age = timeAlive < 20 ? 0 : timeAlive / duration;
-
                     const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
 
                     if (t.isRect) {
@@ -1189,6 +990,31 @@
                         ctx.fill();
                     }
                 });
+
+                if (showAlignment) {
+                    ctx.fillStyle = "#ff00ff";
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        ctx.beginPath(); ctx.arc(coords.x - fRad, coords.y, 4, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(coords.x + fRad, coords.y, 4, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+
+                if (showLabels) {
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        drawLabel(`Fan ${i + 1}`, coords.x, coords.y);
+                    }
+                    const aioHeight = (aioLines - 1) * aioSpacing;
+                    if (showAIO) drawLabel("AIO", aioX + aioWidth / 2, aioY);
+                    if (showRam) drawLabel("RAM", ramX, ramY + ramHeight / 2);
+                    if (showStrimer) drawLabel("Strimer", strimerX + strimerWidth / 2, strimerY);
+                    if (showMatrix) {
+                        const cell = matrixCellSize;
+                        drawLabel("Matrix", matrixX + (matrixCols * cell) / 2, matrixY + (matrixRows * cell) / 2);
+                    }
+                }
+
             } catch (e) {
                 console.error("Render Loop Error:", e);
             }
