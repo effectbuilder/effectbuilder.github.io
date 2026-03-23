@@ -560,25 +560,35 @@
                     }
 
                     if (mode === "Camshaft Timing") {
-                        const strikeInterval = 2.0;
+                        // Uses the existing 'speed' parameter from the UI slider. 50 = normal speed (1x).
+                        const speedMult = Math.max(0.01, speed / 50); 
+                        const strikeInterval = 2.0 / speedMult; 
+                        
                         const phase = (engineTime / 1000) % strikeInterval;
                         for (let fIdx = 0; fIdx < totalCount; fIdx++) {
                             const coords = getFanCoords(fIdx);
-                            const stagger = (fIdx * 0.15) % strikeInterval;
+                            const stagger = ((fIdx * 0.15) % 2.0) / speedMult;
+                            
                             let localPhase = phase - stagger;
                             if (localPhase < 0) localPhase += strikeInterval;
+                            
                             let angle = -Math.PI / 2;
-                            if (localPhase < 0.4) {
-                                let t = localPhase / 0.4;
+                            const animDuration = 0.4 / speedMult;
+                            
+                            if (localPhase < animDuration) {
+                                let t = localPhase / animDuration;
                                 angle = -Math.PI / 2 + (1 - Math.pow(1 - t, 3)) * Math.PI * 2;
                             }
+                            
                             for (let d = 0; d < dots; d++) {
                                 const dotOffset = (d / dots) * Math.PI * 2;
                                 trails.push({
                                     x: coords.x + Math.cos(angle + dotOffset) * rRad,
                                     y: coords.y + Math.sin(angle + dotOffset) * rRad,
-                                    size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan),
-                                    born: engineTime, len: trail
+                                    size: size * scale, 
+                                    color: getObjColor(prof, col, fIdx, totalCount, decayFan),
+                                    born: engineTime, 
+                                    len: trail
                                 });
                             }
                         }
