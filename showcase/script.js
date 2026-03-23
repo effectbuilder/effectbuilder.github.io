@@ -1,6 +1,8 @@
 // --- 1. FIREBASE IMPORTS ---
+// Add GoogleAuthProvider and signInWithPopup to your imports
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { deleteDoc, getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 // --- 2. FIREBASE CONFIGURATION ---
 const firebaseConfig = {
@@ -16,6 +18,54 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// --- AUTHENTICATION SETUP ---
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider(); // Create the Google Login provider
+let currentUser = null;
+
+// 1. Dedicated function to update the form UI safely
+function updateCommentFormVisibility() {
+    const formContainer = document.getElementById('comment-form-container');
+    const loginPrompt = document.getElementById('login-prompt-container');
+    const nameInput = document.getElementById('comment-name');
+
+    if (currentUser) {
+        // Logged IN: Show form, hide prompt
+        if (formContainer) formContainer.style.display = 'block';
+        if (loginPrompt) loginPrompt.style.display = 'none';
+
+        if (nameInput) {
+            nameInput.value = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Verified User');
+            nameInput.readOnly = true;
+        }
+    } else {
+        // Logged OUT: Hide form, show prompt
+        if (formContainer) formContainer.style.display = 'none';
+        if (loginPrompt) loginPrompt.style.display = 'block';
+    }
+}
+
+// 2. Trigger the UI update the moment Firebase confirms the session
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    updateCommentFormVisibility();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('btn-google-login');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            try {
+                // This triggers the secure Google Sign-in window
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Login failed:", error);
+                alert("Failed to sign in: " + error.message);
+            }
+        });
+    }
+});
 
 // --- 3. HELPER FUNCTIONS ---
 
@@ -58,7 +108,285 @@ async function incrementDownloadCount(filename) {
     }
 }
 
-// --- EXISTING CODE STARTS HERE ---
+async function loadCommunityFeed(filename) {
+    const feedContainer = document.getElementById('comments-feed');
+    if (!feedContainer) return;
+
+    feedContainer.innerHTML = '<p class="text-muted text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Connecting to feed...</p>';
+
+    const q = query(
+        collection(db, "community_presets"),
+        where("effectFile", "==", filename),
+        orderBy("timestamp", "desc")
+    );
+
+    onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            feedContainer.innerHTML = '<p class="text-muted text-center py-2">No community presets yet. Be the first!</p>';
+            return;
+        }
+
+        // --- 1. GENERATE FEED HTML ---
+        feedContainer.innerHTML = snapshot.docs.map(docSnapshot => {
+            const data = docSnapshot.data();
+            const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString() : 'Just now';
+            const editedBadge = data.isEdited ? '<span class="text-muted x-small ms-1 font-italic">(edited)</span>' : '';
+
+            // Updated Layout: Shows the raw URL and uses the matching Preview/Open buttons
+            let presetLink = '';
+            if (data.presetUrl) {
+                presetLink = `
+                    <div class="mt-2 p-2 bg-dark rounded border border-secondary d-flex justify-content-between align-items-center">
+                        <div class="text-info x-small text-truncate me-3" title="${data.presetUrl}" style="user-select: all;">
+                            ${data.presetUrl}
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${data.presetUrl}">Preview</button>
+                            <a href="${data.presetUrl}" target="_blank" class="btn btn-sm btn-success" title="Open in SignalRGB"><i class="bi bi-box-arrow-up-right"></i></a>
+                        </div>
+                    </div>`;
+            }
+
+            let actionBtnsHtml = '';
+            if (currentUser && currentUser.uid === data.userId) {
+                actionBtnsHtml = `
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-link text-warning p-0 ms-3 edit-comment-btn" data-doc-id="${docSnapshot.id}" title="Edit Comment">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-link text-danger p-0 ms-3 delete-comment-btn" data-doc-id="${docSnapshot.id}" title="Delete Comment">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>`;
+            }
+
+            return `
+                <div class="mb-3 p-3 border-bottom border-secondary-subtle">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="fw-bold text-info">${data.userName || 'Anonymous'}</span>
+                            <span class="text-muted x-small ms-2">${date}</span>${editedBadge}
+                        </div>
+                        ${actionBtnsHtml}
+                    </div>
+                    
+                    <div id="view-mode-${docSnapshot.id}">
+                        <p class="mb-1 text-light comment-text">${data.commentText}</p>
+                        ${presetLink}
+                    </div>
+
+                    <div id="edit-mode-${docSnapshot.id}" style="display: none;">
+                        <textarea class="form-control form-control-sm bg-dark text-white border-secondary mb-2 inline-edit-textarea">${data.commentText}</textarea>
+                        <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 inline-edit-preset" placeholder="Paste SignalRGB Preset URL (Optional)" value="${data.presetUrl || ''}">
+                        <div class="text-end">
+                            <button class="btn btn-sm btn-secondary me-2 cancel-edit-btn" data-doc-id="${docSnapshot.id}">Cancel</button>
+                            <button class="btn btn-sm btn-success save-edit-btn" data-doc-id="${docSnapshot.id}">Save</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        // --- 2. DELETE BUTTON LOGIC ---
+        feedContainer.querySelectorAll('.delete-comment-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const docId = e.currentTarget.getAttribute('data-doc-id');
+                if (confirm("Are you sure you want to delete this post?")) {
+                    try {
+                        await deleteDoc(doc(db, "community_presets", docId));
+                    } catch (err) {
+                        console.error("Error deleting:", err);
+                        alert("Failed to delete. You may not have permission.");
+                    }
+                }
+            });
+        });
+
+        // --- 3. SHOW EDIT UI ---
+        feedContainer.querySelectorAll('.edit-comment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const docId = e.currentTarget.getAttribute('data-doc-id');
+                document.getElementById(`view-mode-${docId}`).style.display = 'none';
+                document.getElementById(`edit-mode-${docId}`).style.display = 'block';
+            });
+        });
+
+        // --- 4. CANCEL EDIT UI ---
+        feedContainer.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const docId = e.currentTarget.getAttribute('data-doc-id');
+                document.getElementById(`view-mode-${docId}`).style.display = 'block';
+                document.getElementById(`edit-mode-${docId}`).style.display = 'none';
+            });
+        });
+
+        // --- 5. SAVE EDIT LOGIC ---
+        feedContainer.querySelectorAll('.save-edit-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const docId = e.currentTarget.getAttribute('data-doc-id');
+                const editModeDiv = document.getElementById(`edit-mode-${docId}`);
+
+                const newText = editModeDiv.querySelector('.inline-edit-textarea').value.trim();
+                const rawPresetUrl = editModeDiv.querySelector('.inline-edit-preset').value.trim();
+                const saveBtn = e.currentTarget;
+
+                if (!newText) {
+                    alert("Comment cannot be empty.");
+                    return;
+                }
+
+                let validatedUrl = "";
+                if (rawPresetUrl) {
+                    if (!rawPresetUrl.startsWith("https://go.signalrgb.com/app/effect/apply/")) {
+                        alert("Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
+                        return;
+                    }
+                    if (rawPresetUrl.includes(" ")) {
+                        alert("Preset links cannot contain spaces.");
+                        return;
+                    }
+                    validatedUrl = rawPresetUrl;
+                }
+
+                saveBtn.disabled = true;
+                saveBtn.textContent = "Saving...";
+
+                try {
+                    await updateDoc(doc(db, "community_presets", docId), {
+                        commentText: newText,
+                        presetUrl: validatedUrl,
+                        isEdited: true
+                    });
+                } catch (err) {
+                    console.error("Error updating comment:", err);
+                    alert("Failed to update comment.");
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = "Save";
+                }
+            });
+        });
+
+        // --- 6. ATTACH PREVIEW LOGIC TO COMMUNITY MIXES ---
+        feedContainer.querySelectorAll('.preview-preset-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const presetUrl = e.currentTarget.getAttribute('data-url');
+                const btnElement = e.currentTarget;
+                const originalText = btnElement.textContent;
+                btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                btnElement.disabled = true;
+
+                try {
+                    const urlObj = new URL(presetUrl);
+                    const params = new URLSearchParams(urlObj.search);
+
+                    // Fetch the clean base HTML file from your effects folder
+                    const effectUrl = `effects/${filename}`;
+                    const res = await fetch(effectUrl);
+                    let htmlText = await res.text();
+                    const parser = new DOMParser();
+                    const docParser = parser.parseFromString(htmlText, 'text/html');
+
+                    // Inject the custom parameters into the DOM
+                    for (const [key, value] of params.entries()) {
+                        const metaTag = docParser.querySelector(`meta[property="${key}"]`);
+                        if (metaTag) {
+                            metaTag.setAttribute('default', value);
+                            metaTag.setAttribute('content', value);
+                        }
+                    }
+
+                    // Fix relative paths for local assets
+                    const fullEffectUrl = new URL(effectUrl, window.location.href).href;
+                    const baseTag = docParser.createElement('base');
+                    baseTag.href = new URL('.', fullEffectUrl).href;
+                    docParser.head.insertBefore(baseTag, docParser.head.firstChild);
+
+                    // Push the modified HTML into the preview window
+                    const effectIframe = document.getElementById('effect-preview-iframe');
+                    effectIframe.srcdoc = "<!DOCTYPE html>\n" + docParser.documentElement.outerHTML;
+
+                } catch (err) {
+                    console.error("Error generating preview:", err);
+                } finally {
+                    btnElement.textContent = originalText;
+                    btnElement.disabled = false;
+                }
+            });
+        });
+
+    }, (error) => {
+        console.error("Firestore Feed Error:", error);
+        feedContainer.innerHTML = `<p class="text-danger text-center py-2 small">Error loading feed: ${error.message}</p>`;
+    });
+}
+
+async function handlePostComment(filename) {
+    if (!currentUser) {
+        alert("You must be logged in to post.");
+        return;
+    }
+
+    const textInput = document.getElementById('comment-text');
+    const presetInput = document.getElementById('comment-preset');
+    const btn = document.getElementById('btn-post-comment');
+
+    const commentText = textInput.value.trim();
+    const rawPresetUrl = presetInput.value.trim();
+
+    // 1. Text is still required
+    if (!commentText) return;
+
+    // --- 2. THE VALIDATION CHECK ---
+    let validatedUrl = "";
+    if (rawPresetUrl) {
+        // Enforce the strict SignalRGB URL structure
+        if (!rawPresetUrl.startsWith("https://go.signalrgb.com/app/effect/apply/")) {
+            alert("Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
+            // Highlight the box red so the user knows where they messed up
+            presetInput.classList.add('is-invalid', 'border-danger');
+
+            // Remove the red border once they start typing again
+            presetInput.addEventListener('input', () => {
+                presetInput.classList.remove('is-invalid', 'border-danger');
+            }, { once: true });
+
+            return; // Abort the post
+        }
+
+        // Ensure there are no spaces in the URL to prevent broken links
+        if (rawPresetUrl.includes(" ")) {
+            alert("Preset links cannot contain spaces.");
+            return;
+        }
+
+        validatedUrl = rawPresetUrl;
+    }
+
+    // 3. Proceed with posting
+    btn.disabled = true;
+    btn.textContent = 'Posting...';
+
+    try {
+        await addDoc(collection(db, "community_presets"), {
+            effectFile: filename,
+            userName: currentUser.displayName || "Anonymous User",
+            userId: currentUser.uid,
+            commentText: commentText,
+            presetUrl: validatedUrl, // Use the clean, validated URL
+            timestamp: serverTimestamp()
+        });
+
+        // Clear the form on success
+        textInput.value = '';
+        presetInput.value = '';
+        presetInput.classList.remove('is-invalid', 'border-danger');
+    } catch (err) {
+        console.error("Error posting:", err);
+        alert("Failed to post comment. Please try again.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Post to Feed';
+    }
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     // --- CONFIGURATION ---
@@ -208,12 +536,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 tags.push('Customizable');
             }
 
+            // --- PRESET DETECTION ---
+            const presets = [];
+            const presetNodes = doc.querySelectorAll('script.effect-preset');
+
+            presetNodes.forEach(node => {
+                try {
+                    // Standard SignalRGB presets are often valid JS objects but invalid JSON.
+                    // Using a safer evaluation to capture the preset object.
+                    const presetData = node.textContent.trim();
+                    if (presetData.startsWith('{')) {
+                        // Use a Function constructor for safer execution than eval
+                        const parsed = new Function(`return ${presetData}`)();
+                        presets.push(parsed);
+                    }
+                } catch (e) {
+                    console.warn(`Invalid preset format in ${filename}:`, e);
+                }
+            });
+
             return {
                 title, description, author, effectUrl, staticUrl, filename,
                 tags,
                 structuredControls,
-                originalIndex: index, // For "Newest" sort
-                downloads: 0 // Placeholder
+                presets,
+                originalIndex: index,
+                downloads: 0
             };
 
         } catch (error) {
@@ -371,26 +719,41 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.location.hash = effect.filename;
             });
 
-            // Tags HTML
-            let tagsHtml = '';
-            if (effect.tags.length > 0) {
-                tagsHtml = `<div class="mb-2">`;
-                effect.tags.slice(0, 3).forEach(tag => {
-                    let cls = 'bg-secondary';
-                    if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
-                    else if (tag === 'Customizable') cls = 'bg-warning text-dark';
-                    else if (tag === 'Interactive') cls = 'bg-success';
-                    tagsHtml += `<span class="badge ${cls} me-1 small">${tag}</span>`;
-                });
-                if (effect.tags.length > 3) tagsHtml += `<span class="badge bg-light text-dark border me-1 small">+${effect.tags.length - 3}</span>`;
-                tagsHtml += `</div>`;
+            // --- BADGES HTML (Tags & Presets) ---
+            let badgesHtml = '';
+            const hasPresets = effect.presets && effect.presets.length > 0;
+            const hasTags = effect.tags && effect.tags.length > 0;
+
+            if (hasPresets || hasTags) {
+                badgesHtml = `<div class="mb-2">`;
+
+                // 1. Add Presets Badge First (so it stands out)
+                if (hasPresets) {
+                    badgesHtml += `<span class="badge bg-primary me-1 small" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length} Preset${effect.presets.length > 1 ? 's' : ''}</span>`;
+                }
+
+                // 2. Add Standard Tags
+                if (hasTags) {
+                    effect.tags.slice(0, 3).forEach(tag => {
+                        let cls = 'bg-secondary';
+                        if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
+                        else if (tag === 'Customizable') cls = 'bg-warning text-dark';
+                        else if (tag === 'Interactive') cls = 'bg-success';
+                        badgesHtml += `<span class="badge ${cls} me-1 small">${tag}</span>`;
+                    });
+                    if (effect.tags.length > 3) {
+                        badgesHtml += `<span class="badge bg-light text-dark border me-1 small">+${effect.tags.length - 3}</span>`;
+                    }
+                }
+
+                badgesHtml += `</div>`;
             }
 
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body d-flex flex-column';
             cardBody.innerHTML = `
                 <h5 class="card-title text-truncate" title="${effect.title}">${effect.title}</h5>
-                ${tagsHtml}
+                ${badgesHtml}
                 <p class="card-text text-body-secondary small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${effect.description}</p>
                 <small class="text-muted mt-2">By: ${effect.author}</small>
             `;
@@ -436,55 +799,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- INTERACTION HANDLERS (View, Code, Download) ---
 
-    function handleViewEffect(effect) {
-        effectViewTitle.textContent = effect.title;
-        effectIframe.src = effect.effectUrl;
-
-        // --- RE-FETCH THE BUTTONS FROM THE DOM EVERY TIME ---
+    async function handleViewEffect(effect) {
+        // --- 1. LOCAL VARIABLE DECLARATION (Fixes ReferenceErrors) ---
+        const effectIframe = document.getElementById('effect-preview-iframe');
+        const effectIframeContainer = document.getElementById('effect-iframe-container');
         const shareBtn = document.getElementById('effect-share-btn');
         const downloadBtn = document.getElementById('effect-download-btn');
         const recordBtn = document.getElementById('effect-record-btn');
 
-        // Handle Share Button
+        if (!effectIframe || !effectIframeContainer) {
+            console.error("Critical Error: Modal containers not found. Check for nested modals in index.html.");
+            return;
+        }
+
+        // --- 2. RESET STATE ---
+        effectViewTitle.textContent = effect.title;
+        // Clear both to ensure no "ghosting" from the previous effect
+        effectIframe.removeAttribute('srcdoc');
+        effectIframe.src = effect.effectUrl;
+
+        // --- 3. CLONE BUTTONS (Prevents stacking event listeners) ---
         if (shareBtn) {
             const newShareBtn = shareBtn.cloneNode(true);
             shareBtn.replaceWith(newShareBtn);
-            // This ensures the listener is bound to the SPECIFIC filename of this modal instance
             newShareBtn.addEventListener('click', () => handleShareLink(newShareBtn, effect.filename));
         }
 
-        // Handle Download Button
         if (downloadBtn) {
             const newDownloadBtn = downloadBtn.cloneNode(true);
             downloadBtn.replaceWith(newDownloadBtn);
             newDownloadBtn.addEventListener('click', () => handleDownloadZip(effect, newDownloadBtn));
         }
 
-        // Handle Record Button
         if (recordBtn) {
             const newRecordBtn = recordBtn.cloneNode(true);
             recordBtn.replaceWith(newRecordBtn);
             newRecordBtn.addEventListener('click', () => recordEffectPreview(effect.title, newRecordBtn));
         }
 
-        // Iframe Scaling
-        const scale = 2.0;
-        effectIframe.style.width = '320px'; effectIframe.style.height = '200px';
+        // --- 4. ASPECT RATIO & SCALING ---
+        const scale = 1.5;
+
+        effectIframe.style.width = '320px';
+        effectIframe.style.height = '200px';
         effectIframe.style.transform = `scale(${scale})`;
-        effectIframeContainer.style.width = `${320 * scale}px`; effectIframeContainer.style.height = `${200 * scale}px`;
+        effectIframe.style.transformOrigin = 'center center';
 
-        // Inject Details
-        const detailsId = 'effect-details-section';
-        const oldDetails = document.getElementById(detailsId);
-        if (oldDetails) oldDetails.remove();
+        // FIX: Tell the container the exact scaled dimensions so flexbox centers it perfectly without bleeding left
+        effectIframeContainer.style.width = `${320 * scale}px`;
+        effectIframeContainer.style.height = `${200 * scale}px`;
 
-        const detailsDiv = document.createElement('div');
-        detailsDiv.id = detailsId;
-        detailsDiv.className = 'p-3 border-top pt-3';
-
+        // --- 5. BOX 1: DESCRIPTION & TAGS ---
         let tagsHtml = '';
         if (effect.tags.length) {
-            tagsHtml = `<div class="mb-3"><h6 class="fw-bold">Tags:</h6>`;
+            tagsHtml = `<div class="mt-3"><h6 class="fw-bold small text-uppercase tracking-wider">Tags</h6>`;
             effect.tags.forEach(tag => {
                 let cls = 'bg-secondary';
                 if (tag.includes('Sound')) cls = 'bg-info text-dark';
@@ -494,18 +862,137 @@ document.addEventListener('DOMContentLoaded', function () {
             tagsHtml += `</div>`;
         }
 
-        let propsHtml = '';
+        document.getElementById('effect-main-info').innerHTML = `
+        <div class="mb-3">
+            <h6 class="fw-bold small text-uppercase tracking-wider">Description</h6>
+            <p class="text-light small mb-0">${effect.description}</p>
+        </div>
+        ${tagsHtml}
+    `;
+
+        // --- 6. BOX 2: ADJUSTABLE PROPERTIES (Accordion Box) ---
+        const propCard = document.getElementById('properties-section-card');
         if (effect.structuredControls && effect.structuredControls.length > 0) {
-            propsHtml = `<h6 class="fw-bold mb-2"><i class="bi bi-sliders me-2"></i>Adjustable Properties</h6>
+            propCard.style.display = 'block';
+            document.getElementById('properties-table-container').innerHTML = `
             <div class="table-responsive">
-                <table class="table table-bordered table-sm small">
-                    <thead class="table-light"><tr><th>Property</th><th>Type / Range</th><th>Description</th></tr></thead>
-                    <tbody>${effect.structuredControls.map(c => `<tr><td><strong>${c.label}</strong><br><code class="text-primary">${c.variable}</code></td><td>${c.values}</td><td>${c.description}</td></tr>`).join('')}</tbody>
-                </table></div>`;
+                <table class="table table-bordered table-sm small mb-0">
+                    <thead class="table-light">
+                        <tr><th>Property</th><th>Type / Range</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        ${effect.structuredControls.map(c => `
+                            <tr>
+                                <td><strong>${c.label}</strong><br><code class="text-primary">${c.variable}</code></td>
+                                <td>${c.values}</td>
+                                <td>${c.description}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        } else {
+            propCard.style.display = 'none';
         }
 
-        detailsDiv.innerHTML = `<div class="mb-3"><h6 class="fw-bold">Description</h6><p>${effect.description}</p></div>${tagsHtml}${propsHtml}`;
-        effectIframeContainer.parentElement.appendChild(detailsDiv);
+        // --- 7. BOX 3: PRESETS (Restored Logic) ---
+        const presetsCard = document.getElementById('presets-section-card');
+        const presetsZone = document.getElementById('presets-injection-zone');
+
+        if (effect.presets && effect.presets.length > 0) {
+            presetsCard.style.display = 'block';
+            presetsZone.innerHTML = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold mb-0 text-uppercase tracking-wider" style="font-size: 0.8rem; letter-spacing: 1px;">
+                    <i class="bi bi-palette2 me-2 text-info"></i>Available Presets
+                </h6>
+                <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none small" id="reset-preview-btn">Reset Defaults</button>
+            </div>
+            <p class="text-muted mb-0" style="font-size: 0.7rem; opacity: 0.8;">
+                <i class="bi bi-dice-5-fill text-white"></i> = randomly generated
+            </p>
+        </div>
+        <div class="preset-container">
+            ${effect.presets.map(preset => {
+                const parts = preset.name.split(':');
+                return `
+                <div class="preset-card p-3 d-flex justify-content-between align-items-center border border-secondary rounded mb-2 bg-dark">
+                    <div class="flex-grow-1 me-3 text-truncate">
+                        <div class="preset-name small fw-bold">${parts[0]} <i class="bi bi-dice-5-fill ms-1 text-white x-small"></i></div>
+                        <div class="preset-details x-small text-muted text-truncate">${parts[1] || ''}</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${preset.url}">Preview</button>
+                        <a href="${preset.url}" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-box-arrow-up-right"></i></a>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+
+            // Attach listeners for Preset Previews
+            presetsZone.querySelectorAll('.preview-preset-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const presetUrl = e.currentTarget.getAttribute('data-url');
+                    const btnElement = e.currentTarget;
+                    const originalText = btnElement.textContent;
+                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                    btnElement.disabled = true;
+
+                    try {
+                        const urlObj = new URL(presetUrl);
+                        const params = new URLSearchParams(urlObj.search);
+                        const res = await fetch(effect.effectUrl);
+                        let htmlText = await res.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlText, 'text/html');
+
+                        for (const [key, value] of params.entries()) {
+                            const metaTag = doc.querySelector(`meta[property="${key}"]`);
+                            if (metaTag) {
+                                metaTag.setAttribute('default', value);
+                                metaTag.setAttribute('content', value);
+                            }
+                        }
+
+                        const fullEffectUrl = new URL(effect.effectUrl, window.location.href).href;
+                        const baseTag = doc.createElement('base');
+                        baseTag.href = new URL('.', fullEffectUrl).href;
+                        doc.head.insertBefore(baseTag, doc.head.firstChild);
+
+                        effectIframe.srcdoc = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+                    } catch (err) { console.error(err); }
+                    finally { btnElement.textContent = originalText; btnElement.disabled = false; }
+                });
+            });
+
+            const resetBtn = presetsZone.querySelector('#reset-preview-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    effectIframe.removeAttribute('srcdoc');
+                    effectIframe.src = effect.effectUrl;
+                });
+            }
+        } else {
+            presetsCard.style.display = 'none';
+        }
+
+        // --- Updated Community Visibility Logic ---
+        const formContainer = document.getElementById('comment-form-container');
+        const nameInput = document.getElementById('comment-name');
+
+        updateCommentFormVisibility();
+
+        loadCommunityFeed(effect.filename);
+
+        // Ensure the post button cloning check is safe
+        const postBtn = document.getElementById('btn-post-comment');
+        if (postBtn) {
+            const newPostBtn = postBtn.cloneNode(true);
+            postBtn.replaceWith(newPostBtn);
+            newPostBtn.addEventListener('click', () => handlePostComment(effect.filename));
+        }
+
+        // Final Step: Show the modal
         if (effectViewModal) effectViewModal.show();
     }
 
@@ -577,10 +1064,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (effectViewModalEl) {
         effectViewModalEl.addEventListener('hidden.bs.modal', () => {
+            // 1. Clear both src AND srcdoc to ensure the iframe is truly empty
             effectIframe.src = 'about:blank';
+            effectIframe.removeAttribute('srcdoc');
+
             const details = document.getElementById('effect-details-section');
             if (details) details.remove();
-            if (window.location.hash) history.pushState("", document.title, window.location.pathname + window.location.search);
+
+            if (window.location.hash) {
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+            }
         });
     }
 

@@ -104,31 +104,97 @@
     </div>
 
     <div class="modal fade" id="effect-view-modal" tabindex="-1" aria-labelledby="effectViewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 640px; width: 640px;">
-            <div class="modal-content">
-                <div class="modal-header">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark text-white border-secondary overflow-hidden">
+
+                <div class="modal-header border-secondary">
                     <h5 class="modal-title" id="effect-view-title">View Effect</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0 d-flex justify-content-center align-items-center" id="effect-iframe-container" style="background-color: #000; width: 320px; height: 200px;">
-                    <iframe id="effect-preview-iframe" style="width: 320px; height: 200px; border: none; flex-shrink: 0;" title="Effect Preview" scrolling="no"></iframe>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <div>
-                        <button type="button" class="btn btn-outline-info" id="effect-share-btn">
-                            <i class="bi bi-link-45deg me-1"></i> Copy Share Link
-                        </button>
-                        <button type="button" class="btn btn-outline-danger ms-2" id="effect-record-btn">
-                            <i class="bi bi-camera-video me-1"></i>
-                        </button>
+
+                <div class="modal-body p-0">
+                    <div class="row g-0 h-100">
+
+                        <div class="col-12 col-lg-6 col-xl-5 border-end border-secondary bg-black d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden" style="min-height: 400px;">
+
+                            <div id="effect-iframe-container" class="d-flex justify-content-center align-items-center flex-shrink-0">
+                                <iframe id="effect-preview-iframe" style="width: 320px; height: 200px; border: none; background-color: #000; transform-origin: center center;" title="Effect Preview" scrolling="no"></iframe>
+                            </div>
+
+                        </div>
+
+                        <div class="col-lg-6 col-xl-7 p-4 overflow-y-auto custom-scrollbar" style="max-height: 75vh;">
+
+                            <div class="section-card mb-4">
+                                <div id="effect-main-info"></div>
+                            </div>
+
+                            <div class="section-card mb-4" id="properties-section-card" style="display: none;">
+                                <div class="accordion accordion-flush" id="propertiesAccordion">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-transparent shadow-none px-0 py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProps">
+                                                <div class="w-100 d-flex align-items-center">
+                                                    <h6 class="section-title small text-uppercase fw-bold mb-0 tracking-wider">
+                                                        <i class="bi bi-sliders me-2 text-info"></i>Adjustable Properties
+                                                    </h6>
+                                                    <span class="ms-3 text-muted" style="font-size: 0.65rem; text-transform: none; opacity: 0.6;">(Click to view)</span>
+                                                </div>
+                                            </button>
+                                        </h2>
+                                        <div id="collapseProps" class="accordion-collapse collapse">
+                                            <div class="accordion-body p-0 pt-2" id="properties-table-container"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-card mb-4" id="presets-section-card" style="display: none;">
+                                <div id="presets-injection-zone"></div>
+                            </div>
+
+                            <div class="section-card">
+                                <div id="community-section">
+                                    <h6 class="section-title fw-bold text-uppercase small tracking-wider mb-3">
+                                        <i class="bi bi-people-fill me-2 text-info"></i>Community Feed
+                                    </h6>
+
+                                    <div id="login-prompt-container" class="text-center p-4 bg-dark-subtle rounded border border-secondary mb-4 shadow-sm">
+                                        <p class="text-muted small mb-3">Join the community to post comments and share your custom mixes!</p>
+                                        <button id="btn-google-login" class="btn btn-outline-light btn-sm px-4">
+                                            <i class="bi bi-google me-2 text-danger"></i>Sign in with Google
+                                        </button>
+                                    </div>
+
+                                    <div id="comment-form-container" class="bg-dark-subtle p-3 rounded mb-4 border border-secondary shadow-sm" style="display: none;">
+                                        <label class="small fw-bold text-muted mb-1">Posting as:</label>
+                                        <input type="text" id="comment-name" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="User Name" readonly autocomplete="off">
+                                        <textarea id="comment-text" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" rows="2" placeholder="Share a comment or your custom mix..." autocomplete="off"></textarea>
+                                        <input type="text" id="comment-preset" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="Paste SignalRGB Preset URL (Optional)" autocomplete="off">
+                                        <div class="text-end">
+                                            <button class="btn btn-sm btn-primary px-3" id="btn-post-comment">Post to Feed</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="comments-feed" class="small"></div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
-                    <div>
-                        <button type="button" class="btn btn-success" id="effect-download-btn">
-                            <i class="bi bi-download me-1"></i> Download Effect (Zip)
-                        </button>
+                </div>
+
+                <div class="modal-footer border-secondary justify-content-between">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-info" id="effect-share-btn"><i class="bi bi-link-45deg"></i></button>
+                        <button type="button" class="btn btn-outline-danger" id="effect-record-btn"><i class="bi bi-camera-video"></i></button>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success px-3" id="effect-download-btn"><i class="bi bi-download me-1"></i> Download</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
