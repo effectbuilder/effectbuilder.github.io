@@ -1,0 +1,1069 @@
+<html>
+
+<head>
+    <title>Fan Tracer Pro Max (Two-Colors)</title>
+    <meta name="requires-audio" content="true">
+    <meta title="Fan Tracer Pro Max">
+    <meta description="High-precision hardware visualizer designed to perfectly sync effects across your entire PC layout. Easily customize fan counts, AIO lines, and RAM sticks to create seamless animations that travel across your components with pixel-perfect accuracy. Includes a built-in customizable LED matrix for real-time text, time, and custom pixel-art displays. This versions limits the number of colors to only two, except for Rainbow." />
+    <meta publisher="José Miranda" />
+
+    <meta property="showGuides" label="Show Path Guides" type="boolean" default="false" tooltip="Toggle visibility of the structural layout lines.">
+    <meta property="showAlignment" label="Show Fan Alignment Dots" type="boolean" default="false" tooltip="Display high-visibility marker dots at 3 and 9 o'clock on every fan for precise physical alignment.">
+    <meta property="showLabels" label="Show Object Names" type="boolean" default="false" tooltip="Toggle visibility of the names above/below each component.">
+
+    <meta property="audioReactive" label="Audio Reactive Flash" type="boolean" default="false" tooltip="Toggle audio-reactive white flashes globally.">
+    <meta property="audioGain" label="Global Audio Sensitivity" type="number" default="69" min="0" max="100" tooltip="Master audio reactivity for all components. Replaces individual sensitivities.">
+    <meta property="flashDecay" label="Flash Decay Speed" type="number" default="83" min="50" max="99" tooltip="How fast the white audio flash fades away.">
+
+    <meta property="masterProfile" label="[Master] Color Profile" type="combobox" values="None,Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Sunset" tooltip="Global theme override for all components. Set to 'None' for individual control.">
+    <meta property="masterColor" label="[Master] Custom Color 1" type="color" default="#0000ff" tooltip="The first color used when Master Profile is set to 'Custom'.">
+    <meta property="masterColor2" label="[Master] Custom Color 2" type="color" default="#ff0000" tooltip="The second color used when Master Profile is set to 'Custom'.">
+    <meta property="masterColor3" label="[Master] Custom Color 3" type="color" default="#00ff00" tooltip="The third color used when Master Profile is set to 'Custom'.">
+
+    <meta property="fanCount1" label="[Row 1] Fan Count" type="number" default="5" min="1" max="10" tooltip="Number of fans in the top row.">
+    <meta property="hOffset1" label="[Row 1] X Offset" type="number" default="45" min="-100" max="100" tooltip="Horizontal shift for Row 1 to align with Row 2.">
+    <meta property="vOffset1" label="[Row 1] Y Offset" type="number" default="-72" min="-100" max="100" tooltip="Vertical adjustment for Row 1.">
+    <meta property="fanCount2" label="[Row 2] Fan Count" type="number" default="6" min="0" max="10" tooltip="Number of fans in the second row (Set to 0 to disable).">
+    <meta property="hOffset2" label="[Row 2] X Offset" type="number" default="24" min="-100" max="100" tooltip="Horizontal shift for Row 2 to align with Row 1.">
+    <meta property="vOffset2" label="[Row 2] Y Offset" type="number" default="-12" min="-100" max="100" tooltip="Vertical adjustment for Row 2.">
+
+    <meta property="showCircle" label="[Circle] Enable" type="boolean" default="true" tooltip="Enable or disable the rotating outer fan light dots.">
+    <meta property="fanRadius" label="[Circle] Radius" type="number" default="20" min="5" max="100" tooltip="The size of each outer fan circle.">
+    <meta property="moveMode" label="[Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="DNA Weave" tooltip="The movement pattern for the outer fan LEDs.">
+    <meta property="circleSpeed" label="[Circle] Speed" type="number" default="10" min="0" max="100" tooltip="How fast the outer fan LEDs rotate.">
+    <meta property="circleDots" label="[Circle] Dot Count" type="number" default="4" min="1" max="10" tooltip="Number of light clusters per outer fan.">
+    <meta property="groupSize" label="[Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of dots moving together in an outer cluster.">
+    <meta property="circleSize" label="[Circle] Dot Size" type="number" default="5" min="1" max="40" tooltip="The thickness of the outer fan light dots.">
+    <meta property="fanTrail" label="[Circle] Trail Length" type="number" default="8" min="0" max="50" tooltip="How long the light trails persist behind the outer fan dots.">
+    <meta property="fanProfile" label="[Circle] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Custom" tooltip="Specific color theme for the outer fan circles.">
+    <meta property="fanColor" label="[Circle] Custom Color" type="color" default="#0500ff" tooltip="The color used for outer fans if Fan Profile is set to 'Custom'.">
+
+    <meta property="showInnerCircle" label="[Inner Circle] Enable" type="boolean" default="true" tooltip="Enable or disable a secondary inner ring of lights.">
+    <meta property="innerFanRadius" label="[Inner Circle] Radius" type="number" default="6" min="1" max="100" tooltip="The radius of the inner light ring.">
+    <meta property="innerMoveMode" label="[Inner Circle] Style" type="combobox" values="Bounce,Camshaft Timing,Collide (Bounce),Collide (Loop),DNA Weave,Figure 8,Infinity Snake,Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),Turbine Spool" default="Camshaft Timing" tooltip="The movement pattern for the inner fan LEDs.">
+    <meta property="innerCircleSpeed" label="[Inner Circle] Speed" type="number" default="6" min="0" max="100" tooltip="How fast the inner fan LEDs rotate.">
+    <meta property="innerCircleDots" label="[Inner Circle] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of light clusters per inner fan.">
+    <meta property="innerGroupSize" label="[Inner Circle] Group Size" type="number" default="1" min="1" max="4" tooltip="Number of inner dots moving together in a cluster.">
+    <meta property="innerCircleSize" label="[Inner Circle] Dot Size" type="number" default="4" min="1" max="40" tooltip="The thickness of the inner fan light dots.">
+    <meta property="innerFanTrail" label="[Inner Circle] Trail Length" type="number" default="3" min="0" max="50" tooltip="How long the light trails persist behind the inner dots.">
+    <meta property="innerFanProfile" label="[Inner Circle] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Rainbow" tooltip="Specific color theme for the inner circles.">
+    <meta property="innerFanColor" label="[Inner Circle] Custom Color" type="color" default="#ff00ff" tooltip="The color used for inner fans if Profile is set to 'Custom'.">
+
+    <meta property="showRails" label="[Rails] Enable" type="boolean" default="true" tooltip="Toggle the linear light rails above and below fans.">
+    <meta property="railDistance" label="[Rails] Rail Distance" type="number" default="0" min="0" max="100" tooltip="Vertical spacing from the outer edge of the fan to the rails.">
+    <meta property="railMode" label="[Rails] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev)" default="Loop" tooltip="The animation pattern for the rail LEDs.">
+    <meta property="railSpeed" label="[Rails] Speed" type="number" default="66" min="0" max="100" tooltip="Movement speed of the rail LEDs.">
+    <meta property="railDots" label="[Rails] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of dots moving along the rails.">
+    <meta property="railSize" label="[Rails] Dot Size" type="number" default="6" min="1" max="40" tooltip="Size of the light dots on the rails.">
+    <meta property="railTrail" label="[Rails] Trail Length" type="number" default="12" min="0" max="50" tooltip="Length of the trails on the fan rails.">
+    <meta property="railProfile" label="[Rails] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Custom" tooltip="Color theme for the rails.">
+    <meta property="railColor" label="[Rails] Custom Color" type="color" default="#00ff00" tooltip="Custom color for rails if Profile is 'Custom'.">
+
+    <meta property="showAIO" label="[AIO Tubes] Enable" type="boolean" default="true" tooltip="Toggle visibility of AIO Tubes.">
+    <meta property="aioX" label="[AIO Tubes] X Position" type="number" default="5" min="0" max="320" tooltip="Absolute horizontal position.">
+    <meta property="aioY" label="[AIO Tubes] Y Position" type="number" default="184" min="0" max="200" tooltip="Absolute vertical center position.">
+    <meta property="aioWidth" label="[AIO Tubes] Length" type="number" default="200" min="10" max="320" tooltip="Horizontal length.">
+    <meta property="aioLines" label="[AIO Tubes] Tube Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel AIO tubes.">
+    <meta property="aioSpacing" label="[AIO Tubes] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between AIO tubes.">
+    <meta property="aioMode" label="[AIO Tubes] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop" tooltip="Movement style.">
+    <meta property="aioSpeed" label="[AIO Tubes] Speed" type="number" default="4" min="0" max="100" tooltip="Movement velocity.">
+    <meta property="aioSpeedVar" label="[AIO Tubes] Speed Chaos" type="number" default="20" min="0" max="100" tooltip="Randomizes the individual speeds of tubes.">
+    <meta property="aioPosVar" label="[AIO Tubes] Position Chaos" type="number" default="38" min="0" max="100" tooltip="Randomizes the starting position of each tube.">
+    <meta property="aioDots" label="[AIO Tubes] Dot Count" type="number" default="2" min="1" max="20" tooltip="Number of active LEDs per tube.">
+    <meta property="aioTrail" label="[AIO Tubes] Trail Length" type="number" default="25" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="aioProfile" label="[AIO Tubes] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Custom" tooltip="Theme.">
+    <meta property="aioColor" label="[AIO Tubes] Custom Color" type="color" default="#00ff00" tooltip="Custom color.">
+
+    <meta property="showRam" label="[RAM Sticks] Enable" type="boolean" default="true" tooltip="Toggle RAM Sticks.">
+    <meta property="ramX" label="[RAM Sticks] X Position" type="number" default="251" min="0" max="320" tooltip="Absolute horizontal center position.">
+    <meta property="ramY" label="[RAM Sticks] Y Position" type="number" default="130" min="0" max="200" tooltip="Absolute vertical position.">
+    <meta property="ramHeight" label="[RAM Sticks] Height" type="number" default="65" min="10" max="320" tooltip="Vertical height.">
+    <meta property="ramLines" label="[RAM Sticks] Stick Count" type="number" default="2" min="1" max="12" tooltip="Number of parallel RAM sticks.">
+    <meta property="ramSpacing" label="[RAM Sticks] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between RAM sticks.">
+    <meta property="ramMode" label="[RAM Sticks] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop (Rev)" tooltip="Animation style.">
+    <meta property="ramSpeed" label="[RAM Sticks] Speed" type="number" default="8" min="0" max="100" tooltip="Movement speed.">
+    <meta property="ramSpeedVar" label="[RAM Sticks] Speed Chaos" type="number" default="26" min="0" max="100" tooltip="Randomizes the individual speeds of sticks.">
+    <meta property="ramPosVar" label="[RAM Sticks] Position Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the starting position of each stick.">
+    <meta property="ramDots" label="[RAM Sticks] Dot Count" type="number" default="2" min="1" max="20" tooltip="Active LEDs per stick.">
+    <meta property="ramTrail" label="[RAM Sticks] Trail Length" type="number" default="15" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="ramProfile" label="[RAM Sticks] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Custom" tooltip="Theme.">
+    <meta property="ramColor" label="[RAM Sticks] Custom Color" type="color" default="#ffff00" tooltip="Custom color.">
+
+    <meta property="showStrimer" label="[Strimer] Enable" type="boolean" default="true" tooltip="Toggle the vertical Strimer cable.">
+    <meta property="strimerX" label="[Strimer] X Position" type="number" default="0" min="0" max="320" tooltip="Absolute horizontal position.">
+    <meta property="strimerY" label="[Strimer] Y Position" type="number" default="145" min="0" max="200" tooltip="Absolute vertical center position.">
+    <meta property="strimerWidth" label="[Strimer] Width" type="number" default="100" min="10" max="320" tooltip="Horizontal length.">
+    <meta property="strimerLines" label="[Strimer] Line Count" type="number" default="4" min="1" max="12" tooltip="How many parallel cables.">
+    <meta property="strimerSpacing" label="[Strimer] Spacing" type="number" default="10" min="0" max="100" tooltip="Distance between strimer cables.">
+    <meta property="strimerMode" label="[Strimer] Style" type="combobox" values="Bounce,Collide (Bounce),Collide (Loop),Loop,Loop (Rev),Meteor,Meteor (Rev),Solid Line,Sparkle,Sparkle (Rev),Split (Bounce),Split (Loop),VU Meter,VU Meter (Rev),Wipe,Wipe (Bounce)" default="Loop" tooltip="Animation style.">
+    <meta property="strimerSpeed" label="[Strimer] Speed" type="number" default="6" min="0" max="100" tooltip="Movement speed.">
+    <meta property="strimerSpeedVar" label="[Strimer] Speed Chaos" type="number" default="0" min="0" max="100" tooltip="Randomizes the individual speeds.">
+    <meta property="strimerPosVar" label="[Strimer] Position Chaos" type="number" default="100" min="0" max="100" tooltip="Randomizes the starting position.">
+    <meta property="strimerDots" label="[Strimer] Dot Count" type="number" default="2" min="1" max="10" tooltip="Number of active dots per line.">
+    <meta property="strimerTrail" label="[Strimer] Trail Length" type="number" default="12" min="0" max="50" tooltip="Persistence of light.">
+    <meta property="strimerProfile" label="[Strimer] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Custom" tooltip="Theme.">
+    <meta property="strimerColor" label="[Strimer] Custom Color" type="color" default="#ff0000" tooltip="Custom color.">
+
+    <meta property="showMatrix" label="[Matrix] Enable" type="boolean" default="true" tooltip="Toggle the square LED matrix display.">
+    <meta property="matrixX" label="[Matrix] X Position" type="number" default="0" min="0" max="320" tooltip="Absolute horizontal position for the matrix.">
+    <meta property="matrixY" label="[Matrix] Y Position" type="number" default="0" min="0" max="200" tooltip="Absolute vertical position for the matrix.">
+    <meta property="matrixCols" label="[Matrix] Columns" type="number" default="16" min="4" max="64" tooltip="Number of LEDs horizontally.">
+    <meta property="matrixRows" label="[Matrix] Rows" type="number" default="16" min="2" max="32" tooltip="Number of LEDs vertically.">
+    <meta property="matrixCellSize" label="[Matrix] Cell Size" type="number" default="3" min="1" max="20" tooltip="Pixel size of each square LED. Total width = Columns x Cell Size.">
+    <meta property="matrixMode" label="[Matrix] Mode" type="combobox" values="Date,JSON Image,Random,Snake,Text Marquee,Time" default="Text Marquee" tooltip="Visual behavior for the matrix grid.">
+    <meta property="matrixSpeed" label="[Matrix] Speed" type="number" default="10" min="0" max="100" tooltip="Animation and scroll speed for the matrix.">
+    <meta property="matrixTrail" label="[Matrix] Trail Length" type="number" default="0" min="0" max="50" tooltip="Persistence of matrix LED points.">
+    <meta property="matrixText" label="[Matrix] Text" type="textfield" default="SIGNAL RGB" tooltip="Text to display in Marquee mode.">
+    <meta property="matrixFont" label="[Matrix] Font Family" type="combobox" values="Arial,Courier New,Press Start 2P,VT323" default="Courier New" tooltip="Select the font used for the Matrix text. Pixel fonts look best.">
+    <meta property="matrixFontSize" label="[Matrix] Font Scale (%)" type="number" default="75" min="30" max="150" tooltip="Adjust the size of the text relative to the grid height.">
+    <meta property="matrixTimeFormat" label="[Matrix] Time Format" type="combobox" values="12-Hour,24-Hour" default="12-Hour" tooltip="Toggle between standard 12-hour (AM/PM) or military 24-hour time.">
+    <meta property="matrixJSON" label="[Matrix] Pixel-Art Data" type="textfield" default="[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],[0,1,1,1,0,0,0,0,0,0,0,0,0,0.5,0.5,0],[0,1,1,1,1,1,1,1,1,0,0,0,0.5,0.5,0,0],[0,1,1,1,1,1,1,1,1,1,1,0,0.5,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,1,1,0,0,0.5,0.5,0],[0,1,1,1,1,1,1,1,1,1,1,0,0.5,0.5,0,0],[0,1,1,1,1,1,1,1,1,1,0,0.5,0.5,0,0,0],[0,0,0,0,0,0,0,0,0,0,0.5,0.5,0,0,0,0],[0,0,0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0],[0,0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0,0],[0,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0.5,0.5,0,0,0],[0,0,0,0.5,0,0,0,0.5,0,0,0,0.5,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]]" tooltip="Paste a 2D JSON array here when in JSON Image mode.">
+    <meta property="URL" label="Get Pixel-Art here!" type="textfield" default="https://pixelart.nolliergb.com/" tooltip="Tool for JSON generation.">
+    <meta property="matrixProfile" label="[Matrix] Color Profile" type="combobox" values="Custom,Rainbow,Abyss,Akira,Amethyst,Arcade,Atomic,Aurora,Bite,Blade,Breeze,Candy,Carbon,Citrus,Cobalt,Copper,Cyber,Deco,Eclipse,Forest,Frost,Galaxy,Glacier,Horizon,Inferno,Joker,Magma,Matrix,Miami,Midnight,Monolith,Nebula,Neon,Nova,Onyx,Portal,Prism,Quantum,Retro,Rust,Toxic,Vapor" default="Matrix" tooltip="Color theme for the matrix.">
+    <meta property="matrixColor" label="[Matrix] Custom Color" type="color" default="#00ff00" tooltip="Custom color for the matrix.">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="effect-canvas" width="320" height="200"></canvas>
+    <script>
+        // -------------------------------------------------------------------
+        // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+        // -------------------------------------------------------------------
+        if (typeof engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+
+            engine = { audio: { freq: new Array(128).fill(0) } };
+
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(128).fill(0);
+
+                // Bass: Strong pulses
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+                const bassVal = Math.pow(beat, 4) * 255;
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+                // Treble
+                for (let i = 10; i < 40; i++) {
+                    const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                    dataArray[i] = wave * 150 + (Math.random() * 50);
+                }
+                engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+    <script>
+        const canvas = document.getElementById('effect-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let decayFan = 0, decayRail = 0, decayMat = 0;
+        let aioDecays = [], ramDecays = [], strimerDecays = [];
+        let aioSeeds = [], ramSeeds = [], strimerSeeds = [];
+
+        let timeC = 0, timeInnerC = 0, timeR = 0, timeAio = 0, timeRam = 0, timeS = 0, timeMat = 0;
+        let trails = [], sparklesStore = {};
+
+        let lastJsonString = "";
+        let cachedJson = [];
+        let lastTime = 0;
+        let engineTime = 0;
+        let reducedFreq = [];
+
+        const palettes = {
+            "Abyss": ["#0B0C10", "#66FCF1"],
+            "Akira": ["#E50000", "#00E5FF"],
+            "Amethyst": ["#4A00E0", "#8E2DE2"],
+            "Arcade": ["#FF00FF", "#FFFF00"],
+            "Atomic": ["#39FF14", "#B200FF"],
+            "Aurora": ["#0F2027", "#20E3B2"],
+            "Bite": ["#111111", "#E50000"],
+            "Blade": ["#E0E0E0", "#8A0303"],
+            "Breeze": ["#000066", "#00FFCC"],
+            "Candy": ["#FF66CC", "#00FFCC"],
+            "Carbon": ["#2B2B2B", "#FF5500"],
+            "Citrus": ["#FF8C00", "#32CD32"],
+            "Cobalt": ["#0047AB", "#FFD700"],
+            "Copper": ["#43B2A1", "#B87333"],
+            "Cyber": ["#00FFFF", "#FF00FF"],
+            "Deco": ["#1A1A1A", "#D4AF37"],
+            "Eclipse": ["#121212", "#F4F4F4"],
+            "Forest": ["#0B3A24", "#DFFF00"],
+            "Frost": ["#001B3A", "#A0E6FF"],
+            "Galaxy": ["#0F0026", "#FFE87C"],
+            "Glacier": ["#2C3E50", "#7BFFD4"],
+            "Horizon": ["#110036", "#FF4E50"],
+            "Inferno": ["#222222", "#FF3300"],
+            "Joker": ["#6B238E", "#7FFF00"],
+            "Magma": ["#1C1C1C", "#FF4500"],
+            "Matrix": ["#0D0208", "#00FF41"],
+            "Miami": ["#02D4E1", "#FF6AD5"],
+            "Midnight": ["#0A192F", "#FFD700"],
+            "Monolith": ["#333333", "#DC143C"],
+            "Nebula": ["#3F0071", "#FB2576"],
+            "Neon": ["#46344E", "#CCFF00"],
+            "Nova": ["#000000", "#FFBF00"],
+            "Onyx": ["#0F0F0F", "#50C878"],
+            "Portal": ["#0077FF", "#FF6600"],
+            "Prism": ["#1B1B1B", "#E8F9FD"],
+            "Quantum": ["#7C4DFF", "#00E5FF"],
+            "Retro": ["#800080", "#FF8C00"],
+            "Rainbow": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF"],
+            "Rust": ["#8B4513", "#00FFFF"],
+            "Toxic": ["#8B00FF", "#FFEA00"],
+            "Vapor": ["#4B0082", "#00FFFF"]
+        };
+
+        for (let key in palettes) {
+            if (key === "Rainbow") continue;
+            let p = palettes[key];
+            let mirrored = [...p];
+            for (let i = p.length - 2; i >= 1; i--) {
+                mirrored.push(p[i]);
+            }
+            palettes[key] = mirrored;
+        }
+
+        function initProps() {
+            document.querySelectorAll('meta[property]').forEach(meta => {
+                const prop = meta.getAttribute('property');
+                const type = meta.getAttribute('type');
+                const def = meta.getAttribute('default');
+                if (prop && window[prop] === undefined) {
+                    if (type === 'number') window[prop] = parseFloat(def);
+                    else if (type === 'boolean') window[prop] = (def === 'true');
+                    else window[prop] = def;
+                }
+            });
+        }
+        initProps();
+
+        function getAudioValue(currentDecay) {
+            if (window.audioGain === 0) return currentDecay * ((window.flashDecay || 83) / 100);
+
+            // 1. Find the global audio peak across the active musical range
+            let globalPeak = 0;
+            if (reducedFreq && reducedFreq.length > 0) {
+                const usableBins = Math.max(2, Math.floor(reducedFreq.length * 0.6));
+                for (let i = 1; i < usableBins; i++) {
+                    let val = Math.abs(reducedFreq[i]);
+                    if (val > globalPeak) globalPeak = val;
+                }
+            }
+
+            let baseLevel = globalPeak / 128;
+
+            // 2. Apply random trigger chance (15% chance per frame to catch the spike)
+            // This makes the fans, rails, and matrix flash independently and chaotically
+            let isTriggered = Math.random() > 0.85;
+            let level = isTriggered ? baseLevel : baseLevel * 0.15;
+
+            let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
+            if (isNaN(rawHit)) rawHit = 0;
+
+            return Math.max(rawHit, currentDecay * ((window.flashDecay || 83) / 100));
+        }
+
+        function updateMultiLineDecays(decayArray, linesCount) {
+            if (!decayArray || decayArray.length < linesCount) {
+                decayArray.length = 0;
+                for (let i = 0; i < linesCount; i++) decayArray.push(0);
+            }
+
+            // 1. Find the global audio peak (overall track volume instead of specific frequencies)
+            let globalPeak = 0;
+            if (reducedFreq && reducedFreq.length > 0) {
+                // Scan the active musical range
+                const usableBins = Math.max(2, Math.floor(reducedFreq.length * 0.6));
+                for (let i = 1; i < usableBins; i++) {
+                    let val = Math.abs(reducedFreq[i]);
+                    if (val > globalPeak) globalPeak = val;
+                }
+            }
+
+            let baseLevel = globalPeak / 128;
+
+            // 2. Apply the audio energy randomly across the lines
+            for (let l = 0; l < linesCount; l++) {
+                if (window.audioGain === 0 || baseLevel === 0) {
+                    decayArray[l] = decayArray[l] * ((window.flashDecay || 83) / 100);
+                    continue;
+                }
+
+                // 15% chance per frame for this specific line to catch the full audio spike
+                // This prevents the lines from all flashing at the exact same time
+                let isTriggered = Math.random() > 0.85;
+
+                // If triggered, flash brightly. If not, barely react so it stays dynamic.
+                let level = isTriggered ? baseLevel : baseLevel * 0.15;
+
+                let rawHit = Math.pow(Math.min(1.0, level), 1.2) * (window.audioGain / 50) * 2.5;
+                if (isNaN(rawHit)) rawHit = 0;
+
+                decayArray[l] = Math.max(rawHit, decayArray[l] * ((window.flashDecay || 83) / 100));
+            }
+        }
+
+        function getObjColor(profileName, customColor, idx, total, decayVal) {
+            if (audioReactive && decayVal > 0.5) return "#ffffff";
+
+            let isMasterActive = (masterProfile !== "None");
+            let activeP = isMasterActive ? masterProfile : profileName;
+
+            if (activeP === "Custom" && !isMasterActive) {
+                return customColor;
+            }
+
+            let colors = [];
+            if (activeP === "Custom" && isMasterActive) {
+                const m1 = masterColor;
+                const m2 = masterColor2 || "#ff0000";
+                const m3 = masterColor3 || "#00ff00";
+                colors = [m1, m2, m3, m2];
+            } else {
+                colors = palettes[activeP] || palettes["Rainbow"];
+            }
+
+            let safeTotal = total || 1;
+            let normalizedIdx = ((idx % safeTotal) + safeTotal) % safeTotal;
+            let t = normalizedIdx / safeTotal;
+
+            if (activeP === "Rainbow") {
+                return `hsl(${t * 360}, 100%, 50%)`;
+            }
+
+            const floatColorIdx = t * colors.length;
+            const i1 = Math.floor(floatColorIdx) % colors.length;
+            const i2 = (i1 + 1) % colors.length;
+            const fraction = floatColorIdx - Math.floor(floatColorIdx);
+
+            const hexToRgb = hex => {
+                if (!hex) return [255, 0, 0];
+                let match = hex.match(/\w\w/g);
+                return match ? match.map(x => parseInt(x, 16)) : [255, 0, 0];
+            };
+
+            const c1 = hexToRgb(colors[i1]);
+            const c2 = hexToRgb(colors[i2]);
+
+            const r = Math.round(c1[0] + fraction * (c2[0] - c1[0]));
+            const g = Math.round(c1[1] + fraction * (c2[1] - c1[1]));
+            const b = Math.round(c1[2] + fraction * (c2[2] - c1[2]));
+
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function getProgress(time, total, mode) {
+            if (mode.includes("(Rev)")) return total - (time % total);
+            if (mode === "Bounce") { const ph = (time % (total * 2)); return ph > total ? (total * 2) - ph : ph; }
+            return time % total;
+        }
+
+        function handleSparkle(id, count, maxDots, isRev = false) {
+            if (!sparklesStore[id]) sparklesStore[id] = [];
+            const list = sparklesStore[id];
+            if (list.length < maxDots && Math.random() < 0.15) {
+                list.push({ pos: isRev ? 1.0 : 0.0, lineIdx: Math.floor(Math.random() * count) });
+            }
+            for (let i = list.length - 1; i >= 0; i--) {
+                list[i].pos += isRev ? -0.012 : 0.012;
+                if (list[i].pos > 1.0 || list[i].pos < 0.0) list.splice(i, 1);
+            }
+            return list;
+        }
+
+        function drawLabel(text, x, y) {
+            if (!showLabels) return;
+
+            ctx.globalAlpha = 1.0;
+            ctx.font = "bold 10px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // 1. Set up and draw the border
+            ctx.strokeStyle = "white"; // Border color
+            ctx.lineWidth = 1;         // Border thickness
+            ctx.strokeText(text, x, y);
+
+            // 2. Set up and draw the inner text fill
+            ctx.fillStyle = "red";
+            ctx.fillText(text, x, y);
+        }
+
+        function draw(currentTime) {
+            if (!currentTime) currentTime = 0;
+            let deltaTime = (currentTime - lastTime) / 1000 || (1 / 60);
+            if (deltaTime > 0.25) deltaTime = 1 / 60;
+            lastTime = currentTime;
+
+            engineTime += deltaTime * 1000;
+            let frameMult = deltaTime * 60;
+
+            if (engine && engine.audio && engine.audio.freq) {
+                var frequency = new Int8Array(engine.audio.freq);
+                reducedFreq = frequency.filter((element, index) => {
+                    return index % 4 === 0;
+                });
+            } else {
+                reducedFreq = [];
+            }
+
+            try {
+                const w = 320, h = 200, midX = w / 2, midY = h / 2;
+                initProps();
+                ctx.globalAlpha = 1.0; ctx.fillStyle = "black"; ctx.fillRect(0, 0, w, h);
+
+                const count1 = fanCount1 || 3;
+                const count2 = fanCount2 || 0;
+                const totalCount = count1 + count2;
+
+                const dotRad = (circleSize || 6) / 2;
+                const fanGap = dotRad * 2;
+                const baseFRad = fanRadius || 16;
+
+                const maxCount = Math.max(count1, count2);
+                const rawW = (maxCount * baseFRad * 2) + ((maxCount - 1) * fanGap);
+                const scale = rawW > 310 ? 310 / rawW : 1.0;
+
+                const fRad = baseFRad * scale;
+                const scaledGap = fanGap * scale;
+                const fanSpacing = fRad * 2 + scaledGap;
+
+                const startX1 = (w - ((count1 * fRad * 2) + ((count1 - 1) * scaledGap))) / 2 + fRad + (hOffset1 || 0);
+                const startX2 = count2 > 0 ? (w - ((count2 * fRad * 2) + ((count2 - 1) * scaledGap))) / 2 + fRad + (hOffset2 || 0) : 0;
+
+                const centerY1 = midY + vOffset1;
+                const centerY2 = midY + (vOffset2 || 50);
+
+                const getFanCoords = (fIdx) => {
+                    if (fIdx < count1) return { x: startX1 + (fIdx * fanSpacing), y: centerY1 };
+                    return { x: startX2 + ((fIdx - count1) * fanSpacing), y: centerY2 };
+                };
+
+                if (showGuides) {
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1;
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        const cx = coords.x, cy = coords.y;
+                        if (showCircle) { ctx.beginPath(); ctx.arc(cx, cy, fRad, 0, Math.PI * 2); ctx.stroke(); }
+                        if (showInnerCircle) { ctx.beginPath(); ctx.arc(cx, cy, (innerFanRadius || 6) * scale, 0, Math.PI * 2); ctx.stroke(); }
+                        if (showRails) {
+                            const railOffset = fRad + (railDistance * scale) + 2 * dotRad;
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, cy - railOffset); ctx.lineTo(cx + fRad, cy - railOffset); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(cx - fRad, cy + railOffset); ctx.lineTo(cx + fRad, cy + railOffset); ctx.stroke();
+                        }
+                    }
+                    if (showAIO) {
+                        const lines = aioLines || 2;
+                        for (let l = 0; l < lines; l++) {
+                            const ly = aioY + (l - (lines - 1) / 2) * (aioSpacing || 14);
+                            ctx.beginPath(); ctx.moveTo(aioX, ly); ctx.lineTo(aioX + aioWidth, ly); ctx.stroke();
+                        }
+                    }
+                    if (showRam) {
+                        const lines = ramLines || 4;
+                        for (let l = 0; l < lines; l++) {
+                            const lx = ramX + (l - (lines - 1) / 2) * (ramSpacing || 10);
+                            ctx.beginPath(); ctx.moveTo(lx, ramY); ctx.lineTo(lx, ramY + ramHeight); ctx.stroke();
+                        }
+                    }
+                    if (showStrimer) {
+                        const sl = strimerLines || 4;
+                        for (let l = 0; l < sl; l++) {
+                            const ly = strimerY + (l - (sl - 1) / 2) * (strimerSpacing || 6);
+                            ctx.beginPath(); ctx.moveTo(strimerX, ly); ctx.lineTo(strimerX + strimerWidth, ly); ctx.stroke();
+                        }
+                    }
+                    if (showMatrix) {
+                        const cell = Math.floor(matrixCellSize);
+                        ctx.strokeRect(Math.floor(matrixX), Math.floor(matrixY), cell * matrixCols, cell * matrixRows);
+                    }
+                }
+
+                decayFan = getAudioValue(decayFan);
+                decayRail = getAudioValue(decayRail);
+                decayMat = getAudioValue(decayMat);
+
+                updateMultiLineDecays(aioDecays, aioLines || 2);
+                updateMultiLineDecays(ramDecays, ramLines || 4);
+                updateMultiLineDecays(strimerDecays, strimerLines || 4);
+
+                timeC += ((circleSpeed || 41) / 1000) * frameMult;
+                timeInnerC += ((innerCircleSpeed || 55) / 1000) * frameMult;
+                timeR += ((railSpeed || 30) / 1000) * frameMult;
+                timeAio += ((aioSpeed || 10) / 1000) * frameMult;
+                timeRam += ((ramSpeed || 18) / 1000) * frameMult;
+                timeS += ((strimerSpeed || 16) / 1000) * frameMult;
+                timeMat += ((matrixSpeed || 20) / 1000) * frameMult;
+
+                const renderCircleRing = (show, mode, dots, size, speed, trail, radiusBase, groupSize, prof, col, idPrefix, tC) => {
+                    if (!show) return;
+                    const rRad = radiusBase * scale;
+
+                    if (mode === "Solid Line") {
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
+                            const cx = coords.x, cy = coords.y;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, rRad, 0, Math.PI * 2);
+                            ctx.lineWidth = Math.max(1, (size * scale) / 2);
+
+                            const activeProf = masterProfile !== "None" ? masterProfile : prof;
+                            const activeCol = masterProfile !== "None" ? masterColor : col;
+
+                            if (activeProf === "Custom" && masterProfile === "None") {
+                                ctx.strokeStyle = activeCol;
+                            } else {
+                                try {
+                                    const grad = ctx.createConicGradient((tC * 2) % (Math.PI * 2), cx, cy);
+                                    const stops = 30;
+                                    for (let i = 0; i <= stops; i++) {
+                                        grad.addColorStop(i / stops, getObjColor(prof, col, (i / stops) * totalCount, totalCount, decayFan));
+                                    }
+                                    ctx.strokeStyle = grad;
+                                } catch (e) { ctx.strokeStyle = activeCol; }
+                            }
+                            ctx.globalAlpha = Math.min(1.0, Math.max(0.8, decayFan * 1.5));
+                            ctx.stroke();
+                        }
+                        return;
+                    }
+
+                    if (mode === "Turbine Spool") {
+                        const cycleSpeed = 0.5;
+                        const globalPhase = (tC * cycleSpeed) % totalCount;
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
+                            let localTime = globalPhase - fIdx;
+                            if (localTime < 0) localTime += totalCount;
+                            let rotationAngle = Math.pow(localTime, 3) * Math.PI * 1.5;
+                            for (let d = 0; d < dots; d++) {
+                                const dotOffset = (d / dots) * Math.PI * 2;
+                                trails.push({
+                                    x: coords.x + Math.cos(rotationAngle - Math.PI / 2 + dotOffset) * rRad,
+                                    y: coords.y + Math.sin(rotationAngle - Math.PI / 2 + dotOffset) * rRad,
+                                    size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan),
+                                    born: engineTime, len: trail
+                                });
+                            }
+                        }
+                        return;
+                    }
+
+                    if (mode === "Camshaft Timing") {
+                        // Uses the existing 'speed' parameter from the UI slider. 50 = normal speed (1x).
+                        const speedMult = Math.max(0.01, speed / 50);
+                        const strikeInterval = 2.0 / speedMult;
+
+                        const phase = (engineTime / 1000) % strikeInterval;
+                        for (let fIdx = 0; fIdx < totalCount; fIdx++) {
+                            const coords = getFanCoords(fIdx);
+                            const stagger = ((fIdx * 0.15) % 2.0) / speedMult;
+
+                            let localPhase = phase - stagger;
+                            if (localPhase < 0) localPhase += strikeInterval;
+
+                            let angle = -Math.PI / 2;
+                            const animDuration = 0.4 / speedMult;
+
+                            if (localPhase < animDuration) {
+                                let t = localPhase / animDuration;
+                                angle = -Math.PI / 2 + (1 - Math.pow(1 - t, 3)) * Math.PI * 2;
+                            }
+
+                            for (let d = 0; d < dots; d++) {
+                                const dotOffset = (d / dots) * Math.PI * 2;
+                                trails.push({
+                                    x: coords.x + Math.cos(angle + dotOffset) * rRad,
+                                    y: coords.y + Math.sin(angle + dotOffset) * rRad,
+                                    size: size * scale,
+                                    color: getObjColor(prof, col, fIdx, totalCount, decayFan),
+                                    born: engineTime,
+                                    len: trail
+                                });
+                            }
+                        }
+                        return;
+                    }
+
+                    if (mode === "DNA Weave") {
+                        const p = (tC * 1.5) % totalCount;
+                        for (let d = 0; d < dots; d++) {
+                            const dp = (p + (d / dots) * totalCount) % totalCount;
+                            const fIdx = Math.floor(dp);
+                            const fraction = dp % 1;
+                            const coords = getFanCoords(fIdx);
+                            const isEven = (fIdx % 2 === 0);
+
+                            const angle1 = Math.PI + (isEven ? -1 : 1) * (fraction * Math.PI);
+                            trails.push({
+                                x: coords.x + Math.cos(angle1) * rRad, y: coords.y + Math.sin(angle1) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, 0, 2, decayFan), born: engineTime, len: trail * 1.5
+                            });
+
+                            const angle2 = Math.PI + (isEven ? 1 : -1) * (fraction * Math.PI);
+                            trails.push({
+                                x: coords.x + Math.cos(angle2) * rRad, y: coords.y + Math.sin(angle2) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, 1, 2, decayFan), born: engineTime, len: trail * 1.5
+                            });
+                        }
+                        return;
+                    }
+
+                    if (mode === "Infinity Snake") {
+                        const p = (tC * 1.5) % (totalCount * 2);
+                        for (let d = 0; d < dots; d++) {
+                            const dp = (p - (d * 0.2) + (totalCount * 2)) % (totalCount * 2);
+                            let isForward = dp < totalCount;
+                            let fIdx = Math.floor(isForward ? dp : (totalCount * 2) - dp - 1);
+                            let fraction = dp % 1;
+                            if (!isForward) fraction = 1 - fraction;
+
+                            const coords = getFanCoords(fIdx);
+                            const isEven = (fIdx % 2 === 0);
+                            let angle = isForward ? Math.PI + (isEven ? -1 : 1) * (fraction * Math.PI) : 0 + (isEven ? 1 : -1) * ((1 - fraction) * Math.PI);
+
+                            trails.push({
+                                x: coords.x + Math.cos(angle) * rRad, y: coords.y + Math.sin(angle) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, isForward ? 0 : 2, 4, decayFan), born: engineTime, len: trail * 1.5
+                            });
+                        }
+                        return;
+                    }
+
+                    if (mode.includes("Sparkle")) {
+                        handleSparkle(idPrefix, totalCount, (dots || 1) * totalCount, mode.includes("(Rev)")).forEach(s => {
+                            const coords = getFanCoords(s.lineIdx);
+                            trails.push({
+                                x: coords.x + Math.cos(s.pos * Math.PI * 2) * rRad, y: coords.y + Math.sin(s.pos * Math.PI * 2) * rRad,
+                                size: size * scale, color: getObjColor(prof, col, s.lineIdx, totalCount, decayFan), born: engineTime, len: trail
+                            });
+                        });
+                    } else {
+                        let baseMode = mode;
+                        if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                        const prog = getProgress(tC, totalCount, baseMode);
+                        for (let d = 0; d < dots; d++) {
+                            const dp = (prog + (d / dots) * totalCount) % totalCount;
+                            let positions = [];
+
+                            if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(totalCount - (dp / 2)); }
+                            else if (mode.includes("Split")) { positions.push((totalCount / 2) - (dp / 2)); positions.push((totalCount / 2) + (dp / 2)); }
+                            else { positions.push(dp); }
+
+                            positions.forEach(pos => {
+                                for (let g = 0; g < groupSize; g++) {
+                                    const fIdx = (Math.floor(pos) + g) % totalCount;
+                                    const coords = getFanCoords(fIdx);
+                                    let dir = (mode === "Figure 8" && fIdx % 2 === 1) ? -1 : 1;
+                                    if (mode === "Loop (Rev)") dir = -1;
+
+                                    trails.push({
+                                        x: coords.x + Math.cos((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
+                                        y: coords.y + Math.sin((pos % 1) * Math.PI * 2 * dir - Math.PI / 2) * rRad,
+                                        size: size * scale, color: getObjColor(prof, col, fIdx, totalCount, decayFan), born: engineTime, len: trail
+                                    });
+                                }
+                            });
+                        }
+                    }
+                };
+
+                renderCircleRing(showCircle, moveMode, circleDots, circleSize, circleSpeed, fanTrail, fanRadius, groupSize, fanProfile, fanColor, 'circle', timeC);
+                renderCircleRing(showInnerCircle, innerMoveMode, innerCircleDots, innerCircleSize, innerCircleSpeed, innerFanTrail, innerFanRadius, innerGroupSize, innerFanProfile, innerFanColor, 'innerCircle', timeInnerC);
+
+                if (showRails) {
+                    const renderR = (rp) => {
+                        const mode = railMode;
+                        const railOffset = fRad + (railDistance * scale) + 2 * dotRad;
+
+                        if (mode === "Solid Line") {
+                            for (let rIdx = 0; rIdx < 2; rIdx++) {
+                                const isRow1 = rIdx === 0;
+                                const fCount = isRow1 ? count1 : count2;
+                                if (fCount <= 0) continue;
+
+                                const cy = isRow1 ? centerY1 : centerY2;
+                                const ry = cy + rp * railOffset;
+                                const rowStartX = isRow1 ? startX1 : startX2;
+
+                                const totalRailW = ((fCount - 1) * fanSpacing) + (fRad * 2);
+                                const startLx = rowStartX - fRad;
+
+                                ctx.beginPath(); ctx.moveTo(startLx, ry); ctx.lineTo(startLx + totalRailW, ry);
+                                ctx.lineWidth = Math.max(1, (railSize * scale) / 2);
+
+                                const activeProf = masterProfile !== "None" ? masterProfile : railProfile;
+                                const activeCol = masterProfile !== "None" ? masterColor : railColor;
+
+                                if (activeProf === "Custom" && masterProfile === "None") {
+                                    ctx.strokeStyle = activeCol;
+                                } else {
+                                    try {
+                                        const grad = ctx.createLinearGradient(startLx, ry, startLx + totalRailW, ry);
+                                        const stops = 30;
+                                        for (let i = 0; i <= stops; i++) {
+                                            let sampleIdx = ((i / stops) * totalCount) - (timeR * 5);
+                                            grad.addColorStop(i / stops, getObjColor(railProfile, railColor, (sampleIdx % 100000) + 100000, totalCount, decayRail));
+                                        }
+                                        ctx.strokeStyle = grad;
+                                    } catch (e) { ctx.strokeStyle = activeCol; }
+                                }
+                                ctx.globalAlpha = Math.min(1.0, Math.max(0.8, decayRail * 1.5));
+                                ctx.stroke();
+                            }
+                            return;
+                        }
+
+                        if (mode.includes("VU Meter")) {
+                            for (let rIdx = 0; rIdx < 2; rIdx++) {
+                                const isRow1 = rIdx === 0;
+                                const fCount = isRow1 ? count1 : count2;
+                                if (fCount <= 0) continue;
+
+                                const cy = isRow1 ? centerY1 : centerY2;
+                                const ry = cy + rp * railOffset;
+                                const rowStartX = isRow1 ? startX1 : startX2;
+
+                                const level = Math.max(0.05, Math.min(1.0, decayRail * 2.0));
+                                const isRev = mode.includes("(Rev)");
+                                const railWidth = ((fCount - 1) * fanSpacing) + (fRad * 2);
+                                const dotsToDraw = Math.max(1, Math.floor(railWidth / 4));
+                                const activeDots = Math.floor(dotsToDraw * level);
+
+                                for (let d = 0; d < activeDots; d++) {
+                                    const index = isRev ? (dotsToDraw - 1 - d) : d;
+                                    const rx = (rowStartX - fRad) + (index / dotsToDraw) * railWidth;
+                                    trails.push({ x: rx, y: ry, size: window.railSize * scale, color: getObjColor(window.railProfile, window.railColor, d, dotsToDraw, decayRail), born: engineTime, len: 1 });
+                                }
+                            }
+                            return;
+                        }
+
+                        if (mode.includes("Sparkle")) {
+                            handleSparkle('rail' + rp, totalCount, railDots * totalCount, mode.includes("(Rev)")).forEach(s => {
+                                const coords = getFanCoords(s.lineIdx);
+                                // Generate a static, random-looking color based on the dot's ID
+                                const staticColor = Math.floor(Math.abs(Math.sin(s.lineIdx + 77) * 1000));
+                                trails.push({ x: coords.x - fRad + s.pos * fRad * 2, y: coords.y + rp * railOffset, size: railSize * scale, color: getObjColor(railProfile, railColor, staticColor, 1000, decayRail), born: engineTime, len: railTrail });
+                            });
+                        } else {
+                            let baseMode = mode;
+                            if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                            const p = getProgress(timeR, totalCount, baseMode);
+
+                            for (let d = 0; d < railDots; d++) {
+                                // Generate a static, random-looking color based on the dot index
+                                const staticColor = Math.floor(Math.abs(Math.sin(d + 77) * 1000));
+                                const dp = (p + (d / railDots) * totalCount) % totalCount;
+                                let positions = [];
+
+                                if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(totalCount - (dp / 2)); }
+                                else if (mode.includes("Split")) { positions.push((totalCount / 2) - (dp / 2)); positions.push((totalCount / 2) + (dp / 2)); }
+                                else { positions.push(dp); }
+
+                                positions.forEach((val) => {
+                                    if (val < 0) return;
+                                    let fIdx = Math.floor(val);
+                                    let remainder = val % 1;
+                                    if (val >= totalCount) { fIdx = totalCount - 1; remainder = 1.0; }
+                                    const coords = getFanCoords(fIdx);
+                                    trails.push({ x: coords.x - fRad + remainder * fRad * 2, y: coords.y + rp * railOffset, size: railSize * scale, color: getObjColor(railProfile, railColor, staticColor, 1000, decayRail), born: engineTime, len: railTrail });
+                                });
+                            }
+                        }
+                    };
+                    renderR(-1); renderR(1);
+                }
+
+                if (showMatrix) {
+                    const c = matrixCols || 16, r = matrixRows || 16;
+                    const cell = Math.floor(matrixCellSize || 5);
+                    const mx = Math.floor(matrixX), my = Math.floor(matrixY);
+                    let pts = [];
+
+                    if (matrixMode === "JSON Image") {
+                        if (matrixJSON !== lastJsonString) {
+                            try { cachedJson = JSON.parse(matrixJSON); lastJsonString = matrixJSON; } catch (e) { cachedJson = []; }
+                        }
+                        for (let y = 0; y < cachedJson.length && y < r; y++) {
+                            for (let x = 0; x < cachedJson[y].length && x < c; x++) {
+                                let val = cachedJson[y][x];
+                                if (val === 0) pts.push({ x: x, y: y, explicitColor: "#000000", opacity: 1.0 });
+                                else if (val === 1) pts.push({ x: x, y: y, explicitColor: "#ffffff", opacity: 1.0 });
+                                else if (val === 0.5) pts.push({ x: x, y: y, cIdx: 0, opacity: 0.5 });
+                            }
+                        }
+                    } else if (matrixMode === "Snake") {
+                        const t = Math.floor(timeMat * 15);
+                        for (let i = 0; i < 6; i++) {
+                            const idx = (t - i) % (c * r);
+                            pts.push({ x: idx % c, y: Math.floor(idx / c) });
+                        }
+                    } else if (matrixMode === "Random") {
+                        for (let i = 0; i < 3; i++) pts.push({ x: Math.floor(Math.random() * c), y: Math.floor(Math.random() * r) });
+                    } else {
+                        const is12h = (matrixTimeFormat || "12-Hour") === "12-Hour";
+                        let txt = (matrixMode === "Time") ? new Date().toLocaleTimeString([], { hour12: is12h, hour: 'numeric', minute: '2-digit' }) :
+                            (matrixMode === "Date") ? new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) : matrixText;
+
+                        const res = 10;
+                        const offC = document.createElement('canvas'); offC.width = c * res; offC.height = r * res;
+                        const ox = offC.getContext('2d', { willReadFrequently: true });
+                        ox.imageSmoothingEnabled = false;
+                        const fontFam = matrixFont || "Courier New";
+                        const fontScale = (matrixFontSize || 75) / 100;
+
+                        ox.font = `${Math.floor(r * res * fontScale)}px '${fontFam}', monospace`;
+                        ox.textBaseline = "middle"; ox.fillStyle = "white";
+
+                        const tw = ox.measureText(txt).width;
+                        const textCells = Math.ceil(tw / res);
+                        const scrollStep = Math.floor(timeMat * 15);
+                        const offsetCells = scrollStep % (textCells + c);
+                        const sx = (c - offsetCells) * res;
+
+                        ox.fillText(txt, sx, (r * res) / 2 + (res * 0.05));
+                        const data = ox.getImageData(0, 0, c * res, r * res).data;
+
+                        for (let y = 0; y < r; y++) {
+                            for (let x = 0; x < c; x++) {
+                                let alphaSum = 0;
+                                for (let dy = 2; dy <= 8; dy += 3) {
+                                    for (let dx = 2; dx <= 8; dx += 3) { alphaSum += data[((y * res + dy) * c * res + (x * res + dx)) * 4 + 3]; }
+                                }
+                                if (alphaSum > 255 * 2.0) pts.push({ x, y });
+                            }
+                        }
+                    }
+
+                    pts.forEach(p => {
+                        const cIndex = p.cIdx !== undefined ? p.cIdx : p.y;
+                        const animatedIndex = cIndex - (timeMat * 2) + 1000000;
+                        const finalColor = p.explicitColor ? p.explicitColor : getObjColor(matrixProfile, matrixColor, animatedIndex, r, decayMat);
+                        trails.push({ x: mx + p.x * cell, y: my + p.y * cell, size: cell, h: cell, color: finalColor, baseOpacity: p.opacity !== undefined ? p.opacity : 1.0, born: engineTime, len: matrixTrail, isRect: true });
+                    });
+                }
+
+                const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, spacing, mode, timeVal, speedVar, posVar, dots, dotRadius, trail, prof, col, decays, seedsArr) => {
+                    if (!show) return;
+                    // pc is multiplied by 4 for extreme start position staggering
+                    // sc is multiplied by 1.8 for drastic speed differences (kept under 2.0 to prevent reverse movement)
+                    const pc = (posVar || 0) / 25;
+                    const sc = ((speedVar || 0) / 100) * 1.8;
+
+                    if (seedsArr.length !== linesCount) {
+                        seedsArr.length = 0;
+                        for (let i = 0; i < linesCount; i++) seedsArr.push({ p: Math.random(), s: 0.5 + Math.random() });
+                    }
+
+                    for (let l = 0; l < linesCount; l++) {
+                        let lx = startX;
+                        let ly = startY;
+                        if (type === 'h') {
+                            ly = startY + (l - (linesCount - 1) / 2) * spacing;
+                        } else {
+                            lx = startX + (l - (linesCount - 1) / 2) * spacing;
+                        }
+
+                        const lT = timeVal * (1 + (seedsArr[l].s - 1) * sc);
+                        const lP = seedsArr[l].p * pc;
+                        const activeDecay = decays[l];
+
+                        if (mode === "Solid Line") {
+                            ctx.beginPath();
+                            if (type === 'h') { ctx.moveTo(lx, ly); ctx.lineTo(lx + len, ly); }
+                            else { ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + len); }
+                            ctx.lineWidth = dotRadius;
+                            const activeProf = masterProfile !== "None" ? masterProfile : prof;
+                            const activeCol = masterProfile !== "None" ? masterColor : col;
+
+                            if (activeProf === "Custom" && masterProfile === "None") { ctx.strokeStyle = activeCol; } else {
+                                try {
+                                    const grad = (type === 'h') ? ctx.createLinearGradient(lx, ly, lx + len, ly) : ctx.createLinearGradient(lx, ly, lx, ly + len);
+                                    const stops = 30;
+                                    for (let i = 0; i <= stops; i++) {
+                                        let sampleIdx = ((i / stops) * 10) - (lT * 15);
+                                        grad.addColorStop(i / stops, getObjColor(prof, col, (sampleIdx % 100000) + 100000, 10, activeDecay));
+                                    }
+                                    ctx.strokeStyle = grad;
+                                } catch (e) { ctx.strokeStyle = activeCol; }
+                            }
+                            ctx.globalAlpha = Math.min(1.0, Math.max(0.8, activeDecay * 1.5));
+                            ctx.stroke();
+                            continue;
+                        }
+
+                        if (mode.includes("VU Meter")) {
+                            const level = Math.max(0.05, Math.min(1.0, activeDecay * 2.0));
+                            const isRev = mode.includes("(Rev)");
+                            const dotsToDraw = Math.max(1, Math.floor(len / 4));
+                            const activeDots = Math.floor(dotsToDraw * level);
+                            for (let d = 0; d < activeDots; d++) {
+                                const index = isRev ? (dotsToDraw - 1 - d) : d;
+                                const pos = index / dotsToDraw;
+                                const rx = (type === 'h') ? lx + pos * len : lx;
+                                const ry = (type === 'h') ? ly : ly + pos * len;
+                                trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: 1 });
+                            }
+                        }
+                        else if (mode.includes("Wipe")) {
+                            const baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                            const p = getProgress(lT + lP, 1, baseMode);
+                            const isRev = mode.includes("(Rev)");
+                            const dotsToDraw = Math.max(1, Math.floor(len / 4));
+                            for (let d = 0; d < dotsToDraw; d++) {
+                                const staticColor = Math.floor(Math.abs(Math.sin(d + 77) * 1000));
+                                const dp = d / dotsToDraw;
+                                if (isRev ? (dp > (1 - p)) : (dp < p)) {
+                                    const rx = (type === 'h') ? lx + dp * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + dp * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, staticColor, 1000, activeDecay), born: engineTime, len: 1 });
+                                }
+                            }
+                        }
+                        else if (mode.includes("Meteor")) {
+                            const mId = idPrefix + "_meteor_" + l;
+                            if (!sparklesStore[mId]) sparklesStore[mId] = [];
+                            const list = sparklesStore[mId];
+                            const isRev = mode.includes("(Rev)");
+
+                            // Assign a permanent random color ID (cIdx) the moment the meteor is born
+                            if (list.length < dots && Math.random() < 0.1) {
+                                list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015, cIdx: Math.floor(Math.random() * 1000) });
+                            }
+
+                            for (let i = list.length - 1; i >= 0; i--) {
+                                list[i].pos += isRev ? -list[i].speed : list[i].speed;
+                                list[i].speed *= 1.05;
+                                if (list[i].pos > 1.0 || list[i].pos < 0.0) { list.splice(i, 1); } else {
+                                    const rx = (type === 'h') ? lx + list[i].pos * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + list[i].pos * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, list[i].cIdx, 1000, activeDecay), born: engineTime, len: trail });
+                                }
+                            }
+                        }
+                        else if (mode.includes("Sparkle")) {
+                            handleSparkle(idPrefix + "_" + l, 1, dots, mode.includes("(Rev)")).forEach(s => {
+                                const staticColor = Math.floor(Math.abs(Math.sin(s.lineIdx + 77) * 1000));
+                                const rx = (type === 'h') ? lx + s.pos * len : lx;
+                                const ry = (type === 'h') ? ly : ly + s.pos * len;
+                                trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, staticColor, 1000, activeDecay), born: engineTime, len: trail });
+                            });
+                        }
+                        else {
+                            let baseMode = mode;
+                            if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
+                            const prog = getProgress(lT + lP, 1, baseMode);
+                            for (let d = 0; d < dots; d++) {
+                                const staticColor = Math.floor(Math.abs(Math.sin(d + 77) * 1000));
+                                const dp = (prog + d / dots) % 1;
+                                let positions = [];
+                                if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(1 - (dp / 2)); }
+                                else if (mode.includes("Split")) { positions.push(0.5 - (dp / 2)); positions.push(0.5 + (dp / 2)); }
+                                else { positions.push(dp); }
+
+                                positions.forEach((pos) => {
+                                    const rx = (type === 'h') ? lx + pos * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + pos * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, staticColor, 1000, activeDecay), born: engineTime, len: trail });
+                                });
+                            }
+                        }
+                    }
+                };
+
+                const aioDotRadius = aioSpacing - 2 || 2;
+                const ramDotRadius = ramSpacing - 2 || 2;
+                const strimerDotRadius = strimerSpacing - 2 || 2;
+
+                renderMultiLine('aio', 'h', showAIO, aioX, aioY, aioWidth, aioLines || 2, aioSpacing || 14, aioMode, timeAio, aioSpeedVar, aioPosVar, aioDots, aioDotRadius, aioTrail, aioProfile, aioColor, aioDecays, aioSeeds);
+                renderMultiLine('ram', 'v', showRam, ramX, ramY, ramHeight, ramLines || 4, ramSpacing || 10, ramMode, timeRam, ramSpeedVar, ramPosVar, ramDots, ramDotRadius, ramTrail, ramProfile, ramColor, ramDecays, ramSeeds);
+                renderMultiLine('str', 'h', showStrimer, strimerX, strimerY, strimerWidth, strimerLines || 4, strimerSpacing || 6, strimerMode, timeS, strimerSpeedVar, strimerPosVar, strimerDots, strimerDotRadius, strimerTrail, strimerProfile, strimerColor, strimerDecays, strimerSeeds);
+
+                const renderTime = engineTime;
+                trails = trails.filter(t => (renderTime - t.born) < (Math.max(0.1, t.len) * 40));
+
+                trails.forEach(t => {
+                    const duration = Math.max(0.1, t.len) * 40;
+                    const timeAlive = renderTime - t.born;
+                    const age = timeAlive < 20 ? 0 : timeAlive / duration;
+                    const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
+
+                    if (t.isRect) {
+                        ctx.globalAlpha = currentAlpha;
+                        ctx.fillStyle = t.color;
+                        ctx.fillRect(Math.floor(t.x), Math.floor(t.y), Math.floor(t.size), Math.floor(t.h));
+                    } else {
+                        ctx.globalAlpha = currentAlpha;
+                        ctx.fillStyle = t.color;
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, Math.max(0.001, (t.size * (0.4 + 0.6 * (1 - age))) / 2), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                if (showAlignment) {
+                    ctx.fillStyle = "#ff00ff";
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        ctx.beginPath(); ctx.arc(coords.x - fRad, coords.y, 4, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(coords.x + fRad, coords.y, 4, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+
+                if (showLabels) {
+                    for (let i = 0; i < totalCount; i++) {
+                        const coords = getFanCoords(i);
+                        drawLabel(`Fan ${i + 1}`, coords.x, coords.y);
+                    }
+                    const aioHeight = (aioLines - 1) * aioSpacing;
+                    if (showAIO) drawLabel("AIO", aioX + aioWidth / 2, aioY);
+                    if (showRam) drawLabel("RAM", ramX, ramY + ramHeight / 2);
+                    if (showStrimer) drawLabel("Strimer", strimerX + strimerWidth / 2, strimerY);
+                    if (showMatrix) {
+                        const cell = matrixCellSize;
+                        drawLabel("Matrix", matrixX + (matrixCols * cell) / 2, matrixY + (matrixRows * cell) / 2);
+                    }
+                }
+
+            } catch (e) {
+                console.error("Render Loop Error:", e);
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+
+</html>
