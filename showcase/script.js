@@ -142,7 +142,7 @@ async function loadCommunityFeed(filename) {
                         </div>
                         <div class="d-flex gap-2 flex-shrink-0">
                             <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${data.presetUrl}">Preview</button>
-                            <a href="${data.presetUrl}" target="_blank" class="btn btn-sm btn-success" title="Open in SignalRGB"><i class="bi bi-box-arrow-up-right"></i></a>
+                            <a href="${data.presetUrl}" target="_blank" class="btn btn-sm btn-success" title="Apply to SignalRGB"><i class="bi bi-box-arrow-up-right"></i>Apply to SignalRGB</a>
                         </div>
                     </div>`;
             }
@@ -921,9 +921,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="preset-name small fw-bold">${parts[0]} <i class="bi bi-dice-5-fill ms-1 text-white x-small"></i></div>
                         <div class="preset-details x-small text-muted text-truncate">${parts[1] || ''}</div>
                     </div>
-                    <div class="d-flex gap-2">
+
+                    <div class="d-flex gap-2 flex-shrink-0">
                         <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${preset.url}">Preview</button>
-                        <a href="${preset.url}" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-box-arrow-up-right"></i></a>
+                        <a href="${preset.url}" target="_blank" class="btn btn-sm btn-success" title="Apply to SignalRGB"><i class="bi bi-box-arrow-up-right"></i>Apply to SignalRGB</a>
                     </div>
                 </div>`;
             }).join('')}
