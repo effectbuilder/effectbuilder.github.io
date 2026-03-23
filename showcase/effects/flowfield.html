@@ -1,0 +1,650 @@
+<!-- The MIT License (MIT)
+
+Copyright (c) 2013 FastLED
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
+
+<!-- Original code: https://github.com/FastLED/FastLED/blob/master/examples/FlowField/FlowField.ino -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FlowField</title>
+    <meta description="A procedural vector flow field with liquid dynamics and audio-reactive noise punches. Styled as an LED dot matrix." />
+    <meta publisher="José Miranda" />
+
+    <meta property="color_profile" label="Color Profile" tooltip="Select the color theme for the effect." type="combobox" values="Quantum Rainbow,Custom,Abyssal Void,Blood Moon,Crimson Night,Cyber Punk,Dark Matter,Deep Blue/Violet,Deep Red/Blue,Eldritch,Event Horizon,Ghost Light,Midnight Ocean,Neon Synth,Obsidian,Plasma Core,Singularity,Stellar Nursery,Supernova,Toxic Sludge,Vapor Wave" default="Quantum Rainbow">
+    <meta property="c1" label="Custom Color 1" tooltip="First color for the Custom profile." type="color" default="#330000">
+    <meta property="c2" label="Custom Color 2" tooltip="Second color for the Custom profile." type="color" default="#ff0000">
+    <meta property="c3" label="Custom Color 3" tooltip="Third color for the Custom profile." type="color" default="#000033">
+    <meta property="color_shift" label="Color Cycle Speed" tooltip="How fast the colors cycle through the palette." type="number" min="0" max="50" default="4">
+
+    <meta property="enable_led_mask" label="Enable LED Matrix" tooltip="Simulates a physical LED pixel grid." type="boolean" default="false">
+    <meta property="led_size" label="LED Dot Size" tooltip="Adjust the size of the individual dots." type="number" min="10" max="100" default="75">
+    <meta property="grid_size" label="Grid Resolution" tooltip="Adjust the horizontal resolution (aspect ratio locked to 64:40)." type="number" min="16" max="320" default="64">
+
+    <meta property="emitter_mode" label="Emitter Mode" tooltip="The pattern drawn by the light emitters." type="combobox" values="Lissajous,Dots,Both" default="Both">
+    <meta property="endpoint_speed" label="Emitter Speed" tooltip="How fast the emitters move around the screen." type="number" min="5" max="200" default="80">
+    <meta property="dot_count" label="Orbiting Dots" tooltip="Number of dots orbiting the center (if Dot mode is active)." type="number" min="1" max="5" default="3">
+    <meta property="persistence" label="Trail Persistence" tooltip="How long the light trails stay on screen before fading." type="number" min="5" max="500" default="86">
+
+    <meta property="flow_speed_x" label="Flow Speed X" tooltip="Horizontal movement speed of the noise field." type="number" min="-200" max="200" default="10">
+    <meta property="flow_amp_x" label="Flow Amplitude X" tooltip="Intensity of the horizontal warping." type="number" min="0" max="200" default="100">
+    <meta property="noise_freq_x" label="Noise Frequency X" tooltip="Scale of the horizontal noise patterns." type="number" min="5" max="400" default="33">
+    
+    <meta property="flow_speed_y" label="Flow Speed Y" tooltip="Vertical movement speed of the noise field." type="number" min="-200" max="200" default="10">
+    <meta property="flow_amp_y" label="Flow Amplitude Y" tooltip="Intensity of the vertical warping." type="number" min="0" max="200" default="100">
+    <meta property="noise_freq_y" label="Noise Frequency Y" tooltip="Scale of the vertical noise patterns." type="number" min="5" max="400" default="32">
+    
+    <meta property="flow_shift" label="Flow Shift Strength" tooltip="How aggressively the pixels are pushed by the flow field." type="number" min="5" max="40" default="18">
+    
+    <meta property="audio_reactive" label="Audio Reactive" tooltip="Punch the flow field to the beat of the music." type="boolean" default="true">
+    <meta property="audio_white" label="Flash on Beat" tooltip="Add a glint of white with the beat." type="boolean" default="true">
+    <meta property="audio_sens" label="Audio Sensitivity" tooltip="How sensitive the effect is to bass hits." type="number" min="0" max="100" default="60">
+</head>
+
+<body style="margin: 0; padding: 0; background: #000;">
+    <canvas id="ledCanvas" width="320" height="200"></canvas>
+
+<script>
+    // -------------------------------------------------------------------
+    // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+    // -------------------------------------------------------------------
+    if (typeof engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+
+        engine = { audio: { freq: new Array(128).fill(0) } };
+
+        function simulateAudio() {
+            const time = Date.now() / 1000; 
+            const dataArray = new Array(128).fill(0);
+            
+            // Bass: Strong pulses
+            const beat = (Math.sin(time * Math.PI * 4) + 1) / 2; 
+            const bassVal = Math.pow(beat, 4) * 255; 
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+            // Treble
+            for (let i = 10; i < 40; i++) {
+                const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                dataArray[i] = wave * 150 + (Math.random() * 50); 
+            }
+            engine.audio.freq = dataArray;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    } else {
+        const overlay = document.getElementById('start-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+</script>
+
+<script>
+    // --- Engine Timing & Setup ---
+    const canvas = document.getElementById('ledCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    const width = 320;
+    const height = 200;
+    
+    // Track dynamic grid resolution
+    let currentGridW = 64;
+    let currentGridH = 40;
+    
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = currentGridW;
+    offCanvas.height = currentGridH;
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+    
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = width;
+    maskCanvas.height = height;
+    const maskCtx = maskCanvas.getContext('2d');
+    let currentLedSize = -1;
+
+    let lastTime = 0;
+    let engineTime = 0;
+    let lastPunchTime = 0;
+    beatGlint = 0; // Tracks the white glint flash on beat
+
+    function updateMask(sizeRatio) {
+        maskCtx.clearRect(0, 0, width, height);
+        maskCtx.fillStyle = 'black';
+        maskCtx.fillRect(0, 0, width, height);
+        
+        maskCtx.globalCompositeOperation = 'destination-out';
+        maskCtx.fillStyle = 'white';
+        
+        const cellW = width / currentGridW;
+        const cellH = height / currentGridH;
+        const maxRadius = Math.min(cellW, cellH) / 2;
+        const radius = maxRadius * sizeRatio;
+        
+        for (let y = 0; y < currentGridH; y++) {
+            for (let x = 0; x < currentGridW; x++) {
+                maskCtx.beginPath();
+                maskCtx.arc(x * cellW + cellW / 2, y * cellH + cellH / 2, radius, 0, Math.PI * 2);
+                maskCtx.fill();
+            }
+        }
+        maskCtx.globalCompositeOperation = 'source-over';
+    }
+
+    function hexToRgb(hex) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+
+    const palettesMap = {
+        "Quantum Rainbow": ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3"],
+        "Abyssal Void": ["#000000", "#001133", "#004488", "#000011"],
+        "Blood Moon": ["#110000", "#aa0000", "#ff3333", "#220000"],
+        "Crimson Night": ["#1a0000", "#990000", "#ff1111", "#220000"],
+        "Cyber Punk": ["#000022", "#ff003c", "#00f0ff", "#110022"],
+        "Dark Matter": ["#050511", "#111144", "#4b0082", "#0a0a0a"],
+        "Deep Blue/Violet": ["#000033", "#0000ff", "#8a2be2", "#1a0033"],
+        "Deep Red/Blue": ["#330000", "#ff0000", "#0000ff", "#000033"],
+        "Eldritch": ["#001100", "#004400", "#88ff00", "#002200"],
+        "Event Horizon": ["#220000", "#ff4500", "#000000", "#8b0000"],
+        "Ghost Light": ["#001111", "#00aaaa", "#aaffff", "#002222"],
+        "Midnight Ocean": ["#000011", "#000088", "#0088ff", "#000022"],
+        "Neon Synth": ["#110022", "#ff00aa", "#00aaff", "#000011"],
+        "Obsidian": ["#000000", "#111111", "#333333", "#000000"],
+        "Plasma Core": ["#330000", "#ff7b00", "#ffea00", "#110000"],
+        "Singularity": ["#110022", "#4b0082", "#000000", "#9d00ff"],
+        "Stellar Nursery": ["#110011", "#ff00aa", "#440088", "#000022"],
+        "Supernova": ["#221100", "#ff8800", "#ffffff", "#330000"],
+        "Toxic Sludge": ["#051100", "#113300", "#55aa00", "#000000"],
+        "Vapor Wave": ["#110022", "#ff71ce", "#05ffa1", "#000011"]
+    };
+
+    let cachedPalettes = {};
+    for (let key in palettesMap) {
+        cachedPalettes[key] = palettesMap[key].map(hexToRgb);
+    }
+
+    function getThemeColor(t, speed, phase) {
+        let hue = ((t * speed + phase) % 1.0 + 1.0) % 1.0; 
+        let profile = typeof color_profile !== 'undefined' ? color_profile : "Quantum Rainbow";
+        let palette;
+        
+        if (profile === "Custom") {
+            let c1_val = typeof c1 !== 'undefined' ? c1 : "#330000";
+            let c2_val = typeof c2 !== 'undefined' ? c2 : "#ff0000";
+            let c3_val = typeof c3 !== 'undefined' ? c3 : "#000033";
+            palette = [hexToRgb(c1_val), hexToRgb(c2_val), hexToRgb(c3_val)];
+        } else if (cachedPalettes[profile]) {
+            palette = cachedPalettes[profile];
+        } else {
+            palette = cachedPalettes["Quantum Rainbow"];
+        }
+        
+        let len = palette.length;
+        let index = Math.floor(hue * len);
+        let localAmount = (hue * len) - index;
+        
+        let colorA = palette[index % len];
+        let colorB = palette[(index + 1) % len];
+        
+        let r = colorA.r + (colorB.r - colorA.r) * localAmount;
+        let g = colorA.g + (colorB.g - colorA.g) * localAmount;
+        let b = colorA.b + (colorB.b - colorA.b) * localAmount;
+        
+        // Add white glint on beat hits
+        let glint = beatGlint || 0;
+        if (glint > 0) {
+            r = r + (255 - r) * glint;
+            g = g + (255 - g) * glint;
+            b = b + (255 - b) * glint;
+        }
+
+        return { r, g, b };
+    }
+
+    // --- FlowField Engine ---
+    const BumpShape = { HalfSine: 0, Gaussian: 1 };
+
+    class AttackDecayFilter {
+        constructor(attackTau, decayTau, initialValue = 0.0) {
+            this.attackTau = attackTau;
+            this.decayTau = decayTau;
+            this.val = initialValue;
+        }
+        update(target, dtSeconds) {
+            let tau = (target > this.val) ? this.attackTau : this.decayTau;
+            let alpha = (tau > 0.0001) ? (1.0 - Math.exp(-dtSeconds / tau)) : 1.0;
+            this.val += (target - this.val) * alpha;
+            return this.val;
+        }
+        value() { return this.val; }
+        reset(v = 0.0) { this.val = v; }
+    }
+
+    class NoiseBias1D {
+        constructor(size, attackTau, decayTau) {
+            this.size = size;
+            this.filters = Array.from({ length: size }, () => new AttackDecayFilter(attackTau, decayTau, 0.0));
+            this.pending = new Float32Array(size);
+        }
+        trigger(center, w, amplitude, shape = BumpShape.HalfSine) {
+            if (w <= 0.0 || amplitude === 0.0 || this.size === 0) return;
+            const halfWidth = w * 0.5;
+            let iStart = Math.max(0, Math.floor(center - halfWidth));
+            let iEnd = Math.min(this.size - 1, Math.ceil(center + halfWidth));
+
+            for (let i = iStart; i <= iEnd; ++i) {
+                let t = (i - (center - halfWidth)) / w;
+                t = Math.max(0.0, Math.min(1.0, t));
+                let shaped = 0.0;
+                if (shape === BumpShape.HalfSine) shaped = Math.sin(Math.PI * t);
+                else if (shape === BumpShape.Gaussian) {
+                    let u = (t - 0.5) / 0.2;
+                    shaped = Math.exp(-0.5 * u * u);
+                }
+                this.pending[i] += amplitude * shaped;
+            }
+        }
+        update(dtSeconds) {
+            for (let i = 0; i < this.size; ++i) {
+                this.filters[i].update(this.pending[i], dtSeconds);
+                this.pending[i] = 0.0;
+            }
+        }
+        get(i) { return this.filters[i].value(); }
+    }
+
+    class NoiseBias2D {
+        constructor(w, h, attackTau, decayTau) {
+            this.xBias = new NoiseBias1D(w, attackTau, decayTau);
+            this.yBias = new NoiseBias1D(h, attackTau, decayTau);
+        }
+        triggerX(center, w, amplitude, shape = BumpShape.HalfSine) { this.xBias.trigger(center, w, amplitude, shape); }
+        triggerY(center, w, amplitude, shape = BumpShape.HalfSine) { this.yBias.trigger(center, w, amplitude, shape); }
+        update(dtSeconds) {
+            this.xBias.update(dtSeconds);
+            this.yBias.update(dtSeconds);
+        }
+        getX(x) { return this.xBias.get(x); }
+        getY(y) { return this.yBias.get(y); }
+    }
+
+    class Perlin2D {
+        constructor(seed) {
+            this.perm = new Uint8Array(512);
+            this.init(seed);
+        }
+        init(seed) {
+            let p = new Uint8Array(256);
+            for (let i = 0; i < 256; i++) p[i] = i;
+            let s = seed >>> 0;
+            for (let i = 255; i > 0; i--) {
+                s = Math.imul(s, 1664525) + 1013904223 | 0;
+                let j = (s >>> 16) % (i + 1);
+                let tmp = p[i];
+                p[i] = p[j];
+                p[j] = tmp;
+            }
+            for (let i = 0; i < 256; i++) {
+                this.perm[i] = p[i];
+                this.perm[i + 256] = p[i];
+            }
+        }
+        fade(t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); }
+        lerp(a, b, t) { return a + t * (b - a); }
+        grad(h, x, y) {
+            switch (h & 7) {
+                case 0: return x + y; case 1: return -x + y; case 2: return x - y; case 3: return -x - y;
+                case 4: return x; case 5: return -x; case 6: return y; default: return -y;
+            }
+        }
+        noise(x, y) {
+            let xi = Math.floor(x) & 255;
+            let yi = Math.floor(y) & 255;
+            let xf = x - Math.floor(x);
+            let yf = y - Math.floor(y);
+            let u = this.fade(xf);
+            let v = this.fade(yf);
+            let aa = this.perm[this.perm[xi] + yi];
+            let ab = this.perm[this.perm[xi] + yi + 1];
+            let ba = this.perm[this.perm[xi + 1] + yi];
+            let bb = this.perm[this.perm[xi + 1] + yi + 1];
+            let x1 = this.lerp(this.grad(aa, xf, yf), this.grad(ba, xf - 1.0, yf), u);
+            let x2 = this.lerp(this.grad(ab, xf, yf - 1.0), this.grad(bb, xf - 1.0, yf - 1.0), u);
+            return this.lerp(x1, x2, v);
+        }
+    }
+
+    class FlowField {
+        constructor(w, h) {
+            this.width = w;
+            this.height = h;
+            const n = w * h;
+
+            this.noiseBias = new NoiseBias2D(w, h, 0.01, 0.5);
+
+            this.r = new Float32Array(n); this.g = new Float32Array(n); this.b = new Float32Array(n);
+            this.tr = new Float32Array(n); this.tg = new Float32Array(n); this.tb = new Float32Array(n);
+            this.xProf = new Float32Array(w); this.yProf = new Float32Array(h);
+
+            this.noiseGenX = new Perlin2D(42);
+            this.noiseGenY = new Perlin2D(1337);
+        }
+
+        fmodPos(x, m) { let r = x % m; return r < 0.0 ? r + m : r; }
+        clampf(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+        idx(y, x) { return y * this.width + x; }
+
+        drawDot(cx, cy, diam, cr, cg, cb) {
+            let rad = diam * 0.5;
+            let x0 = Math.max(0, Math.floor(cx - rad - 1.0));
+            let x1 = Math.min(this.width - 1, Math.ceil(cx + rad + 1.0));
+            let y0 = Math.max(0, Math.floor(cy - rad - 1.0));
+            let y1 = Math.min(this.height - 1, Math.ceil(cy + rad + 1.0));
+
+            for (let y = y0; y <= y1; y++) {
+                for (let x = x0; x <= x1; x++) {
+                    let dx = (x + 0.5) - cx;
+                    let dy = (y + 0.5) - cy;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    let cov = this.clampf(rad + 0.5 - dist, 0.0, 1.0);
+                    if (cov <= 0.0) continue;
+                    let inv = 1.0 - cov;
+                    let i = this.idx(y, x);
+                    this.r[i] = this.r[i] * inv + cr * cov;
+                    this.g[i] = this.g[i] * inv + cg * cov;
+                    this.b[i] = this.b[i] * inv + cb * cov;
+                }
+            }
+        }
+
+        drawAALine(x0, y0, x1, y1, t, colorShift) {
+            let dx = x1 - x0;
+            let dy = y1 - y0;
+            let steps = Math.max(1, Math.floor(Math.max(Math.abs(dx), Math.abs(dy)) * 3.0));
+            let invSteps = 1.0 / steps;
+
+            for (let i = 0; i <= steps; i++) {
+                let u = i * invSteps;
+                let px = x0 + dx * u;
+                let py = y0 + dy * u;
+                let c = getThemeColor(t, colorShift, u);
+                let ix = Math.floor(px); let iy = Math.floor(py);
+                let fx = px - ix; let fy = py - iy;
+
+                let weights = [(1.0 - fx) * (1.0 - fy), fx * (1.0 - fy), (1.0 - fx) * fy, fx * fy];
+                let offX = [0, 1, 0, 1]; let offY = [0, 0, 1, 1];
+
+                for (let j = 0; j < 4; j++) {
+                    let cx = ix + offX[j]; let cy = iy + offY[j];
+                    if (cx < 0 || cx >= this.width || cy < 0 || cy >= this.height) continue;
+                    let wt = weights[j];
+                    if (wt <= 0.0) continue;
+                    let gi = this.idx(cy, cx); let inv = 1.0 - wt;
+                    this.r[gi] = this.r[gi] * inv + c.r * wt;
+                    this.g[gi] = this.g[gi] * inv + c.g * wt;
+                    this.b[gi] = this.b[gi] * inv + c.b * wt;
+                }
+            }
+        }
+
+        emitLissajousLine(t, epSpeed, cShift) {
+            let cx = (this.width - 1) * 0.5; let cy = (this.height - 1) * 0.5;
+            let s = epSpeed;
+            let x1 = cx + cx * 0.742 * Math.sin(t * s * 1.13 + 0.20);
+            let y1 = cy + cy * 0.677 * Math.sin(t * s * 1.71 + 1.30);
+            let x2 = cx + cx * 0.774 * Math.sin(t * s * 1.89 + 2.20);
+            let y2 = cy + cy * 0.710 * Math.sin(t * s * 1.37 + 0.70);
+            
+            this.drawAALine(x1, y1, x2, y2, t, cShift);
+            let endA = getThemeColor(t, cShift, 0.0);
+            let endB = getThemeColor(t, cShift, 0.5);
+            let discDiam = 1.7;
+            this.drawDot(x1, y1, discDiam, endA.r, endA.g, endA.b);
+            this.drawDot(x2, y2, discDiam, endB.r, endB.g, endB.b);
+        }
+
+        emitOrbitalDots(t, dotCount, cShift) {
+            let minDim = Math.min(this.width, this.height);
+            let n = dotCount;
+            let ocx = this.width * 0.5 - 0.5; let ocy = this.height * 0.5 - 0.5;
+            let orad = minDim * 0.35; let base = t * 3.0; let dotDiam = 1.5;
+            for (let i = 0; i < n; i++) {
+                let a = base + i * (2.0 * Math.PI / n);
+                let cx = ocx + Math.cos(a) * orad; let cy = ocy + Math.sin(a) * orad;
+                let c = getThemeColor(t, cShift, i / n);
+                this.drawDot(cx, cy, dotDiam, c.r, c.g, c.b);
+            }
+        }
+
+        flowPrepare(t, fsX, faX, nfX, fsY, faY, nfY) {
+            const kBaseFreq = 0.23;
+            for (let i = 0; i < this.width; i++) {
+                let v = this.noiseGenX.noise(i * kBaseFreq * nfX + t * fsX, 0.0);
+                this.xProf[i] = this.clampf(v * faX, -1.0, 1.0);
+            }
+            // Reverse X profile for symmetry
+            for (let i = 0; i < Math.floor(this.width / 2); i++) {
+                let tmp = this.xProf[i]; this.xProf[i] = this.xProf[this.width - 1 - i];
+                this.xProf[this.width - 1 - i] = tmp;
+            }
+            for (let i = 0; i < this.height; i++) {
+                let v = this.noiseGenY.noise(i * kBaseFreq * nfY + t * fsY, 0.0);
+                this.yProf[i] = this.clampf(v * faY, -1.0, 1.0);
+            }
+            for (let i = 0; i < this.width; i++) {
+                this.xProf[i] = this.clampf(this.xProf[i] + this.noiseBias.getX(i), -1.0, 1.0);
+            }
+            for (let i = 0; i < this.height; i++) {
+                this.yProf[i] = this.clampf(this.yProf[i] + this.noiseBias.getY(i), -1.0, 1.0);
+            }
+        }
+
+        flowAdvect(dt, persist, fShift) {
+            let halfLife = Math.max(persist, 0.001);
+            let fade = Math.pow(0.5, dt / halfLife);
+
+            for (let y = 0; y < this.height; y++) {
+                let sh = this.yProf[y] * fShift;
+                for (let x = 0; x < this.width; x++) {
+                    let sx = this.fmodPos(x - sh, this.width);
+                    let ix0 = Math.floor(sx) % this.width; let ix1 = (ix0 + 1) % this.width;
+                    let f = sx - Math.floor(sx); let inv = 1.0 - f;
+                    let src0 = this.idx(y, ix0); let src1 = this.idx(y, ix1);
+                    let dst = this.idx(y, x);
+                    this.tr[dst] = this.r[src0] * inv + this.r[src1] * f;
+                    this.tg[dst] = this.g[src0] * inv + this.g[src1] * f;
+                    this.tb[dst] = this.b[src0] * inv + this.b[src1] * f;
+                }
+            }
+
+            for (let x = 0; x < this.width; x++) {
+                let sh = this.xProf[x] * fShift;
+                for (let y = 0; y < this.height; y++) {
+                    let sy = this.fmodPos(y - sh, this.height);
+                    let iy0 = Math.floor(sy) % this.height; let iy1 = (iy0 + 1) % this.height;
+                    let f = sy - Math.floor(sy); let inv = 1.0 - f;
+                    let src0 = this.idx(iy0, x); let src1 = this.idx(iy1, x);
+                    let dst = this.idx(y, x);
+                    this.r[dst] = (this.tr[src0] * inv + this.tr[src1] * f) * fade;
+                    this.g[dst] = (this.tg[src0] * inv + this.tg[src1] * f) * fade;
+                    this.b[dst] = (this.tb[src0] * inv + this.tb[src1] * f) * fade;
+                }
+            }
+        }
+
+        update(dt, t) {
+            // Read UI Params
+            let fsX = (typeof flow_speed_x !== 'undefined' ? flow_speed_x : 10) / 100.0;
+            let faX = (typeof flow_amp_x !== 'undefined' ? flow_amp_x : 100) / 100.0;
+            let nfX = (typeof noise_freq_x !== 'undefined' ? noise_freq_x : 33) / 100.0;
+            
+            let fsY = (typeof flow_speed_y !== 'undefined' ? flow_speed_y : 10) / 100.0;
+            let faY = (typeof flow_amp_y !== 'undefined' ? flow_amp_y : 100) / 100.0;
+            let nfY = (typeof noise_freq_y !== 'undefined' ? noise_freq_y : 32) / 100.0;
+            
+            let epSpeed = (typeof endpoint_speed !== 'undefined' ? endpoint_speed : 80) / 100.0;
+            let cShift = (typeof color_shift !== 'undefined' ? color_shift : 4) / 100.0;
+            let persist = (typeof persistence !== 'undefined' ? persistence : 86) / 100.0;
+            let fShift = (typeof flow_shift !== 'undefined' ? flow_shift : 18) / 10.0;
+            let dCount = typeof dot_count !== 'undefined' ? dot_count : 3;
+            
+            let eModeStr = typeof emitter_mode !== 'undefined' ? emitter_mode : "Both";
+            let eMode = eModeStr === "Lissajous" ? 0 : (eModeStr === "Dots" ? 1 : 2);
+
+            this.noiseBias.update(dt);
+            this.flowPrepare(t, fsX, faX, nfX, fsY, faY, nfY);
+
+            if (eMode === 0 || eMode === 2) this.emitLissajousLine(t, epSpeed, cShift);
+            if (eMode === 1 || eMode === 2) this.emitOrbitalDots(t, dCount, cShift);
+                
+            this.flowAdvect(dt, persist, fShift);
+        }
+
+        noisePunchX(center, w, amplitude, shape = BumpShape.HalfSine) { this.noiseBias.triggerX(center, w, amplitude, shape); }
+        noisePunchY(center, w, amplitude, shape = BumpShape.HalfSine) { this.noiseBias.triggerY(center, w, amplitude, shape); }
+
+        getPixels(uint8ClampedArray) {
+            for (let i = 0; i < this.width * this.height; i++) {
+                let offset = i * 4;
+                uint8ClampedArray[offset] = Math.max(0, Math.min(255, this.r[i]));
+                uint8ClampedArray[offset + 1] = Math.max(0, Math.min(255, this.g[i]));
+                uint8ClampedArray[offset + 2] = Math.max(0, Math.min(255, this.b[i]));
+                uint8ClampedArray[offset + 3] = 255;
+            }
+        }
+    }
+
+    let field = new FlowField(currentGridW, currentGridH);
+    let imgData = offCtx.createImageData(currentGridW, currentGridH);
+
+    function triggerPunch() {
+        const pickX = Math.random() < 0.5;
+        const sign = Math.random() < 0.5 ? 1.0 : -1.0;
+        if (pickX) {
+            const cx = Math.random() * field.width;
+            const w = field.width * 0.4;
+            field.noisePunchX(cx, w, sign);
+        } else {
+            const cy = Math.random() * field.height;
+            const h = field.height * 0.4;
+            field.noisePunchY(cy, h, sign);
+        }
+    }
+
+    function update(currentTime) {
+        if (!currentTime) currentTime = 0; 
+        let deltaTime = (currentTime - lastTime) / 1000 || (1/60);        
+        if (deltaTime > 0.25) { deltaTime = 1 / 60; }
+        lastTime = currentTime;
+        if (isNaN(deltaTime)) { requestAnimationFrame(update); return; }    
+        
+        engineTime += deltaTime;
+
+        // Dynamic Grid Resizing (Locked to 64:40 ratio)
+        let targetGridW = typeof grid_size !== 'undefined' ? Math.floor(grid_size) : 64;
+        let targetGridH = typeof grid_size !== 'undefined' ? Math.floor(grid_size * (40 / 64)) : 40;
+
+        if (targetGridW !== currentGridW || targetGridH !== currentGridH) {
+            currentGridW = targetGridW;
+            currentGridH = targetGridH;
+            
+            offCanvas.width = currentGridW;
+            offCanvas.height = currentGridH;
+            
+            field = new FlowField(currentGridW, currentGridH);
+            imgData = offCtx.createImageData(currentGridW, currentGridH);
+            currentLedSize = -1; // Force mask rebuild
+        }
+
+        // Audio reactivity logic & Glint
+        let bass = 0;
+        if (typeof engine !== 'undefined' && engine.audio && engine.audio.freq) {
+            let freq = new Uint8Array(engine.audio.freq);
+            bass = (freq[1] + freq[2] + freq[3]) / (3 * 255);
+        }
+
+        let isAudio = typeof audio_reactive !== 'undefined' ? audio_reactive : true;
+        
+        if (isAudio) {
+            let sens = typeof audio_sens !== 'undefined' ? audio_sens : 60;
+            let threshold = Math.max(0.1, 1.0 - (sens / 100.0));
+            
+            if (bass > threshold && (engineTime - lastPunchTime) > 0.3) {
+                triggerPunch();
+                lastPunchTime = engineTime;
+                if (audio_white) {
+                    beatGlint = 1.0; // Flash white on beat
+                }
+            } else if (bass > threshold * 0.7) {
+                // Subtle glint on minor beats
+                beatGlint = Math.max(beatGlint, bass * 0.5);
+            }
+        } else {
+            if (engineTime - lastPunchTime > 2.0) {
+                triggerPunch();
+                lastPunchTime = engineTime;
+                beatGlint = 1.0;
+            }
+        }
+        
+        // Decay the white glint over time so it flashes and fades
+        beatGlint = Math.max(0, beatGlint - deltaTime * 3.0);
+
+        // 1. Process and get pixels into the low-res buffer
+        field.update(deltaTime, engineTime);
+        field.getPixels(imgData.data);
+        offCtx.putImageData(imgData, 0, 0);
+
+        // 2. Render pixelated buffer up to full size
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.imageSmoothingEnabled = false; // Forces the chunky pixelation look
+        ctx.drawImage(offCanvas, 0, 0, width, height);
+
+        // 3. Draw LED Matrix Mask
+        let useMask = typeof enable_led_mask !== 'undefined' ? enable_led_mask : true;
+        if (useMask) {
+            let sizeRatio = (typeof led_size !== 'undefined' ? led_size : 75) / 100.0;
+            if (sizeRatio !== currentLedSize) {
+                updateMask(sizeRatio);
+                currentLedSize = sizeRatio;
+            }
+            ctx.drawImage(maskCanvas, 0, 0);
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+</script>
+</body>
+</html>
