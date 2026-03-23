@@ -65,6 +65,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- COPY CODE BUTTON LOGIC (WITH DEBUGGING & BULLETPROOF FALLBACK) ---
+    const copyCodeBtn = document.getElementById('copy-code-btn');
+    const codeContentEl = document.getElementById('code-preview-content');
+
+    if (copyCodeBtn && codeContentEl) {
+        copyCodeBtn.addEventListener('click', async () => {
+            console.log("1. Copy button clicked!");
+
+            // Use innerText to grab it exactly as it looks, preserving line breaks
+            const codeToCopy = codeContentEl.innerText || codeContentEl.textContent;
+
+            if (!codeToCopy) {
+                console.error("2. Error: No code found to copy!");
+                return;
+            }
+            console.log("2. Code grabbed successfully (Length: " + codeToCopy.length + " chars)");
+
+            const triggerSuccessUI = () => {
+                console.log("Success UI triggered.");
+                const originalHtml = copyCodeBtn.innerHTML;
+                copyCodeBtn.innerHTML = '<i class="bi bi-check2-all me-2"></i>Copied!';
+                copyCodeBtn.classList.replace('btn-primary', 'btn-success');
+
+                setTimeout(() => {
+                    copyCodeBtn.innerHTML = originalHtml;
+                    copyCodeBtn.classList.replace('btn-success', 'btn-primary');
+                }, 2000);
+            };
+
+            // Attempt 1: Modern API (Works if HTTPS or Localhost)
+            if (navigator.clipboard && window.isSecureContext) {
+                console.log("3. Attempting modern clipboard API...");
+                try {
+                    await navigator.clipboard.writeText(codeToCopy);
+                    console.log("4. Modern API succeeded!");
+                    triggerSuccessUI();
+                    return; // Stop here if it worked
+                } catch (err) {
+                    console.warn('Modern API failed, moving to fallback: ', err);
+                }
+            } else {
+                console.log("3. Modern API unavailable (Likely running local file:///). Moving to fallback.");
+            }
+
+            // Attempt 2: Bulletproof Fallback
+            console.log("4. Attempting fallback execCommand...");
+            try {
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = codeToCopy;
+
+                // Use opacity 0 instead of moving it off-screen to avoid strict browser blocking
+                tempTextArea.style.position = "fixed";
+                tempTextArea.style.opacity = "0";
+                tempTextArea.style.top = "0";
+                tempTextArea.style.left = "0";
+
+                document.body.appendChild(tempTextArea);
+
+                tempTextArea.focus();
+                tempTextArea.select();
+                tempTextArea.setSelectionRange(0, 999999); // Safeguard for some mobile/strict browsers
+
+                const successful = document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+
+                if (successful) {
+                    console.log("5. Fallback succeeded!");
+                    triggerSuccessUI();
+                } else {
+                    console.error("5. execCommand returned false.");
+                    alert('Browser blocked copying. Please click inside the code block and press Ctrl+C.');
+                }
+            } catch (err) {
+                console.error('Fallback totally failed: ', err);
+                alert('Browser blocked copying. Please click inside the code block and press Ctrl+C.');
+            }
+        });
+    } else {
+        console.error("Copy Code setup failed: Button or Content element not found in the DOM.");
+    }
 });
 
 // --- 3. HELPER FUNCTIONS ---
@@ -806,6 +887,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const shareBtn = document.getElementById('effect-share-btn');
         const downloadBtn = document.getElementById('effect-download-btn');
         const recordBtn = document.getElementById('effect-record-btn');
+        const codeBtn = document.getElementById('effect-code-btn');
 
         if (!effectIframe || !effectIframeContainer) {
             console.error("Critical Error: Modal containers not found. Check for nested modals in index.html.");
@@ -835,6 +917,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const newRecordBtn = recordBtn.cloneNode(true);
             recordBtn.replaceWith(newRecordBtn);
             newRecordBtn.addEventListener('click', () => recordEffectPreview(effect.title, newRecordBtn));
+        }
+
+        if (codeBtn) {
+            const newCodeBtn = codeBtn.cloneNode(true);
+            codeBtn.replaceWith(newCodeBtn);
+            newCodeBtn.addEventListener('click', () => handleViewCode(effect));
         }
 
         // --- 4. ASPECT RATIO & SCALING ---
