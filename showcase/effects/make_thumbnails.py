@@ -13,7 +13,7 @@ HTML_FOLDER = r'C:\wamp64\www\showcase\effects' # <-- Path to your HTML files
 OUTPUT_FOLDER = HTML_FOLDER # Thumbnails saved in the same folder
 THUMBNAIL_WIDTH = 320
 THUMBNAIL_HEIGHT = 200
-WAIT_SECONDS = 5  # Adjust based on how long animations take to look good
+WAIT_SECONDS = 1.0  # Adjust based on how long animations take to look good
 USE_HEADLESS = False # <-- CRITICAL: Must be False for animations/WebGL to render
 # --- End Configuration ---
 
