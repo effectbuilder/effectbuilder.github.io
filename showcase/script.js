@@ -879,36 +879,33 @@ document.addEventListener('DOMContentLoaded', function () {
             const hasPresets = effect.presets && effect.presets.length > 0;
             const hasTags = effect.tags && effect.tags.length > 0;
 
-            if (hasPresets || hasTags) {
-                badgesHtml = `<div class="mb-2">`;
+            // Generate the raw badge spans (removed the wrapper div and margins)
+            if (hasPresets) {
+                badgesHtml += `<span class="badge bg-primary small" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
+            }
 
-                // 1. Add Presets Badge First (so it stands out)
-                if (hasPresets) {
-                    badgesHtml += `<span class="badge bg-primary me-1 small" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length} Preset${effect.presets.length > 1 ? 's' : ''}</span>`;
+            if (hasTags) {
+                effect.tags.slice(0, 3).forEach(tag => {
+                    let cls = 'bg-secondary';
+                    if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
+                    else if (tag === 'Customizable') cls = 'bg-warning text-dark';
+                    else if (tag === 'Interactive') cls = 'bg-success';
+                    badgesHtml += `<span class="badge ${cls} small">${tag}</span>`;
+                });
+                if (effect.tags.length > 3) {
+                    badgesHtml += `<span class="badge bg-light text-dark border small">+${effect.tags.length - 3}</span>`;
                 }
-
-                // 2. Add Standard Tags
-                if (hasTags) {
-                    effect.tags.slice(0, 3).forEach(tag => {
-                        let cls = 'bg-secondary';
-                        if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
-                        else if (tag === 'Customizable') cls = 'bg-warning text-dark';
-                        else if (tag === 'Interactive') cls = 'bg-success';
-                        badgesHtml += `<span class="badge ${cls} me-1 small">${tag}</span>`;
-                    });
-                    if (effect.tags.length > 3) {
-                        badgesHtml += `<span class="badge bg-light text-dark border me-1 small">+${effect.tags.length - 3}</span>`;
-                    }
-                }
-
-                badgesHtml += `</div>`;
             }
 
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body d-flex flex-column';
+
+            // Updated HTML: Group title and badges in a flex-wrap container
             cardBody.innerHTML = `
-                <h5 class="card-title text-truncate" title="${effect.title}">${effect.title}</h5>
-                ${badgesHtml}
+                <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                    <h5 class="card-title mb-0 me-1 text-truncate" style="max-width: 100%;" title="${effect.title}">${effect.title}</h5>
+                    ${badgesHtml}
+                </div>
                 <p class="card-text text-body-secondary small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${effect.description}</p>
                 <small class="text-muted mt-2">By: ${effect.author}</small>
             `;
@@ -968,8 +965,31 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // --- 2. RESET STATE ---
-        effectViewTitle.textContent = effect.title;
+        // --- 2. RESET STATE & INJECT BADGES ---
+        let modalBadgesHtml = '';
+
+        // Add Presets Badge
+        if (effect.presets && effect.presets.length > 0) {
+            modalBadgesHtml += `<span class="badge bg-primary ms-2 align-middle fs-6" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
+        }
+
+        // Add Tags Badges
+        if (effect.tags && effect.tags.length > 0) {
+            effect.tags.forEach(tag => {
+                let cls = 'bg-secondary';
+                if (tag.toLowerCase().includes('sound')) cls = 'bg-info text-dark';
+                else if (tag === 'Customizable') cls = 'bg-warning text-dark';
+                else if (tag === 'Interactive') cls = 'bg-success';
+                modalBadgesHtml += `<span class="badge ${cls} ms-2 align-middle fs-6">${tag}</span>`;
+            });
+        }
+
+        // Wrap the title and badges in a flex container so they look clean and wrap if needed
+        effectViewTitle.innerHTML = `<div class="d-flex align-items-center flex-wrap">${effect.title} ${modalBadgesHtml}</div>`;
+
+        // Clear iframe
+        effectIframe.removeAttribute('srcdoc');
+        effectIframe.src = effect.effectUrl;
         // Clear both to ensure no "ghosting" from the previous effect
         effectIframe.removeAttribute('srcdoc');
         effectIframe.src = effect.effectUrl;
@@ -1011,26 +1031,13 @@ document.addEventListener('DOMContentLoaded', function () {
         effectIframeContainer.style.width = `${320 * scale}px`;
         effectIframeContainer.style.height = `${200 * scale}px`;
 
-        // --- 5. BOX 1: DESCRIPTION & TAGS ---
-        let tagsHtml = '';
-        if (effect.tags.length) {
-            tagsHtml = `<div class="mt-3"><h6 class="fw-bold small text-uppercase tracking-wider">Tags</h6>`;
-            effect.tags.forEach(tag => {
-                let cls = 'bg-secondary';
-                if (tag.includes('Sound')) cls = 'bg-info text-dark';
-                else if (tag === 'Customizable') cls = 'bg-warning text-dark';
-                tagsHtml += `<span class="badge ${cls} me-2">${tag}</span>`;
-            });
-            tagsHtml += `</div>`;
-        }
-
+        // --- 5. BOX 1: DESCRIPTION ---
         document.getElementById('effect-main-info').innerHTML = `
         <div class="mb-3">
             <h6 class="fw-bold small text-uppercase tracking-wider">Description</h6>
             <p class="text-light small mb-0">${effect.description}</p>
         </div>
-        ${tagsHtml}
-    `;
+        `;
 
         // --- 6. BOX 2: ADJUSTABLE PROPERTIES (Accordion Box) ---
         const propCard = document.getElementById('properties-section-card');
