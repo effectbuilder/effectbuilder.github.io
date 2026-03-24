@@ -170,7 +170,17 @@
                                         <label class="small fw-bold text-muted mb-1">Posting as:</label>
                                         <input type="text" id="comment-name" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="User Name" readonly autocomplete="off">
                                         <textarea id="comment-text" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" rows="2" placeholder="Share a comment or your custom mix..." autocomplete="off"></textarea>
-                                        <input type="text" id="comment-preset" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="Paste SignalRGB Preset URL (Optional)" autocomplete="off">
+
+                                        <div class="input-group input-group-sm mb-2">
+                                            <input type="text" id="comment-preset" class="form-control bg-dark text-white border-secondary" placeholder="Paste SignalRGB Preset URL (Optional)" autocomplete="off">
+                                            <button class="btn btn-outline-secondary" type="button" id="btn-paste-preset" title="Paste from Clipboard">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary help-btn-trigger" type="button" title="How to get a preset link?">
+                                                <i class="bi bi-question-circle"></i>
+                                            </button>
+                                        </div>
+
                                         <div class="text-end">
                                             <button class="btn btn-sm btn-primary px-3" id="btn-post-comment">Post to Feed</button>
                                         </div>
@@ -306,8 +316,34 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="modal fade" id="presetHelpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary">
 
+                <div class="modal-header border-secondary py-2">
+                    <h6 class="modal-title fw-bold small"><i class="bi bi-info-circle text-info me-2"></i>How to get the preset link?</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body text-center p-3">
+                    <ol class="text-start small text-light mb-3 ps-3">
+                        <li class="mb-1">Customize your effect in SignalRGB.</li>
+                        <li class="mb-1">Click the <strong>Share</strong> icon (below the effect preview canvas).</li>
+                        <li>Click the <strong>Paste</strong> button here.</li>
+                    </ol>
+
+                    <div class="bg-black border border-secondary rounded p-1">
+                        <video src="./get_preset_link.mp4" class="img-fluid rounded" style="opacity: 0.9;" autoplay loop muted playsinline>
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 
