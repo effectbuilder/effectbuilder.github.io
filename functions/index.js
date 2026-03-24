@@ -13,6 +13,32 @@ const pushoverApiToken = defineSecret("PUSHOVER_API_TOKEN");
 
 const ADMIN_UID = "zMj8mtfMjXeFMt072027JT7Jc7i1"; 
 
+// --- HELPER: SEND PUSHOVER NOTIFICATION ---
+async function sendPushoverNotification(title, message, url, urlTitle) {
+    try {
+        const response = await fetch("https://api.pushover.net/1/messages.json", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                token: pushoverApiToken.value(),
+                user: pushoverUserKey.value(),
+                message: message,
+                title: title,
+                url: url,
+                url_title: urlTitle,
+                priority: 1 
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Pushover Error:", errorText);
+        }
+    } catch (error) {
+        console.error("Fetch Error:", error);
+    }
+}
+
 // --- 2. EFFECT BUILDER TRIGGER ---
 exports.notifyOnNewEffect = onDocumentCreated({
     document: "projects/{projectId}",
@@ -33,30 +59,12 @@ exports.notifyOnNewEffect = onDocumentCreated({
     const name = project.projectName || 'Untitled Effect';
     const url = `https://effectbuilder.github.io/?effectId=${projectId}`;
 
-    try {
-        const response = await fetch("https://api.pushover.net/1/messages.json", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                token: pushoverApiToken.value(),
-                user: pushoverUserKey.value(),
-                message: `New effect "${name}" created by ${author}`,
-                title: "🚀 Effect Builder Alert",
-                url: url,
-                url_title: "Open in Builder",
-                priority: 1 
-            })
-        });
-
-        if (response.ok) {
-            console.log(`Push notification sent for: ${name}`);
-        } else {
-            const errorText = await response.text();
-            console.error("Pushover Error:", errorText);
-        }
-    } catch (error) {
-        console.error("Fetch Error:", error);
-    }
+    await sendPushoverNotification(
+        "🚀 Effect Builder Alert",
+        `New effect "${name}" created by ${author}`,
+        url,
+        "Open in Builder"
+    );
 });
 
 // --- 3. GIPHY SECURE PROXY ---
@@ -97,22 +105,101 @@ exports.notifyOnNewComponent = onDocumentCreated({
     const name = component.name || 'Untitled Component';
     const url = `https://effectbuilder.github.io/builder/?id=${componentId}`;
 
-    try {
-        await fetch("https://api.pushover.net/1/messages.json", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                token: pushoverApiToken.value(),
-                user: pushoverUserKey.value(),
-                message: `New component "${name}" created by ${author}`,
-                title: "🛠️ Component Creator Alert",
-                url: url,
-                url_title: "View Component",
-                priority: 1
-            })
-        });
-        console.log(`Component notification sent: ${name}`);
-    } catch (error) {
-        console.error("Pushover Error:", error);
+    await sendPushoverNotification(
+        "🛠️ Component Creator Alert",
+        `New component "${name}" created by ${author}`,
+        url,
+        "View Component"
+    );
+});
+
+// --- 5. SHOWCASE COMMUNITY FEED COMMENTS ---
+exports.notifyOnShowcaseComment = onDocumentCreated({
+    document: "community_presets/{presetId}",
+    secrets: [pushoverUserKey, pushoverApiToken]
+}, async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return null;
+
+    const data = snapshot.data();
+    
+    // Don't notify if you are the one replying
+    if (data.userId === ADMIN_UID) return null;
+
+    const author = data.userName || 'Anonymous';
+    const effectFile = data.effectFile || 'Unknown Effect';
+    const text = data.commentText || '';
+    
+    // Assuming this points to your showcase page hash
+    const url = `https://rgbjunkie.com/showcase#${effectFile}`;
+
+    await sendPushoverNotification(
+        "💬 New Showcase Comment",
+        `${author} commented on ${effectFile}:\n"${text}"`,
+        url,
+        "View Comment"
+    );
+});
+
+
+// --- 6. EFFECT BUILDER COMMENTS ---
+exports.notifyOnEffectComment = onDocumentCreated({
+    document: "srgb-effect-comments/{commentId}",
+    secrets: [pushoverUserKey, pushoverApiToken]
+}, async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return null;
+
+    const data = snapshot.data();
+    
+    // Check against your ownerId to prevent self-notifications
+    if (data.ownerId === ADMIN_UID) return null;
+
+    const targetId = data.projectId; 
+    if (!targetId) {
+        console.error("Missing projectId in comment document.");
+        return null; 
     }
+
+    const author = data.ownerName || 'Anonymous';
+    const text = data.text || '';
+    const url = `https://effectbuilder.github.io/?effectId=${targetId}`;
+
+    await sendPushoverNotification(
+        "📝 New Effect Builder Comment",
+        `${author} says:\n"${text}"`,
+        url,
+        "View Project"
+    );
+});
+
+
+// --- 7. COMPONENT CREATOR COMMENTS ---
+exports.notifyOnComponentComment = onDocumentCreated({
+    document: "srgb-component-comments/{commentId}",
+    secrets: [pushoverUserKey, pushoverApiToken]
+}, async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return null;
+
+    const data = snapshot.data();
+    
+    if (data.ownerId === ADMIN_UID) return null;
+
+    const targetId = data.componentId; 
+    if (!targetId) {
+        console.error("Missing componentId in comment document.");
+        return null; 
+    }
+
+    const author = data.ownerName || 'Anonymous';
+    const text = data.text || '';
+    const url = `https://effectbuilder.github.io/builder/?id=${targetId}`;
+
+    await sendPushoverNotification(
+        "🧩 New Component Comment",
+        `${author} says:\n"${text}"`,
+        url,
+        "View Component"
+    );
 });
