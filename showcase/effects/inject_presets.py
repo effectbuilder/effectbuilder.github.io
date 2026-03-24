@@ -129,7 +129,7 @@ def process_files():
 
                     query = urllib.parse.urlencode(params)
                     base = filename.rsplit('.', 1)[0]
-                    url = f"https://go.signalrgb.com/app/apply/{base}/?{query}"
+                    url = f"https://go.signalrgb.com/app/effect/apply/{base}/?{query}"
                     generated_presets.append({"name": name, "url": url})
 
             if not generated_presets:
