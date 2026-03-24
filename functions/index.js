@@ -1,3 +1,5 @@
+// Redeployment command: firebase deploy --only functions
+//
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
