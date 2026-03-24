@@ -66,6 +66,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- SAFE NESTED MODAL LOGIC FOR HELP BUTTON ---
+    document.addEventListener('click', (e) => {
+        const helpBtn = e.target.closest('.help-btn-trigger');
+
+        if (helpBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const helpModalEl = document.getElementById('presetHelpModal');
+
+            if (helpModalEl) {
+                // 1. Force the help modal to sit above the main modal
+                helpModalEl.style.zIndex = '1065';
+
+                let helpModal = bootstrap.Modal.getInstance(helpModalEl);
+                if (!helpModal) {
+                    helpModal = new bootstrap.Modal(helpModalEl);
+                }
+                helpModal.show();
+
+                // 2. Wait for Bootstrap to build the backdrop, then adjust its z-index
+                helpModalEl.addEventListener('shown.bs.modal', () => {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length > 1) {
+                        backdrops[backdrops.length - 1].style.zIndex = '1060';
+                    }
+                }, { once: true });
+
+            } else {
+                console.error("Help Modal missing from index.html! Check your HTML file.");
+            }
+        }
+    });
+
     // --- COPY CODE BUTTON LOGIC (WITH DEBUGGING & BULLETPROOF FALLBACK) ---
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const codeContentEl = document.getElementById('code-preview-content');
@@ -145,6 +179,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else {
         console.error("Copy Code setup failed: Button or Content element not found in the DOM.");
+    }
+
+    // --- PASTE BUTTON LOGIC (MAIN FORM) ---
+    const pasteBtn = document.getElementById('btn-paste-preset');
+    const presetInput = document.getElementById('comment-preset');
+
+    if (pasteBtn && presetInput) {
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                presetInput.value = text;
+            } catch (err) {
+                console.error('Failed to read clipboard:', err);
+                alert('Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
+            }
+        });
     }
 });
 
@@ -258,7 +308,17 @@ async function loadCommunityFeed(filename) {
 
                     <div id="edit-mode-${docSnapshot.id}" style="display: none;">
                         <textarea class="form-control form-control-sm bg-dark text-white border-secondary mb-2 inline-edit-textarea">${data.commentText}</textarea>
-                        <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary mb-2 inline-edit-preset" placeholder="Paste SignalRGB Preset URL (Optional)" value="${data.presetUrl || ''}">
+                        
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" class="form-control bg-dark text-white border-secondary inline-edit-preset" placeholder="Paste SignalRGB Preset URL (Optional)" value="${data.presetUrl || ''}">
+                            <button class="btn btn-outline-secondary inline-paste-btn" type="button" title="Paste from Clipboard">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-target="#presetHelpModal" title="How to get a preset link?">
+                                <i class="bi bi-question-circle"></i>
+                            </button>
+                        </div>
+
                         <div class="text-end">
                             <button class="btn btn-sm btn-secondary me-2 cancel-edit-btn" data-doc-id="${docSnapshot.id}">Cancel</button>
                             <button class="btn btn-sm btn-success save-edit-btn" data-doc-id="${docSnapshot.id}">Save</button>
@@ -297,6 +357,20 @@ async function loadCommunityFeed(filename) {
                 const docId = e.currentTarget.getAttribute('data-doc-id');
                 document.getElementById(`view-mode-${docId}`).style.display = 'block';
                 document.getElementById(`edit-mode-${docId}`).style.display = 'none';
+            });
+        });
+
+        // --- 4.5 PASTE BUTTON LOGIC (EDIT MODE) ---
+        feedContainer.querySelectorAll('.inline-paste-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    const input = e.currentTarget.parentElement.querySelector('.inline-edit-preset');
+                    if (input) input.value = text;
+                } catch (err) {
+                    console.error('Failed to read clipboard:', err);
+                    alert('Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
+                }
             });
         });
 
