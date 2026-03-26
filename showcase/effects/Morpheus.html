@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Morphing Constellation</title>
+    <meta title="Morphing Constellation">
+    <meta description="A mesmerizing 3D light show that pulses to your music. Watch as glowing shapes smoothly transform and ripple with every beat." />
+    <meta publisher="José Miranda" />
+
+    <meta property="shapeSelection" label="Shape Selection" type="combobox" values="Cone,Cycle,Cylinder,Mobius,Plane,Random,Ripple Plane,Sphere,Torus,Tri-Twist,Wormhole" default="Random">
+    <meta property="morphIntervalSec" label="Shape: Morph Interval (s)" type="number" min="2" max="20" default="5" step="1">
+    <meta property="particleCount" label="Shape: Grid Detail" type="number" min="50" max="400" default="300" step="1">
+
+    <meta property="cameraMotion" label="Camera: Motion Pattern" type="combobox" values="Drunken,Orbit,Pulse Zoom,Static,Tumble,Wander" default="Tumble">
+    <meta property="cameraSpeed" label="Camera: Speed" type="number" min="1" max="10" default="2" step="1">
+    <meta property="cameraDistance" label="Camera: Distance" type="number" min="50" max="300" default="200" step="1">
+    <meta property="fieldOfView" label="Camera: Field of View" type="number" min="100" max="500" default="200" step="1">
+
+    <meta property="curvature" label="Style: Curve Strength" type="number" min="0" max="100" default="100" step="1">
+    <meta property="faceOpacity" label="Style: Surface Solidness" type="number" min="0" max="100" default="20" step="1">
+    <meta property="lineWidth" label="Style: Line Thickness" type="number" min="1" max="5" default="1" step="1">
+    <meta property="showFaces" label="Style: Show Surfaces" type="boolean" default="true">
+    <meta property="showLines" label="Style: Show Wireframe" type="boolean" default="true">
+    <meta property="showNodes" label="Style: Show Corner Points" type="boolean" default="false">
+
+    <meta property="colorMapType" label="Color: Flow Pattern" type="combobox" values="Conic,Deformation,Dual Sine,Index,Linear,Radial" default="Conic">
+    <meta property="profile" label="Color: Profile" type="combobox" values="Amethyst Geode,Bioluminescent,Blood Moon,Cosmic Void,Custom,Cyber City,Deep Space,Electric Indigo,Emerald Dream,Frozen Core,Ghost in Machine,Golden Ratio,Inferno,Matrix,Monochrome,Neon Tokyo,Outrun,Rainbow,Solar Flare,Synthwave,Toxic Waste,Vaporwave" default="Solar Flare">
+    <meta property="colorSpeed" label="Color: Cycle Speed" type="number" min="0" max="10" default="3" step="1">
+    <meta property="color1" label="Color: Custom Start" type="color" default="#ff0000">
+    <meta property="color2" label="Color: Custom Mid" type="color" default="#e000ff">
+    <meta property="color3" label="Color: Custom End" type="color" default="#0000ff">
+
+    <meta property="audioEnabled" label="Audio: Reactive Enabled" type="boolean" default="true">
+    <meta property="audioSensitivity" label="Audio: Sensitivity" type="number" min="10" max="100" default="100" step="1">
+    <meta property="waveIntensity" label="Audio: Ripple Strength" type="number" min="0" max="100" default="10" step="1">
+    <meta property="waveSpeed" label="Audio: Ripple Speed" type="number" min="1" max="10" default="2" step="1">
+</head>
+
+<body style="margin: 0; background: #000; overflow: hidden;">
+    <canvas id="mcCanvas" width="320" height="200" style="width: 100vw; height: 100vh; image-rendering: pixelated;"></canvas>
+
+    <script>
+        if (typeof window.engine === 'undefined') {
+            const metaTags = document.querySelectorAll('meta[property]');
+            metaTags.forEach(meta => {
+                const propName = meta.getAttribute('property');
+                const propType = meta.getAttribute('type');
+                const defaultVal = meta.getAttribute('default');
+                if (propName) {
+                    let finalValue = defaultVal;
+                    if (propType === 'number') finalValue = parseFloat(defaultVal);
+                    else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                    window[propName] = finalValue;
+                }
+            });
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+            function simulateAudio() {
+                const time = Date.now() / 1000;
+                const dataArray = new Array(128).fill(0);
+                const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+                const bassVal = Math.pow(beat, 4) * 255;
+                dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+                window.engine.audio.freq = dataArray;
+                requestAnimationFrame(simulateAudio);
+            }
+            simulateAudio();
+        }
+    </script>
+
+    <script>
+        const Ease = {
+            outElastic: (t) => {
+                const c4 = (2 * Math.PI) / 3;
+                return t === 0 ? 0 : t >= 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+            }
+        };
+        const canvas = document.getElementById('mcCanvas'), ctx = canvas.getContext('2d', { alpha: false });
+        const width = 320, height = 200;
+
+        const shapeMap = ["Cone", "Cylinder", "Mobius", "Plane", "Ripple Plane", "Sphere", "Torus", "Tri-Twist", "Wormhole"];
+        const shapeMeta = [[0, 1, 0, 1, false], [1, 1, 0, 1.2, false], [1, 1, 0, 1.6, true], [0, 0, 0, 1, false], [0.3, 0, 0, 1.1, false], [1, 1, 0, 1.8, false], [1, 1, 1, 1.9, false], [1, 1, 0, 1.5, false], [1, 1, 0, 1.3, false]];
+
+        const colorProfiles = {
+            "Amethyst Geode": ["#4b0082", "#9400d3", "#ff00ff"], "Bioluminescent": ["#001133", "#00ffcc", "#ffffff"],
+            "Blood Moon": ["#220000", "#ff0000", "#ff6600"], "Cosmic Void": ["#110033", "#4400aa", "#ff00aa"],
+            "Cyber City": ["#00ffff", "#ff00ff", "#0000ff"], "Deep Space": ["#000011", "#4444ff", "#00ffff"],
+            "Electric Indigo": ["#110044", "#6600ff", "#aa00ff"], "Emerald Dream": ["#003311", "#00ff66", "#aaffcc"],
+            "Frozen Core": ["#0022ff", "#00aaff", "#ffffff"], "Ghost in Machine": ["#222222", "#556677", "#ccddff"],
+            "Golden Ratio": ["#442200", "#aa6600", "#ffdd44"], "Inferno": ["#440000", "#ff4400", "#ffcc00"],
+            "Matrix": ["#001100", "#00ff00", "#003300"], "Monochrome": ["#000000", "#888888", "#eeeeee"],
+            "Neon Tokyo": ["#ff0055", "#00ccff", "#00ffaa"], "Outrun": ["#ff0044", "#fb9062", "#0000ff"],
+            "Solar Flare": ["#ff2200", "#ffcc00", "#ffffff"], "Synthwave": ["#2b1055", "#ffaa00", "#ff00ff"],
+            "Toxic Waste": ["#004400", "#aaff00", "#ffffff"], "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1"]
+        };
+
+        let particles = [], activeWaves = [], engineTime = 0, lastTime = 0, lastMorphTime = -999;
+        let angleX = 0.15, angleY = 0, currentFormation = -1, prevFormation = -1, globalCols = 15, globalRows = 10, lastBass = 0;
+        let lastSelection = "", currentParticleCount = -1;
+
+        function hexToRgb(hex) {
+            let res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return res ? { r: parseInt(res[1], 16), g: parseInt(res[2], 16), b: parseInt(res[3], 16) } : { r: 0, g: 0, b: 0 };
+        }
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        function getBaseSurface(form, u, v) {
+            if (form < 0) return { x: 0, y: 0, z: 0 };
+            switch (form) {
+                case 0: return { x: (1.0 - v) * 60 * Math.cos(u * Math.PI * 2), y: (v - 0.4) * 120, z: (1.0 - v) * 60 * Math.sin(u * Math.PI * 2) };
+                case 1: return { x: 50 * Math.cos(u * Math.PI * 2), y: (v - 0.5) * 140, z: 50 * Math.sin(u * Math.PI * 2) };
+                case 2: let a = u * Math.PI * 2, rad = 70, w = 40; return { x: (rad + (v - 0.5) * w * Math.cos(a / 2)) * Math.cos(a), y: (rad + (v - 0.5) * w * Math.cos(a / 2)) * Math.sin(a), z: (v - 0.5) * w * Math.sin(a / 2) };
+                case 3: return { x: (u - 0.5) * 160, y: 0, z: (v - 0.5) * 160 };
+                case 4: let dP = Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)); return { x: (u - 0.5) * 160, y: 12 * Math.sin(dP * 12 - engineTime * 3), z: (v - 0.5) * 160 };
+                case 5: return { x: 75 * Math.sin(v * Math.PI) * Math.cos(u * Math.PI * 2), y: 75 * Math.cos(v * Math.PI), z: 75 * Math.sin(v * Math.PI) * Math.sin(u * Math.PI * 2) };
+                case 6: return { x: (55 + 15 * Math.cos(v * Math.PI * 2)) * Math.cos(u * Math.PI * 2), y: (55 + 15 * Math.cos(v * Math.PI * 2)) * Math.sin(u * Math.PI * 2), z: 15 * Math.sin(v * Math.PI * 2) };
+                case 7: let uR = u * Math.PI * 2, vR = (v - 0.5) * 40; return { x: (55 + vR * Math.cos(3 * uR)) * Math.cos(uR), y: vR * Math.sin(3 * uR), z: (55 + vR * Math.cos(3 * uR)) * Math.sin(uR) };
+                case 8: let vH = (v - 0.5) * 2, uH = u * Math.PI * 2, crv = 15 + 40 * Math.pow(Math.abs(vH), 2.5); return { x: crv * Math.cos(uH), y: 70 * vH, z: crv * Math.sin(uH) };
+            }
+        }
+
+        function getLivePos(u, v, mix) {
+            let p1 = getBaseSurface(prevFormation, u, v), p2 = getBaseSurface(currentFormation, u, v);
+            let pos = { x: lerp(p1.x, p2.x, mix), y: lerp(p1.y, p2.y, mix), z: lerp(p1.z, p2.z, mix) };
+            let total = 0;
+            if (window.audioEnabled) {
+                let waveDist = (currentFormation === 3 || currentFormation === 4) ? Math.sqrt(pos.x ** 2 + pos.z ** 2) : Math.sqrt(pos.x ** 2 + (pos.y - 75) ** 2 + pos.z ** 2);
+                activeWaves.forEach(w => {
+                    let d = Math.abs(waveDist - ((engineTime - w.startTime) * (window.waveSpeed || 2) * 55));
+                    if (d < 50) total += Math.cos(d * 0.12) * (1 - (engineTime - w.startTime) / 4) * w.strength;
+                });
+                if (currentFormation === 3 || currentFormation === 4) pos.y += total;
+                else { let rM = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2) || 1; pos.x += (pos.x / rM) * total; pos.y += (pos.y / rM) * total; pos.z += (pos.z / rM) * total; }
+            }
+            return { ...pos, defAmount: total };
+        }
+
+        function triggerMorph(changeShape = true) {
+            if (changeShape) {
+                let sel = window.shapeSelection || "Random";
+                prevFormation = currentFormation < 0 ? 5 : currentFormation;
+                if (sel === "Cycle") currentFormation = (currentFormation + 1) % 9;
+                else if (sel === "Random") { let n; do { n = Math.floor(Math.random() * 9); } while (n === currentFormation); currentFormation = n; }
+                else { let idx = shapeMap.indexOf(sel); currentFormation = idx >= 0 ? idx : 5; }
+            }
+
+            let targetCount = Math.round((window.particleCount || 300) * (shapeMeta[currentFormation][3] || 1));
+            globalCols = Math.ceil(Math.sqrt(targetCount * 1.5));
+            globalRows = Math.ceil(targetCount / globalCols);
+
+            particles = [];
+            for (let i = 0; i < globalCols * globalRows; i++) {
+                particles.push({
+                    u: (i % globalCols) / Math.max(1, globalCols - 1),
+                    v: (globalRows > 1) ? Math.floor(i / globalCols) / (globalRows - 1) : 0,
+                    mix: changeShape ? 0 : 1,
+                    morphStartTime: changeShape ? engineTime : engineTime - 10
+                });
+            }
+        }
+
+        function project(x, y, z) {
+            let fov = window.fieldOfView || 200, camZ = window.cameraDistance || 200;
+            let cY = Math.cos(angleY), sY = Math.sin(angleY), cX = Math.cos(angleX), sX = Math.sin(angleX);
+            let x1 = x * cY - z * sY, z1 = z * cY + x * sY, y2 = y * cX - z1 * sX, z2 = z1 * cX + y * sX, sc = fov / (camZ + z2);
+            return { px: (x1 * sc) + (width / 2), py: (y2 * sc) + (height / 2), sc, rawZ: z2 };
+        }
+
+        function update(t) {
+            let dt = (t - lastTime) / 1000 || 0.016; lastTime = t; engineTime += dt;
+
+            if (window.audioEnabled) {
+                const bass = (new Int8Array(window.engine.audio.freq)[0]) / 255;
+                if (bass > (0.95 - (window.audioSensitivity / 100 * 0.9)) && bass > lastBass + 0.02) activeWaves.push({ startTime: engineTime, strength: bass * (window.waveIntensity || 10) * 0.5 });
+                lastBass = bass;
+            }
+            activeWaves = activeWaves.filter(w => engineTime - w.startTime < 4);
+
+            let pCountSetting = Math.round(window.particleCount || 300);
+            if (currentParticleCount !== pCountSetting) {
+                currentParticleCount = pCountSetting;
+                if (currentFormation !== -1) triggerMorph(false);
+            }
+
+            if (window.shapeSelection !== lastSelection) { triggerMorph(true); lastSelection = window.shapeSelection; lastMorphTime = engineTime; }
+            if ((window.shapeSelection === "Cycle" || window.shapeSelection === "Random") && (engineTime - lastMorphTime > (window.morphIntervalSec || 5))) { triggerMorph(true); lastMorphTime = engineTime; }
+
+            let cpName = window.profile || "Solar Flare", palette = [];
+            if (cpName === "Custom") palette = [hexToRgb(window.color1), hexToRgb(window.color2), hexToRgb(window.color3)];
+            else { let pProf = colorProfiles[cpName] || colorProfiles["Solar Flare"]; palette = [hexToRgb(pProf[0]), hexToRgb(pProf[1]), hexToRgb(pProf[2])]; }
+
+            particles.forEach((p, i) => {
+                let morphElapsed = engineTime - p.morphStartTime;
+                p.mix = Ease.outElastic(Math.min(1, morphElapsed / 2.2));
+                let live = getLivePos(p.u, p.v, p.mix);
+                let proj = project(live.x, live.y, live.z);
+                p.projX = proj.px; p.projY = proj.py; p.sc = proj.sc; p.zDepth = proj.rawZ;
+                p.worldX = live.x; p.worldY = live.y; p.worldZ = live.z;
+
+                let ratio = 0;
+                switch (window.colorMapType || "Conic") {
+                    case "Linear": ratio = p.u; break;
+                    case "Radial": ratio = Math.sqrt(live.x ** 2 + live.y ** 2 + live.z ** 2) / 100; break;
+                    case "Conic": ratio = (Math.atan2(Math.sin(p.u * Math.PI * 2), Math.cos(p.u * Math.PI * 2)) + Math.PI) / (Math.PI * 2); break;
+                    case "Deformation": ratio = (p.u * 0.3 + p.v * 0.2) + (Math.abs(live.defAmount) / ((window.waveIntensity || 10) * 0.1 + 5)); break;
+                    default: ratio = p.u;
+                }
+                let fR = (0.5 + 0.5 * Math.cos(ratio * Math.PI * 2 + engineTime * (window.colorSpeed || 3) * 0.2)) % 1;
+                let ci = fR < 0.5 ? 0 : 1, tL = ci === 0 ? fR * 2 : (fR - 0.5) * 2;
+                p.r = lerp(palette[ci].r, palette[ci + 1].r, tL); p.g = lerp(palette[ci].g, palette[ci + 1].g, tL); p.b = lerp(palette[ci].b, palette[ci + 1].b, tL);
+            });
+
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, width, height);
+
+            if (window.showFaces) {
+                let faces = [];
+                for (let r = 0; r < globalRows - 1; r++) {
+                    for (let c = 0; c < globalCols - 1; c++) {
+                        let i1 = r * globalCols + c, i2 = i1 + 1, i3 = (r + 1) * globalCols + 1 + c, i4 = i3 - 1;
+                        if (particles[i1] && particles[i3]) faces.push({ p: [particles[i1], particles[i2], particles[i3], particles[i4]], z: (particles[i1].zDepth + particles[i3].zDepth) / 2 });
+                    }
+                }
+                faces.sort((a, b) => b.z - a.z).forEach(f => {
+                    ctx.fillStyle = `rgba(${f.p[0].r},${f.p[0].g},${f.p[0].b},${(window.faceOpacity || 20) / 100})`;
+                    ctx.beginPath(); ctx.moveTo(f.p[0].projX, f.p[0].projY); ctx.lineTo(f.p[1].projX, f.p[1].projY); ctx.lineTo(f.p[2].projX, f.p[2].projY); ctx.lineTo(f.p[3].projX, f.p[3].projY); ctx.fill();
+                });
+            }
+
+            if (window.showLines) {
+                let gCrv = (window.curvature || 100) / 100;
+                let uStep = 1 / Math.max(1, globalCols - 1);
+                let vStep = 1 / Math.max(1, globalRows - 1);
+
+                particles.forEach((p1, i) => {
+                    let c = i % globalCols, r = Math.floor(i / globalCols), meta = shapeMeta[currentFormation];
+                    let neighbors = [];
+
+                    if (c < globalCols - 1) neighbors.push({ p2: particles[i + 1], um: p1.u + uStep / 2, vm: p1.v });
+                    else if (meta[1]) neighbors.push({ p2: particles[meta[4] ? (globalRows - 1 - r) * globalCols : r * globalCols], um: p1.u + uStep / 2, vm: meta[4] ? 1 - p1.v : p1.v });
+
+                    if (r < globalRows - 1) neighbors.push({ p2: particles[i + globalCols], um: p1.u, vm: p1.v + vStep / 2 });
+                    else if (meta[2]) neighbors.push({ p2: particles[c], um: p1.u, vm: p1.v + vStep / 2 });
+
+                    neighbors.forEach(n => {
+                        let p2 = n.p2; if (!p2) return;
+                        let mid = getLivePos(n.um, n.vm, (p1.mix + p2.mix) / 2);
+                        let cp3D = { x: lerp((p1.worldX + p2.worldX) / 2, 2 * mid.x - 0.5 * (p1.worldX + p2.worldX), gCrv), y: lerp((p1.worldY + p2.worldY) / 2, 2 * mid.y - 0.5 * (p1.worldY + p2.worldY), gCrv), z: lerp((p1.worldZ + p2.worldZ) / 2, 2 * mid.z - 0.5 * (p1.worldZ + p2.worldZ), gCrv) };
+                        let cpP = project(cp3D.x, cp3D.y, cp3D.z);
+                        let grad = ctx.createLinearGradient(p1.projX, p1.projY, p2.projX, p2.projY);
+                        grad.addColorStop(0, `rgb(${Math.round(p1.r)},${Math.round(p1.g)},${Math.round(p1.b)})`);
+                        grad.addColorStop(1, `rgb(${Math.round(p2.r)},${Math.round(p2.g)},${Math.round(p2.b)})`);
+                        ctx.strokeStyle = grad; ctx.lineWidth = window.lineWidth || 1;
+                        ctx.beginPath(); ctx.moveTo(p1.projX, p1.projY); ctx.quadraticCurveTo(cpP.px, cpP.py, p2.projX, p2.projY); ctx.stroke();
+                    });
+                });
+            }
+
+            if (window.showNodes) {
+                particles.forEach(p => { ctx.fillStyle = `rgb(${p.r}, ${p.g}, ${p.b})`; ctx.beginPath(); ctx.arc(p.projX, p.projY, 1.2 * p.sc, 0, 7); ctx.fill(); });
+            }
+
+            let spd = (window.cameraSpeed || 2) * 0.15;
+            if (window.cameraMotion === "Tumble") { angleY += dt * spd; angleX += dt * spd * 0.5; }
+            else if (window.cameraMotion === "Drunken") { angleY += Math.sin(engineTime * 0.8) * 0.03; angleX += Math.cos(engineTime * 0.5) * 0.03; angleY += dt * spd; }
+            else if (window.cameraMotion === "Wander") { angleY += Math.sin(engineTime * 0.5) * 0.01; angleX += Math.cos(engineTime * 0.3) * 0.01; angleY += dt * spd; }
+            else { angleY += dt * spd; }
+
+            requestAnimationFrame(update);
+        }
+        triggerMorph();
+        requestAnimationFrame(update);
+    </script>
+</body>
+
+</html>
