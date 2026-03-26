@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <title>Morphing Constellation</title>
-    <meta title="Morphing Constellation">
     <meta description="A mesmerizing 3D light show that pulses to your music. Watch as glowing shapes smoothly transform and ripple with every beat." />
     <meta publisher="José Miranda" />
 
@@ -34,11 +33,12 @@
     <meta property="audioSensitivity" label="Audio: Sensitivity" type="number" min="10" max="100" default="100" step="1">
     <meta property="waveIntensity" label="Audio: Ripple Strength" type="number" min="0" max="100" default="10" step="1">
     <meta property="waveSpeed" label="Audio: Ripple Speed" type="number" min="1" max="10" default="2" step="1">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 </head>
 
 <body style="margin: 0; background: #000; overflow: hidden;">
     <canvas id="mcCanvas" width="320" height="200" style="width: 100vw; height: 100vh; image-rendering: pixelated;"></canvas>
-
     <script>
         if (typeof window.engine === 'undefined') {
             const metaTags = document.querySelectorAll('meta[property]');
@@ -66,14 +66,7 @@
             simulateAudio();
         }
     </script>
-
     <script>
-        const Ease = {
-            outElastic: (t) => {
-                const c4 = (2 * Math.PI) / 3;
-                return t === 0 ? 0 : t >= 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-            }
-        };
         const canvas = document.getElementById('mcCanvas'), ctx = canvas.getContext('2d', { alpha: false });
         const width = 320, height = 200;
 
@@ -93,9 +86,10 @@
             "Toxic Waste": ["#004400", "#aaff00", "#ffffff"], "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1"]
         };
 
-        let particles = [], activeWaves = [], engineTime = 0, lastTime = 0, lastMorphTime = -999;
-        let angleX = 0.15, angleY = 0, currentFormation = -1, prevFormation = -1, globalCols = 15, globalRows = 10, lastBass = 0;
-        let lastSelection = "", currentParticleCount = -1;
+        let particles = [], activeWaves = [];
+        let engineTime = 0, lastTime = 0, lastMorphTime = -999;
+        let angleX = 0.15, angleY = 0, currentFormation = -1, prevFormation = -1;
+        let globalCols = 15, globalRows = 10, lastBass = 0, lastSelection = "";
 
         function hexToRgb(hex) {
             let res = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -103,14 +97,14 @@
         }
         function lerp(a, b, t) { return a + (b - a) * t; }
 
-        function getBaseSurface(form, u, v) {
+        function getBaseSurface(form, u, v, time) {
             if (form < 0) return { x: 0, y: 0, z: 0 };
             switch (form) {
                 case 0: return { x: (1.0 - v) * 60 * Math.cos(u * Math.PI * 2), y: (v - 0.4) * 120, z: (1.0 - v) * 60 * Math.sin(u * Math.PI * 2) };
                 case 1: return { x: 50 * Math.cos(u * Math.PI * 2), y: (v - 0.5) * 140, z: 50 * Math.sin(u * Math.PI * 2) };
                 case 2: let a = u * Math.PI * 2, rad = 70, w = 40; return { x: (rad + (v - 0.5) * w * Math.cos(a / 2)) * Math.cos(a), y: (rad + (v - 0.5) * w * Math.cos(a / 2)) * Math.sin(a), z: (v - 0.5) * w * Math.sin(a / 2) };
                 case 3: return { x: (u - 0.5) * 160, y: 0, z: (v - 0.5) * 160 };
-                case 4: let dP = Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)); return { x: (u - 0.5) * 160, y: 12 * Math.sin(dP * 12 - engineTime * 3), z: (v - 0.5) * 160 };
+                case 4: let dP = Math.sqrt(Math.pow(u - 0.5, 2) + Math.pow(v - 0.5, 2)); return { x: (u - 0.5) * 160, y: 12 * Math.sin(dP * 12 - time * 3), z: (v - 0.5) * 160 };
                 case 5: return { x: 75 * Math.sin(v * Math.PI) * Math.cos(u * Math.PI * 2), y: 75 * Math.cos(v * Math.PI), z: 75 * Math.sin(v * Math.PI) * Math.sin(u * Math.PI * 2) };
                 case 6: return { x: (55 + 15 * Math.cos(v * Math.PI * 2)) * Math.cos(u * Math.PI * 2), y: (55 + 15 * Math.cos(v * Math.PI * 2)) * Math.sin(u * Math.PI * 2), z: 15 * Math.sin(v * Math.PI * 2) };
                 case 7: let uR = u * Math.PI * 2, vR = (v - 0.5) * 40; return { x: (55 + vR * Math.cos(3 * uR)) * Math.cos(uR), y: vR * Math.sin(3 * uR), z: (55 + vR * Math.cos(3 * uR)) * Math.sin(uR) };
@@ -119,7 +113,7 @@
         }
 
         function getLivePos(u, v, mix) {
-            let p1 = getBaseSurface(prevFormation, u, v), p2 = getBaseSurface(currentFormation, u, v);
+            let p1 = getBaseSurface(prevFormation, u, v, engineTime), p2 = getBaseSurface(currentFormation, u, v, engineTime);
             let pos = { x: lerp(p1.x, p2.x, mix), y: lerp(p1.y, p2.y, mix), z: lerp(p1.z, p2.z, mix) };
             let total = 0;
             if (window.audioEnabled) {
@@ -134,139 +128,129 @@
             return { ...pos, defAmount: total };
         }
 
-        function triggerMorph(changeShape = true) {
-            if (changeShape) {
-                let sel = window.shapeSelection || "Random";
-                prevFormation = currentFormation < 0 ? 5 : currentFormation;
-                if (sel === "Cycle") currentFormation = (currentFormation + 1) % 9;
-                else if (sel === "Random") { let n; do { n = Math.floor(Math.random() * 9); } while (n === currentFormation); currentFormation = n; }
-                else { let idx = shapeMap.indexOf(sel); currentFormation = idx >= 0 ? idx : 5; }
+        function getLiveColor(u, v, mix, defAmount, index, palette, cpName) {
+            let ratio = 0;
+            switch (window.colorMapType || "Conic") {
+                case "Index": ratio = (index / (particles.length || 1)); break;
+                case "Linear": ratio = u; break;
+                case "Radial": let pos = getLivePos(u, v, mix); ratio = Math.sqrt(pos.x ** 2 + pos.y ** 2 + pos.z ** 2) / 100; break;
+                case "Conic": ratio = (Math.atan2(Math.sin(u * Math.PI * 2), Math.cos(u * Math.PI * 2)) + Math.PI) / (Math.PI * 2); break;
+                case "Deformation": ratio = (u * 0.3 + v * 0.2) + (Math.abs(defAmount) / ((window.waveIntensity || 10) * 0.1 + 5)); break;
+                case "Dual Sine": ratio = (Math.sin(u * 6) * Math.cos(v * 6) + 1) / 2; break;
             }
+            let fR = (0.5 + 0.5 * Math.cos(ratio * Math.PI * 2 + engineTime * (window.colorSpeed || 3) * 0.2)) % 1;
+            if (cpName === "Rainbow") {
+                let h = fR * 360, k = (n) => (n + h / 60) % 6, f = (n) => 1 - Math.max(0, Math.min(1, Math.min(k(n), 4 - k(n))));
+                return { r: 255 * f(5), g: 255 * f(3), b: 255 * f(1) };
+            } else {
+                let ci = fR < 0.5 ? 0 : 1, tL = ci === 0 ? fR * 2 : (fR - 0.5) * 2;
+                return { r: lerp(palette[ci].r, palette[ci + 1].r, tL), g: lerp(palette[ci].g, palette[ci + 1].g, tL), b: lerp(palette[ci].b, palette[ci + 1].b, tL) };
+            }
+        }
+
+        function triggerMorph() {
+            let sel = window.shapeSelection || "Random"; prevFormation = currentFormation;
+            if (sel === "Cycle") currentFormation = (currentFormation + 1) % 9;
+            else if (sel === "Random") { let n; do { n = Math.floor(Math.random() * 9); } while (n === currentFormation); currentFormation = n; }
+            else { let idx = shapeMap.indexOf(sel); currentFormation = idx >= 0 ? idx : 5; }
 
             let targetCount = Math.round((window.particleCount || 300) * (shapeMeta[currentFormation][3] || 1));
-            globalCols = Math.ceil(Math.sqrt(targetCount * 1.5));
-            globalRows = Math.ceil(targetCount / globalCols);
-
-            particles = [];
-            for (let i = 0; i < globalCols * globalRows; i++) {
-                particles.push({
-                    u: (i % globalCols) / Math.max(1, globalCols - 1),
-                    v: (globalRows > 1) ? Math.floor(i / globalCols) / (globalRows - 1) : 0,
-                    mix: changeShape ? 0 : 1,
-                    morphStartTime: changeShape ? engineTime : engineTime - 10
-                });
+            if (Math.abs(particles.length - targetCount) > 5) {
+                globalCols = Math.ceil(Math.sqrt(targetCount * 1.5)); globalRows = Math.ceil(targetCount / globalCols);
+                particles = [];
+                for (let i = 0; i < globalCols * globalRows; i++) particles.push({ u: 0, v: 0, mix: 1, worldX: 0, worldY: 0, worldZ: 0, projX: 0, projY: 0, scale: 1, r: 0, g: 0, b: 0, lastDef: 0, rawZ: 0 });
             }
+            particles.forEach((p, i) => { p.u = (i % globalCols) / (globalCols - 1); p.v = (Math.floor(i / globalCols)) / (globalRows - 1); p.mix = 0; });
+            anime.remove(particles);
+            anime({ targets: particles, mix: 1.0, duration: 2200, delay: anime.stagger(4), easing: 'easeOutElastic(1, .8)' });
         }
 
         function project(x, y, z) {
             let fov = window.fieldOfView || 200, camZ = window.cameraDistance || 200;
             let cY = Math.cos(angleY), sY = Math.sin(angleY), cX = Math.cos(angleX), sX = Math.sin(angleX);
             let x1 = x * cY - z * sY, z1 = z * cY + x * sY, y2 = y * cX - z1 * sX, z2 = z1 * cX + y * sX, sc = fov / (camZ + z2);
-            return { px: (x1 * sc) + (width / 2), py: (y2 * sc) + (height / 2), sc, rawZ: z2 };
+            return { px: (x1 * sc) + (width / 2), py: (y2 * sc) + (height / 2), sc, zDepth: z2 };
         }
 
         function update(t) {
             let dt = (t - lastTime) / 1000 || 0.016; lastTime = t; engineTime += dt;
+            const bass = (new Int8Array(window.engine.audio.freq)[0]) / 255;
+            if (window.audioEnabled && bass > (0.95 - (window.audioSensitivity / 100 * 0.9)) && bass > lastBass + 0.02) activeWaves.push({ startTime: engineTime, strength: bass * (window.waveIntensity || 10) * 0.5 });
+            lastBass = bass; activeWaves = activeWaves.filter(w => engineTime - w.startTime < 4);
 
-            if (window.audioEnabled) {
-                const bass = (new Int8Array(window.engine.audio.freq)[0]) / 255;
-                if (bass > (0.95 - (window.audioSensitivity / 100 * 0.9)) && bass > lastBass + 0.02) activeWaves.push({ startTime: engineTime, strength: bass * (window.waveIntensity || 10) * 0.5 });
-                lastBass = bass;
-            }
-            activeWaves = activeWaves.filter(w => engineTime - w.startTime < 4);
-
-            let pCountSetting = Math.round(window.particleCount || 300);
-            if (currentParticleCount !== pCountSetting) {
-                currentParticleCount = pCountSetting;
-                if (currentFormation !== -1) triggerMorph(false);
-            }
-
-            if (window.shapeSelection !== lastSelection) { triggerMorph(true); lastSelection = window.shapeSelection; lastMorphTime = engineTime; }
-            if ((window.shapeSelection === "Cycle" || window.shapeSelection === "Random") && (engineTime - lastMorphTime > (window.morphIntervalSec || 5))) { triggerMorph(true); lastMorphTime = engineTime; }
+            if (window.shapeSelection !== lastSelection) { triggerMorph(); lastSelection = window.shapeSelection; lastMorphTime = engineTime; }
+            if ((window.shapeSelection === "Cycle" || window.shapeSelection === "Random") && (engineTime - lastMorphTime > (window.morphIntervalSec || 5))) { triggerMorph(); lastMorphTime = engineTime; }
 
             let cpName = window.profile || "Solar Flare", palette = [];
             if (cpName === "Custom") palette = [hexToRgb(window.color1), hexToRgb(window.color2), hexToRgb(window.color3)];
-            else { let pProf = colorProfiles[cpName] || colorProfiles["Solar Flare"]; palette = [hexToRgb(pProf[0]), hexToRgb(pProf[1]), hexToRgb(pProf[2])]; }
+            else if (cpName !== "Rainbow") { let pProf = colorProfiles[cpName] || colorProfiles["Solar Flare"]; palette = [hexToRgb(pProf[0]), hexToRgb(pProf[1]), hexToRgb(pProf[2])]; }
 
             particles.forEach((p, i) => {
-                let morphElapsed = engineTime - p.morphStartTime;
-                p.mix = Ease.outElastic(Math.min(1, morphElapsed / 2.2));
                 let live = getLivePos(p.u, p.v, p.mix);
-                let proj = project(live.x, live.y, live.z);
-                p.projX = proj.px; p.projY = proj.py; p.sc = proj.sc; p.zDepth = proj.rawZ;
-                p.worldX = live.x; p.worldY = live.y; p.worldZ = live.z;
-
-                let ratio = 0;
-                switch (window.colorMapType || "Conic") {
-                    case "Linear": ratio = p.u; break;
-                    case "Radial": ratio = Math.sqrt(live.x ** 2 + live.y ** 2 + live.z ** 2) / 100; break;
-                    case "Conic": ratio = (Math.atan2(Math.sin(p.u * Math.PI * 2), Math.cos(p.u * Math.PI * 2)) + Math.PI) / (Math.PI * 2); break;
-                    case "Deformation": ratio = (p.u * 0.3 + p.v * 0.2) + (Math.abs(live.defAmount) / ((window.waveIntensity || 10) * 0.1 + 5)); break;
-                    default: ratio = p.u;
-                }
-                let fR = (0.5 + 0.5 * Math.cos(ratio * Math.PI * 2 + engineTime * (window.colorSpeed || 3) * 0.2)) % 1;
-                let ci = fR < 0.5 ? 0 : 1, tL = ci === 0 ? fR * 2 : (fR - 0.5) * 2;
-                p.r = lerp(palette[ci].r, palette[ci + 1].r, tL); p.g = lerp(palette[ci].g, palette[ci + 1].g, tL); p.b = lerp(palette[ci].b, palette[ci + 1].b, tL);
+                p.worldX = live.x; p.worldY = live.y; p.worldZ = live.z; p.lastDef = live.defAmount;
+                let proj = project(p.worldX, p.worldY, p.worldZ);
+                p.projX = proj.px; p.projY = proj.py; p.scale = proj.sc; p.rawZ = proj.zDepth;
+                let c = getLiveColor(p.u, p.v, p.mix, p.lastDef, i, palette, cpName);
+                p.r = c.r; p.g = c.g; p.b = c.b;
             });
 
             ctx.fillStyle = "#000"; ctx.fillRect(0, 0, width, height);
 
             if (window.showFaces) {
-                let faces = [];
+                let faces = [], fOp = (window.faceOpacity || 20) / 100;
                 for (let r = 0; r < globalRows - 1; r++) {
                     for (let c = 0; c < globalCols - 1; c++) {
                         let i1 = r * globalCols + c, i2 = i1 + 1, i3 = (r + 1) * globalCols + 1 + c, i4 = i3 - 1;
-                        if (particles[i1] && particles[i3]) faces.push({ p: [particles[i1], particles[i2], particles[i3], particles[i4]], z: (particles[i1].zDepth + particles[i3].zDepth) / 2 });
+                        let p1 = particles[i1], p2 = particles[i2], p3 = particles[i3], p4 = particles[i4];
+                        if (p1 && p2 && p3 && p4) faces.push({ p1, p2, p3, p4, z: (p1.rawZ + p2.rawZ + p3.rawZ + p4.rawZ) / 4 });
                     }
                 }
                 faces.sort((a, b) => b.z - a.z).forEach(f => {
-                    ctx.fillStyle = `rgba(${f.p[0].r},${f.p[0].g},${f.p[0].b},${(window.faceOpacity || 20) / 100})`;
-                    ctx.beginPath(); ctx.moveTo(f.p[0].projX, f.p[0].projY); ctx.lineTo(f.p[1].projX, f.p[1].projY); ctx.lineTo(f.p[2].projX, f.p[2].projY); ctx.lineTo(f.p[3].projX, f.p[3].projY); ctx.fill();
+                    ctx.fillStyle = `rgba(${f.p1.r}, ${f.p1.g}, ${f.p1.b}, ${fOp})`;
+                    ctx.beginPath(); ctx.moveTo(f.p1.projX, f.p1.projY); ctx.lineTo(f.p2.projX, f.p2.projY); ctx.lineTo(f.p3.projX, f.p3.projY); ctx.lineTo(f.p4.projX, f.p4.projY); ctx.closePath(); ctx.fill();
                 });
             }
 
             if (window.showLines) {
-                let gCrv = (window.curvature || 100) / 100;
-                let uStep = 1 / Math.max(1, globalCols - 1);
-                let vStep = 1 / Math.max(1, globalRows - 1);
-
+                let gCrv = (window.curvature || 100) / 100, lW = window.lineWidth || 1;
                 particles.forEach((p1, i) => {
                     let c = i % globalCols, r = Math.floor(i / globalCols), meta = shapeMeta[currentFormation];
-                    let neighbors = [];
-
-                    if (c < globalCols - 1) neighbors.push({ p2: particles[i + 1], um: p1.u + uStep / 2, vm: p1.v });
-                    else if (meta[1]) neighbors.push({ p2: particles[meta[4] ? (globalRows - 1 - r) * globalCols : r * globalCols], um: p1.u + uStep / 2, vm: meta[4] ? 1 - p1.v : p1.v });
-
-                    if (r < globalRows - 1) neighbors.push({ p2: particles[i + globalCols], um: p1.u, vm: p1.v + vStep / 2 });
-                    else if (meta[2]) neighbors.push({ p2: particles[c], um: p1.u, vm: p1.v + vStep / 2 });
+                    let neighbors = [], uStp = 1 / (globalCols - 1), vStp = 1 / (globalRows - 1);
+                    if (c < globalCols - 1) neighbors.push({ p2: particles[i + 1], um: p1.u + uStp / 2, vm: p1.v });
+                    else if (meta[1]) {
+                        if (meta[4]) neighbors.push({ p2: particles[(globalRows - 1 - r) * globalCols], um: 1.0 + uStp / 2, vm: 1.0 - p1.v });
+                        else neighbors.push({ p2: particles[r * globalCols], um: 1.0 + uStp / 2, vm: p1.v });
+                    }
+                    if (r < globalRows - 1) neighbors.push({ p2: particles[i + globalCols], um: p1.u, vm: p1.v + vStp / 2 });
+                    else if (meta[2]) neighbors.push({ p2: particles[c], um: p1.u, vm: 1.0 + vStp / 2 });
 
                     neighbors.forEach(n => {
                         let p2 = n.p2; if (!p2) return;
-                        let mid = getLivePos(n.um, n.vm, (p1.mix + p2.mix) / 2);
-                        let cp3D = { x: lerp((p1.worldX + p2.worldX) / 2, 2 * mid.x - 0.5 * (p1.worldX + p2.worldX), gCrv), y: lerp((p1.worldY + p2.worldY) / 2, 2 * mid.y - 0.5 * (p1.worldY + p2.worldY), gCrv), z: lerp((p1.worldZ + p2.worldZ) / 2, 2 * mid.z - 0.5 * (p1.worldZ + p2.worldZ), gCrv) };
+                        let avgMix = (p1.mix + p2.mix) / 2, mFinal = getLivePos(n.um, n.vm, avgMix);
+                        let sCrv = lerp(shapeMeta[prevFormation < 0 ? 0 : prevFormation][0], meta[0], avgMix) * gCrv;
+                        let cp3D = { x: lerp((p1.worldX + p2.worldX) / 2, 2 * mFinal.x - 0.5 * (p1.worldX + p2.worldX), sCrv), y: lerp((p1.worldY + p2.worldY) / 2, 2 * mFinal.y - 0.5 * (p1.worldY + p2.worldY), sCrv), z: lerp((p1.worldZ + p2.worldZ) / 2, 2 * mFinal.z - 0.5 * (p1.worldZ + p2.worldZ), sCrv) };
                         let cpP = project(cp3D.x, cp3D.y, cp3D.z);
                         let grad = ctx.createLinearGradient(p1.projX, p1.projY, p2.projX, p2.projY);
-                        grad.addColorStop(0, `rgb(${Math.round(p1.r)},${Math.round(p1.g)},${Math.round(p1.b)})`);
-                        grad.addColorStop(1, `rgb(${Math.round(p2.r)},${Math.round(p2.g)},${Math.round(p2.b)})`);
-                        ctx.strokeStyle = grad; ctx.lineWidth = window.lineWidth || 1;
+                        grad.addColorStop(0, `rgb(${p1.r},${p1.g},${p1.b})`); grad.addColorStop(1, `rgb(${p2.r},${p2.g},${p2.b})`);
+                        ctx.strokeStyle = grad; ctx.lineWidth = lW;
                         ctx.beginPath(); ctx.moveTo(p1.projX, p1.projY); ctx.quadraticCurveTo(cpP.px, cpP.py, p2.projX, p2.projY); ctx.stroke();
                     });
                 });
             }
 
             if (window.showNodes) {
-                particles.forEach(p => { ctx.fillStyle = `rgb(${p.r}, ${p.g}, ${p.b})`; ctx.beginPath(); ctx.arc(p.projX, p.projY, 1.2 * p.sc, 0, 7); ctx.fill(); });
+                particles.forEach(p => { ctx.fillStyle = `rgb(${p.r}, ${p.g}, ${p.b})`; ctx.beginPath(); ctx.arc(p.projX, p.projY, 1.2 * p.scale, 0, 7); ctx.fill(); });
             }
 
-            let spd = (window.cameraSpeed || 2) * 0.15;
-            if (window.cameraMotion === "Tumble") { angleY += dt * spd; angleX += dt * spd * 0.5; }
-            else if (window.cameraMotion === "Drunken") { angleY += Math.sin(engineTime * 0.8) * 0.03; angleX += Math.cos(engineTime * 0.5) * 0.03; angleY += dt * spd; }
-            else if (window.cameraMotion === "Wander") { angleY += Math.sin(engineTime * 0.5) * 0.01; angleX += Math.cos(engineTime * 0.3) * 0.01; angleY += dt * spd; }
-            else { angleY += dt * spd; }
+            let mot = window.cameraMotion || "Tumble", spd = (window.cameraSpeed || 2) * 0.15;
+            if (mot === "Orbit") angleY += dt * spd;
+            else if (mot === "Tumble") { angleY += dt * spd; angleX += dt * spd * 0.5; }
+            else if (mot === "Pulse Zoom") angleY += dt * 0.2;
+            else if (mot === "Wander") { angleY += Math.sin(engineTime * 0.5) * 0.01; angleX += Math.cos(engineTime * 0.3) * 0.01; angleY += dt * 0.2; }
+            else if (mot === "Drunken") { angleY += Math.sin(engineTime * 0.8) * 0.03; angleX += Math.cos(engineTime * 0.5) * 0.03; angleY += dt * 0.3; }
 
             requestAnimationFrame(update);
         }
-        triggerMorph();
         requestAnimationFrame(update);
     </script>
 </body>
