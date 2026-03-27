@@ -10,7 +10,7 @@ import {
     FieldPath,
     documentId, increment, arrayRemove
 } from './firebase.js';
-import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
+import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, toggleNodeStart, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
 // --- GLOBAL SHARED STATE ---
 let componentState = createDefaultComponentState(); // Initialize immediately
@@ -2783,6 +2783,7 @@ function setupToolbarListeners() {
     document.getElementById('zoom-out-btn').addEventListener('click', () => zoomAtPoint(canvas.width / 2, canvas.height / 2, 1 / 1.2));
     document.getElementById('zoom-reset-btn').addEventListener('click', resetView);
     document.getElementById('toggle-grid-btn').addEventListener('click', () => { toggleGrid(); });
+    document.getElementById('toggle-node-start-btn').addEventListener('click', () => { toggleNodeStart(); });
 
     if (rotateSelectedBtn) {
         rotateSelectedBtn.addEventListener('click', (e) => {
@@ -2946,6 +2947,9 @@ function setupKeyboardListeners() {
             case 'G':
                 toggleGrid();
                 break;
+            case 'n':
+            case 'N':
+                toggleNodeStart();
             case '+':
             case '=': // '=' is the same key as '+' without shift
                 zoomAtPoint(canvas.width / 2, canvas.height / 2, 1.2);

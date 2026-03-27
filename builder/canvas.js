@@ -19,6 +19,7 @@ let marqueeEndPos = { x: 0, y: 0 };
 let didDrag = false;
 let ledDragOffsets = [];
 let isGridVisible = true;
+let isNodeStart0 = false;
 const GRID_SIZE = 10;
 const LED_RADIUS = 10; // Screen pixels
 let pendingConnectionStartLed = null; // Track first click for wiring connection { ledId: string, circuitIndex: number, isStart: boolean, isEnd: boolean, circuitInfo: object | null }
@@ -1095,6 +1096,10 @@ export function toggleGrid() {
     isGridVisible = !isGridVisible; drawCanvas();
 }
 
+export function toggleNodeStart() {
+    isNodeStart0 = !isNodeStart0; drawCanvas();
+}
+
 // --- RENDERING ---
 function snap(n) { return Math.floor(n) + 0.5; }
 function drawGrid() {
@@ -1265,7 +1270,7 @@ function drawWiringNumbers() {
             }
             const numberToDraw = index + 1;
             // // console.log(`Drawing number ${numberToDraw} for LED ID ${id} at flattened index ${index}`);
-            ctx.fillText(numberToDraw.toString(), screenPos.x, screenPos.y);
+            ctx.fillText((isNodeStart0) ? numberToDraw.toString()-1 : numberToDraw.toString(), screenPos.x, screenPos.y);
             numberedLedIds.add(id);
         } else {
             // // console.log(`Skipping duplicate draw for LED ID ${id} at index ${index}`); 
@@ -1375,7 +1380,7 @@ export function drawCanvas() {
         const isPendingStart = pendingConnectionStartLed && pendingConnectionStartLed.ledId === led.id;
         const isOrange = orangeLedIds.has(led.id);
         const isWiringToolActive = currentToolGetter() === 'wiring' || currentToolGetter() === 'place-led';
-        const isSelected = selectedLedIds.has(led.id); // <-- ADDED
+        const isSelected = selectedLedIds.has(led.id);
 
         // --- Re-ordered logic to prioritize highlights and orange ---
         if (isPendingStart) {
