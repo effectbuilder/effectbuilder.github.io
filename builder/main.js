@@ -2950,6 +2950,7 @@ function setupKeyboardListeners() {
             case 'n':
             case 'N':
                 toggleNodeStart();
+                break;
             case '+':
             case '=': // '=' is the same key as '+' without shift
                 zoomAtPoint(canvas.width / 2, canvas.height / 2, 1.2);
@@ -4584,6 +4585,18 @@ async function getFeaturedComponentId() {
 // ---
 // --- INITIALIZATION ---
 // ---
+
+// Get Node Start button state and change icon
+const toolBtn = document.getElementById('toggle-node-start-btn');
+const icon = toolBtn.querySelector('i');
+
+if (localStorage.getItem('nodeStart') === 'true') {
+    icon.classList.replace('bi-1-circle', 'bi-0-circle');
+} else {
+    icon.classList.replace('bi-0-circle', 'bi-1-circle');
+}
+drawCanvas();
+
 document.addEventListener('DOMContentLoaded', async () => {
     initializeTooltips();
 

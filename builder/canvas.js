@@ -19,7 +19,7 @@ let marqueeEndPos = { x: 0, y: 0 };
 let didDrag = false;
 let ledDragOffsets = [];
 let isGridVisible = true;
-let isNodeStart0 = false;
+let nodeStart = localStorage.getItem('nodeStart') === 'true';
 const GRID_SIZE = 10;
 const LED_RADIUS = 10; // Screen pixels
 let pendingConnectionStartLed = null; // Track first click for wiring connection { ledId: string, circuitIndex: number, isStart: boolean, isEnd: boolean, circuitInfo: object | null }
@@ -821,9 +821,9 @@ function handleCanvasMouseMove(e) {
         drawCanvas();
     } else if (isDragging) {
         didDrag = true;
-        ledDragOffsets.forEach(item => { 
-            item.led.x = snapToGrid(worldPos.x + item.offsetX); 
-            item.led.y = snapToGrid(worldPos.y + item.offsetY); 
+        ledDragOffsets.forEach(item => {
+            item.led.x = snapToGrid(worldPos.x + item.offsetX);
+            item.led.y = snapToGrid(worldPos.y + item.offsetY);
         });
         drawCanvas();
     } else if (isMarqueeSelecting) {
@@ -983,7 +983,7 @@ function handleCanvasWheel(e) {
 
 // --- NEW: TOUCH EVENT HANDLERS ---
 function handleCanvasTouchStart(e) {
-    e.preventDefault(); 
+    e.preventDefault();
     if (e.touches.length === 1) {
         lastPanPoint = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else if (e.touches.length === 2) {
@@ -1008,7 +1008,7 @@ function handleCanvasTouchMove(e) {
 
         lastPanPoint = currentPoint;
         drawCanvas();
-        
+
     } else if (e.touches.length === 2 && initialPinchDistance) {
         // 2 Finger Pinch-to-Zoom
         const currentPinchDistance = Math.hypot(
@@ -1027,7 +1027,7 @@ function handleCanvasTouchMove(e) {
         const canvasMidY = (midY - rect.top) * scaleY;
 
         zoomAtPoint(canvasMidX, canvasMidY, zoomFactor);
-        initialPinchDistance = currentPinchDistance; 
+        initialPinchDistance = currentPinchDistance;
     }
 }
 
@@ -1097,7 +1097,17 @@ export function toggleGrid() {
 }
 
 export function toggleNodeStart() {
-    isNodeStart0 = !isNodeStart0; drawCanvas();
+    localStorage.setItem('nodeStart', localStorage.getItem('nodeStart') === 'true' ? 'false' : 'true');
+
+    const toolBtn = document.getElementById('toggle-node-start-btn');
+    const icon = toolBtn.querySelector('i');
+
+    if (localStorage.getItem('nodeStart') === 'true') {
+        icon.classList.replace('bi-1-circle', 'bi-0-circle');
+    } else {
+        icon.classList.replace('bi-0-circle', 'bi-1-circle');
+    }
+    drawCanvas();
 }
 
 // --- RENDERING ---
@@ -1260,6 +1270,7 @@ function drawWiringNumbers() {
 
     // // console.log("Wiring Order for Numbering:", JSON.stringify(flatWiringOrder));
 
+    const nodeStart = localStorage.getItem('nodeStart') === 'true';
     flatWiringOrder.forEach((id, index) => {
         if (!numberedLedIds.has(id)) {
             const led = componentState.leds.find(l => l && l.id === id);
@@ -1269,8 +1280,15 @@ function drawWiringNumbers() {
                 numberedLedIds.add(id); return;
             }
             const numberToDraw = index + 1;
-            // // console.log(`Drawing number ${numberToDraw} for LED ID ${id} at flattened index ${index}`);
-            ctx.fillText((isNodeStart0) ? numberToDraw.toString()-1 : numberToDraw.toString(), screenPos.x, screenPos.y);
+            // console.log(`Drawing number ${numberToDraw} for LED ID ${id} at flattened index ${index}`);
+
+            // Draw LED number starting at 0 or 1 depending on the user choice
+            if (nodeStart) {
+                ctx.fillText((numberToDraw - 1).toString(), screenPos.x, screenPos.y);
+            } else {
+                ctx.fillText(numberToDraw.toString(), screenPos.x, screenPos.y);
+            }
+
             numberedLedIds.add(id);
         } else {
             // // console.log(`Skipping duplicate draw for LED ID ${id} at index ${index}`); 
