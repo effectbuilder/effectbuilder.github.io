@@ -162,7 +162,9 @@
         }
 
         function update(now) {
-            let dt = (now - lastTime) / 1000 || 0.016; lastTime = now; engineTime += dt;
+            let dt = (now - lastTime) / 1000 || 0.016;
+            lastTime = now;
+            if (dt > 0.1) dt = 0.016;
             const audio = window.engine.audio.freq, bs = bassSensitivity / 100, ts = trebleSensitivity / 100;
             const bass = (audio[0] + audio[1] + audio[2]) / 3 * bs;
             const signalGate = Math.max(0, Math.min(1, (bass - 5) / 15));
