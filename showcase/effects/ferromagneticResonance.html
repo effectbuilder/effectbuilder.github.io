@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Ferromagnetic Resonance</title>
+    <meta name="publisher" content="José Miranda" />
+    <meta publisher="José Miranda" />
+    <meta description="An advanced audio-reactive engine simulating high-viscosity liquid metal trapped in a zero-gravity resonant chamber. Ferromagnetic Resonance utilizes a temporal beat-lock synchronizer and a kinetic torque physics model to translate audio frequencies into physical deformation. Watch as the core undergoes molecular fission under heavy bass loads, smearing against the containment boundaries with realistic fluid dynamics." />
+    <meta property="profile" label="Theme" type="combobox" values="Cyberpunk,Inferno,Deep Sea,Toxic,Candy,Solar,Aurora,Vaporwave,Biolume,Nebula,Prismatic,Lava,Iceberg,Nuclear,Sunset,Ethereal,Midnight,Jungle,Rainbow,Custom" default="Rainbow" />
+    <meta property="gradientType" label="Gradient Style" type="combobox" values="Radial,Linear,Conic" default="Radial" />
+    <meta property="colorCycleSpeed" label="Cycle Speed" type="number" min="0" max="100" default="4" />
+    <meta property="rotationFriction" label="Rotation Friction" type="number" min="1" max="50" default="30" />
+    <meta property="color1" label="Custom Start" type="color" default="#ff00ff" />
+    <meta property="color2" label="Custom End" type="color" default="#00ffff" />
+    <meta property="edgeBounce" label="Edge Bounce" type="boolean" default="true" />
+    <meta property="beatDivider" label="Beat Division" type="combobox" values="1,1/2,1/3,1/4" default="1/4" />
+    <meta property="impactStrength" label="Resonance Power" type="number" min="10" max="200" default="30" />
+    <meta property="baseVolume" label="Core Volume" type="number" min="20" max="80" default="64" />
+    <meta property="bassSensitivity" label="Bass Sensitivity" type="number" min="0" max="200" default="200" />
+    <meta property="trebleSensitivity" label="Treble Sensitivity" type="number" min="0" max="200" default="200" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            width: 320px;
+            height: 200px;
+        }
+
+        #goo-wrapper {
+            width: 100%;
+            height: 100%;
+            background: black;
+            filter: blur(7px) contrast(22);
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 320px;
+            height: 200px;
+            display: block;
+            transform: scale(1.08);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="goo-wrapper"><canvas id="effect-canvas" width="320" height="200"></canvas></div>
+    <script>
+        const canvas = document.getElementById('effect-canvas'), ctx = canvas.getContext('2d');
+        let lastTime = 0, engineTime = 0, rotationAngle = 0, rotVelocity = 0.05;
+        const modes = [2, 3, 4, 6, 8];
+        let modeEnergy = {}, naturalFreqs = {}, modeRotation = {};
+        modes.forEach(n => {
+            modeEnergy[n] = 0;
+            naturalFreqs[n] = Math.sqrt(n * (n - 1) * (n + 2));
+            modeRotation[n] = Math.random() * 6.28;
+        });
+
+        let coreX = 160, coreY = 100, coreVX = 15, coreVY = 12;
+        let beatClock = 0, estimatedInterval = 0.5, peakHistory = [], lastPeakTime = 0;
+        let droplets = [], lastEject = 0, curVol = 64;
+        const fixedSurfaceTension = 60, MAX_V = 240;
+
+        if (typeof window.engine === 'undefined') {
+            // 1. Initialize Meta-properties
+            const tags = document.querySelectorAll('meta[property]');
+            tags.forEach(m => {
+                let p = m.getAttribute('property'), t = m.getAttribute('type'), d = m.getAttribute('default');
+                if (p) window[p] = (t === 'number') ? parseFloat(d) : (t === 'boolean' ? d === 'true' : d);
+            });
+
+            // 2. Persistent State for Smoothing
+            window.engine = { audio: { freq: new Array(128).fill(0) } };
+            let smoothFreqs = new Array(128).fill(0);
+
+            function sim() {
+                const t = Date.now() / 1000;
+                const rawData = new Array(128).fill(0);
+
+                // --- ORGANIC SIGNAL SYNTHESIS ---
+
+                // A. The Heartbeat (Exponential Kick)
+                // Mimics the physical attack and decay of a drum.
+                const bpmInterval = 0.5; // 120 BPM
+                const beatProgress = (t % bpmInterval) / bpmInterval;
+                const kickEnvelope = Math.exp(-beatProgress * 7) * 255;
+                rawData[0] = kickEnvelope;
+
+                // B. The Resonance (Layered Octaves)
+                // Instead of 1 sine, we sum 3 at different speeds to simulate 
+                // the "shimmer" of fluid under tension.
+                for (let i = 1; i < 64; i++) {
+                    let noise = Math.sin(t * 1.5 + i * 0.2) * 0.5;
+                    noise += Math.sin(t * 4.2 + i * 0.5) * 0.3;
+                    noise += Math.sin(t * 0.7 + i * 0.1) * 0.2;
+
+                    let val = (noise + 1) * 35;
+                    // High frequencies get a little "shiver" when the bass hits
+                    val += (kickEnvelope * 0.15) * (1 / (i * 0.1 + 1));
+                    rawData[i] = val;
+                }
+
+                // --- SIGNAL SMOOTHING (EMA FILTER) ---
+                // This is the secret sauce. alpha = 0.15 makes the signal "heavy" and fluid.
+                const alpha = 0.18;
+                for (let i = 0; i < 128; i++) {
+                    smoothFreqs[i] = (rawData[i] * alpha) + (smoothFreqs[i] * (1 - alpha));
+                }
+
+                window.engine.audio.freq = smoothFreqs;
+                requestAnimationFrame(sim);
+            }
+            sim();
+        }
+
+        const themes = {
+            "Cyberpunk": ["#ff00ff", "#7700ff", "#00ffff", "#ffffff"],
+            "Inferno": ["#440000", "#ff0000", "#ffaa00", "#ffffcc"],
+            "Deep Sea": ["#001133", "#0044ff", "#00ffff", "#aaffff"],
+            "Toxic": ["#004400", "#00ff44", "#aaff00", "#ffffff"],
+            "Candy": ["#ff0088", "#ff8800", "#00ffff", "#ffff00"],
+            "Solar": ["#441100", "#ff8800", "#ffff00", "#ffffff"],
+            "Aurora": ["#00ffaa", "#0088ff", "#5500ff", "#ffffff"],
+            "Vaporwave": ["#ff71ce", "#01cdfe", "#05ffa1", "#b967ff"],
+            "Biolume": ["#002222", "#008888", "#00ffff", "#ccffff"],
+            "Nebula": ["#110022", "#440088", "#ff00ff", "#00ffff"],
+            "Prismatic": ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff"], "Lava": ["#220000", "#880000", "#ff4400", "#ffcc00"],
+            "Iceberg": ["#001122", "#0088ff", "#ccffff", "#ffffff"],
+            "Nuclear": ["#002200", "#00ff00", "#ffff00", "#ffffff"],
+            "Sunset": ["#220011", "#ff0044", "#ff8800", "#ffff00"],
+            "Ethereal": ["#111122", "#444488", "#8888ff", "#ffffff"],
+            "Midnight": ["#000011", "#000044", "#0000aa", "#00ffff"],
+            "Jungle": ["#001100", "#004400", "#008800", "#aaff00"],
+            "Rainbow": ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"]
+        };
+
+        function buildSmoothPath(points) {
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 0; i < points.length; i++) {
+                const p0 = points[(i - 1 + points.length) % points.length], p1 = points[i], p2 = points[(i + 1) % points.length], p3 = points[(i + 2) % points.length];
+                ctx.bezierCurveTo(p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6, p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6, p2.x, p2.y);
+            }
+        }
+
+        function createFlowGrad(cx, cy, r, colors, cycle) {
+            let g;
+            if (gradientType === "Linear") {
+                const x1 = cx + Math.cos(rotationAngle) * -r, y1 = cy + Math.sin(rotationAngle) * -r;
+                const x2 = cx + Math.cos(rotationAngle) * r, y2 = cy + Math.sin(rotationAngle) * r;
+                g = ctx.createLinearGradient(x1, y1, x2, y2);
+            } else if (gradientType === "Conic") {
+                g = ctx.createConicGradient(rotationAngle, cx, cy);
+            } else {
+                const fx = cx + Math.cos(rotationAngle) * (r * 0.2), fy = cy + Math.sin(rotationAngle) * (r * 0.2);
+                g = ctx.createRadialGradient(fx, fy, 0, cx, cy, r);
+            }
+            colors.forEach((c, i) => { g.addColorStop((i / (colors.length - 1) + cycle) % 1, c); });
+            return g;
+        }
+
+        function update(now) {
+            let dt = (now - lastTime) / 1000 || 0.016; lastTime = now; engineTime += dt;
+            const audio = window.engine.audio.freq, bs = bassSensitivity / 100, ts = trebleSensitivity / 100;
+            const bass = (audio[0] + audio[1] + audio[2]) / 3 * bs;
+            const signalGate = Math.max(0, Math.min(1, (bass - 5) / 15));
+
+            if (bass > 130 && (engineTime - lastPeakTime) > 0.25) {
+                let interval = engineTime - lastPeakTime; lastPeakTime = engineTime;
+                peakHistory.push(interval); if (peakHistory.length > 12) peakHistory.shift();
+                let sorted = [...peakHistory].sort((a, b) => a - b);
+                estimatedInterval = sorted[Math.floor(sorted.length / 2)];
+                let phaseDiff = beatClock % 1.0; if (phaseDiff > 0.5) phaseDiff -= 1.0;
+                beatClock -= phaseDiff * 0.3;
+                if (edgeBounce) {
+                    let kick = (bass / 255) * impactStrength * 3.5;
+                    coreVX += (Math.random() - 0.5) * kick; coreVY += (Math.random() - 0.5) * kick;
+                }
+            }
+            beatClock += dt / estimatedInterval;
+
+            if (edgeBounce) {
+                coreVX = Math.max(-MAX_V, Math.min(MAX_V, coreVX)); coreVY = Math.max(-MAX_V, Math.min(MAX_V, coreVY));
+                coreX += coreVX * dt; coreY += coreVY * dt; coreVX *= 0.988; coreVY *= 0.988;
+                const minV = 16;
+                if (Math.abs(coreVX) < minV) coreVX = minV * Math.sign(coreVX || 1);
+                if (Math.abs(coreVY) < minV) coreVY = minV * Math.sign(coreVY || 1);
+            } else { coreX += (160 - coreX) * dt * 2; coreY += (100 - coreY) * dt * 2; coreVX = coreVY = 0; }
+
+            const maxRot = 0.12, minRot = 0.03;
+            rotVelocity = Math.max(-maxRot, Math.min(maxRot, rotVelocity));
+            if (Math.abs(rotVelocity) < minRot) rotVelocity = minRot * Math.sign(rotVelocity || 1);
+            rotationAngle += rotVelocity; rotVelocity *= (1 - (rotationFriction / 1000));
+
+            modes.forEach((n, i) => {
+                let val = audio[i * 3] * (n < 5 ? bs : ts);
+                let input = (val / 255) * impactStrength * (1 / Math.sqrt(n));
+                if (input > modeEnergy[n]) modeEnergy[n] = input; else modeEnergy[n] *= 0.88;
+                modeRotation[n] += dt * (0.3 + (n * 0.05));
+            });
+
+            curVol += (baseVolume - curVol) * dt * 1.5;
+            if (bass > 170 && engineTime - lastEject > 0.15 && droplets.length < 6) {
+                let a = Math.random() * 6.28, f = 140 + Math.random() * 60;
+                droplets.push({ x: coreX, y: coreY, vx: Math.cos(a) * f, vy: Math.sin(a) * f, r: 5 + Math.random() * 8 });
+                lastEject = engineTime; curVol -= 3;
+            }
+
+            for (let i = droplets.length - 1; i >= 0; i--) {
+                let d = droplets[i], dx = coreX - d.x, dy = coreY - d.y, dist = Math.sqrt(dx * dx + dy * dy);
+                d.vx += (dx / dist) * fixedSurfaceTension * dt * 0.05; d.vy += (dy / dist) * fixedSurfaceTension * dt * 0.05;
+                d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 0.94; d.vy *= 0.94;
+                d.x = Math.max(0, Math.min(320, d.x)); d.y = Math.max(0, Math.min(200, d.y));
+                if (dist < curVol * 0.45) { curVol += d.r * 0.5; droplets.splice(i, 1); }
+            }
+
+            ctx.clearRect(0, 0, 320, 200);
+            const cycle = (engineTime * (colorCycleSpeed / 10)), tDef = themes[profile] || themes["Rainbow"];
+            const colorList = profile === "Custom" ? [color1, color2, "#ffffff"] : tDef;
+            const div = beatDivider === "1/2" ? 2 : beatDivider === "1/3" ? 3 : beatDivider === "1/4" ? 4 : 1;
+
+            ctx.fillStyle = createFlowGrad(coreX, coreY, curVol * 2.2, colorList, cycle);
+            ctx.beginPath();
+            const res = 80, points = [];
+            let hitX = 0, hitY = 0;
+            for (let i = 0; i <= res; i++) {
+                const theta = (i / res) * Math.PI * 2; let r = curVol;
+                modes.forEach(n => {
+                    if (modeEnergy[n] < 0.1) return;
+                    r += Math.cos(n * theta + modeRotation[n]) * modeEnergy[n] * Math.sin((beatClock / div) * 3.14159 * 2) * signalGate;
+                });
+                let px = coreX + Math.cos(theta + rotationAngle) * r, py = coreY + Math.sin(theta + rotationAngle) * r;
+                if (edgeBounce) {
+                    if (px <= 0) hitX = -1; if (px >= 320) hitX = 1; if (py <= 0) hitY = -1; if (py >= 200) hitY = 1;
+                    px = Math.max(0, Math.min(320, px)); py = Math.max(0, Math.min(200, py));
+                }
+                points.push({ x: px, y: py });
+            }
+            if (hitX !== 0) { coreVX = -Math.abs(coreVX) * hitX; coreX += hitX * -2; rotVelocity += coreVY * 0.008; }
+            if (hitY !== 0) { coreVY = -Math.abs(coreVY) * hitY; coreY += hitY * -2; rotVelocity -= coreVX * 0.008; }
+
+            buildSmoothPath(points); ctx.fill();
+            droplets.forEach(d => {
+                ctx.fillStyle = createFlowGrad(d.x, d.y, d.r * 1.5, colorList, cycle);
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.28); ctx.fill();
+            });
+            requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    </script>
+    <script type="application/json" class="effect-preset">
+    {
+    "name": "Bouncing",
+    "url": "https://go.signalrgb.com/app/effect/apply/Ferromagnetic%20Resonance?baseVolume=64&bassSensitivity=200&beatDivider=1%2F4&color1=%23ff00ff&color2=%2300ffff&colorCycleSpeed=4&edgeBounce=true&gradientType=Radial&impactStrength=30&profile=Rainbow&rotationFriction=30&trebleSensitivity=200"
+    }
+    </script>
+    <script type="application/json" class="effect-preset">
+    {
+    "name": "Fixed position",
+    "url": "https://go.signalrgb.com/app/effect/apply/Ferromagnetic%20Resonance?baseVolume=64&bassSensitivity=200&beatDivider=1%2F4&color1=%23ff00ff&color2=%2300ffff&colorCycleSpeed=4&edgeBounce=false&gradientType=Radial&impactStrength=30&profile=Rainbow&rotationFriction=30&trebleSensitivity=200"
+    }
+    </script>
+    <script type="application/json" class="effect-preset">
+    {
+    "name": "Rotating Candy",
+    "url": "https://go.signalrgb.com/app/effect/apply/Ferromagnetic%20Resonance?baseVolume=64&bassSensitivity=200&beatDivider=1%2F4&color1=%23ff00ff&color2=%2300ffff&colorCycleSpeed=4&edgeBounce=true&gradientType=Conic&impactStrength=30&profile=Candy&rotationFriction=30&trebleSensitivity=200"
+    }
+    </script>
+    <script type="application/json" class="effect-preset">
+    {
+    "name": "Low Resonance",
+    "url": "https://go.signalrgb.com/app/effect/apply/Ferromagnetic%20Resonance?baseVolume=57&bassSensitivity=38&beatDivider=1%2F4&color1=%23ff00ff&color2=%2300ffff&colorCycleSpeed=4&edgeBounce=true&gradientType=Radial&impactStrength=127&profile=Nebula&rotationFriction=30&trebleSensitivity=197"
+    }
+    </script>
+</body>
+
+</html>

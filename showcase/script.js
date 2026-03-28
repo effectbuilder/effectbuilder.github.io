@@ -574,7 +574,8 @@ document.addEventListener('DOMContentLoaded', function () {
         "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
         "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html",
         "police.html", "neuralAutomata.html", "fanTracer.html", "grandLineVoyage.html",
-        "chuck.html", "fanTracerTwoColor.html", "flowfield.html","Morpheus.html"
+        "chuck.html", "fanTracerTwoColor.html", "flowfield.html","Morpheus.html",
+        "ferromagneticResonance.html"
     ];
 
     const effectsFolder = "effects";
