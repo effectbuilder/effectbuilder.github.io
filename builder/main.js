@@ -1350,13 +1350,28 @@ function generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, w
 /**
  * NEW: Generates the JSON for NollieRGB
  * @param {number} ledCount
+ * @param {Array} ledCoordinates - Array of coordinates (e.g., [[x,y], ...] or [{x,y}, ...])
  * @returns {string} A pretty-printed JSON string for NollieRGB
  */
-function generateNollieRGBJson(ledCount) {
-    const led_index = [];
-    for (let i = 0; i < ledCount; i++) {
-        led_index.push(i + 1); // 1-based indexing
-    }
+function generateNollieRGBJson(ledCount, ledCoordinates) {
+    // 1. Map the original 1-based index to its physical coordinates
+    const mappedLeds = ledCoordinates.map((coord, i) => {
+        const x = Array.isArray(coord) ? coord[0] : coord.x;
+        const y = Array.isArray(coord) ? coord[1] : coord.y;
+        return { index: i + 1, x: x, y: y };
+    });
+
+    // 2. Sort: up-to-down (Y axis), then left-to-right (X axis)
+    mappedLeds.sort((a, b) => {
+        // Use a small tolerance in case Y-coordinates are floating point or slightly off
+        if (Math.abs(a.y - b.y) > 0.5) {
+            return a.y - b.y; // Sort Top to Bottom
+        }
+        return a.x - b.x;     // Sort Left to Right
+    });
+
+    // 3. Extract just the sorted indices back into a flat array
+    const led_index = mappedLeds.map(led => led.index);
 
     const exportObject = {
         version: 1,
@@ -1834,7 +1849,7 @@ function updateExportPreview() {
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
         } else if (format === 'nolliergb') {
-            jsonString = generateNollieRGBJson(ledCount);
+            jsonString = generateNollieRGBJson(ledCount,ledCoordinates);
             filename = (productName || 'nolliergb_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_nollie.json';
         }
 
