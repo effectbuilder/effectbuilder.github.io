@@ -170,85 +170,75 @@
                 </div>
 
                 <div class="tab-content flex-grow-1 overflow-auto p-3 pe-4" id="sidebarTabsContent">
-
-                    <div class="tab-pane fade show active d-flex flex-column h-100" id="project-tab-pane" role="tabpanel" aria-labelledby="project-tab" tabindex="0">
-
-                        <div class="alert alert-info alert-dismissible fade show shadow-sm border-info border-opacity-50 py-2 small flex-shrink-0" role="alert">
-                            <strong><i class="bi bi-info-circle-fill me-1"></i> Update:</strong> Shape generators have moved to the <strong>Build</strong> tab!
-                            <button type="button" class="btn-close pb-1 pt-2" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-
-                        <div id="component-properties" class="mb-2 d-flex flex-column flex-grow-1" style="min-height: 0;">
-
-                            <div class="row mb-3 flex-shrink-0">
-                                <div class="col">
-                                    <label for="component-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Product Name</label>
-                                    <input type="text" id="component-name" class="form-control" placeholder="e.g., My Custom Fan">
+                    <div class="tab-pane fade show active h-100" id="project-tab-pane" role="tabpanel" aria-labelledby="project-tab" tabindex="0">
+                        <div class="d-flex flex-column h-100">
+                            <div class="alert alert-info alert-dismissible fade show shadow-sm border-info border-opacity-50 py-2 small flex-shrink-0" role="alert">
+                                <strong><i class="bi bi-info-circle-fill me-1"></i> Update:</strong> Shape generators have moved to the <strong>Build</strong> tab!
+                                <button type="button" class="btn-close pb-1 pt-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            <div id="component-properties" class="mb-2 d-flex flex-column flex-grow-1" style="min-height: 0;">
+                                <div class="row mb-3 flex-shrink-0">
+                                    <div class="col">
+                                        <label for="component-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Product Name</label>
+                                        <input type="text" id="component-name" class="form-control" placeholder="e.g., My Custom Fan">
+                                    </div>
+                                </div>
+                                <div class="row mb-3 flex-shrink-0">
+                                    <div class="col">
+                                        <label for="component-display-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Display Name</label>
+                                        <input type="text" id="component-display-name" class="form-control" placeholder="e.g., My Custom Fan">
+                                    </div>
+                                </div>
+                                <div class="row mb-2 flex-shrink-0">
+                                    <div class="col">
+                                        <label for="component-brand" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Brand</label>
+                                        <input type="text" id="component-brand" class="form-control" placeholder="e.g., Custom">
+                                    </div>
+                                    <div class="col">
+                                        <label for="component-type" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Type</label>
+                                        <select id="component-type" class="form-select">
+                                            <option>AIO Liquid Cooler</option>
+                                            <option>Air Cooler</option>
+                                            <option>Case</option>
+                                            <option>Desk</option>
+                                            <option>Fan</option>
+                                            <option>GPU</option>
+                                            <option>Headset</option>
+                                            <option>Headset Stand</option>
+                                            <option>Keyboard</option>
+                                            <option>Matrix</option>
+                                            <option>Motherboard</option>
+                                            <option>Monitor</option>
+                                            <option>Mouse</option>
+                                            <option>Mousepad</option>
+                                            <option>PSU</option>
+                                            <option>RAM</option>
+                                            <option>Speaker</option>
+                                            <option>Storage</option>
+                                            <option>Strimer</option>
+                                            <option>Strip</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <hr class="my-3 text-secondary flex-shrink-0">
+                                <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
+                                    <label for="component-image" class="form-label form-label-sm text-secondary text-uppercase fw-bold flex-shrink-0">Device Image</label>
+                                    <input type="file" id="component-image" class="form-control form-control-sm mb-2 flex-shrink-0" accept="image/png, image/webp">
+                                    <div id="image-paste-zone" class="p-2 text-center text-muted border border-secondary border-dashed rounded-3 image-paste-zone flex-grow-1 d-flex align-items-center justify-content-center" contenteditable="true" title="Click here and press Ctrl+V to paste an image" style="min-height: 0; overflow: hidden;">
+                                        <img id="image-preview" src="#" alt="Image Preview" class="rounded shadow-sm" style="display: none; max-width: 100%; max-height: 100%; object-fit: contain;">
+                                        <span id="image-paste-placeholder" class="pointer-events-none">
+                                            <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
+                                            <br>Click to paste or drop
+                                        </span>
+                                    </div>
+                                    <div class="form-text mt-2 small text-center flex-shrink-0 pb-1">
+                                        Use <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste. Max 400x400px.
+                                    </div>
                                 </div>
                             </div>
-                            <div class="row mb-3 flex-shrink-0">
-                                <div class="col">
-                                    <label for="component-display-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Display Name</label>
-                                    <input type="text" id="component-display-name" class="form-control" placeholder="e.g., My Custom Fan">
-                                </div>
-                            </div>
-                            <div class="row mb-2 flex-shrink-0">
-                                <div class="col">
-                                    <label for="component-brand" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Brand</label>
-                                    <input type="text" id="component-brand" class="form-control" placeholder="e.g., Custom">
-                                </div>
-                                <div class="col">
-                                    <label for="component-type" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Type</label>
-                                    <select id="component-type" class="form-select">
-                                        <option>AIO Liquid Cooler</option>
-                                        <option>Air Cooler</option>
-                                        <option>Case</option>
-                                        <option>Desk</option>
-                                        <option>Fan</option>
-                                        <option>GPU</option>
-                                        <option>Headset</option>
-                                        <option>Headset Stand</option>
-                                        <option>Keyboard</option>
-                                        <option>Matrix</option>
-                                        <option>Motherboard</option>
-                                        <option>Monitor</option>
-                                        <option>Mouse</option>
-                                        <option>Mousepad</option>
-                                        <option>PSU</option>
-                                        <option>RAM</option>
-                                        <option>Speaker</option>
-                                        <option>Storage</option>
-                                        <option>Strimer</option>
-                                        <option>Strip</option>
-                                        <option>Other</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <hr class="my-3 text-secondary flex-shrink-0">
-
-                            <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
-                                <label for="component-image" class="form-label form-label-sm text-secondary text-uppercase fw-bold flex-shrink-0">Device Image</label>
-                                <input type="file" id="component-image" class="form-control form-control-sm mb-2 flex-shrink-0" accept="image/png, image/webp">
-
-                                <div id="image-paste-zone" class="p-2 text-center text-muted border border-secondary border-dashed rounded-3 image-paste-zone flex-grow-1 d-flex align-items-center justify-content-center" contenteditable="true" title="Click here and press Ctrl+V to paste an image" style="min-height: 0; overflow: hidden;">
-
-                                    <img id="image-preview" src="#" alt="Image Preview" class="rounded shadow-sm" style="display: none; max-width: 100%; max-height: 100%; object-fit: contain;">
-
-                                    <span id="image-paste-placeholder" class="pointer-events-none">
-                                        <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
-                                        <br>Click to paste or drop
-                                    </span>
-                                </div>
-
-                                <div class="form-text mt-2 small text-center flex-shrink-0 pb-1">
-                                    Use <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste. Max 400x400px.
-                                </div>
-                            </div>
-
                         </div>
                     </div>
-
                     <div class="tab-pane fade" id="shapes-tab-pane" role="tabpanel" aria-labelledby="shapes-tab" tabindex="0">
                         <div id="elements-and-wiring" class="pe-1">
 
