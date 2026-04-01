@@ -1849,7 +1849,7 @@ function updateExportPreview() {
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
         } else if (format === 'nolliergb') {
-            jsonString = generateNollieRGBJson(ledCount,ledCoordinates);
+            jsonString = generateNollieRGBJson(ledCount, ledCoordinates);
             filename = (productName || 'nolliergb_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_nollie.json';
         }
 
@@ -1954,6 +1954,7 @@ function handleImageFile(file) {
                 imagePreview.src = resizedDataUrl; // Show the resized preview
                 imagePreview.style.display = 'block';
                 autoSaveState();
+                syncMobileHeader();
 
                 // Clear the file input field
                 if (compImageInput) compImageInput.value = '';
@@ -2545,13 +2546,21 @@ function setupPropertyListeners() {
     // ADDED Listener for Brand
     compBrandInput.addEventListener('input', (e) => {
         // console.log('Property Listener: Brand changed');
-        if (componentState) { componentState.brand = e.target.value; autoSaveState(); }
+        if (componentState) {
+            componentState.brand = e.target.value;
+            autoSaveState();
+            syncMobileHeader(); // <--- ADD THIS HERE
+        }
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
     compTypeInput.addEventListener('input', (e) => {
         // console.log('Property Listener: Type changed');
-        if (componentState) { componentState.type = e.target.value; autoSaveState(); }
+        if (componentState) {
+            componentState.type = e.target.value;
+            autoSaveState();
+            syncMobileHeader(); // <--- ADD THIS HERE
+        }
         else { console.warn('setupPropertyListeners: componentState not ready.'); }
     });
 
@@ -2634,6 +2643,7 @@ function setupPropertyListeners() {
 
                 autoSaveState(); // Save the cleared state
                 showToast('Image Removed', 'The device image has been cleared.', 'info');
+                syncMobileHeader();
             }
         }
     });
@@ -3131,20 +3141,76 @@ function handleAddMatrix() {
     updateLedCount();
 }
 
-// Updates the mobile view HTML with the current component details
-function updateMobileHeader(name, brand, type) {
+function updateMobileHeader(name, displayName, brand, type, imageUrl, ownerName) {
+    // --- Mobile Elements ---
     const nameEl = document.getElementById('mobile-comp-name');
+    const displayNameEl = document.getElementById('mobile-comp-display-name');
     const brandEl = document.getElementById('mobile-comp-brand');
     const typeEl = document.getElementById('mobile-comp-type');
+    const imageEl = document.getElementById('mobile-comp-image');
+    const makerEl = document.getElementById('mobile-comp-maker');
 
-    if (nameEl) nameEl.textContent = name || 'Untitled Component';
-    if (brandEl) brandEl.textContent = brand || 'Custom';
-    if (typeEl) typeEl.textContent = type || 'Other';
+    // --- Desktop Elements ---
+    const dNameEl = document.getElementById('desktop-comp-name');
+    const dBrandEl = document.getElementById('desktop-comp-brand');
+    const dTypeEl = document.getElementById('desktop-comp-type');
+    const dImageEl = document.getElementById('desktop-comp-image');
+    const dMakerEl = document.getElementById('desktop-comp-maker');
+
+    const finalName = name || 'Untitled Component';
+    const finalMaker = ownerName ? `By: ${ownerName}` : 'By: Anonymous';
+    const finalBrand = brand || 'Custom';
+    const finalType = type || 'Other';
+
+    // 1. Update Mobile Header
+    if (nameEl) nameEl.textContent = finalName;
+    if (makerEl) makerEl.textContent = finalMaker;
+    if (brandEl) brandEl.textContent = finalBrand;
+    if (typeEl) typeEl.textContent = finalType;
+    if (displayNameEl) {
+        if (displayName && displayName !== name) {
+            displayNameEl.textContent = displayName;
+            displayNameEl.classList.remove('d-none');
+        } else {
+            displayNameEl.classList.add('d-none');
+        }
+    }
+
+    // 2. Update Desktop Header
+    if (dNameEl) {
+        // Show Display Name on desktop if it exists and is different
+        dNameEl.textContent = (displayName && displayName !== name) ? `${displayName} (${finalName})` : finalName;
+    }
+    if (dMakerEl) dMakerEl.textContent = finalMaker;
+    if (dBrandEl) dBrandEl.textContent = finalBrand;
+    if (dTypeEl) dTypeEl.textContent = finalType;
+
+    // 3. Update Images for BOTH
+    const hasImage = imageUrl && imageUrl !== '#' && imageUrl.startsWith('data:image');
+
+    if (imageEl) {
+        imageEl.src = hasImage ? imageUrl : '';
+        hasImage ? imageEl.classList.remove('d-none') : imageEl.classList.add('d-none');
+        hasImage ? imageEl.classList.add('d-inline-block') : imageEl.classList.remove('d-inline-block');
+    }
+
+    if (dImageEl) {
+        dImageEl.src = hasImage ? imageUrl : '';
+        hasImage ? dImageEl.classList.remove('d-none') : dImageEl.classList.add('d-none');
+        hasImage ? dImageEl.classList.add('d-block') : dImageEl.classList.remove('d-block');
+    }
 }
 
 function syncMobileHeader() {
     if (typeof componentState !== 'undefined' && componentState) {
-        updateMobileHeader(componentState.name, componentState.brand, componentState.type);
+        updateMobileHeader(
+            componentState.name,
+            componentState.displayName,
+            componentState.brand,
+            componentState.type,
+            componentState.imageUrl,
+            componentState.ownerName
+        );
     }
 }
 
@@ -4631,6 +4697,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupThemeSwitcher(drawCanvas);
     setupCanvas(appState); // Initialize canvas engine FIRST
 
+    syncMobileHeader();
+    
     // Setup all other app listeners
     setupAuthListeners();
     setupProjectListeners();
