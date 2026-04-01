@@ -1,0 +1,37 @@
+name: Update Version Number
+on:
+  push:
+    branches: [ main ] # Change this to 'master' if that is your primary branch
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history so we can count the commits
+
+      - name: Calculate Version
+        id: vars
+        run: |
+          # Get total number of commits
+          COUNT=$(git rev-list --count HEAD)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Update HTML Files
+        run: |
+          # This finds the version span in ALL index.html files (Builder and Gallery)
+          # and replaces the text with the new version number
+          find . -name "index.html" -exec sed -i "s/<span id=\"version-display\">.*<\/span>/<span id=\"version-display\">1.${{ steps.vars.outputs.count }}<\/span>/g" {} +
+          
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          # The [skip ci] tag prevents this commit from triggering the action again in an infinite loop
+          git commit -m "chore: bump version to 1.${{ steps.vars.outputs.count }} [skip ci]" || echo "No changes to commit"
+          git push

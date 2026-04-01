@@ -495,31 +495,43 @@
     }
 }
 
+/* Prevent navbar button text from wrapping under the icons */
+.navbar .btn {
+    white-space: nowrap;
+}
+
 /* --- Featured Component Highlight --- */
 .card.border-warning {
     border-width: 2px !important;
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.2); /* Subtle gold glow */
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.2);
+    /* Subtle gold glow */
 }
 
 .featured-badge {
     position: absolute;
     top: 10px;
     left: 10px;
-    z-index: 20; /* Ensure it stays above the kebab menu and image */
-    pointer-events: none; /* Allows clicks to pass through to the image below */
+    z-index: 20;
+    /* Ensure it stays above the kebab menu and image */
+    pointer-events: none;
+    /* Allows clicks to pass through to the image below */
 }
 
 /* Adjust the kebab menu position so it doesn't fight with the badge */
 .card.position-relative .dropdown {
     z-index: 21;
+}
+
 #component-canvas-container {
-    touch-action: none; /* CRITICAL: Prevents browser scrolling when touching canvas */
+    touch-action: none;
+    /* CRITICAL: Prevents browser scrolling when touching canvas */
 }
 
 /* -------------------------------------------------------- */
 /* MOBILE RESPONSIVENESS (View-Only Mode)                   */
 /* -------------------------------------------------------- */
 @media (max-width: 992px) {
+
     /* Stack elements vertically */
     #main-split {
         display: flex !important;
@@ -527,7 +539,8 @@
     }
 
     /* Hide the left controls panel and toolbar on mobile */
-    #left-panel, #toolbar {
+    #left-panel,
+    #toolbar {
         display: none !important;
     }
 
@@ -538,7 +551,131 @@
     }
 
     /* Hide New, Save, and Import buttons on mobile */
-    #new-component-btn, #save-component-btn, #import-json-btn {
+    #new-component-btn,
+    #save-component-btn,
+    #import-json-btn {
         display: none !important;
     }
+}
+
+/* --- Refactored Inline Styles --- */
+.brand-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.brand-toggle-btn {
+    cursor: pointer;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.brand-logo-img {
+    height: 1.5em;
+}
+
+.custom-dropdown-menu {
+    right: 0;
+    left: auto;
+    margin-top: 10px;
+    min-width: 220px;
+}
+
+.notification-dropdown-menu {
+    min-width: 300px;
+}
+
+.scrollable-list-large {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.scrollable-list-medium {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.pointer-events-none {
+    pointer-events: none;
+}
+
+.profile-photo-sm {
+    width: 24px;
+    height: 24px;
+}
+
+.image-paste-zone {
+    cursor: copy;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-body-bg);
+    transition: all 0.2s ease;
+}
+
+.img-preview-max {
+    max-width: 100%;
+}
+
+.canvas-hud-panel {
+    background: rgba(33, 37, 41, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coords-min-width {
+    min-width: 70px;
+}
+
+.hud-vertical-divider {
+    height: 20px;
+}
+
+.view-count-static {
+    opacity: 1;
+    border-color: var(--bs-border-color);
+}
+
+.textarea-no-resize {
+    resize: none;
+}
+
+.toast-container-top {
+    z-index: 99999;
+}
+
+.toast-large {
+    width: 350px;
+    font-size: 1.1rem;
+}
+
+.offcanvas-wide {
+    width: 500px;
+}
+
+.json-preview-box {
+    max-height: 300px;
+    overflow: auto;
+    background-color: var(--bs-tertiary-bg);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* --- Attention-grabbing pulse for the New badge --- */
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+.pulse-badge {
+    animation: pulse-red 2s infinite;
 }
