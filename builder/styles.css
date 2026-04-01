@@ -679,3 +679,19 @@
 .pulse-badge {
     animation: pulse-red 2s infinite;
 }
+
+/* --- Rainbow RGB Animation --- */
+@keyframes rainbow-shift {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+.rgb-animate {
+    color: #ff0000 !important; /* Base color for hue-rotation */
+    animation: rainbow-shift 5s linear infinite;
+}
+
+/* Optional: Make it only animate when you hover over the button */
+.shape-gallery-item:hover .rgb-animate {
+    animation-duration: 1.5s; /* Speeds up on hover */
+}
