@@ -38,7 +38,7 @@
             <div class="dropdown me-3 brand-dropdown-wrapper">
                 <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle pulse-on-load brand-toggle-btn" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
                     <img src="../images/rgbjunkielogo2.png" alt="Effect Builder Logo" class="me-2 brand-logo-img">
-                    <span class="d-none d-sm-inline">RGBJunkie Component Builder</span>
+                    <span class="fs-6 text-truncate">RGBJunkie Component Builder</span>
                     <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
                 </a>
                 <ul class="dropdown-menu shadow custom-dropdown-menu">
@@ -169,29 +169,30 @@
                     </ul>
                 </div>
 
-                <div class="tab-content flex-grow-1 overflow-auto p-3" id="sidebarTabsContent">
+                <div class="tab-content flex-grow-1 overflow-auto p-3 pe-4" id="sidebarTabsContent">
 
-                    <div class="tab-pane fade show active" id="project-tab-pane" role="tabpanel" aria-labelledby="project-tab" tabindex="0">
+                    <div class="tab-pane fade show active d-flex flex-column h-100" id="project-tab-pane" role="tabpanel" aria-labelledby="project-tab" tabindex="0">
 
-                        <div class="alert alert-info alert-dismissible fade show shadow-sm border-info border-opacity-50 py-2 small" role="alert">
+                        <div class="alert alert-info alert-dismissible fade show shadow-sm border-info border-opacity-50 py-2 small flex-shrink-0" role="alert">
                             <strong><i class="bi bi-info-circle-fill me-1"></i> Update:</strong> Shape generators have moved to the <strong>Build</strong> tab!
                             <button type="button" class="btn-close pb-1 pt-2" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
-                        <div id="component-properties" class="mb-3">
-                            <div class="row mb-3">
+                        <div id="component-properties" class="mb-2 d-flex flex-column flex-grow-1" style="min-height: 0;">
+
+                            <div class="row mb-3 flex-shrink-0">
                                 <div class="col">
                                     <label for="component-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Product Name</label>
                                     <input type="text" id="component-name" class="form-control" placeholder="e.g., My Custom Fan">
                                 </div>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-3 flex-shrink-0">
                                 <div class="col">
                                     <label for="component-display-name" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Display Name</label>
                                     <input type="text" id="component-display-name" class="form-control" placeholder="e.g., My Custom Fan">
                                 </div>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-2 flex-shrink-0">
                                 <div class="col">
                                     <label for="component-brand" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Brand</label>
                                     <input type="text" id="component-brand" class="form-control" placeholder="e.g., Custom">
@@ -224,24 +225,27 @@
                                 </div>
                             </div>
 
-                            <hr class="my-4 text-secondary">
+                            <hr class="my-3 text-secondary flex-shrink-0">
 
-                            <div class="mb-2">
-                                <label for="component-image" class="form-label form-label-sm text-secondary text-uppercase fw-bold">Device Image</label>
-                                <input type="file" id="component-image" class="form-control form-control-sm mb-2" accept="image/png, image/webp">
+                            <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
+                                <label for="component-image" class="form-label form-label-sm text-secondary text-uppercase fw-bold flex-shrink-0">Device Image</label>
+                                <input type="file" id="component-image" class="form-control form-control-sm mb-2 flex-shrink-0" accept="image/png, image/webp">
 
-                                <div id="image-paste-zone" class="p-4 text-center text-muted border border-secondary border-dashed rounded-3 image-paste-zone" contenteditable="true" title="Click here and press Ctrl+V to paste an image">
-                                    <img id="image-preview" src="#" alt="Image Preview" class="img-fluid rounded shadow-sm img-preview-max" style="display: none;">
+                                <div id="image-paste-zone" class="p-2 text-center text-muted border border-secondary border-dashed rounded-3 image-paste-zone flex-grow-1 d-flex align-items-center justify-content-center" contenteditable="true" title="Click here and press Ctrl+V to paste an image" style="min-height: 0; overflow: hidden;">
+
+                                    <img id="image-preview" src="#" alt="Image Preview" class="rounded shadow-sm" style="display: none; max-width: 100%; max-height: 100%; object-fit: contain;">
+
                                     <span id="image-paste-placeholder" class="pointer-events-none">
                                         <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
-                                        <br>
-                                        Click to paste or drop image
+                                        <br>Click to paste or drop
                                     </span>
                                 </div>
-                                <div class="form-text mt-2 small text-center">
-                                    Use <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste, or press <kbd>Delete</kbd> to remove. Max 400x400px.
+
+                                <div class="form-text mt-2 small text-center flex-shrink-0 pb-1">
+                                    Use <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste. Max 400x400px.
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -427,20 +431,43 @@
 
                 <div id="right-panel-top" class="flex-grow-1 position-relative" style="background-color: #2b3035;">
 
-                    <div id="mobile-component-header" class="text-center w-100 p-3 pb-2 d-none position-absolute top-0 z-3 bg-dark bg-opacity-75">
-                        <h4 id="mobile-comp-name" class="mb-1 text-light fw-bold">Component Name</h4>
-                        <div class="mb-2">
+                    <div id="mobile-component-header" class="text-center w-100 p-3 pb-2 d-none position-absolute top-0 z-3 bg-dark bg-opacity-75" style="backdrop-filter: blur(8px);">
+                        <img id="mobile-comp-image" src="" alt="Device" class="d-none rounded shadow-sm mb-2 mx-auto" style="max-height: 80px; object-fit: contain; background-color: rgba(0,0,0,0.5); padding: 4px;">
+
+                        <h4 id="mobile-comp-name" class="mb-0 text-light fw-bold">Component Name</h4>
+
+                        <div id="mobile-comp-maker" class="small text-info mb-2 fw-medium">By: Anonymous</div>
+
+                        <div id="mobile-comp-display-name" class="small text-secondary mb-2 fw-medium">Display Name</div>
+
+                        <div class="mb-1">
                             <span id="mobile-comp-brand" class="badge bg-primary me-1">Brand</span>
                             <span id="mobile-comp-type" class="badge bg-info text-dark">Type</span>
                         </div>
                     </div>
 
+                    <div id="desktop-component-header" class="position-absolute top-0 start-0 m-3 p-2 rounded-3 shadow d-none d-md-flex align-items-center gap-3 z-3 canvas-hud-panel text-light" style="pointer-events: none;">
+                        <img id="desktop-comp-image" src="" alt="Device" class="d-none rounded bg-dark p-1 shadow-sm" style="height: 40px; width: 40px; object-fit: contain;">
+
+                        <div>
+                            <h6 id="desktop-comp-name" class="mb-0 fw-bold text-shadow">Untitled Component</h6>
+                            <div class="small text-secondary fw-medium" style="font-size: 0.75rem;">
+                                <span id="desktop-comp-maker" class="text-info">By: Anonymous</span> &bull;
+                                <span id="desktop-comp-brand">Custom</span> &bull;
+                                <span id="desktop-comp-type">Other</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="canvas-hud" class="position-absolute top-0 end-0 m-3 p-2 rounded-3 shadow d-flex align-items-center gap-3 z-3 canvas-hud-panel">
-                        <div class="d-flex align-items-center text-secondary font-monospace small">
+
+                        <div class="d-none d-lg-flex align-items-center text-secondary font-monospace small">
                             <i class="bi bi-crosshair me-2"></i>
                             <span id="coords-display" class="coords-min-width">---, ---</span>
                         </div>
-                        <div class="border-start border-secondary opacity-50 hud-vertical-divider"></div>
+
+                        <div class="border-start border-secondary opacity-50 hud-vertical-divider d-none d-lg-block"></div>
+
                         <div class="d-flex align-items-center">
                             <span id="led-count-display" class="badge bg-secondary rounded-pill px-3 py-2">0 LEDs</span>
                         </div>
@@ -459,15 +486,15 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="d-flex gap-2">
                             <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="like-component-btn" data-bs-toggle="tooltip" title="Like Component" disabled>
-                                <i class="bi bi-heart me-1"></i> Like
+                                <i class="bi bi-heart me-1"></i>
                                 <span id="like-count-display" class="badge bg-danger ms-1" style="display: none;">0</span>
                             </button>
-                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 view-count-static" id="view-count-btn" title="Total Views" disabled>
+                            <button class="btn btn-secondary btn-sm rounded-pill px-3 view-count-static" id="view-count-btn" title="Total Views" disabled>
                                 <i class="bi bi-eye me-1"></i> <span id="view-count-display">0</span>
                             </button>
                         </div>
 
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="false" title="Toggle Comments">
+                        <button class="btn btn-sm btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="false" title="Toggle Comments">
                             <i class="bi bi-chat-left-text me-1"></i> Comments
                         </button>
                     </div>
