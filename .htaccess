@@ -17,3 +17,8 @@ RewriteRule ^gallery\.html$ /gallery/ [R=301,L]
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.html -f
 RewriteRule ^(.*)$ $1.html [NC,L]
+
+#Check cached files with the server before serving them
+<FilesMatch "\.(html|htm|js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+</FilesMatch>
