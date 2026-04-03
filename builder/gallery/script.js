@@ -29,6 +29,7 @@ const logoutBtn = document.getElementById('logout-btn');
 const userSessionGroup = document.getElementById('user-session-group');
 const userDisplay = document.getElementById('user-display');
 const userPhoto = document.getElementById('user-photo');
+const resetFiltersBtn = document.getElementById('reset-filters-btn');
 
 const galleryComponentList = document.getElementById('user-component-list');
 const gallerySearchInput = document.getElementById('gallery-search-input');
@@ -81,6 +82,7 @@ function setupAuthListeners() {
         }
 
         // Reload components on auth change to show/hide delete buttons
+        loadSavedFilters();
         loadUserComponents(true);
     });
 }
@@ -483,6 +485,53 @@ async function populateGalleryFilters() {
     galleryFilterLeds.value = currentLeds;
 }
 
+// --- FILTER MEMORY LOGIC ---
+function saveFilters() {
+    try {
+        const filters = {
+            type: galleryFilterType ? galleryFilterType.value : '',
+            brand: galleryFilterBrand ? galleryFilterBrand.value : '',
+            leds: galleryFilterLeds ? galleryFilterLeds.value : '',
+            sort: galleryFilterSort ? galleryFilterSort.value : 'recent'
+        };
+        localStorage.setItem('srgbGalleryFilters', JSON.stringify(filters));
+    } catch (error) {
+        console.warn("Browser tracking prevention blocked saving filters.");
+    }
+}
+
+function loadSavedFilters() {
+    const saved = localStorage.getItem('srgbGalleryFilters');
+    if (saved) {
+        try {
+            const filters = JSON.parse(saved);
+            if (galleryFilterType) galleryFilterType.value = filters.type || '';
+            if (galleryFilterBrand) galleryFilterBrand.value = filters.brand || '';
+            if (galleryFilterLeds) galleryFilterLeds.value = filters.leds || '';
+            if (galleryFilterSort) galleryFilterSort.value = filters.sort || 'recent';
+        } catch (e) {
+            console.error("Error parsing saved filters:", e);
+        }
+    }
+}
+
+function resetFilters() {
+    try {
+        localStorage.removeItem('srgbGalleryFilters');
+    } catch(e) {}
+    
+    // Reset dropdowns to their default states
+    if (galleryFilterType) galleryFilterType.value = '';
+    if (galleryFilterBrand) galleryFilterBrand.value = '';
+    if (galleryFilterLeds) galleryFilterLeds.value = '';
+    
+    // THE FIX: Reset the sort dropdown to the first option, avoiding the empty string crash
+    if (galleryFilterSort) galleryFilterSort.selectedIndex = 0; 
+    if (gallerySearchInput) gallerySearchInput.value = '';
+    
+    loadUserComponents(true);
+}
+
 /**
  * Loads components from Firestore with pagination and server-side filtering.
  * @param {boolean} reset - If true, clears the list and starts from the beginning.
@@ -533,20 +582,30 @@ async function loadUserComponents(reset = false) {
         const filterType = galleryFilterType ? galleryFilterType.value : 'all';
         const filterBrand = galleryFilterBrand ? galleryFilterBrand.value : 'all';
         const filterLeds = galleryFilterLeds ? galleryFilterLeds.value : 'all';
+        
+        // --- THE FIX: Bulletproof Sorting Logic ---
         const sortElement = document.getElementById('gallery-filter-sort');
-        const sortField = sortElement ? sortElement.value : 'lastUpdated';
+        let sortField = 'lastUpdated'; // Absolute default fallback
+        
+        if (sortElement && sortElement.value !== "") {
+            const sortVal = sortElement.value;
+            if (sortVal === 'likes') sortField = 'likeCount';
+            else if (sortVal === 'views') sortField = 'viewCount';
+            else if (sortVal === 'downloads') sortField = 'downloadCount';
+            else if (sortVal === 'recent') sortField = 'lastUpdated';
+            else sortField = sortVal; // Catch-all just in case
+        }
+        // ------------------------------------------
 
         let q;
 
         // 2. SEARCH MODE (Server-Side)
-        // If there is a search term, we MUST order by 'searchName' for the inequality filter to work
         if (searchTerm) {
-            // "Starts With" Query
             q = query(
                 componentsCollection,
                 where('searchName', '>=', searchTerm),
                 where('searchName', '<=', searchTerm + '\uf8ff'),
-                limit(50) // Fetch up to 50 matches (search is usually specific enough)
+                limit(50) 
             );
         }
         // 3. BROWSE MODE (Normal Pagination)
@@ -556,9 +615,9 @@ async function loadUserComponents(reset = false) {
                 limit(GALLERY_PAGE_SIZE)
             ];
 
-            if (filterType !== 'all') queryConstraints.push(where('type', '==', filterType));
-            if (filterBrand !== 'all') queryConstraints.push(where('brand', '==', filterBrand));
-            if (filterLeds !== 'all') {
+            if (filterType && filterType !== 'all') queryConstraints.push(where('type', '==', filterType));
+            if (filterBrand && filterBrand !== 'all') queryConstraints.push(where('brand', '==', filterBrand));
+            if (filterLeds && filterLeds !== 'all') {
                 const ledCount = parseInt(filterLeds, 10);
                 if (!isNaN(ledCount)) queryConstraints.push(where('ledCount', '==', ledCount));
             }
@@ -570,7 +629,6 @@ async function loadUserComponents(reset = false) {
 
         const querySnapshot = await getDocs(q);
 
-        // Note: We remove the client-side .filter() because the server did the work!
         let finalDocs = querySnapshot.docs;
         if (searchTerm) {
             finalDocs = finalDocs.filter(doc => {
@@ -596,7 +654,6 @@ async function loadUserComponents(reset = false) {
                 </div>
             ` : '';
 
-            // --- DEFINITIONS ---
             const ledCount = componentData.ledCount || (Array.isArray(componentData.leds) ? componentData.leds.length : 0);
             const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
             const ownerName = componentData.ownerName || 'Anonymous';
@@ -605,12 +662,10 @@ async function loadUserComponents(reset = false) {
             const ownerId = componentData.ownerId;
             const likeCount = componentData.likeCount || 0;
             const viewCount = componentData.viewCount || 0;
+            const downloadCount = componentData.downloadCount || 0;
 
-            // --- [NEW] KEBAB MENU LOGIC ---
-            // Only generate this HTML if the user is allowed to delete
             let kebabMenuHtml = '';
             if (user && (user.uid === ownerId || user.uid === ADMIN_UID)) {
-                // Only admins see the "Feature" option
                 const adminActions = user.uid === ADMIN_UID ? `
                     <li>
                         <button class="dropdown-item text-primary" data-component-id="${componentId}-feature">
@@ -639,7 +694,6 @@ async function loadUserComponents(reset = false) {
             const col = document.createElement('div');
             col.className = 'col';
 
-            // Image HTML (Same as before)
             let imageHtml = `
                 <div class="card-img-top d-flex align-items-center justify-content-center gallery-image-container" 
                      data-component-id="${componentId}-img"
@@ -657,8 +711,6 @@ async function loadUserComponents(reset = false) {
                     </div>`;
             }
 
-            // --- RENDER CARD ---
-            // Added 'position-relative' to the card so the kebab menu is positioned correctly
             col.innerHTML = `
             <div class="card h-100 bg-body-tertiary position-relative ${isFeatured ? 'border border-warning' : ''}">
                 ${featuredBadgeHtml}
@@ -683,12 +735,12 @@ async function loadUserComponents(reset = false) {
                     <div class="d-flex gap-3">
                         <span title="Likes"><i class="bi bi-heart-fill text-danger me-1"></i> ${likeCount}</span>
                         <span title="Views"><i class="bi bi-eye-fill text-secondary me-1"></i> ${viewCount}</span>
+                        <span title="Downloads"><i class="bi bi-download text-success me-1"></i> ${downloadCount}</span>
                     </div>
                 </div>
             </div>
         `;
 
-            // Still inside the forEach loop, after the HTML is injected
             const featureButton = col.querySelector(`[data-component-id="${componentId}-feature"]`);
             if (featureButton) {
                 featureButton.addEventListener('click', async (e) => {
@@ -701,8 +753,7 @@ async function loadUserComponents(reset = false) {
                         }, { merge: true });
 
                         showToast('Spotlight Updated', `"${componentName}" is now the featured component!`, 'success');
-
-                        // Refresh the gallery to update the badges visually
+                        loadSavedFilters();
                         loadUserComponents(true);
                     } catch (error) {
                         console.error("Error setting featured component:", error);
@@ -713,22 +764,19 @@ async function loadUserComponents(reset = false) {
 
             galleryComponentList.appendChild(col);
 
-            // --- THUMBNAIL LOGIC ---
             if (!imageUrl) {
                 const thumbCanvas = col.querySelector(`#thumb-${componentId}`);
                 if (thumbCanvas) renderComponentThumbnail(thumbCanvas, componentData);
             }
 
-            // --- EVENT LISTENERS ---
             const loadUrl = `../index.html?id=${componentId}`;
             col.querySelector(`[data-component-id="${componentId}-load"]`)?.addEventListener('click', () => window.location.href = loadUrl);
             col.querySelector(`[data-component-id="${componentId}-img"]`)?.addEventListener('click', () => window.location.href = loadUrl);
 
-            // Attach listener to the new dropdown delete button
             const deleteButton = col.querySelector(`[data-component-id="${componentId}-delete"]`);
             if (deleteButton) {
                 deleteButton.addEventListener('click', (e) => {
-                    e.preventDefault(); // Prevent menu closing weirdness
+                    e.preventDefault(); 
                     handleDeleteComponent(e, componentId, componentName, imageUrl, ownerId);
                 });
             }
@@ -749,7 +797,6 @@ async function loadUserComponents(reset = false) {
         console.error("Error loading user components:", error);
         galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-danger">Error loading components. See console for details.</div></div>';
 
-        // Helper for Index Errors
         if (error.code === 'failed-precondition') {
             galleryComponentList.innerHTML = '<div class="col"><div class="alert alert-warning">Sort Index Missing. Click the link in the console to create it.</div></div>';
         }
@@ -829,21 +876,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup auth listeners
     setupAuthListeners();
 
-    // Add listeners for the filter controls
-    if (gallerySearchInput) {
-        gallerySearchInput.addEventListener('change', () => loadUserComponents(true));
-    }
+    // --- UPDATED EVENT LISTENERS ---
     if (galleryFilterType) {
-        galleryFilterType.addEventListener('change', () => loadUserComponents(true));
+        galleryFilterType.addEventListener('change', () => { saveFilters(); loadUserComponents(true); });
     }
     if (galleryFilterBrand) {
-        galleryFilterBrand.addEventListener('change', () => loadUserComponents(true));
+        galleryFilterBrand.addEventListener('change', () => { saveFilters(); loadUserComponents(true); });
     }
     if (galleryFilterLeds) {
-        galleryFilterLeds.addEventListener('change', () => loadUserComponents(true));
+        galleryFilterLeds.addEventListener('change', () => { saveFilters(); loadUserComponents(true); });
     }
     if (galleryFilterSort) {
-        galleryFilterSort.addEventListener('change', () => loadUserComponents(true));
+        galleryFilterSort.addEventListener('change', () => { saveFilters(); loadUserComponents(true); });
+    }
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', resetFilters);
     }
 
     // --- [NEW] Event listener for Delete All Read button ---
@@ -866,10 +913,4 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Could not find gallery scrolling container for lazy-loading.");
     }
     // --- [END MODIFIED] ---
-
-    // Initial load of components (triggered by auth listener)
-    // We call it here just in case auth is delayed
-    // if (!auth.currentUser) {
-    //     loadUserComponents(true);
-    // }
 });
