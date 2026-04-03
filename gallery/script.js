@@ -1,5 +1,3 @@
-// gallery.js - COMPLETE FILE (with Cards & Lazy Loading)
-
 document.addEventListener('DOMContentLoaded', function () {
     const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
     const loginBtn = document.getElementById('login-btn');
