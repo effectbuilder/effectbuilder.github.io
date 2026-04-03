@@ -236,3 +236,87 @@ export function renderComponentThumbnail(canvas, componentData) {
     // 6. Restore canvas state
     ctx.restore();
 }
+
+/**
+ * Sets the version number by fetching from GitHub, with a 5-minute cache
+ * stored in the browser's localStorage to reduce API calls.
+ */
+export async function setVersionWithCaching() {
+    // --- CONFIGURE THIS SECTION ---
+    const owner = "effectbuilder";           // Your GitHub username or organization
+    const repo = "effectbuilder.github.io";  // Your repository name
+    const branch = "main";                   // Your default branch name
+    const majorMinor = "1";                // Your project's Major.Minor version
+    const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const PER_PAGE_COUNT = 100;
+    // ------------------------------
+
+    const versionEl = document.getElementById('version-display');
+    if (!versionEl) return;
+
+    let cachedInfo = null;
+    try {
+        cachedInfo = JSON.parse(localStorage.getItem('githubVersionInfo'));
+    } catch (e) {
+        console.warn("Could not parse version cache.");
+    }
+
+    // 1. Check if a fresh version exists in the cache
+    if (cachedInfo && (Date.now() - cachedInfo.timestamp < CACHE_DURATION_MS)) {
+        versionEl.textContent = cachedInfo.version;
+        return; // Use the cached version and stop here
+    }
+
+    // 2. If cache is old or missing, fetch from GitHub
+    try {
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=${PER_PAGE_COUNT}`;
+        const response = await fetch(apiUrl);
+
+        // --- FIX: Read the JSON response immediately. ---
+        // This is necessary even on failure to get the error body (e.g., rate limit message).
+        const commits = await response.json();
+
+        if (!response.ok) {
+            // If not ok, throw the error with the status and the message from the JSON body
+            throw new Error(`API status: ${response.status}. Message: ${commits.message || 'Unknown Error'}`);
+        }
+
+        const linkHeader = response.headers.get('Link');
+        let totalCommits = 0;
+
+        if (linkHeader) {
+            const lastPageMatch = linkHeader.match(/page=(\d+)>; rel="last"/);
+
+            if (lastPageMatch) {
+                const lastPageNum = parseInt(lastPageMatch[1], 10);
+                // Approximate total commits
+                totalCommits = lastPageNum * PER_PAGE_COUNT;
+            }
+        }
+
+        // If totalCommits is still 0 (Link header missing), use the actual count from the JSON
+        if (totalCommits === 0) {
+            totalCommits = commits.length; // Use the commits variable we already awaited
+        }
+
+        // Use the totalCommits we calculated
+        const newVersion = `${majorMinor}.${totalCommits}`;
+        versionEl.textContent = newVersion;
+
+        // 3. Save the new version and current timestamp to the cache
+        const newCacheInfo = {
+            version: newVersion,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('githubVersionInfo', JSON.stringify(newCacheInfo));
+
+    } catch (error) {
+        console.error("Error fetching version from GitHub:", error);
+        // If the API fails, use the stale cache data if it exists
+        if (cachedInfo) {
+            versionEl.textContent = `${cachedInfo.version} (Offline)`;
+        } else {
+            versionEl.textContent = `${majorMinor}.? (API Error)`;
+        }
+    }
+}
