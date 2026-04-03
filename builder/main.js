@@ -1,5 +1,5 @@
 // --- IMPORT ---
-import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from './util.js';
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo, setVersionWithCaching } from './util.js';
 import {
     auth, db, storage, ref, uploadString, getDownloadURL, deleteObject, deleteDoc,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
@@ -4713,6 +4713,7 @@ if (localStorage.getItem('nodeStart') === 'true') {
 drawCanvas();
 
 document.addEventListener('DOMContentLoaded', async () => {
+    setVersionWithCaching();
     initializeTooltips();
 
     if (!ctx) {

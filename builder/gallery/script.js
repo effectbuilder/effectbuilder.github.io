@@ -1,6 +1,6 @@
 // --- IMPORT ---
 // [MODIFIED] Import timeAgo
-import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo } from '../util.js';
+import { initializeTooltips, showToast, setupThemeSwitcher, renderComponentThumbnail, timeAgo, setVersionWithCaching } from '../util.js';
 import {
     auth, db,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
@@ -868,6 +868,7 @@ function handleGalleryScroll(e) {
 // --- INITIALIZATION ---
 // ---
 document.addEventListener('DOMContentLoaded', () => {
+    setVersionWithCaching();
     initializeTooltips();
 
     // Setup theme switcher first so colors are correct

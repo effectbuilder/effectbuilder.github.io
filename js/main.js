@@ -749,7 +749,7 @@ async function setVersionWithCaching() {
     const owner = "effectbuilder";           // Your GitHub username or organization
     const repo = "effectbuilder.github.io";  // Your repository name
     const branch = "main";                   // Your default branch name
-    const majorMinor = "1.0";                // Your project's Major.Minor version
+    const majorMinor = "1";                // Your project's Major.Minor version
     const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
     const PER_PAGE_COUNT = 100;
     // ------------------------------
