@@ -138,6 +138,7 @@ const clearImageGuideBtn = document.getElementById('clear-image-guide-btn');
 const likeBtn = document.getElementById('like-component-btn');
 const likeCountDisplay = document.getElementById('like-count-display');
 const viewCountDisplay = document.getElementById('view-count-display');
+const downloadCountDisplay = document.getElementById('download-count-display');
 
 // --- [NEW] COMMENT DOM Elements ---
 const commentSection = document.getElementById('component-comments-section');
@@ -219,6 +220,7 @@ function updateLikeButtonUI() {
         }
 
         if (viewCountDisplay) viewCountDisplay.textContent = "0";
+        if (downloadCountDisplay) downloadCountDisplay.textContent = "0";
     }
 
     // --- Handle the like count badge (applies in all states) ---
@@ -263,6 +265,10 @@ function loadLikeData(componentId) {
         const viewCount = data.viewCount || 0;
         if (viewCountDisplay) {
             viewCountDisplay.textContent = viewCount;
+        }
+        const downloadCount = data.downloadCount || 0;
+        if (downloadCountDisplay) {
+            downloadCountDisplay.textContent = downloadCount;
         }
 
     }, (error) => {
@@ -327,6 +333,17 @@ async function handleLikeComponent() {
         // Re-enable button (snapshot will refresh state)
         likeBtn.disabled = false;
     }
+}
+
+/**
+ * Increments the download count for the current component in Firestore.
+ */
+function trackDownload() {
+    if (!currentComponentId) return;
+    const compRef = doc(db, "srgb-components", currentComponentId);
+    updateDoc(compRef, {
+        downloadCount: increment(1)
+    }).catch(err => console.error("Error incrementing download count:", err));
 }
 
 /**
@@ -1563,6 +1580,21 @@ async function performSave(isNew, isForking = false) {
     };
     delete dataToSave.dbId; // Don't save the local DB ID in the doc
 
+    // --- THE FIX: Wipe stats clean if this is a new component or fork ---
+    if (isNew) {
+        dataToSave.likeCount = 0;
+        dataToSave.viewCount = 0;
+        dataToSave.downloadCount = 0;
+        dataToSave.likedBy = [];
+        
+        // Also update the local componentState so the UI resets immediately
+        componentState.likeCount = 0;
+        componentState.viewCount = 0;
+        componentState.downloadCount = 0;
+        componentState.likedBy = [];
+    }
+    // --------------------------------------------------------------------
+
     // 4. Execute Firebase save
     try {
         let docRef;
@@ -1876,6 +1908,7 @@ function updateExportPreview() {
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                trackDownload();
                 // Do not revoke URL here; let the next update handle it.
                 if (exportModal) exportModal.hide();
             } catch (downloadError) {
@@ -1887,6 +1920,7 @@ function updateExportPreview() {
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(jsonString).then(() => {
                 showToast('Copied!', 'JSON copied to clipboard.', 'success');
+                trackDownload();
             }).catch(err => {
                 console.error("Error copying JSON to clipboard:", err);
                 showToast('Copy Error', 'Could not copy to clipboard.', 'danger');
@@ -4698,7 +4732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupCanvas(appState); // Initialize canvas engine FIRST
 
     syncMobileHeader();
-    
+
     // Setup all other app listeners
     setupAuthListeners();
     setupProjectListeners();

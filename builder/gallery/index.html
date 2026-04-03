@@ -126,7 +126,7 @@
                 <div class="mb-2">
                     <input type="search" id="gallery-search-input" class="form-control" placeholder="Search by name...">
                 </div>
-                <div class="row g-2 row-cols-1 row-cols-md-3">
+                <div class="row g-2 row-cols-1 row-cols-md-5">
                     <div class="col">
                         <label for="gallery-filter-type" class="form-label form-label-sm">Type</label>
                         <select id="gallery-filter-type" class="form-select form-select-sm">
@@ -151,7 +151,13 @@
                             <option value="lastUpdated" selected>Newest</option>
                             <option value="likeCount">Most Likes</option>
                             <option value="viewCount">Most Views</option>
+                            <option value="downloadCount">Most Downloads</option>
                         </select>
+                    </div>
+                    <div class="col-auto d-flex align-items-end">
+                        <button id="reset-filters-btn" class="btn btn-outline-secondary" title="Clear Filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
                     </div>
                 </div>
             </div>
