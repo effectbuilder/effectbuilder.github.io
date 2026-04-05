@@ -4,104 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RGB Junkie - SignalRGB Generator</title>
+    <title>RGB Junkie - SignalRGB Node Builder</title>
 
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/litegraph.js/css/litegraph.css">
     <script src="https://cdn.jsdelivr.net/npm/litegraph.js/build/litegraph.js"></script>
-
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            margin: 0;
-            background: #0a0a0a;
-            color: #eee;
-            font-family: 'Segoe UI', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Presentation Area */
-        #presentation-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background: #121212;
-            border-bottom: 2px solid #333;
-            position: relative;
-            z-index: 10;
-        }
-
-        #retro-canvas {
-            width: 640px;
-            height: 400px;
-            background: #000;
-            border: 2px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            image-rendering: pixelated;
-        }
-
-        .control-bar {
-            margin-top: 15px;
-            display: flex;
-            gap: 15px;
-            width: 640px;
-            justify-content: space-between;
-        }
-
-        button {
-            background: #2a2a2a;
-            color: #888;
-            border: 1px solid #444;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background: #444;
-            color: #fff;
-            border-color: #00FFDD;
-        }
-
-        .btn-download {
-            background: #004d40;
-            color: #00FFDD;
-            border-color: #00FFDD;
-        }
-
-        .btn-download:hover {
-            background: #00FFDD;
-            color: #000;
-            box-shadow: 0 0 15px rgba(0, 255, 221, 0.5);
-        }
-
-        /* Hidden Developer Area */
-        #editor-container {
-            display: none;
-            flex: 1;
-            position: relative;
-            width: 100%;
-            min-height: 400px;
-        }
-
-        #node-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            background: #1a1a1a;
-        }
-
-        #code-output {
-            display: none;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -109,352 +16,43 @@
     <div id="presentation-container">
         <canvas id="retro-canvas" width="320" height="200"></canvas>
         <div class="control-bar">
-            <button onclick="toggleDevMode()">⚙️ Toggle Effect Builder</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="toggleDevMode()" title="Show/Hide Node Editor">⚙️ Editor</button>
+                <button onclick="window.triggerImport()" style="border-color: #f1c40f; color: #f1c40f;">📂 Load Project</button>
+                <button onclick="window.exportProjectFile()" style="border-color: #2ecc71; color: #2ecc71;" title="Save Nodes to JSON">💾 Save Project</button>
+
+                <select id="fps-select" onchange="window.previewFPS = parseInt(this.value); window.compileGraph();" style="background: #2a2a2a; color: #888; border: 1px solid #444; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none;">
+                    <option value="30">30 FPS (SignalRGB Default)</option>
+                    <option value="60">60 FPS (SignalRGB Max)</option>
+                </select>
+            </div>
+
             <button class="btn-download" onclick="downloadSignalRGB()">⬇️ Download SignalRGB Effect</button>
         </div>
-        <pre id="code-output"></pre>
     </div>
+    <input type="file" id="import-input" style="display:none;" onchange="window.importProjectFile(event)">
 
     <div id="editor-container">
         <canvas id="node-canvas" width="1024" height="768"></canvas>
     </div>
 
-    <script>
-        let devModeActive = false;
-        let signalRgbExportString = ""; // Stores the final downloadable HTML file
+    <script src="engine_setup.js"></script>
 
-        function toggleDevMode() {
-            devModeActive = !devModeActive;
-            const editor = document.getElementById("editor-container");
-            if (devModeActive) {
-                editor.style.display = "block";
-                window.dispatchEvent(new Event('resize'));
-            } else {
-                editor.style.display = "none";
-            }
-        }
-
-        function downloadSignalRGB() {
-            if (!signalRgbExportString) { alert("Please compile a valid effect first."); return; }
-            const blob = new Blob([signalRgbExportString], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "RGB_Junkie_Effect.html";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // --- ENGINE INITIALIZATION ---
-        window.onload = function () {
-            if (typeof LGraph === 'undefined') return;
-
-            LiteGraph.clearRegisteredTypes();
-            const graph = new LGraph();
-            const canvas = new LGraphCanvas(document.getElementById("node-canvas"), graph);
-            window.addEventListener("resize", () => {
-                const container = document.getElementById("editor-container");
-                if (container.style.display !== "none") canvas.resize(container.clientWidth, container.clientHeight);
-            });
-
-            // ==========================================
-            // --- HUMAN-FRIENDLY SIGNALRGB TOOLKIT ---
-            // ==========================================
-
-            function NodeStart() { this.addOutput("Connect ->", ""); }
-            NodeStart.title = "1. Start Box";
-            NodeStart.prototype.compileStream = function () {
-                return { init: `x: 160, y: 100, `, update: ``, draw: ``, previewVars: `` };
-            };
-            LiteGraph.registerNodeType("Basics/1. Start Box", NodeStart);
-
-            // --- SHAPE (WITH META TAGS) ---
-            function NodeShape() {
-                this.addInput("Connect", ""); this.addOutput("Connect ->", "");
-                this.properties = { sides: 5, size: 15 };
-                this.addWidget("slider", "Shape (Sides)", 5, (v) => { this.properties.sides = Math.floor(v); compileGraph(); }, { min: 3, max: 12 });
-                this.addWidget("slider", "Base Size", 15, (v) => { this.properties.size = v; compileGraph(); }, { min: 5, max: 50 });
-            }
-            NodeShape.title = "2. Shape & Size";
-            NodeShape.prototype.compileMeta = function () {
-                return `<meta property="slider" name="Shape Sides" id="sides_${this.id}" min="3" max="12" step="1" default="${this.properties.sides}">\n<meta property="slider" name="Base Size" id="size_${this.id}" min="5" max="50" step="1" default="${this.properties.size}">`;
-            };
-            NodeShape.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-
-                // Define fake variables for the browser preview so it doesn't crash
-                stream.previewVars += `var sides_${this.id} = ${this.properties.sides};\nvar size_${this.id} = ${this.properties.size};\n`;
-
-                // Use the SignalRGB variable names in the actual logic
-                stream.init += `sides: sides_${this.id}, baseSize: size_${this.id}, size: size_${this.id}, rot: 0, vrot: (Math.random()-0.5)*0.2, age: Math.random()*100, `;
-                stream.update += `p.rot += p.vrot; p.age += dt; `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Basics/2. Shape Settings", NodeShape);
-
-            // --- OUTPUT RENDERER ---
-            function NodeOutput() { this.addInput("Connect", ""); }
-            NodeOutput.title = "3. Draw to Screen";
-            NodeOutput.prototype.compileEntityLoop = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : null;
-                if (!stream) return { vars: "", code: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-
-                let code = `
-          state.list_${this.id} = state.list_${this.id} || [];
-          if (Math.random() < 0.05 && state.list_${this.id}.length < 25) { state.list_${this.id}.push({ ${stream.init} }); }
-          for (let i = state.list_${this.id}.length - 1; i >= 0; i--) {
-            let p = state.list_${this.id}[i];
-            ${stream.update}
-            ${stream.draw} 
-            if(p.sides && p.size) { 
-              ctx.beginPath();
-              for (let j = 0; j <= p.sides; j++) {
-                let angle = p.rot + (j * 2 * Math.PI / p.sides);
-                let px = p.x + p.size * Math.cos(angle);
-                let py = p.y + p.size * Math.sin(angle);
-                if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-              }
-              ctx.fill(); ctx.closePath();
-            }
-          }
-        `;
-                return { vars: stream.previewVars, code: code };
-            };
-            LiteGraph.registerNodeType("Basics/3. Draw to Screen", NodeOutput);
+    <script src="nodes/BgTrails.js"></script>
+    <script src="nodes/StartSpawner.js"></script>
+    <script src="nodes/ShapePicker.js"></script>
+    <script src="nodes/SineWave.js"></script>
+    <script src="nodes/AudioLevelSize.js"></script>
+    <script src="nodes/MovementBouncing.js"></script>
+    <script src="nodes/HardwareGradient.js"></script>
+    <script src="nodes/DrawToScreen.js"></script>
+    <script src="nodes/ColorCycler.js"></script>
+    <script src="nodes/Rotation.js"></script>
 
 
-            // --- MOVEMENT (WITH META TAGS) ---
-            function NodeMovement() {
-                this.addInput("Connect", ""); this.addOutput("Connect ->", "");
-                this.properties = { speed: 6 };
-                this.addWidget("slider", "Speed", 6, (v) => { this.properties.speed = Math.floor(v); compileGraph(); }, { min: 1, max: 20 });
-            }
-            NodeMovement.title = "Bouncing";
-            NodeMovement.prototype.compileMeta = function () {
-                return `<meta property="slider" name="Bounce Speed" id="bounce_${this.id}" min="1" max="20" step="1" default="${this.properties.speed}">`;
-            };
-            NodeMovement.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-                stream.previewVars += `var bounce_${this.id} = ${this.properties.speed};\n`;
+    <script src="compiler.js"></script>
+    <script src="app.js"></script>
 
-                stream.init += `vx: (Math.random()-0.5)*bounce_${this.id}, vy: (Math.random()-0.5)*bounce_${this.id}, `;
-                stream.update += `
-          p.x += p.vx; p.y += p.vy;
-          if (p.x - p.size < 0) { p.x = p.size; p.vx *= -1; } 
-          if (p.x + p.size > 320) { p.x = 320 - p.size; p.vx *= -1; } 
-          if (p.y - p.size < 0) { p.y = p.size; p.vy *= -1; } 
-          if (p.y + p.size > 200) { p.y = 200 - p.size; p.vy *= -1; } 
-        `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Movement/Bouncing", NodeMovement);
-
-            // --- COLORS (NO SLIDERS = NO META TAGS NEEDED) ---
-            function NodeRainbow() { this.addInput("Connect", ""); this.addOutput("Connect ->", ""); }
-            NodeRainbow.title = "Rainbow Shift";
-            NodeRainbow.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-                stream.init += `hue: (t * 50) % 360, `;
-                stream.update += `p.hue = (p.hue + (dt * 100)) % 360; p.color = 'hsl(' + p.hue + ', 100%, 50%)'; `;
-                stream.draw += `ctx.fillStyle = p.color; `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Colors/Rainbow Shift", NodeRainbow);
-
-            function NodeSineWave() {
-                this.addInput("Connect", ""); this.addOutput("Connect ->", "");
-                this.properties = { speed: 5, width: 20 };
-                this.addWidget("slider", "Wave Speed", 5, (v) => { this.properties.speed = v; compileGraph(); }, { min: 1, max: 20 });
-                this.addWidget("slider", "Wave Width", 20, (v) => { this.properties.width = v; compileGraph(); }, { min: 1, max: 100 });
-            }
-            NodeSineWave.title = "Sine Wave Wobble";
-            NodeSineWave.prototype.compileMeta = function () {
-                return `<meta property="slider" name="Wave Speed" id="wSpeed_${this.id}" min="1" max="20" step="1" default="${this.properties.speed}">
-<meta property="slider" name="Wave Width" id="wWidth_${this.id}" min="1" max="100" step="1" default="${this.properties.width}">`;
-            };
-            NodeSineWave.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-                stream.previewVars += `var wSpeed_${this.id} = ${this.properties.speed};\nvar wWidth_${this.id} = ${this.properties.width};\n`;
-
-                // Use Math.sin to wobble the X coordinate back and forth over time
-                stream.update += `
-          p.x = p.x + Math.sin((t * wSpeed_${this.id}) + p.age) * (wWidth_${this.id} * dt);
-        `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Movement/Sine Wave Wobble", NodeSineWave);
-
-            function NodeGradient() {
-                this.addInput("Connect", ""); this.addOutput("Connect ->", "");
-                this.properties = { color1: "#FF0044", color2: "#00DDFF" };
-            }
-            NodeGradient.title = "Hardware Gradient";
-            NodeGradient.prototype.compileMeta = function () {
-                return `<meta property="color" name="Gradient Start" id="gradStart_${this.id}" default="${this.properties.color1}">
-<meta property="color" name="Gradient End" id="gradEnd_${this.id}" default="${this.properties.color2}">`;
-            };
-            NodeGradient.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-
-                stream.previewVars += `var gradStart_${this.id} = "${this.properties.color1}";\nvar gradEnd_${this.id} = "${this.properties.color2}";\n`;
-
-                // Creates a canvas gradient from Left (0) to Right (320)
-                stream.draw += `
-          let grad_${this.id} = ctx.createLinearGradient(0, 0, 320, 0);
-          grad_${this.id}.addColorStop(0, gradStart_${this.id});
-          grad_${this.id}.addColorStop(1, gradEnd_${this.id});
-          ctx.fillStyle = grad_${this.id};
-        `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Colors/Hardware Gradient", NodeGradient);
-
-            function NodePixelShape() {
-                this.addInput("Connect", ""); this.addOutput("Connect ->", "");
-                this.properties = { size: 10 };
-                this.addWidget("slider", "Pixel Size", 10, (v) => { this.properties.size = Math.floor(v); compileGraph(); }, { min: 2, max: 40 });
-            }
-            NodePixelShape.title = "2. Retro Pixel";
-            NodePixelShape.prototype.compileMeta = function () {
-                return `<meta property="slider" name="Pixel Size" id="pSize_${this.id}" min="2" max="40" step="1" default="${this.properties.size}">`;
-            };
-            NodePixelShape.prototype.compileStream = function () {
-                let stream = this.getInputNode(0) ? this.getInputNode(0).compileStream() : { init: "", update: "", draw: "", previewVars: "" };
-                if (!stream.previewVars) stream.previewVars = "";
-                stream.previewVars += `var pSize_${this.id} = ${this.properties.size};\n`;
-
-                stream.init += `size: pSize_${this.id}, age: Math.random()*100, `;
-                stream.update += `p.age += dt; `;
-
-                // This hijacks the draw loop to paint a square block, then tells 
-                // the final Output node to skip the complex polygon math.
-                stream.draw += `
-          ctx.fillRect(Math.floor(p.x), Math.floor(p.y), pSize_${this.id}, pSize_${this.id});
-          p.sides = null; 
-        `;
-                return stream;
-            };
-            LiteGraph.registerNodeType("Basics/2. Retro Pixel", NodePixelShape);
-
-
-
-
-            // --- SIGNALRGB COMPILER ---
-            const retroCanvas = document.getElementById("retro-canvas");
-            const ctx = retroCanvas.getContext("2d", { willReadFrequently: true });
-            let renderFunction = null;
-            let engineState = { mouseX: 160, mouseY: 100 };
-
-            function compileGraph() {
-                let entityCode = "";
-                let previewVariables = "";
-                let metaTagsList = [];
-
-                // 1. Gather logic and dummy variables
-                const renderNodes = graph.findNodesByType("Basics/3. Draw to Screen");
-                renderNodes.forEach(n => {
-                    let result = n.compileEntityLoop();
-                    entityCode += result.code + "\n";
-                    previewVariables += result.vars + "\n";
-                });
-
-                // 2. Gather Meta Tags from all nodes
-                graph._nodes.forEach(node => {
-                    if (node.compileMeta) {
-                        metaTagsList.push(node.compileMeta());
-                    }
-                });
-
-                // Ensure every meta tag is strictly on its own line per the rules
-                let cleanMetaTags = metaTagsList.join("\n");
-
-                // 3. Run the live preview (Inject dummy variables so JS doesn't crash)
-                const livePreviewBody = `
-          ${previewVariables}
-          ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-          ctx.fillRect(0, 0, 320, 200);
-          ${entityCode}
-        `;
-                try {
-                    renderFunction = new Function("ctx", "t", "dt", "state", livePreviewBody);
-                    document.getElementById("code-output").innerText = "Compiled successfully";
-                } catch (e) {
-                    console.error(e);
-                }
-
-                // 4. Build the final SignalRGB Export String!
-                signalRgbExportString = `<!DOCTYPE html>
-<html>
-<head>
-<title>RGB Junkie Custom Effect</title>
-<meta name="description" content="Visual Logic built on RGB Junkie">
-<meta name="publisher" content="RGB Junkie">
-<meta name="type" content="canvas">
-${cleanMetaTags}
-</head>
-<body style="margin: 0; padding: 0; background: black;">
-  <canvas id="c" width="320" height="200"></canvas>
-  <script>
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
-    let state = {};
-    let lastTime = performance.now();
-
-    function update(time) {
-      const t = time / 1000;
-      const dt = t - lastTime;
-      lastTime = t;
-
-      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-      ctx.fillRect(0, 0, 320, 200);
-
-      // --- RGB JUNKIE VISUAL LOGIC ---
-      ${entityCode}
-
-      window.requestAnimationFrame(update);
-    }
-    window.requestAnimationFrame(update);
-  <\/script>
-</body>
-</html>`;
-            }
-
-            let lastTime = 0;
-            function animate(time) {
-                const t = time / 1000;
-                if (renderFunction) renderFunction(ctx, t, t - lastTime, engineState);
-                lastTime = t; requestAnimationFrame(animate);
-            }
-
-            // --- DEFAULT GRAPH ---
-            const n_start = LiteGraph.createNode("Basics/1. Start Box"); n_start.pos = [50, 200]; graph.add(n_start);
-            const n_shape = LiteGraph.createNode("Basics/2. Shape Settings"); n_shape.pos = [250, 200]; graph.add(n_shape);
-            const n_move = LiteGraph.createNode("Movement/Bouncing"); n_move.pos = [450, 200]; graph.add(n_move);
-            const n_rain = LiteGraph.createNode("Colors/Rainbow Shift"); n_rain.pos = [650, 200]; graph.add(n_rain);
-            const n_out = LiteGraph.createNode("Basics/3. Draw to Screen"); n_out.pos = [850, 200]; graph.add(n_out);
-
-            n_start.connect(0, n_shape, 0);
-            n_shape.connect(0, n_move, 0);
-            n_move.connect(0, n_rain, 0);
-            n_rain.connect(0, n_out, 0);
-
-            graph.start();
-            compileGraph();
-            requestAnimationFrame(animate);
-
-            graph.onConnectionChange = compileGraph;
-            graph.onNodeAdded = compileGraph;
-            graph.onNodeRemoved = compileGraph;
-        };
-    </script>
 </body>
 
 </html>
