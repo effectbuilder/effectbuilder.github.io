@@ -935,6 +935,7 @@ function loadComponentState(stateToLoad) {
     updateLikeButtonUI();
     Object.assign(componentState, stateToLoad); // Then apply new state\
     componentState.originalDbName = stateToLoad.name;
+    componentState.originalDbDisplayName = stateToLoad.displayName;
 
     // --- Load imageGuideState from stateToLoad or use defaults ---
     imageGuideState.x = stateToLoad.imageGuideX ?? 0;
@@ -1218,13 +1219,11 @@ function createDefaultComponentState() {
         imageUrl: null,
         imageWidth: 500,
         imageHeight: 300,
-        // --- Guide Image Properties ---
         guideImageUrl: null,
         guideImageWidth: 500,
         guideImageHeight: 300,
-
-        // --- ADD THIS LINE ---
-        originalDbName: "My Custom Component" // Give it the default name
+        originalDbName: "My Custom Component",
+        originalDbDisplayName: "My Custom Component"
     };
 }
 
@@ -1635,6 +1634,7 @@ async function performSave(isNew, isForking = false) {
 
         componentState.createdAt = dataToSave.createdAt;
         componentState.originalDbName = componentState.name;
+        componentState.originalDbDisplayName = componentState.displayName;
 
         loadComments(currentComponentId);
 
@@ -1663,9 +1663,12 @@ async function performSave(isNew, isForking = false) {
     }
 }
 
+// Add this near the top of main.js with your other global variables
+let saveConflictModalInstance = null;
+
 /**
  * Gatekeeper function for saving.
- * Checks permissions, then asks user for confirmation
+ * Checks permissions, then shows a modal for confirmation if necessary
  * before calling performSave().
  */
 async function handleSaveComponent() {
@@ -1677,7 +1680,9 @@ async function handleSaveComponent() {
 
     // --- 1. Get new values BUT DON'T apply them yet ---
     const newName = compNameInput.value;
+    const newDisplayName = compDisplayNameInput.value;
     const originalName = componentState.originalDbName;
+    const originalDisplayName = componentState.originalDbDisplayName;
 
     // --- 2. Determine save conditions ---
     const isNewComponent = (currentComponentId === null);
@@ -1686,27 +1691,57 @@ async function handleSaveComponent() {
 
     // --- 3. Route the save logic ---
     if (isNewComponent) {
-        // A. It's a brand new component. Save it.
-        performSave(true, false); // isNew=true, isForking=false
+        // A. It's a brand new component. Save it immediately.
+        performSave(true, false); 
 
     } else if (isForking) {
-        // B. User is not owner. Force a fork (save as new).
-        performSave(true, true); // isNew=true, isForking=true
+        // B. User is not owner. Force a fork (save as new) immediately.
+        performSave(true, true); 
 
     } else if (isOwnerOrAdmin) {
-        // C. User is the owner or admin. Overwrite existing.
-        const overwrite = confirm(
-            'This component already exists.\n\n' +
-            'Click "OK" to OVERWRITE it with your current changes.\n' +
-            '(Click "Cancel" to do nothing).'
-        );
-        if (overwrite) {
-            performSave(false, false); // isNew=false, isForking=false
-        } else {
-            showToast('Save Cancelled', 'No changes were saved.', 'info');
+        // C. User is the owner or admin. Show the Modal.
+        const hasNameChanged = (newName !== originalName) || (newDisplayName !== originalDisplayName);
+        
+        // Setup Modal Elements
+        const modalEl = document.getElementById('save-conflict-modal');
+        if (!saveConflictModalInstance) {
+            saveConflictModalInstance = new bootstrap.Modal(modalEl);
         }
+
+        const bodyEl = document.getElementById('save-conflict-modal-body');
+        const overwriteBtn = document.getElementById('btn-modal-overwrite');
+        const saveNewBtn = document.getElementById('btn-modal-save-new');
+
+        // Dynamically adjust the modal content based on whether the name changed
+        if (hasNameChanged) {
+            bodyEl.innerHTML = `
+                <p>You changed the Component Name or Display Name.</p>
+                <p>Do you want to save this as a completely <strong>NEW</strong> component, or <strong>OVERWRITE</strong> the existing one?</p>
+            `;
+            saveNewBtn.style.display = 'inline-block';
+        } else {
+            bodyEl.innerHTML = `
+                <p>This component already exists in the cloud.</p>
+                <p>Are you sure you want to <strong>OVERWRITE</strong> it with your current changes?</p>
+            `;
+            saveNewBtn.style.display = 'none'; // Hide the "Save as New" button if names match
+        }
+
+        // Attach the specific save actions to the buttons
+        overwriteBtn.onclick = () => {
+            saveConflictModalInstance.hide();
+            performSave(false, false); // isNew=false, isForking=false
+        };
+
+        saveNewBtn.onclick = () => {
+            saveConflictModalInstance.hide();
+            performSave(true, false); // isNew=true (Save as new), isForking=false
+        };
+
+        // Show the modal to the user
+        saveConflictModalInstance.show();
+
     } else {
-        // Fallback for any unhandled case
         console.error("Save logic error: Unhandled case.");
     }
 }

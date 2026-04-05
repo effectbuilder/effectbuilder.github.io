@@ -359,10 +359,10 @@
             if (!sparklesStore[id]) sparklesStore[id] = { list: [], counter: 0 };
             const store = sparklesStore[id];
             if (store.list.length < maxDots && Math.random() < 0.15) {
-                store.list.push({ 
-                    pos: isRev ? 1.0 : 0.0, 
+                store.list.push({
+                    pos: isRev ? 1.0 : 0.0,
                     lineIdx: Math.floor(Math.random() * count),
-                    cIdx: store.counter++ 
+                    cIdx: store.counter++
                 });
             }
             for (let i = store.list.length - 1; i >= 0; i--) {
@@ -533,7 +533,7 @@
                             let localTime = globalPhase - fIdx;
                             if (localTime < 0) localTime += totalCount;
                             let rotationAngle = Math.pow(localTime, 3) * Math.PI * 1.5;
-                            
+
                             // Fan-specific cycle
                             const totalDist = (tC * cycleSpeed) - fIdx;
                             const fanCycle = Math.floor(totalDist / totalCount);
@@ -555,7 +555,7 @@
                         const speedMult = Math.max(0.01, speed / 50);
                         const strikeInterval = 2.0 / speedMult;
                         const phase = (engineTime / 1000) % strikeInterval;
-                        
+
                         for (let fIdx = 0; fIdx < totalCount; fIdx++) {
                             const coords = getFanCoords(fIdx);
                             const stagger = ((fIdx * 0.15) % 2.0) / speedMult;
@@ -655,13 +655,13 @@
                         if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
                         const prog = getProgress(tC, totalCount, baseMode);
                         const period = baseMode === "Bounce" ? totalCount * 2 : totalCount;
-                        
+
                         for (let d = 0; d < dots; d++) {
                             const dp = (prog + (d / dots) * totalCount) % totalCount;
-                            
+
                             // Dot-specific cycle
                             const dotCycle = Math.floor((tC + (d / dots) * period) / period);
-                            
+
                             let positions = [];
 
                             if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(totalCount - (dp / 2)); }
@@ -771,7 +771,7 @@
 
                             for (let d = 0; d < railDots; d++) {
                                 const dp = (p + (d / railDots) * totalCount) % totalCount;
-                                
+
                                 // Dot-specific cycle
                                 const dotCycle = Math.floor((timeR + (d / railDots) * period) / period);
 
@@ -864,7 +864,7 @@
                     });
                 }
 
-const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, spacing, mode, timeVal, speedVar, posVar, dots, dotRadius, trail, prof, col, decays, seedsArr) => {
+                const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, spacing, mode, timeVal, speedVar, posVar, dots, dotRadius, trail, prof, col, decays, seedsArr) => {
                     if (!show) return;
                     const pc = (posVar || 0) / 25;
                     const sc = ((speedVar || 0) / 100) * 1.8;
@@ -930,7 +930,7 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
                             const p = getProgress(lT + lP, 1, baseMode);
                             const period = baseMode === "Bounce" ? 2 : 1;
                             const wipeCycle = Math.floor((lT + lP) / period);
-                            
+
                             const isRev = mode.includes("(Rev)");
                             const dotsToDraw = Math.max(1, Math.floor(len / 4));
                             for (let d = 0; d < dotsToDraw; d++) {
@@ -943,6 +943,7 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
                             }
                         }
                         else if (mode.includes("Meteor")) {
+                            const isRev = mode.includes("(Rev)"); // <-- Add this line
                             const mId = idPrefix + "_meteor_" + l;
                             if (!sparklesStore[mId]) sparklesStore[mId] = { list: [], counter: 0 };
                             const store = sparklesStore[mId];
@@ -973,11 +974,11 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
                             if (mode.includes("Collide") || mode.includes("Split")) baseMode = mode.includes("Bounce") ? "Bounce" : "Loop";
                             const prog = getProgress(lT + lP, 1, baseMode);
                             const period = baseMode === "Bounce" ? 2 : 1;
-                            
+
                             for (let d = 0; d < dots; d++) {
                                 // Dot-specific cycle
                                 const dotCycle = Math.floor(((lT + lP) + (d / dots) * period) / period);
-                                
+
                                 const dp = (prog + d / dots) % 1;
                                 let positions = [];
                                 if (mode.includes("Collide")) { positions.push(dp / 2); positions.push(1 - (dp / 2)); }
@@ -1009,7 +1010,7 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
                     const duration = Math.max(0.1, t.len) * 40;
                     const timeAlive = renderTime - t.born;
                     const age = timeAlive < 20 ? 0 : timeAlive / duration;
-                    const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
+                    const currentAlpha = Math.max(0, Math.pow(1 - age, 3) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
 
                     if (t.isRect) {
                         ctx.globalAlpha = currentAlpha;
@@ -1019,7 +1020,8 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
                         ctx.globalAlpha = currentAlpha;
                         ctx.fillStyle = t.color;
                         ctx.beginPath();
-                        ctx.arc(t.x, t.y, Math.max(0.001, (t.size * (0.4 + 0.6 * (1 - age))) / 2), 0, Math.PI * 2);
+                        // New constant-size line:
+                        ctx.arc(t.x, t.y, Math.max(0.001, t.size / 2), 0, Math.PI * 2);
                         ctx.fill();
                     }
                 });
@@ -1054,19 +1056,6 @@ const renderMultiLine = (idPrefix, type, show, startX, startY, len, linesCount, 
         }
         draw();
     </script>
-    <script type="application/json" class="effect-preset">
-    {
-    "name": "Mix: Show Object Names = On, Global Audio Sensitivity = 34, Flash Decay Speed = 52 +88 more \ud83c\udfb2",
-    "url": "https://go.signalrgb.com/app/effect/apply/Fan%20Tracer%20Pro%20Max%20%28Two-Colors%29/?showGuides=false&showAlignment=false&showLabels=true&audioReactive=false&audioGain=34&flashDecay=52&masterProfile=Onyx&masterColor=%231bcf1c&masterColor2=%23a0eb4f&masterColor3=%23d69a66&fanCount1=3&hOffset1=61&vOffset1=0&fanCount2=5&hOffset2=-8&vOffset2=38&showCircle=false&fanRadius=72&moveMode=Sparkle+%28Rev%29&circleSpeed=85&circleDots=5&groupSize=3&circleSize=34&fanTrail=6&fanProfile=Aurora&fanColor=%233eff48&showInnerCircle=false&innerFanRadius=56&innerMoveMode=Solid+Line&innerCircleSpeed=79&innerCircleDots=3&innerGroupSize=2&innerCircleSize=15&innerFanTrail=10&innerFanProfile=Arcade&innerFanColor=%23bac719&showRails=false&railDistance=84&railMode=Split+%28Bounce%29&railSpeed=55&railDots=5&railSize=28&railTrail=8&railProfile=Frost&railColor=%23b37196&showAIO=true&aioX=267&aioY=71&aioWidth=310&aioLines=6&aioSpacing=1&aioMode=Collide+%28Bounce%29&aioSpeed=93&aioSpeedVar=34&aioPosVar=88&aioDots=8&aioTrail=42&aioProfile=Custom&aioColor=%23a85fb6&showRam=true&ramX=126&ramY=166&ramHeight=200&ramLines=9&ramSpacing=0&ramMode=Sparkle&ramSpeed=19&ramSpeedVar=8&ramPosVar=42&ramDots=13&ramTrail=40&ramProfile=Prism&ramColor=%235fa8d1&showStrimer=true&strimerX=1&strimerY=24&strimerWidth=80&strimerLines=5&strimerSpacing=48&strimerMode=Loop&strimerSpeed=76&strimerSpeedVar=33&strimerPosVar=72&strimerDots=10&strimerTrail=23&strimerProfile=Vapor&strimerColor=%233f52bb&showMatrix=true&matrixX=51&matrixY=120&matrixCols=17&matrixRows=19&matrixCellSize=11&matrixMode=JSON+Image&matrixSpeed=58&matrixTrail=49&matrixText=SIGNAL+RGB&matrixFont=Courier+New&matrixFontSize=99&matrixTimeFormat=24-Hour&matrixJSON=%5B%5B1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%5D%2C%5B0%2C0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%2C1%2C1%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0%5D%2C%5B1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%5D%5D&URL=https%3A%2F%2Fpixelart.nolliergb.com%2F&matrixProfile=Rainbow&matrixColor=%23d3409b"
-}
-    </script>
-    <script type="application/json" class="effect-preset">
-    {
-    "name": "Mix: Show Fan Alignment Dots = On, Show Object Names = On, Audio Reactive Flash = On +90 more \ud83c\udfb2",
-    "url": "https://go.signalrgb.com/app/effect/apply/Fan%20Tracer%20Pro%20Max%20%28Two-Colors%29/?showGuides=false&showAlignment=true&showLabels=true&audioReactive=true&audioGain=36&flashDecay=77&masterProfile=Toxic&masterColor=%23b9916a&masterColor2=%235a8b9b&masterColor3=%237a832c&fanCount1=2&hOffset1=76&vOffset1=-86&fanCount2=7&hOffset2=95&vOffset2=65&showCircle=false&fanRadius=39&moveMode=Collide+%28Loop%29&circleSpeed=1&circleDots=1&groupSize=4&circleSize=28&fanTrail=3&fanProfile=Quantum&fanColor=%23ad5cea&showInnerCircle=true&innerFanRadius=72&innerMoveMode=DNA+Weave&innerCircleSpeed=34&innerCircleDots=4&innerGroupSize=3&innerCircleSize=33&innerFanTrail=9&innerFanProfile=Miami&innerFanColor=%23dc0fd9&showRails=false&railDistance=92&railMode=Split+%28Bounce%29&railSpeed=39&railDots=1&railSize=26&railTrail=13&railProfile=Bite&railColor=%23813448&showAIO=true&aioX=179&aioY=126&aioWidth=211&aioLines=8&aioSpacing=43&aioMode=Split+%28Bounce%29&aioSpeed=25&aioSpeedVar=42&aioPosVar=95&aioDots=5&aioTrail=0&aioProfile=Bite&aioColor=%237d37ba&showRam=true&ramX=155&ramY=67&ramHeight=66&ramLines=2&ramSpacing=99&ramMode=VU+Meter&ramSpeed=23&ramSpeedVar=49&ramPosVar=29&ramDots=10&ramTrail=2&ramProfile=Midnight&ramColor=%23609b51&showStrimer=false&strimerX=65&strimerY=46&strimerWidth=177&strimerLines=12&strimerSpacing=66&strimerMode=VU+Meter&strimerSpeed=15&strimerSpeedVar=47&strimerPosVar=23&strimerDots=10&strimerTrail=1&strimerProfile=Toxic&strimerColor=%234cadd4&showMatrix=true&matrixX=112&matrixY=4&matrixCols=15&matrixRows=13&matrixCellSize=3&matrixMode=Date&matrixSpeed=2&matrixTrail=9&matrixText=SIGNAL+RGB&matrixFont=Arial&matrixFontSize=87&matrixTimeFormat=12-Hour&matrixJSON=%5B%5B1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%5D%2C%5B0%2C0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%2C1%2C1%2C0%2C0%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%2C1%2C1%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C1%2C0%2C0.5%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%5D%2C%5B0%2C0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0.5%2C0.5%2C0%2C0%2C0%5D%2C%5B0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0.5%2C0%2C0%2C0%2C0%5D%2C%5B1%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C0%2C1%5D%5D&URL=https%3A%2F%2Fpixelart.nolliergb.com%2F&matrixProfile=Neon&matrixColor=%237c9789"
-}
-    </script>
-
 </body>
 
 </html>
