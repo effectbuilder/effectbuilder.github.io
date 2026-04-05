@@ -927,18 +927,22 @@
                             }
                         }
                         else if (mode.includes("Meteor")) {
-                            const mId = idPrefix + "_meteor_" + l;
-                            if (!sparklesStore[mId]) sparklesStore[mId] = [];
-                            const list = sparklesStore[mId];
                             const isRev = mode.includes("(Rev)");
-                            if (list.length < dots && Math.random() < 0.1) { list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015 }); }
-                            for (let i = list.length - 1; i >= 0; i--) {
-                                list[i].pos += isRev ? -list[i].speed : list[i].speed;
-                                list[i].speed *= 1.05;
-                                if (list[i].pos > 1.0 || list[i].pos < 0.0) { list.splice(i, 1); } else {
-                                    const rx = (type === 'h') ? lx + list[i].pos * len : lx;
-                                    const ry = (type === 'h') ? ly : ly + list[i].pos * len;
-                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, l, linesCount, activeDecay), born: engineTime, len: trail });
+                            const mId = idPrefix + "_meteor_" + l;
+                            if (!sparklesStore[mId]) sparklesStore[mId] = { list: [], counter: 0 };
+                            const store = sparklesStore[mId];
+
+                            if (store.list.length < dots && Math.random() < 0.1) {
+                                store.list.push({ pos: isRev ? 1.0 : 0.0, speed: 0.005 + Math.random() * 0.015, cIdx: store.counter++ });
+                            }
+
+                            for (let i = store.list.length - 1; i >= 0; i--) {
+                                store.list[i].pos += isRev ? -store.list[i].speed : store.list[i].speed;
+                                store.list[i].speed *= 1.05;
+                                if (store.list[i].pos > 1.0 || store.list[i].pos < 0.0) { store.list.splice(i, 1); } else {
+                                    const rx = (type === 'h') ? lx + store.list[i].pos * len : lx;
+                                    const ry = (type === 'h') ? ly : ly + store.list[i].pos * len;
+                                    trails.push({ x: rx, y: ry, size: dotRadius, color: getObjColor(prof, col, store.list[i].cIdx, 1000, activeDecay), born: engineTime, len: trail });
                                 }
                             }
                         }
@@ -985,7 +989,7 @@
                     const duration = Math.max(0.1, t.len) * 40;
                     const timeAlive = renderTime - t.born;
                     const age = timeAlive < 20 ? 0 : timeAlive / duration;
-                    const currentAlpha = Math.max(0, (1 - age) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
+                    const currentAlpha = Math.max(0, Math.pow(1 - age, 3) * (t.baseOpacity !== undefined ? t.baseOpacity : 1));
 
                     if (t.isRect) {
                         ctx.globalAlpha = currentAlpha;
@@ -995,7 +999,7 @@
                         ctx.globalAlpha = currentAlpha;
                         ctx.fillStyle = t.color;
                         ctx.beginPath();
-                        ctx.arc(t.x, t.y, Math.max(0.001, (t.size * (0.4 + 0.6 * (1 - age))) / 2), 0, Math.PI * 2);
+                        ctx.arc(t.x, t.y, Math.max(0.001, t.size / 2), 0, Math.PI * 2);
                         ctx.fill();
                     }
                 });
