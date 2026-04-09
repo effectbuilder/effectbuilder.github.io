@@ -123,8 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     // === NEW FILTER & SORT LISTENERS END ===
-
-
+    
     // --- LIKE ACTION HANDLER ---
     async function handleLikeAction(docId) {
         const user = window.auth.currentUser;
