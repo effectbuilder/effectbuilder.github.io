@@ -807,9 +807,14 @@ async function loadUserComponents(reset = false) {
             lastVisibleComponent = querySnapshot.docs[querySnapshot.docs.length - 1];
         }
 
-        if (querySnapshot.size < GALLERY_PAGE_SIZE) {
+        // --- THE FIX: Disable pagination if searching OR if we naturally hit the end ---
+        if (searchTerm || querySnapshot.size < GALLERY_PAGE_SIZE) {
             allComponentsLoaded = true;
-            if (galleryEndMessage) galleryEndMessage.style.display = 'block';
+            
+            // Only show the "reached the end" message if there are actual results
+            if (galleryEndMessage && finalDocs.length > 0) {
+                galleryEndMessage.style.display = 'block';
+            }
         }
 
     } catch (error) {
