@@ -564,7 +564,11 @@ async function loadUserComponents(reset = false) {
         galleryComponentList.innerHTML = '';
         lastVisibleComponent = null;
         allComponentsLoaded = false;
-        await populateGalleryFilters();
+        
+        // Only repopulate filters if the search box is empty
+        if (!gallerySearchInput || gallerySearchInput.value.trim() === '') {
+            await populateGalleryFilters();
+        }
     }
 
     if (allComponentsLoaded && !reset) {
@@ -601,11 +605,11 @@ async function loadUserComponents(reset = false) {
 
         // 2. SEARCH MODE (Server-Side)
         if (searchTerm) {
+            // Cast a much wider net so we don't accidentally cut off older matches
             q = query(
                 componentsCollection,
-                where('searchName', '>=', searchTerm),
-                where('searchName', '<=', searchTerm + '\uf8ff'),
-                limit(50) 
+                orderBy(sortField, 'desc'), 
+                limit(999) // <-- Increased from 100 to catch older components
             );
         }
         // 3. BROWSE MODE (Normal Pagination)
@@ -630,10 +634,25 @@ async function loadUserComponents(reset = false) {
         const querySnapshot = await getDocs(q);
 
         let finalDocs = querySnapshot.docs;
+        
         if (searchTerm) {
+            // Split the search string into individual words (e.g. "corsair", "fan", "jose")
+            const searchWords = searchTerm.split(/\s+/);
+            
             finalDocs = finalDocs.filter(doc => {
-                const componentName = (doc.data().name || 'untitled').toLowerCase();
-                return componentName.includes(searchTerm);
+                const data = doc.data();
+                
+                // Grab all the properties you want to be searchable
+                const componentName = (data.name || '').toLowerCase();
+                const componentBrand = (data.brand || '').toLowerCase();
+                const ownerName = (data.ownerName || '').toLowerCase();
+                const componentType = (data.type || '').toLowerCase();
+                
+                // Combine them into one massive searchable string
+                const searchableText = `${componentName} ${componentBrand} ${ownerName} ${componentType}`;
+                
+                // Return true ONLY if every word they typed is found SOMEWHERE in that text
+                return searchWords.every(word => searchableText.includes(word));
             });
         }
 
@@ -892,6 +911,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener('click', resetFilters);
+    }
+
+    // --- [NEW] Search Event Listener with Debounce ---
+    if (gallerySearchInput) {
+        let searchTimeout;
+        gallerySearchInput.addEventListener('input', () => {
+            // Clear the previous timeout so we don't query on every single letter
+            clearTimeout(searchTimeout);
+            // Wait 500ms after the user stops typing before searching
+            searchTimeout = setTimeout(() => {
+                loadUserComponents(true);
+            }, 500);
+        });
     }
 
     // --- [NEW] Event listener for Delete All Read button ---
