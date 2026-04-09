@@ -319,6 +319,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 project.createdAt = project.createdAt.toDate();
             }
 
+            const formattedDate = project.createdAt instanceof Date ? project.createdAt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+
             let description = 'No description provided.';
             if (project.configs) {
                 const descriptionConf = project.configs.find(c => c.name === 'description');
@@ -393,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title text-truncate">${project.name}</h5>
-                    <small class="card-subtitle mb-2 text-body-secondary">By ${project.creatorName || 'Anonymous'}</small>
+                    <small class="card-subtitle mb-2 text-body-secondary">By ${project.creatorName || 'Anonymous'}${formattedDate ? ` • ${formattedDate}` : ''}</small>
                     <p class="card-text small text-body-secondary flex-grow-1" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="${description}">
                         ${description}
                     </p>
