@@ -65,6 +65,54 @@
 
 <script>
     // -------------------------------------------------------------------
+    // 
+    // BROWSER COMPATIBILITY LAYER & AUTO-VARIABLE CREATION
+    // 
+    // -------------------------------------------------------------------
+    // 
+
+    if (typeof window.engine === 'undefined') {
+        const metaTags = document.querySelectorAll('meta[property]');
+        metaTags.forEach(meta => {
+            const propName = meta.getAttribute('property');
+            const propType = meta.getAttribute('type');
+            const defaultVal = meta.getAttribute('default');
+            if (propName) {
+                let finalValue = defaultVal;
+                if (propType === 'number') finalValue = parseFloat(defaultVal);
+                else if (propType === 'boolean') finalValue = (defaultVal === 'true' || defaultVal === '1');
+                window[propName] = finalValue;
+            }
+        });
+
+        window.engine = { audio: { freq: new Array(128).fill(0) } };
+
+        function simulateAudio() {
+            const time = Date.now() / 1000;
+            const dataArray = new Array(128).fill(0);
+
+            // Bass: Strong pulses
+            const beat = (Math.sin(time * Math.PI * 4) + 1) / 2;
+            const bassVal = Math.pow(beat, 4) * 255;
+            dataArray[0] = bassVal; dataArray[1] = bassVal; dataArray[2] = bassVal;
+
+            // Treble
+            for (let i = 10; i < 40; i++) {
+                const wave = (Math.sin(time * 8 + i * 0.5) + 1) / 2;
+                dataArray[i] = wave * 150 + (Math.random() * 50);
+            }
+            window.engine.audio.freq = dataArray;
+            requestAnimationFrame(simulateAudio);
+        }
+        simulateAudio();
+    } else {
+        const overlay = document.getElementById('start-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+</script>
+
+<script>
+    // -------------------------------------------------------------------
     // SETUP
     // -------------------------------------------------------------------
 
@@ -493,9 +541,7 @@
         }
 
         // --- MODIFIED: Added audio data fallback ---
-        const audioData = (typeof engine !== 'undefined' && engine.audio && engine.audio.freq)
-            ? new Int8Array(engine.audio.freq)
-            : new Int8Array(200).fill(0);
+        const audioData = new Int8Array(engine.audio.freq)
 
         const effect_threshold = currentEffectThresholdPercent / 100.0;
         const motionDelta = currentSpeed * deltaTime;
