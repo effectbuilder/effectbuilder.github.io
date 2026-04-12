@@ -640,29 +640,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (!prop) return;
 
                     const label = meta.getAttribute('label') || prop;
-                    const type = meta.getAttribute('type');
+                    const type = meta.getAttribute('type') || 'text';
                     const tooltip = meta.getAttribute('tooltip') || '';
-                    const def = meta.getAttribute('default') || '-';
-
-                    let valueDesc = '';
-                    if (type === 'number') {
-                        valueDesc = `${meta.getAttribute('min')} to ${meta.getAttribute('max')} (Default: ${def})`;
-                    } else if (type === 'boolean') {
-                        valueDesc = `Toggle (True/False)`;
-                    } else if (type === 'list') {
-                        const values = meta.getAttribute('values');
-                        const valList = values ? values.split(',') : [];
-                        valueDesc = valList.length > 3 ?
-                            `Select: ${valList.slice(0, 3).join(', ')}...` :
-                            `Select: ${valList.join(', ')}`;
-                    } else if (type === 'color') {
-                        valueDesc = `Color Picker (Hex)`;
-                    } else {
-                        valueDesc = `Default: ${def}`;
-                    }
+                    const def = meta.getAttribute('default') || '';
 
                     structuredControls.push({
-                        label, variable: prop, values: valueDesc, description: tooltip
+                        label, 
+                        variable: prop, 
+                        type: type,
+                        min: meta.getAttribute('min') || '0',
+                        max: meta.getAttribute('max') || '100',
+                        step: meta.getAttribute('step') || 'any',
+                        valuesStr: meta.getAttribute('values') || '',
+                        def: def,
+                        description: tooltip
                     });
                 });
             }
@@ -1040,26 +1031,129 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         `;
 
-        // --- 6. BOX 2: ADJUSTABLE PROPERTIES (Accordion Box) ---
+        // --- 6. BOX 2: ADJUSTABLE PROPERTIES (Interactive Controls) ---
         const propCard = document.getElementById('properties-section-card');
         if (effect.structuredControls && effect.structuredControls.length > 0) {
             propCard.style.display = 'block';
-            document.getElementById('properties-table-container').innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm small mb-0">
-                    <thead class="table-light">
-                        <tr><th>Property</th><th>Type / Range</th><th>Description</th></tr>
-                    </thead>
-                    <tbody>
-                        ${effect.structuredControls.map(c => `
-                            <tr>
-                                <td><strong>${c.label}</strong><br><code class="text-primary">${c.variable}</code></td>
-                                <td>${c.values}</td>
-                                <td>${c.description}</td>
-                            </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
+
+            const accordionBtn = document.querySelector('[data-bs-target="#collapseProps"]');
+            const accordionBody = document.getElementById('collapseProps');
+            if (accordionBtn && accordionBody) {
+                accordionBtn.classList.remove('collapsed');
+                accordionBtn.setAttribute('aria-expanded', 'true');
+                accordionBody.classList.add('show');
+            }
+
+            // Fetch raw HTML once so we can quickly inject changes on slider drag
+            const res = await fetch(effect.effectUrl);
+            const baseHtmlText = await res.text();
+
+            let formHtml = `<form id="effect-controls-form" class="row g-3 p-3 bg-black border border-secondary rounded">`;
+            
+            effect.structuredControls.forEach(c => {
+                const id = `control-${c.variable}`;
+                formHtml += `<div class="col-12 col-md-6"><label class="form-label small mb-1 fw-bold text-info">${c.label}</label>`;
+
+                if (c.type === 'number') {
+                    formHtml += `
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range flex-grow-1" id="${id}" name="${c.variable}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.def}" oninput="document.getElementById('val-${id}').innerText = this.value">
+                            <span id="val-${id}" class="badge bg-secondary" style="min-width: 3rem;">${c.def}</span>
+                        </div>`;
+                } else if (c.type === 'color') {
+                    formHtml += `<input type="color" class="form-control form-control-color form-control-sm w-100 bg-dark border-secondary" id="${id}" name="${c.variable}" value="${c.def || '#ffffff'}">`;
+                } else if (c.type === 'boolean') {
+                    const checked = (c.def === 'true' || c.def === '1') ? 'checked' : '';
+                    formHtml += `
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" id="${id}" name="${c.variable}" value="true" ${checked}>
+                            <label class="form-check-label small text-muted" for="${id}">Enabled</label>
+                        </div>`;
+                } else if (c.type === 'list' || c.type === 'combobox') {
+                    const options = c.valuesStr ? c.valuesStr.split(',') : [];
+                    formHtml += `<select class="form-select form-select-sm bg-dark text-white border-secondary" id="${id}" name="${c.variable}">`;
+                    options.forEach(opt => {
+                        const cleanOpt = opt.trim();
+                        // Match against the default to select the correct option initially
+                        const isSelected = cleanOpt === c.def.trim() ? 'selected' : '';
+                        formHtml += `<option value="${cleanOpt}" ${isSelected}>${cleanOpt}</option>`;
+                    });
+                    formHtml += `</select>`;
+                } else {
+                    formHtml += `<input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" id="${id}" name="${c.variable}" value="${c.def}">`;
+                }
+
+                if (c.description) {
+                    formHtml += `<div class="form-text x-small mt-1 text-muted" style="opacity: 0.8;">${c.description}</div>`;
+                }
+                formHtml += `</div>`;
+            });
+
+            formHtml += `
+                <div class="col-12 mt-3 text-end border-top border-secondary pt-3">
+                    <button type="button" class="btn btn-sm btn-outline-warning px-3" id="reset-controls-btn">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Defaults
+                    </button>
+                </div>
+            </form>`;
+
+            document.getElementById('properties-table-container').innerHTML = formHtml;
+
+            // Wire up the live preview injection
+            const form = document.getElementById('effect-controls-form');
+
+            const updateLivePreview = () => {
+                const formData = new FormData(form);
+                const parser = new DOMParser();
+                const docParser = parser.parseFromString(baseHtmlText, 'text/html');
+
+                effect.structuredControls.forEach(c => {
+                    let val = formData.get(c.variable);
+                    // Special handling for checkboxes since FormData omits them if unchecked
+                    if (c.type === 'boolean') {
+                        val = form.querySelector(`[name="${c.variable}"]`).checked ? 'true' : 'false';
+                    }
+                    
+                    if (val !== null) {
+                        const metaTag = docParser.querySelector(`meta[property="${c.variable}"]`);
+                        if (metaTag) {
+                            // SignalRGB effects can be picky about which attribute they read on initialization.
+                            // We set all three to guarantee the script picks up the user's change.
+                            metaTag.setAttribute('content', val);
+                            metaTag.setAttribute('default', val);
+                            metaTag.setAttribute('value', val);
+                        }
+                    }
+                });
+
+                // Fix paths so local images/assets inside the iframe don't break
+                const fullEffectUrl = new URL(effect.effectUrl, window.location.href).href;
+                const baseTag = docParser.createElement('base');
+                baseTag.href = new URL('.', fullEffectUrl).href;
+                docParser.head.insertBefore(baseTag, docParser.head.firstChild);
+
+                effectIframe.srcdoc = "<!DOCTYPE html>\n" + docParser.documentElement.outerHTML;
+            };
+
+            // Trigger preview on any form change
+            form.addEventListener('input', updateLivePreview);
+
+            // Handle resets gracefully
+            document.getElementById('reset-controls-btn').addEventListener('click', () => {
+                form.reset();
+                // Manually update the number badges back to default
+                effect.structuredControls.forEach(c => {
+                    if (c.type === 'number') {
+                        const valSpan = document.getElementById(`val-control-${c.variable}`);
+                        if (valSpan) valSpan.innerText = c.def;
+                    }
+                });
+                
+                // Nuke the srcdoc and reload original file to guarantee pure state
+                effectIframe.removeAttribute('srcdoc');
+                effectIframe.src = effect.effectUrl;
+            });
+
         } else {
             propCard.style.display = 'none';
         }
