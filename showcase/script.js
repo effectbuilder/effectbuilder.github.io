@@ -1109,10 +1109,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     const options = c.valuesStr ? c.valuesStr.split(',') : [];
                     formHtml += `<select class="form-select form-select-sm bg-dark text-white border-secondary" id="${id}" name="${c.variable}">`;
                     options.forEach(opt => {
-                        const cleanOpt = opt.trim();
-                        // Match against the default to select the correct option initially
-                        const isSelected = cleanOpt === c.def.trim() ? 'selected' : '';
-                        formHtml += `<option value="${cleanOpt}" ${isSelected}>${cleanOpt}</option>`;
+                        // CRITICAL: We must NOT trim the 'value' attribute, as SignalRGB strictly expects 
+                        // the exact string (including any accidental spaces the author left after commas).
+                        const isSelected = opt === c.def ? 'selected' : (opt.trim() === c.def.trim() ? 'selected' : '');
+                        formHtml += `<option value="${opt}" ${isSelected}>${opt.trim()}</option>`;
                     });
                     formHtml += `</select>`;
                 } else {
@@ -1126,10 +1126,18 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             formHtml += `
-                <div class="col-12 mt-3 text-end border-top border-secondary pt-3">
-                    <button type="button" class="btn btn-sm btn-outline-warning px-3" id="reset-controls-btn">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Defaults
+                <div class="col-12 mt-3 d-flex flex-wrap justify-content-between align-items-center border-top border-secondary pt-3 gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-warning px-3 flex-grow-0" id="reset-controls-btn">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
                     </button>
+                    <div class="btn-group flex-grow-1 flex-md-grow-0">
+                        <button type="button" class="btn btn-sm btn-outline-info" id="copy-live-preset-btn">
+                            <i class="bi bi-link-45deg me-1"></i>Copy Preset
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="apply-live-signal-btn">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Apply to Signal
+                        </button>
+                    </div>
                 </div>
             </form>`;
 
@@ -1221,6 +1229,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 'change' = mouse released / dropdown selection finalized (hard reload)
             form.addEventListener('change', reloadIframeWithChanges);
+
+            // --- NEW: Generate URL and Handle Preset Buttons ---
+            const generateLivePresetUrl = () => {
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+
+                effect.structuredControls.forEach(c => {
+                    let val = formData.get(c.variable);
+                    if (c.type === 'boolean') {
+                        const isChecked = form.querySelector(`[name="${c.variable}"]`).checked;
+                        val = (c.def === '1' || c.def === '0') ? (isChecked ? '1' : '0') : (isChecked ? 'true' : 'false');
+                    }
+
+                    if (val !== null && val !== undefined) {
+                        params.append(c.variable, val);
+                    }
+                });
+
+                // SignalRGB strictly requires alphabetical sorting of parameters
+                params.sort();
+
+                // 1. SignalRGB requires the EXACT case-sensitive Effect Title
+                const exactEffectName = encodeURIComponent(effect.title).replace(/\+/g, '%20');
+                
+                // 2. Convert standard URL '+' spaces into strict '%20' spaces
+                const exactParams = params.toString().replace(/\+/g, '%20');
+                
+                // 3. Return the clean URL with NO trailing slash before the '?'
+                return `https://go.signalrgb.com/app/effect/apply/${exactEffectName}?${exactParams}`;
+            };
+
+            // 1. Copy Link Button
+            const copyPresetBtn = document.getElementById('copy-live-preset-btn');
+            if (copyPresetBtn) {
+                copyPresetBtn.addEventListener('click', async (e) => {
+                    const url = generateLivePresetUrl();
+                    const btn = e.currentTarget;
+                    const originalHtml = btn.innerHTML;
+
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        btn.innerHTML = '<i class="bi bi-check2-all me-1"></i>Copied!';
+                        btn.classList.replace('btn-outline-info', 'btn-info');
+
+                        setTimeout(() => {
+                            btn.innerHTML = originalHtml;
+                            btn.classList.replace('btn-info', 'btn-outline-info');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy preset link', err);
+                        alert("Clipboard access denied. Check browser permissions.");
+                    }
+                });
+            }
+
+            // 2. Apply to Signal Button
+            const applySignalBtn = document.getElementById('apply-live-signal-btn');
+            if (applySignalBtn) {
+                applySignalBtn.addEventListener('click', () => {
+                    const url = generateLivePresetUrl();
+                    window.open(url, '_blank'); // Opens the deep link safely
+                });
+            }
+            // ---------------------------------------------------
 
             // Handle resets gracefully
             document.getElementById('reset-controls-btn').addEventListener('click', () => {
