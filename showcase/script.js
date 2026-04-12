@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () {
         "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
         "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html",
         "police.html", "neuralAutomata.html", "fanTracer.html", "grandLineVoyage.html",
-        "chuck.html", "fanTracerTwoColor.html", "flowfield.html","Morpheus.html",
+        "chuck.html", "fanTracerTwoColor.html", "flowfield.html", "Morpheus.html",
         "ferromagneticResonance.html"
     ];
 
@@ -645,12 +645,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     const def = meta.getAttribute('default') || '';
 
                     structuredControls.push({
-                        label, 
-                        variable: prop, 
+                        label,
+                        variable: prop,
                         type: type,
                         min: meta.getAttribute('min') || '0',
                         max: meta.getAttribute('max') || '100',
-                        step: meta.getAttribute('step') || 'any',
+                        step: meta.getAttribute('step') || '1',
                         valuesStr: meta.getAttribute('values') || '',
                         def: def,
                         description: tooltip
@@ -987,7 +987,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 2. Inject Browser Compatibility Layer into the raw HTML using DOMParser
         const parser = new DOMParser();
         const baseDoc = parser.parseFromString(baseHtmlText, 'text/html');
-        
+
         const polyfillScript = baseDoc.createElement('script');
         polyfillScript.textContent = `
             if (typeof engine === 'undefined') {
@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const type = meta.getAttribute('type');
                     const val = meta.getAttribute('content') || meta.getAttribute('default');
                     if (prop && val !== null) {
-                        if (type === 'number') window[prop] = parseFloat(val);
+                        if (type === 'number') window[prop] = Math.round(parseFloat(val));
                         else if (type === 'boolean') window[prop] = (val === 'true' || val === '1');
                         else window[prop] = val;
                     }
@@ -1006,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         // Insert it at the END of the head, ensuring all <meta> tags are parsed before it runs
         baseDoc.head.appendChild(polyfillScript);
-        
+
         // Save the polyfilled version as our new base template for the rest of the script
         baseHtmlText = "<!DOCTYPE html>\n" + baseDoc.documentElement.outerHTML;
 
@@ -1017,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const baseTag = cleanDoc.createElement('base');
             baseTag.href = new URL('.', fullEffectUrl).href;
             cleanDoc.head.insertBefore(baseTag, cleanDoc.head.firstChild);
-            
+
             effectIframe.removeAttribute('src'); // Stop raw file loads
             effectIframe.srcdoc = "<!DOCTYPE html>\n" + cleanDoc.documentElement.outerHTML;
         };
@@ -1085,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             let formHtml = `<form id="effect-controls-form" class="row g-3 p-3 bg-black border border-secondary rounded">`;
-            
+
             effect.structuredControls.forEach(c => {
                 const id = `control-${c.variable}`;
                 formHtml += `<div class="col-12 col-md-6"><label class="form-label small mb-1 fw-bold text-info">${c.label}</label>`;
@@ -1143,13 +1143,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 try {
                     const iframeDoc = effectIframe.contentDocument || effectIframe.contentWindow.document;
                     if (!iframeDoc) return;
-                    
+
                     const iframeWin = effectIframe.contentWindow; // Capture the active window
 
                     const formData = new FormData(form);
                     effect.structuredControls.forEach(c => {
                         let val = formData.get(c.variable);
-                        
+
                         // Strict boolean handling (respects 1/0 vs true/false)
                         if (c.type === 'boolean') {
                             const isChecked = form.querySelector(`[name="${c.variable}"]`).checked;
@@ -1164,11 +1164,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                 metaTag.setAttribute('default', val);
                                 metaTag.setAttribute('value', val);
                             }
-                            
+
                             // 2. FORCE update the live JavaScript variables
                             if (iframeWin) {
                                 if (c.type === 'number') {
-                                    iframeWin[c.variable] = parseFloat(val);
+                                    iframeWin[c.variable] = Math.round(parseFloat(val));
                                 } else if (c.type === 'boolean') {
                                     iframeWin[c.variable] = (val === 'true' || val === '1');
                                 } else {
@@ -1190,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 effect.structuredControls.forEach(c => {
                     let val = formData.get(c.variable);
-                    
+
                     if (c.type === 'boolean') {
                         const isChecked = form.querySelector(`[name="${c.variable}"]`).checked;
                         val = (c.def === '1' || c.def === '0') ? (isChecked ? '1' : '0') : (isChecked ? 'true' : 'false');
@@ -1218,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Attach the separated listeners:
             // 'input' = continuous slider dragging (fast, silent update)
             form.addEventListener('input', updateActiveIframeDOM);
-            
+
             // 'change' = mouse released / dropdown selection finalized (hard reload)
             form.addEventListener('change', reloadIframeWithChanges);
 
@@ -1232,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (valSpan) valSpan.innerText = c.def;
                     }
                 });
-                
+
                 // Use the new helper function instead of .src
                 loadCleanIframe();
             });
