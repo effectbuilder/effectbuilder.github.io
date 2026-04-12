@@ -979,12 +979,52 @@ document.addEventListener('DOMContentLoaded', function () {
         // Wrap the title and badges in a flex container so they look clean and wrap if needed
         effectViewTitle.innerHTML = `<div class="d-flex align-items-center flex-wrap">${effect.title} ${modalBadgesHtml}</div>`;
 
-        // Clear iframe
-        effectIframe.removeAttribute('srcdoc');
-        effectIframe.src = effect.effectUrl;
-        // Clear both to ensure no "ghosting" from the previous effect
-        effectIframe.removeAttribute('srcdoc');
-        effectIframe.src = effect.effectUrl;
+        // --- NEW GLOBAL POLYFILL & IFRAME LOADER ---
+        // 1. Fetch raw HTML immediately
+        const res = await fetch(effect.effectUrl);
+        let baseHtmlText = await res.text();
+
+        // 2. Inject Browser Compatibility Layer into the raw HTML using DOMParser
+        const parser = new DOMParser();
+        const baseDoc = parser.parseFromString(baseHtmlText, 'text/html');
+        
+        const polyfillScript = baseDoc.createElement('script');
+        polyfillScript.textContent = `
+            if (typeof engine === 'undefined') {
+                window.engine = { audio: { freq: new Array(128).fill(0) } };
+                document.querySelectorAll('meta[property]').forEach(meta => {
+                    const prop = meta.getAttribute('property');
+                    const type = meta.getAttribute('type');
+                    const val = meta.getAttribute('content') || meta.getAttribute('default');
+                    if (prop && val !== null) {
+                        if (type === 'number') window[prop] = parseFloat(val);
+                        else if (type === 'boolean') window[prop] = (val === 'true' || val === '1');
+                        else window[prop] = val;
+                    }
+                });
+            }
+        `;
+        // Insert it at the END of the head, ensuring all <meta> tags are parsed before it runs
+        baseDoc.head.appendChild(polyfillScript);
+        
+        // Save the polyfilled version as our new base template for the rest of the script
+        baseHtmlText = "<!DOCTYPE html>\n" + baseDoc.documentElement.outerHTML;
+
+        // 3. Helper function to load a pristine, polyfilled version of the effect safely
+        const fullEffectUrl = new URL(effect.effectUrl, window.location.href).href;
+        const loadCleanIframe = () => {
+            const cleanDoc = parser.parseFromString(baseHtmlText, 'text/html');
+            const baseTag = cleanDoc.createElement('base');
+            baseTag.href = new URL('.', fullEffectUrl).href;
+            cleanDoc.head.insertBefore(baseTag, cleanDoc.head.firstChild);
+            
+            effectIframe.removeAttribute('src'); // Stop raw file loads
+            effectIframe.srcdoc = "<!DOCTYPE html>\n" + cleanDoc.documentElement.outerHTML;
+        };
+
+        // 4. Trigger the Initial Load
+        loadCleanIframe();
+        // ------------------------------------------
 
         // --- 3. CLONE BUTTONS (Prevents stacking event listeners) ---
         if (shareBtn) {
@@ -1044,10 +1084,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 accordionBody.classList.add('show');
             }
 
-            // Fetch raw HTML once so we can quickly inject changes on slider drag
-            const res = await fetch(effect.effectUrl);
-            const baseHtmlText = await res.text();
-
             let formHtml = `<form id="effect-controls-form" class="row g-3 p-3 bg-black border border-secondary rounded">`;
             
             effect.structuredControls.forEach(c => {
@@ -1102,23 +1138,67 @@ document.addEventListener('DOMContentLoaded', function () {
             // Wire up the live preview injection
             const form = document.getElementById('effect-controls-form');
 
-            const updateLivePreview = () => {
+            // METHOD 1: Instant active DOM update (Fires continuously while dragging)
+            const updateActiveIframeDOM = () => {
+                try {
+                    const iframeDoc = effectIframe.contentDocument || effectIframe.contentWindow.document;
+                    if (!iframeDoc) return;
+                    
+                    const iframeWin = effectIframe.contentWindow; // Capture the active window
+
+                    const formData = new FormData(form);
+                    effect.structuredControls.forEach(c => {
+                        let val = formData.get(c.variable);
+                        
+                        // Strict boolean handling (respects 1/0 vs true/false)
+                        if (c.type === 'boolean') {
+                            const isChecked = form.querySelector(`[name="${c.variable}"]`).checked;
+                            val = (c.def === '1' || c.def === '0') ? (isChecked ? '1' : '0') : (isChecked ? 'true' : 'false');
+                        }
+
+                        if (val !== null) {
+                            // 1. Update the physical HTML tags
+                            const metaTag = iframeDoc.querySelector(`meta[property="${c.variable}"]`);
+                            if (metaTag) {
+                                metaTag.setAttribute('content', val);
+                                metaTag.setAttribute('default', val);
+                                metaTag.setAttribute('value', val);
+                            }
+                            
+                            // 2. FORCE update the live JavaScript variables
+                            if (iframeWin) {
+                                if (c.type === 'number') {
+                                    iframeWin[c.variable] = parseFloat(val);
+                                } else if (c.type === 'boolean') {
+                                    iframeWin[c.variable] = (val === 'true' || val === '1');
+                                } else {
+                                    iframeWin[c.variable] = val;
+                                }
+                            }
+                        }
+                    });
+                } catch (e) {
+                    // Ignore cross-origin errors during rapid updates
+                }
+            };
+
+            // METHOD 2: Hard srcdoc reload (Fires ONLY when mouse click is released)
+            const reloadIframeWithChanges = () => {
                 const formData = new FormData(form);
                 const parser = new DOMParser();
                 const docParser = parser.parseFromString(baseHtmlText, 'text/html');
 
                 effect.structuredControls.forEach(c => {
                     let val = formData.get(c.variable);
-                    // Special handling for checkboxes since FormData omits them if unchecked
-                    if (c.type === 'boolean') {
-                        val = form.querySelector(`[name="${c.variable}"]`).checked ? 'true' : 'false';
-                    }
                     
+                    if (c.type === 'boolean') {
+                        const isChecked = form.querySelector(`[name="${c.variable}"]`).checked;
+                        val = (c.def === '1' || c.def === '0') ? (isChecked ? '1' : '0') : (isChecked ? 'true' : 'false');
+                    }
+
                     if (val !== null) {
                         const metaTag = docParser.querySelector(`meta[property="${c.variable}"]`);
                         if (metaTag) {
-                            // SignalRGB effects can be picky about which attribute they read on initialization.
-                            // We set all three to guarantee the script picks up the user's change.
                             metaTag.setAttribute('content', val);
                             metaTag.setAttribute('default', val);
                             metaTag.setAttribute('value', val);
@@ -1135,8 +1215,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 effectIframe.srcdoc = "<!DOCTYPE html>\n" + docParser.documentElement.outerHTML;
             };
 
-            // Trigger preview on any form change
-            form.addEventListener('input', updateLivePreview);
+            // Attach the separated listeners:
+            // 'input' = continuous slider dragging (fast, silent update)
+            form.addEventListener('input', updateActiveIframeDOM);
+            
+            // 'change' = mouse released / dropdown selection finalized (hard reload)
+            form.addEventListener('change', reloadIframeWithChanges);
 
             // Handle resets gracefully
             document.getElementById('reset-controls-btn').addEventListener('click', () => {
@@ -1149,9 +1233,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
                 
-                // Nuke the srcdoc and reload original file to guarantee pure state
-                effectIframe.removeAttribute('srcdoc');
-                effectIframe.src = effect.effectUrl;
+                // Use the new helper function instead of .src
+                loadCleanIframe();
             });
 
         } else {
@@ -1232,10 +1315,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const resetBtn = presetsZone.querySelector('#reset-preview-btn');
             if (resetBtn) {
-                resetBtn.addEventListener('click', () => {
-                    effectIframe.removeAttribute('srcdoc');
-                    effectIframe.src = effect.effectUrl;
-                });
+                resetBtn.addEventListener('click', loadCleanIframe);
             }
         } else {
             presetsCard.style.display = 'none';
