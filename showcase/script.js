@@ -440,12 +440,28 @@ async function loadCommunityFeed(filename) {
                     const parser = new DOMParser();
                     const docParser = parser.parseFromString(htmlText, 'text/html');
 
-                    // Inject the custom parameters into the DOM
+                    // Inject the custom parameters into the DOM and update the Form UI
                     for (const [key, value] of params.entries()) {
+                        // 1. Update the hidden HTML meta tags for the iframe
                         const metaTag = docParser.querySelector(`meta[property="${key}"]`);
                         if (metaTag) {
                             metaTag.setAttribute('default', value);
                             metaTag.setAttribute('content', value);
+                        }
+
+                        // 2. Update the visual form controls
+                        const formInput = document.querySelector(`#effect-controls-form [name="${key}"]`);
+                        if (formInput) {
+                            if (formInput.type === 'checkbox') {
+                                formInput.checked = (value === 'true' || value === '1');
+                            } else {
+                                formInput.value = value;
+                                // Update the badge text if it's a range slider
+                                if (formInput.type === 'range') {
+                                    const valBadge = document.getElementById(`val-control-${key}`);
+                                    if (valBadge) valBadge.innerText = value;
+                                }
+                            }
                         }
                     }
 
@@ -1228,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', function () {
             form.addEventListener('input', updateActiveIframeDOM);
 
             // 'change' = mouse released / dropdown selection finalized (hard reload)
-            form.addEventListener('change', reloadIframeWithChanges);
+            // form.addEventListener('change', reloadIframeWithChanges);
 
             // --- NEW: Generate URL and Handle Preset Buttons ---
             const generateLivePresetUrl = () => {
@@ -1252,10 +1268,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // 1. SignalRGB requires the EXACT case-sensitive Effect Title
                 const exactEffectName = encodeURIComponent(effect.title).replace(/\+/g, '%20');
-                
+
                 // 2. Convert standard URL '+' spaces into strict '%20' spaces
                 const exactParams = params.toString().replace(/\+/g, '%20');
-                
+
                 // 3. Return the clean URL with NO trailing slash before the '?'
                 return `https://go.signalrgb.com/app/effect/apply/${exactEffectName}?${exactParams}`;
             };
@@ -1366,11 +1382,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(htmlText, 'text/html');
 
+                        // Inject the custom parameters into the DOM and update the Form UI
                         for (const [key, value] of params.entries()) {
+                            // 1. Update the hidden HTML meta tags for the iframe
                             const metaTag = doc.querySelector(`meta[property="${key}"]`);
                             if (metaTag) {
                                 metaTag.setAttribute('default', value);
                                 metaTag.setAttribute('content', value);
+                            }
+
+                            // 2. Update the visual form controls
+                            const formInput = document.querySelector(`#effect-controls-form [name="${key}"]`);
+                            if (formInput) {
+                                if (formInput.type === 'checkbox') {
+                                    formInput.checked = (value === 'true' || value === '1');
+                                } else {
+                                    formInput.value = value;
+                                    // Update the badge text if it's a range slider
+                                    if (formInput.type === 'range') {
+                                        const valBadge = document.getElementById(`val-control-${key}`);
+                                        if (valBadge) valBadge.innerText = value;
+                                    }
+                                }
                             }
                         }
 
