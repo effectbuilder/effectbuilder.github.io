@@ -3022,6 +3022,20 @@ function setupKeyboardListeners() {
             return;
         }
 
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            e.preventDefault(); // Stop the browser from selecting all the text on the page
+            
+            selectedLedIds.clear();
+            componentState.leds.forEach(led => {
+                if (led) selectedLedIds.add(led.id);
+            });
+            
+            // Switch to the select tool so they can immediately drag the new selection
+            setTool('select'); 
+            drawCanvas();
+            return; // We handled the shortcut, so exit early
+        }
+
         // Use a boolean to see if we should prevent default browser actions
         let shortcutHandled = true;
 
