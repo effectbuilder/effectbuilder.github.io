@@ -1585,7 +1585,7 @@ async function performSave(isNew, isForking = false) {
         dataToSave.viewCount = 0;
         dataToSave.downloadCount = 0;
         dataToSave.likedBy = [];
-        
+
         // Also update the local componentState so the UI resets immediately
         componentState.likeCount = 0;
         componentState.viewCount = 0;
@@ -1692,16 +1692,16 @@ async function handleSaveComponent() {
     // --- 3. Route the save logic ---
     if (isNewComponent) {
         // A. It's a brand new component. Save it immediately.
-        performSave(true, false); 
+        performSave(true, false);
 
     } else if (isForking) {
         // B. User is not owner. Force a fork (save as new) immediately.
-        performSave(true, true); 
+        performSave(true, true);
 
     } else if (isOwnerOrAdmin) {
         // C. User is the owner or admin. Show the Modal.
         const hasNameChanged = (newName !== originalName) || (newDisplayName !== originalDisplayName);
-        
+
         // Setup Modal Elements
         const modalEl = document.getElementById('save-conflict-modal');
         if (!saveConflictModalInstance) {
@@ -2957,6 +2957,13 @@ function setupToolbarListeners() {
     } else {
         console.warn("Mirror buttons not found.");
     }
+
+    const duplicateSelectedBtn = document.getElementById('duplicate-selected-btn');
+    if (duplicateSelectedBtn) {
+        duplicateSelectedBtn.addEventListener('click', handleDuplicateSelected);
+    } else {
+        console.warn("Duplicate button not found.");
+    }
 }
 
 function setTool(toolName) {
@@ -3015,6 +3022,20 @@ function setupKeyboardListeners() {
             return;
         }
 
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            e.preventDefault(); // Stop the browser from selecting all the text on the page
+            
+            selectedLedIds.clear();
+            componentState.leds.forEach(led => {
+                if (led) selectedLedIds.add(led.id);
+            });
+            
+            // Switch to the select tool so they can immediately drag the new selection
+            setTool('select'); 
+            drawCanvas();
+            return; // We handled the shortcut, so exit early
+        }
+
         // Use a boolean to see if we should prevent default browser actions
         let shortcutHandled = true;
 
@@ -3056,7 +3077,10 @@ function setupKeyboardListeners() {
             case '0':
                 resetView();
                 break;
-
+            case 'd':
+            case 'D':
+                handleDuplicateSelected();
+                break;
             // Selection Actions
             case 'r':
             case 'R':
@@ -4043,6 +4067,81 @@ function handleMirrorSelected(axis, duplicate) {
 
     if (stateChanged) {
         showToast('Mirror Complete', `${duplicate ? 'Duplicated and mirrored' : 'Mirrored'} ${selectedLedIds.size} LEDs.`, 'success');
+        autoSaveState();
+        drawCanvas();
+        updateLedCount();
+    }
+}
+
+/**
+ * Duplicates the currently selected LEDs and their wiring.
+ * Offsets the duplicated LEDs slightly so they don't perfectly overlap the originals.
+ */
+function handleDuplicateSelected() {
+    if (selectedLedIds.size === 0) {
+        showToast('Action Blocked', 'Select one or more LEDs to duplicate.', 'warning');
+        return;
+    }
+
+    let stateChanged = false;
+    const idMapping = new Map(); // Maps oldId -> newId
+    const newLeds = [];
+    let newLedCounter = 0;
+
+    // Offset the duplicated LEDs by 2 grid units down and right so they are visible
+    const offset = GRID_SIZE * 2;
+
+    // 1. Create duplicated LEDs
+    componentState.leds.forEach(led => {
+        if (led && selectedLedIds.has(led.id)) {
+            const newX = led.x + offset;
+            const newY = led.y + offset;
+
+            const newId = `dup-${Date.now()}-${newLedCounter++}`;
+            idMapping.set(led.id, newId);
+
+            newLeds.push({ id: newId, x: newX, y: newY });
+        }
+    });
+
+    // 2. Duplicate wiring for the duplicated LEDs
+    const newCircuits = [];
+    componentState.wiring.forEach(circuit => {
+        if (!Array.isArray(circuit)) return;
+
+        let duplicatedCircuitFragment = [];
+
+        circuit.forEach(ledId => {
+            if (idMapping.has(ledId)) {
+                // If the LED is selected, add its duplicate to the current fragment
+                duplicatedCircuitFragment.push(idMapping.get(ledId));
+            } else {
+                // If we hit an unselected LED, break the current fragment to prevent 
+                // jumping across unselected LEDs and wiring the duplicates together.
+                if (duplicatedCircuitFragment.length > 0) {
+                    newCircuits.push(duplicatedCircuitFragment);
+                    duplicatedCircuitFragment = [];
+                }
+            }
+        });
+
+        // Push any remaining fragment
+        if (duplicatedCircuitFragment.length > 0) {
+            newCircuits.push(duplicatedCircuitFragment);
+        }
+    });
+
+    // 3. Apply changes to state
+    componentState.leds.push(...newLeds);
+    componentState.wiring.push(...newCircuits);
+
+    // 4. Swap selection to the new duplicated LEDs so they can be dragged immediately
+    selectedLedIds.clear();
+    newLeds.forEach(led => selectedLedIds.add(led.id));
+    stateChanged = true;
+
+    if (stateChanged) {
+        showToast('Duplication Complete', `Duplicated ${newLeds.length} LEDs.`, 'success');
         autoSaveState();
         drawCanvas();
         updateLedCount();
