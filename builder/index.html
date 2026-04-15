@@ -59,25 +59,23 @@
 
                     <div class="btn-group shadow-sm" role="group" aria-label="Project management actions">
                         <button class="btn btn-primary btn-lg" id="new-component-btn" data-bs-toggle="tooltip" title="New Component">
-                            <i class="bi bi-file-earmark-plus"></i>
+                            <i class="bi bi-file-earmark"></i> New
                         </button>
-                        <button class="btn btn-primary btn-lg" id="save-component-btn" data-bs-toggle="tooltip" title="Save to Cloud" disabled>
-                            <i class="bi bi-cloud-arrow-up"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-lg" id="share-component-btn" data-bs-toggle="tooltip" title="Share Component Link" disabled>
-                            <i class="bi bi-share"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-lg" id="import-json-btn" data-bs-toggle="tooltip" title="Import JSON File">
-                            <i class="bi bi-upload"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-lg" id="export-component-btn" data-bs-toggle="modal" data-bs-target="#export-component-modal" title="Export JSON File">
-                            <i class="bi bi-download"></i>
-                        </button>
-                    </div>
-                    <div class="btn-group shadow-sm" role="group" aria-label="Component Gallery">
                         <a href="./gallery" class="btn btn-primary btn-lg" id="browse-gallery-btn" data-bs-toggle="tooltip" title="Browse components made by the community">
-                            <i class="bi bi-images"></i> Component Gallery
+                            <i class="bi bi-folder2-open"></i> Open
                         </a>
+                        <button class="btn btn-primary btn-lg" id="save-component-btn" data-bs-toggle="tooltip" title="Save Component" disabled>
+                            <i class="bi bi-floppy"></i> New
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="share-component-btn" data-bs-toggle="tooltip" title="Share Component" disabled>
+                            <i class="bi bi-share"></i> Share
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="import-json-btn" data-bs-toggle="tooltip" title="Import Component JSON File">
+                            <i class="bi bi-upload"></i> Import
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="export-component-btn" data-bs-toggle="modal" data-bs-target="#export-component-modal" title="Export Component JSON File">
+                            <i class="bi bi-download"></i> Export
+                        </button>
                     </div>
                 </div>
                 <div class="d-flex flex-column flex-xl-row align-items-stretch align-items-xl-center gap-3 mt-3 mt-xl-0">
@@ -386,6 +384,7 @@
                             <button class="btn btn-outline-secondary" id="reverse-selected-btn" data-bs-toggle="tooltip" title="Reverse Wiring (R)"><i class="bi bi-arrow-left-right"></i></button>
                             <button class="btn btn-outline-secondary" id="scale-selected-btn" data-bs-toggle="modal" data-bs-target="#scale-selected-modal" title="Scale Selected (S)"><i class="bi bi-arrows-angle-expand"></i></button>
                             <button class="btn btn-outline-secondary" id="mirror-selected-btn" title="Mirror Selected (M)"><i class="bi bi-symmetry-vertical"></i></button>
+                            <button class="btn btn-outline-secondary" id="duplicate-selected-btn" data-bs-toggle="tooltip" title="Duplicate Selected (D)"><i class="bi bi-copy"></i></button>
                         </div>
                     </div>
 
