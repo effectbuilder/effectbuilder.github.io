@@ -466,28 +466,14 @@ export function updateLedCount() {
 }
 
 function handleCanvasMouseDown(e) {
-    // // console.log(`>>> mousedown event: Button=${e.button}, Tool=${currentToolGetter()}`);
     if (!componentState || !Array.isArray(componentState.leds) || !Array.isArray(componentState.wiring)) return;
 
-    // --- Pan on Middle click OR Right click (if NOT wiring/placing/image) ---
-    if (e.button === 1 || (e.button === 2 && currentToolGetter() !== 'wiring' && currentToolGetter() !== 'place-led' && currentToolGetter() !== 'image')) {
-        // // console.log("Starting Pan...");
-        isPanning = true; canvas.style.cursor = 'grabbing'; e.preventDefault(); return;
-    }
-
-    // --- Right Click: Handled by contextmenu listener OR cancel place-led ---
-    if (e.button === 2) {
-        if (currentToolGetter() === 'wiring' || currentToolGetter() === 'image') {
-            e.preventDefault(); // Already handled by contextmenu listener
-        } else if (currentToolGetter() === 'place-led') {
-            e.preventDefault(); // Prevent context menu
-            if (pendingConnectionStartLed) {
-                // // console.log("Place-LED: Right click, cancelling chain.");
-                pendingConnectionStartLed = null;
-                drawCanvas(); // Redraw to remove highlight
-            }
-        }
-        return; // Stop further mousedown processing for right click
+    // --- Pan on Middle click OR Right click (Universal) ---
+    if (e.button === 1 || e.button === 2) {
+        isPanning = true; 
+        canvas.style.cursor = 'grabbing'; 
+        e.preventDefault(); 
+        return;
     }
 
     // --- Left Click Logic ---
