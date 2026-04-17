@@ -10668,3 +10668,64 @@ document.addEventListener('DOMContentLoaded', function () {
     init();
     setupCommentListeners()
 });
+
+//Hide Google Translate banner if it appears (it seems to inject elements with class names that match this pattern)
+(function() {
+  // This Regex matches the exact format of your examples:
+  // 4 or 5 groups of exactly 6 alphanumeric characters separated by dashes.
+  const classPattern = /^[A-Za-z0-9]{6}-[A-Za-z0-9]{6}-[A-Za-z0-9]{6}-[A-Za-z0-9]{6}(-[A-Za-z0-9]{6})?$/;
+  
+  // As a fallback, we can also look for exact lengths if the dash pattern changes
+  const targetLengths = [27, 34];
+
+  // Function to evaluate a single element
+  const hideIfMatches = (el) => {
+    // Skip text nodes, comments, or elements without classes
+    if (el.nodeType !== Node.ELEMENT_NODE || !el.classList || el.classList.length === 0) {
+      return; 
+    }
+
+    let isMatch = false;
+    
+    // Loop through all classes on the element
+    for (let i = 0; i < el.classList.length; i++) {
+      const className = el.classList[i];
+      
+      // Check if the class matches the dash-pattern OR the exact character length
+      if (classPattern.test(className) || targetLengths.includes(className.length)) {
+        isMatch = true;
+        break; // Stop checking classes once we find a match
+      }
+    }
+
+    // Hide it if a match was found
+    if (isMatch && el.style.display !== 'none') {
+      el.style.display = 'none !important';
+      el.style.setProperty('display', 'none', 'important'); // Enforce override
+    }
+  };
+
+  // 1. Scan the existing DOM immediately on script execution
+  document.querySelectorAll('*').forEach(hideIfMatches);
+
+  // 2. Watch for any dynamically loaded elements
+  const observer = new MutationObserver((mutations) => {
+    for (let mutation of mutations) {
+      for (let node of mutation.addedNodes) {
+        // Check the newly added node itself
+        hideIfMatches(node);
+        
+        // If the new node contains nested elements, check them too
+        if (node.querySelectorAll) {
+          node.querySelectorAll('*').forEach(hideIfMatches);
+        }
+      }
+    }
+  });
+
+  // Start observing the page
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+})();
