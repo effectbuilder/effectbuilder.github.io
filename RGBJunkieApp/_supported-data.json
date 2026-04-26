@@ -1,0 +1,1149 @@
+{
+    "generated":  "2026-04-24",
+    "devices":  {
+                    "Akko":  [
+                                 "Akko_5075_QMK_Keyboard"
+                             ],
+                    "Alpaca":  [
+                                   "Alpaca_WhiteFox_Eclipse_QMK_Keyboard"
+                               ],
+                    "Asus":  [
+                                 "Asus_Aura_Terminal_Controller",
+                                 "ASUS_Keyboard",
+                                 "ASUS_Monitor_Controller",
+                                 "ASUS_Monitor_Controller2",
+                                 "Asus_Mouse",
+                                 "ASUS_Multidevice_Controller",
+                                 "Asus_ROG_Balteus",
+                                 "Asus_ROG_Balteus_Qi",
+                                 "ASUS_ROG_Claymore_I",
+                                 "ASUS_ROG_Claymore_II",
+                                 "ASUS_ROG_Spotlight",
+                                 "ASUS_ROG_Strix_LC",
+                                 "Asus_ROG_Throne_Qi_Stand",
+                                 "ASUS_Ryujin_AIO_Controller",
+                                 "ASUS_Ryuo_AIO_Controller",
+                                 "ASUS_TUF_K1",
+                                 "ENE_RAM"
+                             ],
+                    "BYTech":  [
+                                   "BYTech_Keyboard_Controller"
+                               ],
+                    "Colorful":  [
+                                     "Colorful_Ampere_GPU"
+                                 ],
+                    "CoolerMaster":  [
+                                         "ACER_P09-600_Controller",
+                                         "Cooler_Master_ARGB_Controller",
+                                         "Cooler_Master_A-RGB_LED_Small_Controller",
+                                         "Cooler_Master_Gen2_LED_Controller_A1",
+                                         "CoolerMaster_CK530_V2_Keyboard",
+                                         "CoolerMaster_CK550_V2_Keyboard",
+                                         "CoolerMaster_CK552_V2_Keyboard",
+                                         "CoolerMaster_CK720_Keyboard",
+                                         "CoolerMaster_CK721_Keyboard",
+                                         "CoolerMaster_MK730_Keyboard",
+                                         "CoolerMaster_Mk750_Keyboard",
+                                         "CoolerMaster_Mk850_Keyboard",
+                                         "CoolerMaster_MM711_Mouse",
+                                         "CoolerMaster_MP750L_Mat",
+                                         "CoolerMaster_MP750M_Mat",
+                                         "CoolerMaster_MP750XL_Mat",
+                                         "CoolerMaster_MP860_Mat",
+                                         "CoolerMaster_SK622_Keyboard",
+                                         "CoolerMaster_SK650_Keyboard",
+                                         "CoolerMaster_SK652_Keyboard",
+                                         "CoolerMaster_SK653_Keyboard",
+                                         "Intel_Arc770_GPU"
+                                     ],
+                    "Corsair":  [
+                                    "Corsair_Elite_Capellix_LCD",
+                                    "Corsair_ICUE_Link_LCD",
+                                    "Corsair_Nautilus_RS_LCD",
+                                    "Corsair_Nexus_Screen",
+                                    "Corsair_Void_Headset_Controller",
+                                    "Corsair_XC7_LCD",
+                                    "Corsair_XD6_Elite_LCD"
+                                ],
+                    "Creative Labs":  [
+                                          "Creative_Sound_BlasterX_Katana_Soundbar"
+                                      ],
+                    "Crucial":  [
+                                    "Crucial Ballistix Ram"
+                                ],
+                    "DesignedByGG":  [
+                                         "GG_QMK_ISO_Keyboard_TKL_AZERTY_French"
+                                     ],
+                    "DZTech":  [
+                                   "DZTech-60RGB_Keyboard",
+                                   "DZTech-65RGB-V3_Keyboard"
+                               ],
+                    "Epomaker":  [
+                                     "Epomaker_TH85_QMK",
+                                     "Epomaker_TH96_QMK"
+                                 ],
+                    "Ergodox_EZ":  [
+                                       "Ergodox_EZ_Glow_QMK"
+                                   ],
+                    "EVGA":  [
+                                 "X-15_Mouse",
+                                 "X-17_Mouse",
+                                 "Z-15_Keyboard_0x260e_ISO",
+                                 "Z-15_Keyboard_ANSI",
+                                 "Z-20_ISO_Keyboard",
+                                 "Z-20_Keyboard"
+                             ],
+                    "EVision":  [
+                                    "EVision_Keyboard_Controller"
+                                ],
+                    "Feker":  [
+                                  "Feker-IK75"
+                              ],
+                    "Fnatic":  [
+                                   "Fnatic_Keyboard_Controller",
+                                   "Fnatic_MiniSTREAK_Speed_Keyboard",
+                                   "Fnatic_STREAK_Keyboard",
+                                   "Fnatic_STREAK65_Keyboard"
+                               ],
+                    "Framework":  [
+                                      "Framework_16_Keyboard",
+                                      "Framework_Macropad"
+                                  ],
+                    "GigaByte":  [
+                                     "Aorus_ATC800",
+                                     "Aorus_Liquid_Cooler_360",
+                                     "Gigabyte_AORUS_Waterforce_X_I",
+                                     "Gigabyte_AORUS_Waterforce_X_II",
+                                     "Gigabyte_Gen1_GPU",
+                                     "Gigabyte_Gen2_GPU",
+                                     "Gigabyte_Gen3_GPU",
+                                     "Gigabyte_Gen4_GPU",
+                                     "Gigabyte_Motherboard_Controller",
+                                     "Gigabyte_Motherboard_Controller_0x5711"
+                                 ],
+                    "Glorious":  [
+                                     "Glorious_Model_D_Wireless",
+                                     "Glorious_Model_D_Wireless_-_Wired",
+                                     "Glorious_Model_D_Wireless_-_Wired_0x2012",
+                                     "Glorious_Model_D_Wireless_0x2023",
+                                     "Glorious_Model_O_Wireless",
+                                     "Glorious_Model_O_Wireless_-_Wired"
+                                 ],
+                    "GMMK":  [
+                                 "GMMK_2_65_ANSI_QMK_Keyboard",
+                                 "GMMK_2_65_ISO_QMK_Keyboard",
+                                 "GMMK_2_96_ANSI_QMK_Keyboard",
+                                 "GMMK_2_96_ISO_QMK_Keyboard",
+                                 "GMMK_3_QMK_Keyboard",
+                                 "GMMK_Numpad_QMK",
+                                 "GMMK_Pro_QMK_Keyboard"
+                             ],
+                    "Helheim Designs":  [
+                                            "Freja_65_QMK_Keyboard"
+                                        ],
+                    "HyperX":  [
+                                   "HyperX_Alloy_Elite",
+                                   "HyperX_Alloy_Elite_2",
+                                   "HyperX_Alloy_Elite_2_Keyboard_Alt_PID",
+                                   "HyperX_Alloy_FPS_RGB",
+                                   "HyperX_Alloy_Origins",
+                                   "HyperX_Alloy_Origins_0x03f0_0x0591",
+                                   "HyperX_Alloy_Origins_60",
+                                   "HyperX_Alloy_Origins_60_0c8e",
+                                   "HyperX_Alloy_Origins_65",
+                                   "HyperX_Alloy_Origins_Core",
+                                   "HyperX_Alloy_Origins_Core_0x03f0_0x098f",
+                                   "HyperX_Cloud_Flight",
+                                   "HyperX_Duocast",
+                                   "HyperX_Fury_Ultra",
+                                   "HyperX_Mouse_Controller",
+                                   "HyperX_Pulsefire_Core",
+                                   "HyperX_Pulsefire_Core_0x03F0",
+                                   "HyperX_Pulsefire_Dart_Wireless-_Wired_Mode",
+                                   "HyperX_Pulsefire_Dart_Wireless-_Wireless_Mode",
+                                   "HyperX_Pulsefire_Dart_Wireless-Wireless_Mode_03f0",
+                                   "HyperX_Pulsefire_FPS_Pro",
+                                   "HyperX_PulseFire_Haste",
+                                   "HyperX_PulseFire_Haste_0x03f0_0x0f8f",
+                                   "HyperX_Pulsefire_Haste_2_Mouse",
+                                   "HyperX_PulseFire_Haste_Wireless_Mouse",
+                                   "HyperX_Pulsefire_Mat",
+                                   "HyperX_Pulsefire_Mat_Kingston",
+                                   "HyperX_Pulsefire_Raid",
+                                   "HyperX_Pulsefire_Surge",
+                                   "HyperX_Pulsefire_Surge_0x03f0_Mouse",
+                                   "HyperX_Quadcast_2_S",
+                                   "HyperX_Quadcast_S",
+                                   "HyperX_Quadcast_S_0x03f0"
+                               ],
+                    "Hyte":  [
+                                 "CNVS"
+                             ],
+                    "ID-Cooling":  [
+                                       "ID-Cooling-FX-LCD"
+                                   ],
+                    "IDOBAO":  [
+                                   "IDOBAO_ID67_QMK_Keyboard"
+                               ],
+                    "Inland":  [
+                                   "Inland_KB83_QMK_Keyboard"
+                               ],
+                    "KBDCraft":  [
+                                     "KBDCraft_Adam0110_QMK_Keyboard",
+                                     "KBDCraft_Adam0110_QMK_Keyboard-Test"
+                                 ],
+                    "KBDFans":  [
+                                    "KBDFans_KBD67_RGBMKII_QMK_Keyboard",
+                                    "KBDFans_KBD67_V2_QMK_ISO_Keyboard"
+                                ],
+                    "KBM Gaming":  [
+                                       "KBM_Keyboard_Controller"
+                                   ],
+                    "Kingston":  [
+                                     "Kingston Hyper Fury Ram"
+                                 ],
+                    "KPRepublic":  [
+                                       "KPRepublic_BM60_Poker_Rev_2"
+                                   ],
+                    "Lemokey":  [
+                                    "Lemokey_L1_ANSI_Keyboard",
+                                    "Lemokey_L3_ANSI_Keyboard",
+                                    "Lemokey_P1_HE_ANSI_Keyboard",
+                                    "Lemokey_P1_HE_ISO_Keyboard",
+                                    "Lemokey_P1_Pro_ANSI_Keyboard",
+                                    "Lemokey_P1_Pro_ISO_Keyboard"
+                                ],
+                    "Lenovo":  [
+                                   "Lenovo_Legion_5_Pro_Keyboard",
+                                   "Lenovo_Legion_7"
+                               ],
+                    "LG":  [
+                               "LG_UltraGear_27GN950",
+                               "LG_UltraGear_38GL950G"
+                           ],
+                    "Lian Li":  [
+                                    "Lian_Li_Galahad_II_LCD",
+                                    "Lian_Li_Uni_Fans",
+                                    "Lian_Li_Uni_Fans_AL_1.1",
+                                    "Lian_Li_Uni_Fans_AL_V2",
+                                    "Lian_Li_Uni_Fans_SL_1.2",
+                                    "Lian_Li_Uni_Fans_SL_V2",
+                                    "LianLi_SL_Infinity",
+                                    "LianLi_Strimer_Controller"
+                                ],
+                    "Logitech":  [
+                                     "Logitech_G13_Keyboard",
+                                     "Logitech_G19_Keyboard",
+                                     "Logitech_G600_Mouse",
+                                     "Logitech_Modern_Device",
+                                     "Logitech_Wireless_Dongle.test",
+                                     "Logitech_X56_HOTAS_Joystick",
+                                     "Logitech_X56_HOTAS_Throttle"
+                                 ],
+                    "Massdrop":  [
+                                     "Drop_ALT_V2_QMK_Keyboard",
+                                     "Drop_CSTM80_QMK_Keyboard",
+                                     "Drop_SHIFT_V1_QMK_Keyboard",
+                                     "Drop_SHIFT_V2_QMK_Keyboard",
+                                     "Massdrop_ALT_QMK_Keyboard",
+                                     "Massdrop_CTRL_QMK_Keyboard",
+                                     "Massdrop_CTRL_V2_QMK_Keyboard",
+                                     "Massdrop_SENSE75_QMK_Keyboard"
+                                 ],
+                    "MCHOSE":  [
+                                   "MCHOSE_GX87_QMK_ANSI_Keyboard"
+                               ],
+                    "Monsgeek":  [
+                                     "Monsgeek_M1_V3_Keyboard",
+                                     "Monsgeek_M1_V5_ANSI_Keyboard",
+                                     "Monsgeek_M1_V5_ISO_Keyboard",
+                                     "Monsgeek_M3_Keyboard_TKL",
+                                     "Monsgeek_M7_QMK_ANSI_Keyboard"
+                                 ],
+                    "Mountain":  [
+                                     "Mountain Everest 60",
+                                     "Mountain Everest Max",
+                                     "Mountain_Macropad",
+                                     "Mountain_Makalu_67_Mouse"
+                                 ],
+                    "Msi":  [
+                                "Apache_GS63_Keyboard",
+                                "MSI_Keyboard_Controller",
+                                "MSI_MAG_Monitor",
+                                "MSI_Monitor_Controller"
+                            ],
+                    "NCR":  [
+                                "NCR-80_Hotswap_Keyboard"
+                            ],
+                    "nerdytec":  [
+                                     "nerdytec_CYKEY_QMK_ANSI_Keyboard",
+                                     "nerdytec_CYKEY_QMK_ISO_Keyboard"
+                                 ],
+                    "Nollie":  [
+                                   "Nollie1 CDC Nos2.1",
+                                   "Nollie1",
+                                   "Nollie1_Nos2.0",
+                                   "Nollie16v3",
+                                   "Nollie16v3_Nos2.0",
+                                   "Nollie32",
+                                   "Nollie32_Nos2.0",
+                                   "Nollie8 CDC Nos2.1",
+                                   "Nollie8 v2",
+                                   "Nollie8 v2_Nos2.0"
+                               ],
+                    "Nuphy":  [
+                                  "NuPhy_Air75v2_QMK_Keyboard",
+                                  "NuPhy_Air96v2_QMK_ANSI_Keyboard",
+                                  "NuPhy_Gem80_GMK_Keyboard",
+                                  "NuPhy_Halo75v2_QMK_Keyboard",
+                                  "NuPhy_Halo96v2_QMK_Keyboard"
+                              ],
+                    "Nuvoton":  [
+                                    "Nuvoton_Keyboard_Controller",
+                                    "Nuvoton_Keyboard2_Controller"
+                                ],
+                    "Nzxt":  [
+                                 "NZXT_Kraken_Elite",
+                                 "NZXT_Kraken_Elite_V2_AIO",
+                                 "Nzxt_Kraken_X2_M2_AIO",
+                                 "Nzxt_Kraken_X3_AIO",
+                                 "Nzxt_Kraken_Z3_AIO",
+                                 "NZXT_Motherboard",
+                                 "NZXT_Smart_Device_V1_Controller",
+                                 "NZXT_Smart_Device_V2_Controller",
+                                 "Vertagear_RGB_LED_Upgrade_Kits"
+                             ],
+                    "OEM":  [
+                                "OEM_Keyboard_Wireless_Controller"
+                            ],
+                    "Patriot":  [
+                                    "Patriot_Viper_RAM",
+                                    "Patriot_Viper_Steel_RGB_RAM",
+                                    "V380_Headset"
+                                ],
+                    "PNY":  [
+                                "PNY_Blackwell_GPU",
+                                "PNY_Turing_Ampere_GPU_Controller",
+                                "PNY_XLR8_Lovelace_GPU",
+                                "PNY_XLR8_REVEL_Lovelace_GPU"
+                            ],
+                    "PrismRGB":  [
+                                     "Prism_Mini",
+                                     "Prism_S",
+                                     "PrismRGB_8"
+                                 ],
+                    "Pulsar":  [
+                                   "pulsar_XBOARD QS_sRGB_240206"
+                               ],
+                    "Rama":  [
+                                 "Rama_M65B"
+                             ],
+                    "Razer":  [
+                                  "Razer_Addressable_RGB_Controller",
+                                  "Razer_Barracuda_X_Chroma_Headset",
+                                  "Razer_BaseStation_Chroma_White",
+                                  "Razer_BaseStation_V2",
+                                  "Razer_Blackwidow_2019_Keyboard",
+                                  "Razer_Blackwidow_Chroma_Keyboard",
+                                  "Razer_Blackwidow_Overwatch_Keyboard",
+                                  "Razer_Blackwidow_T_Chroma_Keyboard",
+                                  "Razer_Blackwidow_Ultimate_2013_2014_Keyboard",
+                                  "Razer_Blackwidow_v3_Pro",
+                                  "Razer_Blackwidow_v3_Pro_Wireless_Mode",
+                                  "Razer_Blackwidow_X_Chroma_Keyboard",
+                                  "Razer_Charging_Pad",
+                                  "Razer_Chroma_HDK_Lighting_Controller",
+                                  "Razer_Chroma_Light_Strip_Set",
+                                  "Razer_Chroma_Lighting_Kit",
+                                  "Razer_Cynosa_Chroma_Keyboard",
+                                  "Razer_Cynosa_Chroma_Pro_Keyboard",
+                                  "Razer_Cynosa_Lite_Keyboard",
+                                  "Razer_Cynosa_V2_Keyboard",
+                                  "Razer_DeathAdder_Essential_Mouse",
+                                  "Razer_DeathAdder_Essential_Mouse_0x006E",
+                                  "Razer_Deathstalker_V2_Pro_TKL_Keyboard",
+                                  "Razer_Deathstalker_V2_Pro_TKL_Keyboard_Wireless",
+                                  "Razer_Diamondback_Chroma_Mouse",
+                                  "Razer_Goliathus_Chroma_3XL_Mouse_Mat",
+                                  "Razer_Goliathus_Chroma_Mouse_Pad",
+                                  "Razer_Goliathus_Extended_Chroma_Mouse_Pad",
+                                  "Razer_Hanbo_Cooler",
+                                  "Razer_Huntsman_V2_TKL_Keyboard",
+                                  "Razer_Kraken_7.1_V2_Headset",
+                                  "Razer_Kraken_Headset_Controller",
+                                  "Razer_Kraken_Kitty_Edition_Headset",
+                                  "Razer_Laptop_Cooling_Pad",
+                                  "Razer_Laptop_Stand_Chroma",
+                                  "Razer_Laptop_Stand_Chroma_V2",
+                                  "Razer_Legacy_Mouse",
+                                  "Razer_LianLi_Case",
+                                  "Razer_Mamba_TE_Mouse",
+                                  "Razer_Modern_Keyboard",
+                                  "Razer_Modern_Mouse",
+                                  "Razer_Modern_Mouse.test",
+                                  "Razer_Monitor_Stand_Chroma",
+                                  "Razer_Mouse_Bungee_V3",
+                                  "Razer_Mouse_Dock",
+                                  "Razer_Mouse_Dock_Pro",
+                                  "Razer_Mousepad_Controller",
+                                  "Razer_Naga_Hex_V2_Mouse",
+                                  "Razer_Nari_Headset_Controller",
+                                  "Razer_Nommo_Speakers",
+                                  "Razer_Orbweaver_Chroma_Keypad--Broken",
+                                  "Razer_Ornata_Chroma_Keyboard",
+                                  "Razer_Ornata_V3_TKL_Keyboard",
+                                  "Razer_Ornata_V3_X_Keyboard",
+                                  "Razer_PWM_Controller",
+                                  "Razer_Raptor_27_Inch_Monitor",
+                                  "Razer_Seiren_V3_Mic",
+                                  "Razer_Soundbar",
+                                  "Razer_Tartarus_Pro_Keypad",
+                                  "Razer_Tartarus_V2_Keypad",
+                                  "Razer_Thuderbolt_Dock",
+                                  "Razer_Tomahawk_Case"
+                              ],
+                    "Roccat":  [
+                                   "Roccat_AIMO_Mousepad",
+                                   "Roccat_AIMO_Wide_Mousepad",
+                                   "Roccat_Burst_Core_Mouse",
+                                   "Roccat_Burst_Pro_Air_Mouse_Wired",
+                                   "Roccat_Burst_Pro_Air_Mouse_Wireless",
+                                   "Roccat_Burst_Pro_Mouse",
+                                   "Roccat_Elo_7.1 USB_Headset",
+                                   "Roccat_Elo_7.1_Air_Headset",
+                                   "Roccat_Kain_100_Mouse",
+                                   "Roccat_Kain_120_Mouse",
+                                   "Roccat_Kain_200_Mouse_Wired",
+                                   "Roccat_Kain_200_Mouse_Wireless",
+                                   "Roccat_Kone_Mouse",
+                                   "Roccat_Kone_Pro_Air_Mouse",
+                                   "Roccat_Kone_Pro_Air_Mouse_Wired_Mode",
+                                   "Roccat_Kone_Pro_Mouse",
+                                   "Roccat_Kone_Remastered_Mouse",
+                                   "Roccat_Kone_XP_Air",
+                                   "Roccat_Kone_XP_Air_Dock",
+                                   "Roccat_Kone_XP_Air_Mouse_Wired",
+                                   "Roccat_Kone_XP_Mouse",
+                                   "Roccat_Kova_Aimo_Mouse",
+                                   "Roccat_Magma_Keyboard",
+                                   "Roccat_Pyro_Keyboard",
+                                   "Roccat_Syn_Pro_Air_Headset",
+                                   "Roccat_Torch_Microphone",
+                                   "Roccat_Vulcan_100_Keyboard",
+                                   "Roccat_Vulcan_120_Keyboard",
+                                   "Roccat_Vulcan_II_Keyboard",
+                                   "Roccat_Vulcan_II_Max_Keyboard",
+                                   "Roccat_Vulcan_II_Mini_Air_Keyboard",
+                                   "Roccat_Vulcan_II_Mini_Keyboard",
+                                   "Roccat_Vulcan_Pro_Keyboard",
+                                   "Roccat_Vulcan_Pro_TKL_Keyboard",
+                                   "Roccat_Vulcan_TKL_Keyboard"
+                               ],
+                    "Royal Kludge":  [
+                                         "RK_61_Keyboard",
+                                         "RK_84_Keyboard"
+                                     ],
+                    "Royuan":  [
+                                   "Royuan_Keyboard_Controller"
+                               ],
+                    "Sinowealth":  [
+                                       "Sinowealth_Keyboard_Controller",
+                                       "Sinowealth_Keyboard_Controller2"
+                                   ],
+                    "Sonix":  [
+                                  "SONIX_Keyboard_Controller",
+                                  "SONIX_Keyboard_Controller_2"
+                              ],
+                    "Sony":  [
+                                 "Sony_Dual_Sense_Controller",
+                                 "Sony_Dualshock_4_Controller_Wired"
+                             ],
+                    "SpeedLink":  [
+                                      "Speedlink_ORIOS_RGB_Gaming_Mouse",
+                                      "Speedlink_ORIOS_RGB_Gaming_Mousepad",
+                                      "Speedlink_ORIOS_RGB_Opto-Mech_KB"
+                                  ],
+                    "Steelseries":  [
+                                        "Steelseries_Aerox_Wired_Mouse",
+                                        "Steelseries_Aerox_Wireless_Mouse",
+                                        "Steelseries_Apex_3_Keyboard",
+                                        "Steelseries_Apex_3_TKL_Keyboard",
+                                        "Steelseries_Apex_5_Keyboard",
+                                        "Steelseries_Apex_7_Keyboard",
+                                        "Steelseries_Apex_7_TKL_Keyboard",
+                                        "Steelseries_Apex_9_Mini_Keyboard",
+                                        "Steelseries_Apex_9_TKL_Keyboard",
+                                        "Steelseries_Apex_M750_Keyboard",
+                                        "Steelseries_Apex_M750_TKL_Keyboard",
+                                        "Steelseries_Apex_Pro_Keyboard",
+                                        "Steelseries_Apex_Pro_Mini_Keyboard",
+                                        "Steelseries_Apex_Pro_TKL_2023_Keyboard",
+                                        "Steelseries_Apex_Pro_TKL_2023_Wireless_Keyboard",
+                                        "Steelseries_Apex_Pro_TKL_Keyboard",
+                                        "Steelseries_Arctis_5_Headset",
+                                        "Steelseries_Arctis_5_Headset_Alt_PID",
+                                        "Steelseries_Arctis_Pro_GameDAC_Headset",
+                                        "Steelseries_Arctis_Pro_Headset",
+                                        "Steelseries_Arena_7_Speakers",
+                                        "Steelseries_Arena_9_Speakers",
+                                        "Steelseries_Keyboard_Controller",
+                                        "Steelseries_Qck_Mousepad_Controller",
+                                        "Steelseries_Qck_Prism_Mousepad",
+                                        "Steelseries_Rival_110",
+                                        "Steelseries_Rival_3_Gen2_Mouse",
+                                        "Steelseries_Rival_3_Mouse",
+                                        "Steelseries_Rival_3_Mouse_Alt_PID",
+                                        "Steelseries_Rival_3_Mouse_Wireless",
+                                        "Steelseries_Rival_310_Mouse",
+                                        "Steelseries_Rival_5_Destiny_Mouse",
+                                        "Steelseries_Rival_5_Mouse",
+                                        "Steelseries_Rival_600_Mouse",
+                                        "Steelseries_Rival_650_Mouse",
+                                        "Steelseries_Rival_700_Mouse",
+                                        "Steelseries_Rival_710_Mouse",
+                                        "Steelseries_Rival_Prime_Mouse",
+                                        "Steelseries_Sensi_310_Mouse",
+                                        "Steelseries_Sensi_Ten_Mouse"
+                                    ],
+                    "Swagkeys":  [
+                                     "SW_EAVE65"
+                                 ],
+                    "System76":  [
+                                     "System76_Launch-1_QMK_Keyboard"
+                                 ],
+                    "Thermal Take":  [
+                                         "ThermalTake_Argent_Mouse_Bungee",
+                                         "Thermaltake_Argent_MP1_Mousepad",
+                                         "Thermaltake_DPSG_PSU",
+                                         "ThermalTake_E1_Headphone_Stand",
+                                         "Thermaltake_HS1_Headphone_Stand",
+                                         "ThermalTake_LEDBOX_0x213Cf",
+                                         "ThermalTake_LEDBOX_Pacific_Controller",
+                                         "ThermalTake_LEDBOX_Standard",
+                                         "ThermalTake_Level20_Desk",
+                                         "ThermalTake_Riing_Plus",
+                                         "ThermalTake_Ring_Controller"
+                                     ],
+                    "Thermalright":  [
+                                         "Thermalright_Grand_Vision_LCD"
+                                     ],
+                    "Turtle Beach":  [
+                                         "Turtle_Beach_AIMO_Wide_Mousepad",
+                                         "Turtle_Beach_Kone_XP_Air_Dock",
+                                         "Turtle_Beach_Kone_XP_Air_Mouse",
+                                         "Turtle_Beach_Kone_XP_Air_Wired_Mouse",
+                                         "Turtle_Beach_Vulcan_II_Keyboard",
+                                         "Turtle_Beach_Vulcan_II_Max_Keyboard",
+                                         "Turtle_Beach_Vulcan_II_Mini_Air_Keyboard",
+                                         "Turtle_Beach_Vulcan_TKL_Keyboard"
+                                     ],
+                    "Turzx":  [
+                                  "Turzx_LCD_Controller"
+                              ],
+                    "Wooting":  [
+                                    "Wooting_60HE_Keyboard",
+                                    "Wooting_80HE_Keyboard",
+                                    "Wooting_One_Keyboard",
+                                    "Wooting_Two_HE_Keyboard"
+                                ],
+                    "XBows":  [
+                                  "XBows_KnightPlus_QMK_ANSI_Keyboard",
+                                  "XBows_KnightPlus_QMK_ANSI_Numpad",
+                                  "XBows_Nature_QMK_ANSI_Keyboard"
+                              ],
+                    "Xiaohua":  [
+                                    "Xiaohua_Keyboard_Controller"
+                                ],
+                    "XPG":  [
+                                "XPG_Summoner_Keyboard"
+                            ],
+                    "YMDK":  [
+                                 "YMDK_Melody96rgb_QMK_Keyboard",
+                                 "YMDK_YMD09_QMK_Keyboard"
+                             ],
+                    "Yunzii":  [
+                                   "Yunzii_AL80_QMK_ANSI_Keyboard"
+                               ],
+                    "Zalman":  [
+                                   "Zalman_ZSYNC"
+                               ],
+                    "Zhi Yan":  [
+                                    "DRGB ELITE",
+                                    "DRGB_V3",
+                                    "DRGB_V4F",
+                                    "JPU ELITE",
+                                    "NEEDMAX",
+                                    "YICO",
+                                    "YICO_16"
+                                ]
+                },
+    "components":  {
+                       "Aerocool":  [
+                                        "Aerocool_Duo_12_Fan"
+                                    ],
+                       "Airgoo":  [
+                                      "Airgoo_AFL120_Halo",
+                                      "Airgoo_ATX_Streamer_S1",
+                                      "Airgoo_ATX_Streamer_S2",
+                                      "Airgoo_GPU_Dual_8P",
+                                      "Airgoo_GPU_Triple_8P",
+                                      "Airgoo_Neon_DLS30",
+                                      "Airgoo_Neon_LS1"
+                                  ],
+                       "Antec":  [
+                                     "Antec Fusion 120",
+                                     "Antec Neo Prizm 120",
+                                     "Antec Neo Prizm 140",
+                                     "Antec Vortex AIO Pump"
+                                 ],
+                       "APNX":  [
+                                    "APNX_FP2_Fan"
+                                ],
+                       "Arctic":  [
+                                      "Arctic Bionix P120",
+                                      "Arctic Freezer 36",
+                                      "Arctic Freezer 50",
+                                      "Arctic P12",
+                                      "Arctic P14",
+                                      "Arctic Xtender - 24 LED",
+                                      "Arctic_Liquid_Freezer_III",
+                                      "Arctic_Liquid_Freezer_III_Pro",
+                                      "Arctic_P12_Pro",
+                                      "Arctic_P12_Pro_Reverse",
+                                      "Arctic_P14_Pro",
+                                      "Arctic_P14_Pro_Reverse"
+                                  ],
+                       "Argus":  [
+                                     "Argus RGB-Fan RS-08 - 24 LED"
+                                 ],
+                       "Asiahorse":  [
+                                         "aio_tube_sleeve__shaped__bottom_",
+                                         "aio_tube_sleeve__shaped__top_",
+                                         "Asiahorse_Aurora",
+                                         "Asiahorse_Cosmiq_Fan",
+                                         "Asiahorse_Dawn_Fan",
+                                         "Asiahorse_Hydrus",
+                                         "Asiahorse_Nyota_Fan",
+                                         "Asiahorse_Nyota_Ultra_Fan",
+                                         "Asiahorse-Matrix-360_Fan"
+                                     ],
+                       "Asus":  [
+                                    "ROG_AF_12S_Fan",
+                                    "ROG_Herculx_GPU_Holder",
+                                    "ROG_LC_Fan"
+                                ],
+                       "be_quiet!":  [
+                                         "be_quiet!_DarkBase701_Case",
+                                         "be_quiet!_DarkBasePro901_Case",
+                                         "be_quiet!_DarkRockElite_Cooler",
+                                         "be_quiet!_Light_Wings_120mm_PWM",
+                                         "be_quiet!_Light_Wings_140mm_PWM",
+                                         "be_quiet!_Pure_Base_500_FX",
+                                         "be_quiet!_Pure_Base_500DX",
+                                         "be_quiet!_Pure_Loop_2",
+                                         "be_quiet!_Pure_Loop_2_FX",
+                                         "be_quiet!_ShadowBase800DX_Case",
+                                         "be_quiet!_ShadowBase800FX_Case",
+                                         "be_quiet!_Silent_Loop_2",
+                                         "Bequiet_Light_Loop_AIO",
+                                         "Bequiet_Light_Wings_LX_Fan"
+                                     ],
+                       "CompGen":  [
+                                       "06led_tong_yong_6_led",
+                                       "08led_tong_yong_8_led",
+                                       "09led_tong_yong_9_led",
+                                       "10led_tong_yong_10_led",
+                                       "11led_tong_yong_11_led",
+                                       "12led_tong_yong_12_led",
+                                       "13led_tong_yong_13_led",
+                                       "14led_tong_yong_14_led",
+                                       "15led_tong_yong_15_led",
+                                       "16led_tong_yong_16_led",
+                                       "18led_tong_yong_18_led",
+                                       "20led_tong_yong_20_led",
+                                       "21led_tong_yong_21_led",
+                                       "22led_tong_yong_22_led",
+                                       "240_40LEDs",
+                                       "24led_tong_yong_24_led",
+                                       "26led_tong_yong_26_led",
+                                       "28led_tong_yong_28_led",
+                                       "3090 - 36 LED",
+                                       "360_56LEDs",
+                                       "37led_tong_yong_37_led",
+                                       "40_xi_huo_shen_shu_zhuang_8leds",
+                                       "40asset_143asset_143asset_143asset_143asset_143_8LEDs",
+                                       "50_xi_adoc_guang_quan_30leds",
+                                       "50_xi_suo_tai_tian_qi_18leds",
+                                       "50asset_155ADOCasset_155asset_155_30LEDs",
+                                       "50asset_575asset_575asset_575asset_575asset_575_18LEDs",
+                                       "8_2pin_ling_dong_2pro_xian_ka_shui_jing_xian_8leds",
+                                       "8_3pin_ling_dong_2pro_xian_ka_shui_jing_xian_12leds",
+                                       "AE360 V3",
+                                       "an_qi_la_nei_cun_ma_jia_10leds",
+                                       "atx_gang_qin_zhuan_jie_tou_10eds",
+                                       "atx_ji_guang_zhuan_jie_tou_7leds",
+                                       "atx_ling_dong_2pro_zhu_ban_shui_jing_xian_12leds",
+                                       "atx_liu_guang_f1_zhu_ban_xian_jia_90leds",
+                                       "atx_ni_hong_xian_3pro_zhu_ban_ni_hong_xian_90leds",
+                                       "atx_zhu_ban_fa_guang_bei_ban_55leds",
+                                       "ATXasset_322asset_322asset_322asset_322asset_322asset_322_55LEDs",
+                                       "ATXasset_460asset_460asset_460asset_460asset_460_7LEDs",
+                                       "ATXasset_992asset_992asset_992asset_992asset_992_10EDs",
+                                       "chui_xue_shui_leng_feng_shan_8leds",
+                                       "Clooermaster A1-12 - 30 LED",
+                                       "cong_lin_bao_wu_jie_120_38_led",
+                                       "Corsair LC100 - 9 LED",
+                                       "CR1400_9LEDs",
+                                       "feng_wo_xian_ka_zhi_jia_10leds",
+                                       "Galax_4060 70 80GPU_Fan_24LEDs",
+                                       "Galax_4060GPU_Fan_24LEDs",
+                                       "Galax_4070sGPU_Fan_24LEDs",
+                                       "Galax_4080GPU_Fan_24LEDs",
+                                       "geng_sheng_xuan_guang_57leds",
+                                       "gpu_liu_guang_f1_xian_ka_xian_jia_90leds",
+                                       "gpu_ni_hong_xian_3pro_xian_ka_ni_hong_xian_90leds",
+                                       "gu_ga_v2_gai_zao_chuan_lian",
+                                       "hua_jia_yi_dai_24_led",
+                                       "hua_zai_halo_2_0",
+                                       "hua_zhong_jing_nei_cun_ma_jia_10leds",
+                                       "huan_jie_1_22leds",
+                                       "huan_jie_2_44leds",
+                                       "huan_jie_3_66leds",
+                                       "huan_jie_evo_ban_1_28leds",
+                                       "huan_jie_evo_ban_2_56leds",
+                                       "huan_jie_evo_ban_3_84leds",
+                                       "huan_jing_pro_22_led",
+                                       "huan_zun_pro_1_23leds",
+                                       "huan_zun_pro_2_46leds",
+                                       "huan_zun_pro_3_69leds",
+                                       "HuanJingPro - 22 LED",
+                                       "hurabeast_ju_feng_shou_jing_lie_360_68led",
+                                       "igame_40_huo_shen_san_jiao_deng_ban_20leds",
+                                       "ji_mu_3_bing_lian_24leds",
+                                       "ji_mu_3_cd_ban_1_16leds",
+                                       "ji_mu_3_cd_ban_2_32leds",
+                                       "ji_mu_3_cd_ban_3_48leds",
+                                       "ji_mu_3_chuan_lian_1_24leds",
+                                       "ji_mu_3_chuan_lian_2_48leds",
+                                       "ji_mu_3_chuan_lian_3_72leds",
+                                       "Jonsbo_ZA120_32LEDs",
+                                       "Jonsbo_ZA240_52LEDs",
+                                       "Jonsbo_ZA360_68LEDs",
+                                       "JonsboFR701 - 24 LED",
+                                       "JONSBO-FR701-X1-36LED",
+                                       "JONSBO-FR701-X3-108LED",
+                                       "k12s_ji_mu_x1",
+                                       "k12s_ji_mu_x2",
+                                       "k12s_ji_mu_x3",
+                                       "k12s_k13s_ji_mu_x1_24led",
+                                       "k12s_k13s_ji_mu_x2_48led",
+                                       "k12s_k13s_ji_mu_x3_72led",
+                                       "K12S_K13Sasset_650asset_650x2 - 48LED",
+                                       "K12S_K13Sasset_855asset_855x1 - 24LED",
+                                       "K12S_K13Sasset_900asset_900x3 - 72LED",
+                                       "K12Sasset_572asset_572x2",
+                                       "K12Sasset_755asset_755x1",
+                                       "K12Sasset_898asset_898x3",
+                                       "ku_leng_zhi_zun_shan_jing_30_led",
+                                       "ku_leng_zhi_zun_shui_leng_guan_30_led",
+                                       "ku_leng_zhi_zun_shui_leng_guan_60_led",
+                                       "ku_yue_shui_leng_guan_35_led",
+                                       "kuang_feng_cd_ban_1_15leds",
+                                       "kuang_feng_cd_ban_2_30leds",
+                                       "kuang_feng_cd_ban_3_45leds",
+                                       "kuang_feng_x1_1_15leds",
+                                       "kuang_feng_x1_2_30leds",
+                                       "kuang_feng_x1_3_45leds",
+                                       "L216",
+                                       "LA300-10LED",
+                                       "leng_jing_4_11_11_led",
+                                       "leng_jing_4_11_chuan_lian_ban_19_led",
+                                       "leng_jing_4_16_16_led",
+                                       "leng_jing_4_16_chuan_lian_ban_24_led",
+                                       "leng_jing_4_18_led",
+                                       "leng_jing_4_dai_16_16_led",
+                                       "leng_jing_4_dai_16_chuan_lian_ban_24_led",
+                                       "leng_jing_4_gai_zao_chuan_lian_ban_26_led",
+                                       "leng_jing_4pro_16_led",
+                                       "leng_jing_4pro_chuan_lian_ban_24_led",
+                                       "leng_jing_5s_k_chuan_lian_ban",
+                                       "leng_jing_5sk_yi_bu_26led",
+                                       "leng_jing_6_gai_zao_chuan_lian_29led",
+                                       "leng_jing_6pro_bing_lian_22leds",
+                                       "leng_jing_6pro_chuan_lian_34led",
+                                       "leng_jing_6pro_chuan_lian_ban_34led",
+                                       "leng_jing_6pro_gai_zao_ban_34_led",
+                                       "leng_jing_7pro_12leds",
+                                       "leng_jing_si_dai_18_led",
+                                       "leng_jing_si_dai_gai_zao_chuan_lian_ban_26_led",
+                                       "LengJing - 16 LED",
+                                       "Lian Li TL120",
+                                       "LianJing - 22 LED",
+                                       "LIANLI Strimer Plus V2 - 126 LED",
+                                       "LIANLI Strimer Plus V2 GPU - 108 LED",
+                                       "LIANLI Strimer Plus V2 GPU - 162 LED",
+                                       "LIANLI Strimer Plus V4 - 132 LED",
+                                       "LIANLI Strimer Plus V4 GPU - 174 LED",
+                                       "lianli_ji_mu_3_dai_huan_jing_x1",
+                                       "lianli_ji_mu_3_dai_huan_jing_x2",
+                                       "lianli_ji_mu_3_dai_huan_jing_x3",
+                                       "lianli_ji_mu_4x1",
+                                       "lianli_ji_mu_4x2",
+                                       "lianli_ji_mu_4x3",
+                                       "LianLi_L216_Fan_28LEDs",
+                                       "lianli_tl120_1_26leds",
+                                       "lianli_tl120_2_52leds",
+                                       "lianli_tl120_3_78leds",
+                                       "lianli_TL120asset_2131_26LEDs",
+                                       "lianli_TL120asset_8793_78LEDs",
+                                       "lianli_TL120asset_8842_52LEDs",
+                                       "LiMin - 9 LED",
+                                       "LongJingDM1 - 18 LED",
+                                       "lv_zhong_xue_m2_ma_jia_10leds",
+                                       "lv_zhong_yue_xian_ka_zhi_jia_19leds",
+                                       "MOFUN-CUBE",
+                                       "MOFUN-L-65-25",
+                                       "MOFUN-S-23-25",
+                                       "MOFUN-XL-80-30",
+                                       "ni_ke_ku_er_guang_chi_v2_chuan_lian_1_26leds",
+                                       "ni_ke_ku_er_guang_chi_v2_chuan_lian_2_52leds",
+                                       "ni_ke_ku_er_guang_chi_v2_chuan_lian_3_78leds",
+                                       "ni_ke_ku_er_guang_leng_b12_24leds",
+                                       "Nollie 24Pin Strimer - 120LED",
+                                       "Nollie CG120 x1 - 26LED",
+                                       "Nollie CG120 x2 - 52LED",
+                                       "Nollie CG120 x3 - 78LED",
+                                       "Nollie CG120 x4 - 104LED",
+                                       "Nollie GPU Strimer - 88LED",
+                                       "Nollie Strimer - 108LED",
+                                       "Nollie_ GPUasset_450asset_450asset_450asset_450_88LEDs",
+                                       "nollie_gpu_ni_hong_ma_jia_88leds",
+                                       "nollie_ji_mu_san_dai_24leds",
+                                       "nollie_liang_zi_deng_19led",
+                                       "nollie_liang_zi_deng_19leds",
+                                       "nollie_ni_hong_xian_ma_jia_120leds",
+                                       "nollie_yi_dai_huan_jie_22leds",
+                                       "Nollieasset_259asset_259asset_259_19LED",
+                                       "Nollieasset_496asset_496asset_496asset_496_22LEDs",
+                                       "Nollieasset_560asset_560asset_560_19LEDs",
+                                       "Nollieasset_947asset_947asset_947asset_947_24LEDs",
+                                       "nv_wu_shen_nei_cun_ma_jia_10leds",
+                                       "phanteks GPU",
+                                       "phanteks NV7 outside1",
+                                       "phanteks NV7 outside2",
+                                       "phanteks NV7 outside3",
+                                       "phanteks NV7 outside4",
+                                       "phanteks NV7 outside5",
+                                       "phanteks NV7 outside6",
+                                       "phanteks_nv5_ce_deng_dai",
+                                       "phanteks_nv5_dian_yuan_cang_deng_dai",
+                                       "phanteks_nv5_shang_deng_dai",
+                                       "phanteks_nv5_xia_deng_dai",
+                                       "phanteks_nv7_inside_gun",
+                                       "phanteks_nv7_inside_yi",
+                                       "Pixel  - 256 LED",
+                                       "Pixel screen - 256 LED",
+                                       "Pixel screen 8x8 - 64 LED",
+                                       "qi_cai_hong_30_huo_shen_32_led",
+                                       "qi_cai_hong_40_xi_shu_zhuang_xian_ka_deng_tiao",
+                                       "Quantum lamp - 19 LED",
+                                       "Quantum lamp x10- 190 LED",
+                                       "rog_da_li_shen_xian_ka_zhi_jia_17leds",
+                                       "ROGasset_408asset_408asset_408asset_408asset_408asset_408asset_408_17LEDs",
+                                       "ShengHuan30LED - 30 LED",
+                                       "shuang_zi_xing_nei_cun_san_re_feng_shan_6leds",
+                                       "Star Ring_20LEDs",
+                                       "tai_tan_a080_8leds",
+                                       "tai_tan_a090_8leds",
+                                       "tai_tan_a090_fan_8leds",
+                                       "tryx_chuang_ke_xing_xi_zhan_yu_feng_shan_8leds",
+                                       "TRYXasset_510asset_510asset_510asset_510asset_510asset_510asset_510asset_510_8LEDs",
+                                       "TTS100 - 36 LED",
+                                       "VK GL360 - 10 LED",
+                                       "VK X12 - 8 LED",
+                                       "vk_a360_leng_tou_8leds",
+                                       "VK_B360_Fan_9LEDs",
+                                       "vk_c_shui_beng_10_led",
+                                       "vk_c360_leng_tou_10leds",
+                                       "VK_S12_16LEDs",
+                                       "VK_X12_8LEDs",
+                                       "VKx12 - 8 LED",
+                                       "xue_zhong_jing_m2_ma_jia_6leds",
+                                       "yico_ji_mu_san_cdx1_16led",
+                                       "yico_ji_mu_san_cdx2_32led",
+                                       "yico_ji_mu_san_cdx3_48led",
+                                       "yico_ji_mu_san_huan_jing_x1_24led",
+                                       "yico_ji_mu_san_huan_jing_x2_48led",
+                                       "yico_ji_mu_san_huan_jing_x3_72led",
+                                       "yico_ji_mu_yi_huan_jie_1_22leds",
+                                       "yico_ji_mu_yi_huan_jie_2_44leds",
+                                       "yico_ji_mu_yi_huan_jie_3_66leds",
+                                       "yico_ji_mu_yi_huan_jie_evo_1_28leds",
+                                       "yico_ji_mu_yi_huan_jie_evo_2_56leds",
+                                       "yico_ji_mu_yi_huan_jie_evo_3_84leds",
+                                       "yico_leng_jing_7pro_12leds",
+                                       "yico_liu_guang_f1s_xian_ka_gpu_xian_jia_120leds",
+                                       "yico_liu_guang_f1s_zhu_ban_atx_xian_jia_120leds",
+                                       "yico_ni_cai_xian_90led",
+                                       "YICOasset_171asset_171asset_171asset_171asset_171x1 - 24LED",
+                                       "YICOasset_321asset_321asset_321asset_321asset_321x3 - 72LED",
+                                       "YICOasset_444asset_444asset_444asset_444asset_444asset_4441 _22LEDs",
+                                       "YICOasset_459asset_459asset_459asset_459asset_459x2 - 48LED",
+                                       "YICOasset_615asset_615asset_615asset_615asset_615asset_6152 _44LEDs",
+                                       "YICOasset_632asset_632asset_632CDx2 - 32LED",
+                                       "YICOasset_684asset_684asset_684asset_684asset_684EVOasset_6843 _84LEDs",
+                                       "YICOasset_758asset_758asset_758asset_758asset_758EVOasset_7582 _56LEDs",
+                                       "YICOasset_807asset_807asset_807CDx1 - 16LED",
+                                       "YICOasset_861asset_861asset_861asset_861asset_861asset_8613 _66LEDs",
+                                       "YICOasset_899asset_899asset_899 - 90LED",
+                                       "YICOasset_926asset_926asset_926CDx3 - 48LED",
+                                       "YICOasset_983asset_983asset_983asset_983asset_983EVOasset_9831 _28LEDs",
+                                       "ying_chi_cong_lin_bao_ji_mu_x1_8_led",
+                                       "ying_chi_cong_lin_bao_ji_mu_x2_16_led",
+                                       "ying_chi_cong_lin_bao_ji_mu_x3_24_led",
+                                       "yue_zhong_jing_xian_ka_zhi_jia_8leds",
+                                       "zhui_guang_s6_ni_cai_xian_120_led",
+                                       "ZOTAC GeForce RTX 30 PGF - 49 LED"
+                                   ],
+                       "CoolerMaster":  [
+                                            "Coolermaster_Atmos_AIO",
+                                            "Coolermaster_HAF_700_Evo_Bottom",
+                                            "Coolermaster_HAF_700_Evo_Top",
+                                            "Coolermaster_MF120_Prismatic",
+                                            "CoolerMaster_MF120AB_Fan",
+                                            "CoolerMaster_MF120Halo_Fan",
+                                            "CoolerMaster_MF140Halo_Fan",
+                                            "CoolerMaster_ML240_Illusion_Pump",
+                                            "CoolerMaster_ML240_Mirror_RGB_Pump",
+                                            "CoolerMaster_ML240_RGB_Pump",
+                                            "Coolermaster_Mobius_120P_ARGB",
+                                            "Coolermaster_PL360",
+                                            "CoolerMaster_SickleFlow120_Fan"
+                                        ],
+                       "CoolerOne":  [
+                                         "CoolerOne_120MM_Heatpipe_Fan",
+                                         "CoolerOne_Spire_Cpu_Fan",
+                                         "CoolerOne_Stealth_Cpu_Fan"
+                                     ],
+                       "Coolmoon":  [
+                                        "Coolmoon-Multilens"
+                                    ],
+                       "Corsair":  [
+                                       "Corsair_1.4m_Strip",
+                                       "Corsair_250mm_Strip",
+                                       "Corsair_350mm_Strip",
+                                       "Corsair_450mm_Strip",
+                                       "Corsair_9000D_IO_Strip",
+                                       "Corsair_9000D_Logo_Strip",
+                                       "Corsair_GPU_Water_Block",
+                                       "Corsair_HD_Fan",
+                                       "Corsair_Internal_425mm_Strip",
+                                       "Corsair_Internal_500mm_Strip",
+                                       "Corsair_Internal_Strip",
+                                       "Corsair_LC100_Panel",
+                                       "Corsair_LL_Fan",
+                                       "Corsair_LS350",
+                                       "Corsair_LS430",
+                                       "Corsair_LT100_Light_Tower",
+                                       "Corsair_ML_Fan",
+                                       "Corsair_ML_Fan_-_8_LED",
+                                       "Corsair_QL_Fan",
+                                       "Corsair_SpPro_Fan",
+                                       "Corsair_XD5_CPU_Water_Block",
+                                       "Corsair_XD5_Reservior"
+                                   ],
+                       "DeepCool":  [
+                                        "DeepCool_AK400_Heatsink",
+                                        "DeepCool_AK620_Heatsink",
+                                        "DeepCool_AS500_Heatsink",
+                                        "DeepCool_Castle_EX_Pump_AIO",
+                                        "DeepCool_CF120_Plus_Fan",
+                                        "DeepCool_CF140_RGB_Fan",
+                                        "DeepCool_FC120_ARGB_Fan",
+                                        "DeepCool_GH_01_A-RGB_Strip",
+                                        "DeepCool_LS_AIO_Pump",
+                                        "DeepCool_LS_LE_AIO_Pump",
+                                        "DeepCool_LT_AIO_Pump",
+                                        "DeepCool_MF120_GT_Fan",
+                                        "DeepCool_ST500_ARGB_Strip"
+                                    ],
+                       "EK":  [
+                                  "Nucleus-Lux"
+                              ],
+                       "Enermax":  [
+                                       "Enermax_SquA-RGB_Fans-18_LED"
+                                   ],
+                       "EZDIY-FAB":  [
+                                         "EZDIY-FAB_ARGB_DDR_Memory_RAM_Cooler-8_LED",
+                                         "EZDIY-FAB_ARGB_GPU_Holder_v1-10_LED",
+                                         "EZDIY-FAB_ARGB_GPU_Holder_v1-16_LED",
+                                         "EZDIY-FAB_ARGB_LED_Premium-Strip-30_LED",
+                                         "EZDIY-FAB_ARGB_LED_Strip-24_LED",
+                                         "EZDIY-FAB_ATX_Connector-5_LED"
+                                     ],
+                       "Fractal":  [
+                                       "Fractal_Design_Aspect_12_RGB-6_Fan",
+                                       "Fractal_Design_Lumen_Sxx",
+                                       "Fractal_Prisma_AL18"
+                                   ],
+                       "Gamdias":  [
+                                       "GAMDIAS_E2_CHIONE_Pump",
+                                       "GAMDIAS_M2_1201R_Fan"
+                                   ],
+                       "Generic":  [
+                                       "Generic_ARGB_Fan_12_LEDs",
+                                       "Generic_ARGB_Fan_16_LEDs",
+                                       "Generic_ARGB_Fan_6_LEDs",
+                                       "Generic_ARGB_Fan_8_LEDs"
+                                   ],
+                       "Ice Whale":  [
+                                         "Ice_Whale_4RS"
+                                     ],
+                       "ID-Cooling":  [
+                                          "ID-Cooling_TTF120_Fan",
+                                          "ID-Cooling_Zoomflow_X_AIO"
+                                      ],
+                       "JUMPEAK":  [
+                                       "JUMPEAK_CS120",
+                                       "JUMPEAK_HS120",
+                                       "JUMPEAK_Ms120",
+                                       "JUMPEAK_Mx120"
+                                   ],
+                       "Jungle_Leopard":  [
+                                              "Jungle_Leopard_4RS",
+                                              "Jungle_Leopard_Interstellar_V2",
+                                              "Jungle_Leopard_Interstellar_V2RS",
+                                              "Jungle_Leopard_Interstellar_V3",
+                                              "Jungle_Leopard_Prism_XH",
+                                              "Jungle_Leopard_S30RS",
+                                              "Jungle_Leopard_Transwarp"
+                                          ],
+                       "Jupiter":  [
+                                       "Jupiter_AJ120_Fan"
+                                   ],
+                       "Leetdesk":  [
+                                        "LeetDesk AURA - Left side",
+                                        "LeetDesk AURA - Middle part",
+                                        "LeetDesk AURA - Right side"
+                                    ],
+                       "Lian_Li":  [
+                                       "Lian_Li_AL_UniFan_Fan",
+                                       "Lian_Li_ATX_Strimer",
+                                       "Lian_Li_Galahad_AIO",
+                                       "Lian_Li_Galahad_II_AIO",
+                                       "Lian_Li_GPU_Strimer_4x27",
+                                       "Lian_Li_GPU_Strimer_6x27",
+                                       "Lian_Li_GPU_Strimmer_Plus",
+                                       "Lian_Li_O11_Dynamic_Evo_Front_Case",
+                                       "Lian_Li_O11_Dynamic_Evo_RGB_Front_Case",
+                                       "Lian_Li_O11_Dynamic_Evo_XL_Front_Case",
+                                       "Lian_Li_SL_Infinity_140_Fan",
+                                       "Lian_Li_SL_Infinity_140_Inner_Fan",
+                                       "Lian_Li_SL_Infinity_140_Outter_Fan",
+                                       "Lian_Li_SL_Infinity_Fan",
+                                       "Lian_Li_SL_Infinity_Inner_Fan",
+                                       "Lian_Li_SL_Infinity_Outter_Fan",
+                                       "Lian_Li_SL_UniFan_Fan",
+                                       "Lian_Li_TL_Fan"
+                                   ],
+                       "Magnium":  [
+                                       "Magnium_Neo_Qube_2_Case"
+                                   ],
+                       "Misc":  [
+                                    "Hexagon_Wall_Panel"
+                                ],
+                       "Montech":  [
+                                       "Montech_AX120_Fan",
+                                       "Montech_AX140_Fan"
+                                   ],
+                       "MSI":  [
+                                   "MSI_Coreliquid_Block",
+                                   "MSI_Coreliquid_Fan",
+                                   "MSI_Vampiric_300R_Strip"
+                               ],
+                       "Nanoleaf":  [
+                                        "Nanoleaf_Panel"
+                                    ],
+                       "Nollie":  [
+                                      "Nollie_Fan_GC120",
+                                      "nollie_snap_fan_gc120",
+                                      "nollie_snap_fan_gc120__straight__x3",
+                                      "nollie_snap_fan_gc140",
+                                      "nollie_snap_fan_gc140_x3"
+                                  ],
+                       "NZXT":  [
+                                    "NZXT_10_Led_Strip",
+                                    "NZXT_6_Led_Strip",
+                                    "NZXT_8_Led_Strip",
+                                    "NZXT_AER_2_Fan",
+                                    "NZXT_AER_2_Fan_140",
+                                    "NZXT_F120_Duo_Fan",
+                                    "NZXT_F120_Fan",
+                                    "NZXT_F140_Duo_Fan",
+                                    "NZXT_F140_Fan"
+                                ],
+                       "OEM":  [
+                                   "OEM_PRISM_5_Pro"
+                               ],
+                       "PALIT":  [
+                                     "5090_GameRock_GPU"
+                                 ],
+                       "PCYES":  [
+                                     "PCYES_Sangue_Frio_3_AIO",
+                                     "PCYES_Sangue_Frio_3_Fan"
+                                 ],
+                       "Phanteks":  [
+                                        "HalosLuxDigital",
+                                        "Phanteks_120SK",
+                                        "Phanteks_D30-120",
+                                        "Phanteks_NEON_Strip_ComboKit",
+                                        "Phanteks_NEON_Strip_M1",
+                                        "Phanteks_NEON_Strip_M5"
+                                    ],
+                       "PowerColor":  [
+                                          "RedDevil_RX6700XT",
+                                          "RedDevil_RX7800XT"
+                                      ],
+                       "SilentiumPC":  [
+                                           "SilentiumPC_Stella_HP_ARGB_120_PWM-9_Fan"
+                                       ],
+                       "Teucer":  [
+                                      "Teucer_Infinite_Mirror_4_Fan",
+                                      "Teucer_JM1_Fan",
+                                      "Teucer_JM2_Fan"
+                                  ],
+                       "Thermalright":  [
+                                            "Thermalright_TL_C12C-S_Fan",
+                                            "Thermalright_TL-M12-S_Fan",
+                                            "ThermalRight_TL-S12_Fan"
+                                        ],
+                       "ThermalTake":  [
+                                           "thermaltake_aio_pump",
+                                           "ThermalTake_Floe_Riing_AIO",
+                                           "Thermaltake_Pacific_R1_-_36_LED",
+                                           "Thermaltake_Riing_Duo_12_Fan ",
+                                           "ThermalTake_Riing_Plus_Radiator_Fan",
+                                           "ThermalTake_Riing_Quad_12_Fan",
+                                           "ThermalTake_SWAFAN",
+                                           "ThermalTake_SWAFAN_EX",
+                                           "ThermalTake_TT1225_Fan"
+                                       ],
+                       "Valkyrie":  [
+                                        "Dragonfang_AIO",
+                                        "x12_Fan"
+                                    ],
+                       "Vertagear":  [
+                                         "VertaGear_RGB_PL4500_Bottom_Kit",
+                                         "VertaGear_RGB_PL4500_Top_Kit",
+                                         "VertaGear_RGB_SL5000_Top_Kit"
+                                     ],
+                       "Xilence":  [
+                                       "Xilence 120 MM ARGB Fan",
+                                       "Xilence ARGB M.2 Cover",
+                                       "Xilence LQ240 ARGB"
+                                   ],
+                       "XPG":  [
+                                   "XPG_Vento_ARGB_Fan"
+                               ]
+                   }
+}
