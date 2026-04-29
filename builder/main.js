@@ -892,17 +892,18 @@ async function loadComponentFromUrl(componentId) {
 
                 // Enable share button so the user can re-share this link
                 document.getElementById('share-component-btn').disabled = false;
-            } else {
-                throw new Error("Failed to parse component data.");
+                return true;
             }
-        } else {
-            showToast('Load Error', 'Component ID from URL was not found.', 'danger');
-            handleNewComponent(false); // Fall back to normal load
+            throw new Error("Failed to parse component data.");
         }
+        showToast('Load Error', 'Component ID from URL was not found.', 'danger');
+        handleNewComponent(false); // Fall back to normal load
+        return false;
     } catch (error) {
         console.error("Error loading component from URL:", error);
         showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
         handleNewComponent(false); // Fall back to normal load
+        return false;
     }
 }
 
@@ -1436,6 +1437,147 @@ function generateSignalRGBJson(productName, displayName, brand, currentType, led
     return JSON.stringify(exportObject, null, 2);
 }
 
+/**
+ * Validates current state and builds SignalRGB JSON + filename (same rules as the export modal).
+ * Used by the modal preview and by `?id=...&export=rgbjunkie` direct download links.
+ * @returns {{ ok: true, jsonString: string, filename: string } | { ok: false, message: string, variant?: string }}
+ */
+function buildSignalRgbExportFromCurrentState() {
+    if (!componentState || !Array.isArray(componentState.leds)) {
+        return { ok: false, message: 'No component data.', variant: 'danger' };
+    }
+
+    const currentLeds = componentState.leds || [];
+    const currentWiring = componentState.wiring || [];
+    const ledCount = currentLeds.length;
+
+    if (ledCount === 0) {
+        return { ok: false, message: 'Cannot export empty component.', variant: 'warning' };
+    }
+
+    const wiredLedIds = new Set();
+    if (Array.isArray(currentWiring)) {
+        currentWiring.forEach(circuit => {
+            if (Array.isArray(circuit)) {
+                circuit.forEach(id => wiredLedIds.add(id));
+            }
+        });
+    }
+    const unwiredLedsExist = currentLeds.some(led => led && !wiredLedIds.has(led.id));
+
+    if (unwiredLedsExist) {
+        const unwiredCount = currentLeds.filter(led => led && !wiredLedIds.has(led.id)).length;
+        return {
+            ok: false,
+            message: `Cannot export: ${unwiredCount} LED${unwiredCount === 1 ? ' is' : 's are'} unwired. All LEDs must be part of a circuit.`,
+            variant: 'danger'
+        };
+    }
+
+    const productName = (compNameInput && compNameInput.value) ? compNameInput.value : 'My Custom Component';
+    const displayName = (compDisplayNameInput && compDisplayNameInput.value) ? compDisplayNameInput.value : productName;
+    const brand = (compBrandInput && compBrandInput.value) ? compBrandInput.value : 'Custom';
+    const currentType = (compTypeInput && compTypeInput.value) ? compTypeInput.value : 'Other';
+
+    const imageDataUrl = (componentState.imageUrl && componentState.imageUrl.startsWith('data:'))
+        ? componentState.imageUrl
+        : null;
+
+    let minX = Infinity, minY = Infinity;
+    let maxX_world = -Infinity, maxY_world = -Infinity;
+    currentLeds.forEach(led => {
+        if (led) {
+            minX = Math.min(minX, led.x);
+            minY = Math.min(minY, led.y);
+            maxX_world = Math.max(maxX_world, led.x);
+            maxY_world = Math.max(maxY_world, led.y);
+        }
+    });
+    minX = (minX === Infinity) ? 0 : minX;
+    minY = (minY === Infinity) ? 0 : minY;
+
+    const maxX_norm = (maxX_world === -Infinity) ? 0 : Math.round((maxX_world - minX) / GRID_SIZE);
+    const maxY_norm = (maxY_world === -Infinity) ? 0 : Math.round((maxY_world - minY) / GRID_SIZE);
+    const width = maxX_norm + 1;
+    const height = maxY_norm + 1;
+
+    const ledDataMap = new Map();
+    currentLeds.forEach(led => {
+        if (led) {
+            const offsetX = Math.round((led.x - minX) / GRID_SIZE);
+            const offsetY = Math.round((led.y - minY) / GRID_SIZE);
+            ledDataMap.set(led.id, { x: offsetX, y: offsetY });
+        }
+    });
+
+    let ledCoordinates = [];
+    const exportedLedIds = new Set();
+    const flatWiring = currentWiring.flat().filter(id => id != null);
+
+    flatWiring.forEach(ledId => {
+        const ledData = ledDataMap.get(ledId);
+        if (ledData && !exportedLedIds.has(ledId)) {
+            ledCoordinates.push([ledData.x, ledData.y]);
+            exportedLedIds.add(ledId);
+        }
+    });
+
+    let base64ImageData = "";
+    if (imageDataUrl) {
+        const commaIndex = imageDataUrl.indexOf(',');
+        if (commaIndex !== -1) { base64ImageData = imageDataUrl.substring(commaIndex + 1); }
+    }
+
+    const jsonString = generateSignalRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData);
+    const filename = (productName || 'component').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+
+    return { ok: true, jsonString, filename };
+}
+
+/**
+ * Removes `export=rgbjunkie` from the URL (keeps other params such as `id`) so refresh does not re-download.
+ */
+function removeExportQueryParamFromUrl() {
+    try {
+        const u = new URL(window.location.href);
+        if (!u.searchParams.has('export')) return;
+        u.searchParams.delete('export');
+        const qs = u.searchParams.toString();
+        window.history.replaceState({}, document.title, u.pathname + (qs ? '?' + qs : ''));
+    } catch (e) {
+        console.warn('Could not strip export param from URL:', e);
+    }
+}
+
+/**
+ * Direct download for URLs like `/builder/?id=<shareId>&export=rgbjunkie`
+ */
+function tryDirectRgbjunkieExportDownload() {
+    const built = buildSignalRgbExportFromCurrentState();
+    if (!built.ok) {
+        showToast('Export', built.message, built.variant || 'danger');
+        removeExportQueryParamFromUrl();
+        return;
+    }
+    try {
+        const blob = new Blob([built.jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = built.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        trackDownload();
+        showToast('Downloaded', 'SignalRGB JSON downloaded.', 'success');
+    } catch (err) {
+        console.error('Direct export download failed:', err);
+        showToast('Download Error', 'Could not trigger file download.', 'danger');
+    }
+    removeExportQueryParamFromUrl();
+}
+
 
 
 /**
@@ -1910,8 +2052,13 @@ function updateExportPreview() {
         let filename = "component.json";
 
         if (format === 'srgb') {
-            jsonString = generateSignalRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData);
-            filename = (productName || 'component').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.json';
+            const built = buildSignalRgbExportFromCurrentState();
+            if (!built.ok) {
+                preview.textContent = built.message;
+                return;
+            }
+            jsonString = built.jsonString;
+            filename = built.filename;
         } else if (format === 'wled') {
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
@@ -4925,9 +5072,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const componentIdFromUrl = urlParams.get('id');
+    const wantsRgbjunkieExport = (urlParams.get('export') || '').toLowerCase() === 'rgbjunkie';
+
+    if (wantsRgbjunkieExport && !componentIdFromUrl) {
+        showToast('Export', 'Add a shared component id: /builder/?id=YOUR_ID&export=rgbjunkie', 'warning');
+    }
 
     if (componentIdFromUrl) {
-        loadComponentFromUrl(componentIdFromUrl); // Priority 1: Direct Link
+        loadComponentFromUrl(componentIdFromUrl).then((loadedOk) => {
+            if (wantsRgbjunkieExport) {
+                if (loadedOk) {
+                    tryDirectRgbjunkieExportDownload();
+                } else {
+                    showToast('Export', 'Could not export: the shared component did not load.', 'warning');
+                    removeExportQueryParamFromUrl();
+                }
+            }
+        });
     } else {
         const savedState = localStorage.getItem(AUTOSAVE_KEY);
         if (savedState) {
