@@ -8,6 +8,11 @@ RewriteRule ^builder/component-catalog-image$ /builder/component-catalog-image.p
 RewriteRule ^builder/component-layout\.json$ /builder/component-layout.php [L,QSA]
 RewriteRule ^builder/component-layout$ /builder/component-layout.php [L,QSA]
 
+# Desktop / Tauri — community effects (PHP + Firestore REST on `projects`)
+RewriteRule ^effects-catalog\.json$ /effects-catalog.php [L,QSA]
+RewriteRule ^effects/effect\.json$ /effect-json.php [L,QSA]
+RewriteRule ^effects/thumbnail\.png$ /effect-thumbnail.php [L,QSA]
+
 # 1. Map the Custom 404 Page
 ErrorDocument 404 /404.html
 
