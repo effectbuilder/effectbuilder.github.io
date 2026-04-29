@@ -31,16 +31,28 @@
         <h1 class="h3 text-body-emphasis mb-2">Component catalog (JSON)</h1>
         <p class="text-body-secondary col-lg-10 mb-4">
             This page uses the same in-browser Firebase connection as the Component Builder (no Node, no npm, no Cloud Functions).
-            It loads public components from the cloud, then builds a JSON file with names, brand, type, creator, stats, image URL when it is a normal link,
-            and <strong>rgbjunkie.com</strong> URLs for the builder and the direct SignalRGB JSON link (<code class="small">?id=…&amp;export=rgbjunkie</code>).
+            It loads public components from the cloud, then builds JSON with stable <code>id</code> / <code>shareId</code> / <code>catalogId</code>, normalized <code>LedCount</code>,
+            <code>ProductName</code>, <code>DisplayName</code>, <code>Brand</code>, <code>Type</code>, <code>ImageUrl</code> (merging common field name variants from Firestore),
+            plus <code>BuilderUrl</code> and <code>SignalrgbJsonUrl</code> on <strong>https://rgbjunkie.com</strong>.
+            Choose the root shape in the dropdown; nested mode uses <code>{ "id", "component": { … } }</code> with ids only on the wrapper.
         </p>
 
         <div class="card border-secondary shadow-sm mb-4">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="max-docs" class="form-label">Max components</label>
                         <input type="number" class="form-control" id="max-docs" value="2000" min="1" max="5000" step="100">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="catalog-format" class="form-label">JSON shape</label>
+                        <select class="form-select" id="catalog-format" title="Root structure of the downloaded file">
+                            <option value="components">{ "components": [ … ] } (default)</option>
+                            <option value="array">[ … ] root array</option>
+                            <option value="items">{ "items": [ … ] }</option>
+                            <option value="data">{ "data": { "components": [ … ] } }</option>
+                            <option value="nested">[ { "id", "component": { … } }, … ]</option>
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <div class="form-check mt-md-4">
@@ -48,9 +60,9 @@
                             <label class="form-check-label" for="include-data-images">Include full <code>data:</code> images (very large JSON)</label>
                         </div>
                     </div>
-                    <div class="col-md-4 d-flex flex-wrap gap-2 justify-content-md-end">
-                        <button type="button" class="btn btn-primary" id="btn-build"><i class="bi bi-cloud-download me-1"></i>Build catalog</button>
-                        <button type="button" class="btn btn-success" id="btn-download" disabled><i class="bi bi-file-earmark-arrow-down me-1"></i>Download .json</button>
+                    <div class="col-12 col-xl-2 d-flex flex-wrap gap-2 justify-content-xl-end">
+                        <button type="button" class="btn btn-primary" id="btn-build"><i class="bi bi-cloud-download me-1"></i>Build</button>
+                        <button type="button" class="btn btn-success" id="btn-download" disabled><i class="bi bi-file-earmark-arrow-down me-1"></i>Download</button>
                         <button type="button" class="btn btn-outline-secondary" id="btn-copy" disabled><i class="bi bi-clipboard me-1"></i>Copy</button>
                     </div>
                 </div>
@@ -60,8 +72,9 @@
 
         <div class="mb-2 small text-body-secondary">
             <strong>Optional URL switches:</strong>
-            <code class="user-select-all">?autostart=1</code> — build on load;
-            <code class="user-select-all">?download=1</code> — after build, download automatically (combine with autostart);
+            <code class="user-select-all">?format=components|array|items|data|nested</code>;
+            <code class="user-select-all">?autostart=1</code>;
+            <code class="user-select-all">?download=1</code>;
             <code class="user-select-all">?max=3000</code>;
             <code class="user-select-all">?includeDataImages=1</code>.
         </div>
