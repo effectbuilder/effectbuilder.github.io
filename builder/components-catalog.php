@@ -3,7 +3,7 @@
  * Public GET catalog: JSON array of component objects (Firestore REST; public read rules).
  * URL: GET /builder/components-catalog.json → 200, Content-Type: application/json, body: [...]
  * Optional: ?max=2000&includeDataImages=1 (inline data URLs in catalog when set)
- * Embedded Firestore images: ImageUrl points at component-catalog-image.php?id=...
+ * ImageUrl points at component-catalog-image.php when there is a stored image (data:/gs:) or a LED-only synthetic thumbnail.
  */
 
 declare(strict_types=1);
@@ -19,8 +19,7 @@ header('Access-Control-Allow-Origin: *');
  */
 function build_normalized_component(string $shareId, array $d, bool $includeDataImages, ?string $docCreateTime, ?string $docUpdateTime): array
 {
-    $rawImage = pick_device_image_raw($d);
-    [$imageUrl, $imageInline] = resolve_catalog_image_display($shareId, $rawImage, $includeDataImages);
+    [$imageUrl, $imageInline] = resolve_catalog_image_display($shareId, $d, $includeDataImages);
     $imageField = $imageInline;
 
     $ledRaw = $d['LedCount'] ?? $d['ledCount'] ?? (isset($d['leds']) && is_array($d['leds']) ? count($d['leds']) : null);

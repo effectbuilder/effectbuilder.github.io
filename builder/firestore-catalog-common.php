@@ -171,26 +171,215 @@ function gs_to_storage_download_url(string $gs): ?string
 }
 
 /**
+ * LEDs from Firestore (same shape as builder / gallery thumbnail).
+ *
+ * @param array<string, mixed> $d
+ * @return list<array{id: string, x: float, y: float}>
+ */
+function parse_leds_for_thumbnail(array $d): array
+{
+    $leds = $d['leds'] ?? [];
+    if (! is_array($leds)) {
+        return [];
+    }
+    $out = [];
+    foreach ($leds as $led) {
+        if (! is_array($led)) {
+            continue;
+        }
+        $id = isset($led['id']) ? trim((string) $led['id']) : '';
+        if ($id === '') {
+            continue;
+        }
+        $x = $led['x'] ?? null;
+        $y = $led['y'] ?? null;
+        if (! is_numeric($x) || ! is_numeric($y)) {
+            continue;
+        }
+        $out[] = ['id' => $id, 'x' => (float) $x, 'y' => (float) $y];
+    }
+
+    return $out;
+}
+
+/**
+ * Wiring as list of ordered LED id lists (Firestore [{circuit: [...]}] or flat arrays).
+ *
+ * @param array<string, mixed> $d
+ * @return list<list<string>>
+ */
+function parse_wiring_circuits(array $d): array
+{
+    $w = $d['wiring'] ?? [];
+    if (! is_array($w)) {
+        return [];
+    }
+    $out = [];
+    foreach ($w as $item) {
+        if (! is_array($item)) {
+            continue;
+        }
+        if (isset($item['circuit']) && is_array($item['circuit'])) {
+            $circ = [];
+            foreach ($item['circuit'] as $id) {
+                if (is_string($id) || is_int($id)) {
+                    $circ[] = (string) $id;
+                }
+            }
+            if ($circ !== []) {
+                $out[] = $circ;
+            }
+        } elseif ($item !== [] && array_key_exists(0, $item)) {
+            $circ = [];
+            foreach ($item as $id) {
+                if (is_string($id) || is_int($id)) {
+                    $circ[] = (string) $id;
+                }
+            }
+            if ($circ !== []) {
+                $out[] = $circ;
+            }
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * PNG bitmap matching builder util.js renderComponentThumbnail (180², padding 20, green LEDs).
+ *
+ * @param array<string, mixed> $d Decoded Firestore document fields
+ */
+function generate_led_thumbnail_png(array $d): ?string
+{
+    if (! function_exists('imagecreatetruecolor')) {
+        return null;
+    }
+    $leds = parse_leds_for_thumbnail($d);
+    if ($leds === []) {
+        return null;
+    }
+    $wiring = parse_wiring_circuits($d);
+    /** @var array<string, array{id: string, x: float, y: float}> $ledMap */
+    $ledMap = [];
+    foreach ($leds as $led) {
+        $ledMap[$led['id']] = $led;
+    }
+
+    $W = 180;
+    $H = 180;
+    $padding = 20.0;
+
+    $minX = INF;
+    $minY = INF;
+    $maxX = -INF;
+    $maxY = -INF;
+    foreach ($leds as $led) {
+        $minX = min($minX, $led['x']);
+        $minY = min($minY, $led['y']);
+        $maxX = max($maxX, $led['x']);
+        $maxY = max($maxY, $led['y']);
+    }
+    $boundsW = max($maxX - $minX, 1.0);
+    $boundsH = max($maxY - $minY, 1.0);
+
+    $innerW = $W - $padding * 2;
+    $innerH = $H - $padding * 2;
+    $scale = min($innerW / $boundsW, $innerH / $boundsH);
+
+    $boundsCenterX = $minX + $boundsW / 2;
+    $boundsCenterY = $minY + $boundsH / 2;
+    $panX = ($W / 2) - ($boundsCenterX * $scale);
+    $panY = ($H / 2) - ($boundsCenterY * $scale);
+
+    $toScreen = static function (float $x, float $y) use ($panX, $panY, $scale): array {
+        return [$panX + $x * $scale, $panY + $y * $scale];
+    };
+
+    $im = imagecreatetruecolor($W, $H);
+    if ($im === false) {
+        return null;
+    }
+    imagealphablending($im, true);
+
+    $bg = imagecolorallocate($im, 33, 37, 41);
+    imagefilledrectangle($im, 0, 0, $W - 1, $H - 1, $bg);
+
+    $wireColor = imagecolorallocate($im, 80, 80, 88);
+    $ledFill = imagecolorallocate($im, 0, 180, 0);
+    $ledStroke = imagecolorallocate($im, 200, 200, 200);
+
+    imagesetthickness($im, 1);
+
+    foreach ($wiring as $circuit) {
+        if (count($circuit) < 2) {
+            continue;
+        }
+        $prev = null;
+        foreach ($circuit as $lidStr) {
+            if (! isset($ledMap[$lidStr])) {
+                continue;
+            }
+            $led = $ledMap[$lidStr];
+            [$sx, $sy] = $toScreen($led['x'], $led['y']);
+            if ($prev === null) {
+                $prev = [$sx, $sy];
+                continue;
+            }
+            imageline(
+                $im,
+                (int) round($prev[0]),
+                (int) round($prev[1]),
+                (int) round($sx),
+                (int) round($sy),
+                $wireColor
+            );
+            $prev = [$sx, $sy];
+        }
+    }
+
+    $rpx = 5;
+    foreach ($leds as $led) {
+        [$cx, $cy] = $toScreen($led['x'], $led['y']);
+        $cx = (int) round($cx);
+        $cy = (int) round($cy);
+        imagefilledellipse($im, $cx, $cy, $rpx * 2, $rpx * 2, $ledFill);
+        imageellipse($im, $cx, $cy, $rpx * 2, $rpx * 2, $ledStroke);
+    }
+
+    ob_start();
+    imagepng($im, null, 6);
+    $png = ob_get_clean();
+    imagedestroy($im);
+
+    return is_string($png) && $png !== '' ? $png : null;
+}
+
+/**
  * @return array{0: ?string, 1: ?string} [catalog ImageUrl, optional inline Image data URL]
  */
-function resolve_catalog_image_display(string $shareId, ?string $raw, bool $includeDataImages): array
+function resolve_catalog_image_display(string $shareId, array $d, bool $includeDataImages): array
 {
-    if ($raw === null || trim($raw) === '') {
-        return [null, null];
-    }
-    $raw = trim($raw);
-    $base = rtrim(SITE_ORIGIN, '/') . '/builder/component-catalog-image.php?id=' . rawurlencode($shareId);
+    $raw = pick_device_image_raw($d);
+    $rawTrim = $raw !== null ? trim($raw) : '';
+    $proxy = rtrim(SITE_ORIGIN, '/') . '/builder/component-catalog-image.php?id=' . rawurlencode($shareId);
 
-    if (str_starts_with($raw, 'data:')) {
-        $inline = $includeDataImages ? $raw : null;
+    if ($rawTrim !== '') {
+        if (str_starts_with($rawTrim, 'data:')) {
+            $inline = $includeDataImages ? $rawTrim : null;
 
-        return [$base, $inline];
+            return [$proxy, $inline];
+        }
+        if (str_starts_with($rawTrim, 'gs://')) {
+            return [$proxy, null];
+        }
+        if (str_starts_with($rawTrim, 'http://') || str_starts_with($rawTrim, 'https://')) {
+            return [$rawTrim, null];
+        }
     }
-    if (str_starts_with($raw, 'gs://')) {
-        return [$base, null];
-    }
-    if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
-        return [$raw, null];
+
+    if (parse_leds_for_thumbnail($d) !== []) {
+        return [$proxy, null];
     }
 
     return [null, null];

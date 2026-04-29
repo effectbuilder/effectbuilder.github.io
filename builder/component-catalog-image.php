@@ -33,10 +33,19 @@ $raw = pick_device_image_raw($fields);
 [$byteCode, $mime, $binary] = resolve_device_image_bytes($raw);
 
 if ($byteCode !== 200 || $binary === '') {
-    http_response_code($byteCode === 404 ? 404 : ($byteCode >= 400 ? $byteCode : 502));
+    $synth = generate_led_thumbnail_png($fields);
+    if ($synth !== null) {
+        $byteCode = 200;
+        $mime = 'image/png';
+        $binary = $synth;
+    }
+}
+
+if ($byteCode !== 200 || $binary === '') {
+    http_response_code(404);
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
-    echo json_encode(['error' => 'No image for this component'], JSON_UNESCAPED_SLASHES);
+    echo json_encode(['error' => 'No image or LED layout for this component'], JSON_UNESCAPED_SLASHES);
     exit;
 }
 
