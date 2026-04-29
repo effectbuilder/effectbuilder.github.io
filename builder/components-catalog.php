@@ -2,117 +2,26 @@
 /**
  * Public GET catalog: JSON array of component objects (Firestore REST; public read rules).
  * URL: GET /builder/components-catalog.json → 200, Content-Type: application/json, body: [...]
- * Optional: ?max=2000&includeDataImages=1
+ * Optional: ?max=2000&includeDataImages=1 (inline data URLs in catalog when set)
+ * Embedded Firestore images: ImageUrl points at component-catalog-image.php?id=...
  */
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/firestore-catalog-common.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=60, stale-while-revalidate=300');
 header('Access-Control-Allow-Origin: *');
-
-const SITE_ORIGIN = 'https://rgbjunkie.com';
-const FIRESTORE_PROJECT = 'effect-builder';
-const COLLECTION = 'srgb-components';
-
-/**
- * @param mixed $v Firestore Value object (single-key associative array)
- * @return mixed
- */
-function firestore_decode_value($v): mixed
-{
-    if (!is_array($v) || $v === []) {
-        return null;
-    }
-    $key = array_key_first($v);
-    $val = $v[$key];
-    switch ($key) {
-        case 'nullValue':
-            return null;
-        case 'stringValue':
-            return $val;
-        case 'integerValue':
-            return (int) $val;
-        case 'doubleValue':
-            return (float) $val;
-        case 'booleanValue':
-            return (bool) $val;
-        case 'timestampValue':
-            return is_string($val) ? $val : null;
-        case 'bytesValue':
-        case 'referenceValue':
-            return $val;
-        case 'geoPointValue':
-            return $val;
-        case 'mapValue':
-            return firestore_fields_to_array($val['fields'] ?? []);
-        case 'arrayValue':
-            $out = [];
-            foreach (($val['values'] ?? []) as $item) {
-                $out[] = firestore_decode_value($item);
-            }
-            return $out;
-        default:
-            return null;
-    }
-}
-
-/**
- * @param array<string, mixed>|null $fields
- * @return array<string, mixed>
- */
-function firestore_fields_to_array(?array $fields): array
-{
-    if ($fields === null || $fields === []) {
-        return [];
-    }
-    $out = [];
-    foreach ($fields as $k => $v) {
-        $out[$k] = firestore_decode_value($v);
-    }
-    return $out;
-}
-
-function extract_share_id(string $resourceName): string
-{
-    if (preg_match('#/srgb-components/([^/]+)$#', $resourceName, $m)) {
-        return $m[1];
-    }
-    return '';
-}
-
-function pick_first(?string ...$candidates): ?string
-{
-    foreach ($candidates as $c) {
-        if ($c === null) {
-            continue;
-        }
-        if (is_string($c) && trim($c) === '') {
-            continue;
-        }
-        return $c;
-    }
-    return null;
-}
 
 /**
  * @param array<string, mixed> $d Flat Firestore document fields
  */
 function build_normalized_component(string $shareId, array $d, bool $includeDataImages, ?string $docCreateTime, ?string $docUpdateTime): array
 {
-    $imageUrl = pick_first(
-        isset($d['ImageUrl']) ? (string) $d['ImageUrl'] : null,
-        isset($d['imageUrl']) ? (string) $d['imageUrl'] : null,
-        isset($d['imageURL']) ? (string) $d['imageURL'] : null,
-        isset($d['image_url']) ? (string) $d['image_url'] : null,
-        isset($d['Image']) ? (string) $d['Image'] : null
-    );
-
-    $hasEmbedded = is_string($imageUrl) && str_starts_with($imageUrl, 'data:');
-    if ($hasEmbedded && ! $includeDataImages) {
-        $imageUrl = null;
-    }
-    $imageField = ($hasEmbedded && $includeDataImages && is_string($imageUrl)) ? $imageUrl : null;
+    $rawImage = pick_device_image_raw($d);
+    [$imageUrl, $imageInline] = resolve_catalog_image_display($shareId, $rawImage, $includeDataImages);
+    $imageField = $imageInline;
 
     $ledRaw = $d['LedCount'] ?? $d['ledCount'] ?? (isset($d['leds']) && is_array($d['leds']) ? count($d['leds']) : null);
     $ledCount = is_int($ledRaw) ? $ledRaw : (int) (is_numeric($ledRaw) ? $ledRaw : 0);
@@ -188,38 +97,6 @@ function build_normalized_component(string $shareId, array $d, bool $includeData
     ] + $base;
 }
 
-function http_get(string $url): array
-{
-    if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        if ($ch === false) {
-            return [0, ''];
-        }
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 120,
-        ]);
-        $body = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        return [$code, is_string($body) ? $body : ''];
-    }
-
-    $ctx = stream_context_create([
-        'http' => [
-            'timeout' => 120,
-            'ignore_errors' => true,
-        ],
-    ]);
-    $body = @file_get_contents($url, false, $ctx);
-    $code = 0;
-    if (isset($http_response_header[0]) && preg_match('#\b(\d{3})\b#', $http_response_header[0], $m)) {
-        $code = (int) $m[1];
-    }
-    return [$code, is_string($body) ? $body : ''];
-}
-
 $max = (int) ($_GET['max'] ?? $_GET['limit'] ?? 2000);
 $max = max(1, min($max, 5000));
 $includeDataImages = (($_GET['includeDataImages'] ?? '') === '1');
@@ -282,10 +159,10 @@ try {
         }
     }
 
-    // Sort by UpdatedAt / document order — prefer UpdatedAt desc
     usort($normalized, static function (array $a, array $b): int {
         $ta = $a['UpdatedAt'] ?? '';
         $tb = $b['UpdatedAt'] ?? '';
+
         return strcmp((string) $tb, (string) $ta);
     });
 
