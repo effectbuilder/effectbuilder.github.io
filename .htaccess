@@ -4,6 +4,7 @@ RewriteBase /
 
 # Dynamic component catalog JSON (PHP + Firestore REST)
 RewriteRule ^builder/components-catalog\.json$ /builder/components-catalog.php [L,QSA]
+RewriteRule ^builder/component-catalog-image$ /builder/component-catalog-image.php [L,QSA]
 
 # 1. Map the Custom 404 Page
 ErrorDocument 404 /404.html
