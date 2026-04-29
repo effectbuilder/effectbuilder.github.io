@@ -6,6 +6,9 @@ const SITE_ORIGIN = 'https://rgbjunkie.com';
 const FIRESTORE_PROJECT = 'effect-builder';
 const COLLECTION = 'srgb-components';
 
+/** Same as builder/main.js GRID_SIZE for LedCoordinates / export math */
+const EXPORT_GRID_SIZE = 10;
+
 /**
  * @param mixed $v Firestore Value object (single-key associative array)
  * @return mixed
@@ -243,6 +246,105 @@ function parse_wiring_circuits(array $d): array
     }
 
     return $out;
+}
+
+/** Same as builder `GRID_SIZE` / SignalRGB export grid step (world units per layout cell). */
+const CATALOG_GRID_SIZE = 10;
+
+/**
+ * @param list<list<string>> $circuits
+ * @return list<string>
+ */
+function flatten_wiring_led_ids(array $circuits): array
+{
+    $flat = [];
+    foreach ($circuits as $circuit) {
+        if (! is_array($circuit)) {
+            continue;
+        }
+        foreach ($circuit as $lid) {
+            if ($lid !== null && $lid !== '') {
+                $flat[] = (string) $lid;
+            }
+        }
+    }
+
+    return $flat;
+}
+
+/**
+ * SignalRGB-style grid layout from stored leds + wiring (matches builder export in main.js).
+ *
+ * @param array<string, mixed> $d Decoded Firestore document fields
+ * @return array{LedCoordinates: list<array{0: int, 1: int}>, Width: int, Height: int, Type: ?string}
+ */
+function build_layout_definition_from_fields(array $d): array
+{
+    $type = pick_first(
+        isset($d['Type']) ? (string) $d['Type'] : null,
+        isset($d['type']) ? (string) $d['type'] : null
+    );
+
+    $leds = parse_leds_for_thumbnail($d);
+    if ($leds === []) {
+        return [
+            'LedCoordinates' => [],
+            'Width' => 0,
+            'Height' => 0,
+            'Type' => $type,
+        ];
+    }
+
+    $wiring = parse_wiring_circuits($d);
+    $flat = flatten_wiring_led_ids($wiring);
+
+    $minX = INF;
+    $minY = INF;
+    $maxX = -INF;
+    $maxY = -INF;
+    foreach ($leds as $led) {
+        $minX = min($minX, $led['x']);
+        $minY = min($minY, $led['y']);
+        $maxX = max($maxX, $led['x']);
+        $maxY = max($maxY, $led['y']);
+    }
+    $minX = $minX === INF ? 0.0 : $minX;
+    $minY = $minY === INF ? 0.0 : $minY;
+
+    $maxX_norm = (int) round(($maxX - $minX) / CATALOG_GRID_SIZE);
+    $maxY_norm = (int) round(($maxY - $minY) / CATALOG_GRID_SIZE);
+    $width = $maxX_norm + 1;
+    $height = $maxY_norm + 1;
+
+    $ledDataMap = [];
+    foreach ($leds as $led) {
+        $ledDataMap[$led['id']] = [
+            (int) round(($led['x'] - $minX) / CATALOG_GRID_SIZE),
+            (int) round(($led['y'] - $minY) / CATALOG_GRID_SIZE),
+        ];
+    }
+
+    $ledCoordinates = [];
+    $exported = [];
+    foreach ($flat as $lidStr) {
+        if (! isset($ledDataMap[$lidStr])) {
+            continue;
+        }
+        if (isset($exported[$lidStr])) {
+            continue;
+        }
+        $gx = $ledDataMap[$lidStr][0];
+        $gy = $ledDataMap[$lidStr][1];
+        $ledCoordinates[] = [$gx, $gy];
+        $exported[$lidStr] = true;
+    }
+
+    return [
+        'LedCoordinates' => $ledCoordinates,
+        'Width' => $width,
+        'Height' => $height,
+        'Type' => $type,
+    ];
 }
 
 /**
