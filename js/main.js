@@ -1817,21 +1817,61 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         /** gzip + Firestore bytes to stay under the ~1 MiB document size limit; drops legacy plain `exportedHtml`. */
-        async function gzipUtf8ToUint8Array(text) {
-            if (typeof CompressionStream === 'undefined') {
-                throw new Error('CompressionStream not supported');
+        function promiseWithTimeout(promise, ms, errLabel) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(errLabel)), ms))
+            ]);
+        }
+
+        /** fflate avoids Chrome/WIN hangs on CompressionStream gzip + arrayBuffer() for ~200k+ payloads. */
+        let fflateGzipModulePromise = null;
+        function loadFflateGzipOnce() {
+            if (!fflateGzipModulePromise) {
+                fflateGzipModulePromise = import(
+                    /* webpackIgnore: true */
+                    'https://esm.sh/fflate@0.8.2?exports=gzipSync'
+                ).catch((err) => {
+                    fflateGzipModulePromise = null;
+                    return Promise.reject(err);
+                });
             }
+            return fflateGzipModulePromise;
+        }
+
+        async function gzipUtf8ToUint8Array(text) {
             const input = new TextEncoder().encode(text);
+
+            try {
+                const mod = await promiseWithTimeout(loadFflateGzipOnce(), 20000, 'fflate_import_timeout_20s');
+                const gzipSync = mod.gzipSync;
+                if (typeof gzipSync === 'function') {
+                    return gzipSync(input, { level: 6 });
+                }
+            } catch (e) {
+                console.warn('gzipUtf8ToUint8Array: fflate failed, trying CompressionStream', e);
+            }
+
+            if (typeof CompressionStream === 'undefined') {
+                throw new Error('gzip failed: CompressionStream missing and fflate unavailable');
+            }
             const cs = new CompressionStream('gzip');
             const w = cs.writable.getWriter();
             await w.write(input);
             await w.close();
-            const buf = await new Response(cs.readable).arrayBuffer();
+            const buf = await promiseWithTimeout(
+                new Response(cs.readable).arrayBuffer(),
+                120000,
+                'gzip_arrayBuffer_timeout_120s'
+            );
             return new Uint8Array(buf);
         }
 
-        async function buildExportedHtmlFirestorePayload(finalHtml) {
+        async function buildExportedHtmlFirestorePayload(finalHtml, progressFn) {
+            if (typeof progressFn === 'function') progressFn('gzip_running');
             const gz = await gzipUtf8ToUint8Array(finalHtml);
+            if (typeof progressFn === 'function') progressFn(`gzip_done_bytes_${gz.byteLength}`);
+            if (typeof progressFn === 'function') progressFn('firestore_bytes_wrap');
             const payload = {
                 exportedHtmlGzip: window.Bytes.fromUint8Array(gz),
                 exportedHtmlEncoding: 'gzip',
@@ -1863,23 +1903,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const ADMIN_UID_FOR_EXPORT_BACKFILL = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
 
-        async function waitForAuthInIframe(maxMs = 30000) {
-            const start = Date.now();
-            while (Date.now() - start < maxMs) {
+        async function waitForAuthInIframe(maxMs = 60000) {
+            const deadline = Date.now() + maxMs;
+            try {
+                if (window.auth && typeof window.auth.authStateReady === 'function') {
+                    await Promise.race([
+                        window.auth.authStateReady(),
+                        new Promise((resolve) => setTimeout(resolve, 15000))
+                    ]);
+                }
+            } catch (e) {
+                console.warn('waitForAuth authStateReady', e);
+            }
+            while (Date.now() < deadline) {
                 if (window.auth && window.auth.currentUser) return window.auth.currentUser;
-                await new Promise((r) => setTimeout(r, 250));
+                await new Promise((r) => setTimeout(r, 200));
             }
             return null;
         }
 
         function scheduleAdminBackfillExportedHtml(effectDocId) {
             window.setTimeout(async () => {
-                const reply = (payload) => {
-                    const msg = {
-                        type: 'rgbjunkie-admin-export-done',
-                        id: String(effectDocId),
-                        ...payload
-                    };
+                const sendTransport = (msg) => {
                     try {
                         if (typeof BroadcastChannel !== 'undefined') {
                             const bc = new BroadcastChannel('rgbjunkie-export-backfill');
@@ -1889,24 +1934,61 @@ document.addEventListener('DOMContentLoaded', function () {
                     } catch (e) {
                         console.warn('adminBackfill BroadcastChannel', e);
                     }
+                    // Progress-only on BC avoids duplicate lines (parent listens to both BC and message).
+                    if (msg.type === 'rgbjunkie-admin-export-progress') return;
                     if (window.parent !== window) {
                         window.parent.postMessage(msg, '*');
                     }
                 };
 
-                const u = await waitForAuthInIframe();
-                if (!u || u.uid !== ADMIN_UID_FOR_EXPORT_BACKFILL) {
-                    reply({ ok: false, error: 'not_admin_or_auth_pending' });
-                    return;
-                }
+                const replyProgress = (stage) => {
+                    sendTransport({
+                        type: 'rgbjunkie-admin-export-progress',
+                        id: String(effectDocId),
+                        stage
+                    });
+                };
+
+                const reply = (payload) => {
+                    sendTransport({
+                        type: 'rgbjunkie-admin-export-done',
+                        id: String(effectDocId),
+                        ...payload
+                    });
+                };
+
                 try {
-                    const { finalHtml } = buildExportPayload([]);
-                    if (!finalHtml) throw new Error('empty_html');
-                    const payload = await buildExportedHtmlFirestorePayload(finalHtml);
-                    await window.updateDoc(window.doc(window.db, 'projects', effectDocId), payload);
-                    reply({ ok: true });
+                    replyProgress('backfill_task_started');
+                    const u = await waitForAuthInIframe();
+                    if (!u || u.uid !== ADMIN_UID_FOR_EXPORT_BACKFILL) {
+                        reply({ ok: false, error: 'not_admin_or_auth_pending' });
+                        return;
+                    }
+                    replyProgress('auth_ok_exporting');
+                    try {
+                        await new Promise((r) => setTimeout(r, 0));
+                        replyProgress('build_html_started');
+                        const { finalHtml } = buildExportPayload([]);
+                        replyProgress(`html_built_bytes_${finalHtml ? finalHtml.length : 0}`);
+                        if (!finalHtml) throw new Error('empty_html');
+                        const payload = await promiseWithTimeout(
+                            buildExportedHtmlFirestorePayload(finalHtml, replyProgress),
+                            180000,
+                            'gzip_or_payload_timeout_180s'
+                        );
+                        replyProgress('firestore_update_started');
+                        await promiseWithTimeout(
+                            window.updateDoc(window.doc(window.db, 'projects', effectDocId), payload),
+                            120000,
+                            'firestore_updateDoc_timeout_120s'
+                        );
+                        reply({ ok: true });
+                    } catch (e) {
+                        console.error('adminBackfillExport', e);
+                        reply({ ok: false, error: String(e && e.message ? e.message : e) });
+                    }
                 } catch (e) {
-                    console.error('adminBackfillExport', e);
+                    console.error('adminBackfillUnhandled', e);
                     reply({ ok: false, error: String(e && e.message ? e.message : e) });
                 }
             }, 400);
@@ -8537,11 +8619,20 @@ document.addEventListener('DOMContentLoaded', function () {
     async function loadSharedEffect() {
         const params = new URLSearchParams(window.location.search);
         const effectId = params.get('effectId');
+        const adminBackfill = params.get('adminBackfillExport') === '1';
 
         if (effectId && window.db) {
             try {
                 const effectDocRef = window.doc(window.db, "projects", effectId);
-                const effectDoc = await window.getDoc(effectDocRef);
+                const getDocPromise = window.getDoc(effectDocRef);
+                const effectDoc = adminBackfill
+                    ? await Promise.race([
+                        getDocPromise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('getDoc_timeout_25s')), 25000)
+                        )
+                    ])
+                    : await getDocPromise;
 
                 if (effectDoc.exists()) {
                     const projectData = { docId: effectDoc.id, ...effectDoc.data() };

@@ -13,14 +13,14 @@ require_once __DIR__ . '/effects-firestore-lib.php';
 header('Access-Control-Allow-Origin: *');
 
 $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
-if ($id === '' || strlen($id) > 512 || preg_match('#[/#?\\\\]#', $id)) {
+if ($id === '' || strlen($id) > 512 || preg_match('~[/#?\\\\]~', $id)) {
     http_response_code(400);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'invalid_id', 'message' => 'Missing or invalid id'], JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-[$code, $fields] = effects_get_project_document($id);
+[$code, $fields, $loadDetail] = effects_get_project_document($id);
 if ($code === 404) {
     http_response_code(404);
     header('Content-Type: application/json; charset=utf-8');
@@ -28,9 +28,14 @@ if ($code === 404) {
     exit;
 }
 if ($code !== 200 || $fields === []) {
-    http_response_code(502);
+    $http = ($code >= 400 && $code < 600) ? $code : 502;
+    http_response_code($http);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['error' => 'load_failed', 'message' => 'Could not load effect'], JSON_UNESCAPED_SLASHES);
+    $err = ['error' => 'load_failed', 'message' => 'Could not load effect', 'upstreamStatus' => $code];
+    if ($loadDetail !== null && $loadDetail !== '') {
+        $err['detail'] = $loadDetail;
+    }
+    echo json_encode($err, JSON_UNESCAPED_SLASHES);
     exit;
 }
 

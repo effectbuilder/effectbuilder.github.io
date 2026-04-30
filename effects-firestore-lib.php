@@ -9,6 +9,66 @@ declare(strict_types=1);
 const EFFECTS_FIRESTORE_PROJECT = 'effect-builder';
 const EFFECTS_COLLECTION = 'projects';
 
+if (is_file(__DIR__ . '/effects-firestore-config.php')) {
+    require_once __DIR__ . '/effects-firestore-config.php';
+}
+
+if (! defined('EFFECTS_FIREBASE_WEB_API_KEY')) {
+    /** Same public key as `js/firebase.js` — required for unauthenticated Firestore REST calls. */
+    define('EFFECTS_FIREBASE_WEB_API_KEY', 'AIzaSyBIzgQqxHMTdCsW0UG4MOEuFWwjEYAFYbk');
+}
+
+/**
+ * Web API key (override with `putenv('EFFECTS_FIREBASE_WEB_API_KEY=...')` or `effects-firestore-config.php`).
+ */
+function effects_firebase_web_api_key(): string
+{
+    $fromEnv = getenv('EFFECTS_FIREBASE_WEB_API_KEY');
+    if (is_string($fromEnv) && trim($fromEnv) !== '') {
+        return trim($fromEnv);
+    }
+
+    return (string) EFFECTS_FIREBASE_WEB_API_KEY;
+}
+
+function effects_firestore_url_with_key(string $url): string
+{
+    $key = effects_firebase_web_api_key();
+    if ($key === '') {
+        return $url;
+    }
+
+    $sep = strpos($url, '?') !== false ? '&' : '?';
+
+    return $url . $sep . 'key=' . rawurlencode($key);
+}
+
+/**
+ * Whether cURL should verify HTTPS peers. WAMP often lacks CA bundle → set EFFECTS_CURL_SSL_VERIFY=0,
+ * or we default to false only for localhost-style hosts (dev convenience).
+ */
+function effects_curl_ssl_verify_peer(): bool
+{
+    $v = getenv('EFFECTS_CURL_SSL_VERIFY');
+    if ($v === '0' || strtolower((string) $v) === 'false' || $v === 'no') {
+        return false;
+    }
+    if ($v === '1' || strtolower((string) $v) === 'true' || $v === 'yes') {
+        return true;
+    }
+    $host = isset($_SERVER['HTTP_HOST']) ? strtolower((string) $_SERVER['HTTP_HOST']) : '';
+    if (
+        strpos($host, 'localhost') === 0
+        || strpos($host, '127.0.0.1') === 0
+        || strpos($host, '[::1]') === 0
+        || strpos($host, '127.') === 0
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * @param mixed $v Firestore Value object (single-key associative array)
  * @return mixed
@@ -68,23 +128,39 @@ function effects_firestore_fields_to_array(?array $fields): array
     return $out;
 }
 
+/**
+ * @return array{0: int, 1: string, 2: ?string} HTTP status, body, optional transport error (curl_error, etc.)
+ */
 function effects_http_get(string $url): array
 {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         if ($ch === false) {
-            return [0, ''];
+            return [0, '', 'curl_init_failed'];
         }
-        curl_setopt_array($ch, [
+        $opts = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 120,
-        ]);
+            CURLOPT_CONNECTTIMEOUT => 25,
+        ];
+        if (! effects_curl_ssl_verify_peer()) {
+            $opts[CURLOPT_SSL_VERIFYPEER] = false;
+            $opts[CURLOPT_SSL_VERIFYHOST] = 0;
+        }
+        curl_setopt_array($ch, $opts);
         $body = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errno = curl_errno($ch);
+        $cerr = curl_error($ch);
         curl_close($ch);
 
-        return [$code, is_string($body) ? $body : ''];
+        $transport = null;
+        if ($body === false || ($code === 0 && $cerr !== '')) {
+            $transport = $cerr !== '' ? $cerr : ('curl_errno_' . (string) $errno);
+        }
+
+        return [$code, is_string($body) ? $body : '', $transport];
     }
 
     $ctx = stream_context_create([
@@ -98,31 +174,54 @@ function effects_http_get(string $url): array
     if (isset($http_response_header[0]) && preg_match('#\b(\d{3})\b#', $http_response_header[0], $m)) {
         $code = (int) $m[1];
     }
+    $transport = null;
+    if ($body === false) {
+        $le = error_get_last();
+        $transport = (is_array($le) && isset($le['message']) && is_string($le['message']))
+            ? $le['message']
+            : 'file_get_contents_failed';
+    }
 
-    return [$code, is_string($body) ? $body : ''];
+    return [$code, is_string($body) ? $body : '', $transport];
 }
 
+/**
+ * @return array{0: int, 1: string, 2: ?string}
+ */
 function effects_http_post_json(string $url, string $jsonBody): array
 {
     if (! function_exists('curl_init')) {
-        return [0, ''];
+        return [0, '', 'curl_not_available'];
     }
     $ch = curl_init($url);
     if ($ch === false) {
-        return [0, ''];
+        return [0, '', 'curl_init_failed'];
     }
-    curl_setopt_array($ch, [
+    $opts = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
         CURLOPT_POSTFIELDS => $jsonBody,
         CURLOPT_TIMEOUT => 120,
-    ]);
+        CURLOPT_CONNECTTIMEOUT => 25,
+    ];
+    if (! effects_curl_ssl_verify_peer()) {
+        $opts[CURLOPT_SSL_VERIFYPEER] = false;
+        $opts[CURLOPT_SSL_VERIFYHOST] = 0;
+    }
+    curl_setopt_array($ch, $opts);
     $body = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $errno = curl_errno($ch);
+    $cerr = curl_error($ch);
     curl_close($ch);
 
-    return [$code, is_string($body) ? $body : ''];
+    $transport = null;
+    if ($body === false || ($code === 0 && $cerr !== '')) {
+        $transport = $cerr !== '' ? $cerr : ('curl_errno_' . (string) $errno);
+    }
+
+    return [$code, is_string($body) ? $body : '', $transport];
 }
 
 /**
@@ -133,10 +232,10 @@ function effects_run_query_public_projects(
     ?string $startAfterResourceName,
     array $selectFieldPaths
 ): array {
-    $url = sprintf(
+    $url = effects_firestore_url_with_key(sprintf(
         'https://firestore.googleapis.com/v1/projects/%s/databases/(default)/documents:runQuery',
         EFFECTS_FIRESTORE_PROJECT
-    );
+    ));
 
     $selectFields = [];
     foreach ($selectFieldPaths as $path) {
@@ -199,30 +298,56 @@ function effects_run_query_public_projects(
 }
 
 /**
- * @return array{0: int, 1: array<string, mixed>}
+ * @return array{0: int, 1: array<string, mixed>, 2: ?string} HTTP-like code, decoded fields, optional error detail
  */
 function effects_get_project_document(string $docId): array
 {
-    $url = sprintf(
+    $url = effects_firestore_url_with_key(sprintf(
         'https://firestore.googleapis.com/v1/projects/%s/databases/(default)/documents/%s/%s',
         EFFECTS_FIRESTORE_PROJECT,
         EFFECTS_COLLECTION,
         rawurlencode($docId)
-    );
-    [$code, $raw] = effects_http_get($url);
+    ));
+    [$code, $raw, $transportErr] = effects_http_get($url);
     if ($code === 404) {
-        return [404, []];
+        return [404, [], null];
     }
     if ($code !== 200) {
-        return [$code >= 400 ? $code : 502, []];
+        $detail = effects_firestore_parse_error_body($raw, $code);
+        if ($transportErr !== null && $transportErr !== '') {
+            $detail = $transportErr;
+        }
+
+        return [$code >= 400 ? $code : 502, [], $detail];
     }
     $json = json_decode($raw, true);
     if (! is_array($json)) {
-        return [502, []];
+        return [502, [], 'invalid_json_from_firestore'];
     }
     $fields = effects_firestore_fields_to_array($json['fields'] ?? []);
+    if ($fields === []) {
+        return [502, [], 'empty_firestore_fields'];
+    }
 
-    return [200, $fields];
+    return [200, $fields, null];
+}
+
+/**
+ * @return non-empty-string|null
+ */
+function effects_firestore_parse_error_body(string $raw, int $httpCode): ?string
+{
+    $j = json_decode($raw, true);
+    if (is_array($j) && isset($j['error']['message']) && is_string($j['error']['message']) && $j['error']['message'] !== '') {
+        return $j['error']['message'];
+    }
+    if ($raw !== '') {
+        $t = trim($raw);
+
+        return strlen($t) > 280 ? (substr($t, 0, 280) . '…') : $t;
+    }
+
+    return 'http_' . (string) $httpCode;
 }
 
 function effects_extract_document_id(string $resourceName): string
