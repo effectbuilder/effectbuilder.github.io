@@ -1863,18 +1863,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const ADMIN_UID_FOR_EXPORT_BACKFILL = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
 
+        async function waitForAuthInIframe(maxMs = 30000) {
+            const start = Date.now();
+            while (Date.now() - start < maxMs) {
+                if (window.auth && window.auth.currentUser) return window.auth.currentUser;
+                await new Promise((r) => setTimeout(r, 250));
+            }
+            return null;
+        }
+
         function scheduleAdminBackfillExportedHtml(effectDocId) {
             window.setTimeout(async () => {
-                const u = window.auth.currentUser;
-                if (!u || u.uid !== ADMIN_UID_FOR_EXPORT_BACKFILL) {
-                    if (window.parent !== window) {
-                        window.parent.postMessage({
-                            type: 'rgbjunkie-admin-export-done',
-                            id: effectDocId,
-                            ok: false,
-                            error: 'not_admin'
-                        }, window.location.origin);
+                const reply = (payload) => {
+                    const msg = {
+                        type: 'rgbjunkie-admin-export-done',
+                        id: String(effectDocId),
+                        ...payload
+                    };
+                    try {
+                        if (typeof BroadcastChannel !== 'undefined') {
+                            const bc = new BroadcastChannel('rgbjunkie-export-backfill');
+                            bc.postMessage(msg);
+                            bc.close();
+                        }
+                    } catch (e) {
+                        console.warn('adminBackfill BroadcastChannel', e);
                     }
+                    if (window.parent !== window) {
+                        window.parent.postMessage(msg, '*');
+                    }
+                };
+
+                const u = await waitForAuthInIframe();
+                if (!u || u.uid !== ADMIN_UID_FOR_EXPORT_BACKFILL) {
+                    reply({ ok: false, error: 'not_admin_or_auth_pending' });
                     return;
                 }
                 try {
@@ -1882,21 +1904,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (!finalHtml) throw new Error('empty_html');
                     const payload = await buildExportedHtmlFirestorePayload(finalHtml);
                     await window.updateDoc(window.doc(window.db, 'projects', effectDocId), payload);
-                    if (window.parent !== window) {
-                        window.parent.postMessage({ type: 'rgbjunkie-admin-export-done', id: effectDocId, ok: true }, window.location.origin);
-                    }
+                    reply({ ok: true });
                 } catch (e) {
                     console.error('adminBackfillExport', e);
-                    if (window.parent !== window) {
-                        window.parent.postMessage({
-                            type: 'rgbjunkie-admin-export-done',
-                            id: effectDocId,
-                            ok: false,
-                            error: String(e && e.message ? e.message : e)
-                        }, window.location.origin);
-                    }
+                    reply({ ok: false, error: String(e && e.message ? e.message : e) });
                 }
-            }, 1200);
+            }, 400);
         }
 
         // This is a new function that replaces the old exportFile logic

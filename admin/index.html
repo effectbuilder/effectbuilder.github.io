@@ -83,11 +83,11 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text">
-                        Writes <code>exportedHtml</code> (and <code>exportedHtmlUpdatedAt</code>) on each <strong>public</strong> project by opening the Effect Builder in a hidden iframe for each id.
-                        New saves, shares, and zip exports from the builder already update these fields.
+                        Writes <strong>gzip-compressed</strong> export HTML (<code>exportedHtmlGzip</code>, <code>exportedHtmlEncoding</code>, <code>exportedHtmlUpdatedAt</code>) on each <strong>public</strong> project by opening the Effect Builder in a hidden iframe so your session can run the exporter.
+                        Stay <strong>signed in on this browser</strong> (same Google account as admin). New saves, shares, and zip exports from the builder already update these fields.
                     </p>
                     <p class="text-warning small mb-2">
-                        Deploy Firestore rules so your admin UID can <code>update</code> documents owned by other users (at least <code>exportedHtml</code> and <code>exportedHtmlUpdatedAt</code>), or backfill will fail with permission errors.
+                        Deploy Firestore rules so your admin UID can <code>update</code> project documents from other users (including <code>exportedHtmlGzip</code> and timestamps), or backfill will show <code>FAIL</code> with permission errors.
                     </p>
                     <button class="btn btn-warning btn-lg" id="backfill-export-html-btn" type="button">
                         <i class="bi bi-cloud-upload me-2"></i> Backfill all public effects
