@@ -57,10 +57,12 @@ Public HTTPS only (`https://rgbjunkie.com` or `https://www.rgbjunkie.com`). No a
 
 | Field | Type | When set |
 |-------|------|----------|
-| `exportedHtml` | string | Save (overwrite/new), Share, Zip export; **Admin backfill** iframe (`adminBackfillExport=1`). |
+| `exportedHtmlGzip` | bytes | gzip-compressed UTF-8 export HTML (preferred; keeps the whole document under the **~1 MiB** Firestore limit). |
+| `exportedHtmlEncoding` | string | `"gzip"` |
+| `exportedHtml` | string | **Legacy** plain storage (no longer written; removed on next save when gzip is written). |
 | `exportedHtmlUpdatedAt` | timestamp | Same as above. |
 
-**Size:** Firestore documents are capped at **~1 MiB** total. Very large effects may fail to save `exportedHtml`; the builder logs a warning.
+**Size:** The entire `projects/{id}` document must stay under **1,048,576 bytes**. Export HTML is stored **gzipped** as `exportedHtmlGzip`. If the doc is still too large (e.g. huge embedded thumbnail), trim other fields or raise the issue in support tooling.
 
 ### Admin backfill (`/admin/`)
 
