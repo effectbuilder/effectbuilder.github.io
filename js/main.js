@@ -1495,6 +1495,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        /**
+         * Same `conf.property` list as Export modal with every property checkbox checked ("Expose All"),
+         * so stored/API HTML keeps full `<meta property=…>` tags (empty `[]` meant "none exposed" → everything hardcoded as `window.*`).
+         */
+        function getExposeAllPropertyNamesForCloudExport() {
+            const forceHardcode = ['pixelArtFrames', 'polylineNodes'];
+            const names = [];
+            objects.forEach((obj) => {
+                const validPropsForShape = shapePropertyMap[obj.shape] || [];
+                for (const groupName in controlGroupMap) {
+                    const groupProps = controlGroupMap[groupName].props;
+                    const relevantConfigs = configStore.filter((conf) => {
+                        if (!conf.property || !conf.property.startsWith(`obj${obj.id}_`)) return false;
+                        const propName = conf.property.substring(conf.property.indexOf('_') + 1);
+                        return !forceHardcode.includes(propName) && groupProps.includes(propName) && validPropsForShape.includes(propName);
+                    });
+                    relevantConfigs.forEach((c) => names.push(c.property));
+                }
+            });
+            return [...new Set(names)];
+        }
+
         function buildExportPayload(exposedProperties = []) {
             // 1. Ensure the live objects are in sync with the form controls
             updateObjectsFromForm();
@@ -1771,7 +1793,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let finalHtml;
             let safeFilename;
             try {
-                const out = buildExportPayload([]);
+                const out = buildExportPayload(getExposeAllPropertyNamesForCloudExport());
                 finalHtml = out.finalHtml;
                 safeFilename = out.safeFilename;
             } catch (e) {
@@ -1888,7 +1910,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const silent = !!options.silent;
             if (!currentProjectDocId || !window.db) return;
             try {
-                const { finalHtml } = buildExportPayload([]);
+                const { finalHtml } = buildExportPayload(getExposeAllPropertyNamesForCloudExport());
                 if (!finalHtml) return;
                 const payload = await buildExportedHtmlFirestorePayload(finalHtml);
                 await window.updateDoc(window.doc(window.db, 'projects', currentProjectDocId), payload);
@@ -1968,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     try {
                         await new Promise((r) => setTimeout(r, 0));
                         replyProgress('build_html_started');
-                        const { finalHtml } = buildExportPayload([]);
+                        const { finalHtml } = buildExportPayload(getExposeAllPropertyNamesForCloudExport());
                         replyProgress(`html_built_bytes_${finalHtml ? finalHtml.length : 0}`);
                         if (!finalHtml) throw new Error('empty_html');
                         const payload = await promiseWithTimeout(
