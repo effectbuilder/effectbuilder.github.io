@@ -32,11 +32,26 @@ const backfillExportBtn = document.getElementById('backfill-export-html-btn');
 const cancelBackfillBtn = document.getElementById('cancel-backfill-btn');
 const backfillProgressEl = document.getElementById('backfill-progress');
 
-/** Same origin as the Effect Builder index.html */
-const BUILDER_INDEX_URL = new URL('../index.html', window.location.href).href;
+/** Builder root (/?effectId=…) — avoids /index.html redirects that can break query strings. */
+const BUILDER_PAGE_BASE = new URL('/', window.location.origin).href;
 
 let backfillAbort = false;
 let backfillIframe = null;
+let backfillTimeoutId = null;
+/** @type {BroadcastChannel | null} */
+let backfillChannel = null;
+
+/** Treat rgbjunkie.com and www.rgbjunkie.com as the same for postMessage. */
+function isSameSiteMessageOrigin(origin) {
+    try {
+        const a = new URL(window.location.origin);
+        const b = new URL(origin);
+        if (a.protocol !== b.protocol) return false;
+        return a.hostname.replace(/^www\./i, '') === b.hostname.replace(/^www\./i, '');
+    } catch {
+        return false;
+    }
+}
 
 // Navbar Elements (for auth)
 const loginBtn = document.getElementById('login-btn');
@@ -157,8 +172,10 @@ async function runBackfillExportedHtml() {
     if (!backfillExportBtn || !backfillProgressEl) return;
     backfillAbort = false;
     backfillExportBtn.disabled = true;
-    cancelBackfillBtn.classList.remove('d-none');
-    cancelBackfillBtn.disabled = false;
+    if (cancelBackfillBtn) {
+        cancelBackfillBtn.classList.remove('d-none');
+        cancelBackfillBtn.disabled = false;
+    }
     backfillProgressEl.textContent = '';
 
     let ids;
@@ -170,14 +187,14 @@ async function runBackfillExportedHtml() {
         console.error(e);
         showToast('Backfill', String(e.message || e), 'danger');
         backfillExportBtn.disabled = false;
-        cancelBackfillBtn.classList.add('d-none');
+        if (cancelBackfillBtn) cancelBackfillBtn.classList.add('d-none');
         return;
     }
 
     if (ids.length === 0) {
         appendBackfillLog('Nothing to do.');
         backfillExportBtn.disabled = false;
-        cancelBackfillBtn.classList.add('d-none');
+        if (cancelBackfillBtn) cancelBackfillBtn.classList.add('d-none');
         return;
     }
 
@@ -191,19 +208,29 @@ async function runBackfillExportedHtml() {
     let idx = 0;
     let ok = 0;
     let fail = 0;
+    /** Effect id currently loaded in the iframe (ignore stale postMessages). */
+    let processingId = null;
 
-    const onMessage = (ev) => {
-        if (ev.origin !== window.location.origin) return;
-        const d = ev.data;
-        if (!d || d.type !== 'rgbjunkie-admin-export-done') return;
-
-        if (d.ok) {
-            ok++;
-            appendBackfillLog(`OK ${d.id}`);
-        } else {
-            fail++;
-            appendBackfillLog(`FAIL ${d.id} ${d.error || ''}`);
+    function clearEffectTimeout() {
+        if (backfillTimeoutId !== null) {
+            clearTimeout(backfillTimeoutId);
+            backfillTimeoutId = null;
         }
+    }
+
+    function armEffectTimeout() {
+        clearEffectTimeout();
+        const currentId = processingId;
+        backfillTimeoutId = window.setTimeout(() => {
+            fail++;
+            appendBackfillLog(`TIMEOUT ${currentId} (no reply — stay signed in on this site, or check Firestore rules / builder errors in console)`);
+            processingId = null;
+            advanceAfterResult();
+        }, 120000);
+    }
+
+    function advanceAfterResult() {
+        clearEffectTimeout();
         idx++;
         if (backfillAbort) {
             cleanup();
@@ -217,26 +244,91 @@ async function runBackfillExportedHtml() {
             return;
         }
         loadNext();
+    }
+
+    function handleBackfillPayload(d) {
+        if (!d || d.type !== 'rgbjunkie-admin-export-done') return;
+        if (!processingId) return;
+        if (String(d.id) !== String(processingId)) {
+            console.warn('[admin backfill] ignored message id', d.id, 'expected', processingId);
+            return;
+        }
+
+        if (d.ok) {
+            ok++;
+            appendBackfillLog(`OK ${d.id}`);
+        } else {
+            fail++;
+            appendBackfillLog(`FAIL ${d.id} ${d.error || ''}`);
+        }
+        processingId = null;
+        advanceAfterResult();
+    }
+
+    const onWindowMessage = (ev) => {
+        if (!isSameSiteMessageOrigin(ev.origin)) return;
+        handleBackfillPayload(ev.data);
     };
 
     function cleanup() {
-        window.removeEventListener('message', onMessage);
+        clearEffectTimeout();
+        window.removeEventListener('message', onWindowMessage);
+        if (backfillChannel) {
+            try {
+                backfillChannel.onmessage = null;
+                backfillChannel.close();
+            } catch (_) {
+                /* ignore */
+            }
+            backfillChannel = null;
+        }
         backfillExportBtn.disabled = false;
-        cancelBackfillBtn.classList.add('d-none');
+        if (cancelBackfillBtn) cancelBackfillBtn.classList.add('d-none');
         if (backfillIframe) {
             backfillIframe.src = 'about:blank';
         }
     }
 
     function loadNext() {
-        const id = ids[idx];
-        const u = new URL(BUILDER_INDEX_URL);
-        u.searchParams.set('effectId', id);
-        u.searchParams.set('adminBackfillExport', '1');
-        backfillIframe.src = u.href;
+        try {
+            const id = ids[idx];
+            processingId = id;
+            appendBackfillLog(`→ ${idx + 1}/${ids.length} ${id} (loading builder iframe…)`);
+            const u = new URL(BUILDER_PAGE_BASE);
+            u.searchParams.set('effectId', id);
+            u.searchParams.set('adminBackfillExport', '1');
+            backfillIframe.src = u.href;
+            armEffectTimeout();
+        } catch (e) {
+            console.error(e);
+            appendBackfillLog(`ERROR loadNext: ${String(e && e.message ? e.message : e)}`);
+            fail++;
+            advanceAfterResult();
+        }
     }
 
-    window.addEventListener('message', onMessage);
+    appendBackfillLog(
+        typeof BroadcastChannel !== 'undefined'
+            ? 'Using BroadcastChannel (same-origin) for iframe results…'
+            : 'Using window.postMessage fallback…'
+    );
+
+    if (typeof BroadcastChannel !== 'undefined') {
+        try {
+            backfillChannel = new BroadcastChannel('rgbjunkie-export-backfill');
+            backfillChannel.onmessage = (ev) => handleBackfillPayload(ev.data);
+        } catch (e) {
+            console.warn('BroadcastChannel failed', e);
+            appendBackfillLog(`BroadcastChannel unavailable: ${String(e.message || e)}`);
+        }
+    }
+    window.addEventListener('message', onWindowMessage);
+
+    if (backfillIframe) {
+        backfillIframe.onload = () => appendBackfillLog('  (iframe load event)');
+        backfillIframe.onerror = () => appendBackfillLog('  (iframe error event — check network / SSL)');
+    }
+
     loadNext();
 }
 

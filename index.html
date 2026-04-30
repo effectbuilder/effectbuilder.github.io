@@ -383,8 +383,9 @@
                     <div class="modal-body">
                         <p>Welcome to the RGBJunkie Interactive Effect Builder! This guide explains the features to help you create stunning visual effects.</p>
 
-                        <div class="ratio ratio-16x9 mb-4">
-                            <iframe src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" title="RGBJunkie Interactive Effect Builder" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        <div class="ratio ratio-16x9 mb-4 position-relative bg-body-secondary">
+                            <iframe id="help-youtube-iframe" title="RGBJunkie Interactive Effect Builder tutorial" width="560" height="315" data-src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" src="about:blank" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>
+                            <p id="help-youtube-hint" class="position-absolute top-50 start-50 translate-middle text-center small text-body-secondary px-3 mb-0" style="pointer-events: none;">Video loads when you open this help tab.</p>
                         </div>
 
                         <div class="accordion" id="help-accordion">
@@ -1188,9 +1189,24 @@
                 </div>
             </div>
         </div>
-        test
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            (function () {
+                const helpModal = document.getElementById('help-modal');
+                const iframe = document.getElementById('help-youtube-iframe');
+                const hint = document.getElementById('help-youtube-hint');
+                if (!helpModal || !iframe || !iframe.dataset.src) return;
+                let loaded = false;
+                function loadHelpYoutube() {
+                    if (loaded) return;
+                    loaded = true;
+                    iframe.src = iframe.dataset.src;
+                    if (hint) hint.style.display = 'none';
+                }
+                helpModal.addEventListener('shown.bs.modal', loadHelpYoutube, { once: true });
+            })();
+        </script>
         <script type="module">
             import { parseGIF, decompressFrames } from 'https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm';
             window.parseGIF = parseGIF;
