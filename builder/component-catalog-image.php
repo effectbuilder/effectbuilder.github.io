@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/firestore-catalog-common.php';
 
 $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
-if ($id === '' || strlen($id) > 512 || preg_match('#[/#?\\\\]#', $id)) {
+if ($id === '' || strlen($id) > 512 || preg_match('~[/#?\\\\]~', $id)) {
     http_response_code(400);
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');

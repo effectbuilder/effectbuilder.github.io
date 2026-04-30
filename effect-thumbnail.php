@@ -9,14 +9,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/effects-firestore-lib.php';
 
 $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
-if ($id === '' || strlen($id) > 512 || preg_match('#[/#?\\\\]#', $id)) {
+if ($id === '' || strlen($id) > 512 || preg_match('~[/#?\\\\]~', $id)) {
     http_response_code(400);
     exit;
 }
 
 [$code, $fields] = effects_get_project_document($id);
 if ($code !== 200 || $fields === []) {
-    http_response_code(404);
+    http_response_code($code === 403 ? 403 : 404);
     exit;
 }
 if (! effects_is_public_true($fields['isPublic'] ?? false)) {

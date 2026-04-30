@@ -14,7 +14,7 @@ header('Cache-Control: public, max-age=60, stale-while-revalidate=300');
 header('Access-Control-Allow-Origin: *');
 
 $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
-if ($id === '' || strlen($id) > 512 || preg_match('#[/#?\\\\]#', $id)) {
+if ($id === '' || strlen($id) > 512 || preg_match('~[/#?\\\\]~', $id)) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing or invalid id'], JSON_UNESCAPED_SLASHES);
     exit;

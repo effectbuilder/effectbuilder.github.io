@@ -41,6 +41,8 @@ const BUILDER_PAGE_BASE = new URL('../', window.location.href).href;
 let backfillAbort = false;
 let backfillIframe = null;
 let backfillTimeoutId = null;
+/** @type {ReturnType<typeof setInterval> | null} */
+let backfillWaitTickerId = null;
 /** @type {BroadcastChannel | null} */
 let backfillChannel = null;
 
@@ -220,11 +222,22 @@ async function runBackfillExportedHtml() {
             clearTimeout(backfillTimeoutId);
             backfillTimeoutId = null;
         }
+        if (backfillWaitTickerId !== null) {
+            clearInterval(backfillWaitTickerId);
+            backfillWaitTickerId = null;
+        }
     }
 
     function armEffectTimeout() {
         clearEffectTimeout();
         const currentId = processingId;
+        let elapsed = 0;
+        backfillWaitTickerId = window.setInterval(() => {
+            elapsed += 10;
+            appendBackfillLog(
+                `  …still waiting (${elapsed}s) — iframe may be loading Firestore or waiting for auth; check browser console in the builder (open DevTools → top frame → Console).`
+            );
+        }, 10000);
         backfillTimeoutId = window.setTimeout(() => {
             fail++;
             appendBackfillLog(`TIMEOUT ${currentId} (no reply — stay signed in on this site, or check Firestore rules / builder errors in console)`);
@@ -251,7 +264,13 @@ async function runBackfillExportedHtml() {
     }
 
     function handleBackfillPayload(d) {
-        if (!d || d.type !== 'rgbjunkie-admin-export-done') return;
+        if (!d) return;
+        if (d.type === 'rgbjunkie-admin-export-progress') {
+            if (!processingId || String(d.id) !== String(processingId)) return;
+            appendBackfillLog(`  progress: ${d.stage || '…'}`);
+            return;
+        }
+        if (d.type !== 'rgbjunkie-admin-export-done') return;
         if (!processingId) return;
         if (String(d.id) !== String(processingId)) {
             console.warn('[admin backfill] ignored message id', d.id, 'expected', processingId);
