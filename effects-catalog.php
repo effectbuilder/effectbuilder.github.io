@@ -73,6 +73,7 @@ try {
                 'name' => $name,
                 'fileName' => 'rgbjunkie-' . $id . '.html',
                 'contentUrl' => $origin . '/effects/effect.json?id=' . rawurlencode($id),
+                'exportPlainUrl' => effects_export_plain_page_url($id),
                 'thumbnailUrl' => $thumbUrl,
                 'developer' => effects_pick_string($f, 'creatorName'),
                 'description' => $meta['description'],

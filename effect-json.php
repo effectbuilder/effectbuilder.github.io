@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Single public effect as JSON (workspace for HTML generation — no full HTML stored in Firestore).
+ * Single public effect as JSON (metadata + link to in-browser plain export). No full Firestore document by default.
  * GET /effects/effect.json?id=<projectId>
+ * Optional: includeWorkspace=1 adds configs/objects (large; for debugging only).
  */
 
 require_once __DIR__ . '/effects-firestore-lib.php';
@@ -45,21 +46,12 @@ $meta = effects_summary_from_fields($fields);
 $desc = $meta['description'];
 $tags = $meta['tags'];
 
-$configs = $fields['configs'] ?? [];
-$objects = $fields['objects'] ?? [];
-if (! is_array($configs)) {
-    $configs = [];
-}
-if (! is_array($objects)) {
-    $objects = [];
-}
+$includeWorkspace = isset($_GET['includeWorkspace'])
+    && (string) $_GET['includeWorkspace'] === '1';
 
-$workspace = [
-    'configs' => $configs,
-    'objects' => $objects,
-];
+$exportPlainUrl = effects_export_plain_page_url($id);
 
-// `html`: full document string for SignalRGB-style iframe; not persisted in Firestore — desktop fills from `workspace` (same rules as Effect Builder export) or leaves null.
+// `html` is always null here: the builder generates the document client-side. Use `exportPlainUrl` (effectId + exportPlain=1) to download/view as text/plain .txt in the browser.
 $payload = [
     'schemaVersion' => 1,
     'id' => $id,
@@ -69,8 +61,23 @@ $payload = [
     'description' => $desc,
     'tags' => $tags,
     'html' => null,
-    'workspace' => $workspace,
+    'exportPlainUrl' => $exportPlainUrl,
 ];
+
+if ($includeWorkspace) {
+    $configs = $fields['configs'] ?? [];
+    $objects = $fields['objects'] ?? [];
+    if (! is_array($configs)) {
+        $configs = [];
+    }
+    if (! is_array($objects)) {
+        $objects = [];
+    }
+    $payload['workspace'] = [
+        'configs' => $configs,
+        'objects' => $objects,
+    ];
+}
 
 $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($body === false) {

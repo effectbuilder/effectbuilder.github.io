@@ -1761,6 +1761,61 @@ document.addEventListener('DOMContentLoaded', function () {
             };
         }
 
+        /**
+         * ?exportPlain=1 — after a shared effect loads, download export HTML as a .txt (text/plain)
+         * and replace the page with a plain <pre> of the same source (no Playwright / server needed).
+         */
+        function runPlainTextExportDownload() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('exportPlain') !== '1') return;
+            let finalHtml;
+            let safeFilename;
+            try {
+                const out = buildExportPayload([]);
+                finalHtml = out.finalHtml;
+                safeFilename = out.safeFilename;
+            } catch (e) {
+                const msg = e && e.message ? e.message : String(e);
+                console.error(e);
+                document.body.innerHTML = '';
+                const p = document.createElement('p');
+                p.style.color = 'red';
+                p.style.padding = '1rem';
+                p.textContent = 'Export failed: ' + msg;
+                document.body.appendChild(p);
+                return;
+            }
+            if (!finalHtml) {
+                document.body.innerHTML = '';
+                const p = document.createElement('p');
+                p.style.padding = '1rem';
+                p.textContent = 'No HTML generated.';
+                document.body.appendChild(p);
+                return;
+            }
+            const id = currentProjectDocId || 'export';
+            const fname = (safeFilename || 'rgbjunkie-' + id) + '.txt';
+            const blob = new Blob([finalHtml], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fname;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(a.href);
+            document.title = fname;
+            document.body.innerHTML = '';
+            const pre = document.createElement('pre');
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.style.wordBreak = 'break-all';
+            pre.style.padding = '1rem';
+            pre.style.margin = '0';
+            pre.style.fontFamily = 'ui-monospace, Consolas, monospace';
+            pre.style.fontSize = '12px';
+            pre.textContent = finalHtml;
+            document.body.appendChild(pre);
+        }
+
         // This is a new function that replaces the old exportFile logic
         async function generateAndDownloadZip(exposedProperties = []) {
             const exportButton = document.getElementById('export-btn');
@@ -6540,6 +6595,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (workspace.docId) {
             (async () => {
                 try {
+                    const skipMetrics = new URLSearchParams(window.location.search).get('exportPlain') === '1';
+                    if (skipMetrics) return;
                     const docRef = window.doc(window.db, "projects", workspace.docId);
                     await window.updateDoc(docRef, { viewCount: window.increment(1) });
                 } catch (err) { }
@@ -8358,6 +8415,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (params.get('action') === 'regenThumbnail') {
                             regenerateAndSaveThumbnail(effectId);
+                        } else if (params.get('exportPlain') === '1') {
+                            runPlainTextExportDownload();
                         } else {
                             showToast("Shared effect loaded!", 'success');
                         }
