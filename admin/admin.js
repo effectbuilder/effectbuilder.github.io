@@ -32,8 +32,11 @@ const backfillExportBtn = document.getElementById('backfill-export-html-btn');
 const cancelBackfillBtn = document.getElementById('cancel-backfill-btn');
 const backfillProgressEl = document.getElementById('backfill-progress');
 
-/** Builder root (/?effectId=…) — avoids /index.html redirects that can break query strings. */
-const BUILDER_PAGE_BASE = new URL('/', window.location.origin).href;
+/**
+ * Builder root (sibling of /admin/) — matches "Return to Editor" (../).
+ * Using only origin + '/' breaks when the app lives in a subdirectory.
+ */
+const BUILDER_PAGE_BASE = new URL('../', window.location.href).href;
 
 let backfillAbort = false;
 let backfillIframe = null;
@@ -183,6 +186,7 @@ async function runBackfillExportedHtml() {
         appendBackfillLog('Fetching public project ids…');
         ids = await fetchAllPublicProjectIds();
         appendBackfillLog(`Found ${ids.length} public effects.`);
+        appendBackfillLog(`Builder base URL: ${BUILDER_PAGE_BASE}`);
     } catch (e) {
         console.error(e);
         showToast('Backfill', String(e.message || e), 'danger');
@@ -293,10 +297,11 @@ async function runBackfillExportedHtml() {
         try {
             const id = ids[idx];
             processingId = id;
-            appendBackfillLog(`→ ${idx + 1}/${ids.length} ${id} (loading builder iframe…)`);
             const u = new URL(BUILDER_PAGE_BASE);
             u.searchParams.set('effectId', id);
             u.searchParams.set('adminBackfillExport', '1');
+            appendBackfillLog(`→ ${idx + 1}/${ids.length} ${id}`);
+            appendBackfillLog(`  iframe: ${u.href}`);
             backfillIframe.src = u.href;
             armEffectTimeout();
         } catch (e) {
