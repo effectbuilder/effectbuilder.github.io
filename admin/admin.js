@@ -3,7 +3,7 @@ import { initializeTooltips, showToast, setupThemeSwitcher } from '../builder/ut
 import {
     auth, db,
     GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-    collection, getDocs, query
+    collection, getDocs, query, where, orderBy, limit, startAfter
 } from '../builder/firebase.js';
 
 // --- CONSTANTS ---
@@ -28,6 +28,15 @@ const loadingEl = document.getElementById('admin-loading');
 const deniedEl = document.getElementById('admin-denied');
 const contentEl = document.getElementById('admin-content');
 const downloadBtn = document.getElementById('download-zip-btn');
+const backfillExportBtn = document.getElementById('backfill-export-html-btn');
+const cancelBackfillBtn = document.getElementById('cancel-backfill-btn');
+const backfillProgressEl = document.getElementById('backfill-progress');
+
+/** Same origin as the Effect Builder index.html */
+const BUILDER_INDEX_URL = new URL('../index.html', window.location.href).href;
+
+let backfillAbort = false;
+let backfillIframe = null;
 
 // Navbar Elements (for auth)
 const loginBtn = document.getElementById('login-btn');
@@ -116,6 +125,121 @@ function setupAuthListeners() {
  * @param {string} collectionName The name of the Firestore collection
  * @returns {Promise<object>} An object where the keys are the document IDs
  */
+/**
+ * @returns {Promise<string[]>}
+ */
+async function fetchAllPublicProjectIds() {
+    const ids = [];
+    const projectsRef = collection(db, 'projects');
+    const pageSize = 40;
+    let lastDoc = null;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const q = lastDoc
+            ? query(projectsRef, where('isPublic', '==', true), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(pageSize))
+            : query(projectsRef, where('isPublic', '==', true), orderBy('createdAt', 'desc'), limit(pageSize));
+        const snap = await getDocs(q);
+        if (snap.empty) break;
+        snap.forEach((d) => ids.push(d.id));
+        lastDoc = snap.docs[snap.docs.length - 1];
+        if (snap.size < pageSize) break;
+    }
+    return ids;
+}
+
+function appendBackfillLog(line) {
+    if (!backfillProgressEl) return;
+    backfillProgressEl.textContent += `${line}\n`;
+    backfillProgressEl.scrollTop = backfillProgressEl.scrollHeight;
+}
+
+async function runBackfillExportedHtml() {
+    if (!backfillExportBtn || !backfillProgressEl) return;
+    backfillAbort = false;
+    backfillExportBtn.disabled = true;
+    cancelBackfillBtn.classList.remove('d-none');
+    cancelBackfillBtn.disabled = false;
+    backfillProgressEl.textContent = '';
+
+    let ids;
+    try {
+        appendBackfillLog('Fetching public project ids…');
+        ids = await fetchAllPublicProjectIds();
+        appendBackfillLog(`Found ${ids.length} public effects.`);
+    } catch (e) {
+        console.error(e);
+        showToast('Backfill', String(e.message || e), 'danger');
+        backfillExportBtn.disabled = false;
+        cancelBackfillBtn.classList.add('d-none');
+        return;
+    }
+
+    if (ids.length === 0) {
+        appendBackfillLog('Nothing to do.');
+        backfillExportBtn.disabled = false;
+        cancelBackfillBtn.classList.add('d-none');
+        return;
+    }
+
+    if (!backfillIframe) {
+        backfillIframe = document.createElement('iframe');
+        backfillIframe.setAttribute('title', 'Export backfill');
+        backfillIframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-99px;top:0;opacity:0;pointer-events:none;border:0';
+        document.body.appendChild(backfillIframe);
+    }
+
+    let idx = 0;
+    let ok = 0;
+    let fail = 0;
+
+    const onMessage = (ev) => {
+        if (ev.origin !== window.location.origin) return;
+        const d = ev.data;
+        if (!d || d.type !== 'rgbjunkie-admin-export-done') return;
+
+        if (d.ok) {
+            ok++;
+            appendBackfillLog(`OK ${d.id}`);
+        } else {
+            fail++;
+            appendBackfillLog(`FAIL ${d.id} ${d.error || ''}`);
+        }
+        idx++;
+        if (backfillAbort) {
+            cleanup();
+            appendBackfillLog('Cancelled.');
+            return;
+        }
+        if (idx >= ids.length) {
+            cleanup();
+            appendBackfillLog(`Done. ${ok} ok, ${fail} failed.`);
+            showToast('Backfill finished', `${ok} ok, ${fail} failed`, fail ? 'warning' : 'success');
+            return;
+        }
+        loadNext();
+    };
+
+    function cleanup() {
+        window.removeEventListener('message', onMessage);
+        backfillExportBtn.disabled = false;
+        cancelBackfillBtn.classList.add('d-none');
+        if (backfillIframe) {
+            backfillIframe.src = 'about:blank';
+        }
+    }
+
+    function loadNext() {
+        const id = ids[idx];
+        const u = new URL(BUILDER_INDEX_URL);
+        u.searchParams.set('effectId', id);
+        u.searchParams.set('adminBackfillExport', '1');
+        backfillIframe.src = u.href;
+    }
+
+    window.addEventListener('message', onMessage);
+    loadNext();
+}
+
 async function fetchCollectionData(collectionName) {
     const collectionRef = collection(db, collectionName);
     const q = query(collectionRef);
@@ -292,4 +416,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bind the download button
     downloadBtn.addEventListener('click', handleDownloadZip);
+
+    if (backfillExportBtn) {
+        backfillExportBtn.addEventListener('click', () => {
+            if (!confirm('This will open the builder once per public effect (may take a long time). Continue?')) return;
+            runBackfillExportedHtml();
+        });
+    }
+    if (cancelBackfillBtn) {
+        cancelBackfillBtn.addEventListener('click', () => {
+            backfillAbort = true;
+            cancelBackfillBtn.disabled = true;
+        });
+    }
 });

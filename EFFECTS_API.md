@@ -16,7 +16,7 @@ Public HTTPS only (`https://rgbjunkie.com` or `https://www.rgbjunkie.com`). No a
 | `name` | yes | Display title. |
 | `fileName` | yes | e.g. `rgbjunkie-{id}.html` |
 | `contentUrl` | yes | `GET` returns **JSON** — see Effect payload below. |
-| `exportPlainUrl` | yes | Opens the Effect Builder with **`exportPlain=1`**: in the browser, downloads the export HTML as a **`.txt`** (`text/plain`) and shows the source in a plain `<pre>`. Same generator as the normal Export button (`buildExportPayload`). |
+| `exportPlainUrl` | yes | Opens the Effect Builder with **`exportPlain=1`**: downloads export HTML as **`.txt`** and shows source in `<pre>`. |
 | `thumbnailUrl` | no | HTTPS image or `/effects/thumbnail.png?id=...` |
 | `developer` | no | Author. |
 | `description` | no | Parsed server-side from Firestore `configs` (meta `name === "description"`) or legacy `catalogDescription`. |
@@ -26,17 +26,18 @@ Public HTTPS only (`https://rgbjunkie.com` or `https://www.rgbjunkie.com`). No a
 
 - JSON: `https://rgbjunkie.com/effects/effect.json?id=AbC123xYz`
 - Plain export (browser): `https://rgbjunkie.com/?effectId=AbC123xYz&exportPlain=1`
-- **Plain text (one line):** `GET /effects/effect-export-url.txt?id=AbC123xYz` — **`Content-Type: text/plain`**, body is **only** the `exportPlainUrl` (plus newline). Use from `curl`/scripts; it is **not** the HTML source (that still requires a browser or stored copy).
+- **Plain text (one line):** `GET /effects/effect-export-url.txt?id=AbC123xYz` — **`Content-Type: text/plain`**, body is only **`exportPlainUrl`** (not the HTML document).
 
 ---
 
 ## Effect payload — `GET /effects/effect.json?id=<id>`
 
 - **Success:** `200`, `Content-Type: application/json; charset=utf-8`
-- **Body:** metadata plus **`exportPlainUrl`**. The full Firestore **`configs` / `objects`** blob is **not** included by default.
-- **`html`:** always **`null`**. HTML is produced **only in the browser** when the user (or app WebView) opens **`exportPlainUrl`**.
+- **`html`:** full self-contained HTML string when the Firestore document has **`exportedHtml`** (written by the Effect Builder on save, share, zip export, or via **Admin → Backfill**). Otherwise **`null`**.
+- **`exportPlainUrl`:** always present; browser-only fallback when **`html`** is missing.
+- **`workspace`** is omitted by default; use **`includeWorkspace=1`** for large `configs` / `objects` (debug only).
 
-### Default shape
+### Example shape (when stored export exists)
 
 ```json
 {
@@ -47,18 +48,43 @@ Public HTTPS only (`https://rgbjunkie.com` or `https://www.rgbjunkie.com`). No a
   "developer": "Ada",
   "description": "Short blurb",
   "tags": ["audio"],
-  "html": null,
+  "html": "<!DOCTYPE html>\\n<html>...",
   "exportPlainUrl": "https://rgbjunkie.com/?effectId=AbC123xYz&exportPlain=1"
 }
 ```
 
-### Optional full workspace
+### Firestore fields (Effect Builder)
 
-`GET /effects/effect.json?id=<id>&includeWorkspace=1` adds **`workspace`**: `{ "configs": [ ], "objects": [ ] }` (large). For debugging or offline rebuild only.
+| Field | Type | When set |
+|-------|------|----------|
+| `exportedHtml` | string | Save (overwrite/new), Share, Zip export; **Admin backfill** iframe (`adminBackfillExport=1`). |
+| `exportedHtmlUpdatedAt` | timestamp | Same as above. |
+
+**Size:** Firestore documents are capped at **~1 MiB** total. Very large effects may fail to save `exportedHtml`; the builder logs a warning.
+
+### Admin backfill (`/admin/`)
+
+Signed-in **admin UID** (same as in `admin/admin.js`) can run **Backfill all public effects**: for each public project id, a hidden iframe loads  
+`{builder}/?effectId={id}&adminBackfillExport=1`  
+so the builder runs `buildExportPayload` and **`updateDoc`** on that project.
+
+**Firestore rules** must allow the admin user to update **`exportedHtml`** on documents where `request.auth.uid` is not the owner. Example pattern (replace `ADMIN_UID`):
+
+```
+match /projects/{projectId} {
+  allow update: if request.auth != null && (
+    request.auth.uid == resource.data.userId
+    || request.auth.uid == 'ADMIN_UID'
+  );
+}
+```
+
+Tighten further with `request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])` if you only want those two fields writable by admin.
 
 ### Desktop / automation note
 
-A plain **`GET`** from PHP to **`exportPlainUrl`** returns the **shell HTML** of the app, **not** the generated document (JavaScript has not run). To obtain the string in code, use an environment that executes JS (embedded browser, user flow, or your own automation), or use **`includeWorkspace=1`** and rebuild from `workspace` client-side.
+- **`GET`** `exportPlainUrl` without JS still returns only the **app shell**, not generated HTML.
+- **`GET`** `effect.json` returns **`html`** whenever **`exportedHtml`** is populated server-side.
 
 - **304:** send `If-None-Match` with the response **`ETag`** when re-fetching.
 
@@ -77,6 +103,6 @@ PNG when the project stores a `data:` thumbnail.
 ## Firestore / builder
 
 - Community list: `projects` with `isPublic == true`.
-- **`exportPlain=1`** in **`js/main.js`**: skips the “Shared effect loaded!” toast and does **not** increment **`viewCount`** (same as treating the visit as an export helper).
-- The catalog `runQuery` may request `configs` only so the server can read description/tags; **`configs` are not included in the catalog JSON response**.
-- Composite index may be required for `isPublic` + `createdAt` (`runQuery`); if the catalog is empty, check server logs / Firestore console for index links.
+- **`exportPlain=1`** and **`adminBackfillExport=1`**: skip “Shared effect loaded!” toast and **do not** increment **`viewCount`**.
+- Catalog `runQuery` may request `configs` only for description/tags; **`configs` are not in the catalog JSON**.
+- Composite index may be required for `isPublic` + `createdAt`.

@@ -1,6 +1,6 @@
 ---
-description: Community effects JSON API and exportPlainUrl (in-browser HTML export)
-globs: effects-*.php,effect-*.php,EFFECTS_API.md,js/main.js
+description: Community effects API, exportedHtml in Firestore, admin backfill
+globs: effects-*.php,effect-*.php,EFFECTS_API.md,js/main.js,admin/admin.js
 alwaysApply: false
 ---
 
@@ -8,9 +8,6 @@ alwaysApply: false
 
 See **`EFFECTS_API.md`**.
 
-- **Catalog:** `GET /effects-catalog.json` — each row has **`contentUrl`** (JSON) and **`exportPlainUrl`** (builder with **`exportPlain=1`**).
-- **Effect JSON:** `GET /effects/effect.json?id=…` — **`html`** is always **`null`**; use **`exportPlainUrl`** in the browser for **`.txt` download + `<pre>`**.
-- **Plain text URL line:** `GET /effects/effect-export-url.txt?id=…` returns **`text/plain`** with one line = **`exportPlainUrl`** (for `curl`; not the HTML body).
-- **`includeWorkspace=1`** on effect.json adds large **`workspace`** for debugging only.
-
-When changing export behavior, keep **`runPlainTextExportDownload`** in **`js/main.js`** aligned with **`buildExportPayload`**.
+- **`exportedHtml`** / **`exportedHtmlUpdatedAt`** on Firestore **`projects`** — written from **`js/main.js`** on save, share, zip export, and from **`?adminBackfillExport=1`** (admin iframe only, same **`ADMIN_UID`** as **`admin/admin.js`**).
+- **`GET /effects/effect.json`** — **`html`** mirrors **`exportedHtml`** when present; else **`null`**. **`exportPlainUrl`** remains the browser fallback.
+- **Admin** (`**/admin/**`) — backfill loads builder iframes sequentially; requires Firestore rules allowing admin **`update`** on others’ projects for those fields.

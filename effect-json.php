@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Single public effect as JSON (metadata + link to in-browser plain export). No full Firestore document by default.
+ * Single public effect as JSON. `html` is set when `exportedHtml` exists on the Firestore project (saved from builder).
  * GET /effects/effect.json?id=<projectId>
  * Optional: includeWorkspace=1 adds configs/objects (large; for debugging only).
  */
@@ -51,7 +51,9 @@ $includeWorkspace = isset($_GET['includeWorkspace'])
 
 $exportPlainUrl = effects_export_plain_page_url($id);
 
-// `html` is always null here: the builder generates the document client-side. Use `exportPlainUrl` (effectId + exportPlain=1) to download/view as text/plain .txt in the browser.
+$exportedHtml = $fields['exportedHtml'] ?? null;
+$html = (is_string($exportedHtml) && $exportedHtml !== '') ? $exportedHtml : null;
+
 $payload = [
     'schemaVersion' => 1,
     'id' => $id,
@@ -60,7 +62,7 @@ $payload = [
     'developer' => effects_pick_string($fields, 'creatorName'),
     'description' => $desc,
     'tags' => $tags,
-    'html' => null,
+    'html' => $html,
     'exportPlainUrl' => $exportPlainUrl,
 ];
 

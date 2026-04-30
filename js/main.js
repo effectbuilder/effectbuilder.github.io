@@ -1816,6 +1816,65 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.appendChild(pre);
         }
 
+        /** Same HTML as zip export; stored on the project for PHP / desktop APIs (Firestore ~1MB doc limit). */
+        async function persistExportedHtmlToFirestore(options = {}) {
+            const silent = !!options.silent;
+            if (!currentProjectDocId || !window.db) return;
+            try {
+                const { finalHtml } = buildExportPayload([]);
+                if (!finalHtml) return;
+                await window.updateDoc(window.doc(window.db, 'projects', currentProjectDocId), {
+                    exportedHtml: finalHtml,
+                    exportedHtmlUpdatedAt: window.serverTimestamp()
+                });
+            } catch (err) {
+                console.warn('persistExportedHtmlToFirestore', err);
+                if (!silent) {
+                    showToast('Could not save export HTML to cloud (try a smaller effect or check Firestore rules).', 'warning');
+                }
+            }
+        }
+
+        const ADMIN_UID_FOR_EXPORT_BACKFILL = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
+
+        function scheduleAdminBackfillExportedHtml(effectDocId) {
+            window.setTimeout(async () => {
+                const u = window.auth.currentUser;
+                if (!u || u.uid !== ADMIN_UID_FOR_EXPORT_BACKFILL) {
+                    if (window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'rgbjunkie-admin-export-done',
+                            id: effectDocId,
+                            ok: false,
+                            error: 'not_admin'
+                        }, window.location.origin);
+                    }
+                    return;
+                }
+                try {
+                    const { finalHtml } = buildExportPayload([]);
+                    if (!finalHtml) throw new Error('empty_html');
+                    await window.updateDoc(window.doc(window.db, 'projects', effectDocId), {
+                        exportedHtml: finalHtml,
+                        exportedHtmlUpdatedAt: window.serverTimestamp()
+                    });
+                    if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'rgbjunkie-admin-export-done', id: effectDocId, ok: true }, window.location.origin);
+                    }
+                } catch (e) {
+                    console.error('adminBackfillExport', e);
+                    if (window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'rgbjunkie-admin-export-done',
+                            id: effectDocId,
+                            ok: false,
+                            error: String(e && e.message ? e.message : e)
+                        }, window.location.origin);
+                    }
+                }
+            }, 1200);
+        }
+
         // This is a new function that replaces the old exportFile logic
         async function generateAndDownloadZip(exposedProperties = []) {
             const exportButton = document.getElementById('export-btn');
@@ -1847,6 +1906,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 showToast("Zip file download started.", 'info');
                 await incrementDownloadCount();
+                await persistExportedHtmlToFirestore({ silent: true });
 
             } catch (error) {
                 console.error('Export failed:', error);
@@ -6595,7 +6655,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (workspace.docId) {
             (async () => {
                 try {
-                    const skipMetrics = new URLSearchParams(window.location.search).get('exportPlain') === '1';
+                    const skipMetrics = new URLSearchParams(window.location.search).get('exportPlain') === '1'
+                        || new URLSearchParams(window.location.search).get('adminBackfillExport') === '1';
                     if (skipMetrics) return;
                     const docRef = window.doc(window.db, "projects", workspace.docId);
                     await window.updateDoc(docRef, { viewCount: window.increment(1) });
@@ -7355,6 +7416,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // [NEW] Load comments for this effect
                         loadComments(currentProjectDocId);
 
+                        await persistExportedHtmlToFirestore({ silent: true });
                         showToast(`Project "${trimmedName}" was overwritten successfully!`, 'success');
                     } catch (error) {
                         console.error("Error overwriting document: ", error);
@@ -7398,6 +7460,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // [NEW] Load comments for the new effect
                 loadComments(currentProjectDocId);
 
+                await persistExportedHtmlToFirestore({ silent: true });
                 showToast(`Effect "${trimmedName}" was saved successfully!`, 'success');
             } catch (error) {
                 console.error("Error saving new document: ", error);
@@ -8329,6 +8392,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Case 1: Project is already saved. UPDATE the existing document.
                 docRef = window.doc(projectsRef, effectIdToShare);
                 await window.updateDoc(docRef, projectData);
+                await persistExportedHtmlToFirestore({ silent: true });
                 showToast(`Effect "${name}" updated and share link generated!`, 'success');
             } else {
                 // Case 2: Project is NOT saved (no ID). SAVE AS NEW.
@@ -8345,6 +8409,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 effectIdToShare = docRef.id;
                 currentProjectDocId = docRef.id; // Update current ID
                 updateShareButtonState();
+                await persistExportedHtmlToFirestore({ silent: true });
                 showToast(`New effect "${name}" saved and share link copied!`, 'success');
             }
 
@@ -8413,7 +8478,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (projectData.isPublic) {
                         loadWorkspace(projectData);
 
-                        if (params.get('action') === 'regenThumbnail') {
+                        if (params.get('adminBackfillExport') === '1') {
+                            scheduleAdminBackfillExportedHtml(effectId);
+                        } else if (params.get('action') === 'regenThumbnail') {
                             regenerateAndSaveThumbnail(effectId);
                         } else if (params.get('exportPlain') === '1') {
                             runPlainTextExportDownload();
