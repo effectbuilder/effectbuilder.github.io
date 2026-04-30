@@ -11,6 +11,7 @@ RewriteRule ^builder/component-layout$ /builder/component-layout.php [L,QSA]
 # Desktop / Tauri — community effects (PHP + Firestore REST on `projects`)
 RewriteRule ^effects-catalog\.json$ /effects-catalog.php [L,QSA]
 RewriteRule ^effects/effect\.json$ /effect-json.php [L,QSA]
+RewriteRule ^effects/effect-export-url\.txt$ /effect-plain-url.php [L,QSA]
 RewriteRule ^effects/thumbnail\.png$ /effect-thumbnail.php [L,QSA]
 
 # 1. Map the Custom 404 Page

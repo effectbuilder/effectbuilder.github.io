@@ -245,6 +245,19 @@ function effects_site_origin(): string
     return $scheme . '://' . $host;
 }
 
+/**
+ * Opens the Effect Builder with exportPlain=1: in-browser download of the export HTML as a .txt and a plain pre view.
+ */
+function effects_export_plain_page_url(string $effectId): string
+{
+    $effectId = trim($effectId);
+    if ($effectId === '') {
+        return rtrim(effects_site_origin(), '/') . '/';
+    }
+
+    return rtrim(effects_site_origin(), '/') . '/?effectId=' . rawurlencode($effectId) . '&exportPlain=1';
+}
+
 function effects_pick_string(array $fields, string ...$keys): ?string
 {
     foreach ($keys as $k) {
