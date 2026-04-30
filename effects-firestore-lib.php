@@ -321,3 +321,34 @@ function effects_is_public_true($v): bool
 {
     return $v === true;
 }
+
+/**
+ * Reads stored SignalRGB-style HTML from Firestore project fields.
+ * Prefers legacy plain `exportedHtml`; otherwise decompresses `exportedHtmlGzip` (base64 gzip from REST bytesValue).
+ *
+ * @param array<string, mixed> $fields
+ */
+function effects_decode_exported_html_from_fields(array $fields): ?string
+{
+    $plain = $fields['exportedHtml'] ?? null;
+    if (is_string($plain) && $plain !== '') {
+        return $plain;
+    }
+
+    $gzB64 = $fields['exportedHtmlGzip'] ?? null;
+    if (! is_string($gzB64) || $gzB64 === '') {
+        return null;
+    }
+
+    $raw = base64_decode($gzB64, true);
+    if ($raw === false || $raw === '') {
+        return null;
+    }
+
+    $out = @gzdecode($raw);
+    if (is_string($out) && $out !== '') {
+        return $out;
+    }
+
+    return null;
+}

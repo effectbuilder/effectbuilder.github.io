@@ -1816,21 +1816,47 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.appendChild(pre);
         }
 
-        /** Same HTML as zip export; stored on the project for PHP / desktop APIs (Firestore ~1MB doc limit). */
+        /** gzip + Firestore bytes to stay under the ~1 MiB document size limit; drops legacy plain `exportedHtml`. */
+        async function gzipUtf8ToUint8Array(text) {
+            if (typeof CompressionStream === 'undefined') {
+                throw new Error('CompressionStream not supported');
+            }
+            const input = new TextEncoder().encode(text);
+            const cs = new CompressionStream('gzip');
+            const w = cs.writable.getWriter();
+            await w.write(input);
+            await w.close();
+            const buf = await new Response(cs.readable).arrayBuffer();
+            return new Uint8Array(buf);
+        }
+
+        async function buildExportedHtmlFirestorePayload(finalHtml) {
+            const gz = await gzipUtf8ToUint8Array(finalHtml);
+            const payload = {
+                exportedHtmlGzip: window.Bytes.fromUint8Array(gz),
+                exportedHtmlEncoding: 'gzip',
+                exportedHtmlUpdatedAt: window.serverTimestamp()
+            };
+            if (typeof window.deleteField === 'function') {
+                payload.exportedHtml = window.deleteField();
+            }
+            return payload;
+        }
+
+        /** Same HTML as zip export; stored gzip-compressed for PHP / desktop APIs (Firestore ~1 MiB doc limit). */
         async function persistExportedHtmlToFirestore(options = {}) {
             const silent = !!options.silent;
             if (!currentProjectDocId || !window.db) return;
             try {
                 const { finalHtml } = buildExportPayload([]);
                 if (!finalHtml) return;
-                await window.updateDoc(window.doc(window.db, 'projects', currentProjectDocId), {
-                    exportedHtml: finalHtml,
-                    exportedHtmlUpdatedAt: window.serverTimestamp()
-                });
+                const payload = await buildExportedHtmlFirestorePayload(finalHtml);
+                await window.updateDoc(window.doc(window.db, 'projects', currentProjectDocId), payload);
             } catch (err) {
                 console.warn('persistExportedHtmlToFirestore', err);
                 if (!silent) {
-                    showToast('Could not save export HTML to cloud (try a smaller effect or check Firestore rules).', 'warning');
+                    const msg = err && err.message ? err.message : String(err);
+                    showToast('Could not save export HTML to cloud (document may still be too large, or rules/network). ' + msg, 'warning');
                 }
             }
         }
@@ -1854,10 +1880,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 try {
                     const { finalHtml } = buildExportPayload([]);
                     if (!finalHtml) throw new Error('empty_html');
-                    await window.updateDoc(window.doc(window.db, 'projects', effectDocId), {
-                        exportedHtml: finalHtml,
-                        exportedHtmlUpdatedAt: window.serverTimestamp()
-                    });
+                    const payload = await buildExportedHtmlFirestorePayload(finalHtml);
+                    await window.updateDoc(window.doc(window.db, 'projects', effectDocId), payload);
                     if (window.parent !== window) {
                         window.parent.postMessage({ type: 'rgbjunkie-admin-export-done', id: effectDocId, ok: true }, window.location.origin);
                     }

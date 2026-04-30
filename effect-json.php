@@ -51,8 +51,7 @@ $includeWorkspace = isset($_GET['includeWorkspace'])
 
 $exportPlainUrl = effects_export_plain_page_url($id);
 
-$exportedHtml = $fields['exportedHtml'] ?? null;
-$html = (is_string($exportedHtml) && $exportedHtml !== '') ? $exportedHtml : null;
+$html = effects_decode_exported_html_from_fields($fields);
 
 $payload = [
     'schemaVersion' => 1,

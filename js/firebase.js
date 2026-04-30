@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 // import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove, Bytes, deleteField } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -55,3 +55,5 @@ window.documentId = documentId; // This exports the actual function
 window.writeBatch = writeBatch;
 window.arrayUnion = arrayUnion;
 window.arrayRemove = arrayRemove;
+window.Bytes = Bytes;
+window.deleteField = deleteField;
