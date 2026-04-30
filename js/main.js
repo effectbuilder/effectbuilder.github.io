@@ -1912,6 +1912,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 400);
         }
 
+        window.scheduleAdminBackfillExportedHtml = scheduleAdminBackfillExportedHtml;
+
         // This is a new function that replaces the old exportFile logic
         async function generateAndDownloadZip(exposedProperties = []) {
             const exportButton = document.getElementById('export-btn');
@@ -8312,6 +8314,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
+     * Notify admin backfill parent when the builder cannot run the export (wrong scope used to call the scheduler).
+     * Same transport as scheduleAdminBackfillExportedHtml's reply().
+     */
+    function postAdminBackfillDoneToOpener(effectDocId, payload) {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get('adminBackfillExport') !== '1') return;
+        const msg = {
+            type: 'rgbjunkie-admin-export-done',
+            id: String(effectDocId),
+            ...payload
+        };
+        try {
+            if (typeof BroadcastChannel !== 'undefined') {
+                const bc = new BroadcastChannel('rgbjunkie-export-backfill');
+                bc.postMessage(msg);
+                bc.close();
+            }
+        } catch (e) {
+            console.warn('postAdminBackfillDoneToOpener BroadcastChannel', e);
+        }
+        if (window.parent !== window) {
+            window.parent.postMessage(msg, '*');
+        }
+    }
+
+    /**
      * The main initialization function for the application.
      * It sets up the initial configuration, creates objects, renders the form,
      * initializes tooltips, starts the animation loop, and sets up the resizable panels.
@@ -8358,6 +8386,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 generateOutputScript();
             }
         } else {
+            const pInit = new URLSearchParams(window.location.search);
+            const eidInit = pInit.get('effectId');
+            if (eidInit && pInit.get('adminBackfillExport') === '1') {
+                postAdminBackfillDoneToOpener(eidInit, { ok: false, error: 'firebase_db_unavailable' });
+            }
             // Fall back to the default template if firebase is not available
             const parser = new DOMParser();
             const doc = parser.parseFromString(INITIAL_CONFIG_TEMPLATE, 'text/html');
@@ -8516,7 +8549,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         loadWorkspace(projectData);
 
                         if (params.get('adminBackfillExport') === '1') {
-                            scheduleAdminBackfillExportedHtml(effectId);
+                            if (typeof window.scheduleAdminBackfillExportedHtml === 'function') {
+                                window.scheduleAdminBackfillExportedHtml(effectId);
+                            } else {
+                                postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'backfill_scheduler_unavailable' });
+                            }
                         } else if (params.get('action') === 'regenThumbnail') {
                             regenerateAndSaveThumbnail(effectId);
                         } else if (params.get('exportPlain') === '1') {
@@ -8528,14 +8565,25 @@ document.addEventListener('DOMContentLoaded', function () {
                         return true;
                     } else {
                         showToast("This effect is not public.", 'danger');
+                        if (params.get('adminBackfillExport') === '1') {
+                            postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'effect_not_public' });
+                        }
                     }
                 } else {
                     showToast("Shared effect not found.", 'danger');
+                    if (params.get('adminBackfillExport') === '1') {
+                        postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'effect_not_found' });
+                    }
                 }
             } catch (error) {
                 console.error("Error loading shared effect:", error);
                 showToast("Could not load the shared effect.", 'danger');
+                if (params.get('adminBackfillExport') === '1') {
+                    postAdminBackfillDoneToOpener(effectId, { ok: false, error: String(error && error.message ? error.message : error) });
+                }
             }
+        } else if (effectId && params.get('adminBackfillExport') === '1') {
+            postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'firebase_db_unavailable' });
         }
 
         return false;
