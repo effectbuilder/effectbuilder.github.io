@@ -76,6 +76,26 @@
                     </button>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Effect export HTML (Firestore)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Writes <code>exportedHtml</code> (and <code>exportedHtmlUpdatedAt</code>) on each <strong>public</strong> project by opening the Effect Builder in a hidden iframe for each id.
+                        New saves, shares, and zip exports from the builder already update these fields.
+                    </p>
+                    <p class="text-warning small mb-2">
+                        Deploy Firestore rules so your admin UID can <code>update</code> documents owned by other users (at least <code>exportedHtml</code> and <code>exportedHtmlUpdatedAt</code>), or backfill will fail with permission errors.
+                    </p>
+                    <button class="btn btn-warning btn-lg" id="backfill-export-html-btn" type="button">
+                        <i class="bi bi-cloud-upload me-2"></i> Backfill all public effects
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2 d-none" id="cancel-backfill-btn" type="button">Cancel</button>
+                    <div id="backfill-progress" class="mt-3 small font-monospace text-body-secondary" style="max-height: 220px; overflow-y: auto; white-space: pre-wrap;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
