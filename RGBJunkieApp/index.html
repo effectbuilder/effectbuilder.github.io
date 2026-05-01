@@ -80,7 +80,9 @@
                         Plan where every strip and device sits, preview rich lighting looks in real time, then send them to the gear on your desk—without digging through dense technical menus.
                     </p>
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <span class="badge rounded-pill text-bg-dark border">Latest · v0.2.4</span>
+                        <!-- RGBJUNKIE_AUTO:BEGIN latest-badge -->
+                        <span class="badge rounded-pill text-bg-dark border">Latest · v0.2.7</span>
+                        <!-- RGBJUNKIE_AUTO:END latest-badge -->
                         <span class="badge rounded-pill text-bg-secondary">Drag-and-drop layout</span>
                         <span class="badge rounded-pill text-bg-secondary">Effect library</span>
                         <span class="badge rounded-pill text-bg-secondary">Paint individual LEDs</span>
@@ -182,17 +184,18 @@
                         <h2 class="h3 fw-bold text-body-emphasis mb-2 text-center"><i class="bi bi-cloud-download me-2 text-info"></i>Download for Windows</h2>
                         <p class="text-body-secondary text-center mb-4">Pick the installer that fits how you like to install apps. Both options install the same RGBJunkie experience on 64-bit Windows. Older builds stay available if you need to match a prior install.</p>
 
+                        <!-- RGBJUNKIE_AUTO:BEGIN download-cards -->
                         <div class="card border-secondary shadow-sm mb-4">
                             <div class="card-header bg-dark border-secondary d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <span class="fw-semibold"><i class="bi bi-windows me-2"></i>RGBJunkie v0.2.4 · Windows 10 or later (64-bit)</span>
+                                <span class="fw-semibold"><i class="bi bi-windows me-2"></i>RGBJunkie v0.2.7 · Windows 10 or later (64-bit)</span>
                                 <span class="badge text-bg-success">Current</span>
                             </div>
                             <div class="card-body">
                                 <div class="d-grid gap-2 d-sm-flex flex-sm-wrap">
-                                    <a class="btn btn-primary btn-lg flex-sm-fill" href="downloads/RGBJunkie_0.2.4_x64-setup.exe" download>
+                                    <a class="btn btn-primary btn-lg flex-sm-fill" href="downloads/RGBJunkie_0.2.7_x64-setup.exe" download>
                                         <i class="bi bi-download me-2"></i>Download installer
                                     </a>
-                                    <a class="btn btn-outline-primary flex-sm-fill" href="downloads/RGBJunkie_0.2.4_x64_en-US.msi" download>
+                                    <a class="btn btn-outline-primary flex-sm-fill" href="downloads/RGBJunkie_0.2.7_x64_en-US.msi" download>
                                         <i class="bi bi-box-seam me-2"></i>Download MSI (IT-friendly)
                                     </a>
                                 </div>
@@ -201,12 +204,12 @@
                                 <p class="small text-muted mb-2 fw-semibold">Share these links</p>
                                 <div class="input-group input-group-sm mb-2">
                                     <span class="input-group-text bg-dark border-secondary text-secondary">Installer</span>
-                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-setup" data-base-path="downloads/RGBJunkie_0.2.4_x64-setup.exe">
+                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-setup" data-base-path="downloads/RGBJunkie_0.2.7_x64-setup.exe">
                                     <button class="btn btn-outline-secondary" type="button" data-copy-target="link-setup" title="Copy link"><i class="bi bi-clipboard"></i></button>
                                 </div>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-dark border-secondary text-secondary">MSI</span>
-                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-msi" data-base-path="downloads/RGBJunkie_0.2.4_x64_en-US.msi">
+                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-msi" data-base-path="downloads/RGBJunkie_0.2.7_x64_en-US.msi">
                                     <button class="btn btn-outline-secondary" type="button" data-copy-target="link-msi" title="Copy link"><i class="bi bi-clipboard"></i></button>
                                 </div>
                             </div>
@@ -215,17 +218,87 @@
                         <div class="card border-secondary shadow-sm mb-4">
                             <div class="card-header bg-dark border-secondary">
                                 <span class="fw-semibold"><i class="bi bi-archive me-2"></i>Previous releases</span>
-                                <span class="small text-body-secondary d-block mt-1">Same 64-bit Windows requirement; use these if you are pinning to an earlier build.</span>
+                                <span class="small text-body-secondary d-block mt-1">All installer pairs we currently host (newest first); same 64-bit Windows requirement.</span>
                             </div>
                             <div class="card-body p-0">
                                 <div class="accordion accordion-flush" id="installersArchive">
                                     <div class="accordion-item bg-body-tertiary border-secondary">
                                         <h3 class="accordion-header">
-                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-021" aria-expanded="false" aria-controls="rel-021">
-                                                v0.2.1
-                                            </button>
+                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-0-2-6" aria-expanded="false" aria-controls="rel-0-2-6">v0.2.6</button>
                                         </h3>
-                                        <div id="rel-021" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
+                                        <div id="rel-0-2-6" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
+                                            <div class="accordion-body border-top border-secondary">
+                                                <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.6_x64-setup.exe" download><i class="bi bi-download me-2"></i>Setup (.exe)</a>
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.6_x64_en-US.msi" download><i class="bi bi-box-seam me-2"></i>MSI</a>
+                                                </div>
+                                                <p class="small text-muted mb-2 fw-semibold">Share direct links</p>
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">Installer</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-setup-026" data-base-path="downloads/RGBJunkie_0.2.6_x64-setup.exe">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-setup-026" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">MSI</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-msi-026" data-base-path="downloads/RGBJunkie_0.2.6_x64_en-US.msi">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-msi-026" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item bg-body-tertiary border-secondary">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-0-2-5" aria-expanded="false" aria-controls="rel-0-2-5">v0.2.5</button>
+                                        </h3>
+                                        <div id="rel-0-2-5" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
+                                            <div class="accordion-body border-top border-secondary">
+                                                <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.5_x64-setup.exe" download><i class="bi bi-download me-2"></i>Setup (.exe)</a>
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.5_x64_en-US.msi" download><i class="bi bi-box-seam me-2"></i>MSI</a>
+                                                </div>
+                                                <p class="small text-muted mb-2 fw-semibold">Share direct links</p>
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">Installer</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-setup-025" data-base-path="downloads/RGBJunkie_0.2.5_x64-setup.exe">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-setup-025" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">MSI</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-msi-025" data-base-path="downloads/RGBJunkie_0.2.5_x64_en-US.msi">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-msi-025" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item bg-body-tertiary border-secondary">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-0-2-4" aria-expanded="false" aria-controls="rel-0-2-4">v0.2.4</button>
+                                        </h3>
+                                        <div id="rel-0-2-4" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
+                                            <div class="accordion-body border-top border-secondary">
+                                                <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.4_x64-setup.exe" download><i class="bi bi-download me-2"></i>Setup (.exe)</a>
+                                                    <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.4_x64_en-US.msi" download><i class="bi bi-box-seam me-2"></i>MSI</a>
+                                                </div>
+                                                <p class="small text-muted mb-2 fw-semibold">Share direct links</p>
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">Installer</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-setup-024" data-base-path="downloads/RGBJunkie_0.2.4_x64-setup.exe">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-setup-024" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-dark border-secondary text-secondary">MSI</span>
+                                                    <input type="text" class="form-control font-monospace small bg-body text-body-secondary" readonly value="" id="link-msi-024" data-base-path="downloads/RGBJunkie_0.2.4_x64_en-US.msi">
+                                                    <button class="btn btn-outline-secondary" type="button" data-copy-target="link-msi-024" title="Copy link"><i class="bi bi-clipboard"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item bg-body-tertiary border-secondary">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-0-2-1" aria-expanded="false" aria-controls="rel-0-2-1">v0.2.1</button>
+                                        </h3>
+                                        <div id="rel-0-2-1" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
                                             <div class="accordion-body border-top border-secondary">
                                                 <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
                                                     <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.1_x64-setup.exe" download><i class="bi bi-download me-2"></i>Setup (.exe)</a>
@@ -245,13 +318,11 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="accordion-item bg-body-tertiary border-secondary border-top-0">
+                                    <div class="accordion-item bg-body-tertiary border-secondary">
                                         <h3 class="accordion-header">
-                                            <button class="accordion-button collapsed bg-body-tertiary text-body rounded-0" type="button" data-bs-toggle="collapse" data-bs-target="#rel-020" aria-expanded="false" aria-controls="rel-020">
-                                                v0.2.0
-                                            </button>
+                                            <button class="accordion-button collapsed bg-body-tertiary text-body" type="button" data-bs-toggle="collapse" data-bs-target="#rel-0-2-0" aria-expanded="false" aria-controls="rel-0-2-0">v0.2.0</button>
                                         </h3>
-                                        <div id="rel-020" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
+                                        <div id="rel-0-2-0" class="accordion-collapse collapse" data-bs-parent="#installersArchive">
                                             <div class="accordion-body border-top border-secondary">
                                                 <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
                                                     <a class="btn btn-outline-secondary flex-sm-fill" href="downloads/RGBJunkie_0.2.0_x64-setup.exe" download><i class="bi bi-download me-2"></i>Setup (.exe)</a>
@@ -274,6 +345,7 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- RGBJUNKIE_AUTO:END download-cards -->
 
                         <div class="alert alert-info border-info bg-dark mb-0" role="note">
                             <h3 class="alert-heading h6"><i class="bi bi-shield-check me-2"></i>Windows may ask you to confirm the first time</h3>
@@ -291,7 +363,7 @@
                         <h2 class="h4 fw-bold text-body-emphasis mb-3"><i class="bi bi-pc-display-horizontal me-2 text-info"></i>What you need</h2>
                         <ul class="list-group list-group-flush border rounded border-secondary overflow-hidden">
                             <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Computer:</strong> Windows 10 or newer, 64-bit, desktop or laptop.</li>
-                            <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Lighting:</strong> USB RGB devices that RGBJunkie supports out of the box. <a href="supported.html">Browse supported USB devices and layout parts</a>.</li>
+                            <!-- <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Lighting:</strong> USB RGB devices that RGBJunkie supports out of the box. <a href="supported.html">Browse supported USB devices and layout parts</a>.</li> -->
                             <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Screen:</strong> At least a 1200×800 window size is comfortable for the full workspace.</li>
                         </ul>
                     </div>
