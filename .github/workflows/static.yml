@@ -1,4 +1,9 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Deploy static content to GitHub Pages
+#
+# FIRST-TIME SETUP (required once per repo, or you get HttpError Not Found on configure-pages):
+#   GitHub → repo → Settings → Pages → Build and deployment → Source → GitHub Actions → Save.
+#   Then re-run this workflow (Actions → workflow → Run workflow).
+#
 name: Deploy static content to Pages
 
 on:
@@ -30,14 +35,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
+        # enablement: auto exists but needs a PAT in secrets—not GITHUB_TOKEN; enable Pages in Settings instead (see header comment).
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           # Upload entire repository
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
