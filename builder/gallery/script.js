@@ -896,13 +896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setVersionWithCaching();
     initializeTooltips();
 
-    window.addEventListener('i18n:changed', () => {
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-            const inst = bootstrap.Tooltip.getInstance(el);
-            if (inst) inst.dispose();
-        });
-        initializeTooltips();
-    });
+    // Tooltips refresh from js/i18n.js on language change (do not dispose here — Bootstrap would revert titles).
 
     // Setup theme switcher first so colors are correct
     setupThemeSwitcher(null); // No canvas to redraw

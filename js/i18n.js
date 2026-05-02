@@ -84,27 +84,44 @@
             }
             document.documentElement.lang = this.cur.indexOf('-') > -1 ? this.cur : this.cur;
             this.applyDocumentLanguage();
+            /** Dispose tooltips *before* updateStaticUI: Bootstrap's dispose() restores the cached (usually English)
+             *  title and would overwrite freshly translated titles if we disposed after updating. */
+            this.disposeBootstrapTooltips();
             this.updateStaticUI();
             this.populateLangSwitcher();
-            this.refreshBootstrapTooltips();
+            this.initBootstrapTooltips();
             window.dispatchEvent(new CustomEvent('i18n:changed', { detail: { lang: this.cur } }));
         },
 
-        refreshBootstrapTooltips: function () {
+        /** Dropdown toggles must not get Tooltips — they break outside-click close (BS dropdown + Tooltip conflict). */
+        _skipTooltipElement: function (el) {
+            var t = (el.getAttribute('data-bs-toggle') || '').toLowerCase();
+            return t.indexOf('dropdown') !== -1;
+        },
+
+        disposeBootstrapTooltips: function () {
             if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
-            /** Dropdown toggles must not get Tooltips — they break outside-click close (BS dropdown + Tooltip conflict). */
-            function skipTooltip(el) {
-                var t = (el.getAttribute('data-bs-toggle') || '').toLowerCase();
-                return t.indexOf('dropdown') !== -1;
-            }
-            document.querySelectorAll('[title]').forEach(function (el) {
-                if (skipTooltip(el)) return;
+            var self = this;
+            var seen = new WeakSet();
+            function disposeOne(el) {
+                if (!el || seen.has(el)) return;
+                seen.add(el);
+                if (self._skipTooltipElement(el)) return;
                 var inst = bootstrap.Tooltip.getInstance(el);
                 if (inst) inst.dispose();
-            });
+            }
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(disposeOne);
+            document.querySelectorAll('[title]').forEach(disposeOne);
+        },
+
+        initBootstrapTooltips: function () {
+            if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+            var self = this;
+            /** Match builder/util.js initializeTooltips (hover-only, no focus trigger). */
+            var tooltipOpts = { trigger: 'hover' };
             document.querySelectorAll('[title]').forEach(function (el) {
-                if (skipTooltip(el)) return;
-                if (!bootstrap.Tooltip.getInstance(el)) new bootstrap.Tooltip(el);
+                if (self._skipTooltipElement(el)) return;
+                if (!bootstrap.Tooltip.getInstance(el)) new bootstrap.Tooltip(el, tooltipOpts);
             });
         },
 

@@ -53,20 +53,25 @@ export function setupThemeSwitcher(canvasRedrawCallback = null) {
 // Utility for showing tooltips
 export function initializeTooltips() {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    
-    [...tooltipTriggerList].map(tooltipTriggerEl => {
-        // 1. Change the trigger to 'hover' only (removes 'focus')
-        const tooltip = new bootstrap.Tooltip(tooltipTriggerEl, {
-            trigger: 'hover' 
-        });
 
-        // 2. Force the tooltip to hide immediately when the button is clicked
-        tooltipTriggerEl.addEventListener('click', function () {
-            const instance = bootstrap.Tooltip.getInstance(this);
-            if (instance) {
-                instance.hide();
-            }
-        });
+    [...tooltipTriggerList].map(tooltipTriggerEl => {
+        let tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+        if (!tooltip) {
+            tooltip = new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover'
+            });
+        }
+
+        // Hide tooltip on click (bind once so we do not stack listeners when I18N created the instance first)
+        if (!tooltipTriggerEl.dataset.rgbTooltipClickHide) {
+            tooltipTriggerEl.dataset.rgbTooltipClickHide = '1';
+            tooltipTriggerEl.addEventListener('click', function () {
+                const instance = bootstrap.Tooltip.getInstance(this);
+                if (instance) {
+                    instance.hide();
+                }
+            });
+        }
 
         return tooltip;
     });

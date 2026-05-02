@@ -4988,11 +4988,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeTooltips();
 
     window.addEventListener('i18n:changed', () => {
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-            const inst = bootstrap.Tooltip.getInstance(el);
-            if (inst) inst.dispose();
-        });
-        initializeTooltips();
+        // Tooltips are recreated in js/i18n.js after titles update; disposing here would restore English via Bootstrap.
         updateLedCount();
     });
 
