@@ -891,9 +891,18 @@ function handleGalleryScroll(e) {
 // ---
 // --- INITIALIZATION ---
 // ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.I18N) await window.I18N.init();
     setVersionWithCaching();
     initializeTooltips();
+
+    window.addEventListener('i18n:changed', () => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+            const inst = bootstrap.Tooltip.getInstance(el);
+            if (inst) inst.dispose();
+        });
+        initializeTooltips();
+    });
 
     // Setup theme switcher first so colors are correct
     setupThemeSwitcher(null); // No canvas to redraw

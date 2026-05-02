@@ -1,0 +1,36 @@
+<p>La potencia del constructor está en sus formas y herramientas especializadas. Al cambiar la propiedad <strong>Forma</strong> de un objeto aparecen distintos ajustes.</p>
+                                        <h6>Herramienta Polilínea</h6>
+                                        <ul>
+                                            <li><strong>Dibujo:</strong> Pulsa <strong><i class="bi bi-pen"></i> Añadir polilínea</strong>. Haz clic en el lienzo para colocar puntos; <strong>doble clic</strong> o <kbd>Intro</kbd> para terminar.</li>
+                                            <li><strong>Editar nodos:</strong> Selecciona la polilínea y arrastra los nodos. <strong>Doble clic</strong> en un segmento para añadir un nodo, o <strong>Alt+Clic</strong> en un nodo para borrarlo.</li>
+                                            <li><strong>Animación de trayectoria:</strong> Anima un subobjeto (partícula) que recorre la ruta; puedes ajustar forma, velocidad, estela y comportamiento al llegar al final.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Editor de pixel art</h6>
+                                        <ul>
+                                            <li><strong>Edición:</strong> En un objeto `pixel-art`, pulsa <kbd><i class="bi bi-pencil-square"></i> Editar</kbd> en cualquier fotograma para abrir el editor integrado.</li>
+                                            <li><strong>Herramientas:</strong> Pinta, <kbd><i class="bi bi-paint-bucket"></i> Rellenar</kbd> zonas o voltea el arte con <kbd><i class="bi bi-arrow-left-right"></i></kbd> / <kbd><i class="bi bi-arrow-down-up"></i></kbd>.</li>
+                                            <li><strong>Colores especiales:</strong> La paleta del editor permite valores que interpreta el motor (p. ej. blanco opaco 1.0, Color 1 = 0.3, Color 2 = 0.4).</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Hojas de sprites y GIF</h6>
+                                        <ul>
+                                            <li><strong>Pegar del portapapeles:</strong> Puedes pegar una imagen o GIF en un objeto `pixel-art`. Con el objeto seleccionado, <kbd>Ctrl</kbd>+<kbd>V</kbd> abre el menú de pegado.</li>
+                                            <li><strong>Hojas de sprites:</strong> Una sola imagen con varios fotogramas; la herramienta divide la imagen según las dimensiones de fotograma que indiques.</li>
+                                            <li><strong>Subir GIF:</strong> Pulsa <kbd><i class="bi bi-film"></i> Subir GIF</kbd> en los ajustes del objeto para convertir un GIF animado en fotogramas.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Galería de pixel art</h6>
+                                        <ul>
+                                            <li><strong>Acceso:</strong> En un objeto `pixel-art`, pulsa <kbd><i class="bi bi-images"></i> Explorar galería</kbd> en la pestaña «Pixel art».</li>
+                                            <li><strong>Uso:</strong> Busca arte de efectos públicos de la comunidad.</li>
+                                            <li><strong>Inserción:</strong> Con <kbd><i class="bi bi-plus-lg me-1"></i> Insertar</kbd> se añaden los fotogramas al objeto `pixel-art` seleccionado.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Otras formas</h6>
+                                        <p>Explora <strong>Spawner</strong>, <strong>Strimer</strong>, <strong>Visualizador de audio</strong>, cada una con propiedades únicas.</p>
+                                        <ul>
+                                            <li><strong>Spawner:</strong> Sistema de partículas con física (gravedad, velocidad, rotación, estelas); puedes usar una ruta SVG para la forma.</li>
+                                            <li><strong>Strimer:</strong> Bloques en columnas que simulan cables u elementos verticales; incluye animaciones como «Rebote» o «Serpiente».</li>
+                                            <li><strong>Visualizador de audio:</strong> Representa el audio en barras o línea; diseños lineales, circulares o polilínea, con número de barras, espaciado y suavizado.</li>
+                                        </ul>

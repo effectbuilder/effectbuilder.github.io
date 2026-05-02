@@ -12,6 +12,11 @@ import {
 } from './firebase.js';
 import { setupCanvas, drawCanvas, zoomAtPoint, resetView, toggleGrid, toggleNodeStart, clearPendingConnection, updateLedCount, setImageGuideSrc } from './canvas.js';
 
+/** Runtime i18n for strings not covered by data-i18n (same keys as locales/*.json). */
+function bt(key, vars) {
+    return typeof window !== 'undefined' && window.tr ? window.tr(key, vars) : key;
+}
+
 // --- GLOBAL SHARED STATE ---
 let componentState = createDefaultComponentState(); // Initialize immediately
 let currentUserHasLiked = false;
@@ -283,11 +288,11 @@ function loadLikeData(componentId) {
 async function handleLikeComponent() {
     const user = auth.currentUser;
     if (!user) {
-        showToast('Error', 'You must be logged in to like a component.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_like_login'), 'danger');
         return;
     }
     if (!currentComponentId) {
-        showToast('Error', 'Please save the component before liking.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_like_save_first'), 'danger');
         return;
     }
 
@@ -328,7 +333,7 @@ async function handleLikeComponent() {
 
     } catch (error) {
         console.error("Error updating like status:", error);
-        showToast('Error', 'Could not update like status.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_like_update_fail'), 'danger');
     } finally {
         // Re-enable button (snapshot will refresh state)
         likeBtn.disabled = false;
@@ -379,7 +384,7 @@ async function fetchDisplayNames(uids) {
             const q = query(usersRef, where(documentId(), 'in', batch));
             const querySnapshot = await getDocs(q);
             querySnapshot.forEach(doc => {
-                namesMap.set(doc.id, doc.data().displayName || 'Anonymous User');
+                namesMap.set(doc.id, doc.data().displayName || bt('builder_anonymous_user'));
             });
         }
     } catch (e) {
@@ -411,7 +416,7 @@ async function fetchComponentNames(componentIds) {
             const q = query(componentsRef, where(documentId(), 'in', batch));
             const querySnapshot = await getDocs(q);
             querySnapshot.forEach(doc => {
-                namesMap.set(doc.id, doc.data().name || 'Untitled Component');
+                namesMap.set(doc.id, doc.data().name || bt('builder_msg_untitled_component'));
             });
         }
     } catch (e) {
@@ -436,10 +441,7 @@ function setupNotificationListener(user) {
 
     if (!user) {
         if (listContainer) {
-            listContainer.innerHTML = `
-            <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
-            </li>`;
+            listContainer.innerHTML = bt('builder_msg_sign_in_notifications');
         }
         toggleBtn.disabled = true;
         notificationBadge.classList.add('d-none');
@@ -482,9 +484,9 @@ function setupNotificationListener(user) {
 
         const finalNotifications = allNotifications.map(notification => ({
             ...notification,
-            senderName: namesMap.get(notification.senderId) || 'A User',
+            senderName: namesMap.get(notification.senderId) || bt('builder_anonymous_user'),
             // Use the component map
-            projectName: componentNamesMap.get(notification.projectId) || 'Untitled Component'
+            projectName: componentNamesMap.get(notification.projectId) || bt('builder_msg_untitled_component')
         }));
 
         const newUnreadCount = finalNotifications.filter(n => !n.read).length;
@@ -517,11 +519,7 @@ function renderNotificationDropdown(allNotifications) {
     if (!listContainer || !deleteAllReadBtn || !markAllBtn) return; // [MODIFIED] Add guard
 
     if (!user) {
-        listContainer.innerHTML = `
-                <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                    <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
-                </li>
-            `;
+        listContainer.innerHTML = bt('builder_msg_sign_in_notifications');
         markAllBtn.style.display = 'none';
         deleteAllReadBtn.style.display = 'none'; // [NEW] Hide
         return;
@@ -536,7 +534,7 @@ function renderNotificationDropdown(allNotifications) {
     // --- [END MODIFICATION] ---
 
     if (allNotifications.length === 0) {
-        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
+        listContainer.innerHTML = `<li class="dropdown-item disabled text-center text-body-secondary small p-3">${bt('builder_notif_empty')}</li>`;
         return;
     }
 
@@ -549,14 +547,23 @@ function renderNotificationDropdown(allNotifications) {
         let notificationIcon = '';
 
         if (notification.eventType === 'like') {
-            notificationText = `Your component <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
-            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i> Like`;
+            notificationText = bt('builder_notif_like_text', {
+                project: notification.projectName,
+                sender: notification.senderName
+            });
+            notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i> ${bt('builder_notif_like_icon')}`;
         } else if (notification.eventType === 'comment') {
             // Use 'projectName' which we mapped to the component name
-            notificationText = `<strong>${notification.senderName}</strong> commented on your component <strong>${notification.projectName}</strong>.`;
+            notificationText = bt('builder_notif_comment_text', {
+                sender: notification.senderName,
+                project: notification.projectName
+            });
             notificationIcon = `<i class="bi bi-chat-left-text-fill text-info fs-5 mt-1 flex-shrink-0"></i>`;
         } else {
-            notificationText = `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+            notificationText = bt('builder_notif_event', {
+                event: notification.eventType,
+                sender: notification.senderName
+            });
             notificationIcon = `<i class="bi bi-bell-fill text-warning fs-5 mt-1 flex-shrink-0"></i>`;
         }
 
@@ -573,7 +580,7 @@ function renderNotificationDropdown(allNotifications) {
                         <p class="mb-0 small">
                             ${notificationText}
                         </p>
-                        <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
+                        <small class="text-body-secondary">${timeAgo(timestamp)}</small> 
                     </div>
                 </a>
             `;
@@ -591,7 +598,7 @@ function renderNotificationDropdown(allNotifications) {
 async function handleNotificationClick(componentId, notificationId) {
     const user = auth.currentUser;
     if (!user) {
-        showToast("Please sign in to load components.", "warning");
+        showToast(bt('builder_title_warning'), bt('builder_msg_login_required_short'), 'warning');
         return;
     }
 
@@ -601,7 +608,7 @@ async function handleNotificationClick(componentId, notificationId) {
         const componentDoc = await getDoc(componentDocRef);
 
         if (!componentDoc.exists()) {
-            showToast("The associated component was not found.", "danger");
+            showToast(bt('builder_title_error'), bt('builder_msg_component_not_found'), 'danger');
             // Do not return, still mark as read
         } else {
             const componentData = { dbId: componentDoc.id, ...componentDoc.data() };
@@ -613,13 +620,13 @@ async function handleNotificationClick(componentId, notificationId) {
                 isDirty = false;
                 clearAutoSave();
             } else {
-                showToast("Load Error", "Failed to parse component data.", "danger");
+                showToast(bt('builder_title_load_error'), bt('builder_msg_load_notification_fail'), 'danger');
             }
         }
 
     } catch (error) {
         console.error("Error loading component from notification:", error);
-        showToast("Failed to load the component.", "danger");
+        showToast(bt('builder_title_load_error'), bt('builder_msg_load_component_fail'), 'danger');
     }
 
     // 2. Mark the specific notification as read
@@ -637,7 +644,7 @@ async function handleNotificationClick(componentId, notificationId) {
 async function deleteAllReadNotifications() {
     const user = auth.currentUser;
     if (!user) {
-        showToast("You must be logged in to perform this action.", "warning");
+        showToast(bt('builder_title_warning'), bt('builder_msg_login_required'), 'warning');
         return;
     }
 
@@ -657,7 +664,7 @@ async function deleteAllReadNotifications() {
     try {
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) {
-            showToast("No read notifications to delete.", "info");
+            showToast(bt('builder_title_info'), bt('builder_msg_no_read_to_delete'), 'info');
             return;
         }
 
@@ -668,12 +675,12 @@ async function deleteAllReadNotifications() {
         });
 
         await batch.commit();
-        showToast("Success", `Cleared ${querySnapshot.size} read notifications.`, "success");
+        showToast(bt('builder_title_success'), bt('builder_msg_cleared_read_notifications', { count: querySnapshot.size }), 'success');
         // The real-time listener will automatically update the list.
 
     } catch (error) {
         console.error("Error deleting all read notifications:", error);
-        showToast("Error", "Could not delete read notifications.", "danger");
+        showToast(bt('builder_title_error'), bt('builder_msg_delete_read_fail'), 'danger');
     }
 }
 
@@ -683,7 +690,7 @@ async function deleteAllReadNotifications() {
 async function markAllNotificationsAsRead() {
     const user = auth.currentUser;
     if (!user) {
-        showToast("You must be logged in to perform this action.", "warning");
+        showToast(bt('builder_title_warning'), bt('builder_msg_login_required'), 'warning');
         return;
     }
 
@@ -706,7 +713,7 @@ async function markAllNotificationsAsRead() {
         await batch.commit();
     } catch (error) {
         console.error("Error marking all notifications as read:", error);
-        showToast("Could not mark all notifications as read.", "danger");
+        showToast(bt('builder_title_error'), bt('builder_msg_mark_all_read_fail'), 'danger');
     }
 }
 
@@ -715,7 +722,7 @@ async function markAllNotificationsAsRead() {
  */
 function handleShareComponent() {
     if (!currentComponentId) {
-        showToast('Share Error', 'Please save the component to the cloud first.', 'warning');
+        showToast(bt('builder_title_share_error'), bt('builder_msg_share_save_first'), 'warning');
         return;
     }
 
@@ -746,23 +753,23 @@ function handleCopyShareUrl() {
 
     try {
         navigator.clipboard.writeText(shareUrlInput.value).then(() => {
-            showToast('Copied!', 'Share link copied to clipboard.', 'success');
+            showToast(bt('builder_title_copied'), bt('builder_msg_copy_link_ok'), 'success');
             if (shareModal) {
                 shareModal.hide();
             }
         }).catch(err => {
             console.error('Failed to copy text: ', err);
-            showToast('Copy Error', 'Could not copy link. Please copy it manually.', 'danger');
+            showToast(bt('builder_title_copy_error'), bt('builder_msg_copy_link_fail'), 'danger');
         });
     } catch (err) {
         console.error('Clipboard API error: ', err);
-        showToast('Copy Error', 'Could not copy link. Please copy it manually.', 'danger');
+        showToast(bt('builder_title_copy_error'), bt('builder_msg_copy_link_fail'), 'danger');
     }
 }
 
 function handleClearImageGuide() {
     if (!componentState.guideImageUrl) {
-        showToast('Info', 'No image guide is currently loaded.', 'info');
+        showToast(bt('builder_title_info'), bt('builder_msg_guide_no_image'), 'info');
         return;
     }
 
@@ -792,7 +799,7 @@ function handleClearImageGuide() {
     updateImageGuideUI();
     window.drawCanvas();
     autoSaveState(); // Persist the cleared state to localStorage
-    showToast('Image Guide', 'The image guide has been removed.', 'success');
+    showToast(bt('builder_title_image_guide'), bt('builder_msg_guide_removed'), 'success');
 }
 
 // --- Local Storage Functions ---
@@ -825,7 +832,7 @@ function autoSaveState() {
             console.error('Error stringifying componentState for autosave:', e);
             if (e.name === 'QuotaExceededError') {
                 // Even after resizing, if quota is low, show a warning but continue.
-                showToast('Autosave Failed', 'Storage quota exceeded. Image may be lost on refresh.', 'danger');
+                showToast(bt('builder_title_autosave_failed'), bt('builder_msg_autosave_quota'), 'danger');
             }
         }
     } else {
@@ -874,7 +881,7 @@ function updateBrowserUrl(componentId) {
  * @param {string} componentId - The document ID from Firebase.
  */
 async function loadComponentFromUrl(componentId) {
-    showToast('Loading Share', 'Loading component from URL...', 'info');
+    showToast(bt('builder_title_loading_share'), bt('builder_msg_loading_share'), 'info');
     try {
         const docRef = doc(db, 'srgb-components', componentId);
         const docSnap = await getDoc(docRef);
@@ -886,7 +893,7 @@ async function loadComponentFromUrl(componentId) {
             if (loadComponentState(componentData)) { // loadComponentState will call updateBrowserUrl
                 currentComponentId = docSnap.id;
                 loadComments(currentComponentId);
-                showToast('Load Successful', `Loaded shared component: ${componentData.name}`, 'success');
+                showToast(bt('builder_title_load_successful'), bt('builder_msg_load_share_ok', { name: componentData.name }), 'success');
                 isDirty = false;
                 clearAutoSave(); // Clear any local autosave to not overwrite the loaded one
 
@@ -896,12 +903,12 @@ async function loadComponentFromUrl(componentId) {
             }
             throw new Error("Failed to parse component data.");
         }
-        showToast('Load Error', 'Component ID from URL was not found.', 'danger');
+        showToast(bt('builder_title_load_error'), bt('builder_msg_load_share_not_found'), 'danger');
         handleNewComponent(false); // Fall back to normal load
         return false;
     } catch (error) {
         console.error("Error loading component from URL:", error);
-        showToast('Load Error', `Could not load shared component: ${error.message}`, 'danger');
+        showToast(bt('builder_title_load_error'), bt('builder_msg_load_share_fail', { message: error.message }), 'danger');
         handleNewComponent(false); // Fall back to normal load
         return false;
     }
@@ -915,7 +922,7 @@ async function loadComponentFromUrl(componentId) {
  */
 function loadComponentState(stateToLoad) {
     if (!stateToLoad || typeof stateToLoad !== 'object' || !Array.isArray(stateToLoad.leds)) {
-        showToast('Load Error', 'Invalid component data object.', 'danger');
+        showToast(bt('builder_title_load_error'), bt('builder_msg_load_share_invalid'), 'danger');
         return false;
     }
 
@@ -1069,17 +1076,17 @@ async function handleLogin() {
         await signInWithPopup(auth, provider);
     } catch (error) {
         console.error("Error during sign-in:", error);
-        showToast('Login Error', error.message, 'danger');
+        showToast(bt('builder_title_login_error'), error.message, 'danger');
     }
 }
 
 async function handleLogout() {
     try {
         await signOut(auth);
-        showToast('Logged Out', 'You have been signed out.', 'info');
+        showToast(bt('builder_title_logged_out'), bt('builder_msg_logged_out'), 'info');
     } catch (error) {
         console.error("Error during sign-out:", error);
-        showToast('Logout Error', error.message, 'danger');
+        showToast(bt('builder_title_logout_error'), error.message, 'danger');
     }
 }
 
@@ -1131,7 +1138,7 @@ function setupAuthListeners() {
 
             const userDocRef = doc(db, "users", user.uid);
             setDoc(userDocRef, {
-                displayName: user.displayName || 'Anonymous User',
+                displayName: user.displayName || bt('builder_anonymous_user'),
                 photoURL: user.photoURL || null
             }, { merge: true }).catch(err => {
                 console.error("Failed to save user profile to Firestore:", err);
@@ -1251,7 +1258,7 @@ function handleNewComponent(showNotification = true) {
                 const parsedState = JSON.parse(savedState);
                 if (parsedState && typeof parsedState === 'object' && Array.isArray(parsedState.leds)) {
                     if (loadComponentState(parsedState)) {
-                        showToast('Welcome Back!', 'Your unsaved work has been restored.', 'info');
+                        showToast(bt('builder_title_welcome_back'), bt('builder_msg_welcome_autosave'), 'info');
                         isDirty = true;
                         return; // Successfully restored and exited
                     }
@@ -1280,7 +1287,7 @@ function handleNewComponent(showNotification = true) {
 
     isDirty = false;
     if (showNotification) {
-        showToast('New Project', 'Cleared the canvas and properties.', 'info');
+        showToast(bt('builder_title_new_project'), bt('builder_msg_new_project'), 'info');
     }
 }
 
@@ -1338,7 +1345,7 @@ function generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, w
     }
 
     if (collisionDetected) {
-        showToast('WLED Export Warning', 'Multiple LEDs occupy the same grid cell. Only the last LED in the wire was mapped.', 'warning');
+        showToast(bt('builder_title_wled_warning'), bt('builder_msg_wled_grid_warning'), 'warning');
     }
 
     // --- MODIFIED: Custom JSON Stringification for WLED Preview ---
@@ -1365,43 +1372,66 @@ function generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, w
 }
 
 /**
- * NEW: Generates the JSON for NollieRGB
+ * NollieRGB export format v2.0: top-level layout fields plus a full {@link generateSignalRGBJson|SignalRGB-style} `Component` (with `ZLedMapping`).
+ * `led_index` lists 0-based LED indices in wiring/export order, sorted by physical position (top-to-bottom, then left-to-right).
+ *
+ * @param {string} productName
+ * @param {string} displayName
+ * @param {string} brand
+ * @param {string} currentType
  * @param {number} ledCount
- * @param {Array} ledCoordinates - Array of coordinates (e.g., [[x,y], ...] or [{x,y}, ...])
- * @returns {string} A pretty-printed JSON string for NollieRGB
+ * @param {number} width
+ * @param {number} height
+ * @param {Array} ledCoordinates - Normalized `[[x,y], ...]` in the same order as the wiring export
+ * @param {string} base64ImageData
+ * @returns {string} Pretty-printed JSON for NollieRGB v2.0
  */
-function generateNollieRGBJson(ledCount, ledCoordinates) {
-    // 1. Map the original 1-based index to its physical coordinates
+function generateNollieRGBJson(productName, displayName, brand, currentType, ledCount, width, height, ledCoordinates, base64ImageData) {
     const mappedLeds = ledCoordinates.map((coord, i) => {
         const x = Array.isArray(coord) ? coord[0] : coord.x;
         const y = Array.isArray(coord) ? coord[1] : coord.y;
-        return { index: i + 1, x: x, y: y };
+        return { index: i, x, y };
     });
 
-    // 2. Sort: up-to-down (Y axis), then left-to-right (X axis)
     mappedLeds.sort((a, b) => {
-        // Use a small tolerance in case Y-coordinates are floating point or slightly off
         if (Math.abs(a.y - b.y) > 0.5) {
-            return a.y - b.y; // Sort Top to Bottom
+            return a.y - b.y;
         }
-        return a.x - b.x;     // Sort Left to Right
+        return a.x - b.x;
     });
 
-    // 3. Extract just the sorted indices back into a flat array
-    const led_index = mappedLeds.map(led => led.index);
+    const led_index = mappedLeds.map((led) => led.index);
+
+    const ledMapping = Array.from({ length: ledCount }, (_, i) => i);
+
+    const componentObj = {
+        ZLedMapping: [],
+        ProductName: productName,
+        DisplayName: displayName,
+        Brand: brand,
+        Type: currentType,
+        LedCount: ledCount,
+        Width: width,
+        Height: height,
+        LedMapping: ledMapping,
+        LedCoordinates: ledCoordinates,
+        LedNames: Array.from({ length: ledCount }, (_, i) => `Led${i + 1}`),
+        Image: base64ImageData || '',
+        ImageUrl: '',
+    };
 
     const exportObject = {
-        version: 1,
-        led_size: ledCount,
-        re_led_size: ledCount,
-        led_index: led_index
+        DisplayName: displayName,
+        Type: currentType,
+        version: 2,
+        fx_ch_led_num: ledCount,
+        fx_ch_zled_num: 0,
+        led_index,
+        Component: componentObj,
     };
 
     return JSON.stringify(exportObject, null, 2);
 }
-
-
-/**f
 
 /**
  * NEW: Generates the JSON for SignalRGB
@@ -1444,7 +1474,7 @@ function generateSignalRGBJson(productName, displayName, brand, currentType, led
  */
 function buildSignalRgbExportFromCurrentState() {
     if (!componentState || !Array.isArray(componentState.leds)) {
-        return { ok: false, message: 'No component data.', variant: 'danger' };
+        return { ok: false, message: bt('builder_msg_export_no_data'), variant: 'danger' };
     }
 
     const currentLeds = componentState.leds || [];
@@ -1452,7 +1482,7 @@ function buildSignalRgbExportFromCurrentState() {
     const ledCount = currentLeds.length;
 
     if (ledCount === 0) {
-        return { ok: false, message: 'Cannot export empty component.', variant: 'warning' };
+        return { ok: false, message: bt('builder_msg_export_empty'), variant: 'warning' };
     }
 
     const wiredLedIds = new Set();
@@ -1467,9 +1497,13 @@ function buildSignalRgbExportFromCurrentState() {
 
     if (unwiredLedsExist) {
         const unwiredCount = currentLeds.filter(led => led && !wiredLedIds.has(led.id)).length;
+        const unwiredMsg =
+            unwiredCount === 1
+                ? bt('builder_msg_export_blocked_body_single', { count: unwiredCount })
+                : bt('builder_msg_export_blocked_body_plural', { count: unwiredCount });
         return {
             ok: false,
-            message: `Cannot export: ${unwiredCount} LED${unwiredCount === 1 ? ' is' : 's are'} unwired. All LEDs must be part of a circuit.`,
+            message: unwiredMsg,
             variant: 'danger'
         };
     }
@@ -1555,7 +1589,7 @@ function removeExportQueryParamFromUrl() {
 function tryDirectRgbjunkieExportDownload() {
     const built = buildSignalRgbExportFromCurrentState();
     if (!built.ok) {
-        showToast('Export', built.message, built.variant || 'danger');
+        showToast(bt('builder_title_export'), built.message, built.variant || 'danger');
         removeExportQueryParamFromUrl();
         return;
     }
@@ -1570,10 +1604,10 @@ function tryDirectRgbjunkieExportDownload() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         trackDownload();
-        showToast('Downloaded', 'SignalRGB JSON downloaded.', 'success');
+        showToast(bt('builder_title_downloaded'), bt('builder_msg_signalrgb_downloaded'), 'success');
     } catch (err) {
         console.error('Direct export download failed:', err);
-        showToast('Download Error', 'Could not trigger file download.', 'danger');
+        showToast(bt('builder_title_download_error'), bt('builder_msg_download_fail'), 'danger');
     }
     removeExportQueryParamFromUrl();
 }
@@ -1639,28 +1673,28 @@ function handleImportJson(e) {
 
             } else {
                 // --- 3. It's an UNKNOWN format ---
-                showToast('Import Error', 'Invalid or unrecognized JSON file format.', 'danger');
+                showToast(bt('builder_title_import_error'), bt('builder_msg_import_invalid_format'), 'danger');
                 e.target.value = null; // Reset input
                 return;
             }
 
             // --- Load the prepared state ---
             if (loadComponentState(stateToLoad)) {
-                showToast('Import Successful', `Loaded "${stateToLoad.name}" from file.`, 'success');
+                showToast(bt('builder_title_import_successful'), bt('builder_msg_import_ok', { name: stateToLoad.name }), 'success');
                 // --- Set dirty flag after successful import ---
                 isDirty = true;
             }
 
         } catch (err) {
             console.error("Error parsing JSON file:", err);
-            showToast('Import Error', 'Could not parse JSON file. It may be corrupt.', 'danger');
+            showToast(bt('builder_title_import_error'), bt('builder_msg_import_corrupt'), 'danger');
         } finally {
             // Reset the file input to allow loading the same file again
             e.target.value = null;
         }
     };
     reader.onerror = () => {
-        showToast('File Error', 'Could not read the selected file.', 'danger');
+        showToast(bt('builder_title_file_error'), bt('builder_msg_read_file_fail'), 'danger');
         e.target.value = null;
     };
     reader.readAsText(file);
@@ -1674,7 +1708,7 @@ function handleImportJson(e) {
 async function performSave(isNew, isForking = false) {
     const user = auth.currentUser; // Re-check user
     if (!user) {
-        showToast('Error', 'You must be logged in to save.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_login_required_save'), 'danger');
         return;
     }
 
@@ -1686,9 +1720,9 @@ async function performSave(isNew, isForking = false) {
 
     // 2. Show toast
     if (isForking) {
-        showToast('Forking Component...', 'Saving your version as a new component.', 'info');
+        showToast(bt('builder_title_forking'), bt('builder_msg_fork_saving'), 'info');
     } else {
-        showToast('Saving...', 'Saving component to the cloud.', 'info');
+        showToast(bt('builder_title_saving'), bt('builder_msg_save_cloud'), 'info');
     }
 
     // 3. Prepare data for Firebase
@@ -1794,14 +1828,14 @@ async function performSave(isNew, isForking = false) {
         }
 
         // 6. Finalize
-        showToast('Save Successful', `Saved component: ${componentState.name}`, 'success');
+        showToast(bt('builder_title_save_successful'), bt('builder_msg_save_ok', { name: componentState.name }), 'success');
         document.getElementById('share-component-btn').disabled = false;
         clearAutoSave();
         isDirty = false;
 
     } catch (error) {
         console.error("Error saving component: ", error);
-        showToast('Error Saving', error.message, 'danger');
+        showToast(bt('builder_title_error_saving'), error.message, 'danger');
     }
 }
 
@@ -1816,7 +1850,7 @@ let saveConflictModalInstance = null;
 async function handleSaveComponent() {
     const user = auth.currentUser;
     if (!user) {
-        showToast('Error', 'You must be logged in to save.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_login_required_save'), 'danger');
         return;
     }
 
@@ -1856,16 +1890,10 @@ async function handleSaveComponent() {
 
         // Dynamically adjust the modal content based on whether the name changed
         if (hasNameChanged) {
-            bodyEl.innerHTML = `
-                <p>You changed the Component Name or Display Name.</p>
-                <p>Do you want to save this as a completely <strong>NEW</strong> component, or <strong>OVERWRITE</strong> the existing one?</p>
-            `;
+            bodyEl.innerHTML = bt('builder_msg_save_conflict_body_rename_html');
             saveNewBtn.style.display = 'inline-block';
         } else {
-            bodyEl.innerHTML = `
-                <p>This component already exists in the cloud.</p>
-                <p>Are you sure you want to <strong>OVERWRITE</strong> it with your current changes?</p>
-            `;
+            bodyEl.innerHTML = bt('builder_msg_save_conflict_body_overwrite_html');
             saveNewBtn.style.display = 'none'; // Hide the "Save as New" button if names match
         }
 
@@ -1896,7 +1924,7 @@ function showExportModal() {
     // console.log("showExportModal triggered.");
 
     if (!componentState || !Array.isArray(componentState.leds)) {
-        showToast('Export Error', 'No component data.', 'danger');
+        showToast(bt('builder_title_export_error'), bt('builder_msg_export_no_data'), 'danger');
         return;
     }
 
@@ -1906,7 +1934,7 @@ function showExportModal() {
         const ledCount = currentLeds.length;
 
         if (ledCount === 0) {
-            showToast('Export Error', 'Cannot export empty component.', 'warning');
+            showToast(bt('builder_title_export_error'), bt('builder_msg_export_empty'), 'warning');
             return; // Stop
         }
 
@@ -1923,11 +1951,11 @@ function showExportModal() {
 
         if (unwiredLedsExist) {
             const unwiredCount = currentLeds.filter(led => led && !wiredLedIds.has(led.id)).length;
-            showToast(
-                'Export Blocked',
-                `Cannot export: ${unwiredCount} LED${unwiredCount === 1 ? ' is' : 's are'} unwired. All LEDs must be part of a circuit.`,
-                'danger'
-            );
+            const unwiredMsg =
+                unwiredCount === 1
+                    ? bt('builder_msg_export_blocked_body_single', { count: unwiredCount })
+                    : bt('builder_msg_export_blocked_body_plural', { count: unwiredCount });
+            showToast(bt('builder_title_export_blocked'), unwiredMsg, 'danger');
             console.error(`Export Blocked: ${unwiredCount} unwired LEDs detected.`);
             return; // Stop
         }
@@ -1946,7 +1974,7 @@ function showExportModal() {
 
     } catch (error) {
         console.error("Error during showExportModal validation:", error);
-        showToast('Export Error', `An unexpected error occurred: ${error.message}`, 'danger');
+        showToast(bt('builder_title_export_error'), bt('builder_msg_export_unexpected', { message: error.message }), 'danger');
     }
 }
 
@@ -2063,7 +2091,17 @@ function updateExportPreview() {
             jsonString = generateWLEDJson(productName, currentLeds, currentWiring, minX, minY, width, height);
             filename = (productName || 'wled_matrix').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_wled.json';
         } else if (format === 'nolliergb') {
-            jsonString = generateNollieRGBJson(ledCount, ledCoordinates);
+            jsonString = generateNollieRGBJson(
+                productName,
+                displayName,
+                brand,
+                currentType,
+                ledCount,
+                width,
+                height,
+                ledCoordinates,
+                base64ImageData
+            );
             filename = (productName || 'nolliergb_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_nollie.json';
         }
 
@@ -2095,17 +2133,17 @@ function updateExportPreview() {
                 if (exportModal) exportModal.hide();
             } catch (downloadError) {
                 console.error("Error triggering download:", downloadError);
-                showToast('Download Error', 'Could not trigger file download.', 'danger');
+                showToast(bt('builder_title_download_error'), bt('builder_msg_download_fail'), 'danger');
             }
         };
 
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(jsonString).then(() => {
-                showToast('Copied!', 'JSON copied to clipboard.', 'success');
+                showToast(bt('builder_title_copied'), bt('builder_msg_json_copied'), 'success');
                 trackDownload();
             }).catch(err => {
                 console.error("Error copying JSON to clipboard:", err);
-                showToast('Copy Error', 'Could not copy to clipboard.', 'danger');
+                showToast(bt('builder_title_copy_error'), bt('builder_msg_copy_clipboard_fail'), 'danger');
             });
         };
 
@@ -2115,8 +2153,8 @@ function updateExportPreview() {
 
     } catch (error) {
         console.error("Error during updateExportPreview:", error);
-        showToast('Export Error', `An unexpected error occurred: ${error.message}`, 'danger');
-        if (preview) preview.textContent = `Error: ${error.message}`;
+        showToast(bt('builder_title_export_error'), bt('builder_msg_export_unexpected', { message: error.message }), 'danger');
+        if (preview) preview.textContent = bt('builder_msg_export_preview_error', { message: error.message });
     }
 }
 
@@ -2127,7 +2165,7 @@ function updateExportPreview() {
  */
 function handleImageFile(file) {
     if (!file || !file.type.startsWith('image/')) {
-        showToast('Image Error', 'Pasted item was not a valid image.', 'warning');
+        showToast(bt('builder_title_image_error'), bt('builder_msg_image_invalid_paste'), 'warning');
         return;
     }
 
@@ -2177,7 +2215,7 @@ function handleImageFile(file) {
 
             };
             img.onerror = () => {
-                showToast('Image Error', 'Could not load image file.', 'danger');
+                showToast(bt('builder_title_image_error'), bt('builder_msg_image_load_fail'), 'danger');
                 componentState.imageUrl = null; componentState.imageWidth = 500; componentState.imageHeight = 300;
                 imagePreview.src = '#'; imagePreview.style.display = 'none';
                 autoSaveState();
@@ -2185,7 +2223,7 @@ function handleImageFile(file) {
             img.src = event.target.result;
         }
         reader.onerror = () => {
-            showToast('File Read Error', 'Could not read file.', 'danger');
+            showToast(bt('builder_title_file_read_error'), bt('builder_msg_file_read_fail'), 'danger');
             if (compImageInput) compImageInput.value = '';
             imagePreview.src = '#'; imagePreview.style.display = 'none';
         };
@@ -2256,15 +2294,15 @@ function handleImageGuideFile(e) {
             }
             updateImageGuideUI();
             autoSaveState(); // Save the resized image to localStorage
-            showToast('Image Guide Loaded', `Image resized to ${width}x${height} and loaded.`, 'success');
+            showToast(bt('builder_title_image_guide_loaded'), bt('builder_msg_guide_loaded', { width, height }), 'success');
         };
         img.onerror = () => {
-            showToast('Image Load Error', 'Could not load guide image file.', 'danger');
+            showToast(bt('builder_title_image_load_error'), bt('builder_msg_guide_image_load_fail'), 'danger');
         };
         img.src = event.target.result;
     };
     reader.onerror = () => {
-        showToast('File Read Error', 'Could not read image file for guide.', 'danger');
+        showToast(bt('builder_title_file_read_error'), bt('builder_msg_read_guide_fail'), 'danger');
     };
     reader.readAsDataURL(file);
 
@@ -2320,7 +2358,11 @@ function toggleImageLock() {
     updateImageGuideUI();
     window.setAppCursor(); // Update cursor based on new lock state
     autoSaveState();
-    showToast('Image Guide', imageGuideState.isLocked ? 'Image Guide Locked' : 'Image Guide Unlocked', 'info');
+    showToast(
+        bt('builder_title_image_guide'),
+        imageGuideState.isLocked ? bt('builder_msg_guide_locked') : bt('builder_msg_guide_unlocked'),
+        'info'
+    );
 }
 
 /**
@@ -2332,7 +2374,11 @@ function toggleImageVisibility() {
     updateImageGuideUI();
     window.drawCanvas(); // Redraw immediately
     autoSaveState();
-    showToast('Image Guide', imageGuideState.isVisible ? 'Image Guide Visible' : 'Image Guide Hidden', 'info');
+    showToast(
+        bt('builder_title_image_guide'),
+        imageGuideState.isVisible ? bt('builder_msg_guide_visible') : bt('builder_msg_guide_hidden'),
+        'info'
+    );
 }
 
 // --- END NEW IMAGE GUIDE FUNCTIONS ---
@@ -2404,16 +2450,16 @@ async function handleDeleteComment(commentId) {
         return;
     }
 
-    showToast('Deleting...', 'Removing comment...', 'info');
+    showToast(bt('builder_title_deleting'), bt('builder_deleting_comment_body'), 'info');
 
     try {
         const docRef = doc(db, "srgb-component-comments", commentId);
         await deleteDoc(docRef);
         // No need to remove from UI, onSnapshot will handle it.
-        showToast('Success', 'Comment deleted.', 'success');
+        showToast(bt('builder_comment_deleted_title'), bt('builder_comment_deleted_body'), 'success');
     } catch (error) {
         console.error("Error deleting comment:", error);
-        showToast('Error', 'Could not delete comment.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_comment_delete_error'), 'danger');
     }
 }
 
@@ -2447,7 +2493,7 @@ function loadComments(componentId) {
         if (commentsSavePrompt) commentsSavePrompt.style.display = 'none'; // Ensure save prompt is hidden
 
         if (querySnapshot.empty && commentList.innerHTML === '') {
-            commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">No comments yet. Be the first!</p>';
+            commentList.innerHTML = bt('builder_comment_none_html');
             return;
         }
 
@@ -2461,10 +2507,10 @@ function loadComments(componentId) {
 
     }, (error) => {
         console.error("Error loading comments:", error);
-        showToast('Comment Error', 'Could not load comments.', 'danger');
+        showToast(bt('builder_title_comment_error'), bt('builder_comment_error_load'), 'danger');
         if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
         if (commentsSavePrompt) commentsSavePrompt.style.display = 'none'; // Ensure save prompt is hidden on error too
-        if (commentList) commentList.innerHTML = '<p class="text-danger">Error loading comments.</p>';
+        if (commentList) commentList.innerHTML = bt('builder_comment_load_error_html');
     });
 }
 
@@ -2488,7 +2534,7 @@ function renderComment(doc) { // [MODIFIED] Changed parameter
     const div = document.createElement('div');
     div.className = 'comment-item';
 
-    const authorName = data.ownerName || 'Anonymous';
+    const authorName = data.ownerName || bt('builder_anonymous_owner');
     const authorPhoto = data.ownerPhoto || defaultIcon;
     const commentDate = data.createdAt?.toDate()?.toLocaleString() || 'just now';
     const commentText = data.text || '';
@@ -2507,7 +2553,7 @@ function renderComment(doc) { // [MODIFIED] Changed parameter
                 <span class="comment-date">${commentDate}</span>
                 ${canDelete ? `
                     <span class="comment-delete ms-auto">
-                        <a href="#" data-comment-id="${commentId}" class="text-danger" title="Delete comment">
+                        <a href="#" data-comment-id="${commentId}" class="text-danger" title="${bt('builder_comment_delete_tooltip')}">
                             <i class="bi bi-trash"></i>
                         </a>
                     </span>
@@ -2534,28 +2580,30 @@ async function handlePostComment(commentText) {
     const lowerComment = commentText.toLowerCase();
     const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
     if (foundWord) {
-        showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+        showToast(bt('builder_title_moderation'), bt('builder_comment_moderation'), 'warning');
         return; // Stop the function
     }
     // --- [END NEW] ---
 
     const user = auth.currentUser;
     if (!user) {
-        showToast('Error', 'You must be logged in to comment.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_comment_login_required'), 'danger');
         return;
     }
     if (!currentComponentId) {
-        showToast('Error', 'Cannot post comment: No component selected.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_comment_no_component'), 'danger');
         return;
     }
 
     commentSubmitBtn.disabled = true;
-    commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+    commentSubmitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ' +
+        bt('builder_comment_btn_posting');
 
     const commentData = {
         componentId: currentComponentId,
         ownerId: user.uid,
-        ownerName: user.displayName || 'Anonymous',
+        ownerName: user.displayName || bt('builder_anonymous_owner'),
         ownerPhoto: user.photoURL || null,
         text: commentText,
         createdAt: serverTimestamp()
@@ -2612,10 +2660,10 @@ async function handlePostComment(commentText) {
 
     } catch (error) {
         console.error("Error posting comment:", error);
-        showToast('Error', 'Could not post your comment.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_comment_error_post'), 'danger');
     } finally {
         commentSubmitBtn.disabled = false;
-        commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
+        commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> ' + bt('builder_comment_btn_submit');
     }
 }
 
@@ -2628,22 +2676,24 @@ async function handlePostComment(commentText) {
 //     const lowerComment = commentText.toLowerCase();
 //     const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
 //     if (foundWord) {
-//         showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+//         showToast(bt('builder_title_moderation'), bt('builder_comment_moderation'), 'warning');
 //         return;
 //     }
 
 //     const user = auth.currentUser;
 //     if (!user) {
-//         showToast('Error', 'You must be logged in to comment.', 'danger');
+//         showToast(bt('builder_title_error'), bt('builder_comment_login_required'), 'danger');
 //         return;
 //     }
 //     if (!currentComponentId) {
-//         showToast('Error', 'Cannot post comment: No component selected.', 'danger');
+//         showToast(bt('builder_title_error'), bt('builder_comment_no_component'), 'danger');
 //         return;
 //     }
 
 //     commentSubmitBtn.disabled = true;
-//     commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+//     commentSubmitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ' +
+        bt('builder_comment_btn_posting');
 
 //     const commentData = {
 //         componentId: currentComponentId,
@@ -2712,10 +2762,10 @@ async function handlePostComment(commentText) {
 
 //     } catch (error) {
 //         console.error("Error posting comment:", error);
-//         showToast('Error', 'Could not post your comment.', 'danger');
+//         showToast(bt('builder_title_error'), bt('builder_comment_error_post'), 'danger');
 //     } finally {
 //         commentSubmitBtn.disabled = false;
-//         commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
+//         commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> ' + bt('builder_comment_btn_submit');
 //     }
 // }
 
@@ -2812,7 +2862,7 @@ function setupPropertyListeners() {
         const items = e.clipboardData ? e.clipboardData.items : null;
         if (!items) {
             console.error('Image Handling: Browser does not support clipboard items.');
-            showToast('Paste Error', 'Browser does not support clipboard items.', 'danger');
+            showToast(bt('builder_title_paste_error'), bt('builder_msg_paste_unsupported'), 'danger');
             return;
         }
 
@@ -2837,7 +2887,7 @@ function setupPropertyListeners() {
             handleImageFile(foundFile); // Use the same handler
         } else {
             // console.log('Image Handling: No usable file found in clipboard items.');
-            showToast('Paste Error', 'No image file found in clipboard.', 'warning');
+            showToast(bt('builder_title_paste_error'), bt('builder_msg_paste_clipboard_no_image'), 'warning');
         }
     });
 
@@ -2858,7 +2908,7 @@ function setupPropertyListeners() {
                 if (compImageInput) compImageInput.value = ''; // Clear the file input
 
                 autoSaveState(); // Save the cleared state
-                showToast('Image Removed', 'The device image has been cleared.', 'info');
+                showToast(bt('builder_title_image_removed'), bt('builder_msg_image_cleared'), 'info');
                 syncMobileHeader();
             }
         }
@@ -2890,7 +2940,7 @@ function setupPropertyListeners() {
             if (file.type.startsWith('image/')) {
                 handleImageFile(file); // Use our existing function
             } else {
-                showToast('File Error', 'Only image files can be dropped.', 'warning');
+                showToast(bt('builder_title_file_error'), bt('builder_msg_file_drop_images_only'), 'warning');
             }
         }
     });
@@ -3029,7 +3079,7 @@ function setupToolbarListeners() {
     if (rotateSelectedBtn) {
         rotateSelectedBtn.addEventListener('click', (e) => {
             if (selectedLedIds.size === 0) {
-                showToast('Action Blocked', 'Select one or more LEDs to rotate.', 'warning');
+                showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_rotate'), 'warning');
             } else {
                 // Check for Shift key to determine direction:
                 // Shift key down = -90° (Clockwise)
@@ -3050,7 +3100,7 @@ function setupToolbarListeners() {
     if (scaleSelectedBtn && confirmScaleBtn) {
         scaleSelectedBtn.addEventListener('click', () => {
             if (selectedLedIds.size === 0) {
-                showToast('Action Blocked', 'Select one or more LEDs to scale.', 'warning');
+                showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_scale'), 'warning');
             } else {
                 scaleModal.show();
             }
@@ -3077,32 +3127,26 @@ function setupToolbarListeners() {
     } else { console.warn("Image Visibility button not found."); }
     // --- END IMAGE GUIDE LISTENERS ---
 
-    // --- MIRROR MODAL INIT ---
-    let mirrorModal = null;
-    const mirrorModalEl = document.getElementById('mirror-selected-modal');
-    if (mirrorModalEl) {
-        mirrorModal = new bootstrap.Modal(mirrorModalEl);
-    }
-    const mirrorSelectedBtn = document.getElementById('mirror-selected-btn');
-    const confirmMirrorBtn = document.getElementById('confirm-mirror-btn');
+    const mirrorHBtn = document.getElementById('mirror-h-btn');
+    const mirrorVBtn = document.getElementById('mirror-v-btn');
 
-    if (mirrorSelectedBtn && confirmMirrorBtn) {
-        mirrorSelectedBtn.addEventListener('click', () => {
-            if (selectedLedIds.size === 0) {
-                showToast('Action Blocked', 'Select one or more LEDs to mirror.', 'warning');
-            } else {
-                if (mirrorModal) mirrorModal.show();
-            }
-        });
+    const tryMirror = (axis) => {
+        if (selectedLedIds.size === 0) {
+            showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_mirror'), 'warning');
+            return;
+        }
+        handleMirrorSelected(axis);
+    };
 
-        confirmMirrorBtn.addEventListener('click', () => {
-            const axis = document.getElementById('mirror-direction').value;
-            const duplicate = document.getElementById('mirror-duplicate').checked;
-            handleMirrorSelected(axis, duplicate);
-            if (mirrorModal) mirrorModal.hide();
-        });
+    if (mirrorHBtn) {
+        mirrorHBtn.addEventListener('click', () => tryMirror('horizontal'));
     } else {
-        console.warn("Mirror buttons not found.");
+        console.warn('mirror-h-btn not found.');
+    }
+    if (mirrorVBtn) {
+        mirrorVBtn.addEventListener('click', () => tryMirror('vertical'));
+    } else {
+        console.warn('mirror-v-btn not found.');
     }
 
     const duplicateSelectedBtn = document.getElementById('duplicate-selected-btn');
@@ -3238,7 +3282,7 @@ function setupKeyboardListeners() {
                 if (selectedLedIds.size > 0) {
                     scaleModal.show();
                 } else {
-                    showToast('Action Blocked', 'Select one or more LEDs to scale.', 'warning');
+                    showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_scale'), 'warning');
                 }
                 break;
             case 'Delete':
@@ -3277,10 +3321,9 @@ function setupKeyboardListeners() {
             case 'm':
             case 'M':
                 if (selectedLedIds.size > 0) {
-                    const mirrorModalInstance = bootstrap.Modal.getInstance(document.getElementById('mirror-selected-modal')) || new bootstrap.Modal(document.getElementById('mirror-selected-modal'));
-                    mirrorModalInstance.show();
+                    handleMirrorSelected(e.shiftKey ? 'vertical' : 'horizontal');
                 } else {
-                    showToast('Action Blocked', 'Select one or more LEDs to mirror.', 'warning');
+                    showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_mirror'), 'warning');
                 }
                 break;
             default:
@@ -3313,8 +3356,8 @@ function handleAddMatrix() {
     const isSerpentine = document.getElementById('matrix-serpentine').checked;
     // GRID_SIZE is globally defined
 
-    if (cols <= 0 || rows <= 0) { showToast('Invalid Input', 'Columns and Rows must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (cols <= 0 || rows <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_cols_rows_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
     const matrixWidth = (cols - 1) * GRID_SIZE;
@@ -3334,7 +3377,7 @@ function handleAddMatrix() {
     const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, matrixWidth, matrixHeight, getMatrixPositions);
 
     if (!foundSpot) {
-        showToast('No Empty Space', `Could not find an empty ${cols}x${rows} space.`, 'warning');
+        showToast(bt('builder_title_no_empty_space'), bt('builder_msg_matrix_no_space', { cols, rows }), 'warning');
         return;
     }
 
@@ -3473,8 +3516,8 @@ function handleAddStrip() {
     const ledCount = parseInt(document.getElementById('strip-led-count').value) || 1;
     const orientation = document.getElementById('strip-orientation').value;
 
-    if (ledCount <= 0) { showToast('Invalid Input', 'LED Count must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (ledCount <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_led_count_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
     const shapeWidth = (orientation === 'horizontal') ? (ledCount - 1) * GRID_SIZE : 0;
@@ -3493,7 +3536,7 @@ function handleAddStrip() {
     const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getStripPositions);
 
     if (!foundSpot) {
-        showToast('No Empty Space', `Could not find an empty space for the strip.`, 'warning');
+        showToast(bt('builder_title_no_empty_space'), bt('builder_msg_strip_no_space'), 'warning');
         return;
     }
 
@@ -3528,9 +3571,9 @@ function handleAddCircle() {
     // --- FIX 1: Respect the user's radius input ---
     const radiusUnits = parseInt(document.getElementById('circle-radius').value) || 5;
 
-    if (ledCount <= 1) { showToast('Invalid Input', 'LED Count must be greater than 1.', 'danger'); return; }
-    if (radiusUnits <= 0) { showToast('Invalid Input', 'Radius must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (ledCount <= 1) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_led_count_gt_one'), 'danger'); return; }
+    if (radiusUnits <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_radius_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     // --- Use the user's radius ---
     const radiusPx = radiusUnits * GRID_SIZE;
@@ -3583,7 +3626,7 @@ function handleAddCircle() {
         getPositionsForSearch
     );
 
-    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the circle.`, 'warning'); return; }
+    if (!foundSpot) { showToast(bt('builder_title_no_empty_space'), bt('builder_msg_circle_no_space'), 'warning'); return; }
 
     // --- FIX 3: Use the new position generator for *final* LED creation ---
     // Calculate the actual center based on where the shape was placed
@@ -3611,12 +3654,12 @@ function handleAddCircle() {
 
     // --- Check if grid snapping collapsed all points ---
     if (newLeds.length === 0) {
-        showToast('Error', 'Could not create circle. Radius might be too small.', 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_circle_create_fail'), 'danger');
         return;
     }
 
     if (newLeds.length < ledCount) {
-        showToast('Warning', `Note: ${ledCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+        showToast(bt('builder_title_warning'), bt('builder_msg_snap_removed_leds', { count: ledCount - newLeds.length }), 'info');
     }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -3640,8 +3683,8 @@ function handleAddLShape() {
     const aLeds = parseInt(document.getElementById('l-shape-a-leds').value) || 3; // Vertical
     const bLeds = parseInt(document.getElementById('l-shape-b-leds').value) || 3; // Horizontal
 
-    if (aLeds <= 0 || bLeds <= 0) { showToast('Invalid Input', 'LED Counts must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (aLeds <= 0 || bLeds <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_led_counts_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
     const shapeWidth = (bLeds - 1) * GRID_SIZE;
@@ -3662,7 +3705,7 @@ function handleAddLShape() {
     const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getLShapePositions);
 
     if (!foundSpot) {
-        showToast('No Empty Space', `Could not find an empty space for the L-shape.`, 'warning');
+        showToast(bt('builder_title_no_empty_space'), bt('builder_msg_no_space_l_shape'), 'warning');
         return;
     }
 
@@ -3703,8 +3746,8 @@ function handleAddUShape() {
     const bLeds = parseInt(document.getElementById('u-shape-b-leds').value) || 1; // Bottom
     const cLeds = parseInt(document.getElementById('u-shape-c-leds').value) || 1; // Right
 
-    if (aLeds <= 0 || bLeds <= 0 || cLeds <= 0) { showToast('Invalid Input', 'LED Counts must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (aLeds <= 0 || bLeds <= 0 || cLeds <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_led_counts_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
@@ -3734,7 +3777,7 @@ function handleAddUShape() {
 
     const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getUShapePositions);
 
-    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the U-shape.`, 'warning'); return; }
+    if (!foundSpot) { showToast(bt('builder_title_no_empty_space'), bt('builder_msg_no_space_u_shape'), 'warning'); return; }
 
     const newLeds = [];
     const newWireIds = [];
@@ -3779,8 +3822,8 @@ function handleAddLiLi() {
     const circleRadius = parseInt(document.getElementById('lili-circle-radius').value) || 4;
     const spacing = parseInt(document.getElementById('lili-spacing').value) || 2;
 
-    if (stripLeds <= 0 || circleLeds <= 0 || circleRadius <= 0 || spacing <= 0) { showToast('Invalid Input', 'Inputs must be > 0.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (stripLeds <= 0 || circleLeds <= 0 || circleRadius <= 0 || spacing <= 0) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_inputs_must_positive'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
@@ -3824,7 +3867,7 @@ function handleAddLiLi() {
 
     const { foundSpot, startX, startY } = findEmptySpotForShape(viewCenter, shapeWidth, shapeHeight, getLiLiPositions);
 
-    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the LiLi shape.`, 'warning'); return; }
+    if (!foundSpot) { showToast(bt('builder_title_no_empty_space'), bt('builder_msg_no_space_lili'), 'warning'); return; }
 
     const allNewLeds = [];
     const strip1_Leds = [], strip1_Wires = [];
@@ -3901,8 +3944,8 @@ function handleAddHexagon() {
     const ledsPerSideInput = parseInt(document.getElementById('hexagon-leds-per-side').value) || 4;
     const SIDES = 6;
 
-    if (ledsPerSideInput <= 1) { showToast('Invalid Input', 'LEDs per Side must be greater than 1.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (ledsPerSideInput <= 1) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_leds_per_side_gt_one'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     // 'numSegments' is the number of gaps between LEDs.
     // If user wants 4 LEDs per side, there are 3 gaps.
@@ -3946,7 +3989,7 @@ function handleAddHexagon() {
         getPositionsForSearch
     );
 
-    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the hexagon.`, 'warning'); return; }
+    if (!foundSpot) { showToast(bt('builder_title_no_empty_space'), bt('builder_msg_hex_no_space'), 'warning'); return; }
 
     // --- FINAL CREATION ---
     const finalCenterX = startX + R;
@@ -3970,7 +4013,7 @@ function handleAddHexagon() {
     // Check if snapping caused too many LEDs to merge
     const expectedLedCount = (ledsPerSideInput - 1) * SIDES;
     if (newLeds.length < expectedLedCount * 0.9) { // Allow for some merging
-        showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+        showToast(bt('builder_title_warning'), bt('builder_msg_snap_removed_leds', { count: expectedLedCount - newLeds.length }), 'info');
     }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -3990,8 +4033,8 @@ function handleAddHexagon() {
 function handleAddTriangle() {
     const ledsPerSide = parseInt(document.getElementById('triangle-leds-per-side').value) || 5;
 
-    if (ledsPerSide <= 1) { showToast('Invalid Input', 'LEDs per Side must be > 1.', 'danger'); return; }
-    if (!canvas || !viewTransform) { showToast('Error', 'Canvas not ready.', 'danger'); return; }
+    if (ledsPerSide <= 1) { showToast(bt('builder_title_invalid_input'), bt('builder_msg_leds_per_side_gt_one_alt'), 'danger'); return; }
+    if (!canvas || !viewTransform) { showToast(bt('builder_title_error'), bt('builder_msg_canvas_not_ready'), 'danger'); return; }
 
     const viewCenter = { x: (canvas.width / 2 - viewTransform.panX) / viewTransform.zoom, y: (canvas.height / 2 - viewTransform.panY) / viewTransform.zoom };
 
@@ -4021,7 +4064,7 @@ function handleAddTriangle() {
         getPositionsForSearch
     );
 
-    if (!foundSpot) { showToast('No Empty Space', `Could not find an empty space for the triangle.`, 'warning'); return; }
+    if (!foundSpot) { showToast(bt('builder_title_no_empty_space'), bt('builder_msg_no_space_triangle'), 'warning'); return; }
 
     const finalCenterX = startX + shapeWidth / 2;
     const finalCenterY = startY + shapeHeight / 2;
@@ -4043,7 +4086,7 @@ function handleAddTriangle() {
 
     const expectedLedCount = (ledsPerSide - 1) * 3;
     if (newLeds.length < expectedLedCount * 0.9) {
-        showToast('Warning', `Note: ${expectedLedCount - newLeds.length} LED(s) were removed due to grid snapping overlap.`, 'info');
+        showToast(bt('builder_title_warning'), bt('builder_msg_snap_removed_leds', { count: expectedLedCount - newLeds.length }), 'info');
     }
 
     if (!Array.isArray(componentState.leds)) componentState.leds = [];
@@ -4070,9 +4113,9 @@ function handleRotateSelected(angleDeg) {
     let rotationType = '';
 
     if (angleDeg === 90) {
-        rotationType = '+90° (CCW)';
+        rotationType = bt('builder_msg_rotation_ccw');
     } else if (angleDeg === -90) {
-        rotationType = '-90° (CW)';
+        rotationType = bt('builder_msg_rotation_cw');
     } else {
         console.error("handleRotateSelected called with non-90° angle.");
         return;
@@ -4095,125 +4138,49 @@ function handleRotateSelected(angleDeg) {
     });
 
     if (stateChanged) {
-        showToast('Rotation Complete', `Rotated ${selectedLedIds.size} LEDs by ${rotationType}. Hold Shift for other direction.`, 'success');
+        showToast(bt('builder_title_rotation_complete'), bt('builder_msg_rotation_complete', { count: selectedLedIds.size, rotation: rotationType }), 'success');
         autoSaveState();
         drawCanvas();
     }
 }
 
 /**
- * Mirrors the currently selected LEDs and their wiring.
- * If duplicating, mirrors adjacent to the selection. If not, mirrors across the centroid.
- * @param {string} axis - 'horizontal' or 'vertical'
- * @param {boolean} duplicate - True to clone, false to just move existing.
+ * Mirrors the currently selected LEDs in place across the selection centroid.
+ * Use Duplicate for a separately offset copy; mirroring always moves the selection.
+ * @param {string} axis - 'horizontal' (flip left/right) or 'vertical' (flip up/down)
  */
-function handleMirrorSelected(axis, duplicate) {
+function handleMirrorSelected(axis) {
     if (selectedLedIds.size === 0) return;
 
-    let mirrorLineX, mirrorLineY;
+    const center = getSelectionCenter();
+    if (!center) return;
 
-    if (duplicate) {
-        // --- DUPLICATE MODE: Mirror line is at the outer edge + 1 grid space ---
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-
-        componentState.leds.forEach(led => {
-            if (led && selectedLedIds.has(led.id)) {
-                if (led.x > maxX) maxX = led.x;
-                if (led.y > maxY) maxY = led.y;
-            }
-        });
-
-        if (maxX === -Infinity || maxY === -Infinity) return;
-
-        mirrorLineX = maxX + GRID_SIZE;
-        mirrorLineY = maxY + GRID_SIZE;
-    } else {
-        // --- MOVE MODE: Mirror line is exactly at the centroid of the selection ---
-        const center = getSelectionCenter();
-        if (!center) return;
-
-        mirrorLineX = center.centerX;
-        mirrorLineY = center.centerY;
-    }
+    const mirrorLineX = center.centerX;
+    const mirrorLineY = center.centerY;
 
     let stateChanged = false;
 
-    if (duplicate) {
-        const idMapping = new Map(); // Maps oldId -> newId
-        const newLeds = [];
-        let newLedCounter = 0;
+    componentState.leds.forEach(led => {
+        if (led && selectedLedIds.has(led.id)) {
+            let newX = led.x;
+            let newY = led.y;
 
-        // 1. Create mirrored LEDs
-        componentState.leds.forEach(led => {
-            if (led && selectedLedIds.has(led.id)) {
-                let newX = led.x;
-                let newY = led.y;
-
-                if (axis === 'horizontal') {
-                    newX = mirrorLineX + (mirrorLineX - led.x);
-                } else if (axis === 'vertical') {
-                    newY = mirrorLineY + (mirrorLineY - led.y);
-                }
-
-                // Snap to grid
-                newX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
-                newY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
-
-                const newId = `mirror-${Date.now()}-${newLedCounter++}`;
-                idMapping.set(led.id, newId);
-
-                newLeds.push({ id: newId, x: newX, y: newY });
+            if (axis === 'horizontal') {
+                newX = mirrorLineX + (mirrorLineX - led.x);
+            } else if (axis === 'vertical') {
+                newY = mirrorLineY + (mirrorLineY - led.y);
             }
-        });
 
-        // 2. Duplicate wiring for the mirrored LEDs
-        const newCircuits = [];
-        componentState.wiring.forEach(circuit => {
-            if (!Array.isArray(circuit)) return;
-            const mirroredCircuitFragment = [];
-            circuit.forEach(ledId => {
-                if (idMapping.has(ledId)) {
-                    mirroredCircuitFragment.push(idMapping.get(ledId));
-                }
-            });
-            if (mirroredCircuitFragment.length > 0) {
-                newCircuits.push(mirroredCircuitFragment);
-            }
-        });
-
-        // 3. Apply changes to state
-        componentState.leds.push(...newLeds);
-        componentState.wiring.push(...newCircuits);
-
-        // 4. Swap selection to the new mirrored LEDs
-        selectedLedIds.clear();
-        newLeds.forEach(led => selectedLedIds.add(led.id));
-        stateChanged = true;
-
-    } else {
-        // 1. Just move the existing LEDs
-        componentState.leds.forEach(led => {
-            if (led && selectedLedIds.has(led.id)) {
-                let newX = led.x;
-                let newY = led.y;
-
-                if (axis === 'horizontal') {
-                    newX = mirrorLineX + (mirrorLineX - led.x);
-                } else if (axis === 'vertical') {
-                    newY = mirrorLineY + (mirrorLineY - led.y);
-                }
-
-                led.x = Math.round(newX / GRID_SIZE) * GRID_SIZE;
-                led.y = Math.round(newY / GRID_SIZE) * GRID_SIZE;
-                stateChanged = true;
-            }
-        });
-        // Selection remains on the same LEDs
-    }
+            led.x = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+            led.y = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+            stateChanged = true;
+        }
+    });
 
     if (stateChanged) {
-        showToast('Mirror Complete', `${duplicate ? 'Duplicated and mirrored' : 'Mirrored'} ${selectedLedIds.size} LEDs.`, 'success');
+        const dir =
+            axis === 'horizontal' ? bt('builder_msg_mirror_dir_horizontal') : bt('builder_msg_mirror_dir_vertical');
+        showToast(bt('builder_title_mirror_complete'), bt('builder_msg_mirror_complete', { count: selectedLedIds.size, direction: dir }), 'success');
         autoSaveState();
         drawCanvas();
         updateLedCount();
@@ -4226,7 +4193,7 @@ function handleMirrorSelected(axis, duplicate) {
  */
 function handleDuplicateSelected() {
     if (selectedLedIds.size === 0) {
-        showToast('Action Blocked', 'Select one or more LEDs to duplicate.', 'warning');
+        showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_duplicate'), 'warning');
         return;
     }
 
@@ -4288,7 +4255,7 @@ function handleDuplicateSelected() {
     stateChanged = true;
 
     if (stateChanged) {
-        showToast('Duplication Complete', `Duplicated ${newLeds.length} LEDs.`, 'success');
+        showToast(bt('builder_title_duplication_complete'), bt('builder_msg_duplicate_complete', { count: newLeds.length }), 'success');
         autoSaveState();
         drawCanvas();
         updateLedCount();
@@ -4298,7 +4265,7 @@ function handleDuplicateSelected() {
 function handleScaleSelected() {
     const factor = parseFloat(scaleFactorInput.value);
     if (isNaN(factor) || factor <= 0 || selectedLedIds.size === 0) {
-        showToast('Invalid Input', 'Invalid scale factor (must be > 0) or no LEDs selected.', 'danger');
+        showToast(bt('builder_title_invalid_input'), bt('builder_msg_scale_invalid'), 'danger');
         return;
     }
 
@@ -4320,7 +4287,7 @@ function handleScaleSelected() {
     });
 
     if (stateChanged) {
-        showToast('Scaling Complete', `Scaled ${selectedLedIds.size} LEDs by x${factor}`, 'success');
+        showToast(bt('builder_title_scaling_complete'), bt('builder_msg_scale_complete', { count: selectedLedIds.size, factor }), 'success');
         autoSaveState();
         drawCanvas();
     }
@@ -4333,7 +4300,7 @@ function handleScaleSelected() {
  */
 function handleReverseSelected() {
     if (selectedLedIds.size === 0) {
-        showToast('Action Blocked', 'Select two or more LEDs in a circuit to reverse.', 'warning');
+        showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_reverse_multi'), 'warning');
         return;
     }
 
@@ -4375,11 +4342,11 @@ function handleReverseSelected() {
     });
 
     if (stateChanged) {
-        showToast('Wiring Reversed', `Reversed the order of ${totalReversedCount} selected LEDs.`, 'success');
+        showToast(bt('builder_title_wiring_reversed'), bt('builder_msg_wiring_reversed', { count: totalReversedCount }), 'success');
         autoSaveState();
         drawCanvas();
     } else {
-        showToast('Action Blocked', 'Select two or more LEDs *from the same circuit* to reverse.', 'warning');
+        showToast(bt('builder_title_action_blocked'), bt('builder_msg_action_blocked_reverse_same'), 'warning');
     }
 }
 
@@ -4469,10 +4436,10 @@ async function loadUserComponents(reset = false) {
         if (reset && finalDocs.length === 0) {
             if (querySnapshot.empty) {
                 // Server found nothing
-                galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components match your filters.</div>';
+                galleryComponentList.innerHTML = `<div class="alert alert-secondary">${bt('builder_gallery_no_match_filters')}</div>`;
             } else {
                 // Server found things, but client search filtered them all
-                galleryComponentList.innerHTML = '<div class="alert alert-secondary">No components on this page match your search term.</div>';
+                galleryComponentList.innerHTML = `<div class="alert alert-secondary">${bt('builder_gallery_no_match_search')}</div>`;
             }
         }
 
@@ -4485,9 +4452,10 @@ async function loadUserComponents(reset = false) {
             card.className = 'card bg-body-secondary mb-3';
 
             const ledCount = Array.isArray(componentData.leds) ? componentData.leds.length : 0;
-            const lastUpdated = componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? 'Unknown date';
-            const ownerName = componentData.ownerName || 'Anonymous';
-            const componentName = componentData.name || 'Untitled';
+            const lastUpdated =
+                componentData.lastUpdated?.toDate()?.toLocaleDateString() ?? bt('builder_gallery_unknown_date');
+            const ownerName = componentData.ownerName || bt('builder_anonymous_owner');
+            const componentName = componentData.name || bt('builder_msg_untitled_component');
             const imageUrl = componentData.imageUrl;
             const ownerId = componentData.ownerId;
 
@@ -4504,7 +4472,7 @@ async function loadUserComponents(reset = false) {
                     <div class="col-md-4 d-flex align-items-center justify-content-center gallery-image-container" 
                          data-component-id="${componentId}-img"
                          style="background-color: #212529; padding: 0.5rem;">
-                        <img src="${imageUrl}" class="img-fluid rounded" alt="${componentName} preview" 
+                        <img src="${imageUrl}" class="img-fluid rounded" alt="${bt('builder_gallery_card_alt_preview', { name: componentName })}" 
                              style="max-height: 170px; object-fit: contain;">
                     </div>`;
             }
@@ -4513,16 +4481,16 @@ async function loadUserComponents(reset = false) {
                 <div class="col-md-8">
                     <div class="card-body d-flex flex-column h-100">
                         <h5 class="card-title">${componentName}</h5>
-                        <small class="card-subtitle text-muted mb-2"> By: ${ownerName} on ${lastUpdated} </small>
+                        <small class="card-subtitle text-muted mb-2"> ${bt('builder_mobile_by_prefix')} ${ownerName} on ${lastUpdated} </small>
                         <div class="mb-3">
-                            <span class="badge bg-primary">${componentData.brand || 'N/A'}</span>
-                            <span class="badge bg-info text-dark">${componentData.type || 'N/A'}</span>
-                            <span class="badge bg-secondary">${ledCount} LEDs</span>
+                            <span class="badge bg-primary">${componentData.brand || bt('builder_gallery_na')}</span>
+                            <span class="badge bg-info text-dark">${componentData.type || bt('builder_gallery_na')}</span>
+                            <span class="badge bg-secondary">${bt('builder_led_count_plural', { count: ledCount })}</span>
                         </div>
                         <div class="flex-grow-1"></div>
                         <div class="d-flex justify-content-between">
-                            <button class="btn btn-primary btn-sm" data-component-id="${componentId}-load"> <i class="bi bi-folder2-open me-1"></i> Load </button>
-                            <button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete"> <i class="bi bi-trash me-1"></i> Delete </button>
+                            <button class="btn btn-primary btn-sm" data-component-id="${componentId}-load"> <i class="bi bi-folder2-open me-1"></i> ${bt('builder_gallery_btn_load')} </button>
+                            <button class="btn btn-danger btn-sm" data-component-id="${componentId}-delete"> <i class="bi bi-trash me-1"></i> ${bt('builder_gallery_btn_delete')} </button>
                         </div>
                     </div>
                 </div>`;
@@ -4547,7 +4515,13 @@ async function loadUserComponents(reset = false) {
                     currentComponentId = componentId;
                     document.getElementById('share-component-btn').disabled = false;
                     if (galleryOffcanvas) galleryOffcanvas.hide();
-                    showToast('Component Loaded', `Loaded "${componentData.name || 'Untitled'}".`, 'success');
+                    showToast(
+                        bt('builder_title_component_loaded'),
+                        bt('builder_msg_gallery_loaded_card', {
+                            name: componentData.name || bt('builder_msg_untitled_component')
+                        }),
+                        'success'
+                    );
                     isDirty = false;
                 }
             };
@@ -4584,15 +4558,18 @@ async function loadUserComponents(reset = false) {
 
     } catch (error) {
         console.error("Error loading user components:", error);
-        galleryComponentList.innerHTML = '<div class="alert alert-danger">Error loading components. See console for details.</div>';
-        showToast('Load Error', 'Could not fetch components.', 'danger');
+        galleryComponentList.innerHTML = `<div class="alert alert-danger">${bt('builder_gallery_error_console')}</div>`;
+        showToast(bt('builder_title_load_error'), bt('builder_msg_gallery_fetch_fail'), 'danger');
 
         if (galleryLoadingSpinner) galleryLoadingSpinner.style.display = 'none';
 
         // --- THIS IS THE FIREBASE INDEX WARNING ---
         if (error.code === 'failed-precondition') {
-            const indexErrorMsg = `This query requires a composite index. Click the link in the console error message (it looks like: ${error.message.substring(error.message.indexOf('https://'))}) to create it in Firebase, then wait a few minutes.`;
-            galleryComponentList.innerHTML = `<div class="alert alert-warning">${indexErrorMsg}</div>`;
+            const linkStart = error.message.indexOf('https://');
+            const indexLink = linkStart >= 0 ? error.message.substring(linkStart) : error.message;
+            galleryComponentList.innerHTML = bt('builder_gallery_index_error_html', {
+                message: bt('builder_msg_firebase_composite_index', { link: indexLink })
+            });
         }
     } finally {
         isGalleryLoading = false;
@@ -4614,9 +4591,9 @@ async function populateGalleryFilters() {
     const currentLeds = galleryFilterLeds.value;
 
     // --- 2. Clear dropdowns (except for the 'All' option) ---
-    galleryFilterType.innerHTML = '<option value="all" selected>All Types</option>';
-    galleryFilterBrand.innerHTML = '<option value="all" selected>All Brands</option>';
-    galleryFilterLeds.innerHTML = '<option value="all" selected>All Counts</option>';
+    galleryFilterType.innerHTML = `<option value="all" selected>${bt('builder_gallery_filter_all_types')}</option>`;
+    galleryFilterBrand.innerHTML = `<option value="all" selected>${bt('builder_gallery_filter_all_brands')}</option>`;
+    galleryFilterLeds.innerHTML = `<option value="all" selected>${bt('builder_gallery_filter_all_counts')}</option>`;
 
     try {
         const filterDocRef = doc(db, "srgb-components-metadata", "filters");
@@ -4637,7 +4614,7 @@ async function populateGalleryFilters() {
         } else {
             // --- 4. One-time scan to build the filters doc ---
             console.warn("Filters doc empty or missing. Performing one-time scan...");
-            showToast("Gallery Init", "Building filter list for the first time...", "info");
+            showToast(bt('builder_title_info'), bt('builder_msg_filter_building_first_time'), 'info');
 
             const allTypes = new Set();
             const allBrands = new Set();
@@ -4691,14 +4668,14 @@ async function populateGalleryFilters() {
         // --- 7. [MODIFIED] Populate LED Dropdown with exact counts ---
         // Sort the numbers numerically (e.g., 8, 12, 64, 120)
         ledCountsToUse.sort((a, b) => a - b).forEach(count => {
-            galleryFilterLeds.innerHTML += `<option value="${count}">${count} LEDs</option>`;
+            galleryFilterLeds.innerHTML += `<option value="${count}">${bt('builder_led_count_plural', { count })}</option>`;
         });
         // --- END MODIFICATION ---
 
 
     } catch (error) {
         console.error("Error fetching gallery filters:", error);
-        showToast("Filter Error", "Could not load filter options.", "danger");
+        showToast(bt('builder_title_error'), bt('builder_msg_filter_load_fail'), 'danger');
     }
 
     // --- 8. Restore user selection ---
@@ -4716,7 +4693,7 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
         return;
     }
 
-    showToast('Deleting...', `Deleting ${componentName}...`, 'info');
+    showToast(bt('builder_title_deleting'), bt('builder_msg_deleting_component', { name: componentName }), 'info');
 
     try {
         if (imageUrl && (imageUrl.startsWith('gs://') || imageUrl.startsWith('https://firebasestorage.googleapis.com'))) {
@@ -4733,7 +4710,7 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
         const docRef = doc(db, 'srgb-components', docId);
         await deleteDoc(docRef);
 
-        showToast('Success', `Successfully deleted "${componentName}".`, 'success');
+        showToast(bt('builder_title_success'), bt('builder_msg_delete_component_ok', { name: componentName }), 'success');
 
         // 3. --- Remove the card from the UI directly ---
         if (e && e.target) {
@@ -4749,7 +4726,7 @@ async function handleDeleteComponent(e, docId, componentName, imageUrl, ownerId)
 
     } catch (error) {
         console.error("Error deleting component:", error);
-        showToast('Error', `Failed to delete component: ${error.message}`, 'danger');
+        showToast(bt('builder_title_error'), bt('builder_msg_delete_component_fail', { message: error.message }), 'danger');
     }
 }
 
@@ -4978,6 +4955,18 @@ async function getFeaturedComponentId() {
 
 
 
+/**
+ * Rotate / reverse wiring / scale / duplicate / mirror — enabled only when at least one LED is selected.
+ */
+function updateSelectionToolbarButtons() {
+    const hasSelection = Boolean(selectedLedIds && selectedLedIds.size > 0);
+    for (const id of ['rotate-selected-btn', 'reverse-selected-btn', 'scale-selected-btn', 'duplicate-selected-btn', 'mirror-h-btn', 'mirror-v-btn']) {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !hasSelection;
+    }
+}
+window.updateSelectionToolbarButtons = updateSelectionToolbarButtons;
+
 // ---
 // --- INITIALIZATION ---
 // ---
@@ -4994,8 +4983,18 @@ if (localStorage.getItem('nodeStart') === 'true') {
 drawCanvas();
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (window.I18N) await window.I18N.init();
     setVersionWithCaching();
     initializeTooltips();
+
+    window.addEventListener('i18n:changed', () => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+            const inst = bootstrap.Tooltip.getInstance(el);
+            if (inst) inst.dispose();
+        });
+        initializeTooltips();
+        updateLedCount();
+    });
 
     if (!ctx) {
         console.error("Failed to get 2D context for canvas. Aborting initialization.");
@@ -5075,7 +5074,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const wantsRgbjunkieExport = (urlParams.get('export') || '').toLowerCase() === 'rgbjunkie';
 
     if (wantsRgbjunkieExport && !componentIdFromUrl) {
-        showToast('Export', 'Add a shared component id: /builder/?id=YOUR_ID&export=rgbjunkie', 'warning');
+        showToast(bt('builder_title_export'), bt('builder_msg_export_demo_hint'), 'warning');
     }
 
     if (componentIdFromUrl) {
@@ -5084,7 +5083,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (loadedOk) {
                     tryDirectRgbjunkieExportDownload();
                 } else {
-                    showToast('Export', 'Could not export: the shared component did not load.', 'warning');
+                    showToast(bt('builder_title_export'), bt('builder_msg_export_share_not_loaded'), 'warning');
                     removeExportQueryParamFromUrl();
                 }
             }
@@ -5097,7 +5096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Priority 3: Feature a community favorite
             const featuredId = await getFeaturedComponentId();
             if (featuredId) {
-                showToast('Welcome', 'Loading the featured community component...', 'info');
+                showToast(bt('builder_title_welcome'), bt('builder_msg_featured_loading'), 'info');
                 loadComponentFromUrl(featuredId);
             } else {
                 handleNewComponent(false); // Priority 4: Fresh Canvas

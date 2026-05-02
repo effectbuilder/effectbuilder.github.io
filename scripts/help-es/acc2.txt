@@ -1,0 +1,25 @@
+<h6>Interacción con el lienzo</h6>
+                                        <ul>
+                                            <li><strong>Seleccionar:</strong> Haz clic en un objeto para seleccionarlo. Mantén <kbd>Shift</kbd> o <kbd>Ctrl</kbd> para seleccionar varios.</li>
+                                            <li><strong>Manipular:</strong> Arrastra el objeto para moverlo, los tiradores cuadrados para redimensionar o el tirador circular para rotar.</li>
+                                            <li><strong>Ajuste:</strong> Los objetos se alinean automáticamente a bordes y centros de otros objetos y del lienzo.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Barra de herramientas</h6>
+                                        <p>La barra sobre el lienzo ofrece herramientas rápidas:</p>
+                                        <ul>
+                                            <li><strong>Historial (<i class="bi bi-arrow-counterclockwise"></i> / <i class="bi bi-arrow-clockwise"></i>):</strong> Deshacer y rehacer cambios recientes.</li>
+                                            <li><strong>Copiar/pegar propiedades (<i class="bi bi-clipboard-plus"></i> / <i class="bi bi-clipboard-check"></i>):</strong> Copia grupos de propiedades (tamaño, color, animación, etc.) de un objeto y pégalos en otros.</li>
+                                            <li><strong>Alineación y coincidencia:</strong> Con objeto(s) seleccionados, puedes alinearlos a la pantalla, igualar tamaños o ajustarlos al lienzo al instante.</li>
+                                            <li><strong>Limitar al lienzo:</strong> Activa o desactiva si los objetos pueden salir de los bordes del lienzo.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Atajos de teclado</h6>
+                                        <ul>
+                                            <li><kbd>Flechas</kbd>: Mueve los objetos seleccionados un poco.</li>
+                                            <li><kbd>Shift</kbd> + <kbd>Flechas</kbd>: Movimiento mayor.</li>
+                                            <li><kbd>Suprimir</kbd> / <kbd>Retroceso</kbd>: Eliminar objetos seleccionados.</li>
+                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>Z</kbd> / <kbd>Y</kbd>: Deshacer y rehacer.</li>
+                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>C</kbd> / <kbd>V</kbd>: Copiar/pegar propiedades.</li>
+                                            <li><kbd>Escape</kbd>: Deseleccionar todo.</li>
+                                        </ul>
