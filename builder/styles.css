@@ -1,8 +1,12 @@
+:root {
+    /* Match styles.css — left rail width for Effect Builder + Component Builder */
+    --app-left-panel-width: 420px;
+}
+
 /* Make the main split work using CSS Grid */
 #main-split {
     display: grid;
-    grid-template-columns: 350px 1fr;
-    /* Left panel 350px, right panel takes rest */
+    grid-template-columns: var(--app-left-panel-width) 1fr;
     height: 100%;
 }
 
@@ -13,10 +17,15 @@
 /* Ensure panels can scroll independently if content overflows */
 #left-panel {
     height: 100%;
-    overflow-y: auto;
-    /* Allow vertical scroll */
-    overflow-x: hidden;
-    /* Prevent horizontal scroll */
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#left-panel .tab-content {
+    min-height: 0;
 }
 
 #right-panel {
@@ -293,86 +302,6 @@
     color: var(--bs-primary);
 }
 
-/* --------------------------------------------------------
-   GTranslate Custom Styling (Bootstrap Dark Theme)
-   -------------------------------------------------------- */
-
-/* 1. Target the selector inside the wrapper */
-.gtranslate_wrapper select {
-    /* Base Button Styling */
-    background-color: #2b3035 !important;
-    /* Bootstrap Dark Gray */
-    color: #fff !important;
-    /* White Text */
-    border: 1px solid #495057 !important;
-    /* Dark Border */
-    border-radius: 6px !important;
-    /* Bootstrap Rounded Corners */
-    padding: 6px 36px 6px 12px !important;
-    /* Padding (Right extra for arrow) */
-    font-size: 14px !important;
-    line-height: 1.5 !important;
-    cursor: pointer !important;
-    outline: none !important;
-
-    /* 2. Custom White Arrow (Replaces default black arrow) */
-    appearance: none !important;
-    /* Hides native browser arrow */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
-    background-size: 12px 12px !important;
-}
-
-/* 3. Hover Effect */
-.gtranslate_wrapper select:hover {
-    background-color: #343a40 !important;
-    border-color: #6c757d !important;
-}
-
-/* 4. Focus/Active Effect (Blue Glow) */
-.gtranslate_wrapper select:focus {
-    border-color: #86b7fe !important;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-}
-
-/* 5. Hide the floating popup if it ever tries to appear */
-#goog-gt-tt {
-    display: none !important;
-}
-
-/* STABILIZE THE GOOGLE GLOBE (Robust Version) */
-
-/* 1. Target the first DIV inside your wrapper */
-/* This catches the container regardless of its weird class name */
-#google_translate_element>div {
-    z-index: 10000 !important;
-    position: fixed !important;
-
-    /* Hardware acceleration to stop flickering */
-    transform: translate3d(0, 0, 0) !important;
-    will-change: transform;
-    backface-visibility: hidden;
-
-    /* Position settings */
-    bottom: 20px !important;
-    right: 20px !important;
-    top: auto !important;
-    left: auto !important;
-}
-
-/* 2. Target the SVG (The actual globe graphic) */
-/* This ensures the vector graphic itself is stable */
-#google_translate_element svg {
-    transform: translateZ(0);
-    shape-rendering: geometricPrecision;
-    width: 48px !important;
-    /* Optional: Enforce a stable size */
-    height: 48px !important;
-}
-
 /* Make the brand area look like a clickable button on hover */
 .brand-dropdown-toggle {
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -420,6 +349,109 @@
     /* Runs the 1.5 second animation exactly 2 times, then stops forever */
     animation: load-pulse 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) 2;
     border-radius: 0.5rem;
+}
+
+/* Secondary toolbar below navbar — match Effect Builder */
+#toolbar.app-subtoolbar {
+    z-index: 2;
+}
+
+/* Canvas toolbar — same rules as www/styles.css (outline / disabled / active) */
+#toolbar.app-subtoolbar .btn-group.shadow-sm {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14) !important;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn {
+    position: relative;
+    box-sizing: border-box;
+    --bs-btn-border-width: 1px;
+    border-width: 1px !important;
+    box-shadow: none !important;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn:not(:disabled):not(.disabled) {
+    border-style: solid !important;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn:hover:not(:disabled):not(.disabled),
+#toolbar.app-subtoolbar .btn-group > .btn:focus-visible {
+    z-index: 1;
+    box-shadow: none !important;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn.active:not(:disabled) {
+    z-index: 2;
+}
+
+#toolbar.app-subtoolbar .btn-group > .btn.btn-primary {
+    box-shadow: none !important;
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-secondary:not(:disabled):not(.disabled) {
+    --bs-btn-color: var(--bs-emphasis-color);
+    --bs-btn-border-color: rgba(var(--bs-emphasis-rgb), 0.45);
+    --bs-btn-bg: rgba(var(--bs-emphasis-rgb), 0.07);
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-secondary:not(:disabled):not(.disabled):hover {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-color: #fff;
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-info:not(:disabled):not(.disabled):not(.active) {
+    --bs-btn-color: var(--bs-info);
+    --bs-btn-border-color: rgba(var(--bs-info-rgb), 0.65);
+    --bs-btn-bg: rgba(var(--bs-info-rgb), 0.08);
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-info:not(:disabled):not(.disabled):not(.active):hover {
+    --bs-btn-bg: var(--bs-info);
+    --bs-btn-border-color: var(--bs-info);
+    --bs-btn-color: var(--bs-white);
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-danger:not(:disabled):not(.disabled) {
+    --bs-btn-color: var(--bs-danger);
+    --bs-btn-border-color: rgba(var(--bs-danger-rgb), 0.65);
+    --bs-btn-bg: rgba(var(--bs-danger-rgb), 0.06);
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-danger:not(:disabled):not(.disabled):hover {
+    --bs-btn-bg: var(--bs-danger);
+    --bs-btn-border-color: var(--bs-danger);
+    --bs-btn-color: #fff;
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-secondary.active:not(:disabled),
+#toolbar.app-subtoolbar .btn.btn-outline-info.active:not(:disabled) {
+    --bs-btn-bg: var(--bs-secondary);
+    --bs-btn-border-color: var(--bs-secondary);
+    --bs-btn-color: #fff;
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-secondary.active:not(:disabled):hover,
+#toolbar.app-subtoolbar .btn.btn-outline-info.active:not(:disabled):hover {
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-color: #fff;
+}
+
+#toolbar.app-subtoolbar .btn.btn-outline-secondary:disabled,
+#toolbar.app-subtoolbar .btn.btn-outline-secondary.disabled,
+#toolbar.app-subtoolbar .btn.btn-outline-info:disabled,
+#toolbar.app-subtoolbar .btn.btn-outline-danger:disabled {
+    opacity: 0.4;
+    border-style: dashed;
+    --bs-btn-border-color: var(--bs-secondary-color);
+    --bs-btn-color: var(--bs-secondary-color);
+    --bs-btn-bg: transparent;
 }
 
 /* -------------------------------------------------------- */

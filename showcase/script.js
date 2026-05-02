@@ -36,7 +36,7 @@ function updateCommentFormVisibility() {
         if (loginPrompt) loginPrompt.style.display = 'none';
 
         if (nameInput) {
-            nameInput.value = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Verified User');
+            nameInput.value = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : (window.tr ? window.tr('showcase_verified_user') : 'Verified User'));
             nameInput.readOnly = true;
         }
     } else {
@@ -52,7 +52,11 @@ onAuthStateChanged(auth, (user) => {
     updateCommentFormVisibility();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.I18N) {
+        await window.I18N.init();
+    }
+
     const loginBtn = document.getElementById('btn-google-login');
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
@@ -61,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("Failed to sign in: " + error.message);
+                alert((window.tr ? window.tr('showcase_alert_signin_failed') : 'Failed to sign in:') + ' ' + error.message);
             }
         });
     }
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const triggerSuccessUI = () => {
                 console.log("Success UI triggered.");
                 const originalHtml = copyCodeBtn.innerHTML;
-                copyCodeBtn.innerHTML = '<i class="bi bi-check2-all me-2"></i>Copied!';
+                copyCodeBtn.innerHTML = '<i class="bi bi-check2-all me-2"></i>' + (window.tr ? window.tr('showcase_btn_copied') : 'Copied!');
                 copyCodeBtn.classList.replace('btn-primary', 'btn-success');
 
                 setTimeout(() => {
@@ -170,11 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     triggerSuccessUI();
                 } else {
                     console.error("5. execCommand returned false.");
-                    alert('Browser blocked copying. Please click inside the code block and press Ctrl+C.');
+                    alert(window.tr ? window.tr('showcase_alert_clipboard_block') : 'Browser blocked copying. Please click inside the code block and press Ctrl+C.');
                 }
             } catch (err) {
                 console.error('Fallback totally failed: ', err);
-                alert('Browser blocked copying. Please click inside the code block and press Ctrl+C.');
+                alert(window.tr ? window.tr('showcase_alert_clipboard_block') : 'Browser blocked copying. Please click inside the code block and press Ctrl+C.');
             }
         });
     } else {
@@ -192,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 presetInput.value = text;
             } catch (err) {
                 console.error('Failed to read clipboard:', err);
-                alert('Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
+                alert(window.tr ? window.tr('showcase_alert_clipboard_paste') : 'Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
             }
         });
     }
@@ -243,7 +247,7 @@ async function loadCommunityFeed(filename) {
     const feedContainer = document.getElementById('comments-feed');
     if (!feedContainer) return;
 
-    feedContainer.innerHTML = '<p class="text-muted text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Connecting to feed...</p>';
+    feedContainer.innerHTML = '<p class="text-muted text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>' + (window.tr ? window.tr('showcase_feed_connecting') : 'Connecting to feed...') + '</p>';
 
     const q = query(
         collection(db, "community_presets"),
@@ -253,15 +257,15 @@ async function loadCommunityFeed(filename) {
 
     onSnapshot(q, (snapshot) => {
         if (snapshot.empty) {
-            feedContainer.innerHTML = '<p class="text-muted text-center py-2">No community presets yet. Be the first!</p>';
+            feedContainer.innerHTML = '<p class="text-muted text-center py-2">' + (window.tr ? window.tr('showcase_feed_empty') : 'No community presets yet. Be the first!') + '</p>';
             return;
         }
 
         // --- 1. GENERATE FEED HTML ---
         feedContainer.innerHTML = snapshot.docs.map(docSnapshot => {
             const data = docSnapshot.data();
-            const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString() : 'Just now';
-            const editedBadge = data.isEdited ? '<span class="text-muted x-small ms-1 font-italic">(edited)</span>' : '';
+            const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString() : (window.tr ? window.tr('showcase_just_now') : 'Just now');
+            const editedBadge = data.isEdited ? '<span class="text-muted x-small ms-1 font-italic">' + (window.tr ? window.tr('showcase_edited_label') : '(edited)') + '</span>' : '';
 
             // Updated Layout: Shows the raw URL and uses the matching Preview/Open buttons
             let presetLink = '';
@@ -272,8 +276,8 @@ async function loadCommunityFeed(filename) {
                             ${data.presetUrl}
                         </div>
                         <div class="d-flex gap-2 flex-shrink-0">
-                            <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${data.presetUrl}">Preview</button>
-                            <a href="${data.presetUrl}" target="_blank" class="btn btn-sm btn-success" title="Apply to SignalRGB"><i class="bi bi-box-arrow-up-right"></i>Apply to SignalRGB</a>
+                            <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${data.presetUrl}">${window.tr ? window.tr('showcase_btn_preview') : 'Preview'}</button>
+                            <a href="${data.presetUrl}" target="_blank" class="btn btn-sm btn-success" title="${window.tr ? window.tr('showcase_title_apply_signal') : 'Apply to SignalRGB'}"><i class="bi bi-box-arrow-up-right"></i>${window.tr ? window.tr('showcase_btn_apply_signal') : 'Apply to SignalRGB'}</a>
                         </div>
                     </div>`;
             }
@@ -282,10 +286,10 @@ async function loadCommunityFeed(filename) {
             if (currentUser && currentUser.uid === data.userId) {
                 actionBtnsHtml = `
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-link text-warning p-0 ms-3 edit-comment-btn" data-doc-id="${docSnapshot.id}" title="Edit Comment">
+                        <button class="btn btn-link text-warning p-0 ms-3 edit-comment-btn" data-doc-id="${docSnapshot.id}" title="${window.tr ? window.tr('showcase_title_edit_comment') : 'Edit Comment'}">
                             <i class="bi bi-pencil-square"></i>
                         </button>
-                        <button class="btn btn-link text-danger p-0 ms-3 delete-comment-btn" data-doc-id="${docSnapshot.id}" title="Delete Comment">
+                        <button class="btn btn-link text-danger p-0 ms-3 delete-comment-btn" data-doc-id="${docSnapshot.id}" title="${window.tr ? window.tr('showcase_title_delete_comment') : 'Delete Comment'}">
                             <i class="bi bi-trash3-fill"></i>
                         </button>
                     </div>`;
@@ -295,7 +299,7 @@ async function loadCommunityFeed(filename) {
                 <div class="mb-3 p-3 border-bottom border-secondary-subtle">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div>
-                            <span class="fw-bold text-info">${data.userName || 'Anonymous'}</span>
+                            <span class="fw-bold text-info">${data.userName || (window.tr ? window.tr('showcase_anonymous') : 'Anonymous')}</span>
                             <span class="text-muted x-small ms-2">${date}</span>${editedBadge}
                         </div>
                         ${actionBtnsHtml}
@@ -310,18 +314,18 @@ async function loadCommunityFeed(filename) {
                         <textarea class="form-control form-control-sm bg-dark text-white border-secondary mb-2 inline-edit-textarea">${data.commentText}</textarea>
                         
                         <div class="input-group input-group-sm mb-2">
-                            <input type="text" class="form-control bg-dark text-white border-secondary inline-edit-preset" placeholder="Paste SignalRGB Preset URL (Optional)" value="${data.presetUrl || ''}">
-                            <button class="btn btn-outline-secondary inline-paste-btn" type="button" title="Paste from Clipboard">
+                            <input type="text" class="form-control bg-dark text-white border-secondary inline-edit-preset" placeholder="${window.tr ? window.tr('showcase_placeholder_preset_url') : 'Paste SignalRGB Preset URL (Optional)'}" value="${data.presetUrl || ''}">
+                            <button class="btn btn-outline-secondary inline-paste-btn" type="button" title="${window.tr ? window.tr('showcase_title_paste_clipboard') : 'Paste from Clipboard'}">
                                 <i class="bi bi-clipboard"></i>
                             </button>
-                            <button class="btn btn-outline-secondary" type="button" data-bs-target="#presetHelpModal" title="How to get a preset link?">
+                            <button class="btn btn-outline-secondary" type="button" data-bs-target="#presetHelpModal" title="${window.tr ? window.tr('showcase_title_preset_help') : 'How to get a preset link?'}">
                                 <i class="bi bi-question-circle"></i>
                             </button>
                         </div>
 
                         <div class="text-end">
-                            <button class="btn btn-sm btn-secondary me-2 cancel-edit-btn" data-doc-id="${docSnapshot.id}">Cancel</button>
-                            <button class="btn btn-sm btn-success save-edit-btn" data-doc-id="${docSnapshot.id}">Save</button>
+                            <button class="btn btn-sm btn-secondary me-2 cancel-edit-btn" data-doc-id="${docSnapshot.id}">${window.tr ? window.tr('showcase_btn_cancel') : 'Cancel'}</button>
+                            <button class="btn btn-sm btn-success save-edit-btn" data-doc-id="${docSnapshot.id}">${window.tr ? window.tr('showcase_btn_save') : 'Save'}</button>
                         </div>
                     </div>
                 </div>`;
@@ -331,12 +335,12 @@ async function loadCommunityFeed(filename) {
         feedContainer.querySelectorAll('.delete-comment-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const docId = e.currentTarget.getAttribute('data-doc-id');
-                if (confirm("Are you sure you want to delete this post?")) {
+                if (confirm(window.tr ? window.tr('showcase_confirm_delete_post') : 'Are you sure you want to delete this post?')) {
                     try {
                         await deleteDoc(doc(db, "community_presets", docId));
                     } catch (err) {
                         console.error("Error deleting:", err);
-                        alert("Failed to delete. You may not have permission.");
+                        alert(window.tr ? window.tr('showcase_alert_delete_failed') : 'Failed to delete. You may not have permission.');
                     }
                 }
             });
@@ -369,7 +373,7 @@ async function loadCommunityFeed(filename) {
                     if (input) input.value = text;
                 } catch (err) {
                     console.error('Failed to read clipboard:', err);
-                    alert('Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
+                    alert(window.tr ? window.tr('showcase_alert_clipboard_paste') : 'Clipboard access denied. Please use Ctrl+V / Cmd+V to paste.');
                 }
             });
         });
@@ -385,25 +389,25 @@ async function loadCommunityFeed(filename) {
                 const saveBtn = e.currentTarget;
 
                 if (!newText) {
-                    alert("Comment cannot be empty.");
+                    alert(window.tr ? window.tr('showcase_alert_comment_empty') : 'Comment cannot be empty.');
                     return;
                 }
 
                 let validatedUrl = "";
                 if (rawPresetUrl) {
                     if (!rawPresetUrl.startsWith("https://go.signalrgb.com/app/effect/apply/")) {
-                        alert("Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
+                        alert(window.tr ? window.tr('showcase_alert_preset_invalid') : "Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
                         return;
                     }
                     if (rawPresetUrl.includes(" ")) {
-                        alert("Preset links cannot contain spaces.");
+                        alert(window.tr ? window.tr('showcase_alert_preset_spaces') : 'Preset links cannot contain spaces.');
                         return;
                     }
                     validatedUrl = rawPresetUrl;
                 }
 
                 saveBtn.disabled = true;
-                saveBtn.textContent = "Saving...";
+                saveBtn.textContent = window.tr ? window.tr('showcase_btn_saving') : 'Saving...';
 
                 try {
                     await updateDoc(doc(db, "community_presets", docId), {
@@ -413,9 +417,9 @@ async function loadCommunityFeed(filename) {
                     });
                 } catch (err) {
                     console.error("Error updating comment:", err);
-                    alert("Failed to update comment.");
+                    alert(window.tr ? window.tr('showcase_alert_save_failed') : 'Failed to update comment.');
                     saveBtn.disabled = false;
-                    saveBtn.textContent = "Save";
+                    saveBtn.textContent = window.tr ? window.tr('showcase_btn_save') : 'Save';
                 }
             });
         });
@@ -486,13 +490,13 @@ async function loadCommunityFeed(filename) {
 
     }, (error) => {
         console.error("Firestore Feed Error:", error);
-        feedContainer.innerHTML = `<p class="text-danger text-center py-2 small">Error loading feed: ${error.message}</p>`;
+        feedContainer.innerHTML = '<p class="text-danger text-center py-2 small">' + (window.tr ? window.tr('showcase_feed_error') : 'Error loading feed:') + ' ' + error.message + '</p>';
     });
 }
 
 async function handlePostComment(filename) {
     if (!currentUser) {
-        alert("You must be logged in to post.");
+        alert(window.tr ? window.tr('showcase_alert_login_post') : 'You must be logged in to post.');
         return;
     }
 
@@ -511,7 +515,7 @@ async function handlePostComment(filename) {
     if (rawPresetUrl) {
         // Enforce the strict SignalRGB URL structure
         if (!rawPresetUrl.startsWith("https://go.signalrgb.com/app/effect/apply/")) {
-            alert("Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
+            alert(window.tr ? window.tr('showcase_alert_preset_invalid') : "Invalid preset link. It must start with 'https://go.signalrgb.com/app/effect/apply/'");
             // Highlight the box red so the user knows where they messed up
             presetInput.classList.add('is-invalid', 'border-danger');
 
@@ -525,7 +529,7 @@ async function handlePostComment(filename) {
 
         // Ensure there are no spaces in the URL to prevent broken links
         if (rawPresetUrl.includes(" ")) {
-            alert("Preset links cannot contain spaces.");
+            alert(window.tr ? window.tr('showcase_alert_preset_spaces') : 'Preset links cannot contain spaces.');
             return;
         }
 
@@ -534,7 +538,7 @@ async function handlePostComment(filename) {
 
     // 3. Proceed with posting
     btn.disabled = true;
-    btn.textContent = 'Posting...';
+    btn.textContent = window.tr ? window.tr('showcase_btn_posting') : 'Posting...';
 
     try {
         await addDoc(collection(db, "community_presets"), {
@@ -552,10 +556,10 @@ async function handlePostComment(filename) {
         presetInput.classList.remove('is-invalid', 'border-danger');
     } catch (err) {
         console.error("Error posting:", err);
-        alert("Failed to post comment. Please try again.");
+        alert(window.tr ? window.tr('showcase_alert_post_failed') : 'Failed to post comment. Please try again.');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Post to Feed';
+        btn.textContent = window.tr ? window.tr('showcase_btn_post_feed') : 'Post to Feed';
     }
 }
 
@@ -642,9 +646,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 return el ? (el.getAttribute(attrName) || el.getAttribute('content')) : null;
             };
 
-            const title = getCustomMeta('title') || doc.querySelector('title')?.textContent || 'Untitled Effect';
-            const description = getCustomMeta('description') || getCustomMeta('og:description') || 'No description available.';
-            const author = getCustomMeta('publisher') || getCustomMeta('author') || 'Unknown Author';
+            const title = getCustomMeta('title') || doc.querySelector('title')?.textContent || (window.tr ? window.tr('showcase_fallback_untitled') : 'Untitled Effect');
+            const description = getCustomMeta('description') || getCustomMeta('og:description') || (window.tr ? window.tr('showcase_fallback_no_description') : 'No description available.');
+            const author = getCustomMeta('publisher') || getCustomMeta('author') || (window.tr ? window.tr('showcase_fallback_unknown_author') : 'Unknown Author');
 
             // --- PROPERTIES ---
             const propertyMetas = doc.querySelectorAll('meta[property]');
@@ -813,13 +817,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 3. Render
         renderGrid(filtered);
-        totalCountBadge.textContent = `${filtered.length} Effects`;
+        totalCountBadge.textContent = window.tr ? window.tr('showcase_effect_count', { count: filtered.length }) : `${filtered.length} Effects`;
     }
 
     function renderGrid(effects) {
         projectListContainer.innerHTML = '';
         if (effects.length === 0) {
-            projectListContainer.innerHTML = `<div class="col-12 text-center text-muted py-5"><h3><i class="bi bi-search"></i></h3><p>No effects found matching your criteria.</p></div>`;
+            projectListContainer.innerHTML = '<div class="col-12 text-center text-muted py-5"><h3><i class="bi bi-search"></i></h3><p>' + (window.tr ? window.tr('showcase_no_results') : 'No effects found matching your criteria.') + '</p></div>';
             return;
         }
 
@@ -889,7 +893,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Generate the raw badge spans (removed the wrapper div and margins)
             if (hasPresets) {
-                badgesHtml += `<span class="badge bg-primary small" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
+                const pTitle = window.tr ? window.tr('showcase_presets_count_title', { count: effect.presets.length }) : `${effect.presets.length} Presets Available`;
+                badgesHtml += `<span class="badge bg-primary small" title="${pTitle}"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
             }
 
             if (hasTags) {
@@ -915,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     ${badgesHtml}
                 </div>
                 <p class="card-text text-body-secondary small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${effect.description}</p>
-                <small class="text-muted mt-2">By: ${effect.author}</small>
+                <small class="text-muted mt-2">${window.tr ? window.tr('showcase_card_by_prefix') : 'By:'} ${effect.author}</small>
             `;
 
             // Footer
@@ -934,19 +939,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const viewBtn = document.createElement('button');
             viewBtn.className = 'btn btn-sm btn-outline-primary';
             viewBtn.innerHTML = '<i class="bi bi-eye"></i>';
-            viewBtn.title = "Preview";
+            viewBtn.title = window.tr ? window.tr('showcase_btn_preview') : 'Preview';
             viewBtn.onclick = (e) => { e.stopPropagation(); handleViewEffect(effect); window.location.hash = effect.filename; };
 
             const codeBtn = document.createElement('button');
             codeBtn.className = 'btn btn-sm btn-outline-secondary';
             codeBtn.innerHTML = '<i class="bi bi-code-slash"></i>';
-            codeBtn.title = "Source Code";
+            codeBtn.title = window.tr ? window.tr('showcase_tooltip_source_code') : 'Source Code';
             codeBtn.onclick = (e) => { e.stopPropagation(); handleViewCode(effect); };
 
             const dlBtn = document.createElement('button');
             dlBtn.className = 'btn btn-sm btn-outline-success';
             dlBtn.innerHTML = '<i class="bi bi-download"></i>';
-            dlBtn.title = "Download";
+            dlBtn.title = window.tr ? window.tr('showcase_download_title') : 'Download';
             dlBtn.onclick = (e) => { e.stopPropagation(); handleDownloadZip(effect, dlBtn); };
 
             btnGroup.append(viewBtn, codeBtn, dlBtn);
@@ -978,7 +983,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Add Presets Badge
         if (effect.presets && effect.presets.length > 0) {
-            modalBadgesHtml += `<span class="badge bg-primary ms-2 align-middle fs-6" title="${effect.presets.length} Presets Available"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
+            const mpTitle = window.tr ? window.tr('showcase_presets_count_title', { count: effect.presets.length }) : `${effect.presets.length} Presets Available`;
+            modalBadgesHtml += `<span class="badge bg-primary ms-2 align-middle fs-6" title="${mpTitle}"><i class="bi bi-palette me-1"></i>${effect.presets.length}</span>`;
         }
 
         // Add Tags Badges
@@ -1082,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // --- 5. BOX 1: DESCRIPTION ---
         document.getElementById('effect-main-info').innerHTML = `
         <div class="mb-3">
-            <h6 class="fw-bold small text-uppercase tracking-wider">Description</h6>
+            <h6 class="fw-bold small text-uppercase tracking-wider">${window.tr ? window.tr('showcase_section_description') : 'Description'}</h6>
             <p class="text-light small mb-0">${effect.description}</p>
         </div>
         `;
@@ -1119,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     formHtml += `
                         <div class="form-check form-switch mt-1">
                             <input class="form-check-input" type="checkbox" id="${id}" name="${c.variable}" value="true" ${checked}>
-                            <label class="form-check-label small text-muted" for="${id}">Enabled</label>
+                            <label class="form-check-label small text-muted" for="${id}">${window.tr ? window.tr('showcase_control_enabled') : 'Enabled'}</label>
                         </div>`;
                 } else if (c.type === 'list' || c.type === 'combobox') {
                     const options = c.valuesStr ? c.valuesStr.split(',') : [];
@@ -1144,14 +1150,14 @@ document.addEventListener('DOMContentLoaded', function () {
             formHtml += `
                 <div class="col-12 mt-3 d-flex flex-wrap justify-content-between align-items-center border-top border-secondary pt-3 gap-2">
                     <button type="button" class="btn btn-sm btn-outline-warning px-3 flex-grow-0" id="reset-controls-btn">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>${window.tr ? window.tr('showcase_control_reset') : 'Reset'}
                     </button>
                     <div class="btn-group flex-grow-1 flex-md-grow-0">
                         <button type="button" class="btn btn-sm btn-outline-info" id="copy-live-preset-btn">
-                            <i class="bi bi-link-45deg me-1"></i>Copy Preset
+                            <i class="bi bi-link-45deg me-1"></i>${window.tr ? window.tr('showcase_btn_copy_preset_link') : 'Copy Preset'}
                         </button>
                         <button type="button" class="btn btn-sm btn-success" id="apply-live-signal-btn">
-                            <i class="bi bi-box-arrow-up-right me-1"></i>Apply to Signal
+                            <i class="bi bi-box-arrow-up-right me-1"></i>${window.tr ? window.tr('showcase_btn_apply_signal_live') : 'Apply to Signal'}
                         </button>
                     </div>
                 </div>
@@ -1286,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     try {
                         await navigator.clipboard.writeText(url);
-                        btn.innerHTML = '<i class="bi bi-check2-all me-1"></i>Copied!';
+                        btn.innerHTML = '<i class="bi bi-check2-all me-1"></i>' + (window.tr ? window.tr('showcase_btn_copied') : 'Copied!');
                         btn.classList.replace('btn-outline-info', 'btn-info');
 
                         setTimeout(() => {
@@ -1295,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         }, 2000);
                     } catch (err) {
                         console.error('Failed to copy preset link', err);
-                        alert("Clipboard access denied. Check browser permissions.");
+                        alert(window.tr ? window.tr('showcase_alert_clipboard_perm') : 'Clipboard access denied. Check browser permissions.');
                     }
                 });
             }
@@ -1335,16 +1341,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (effect.presets && effect.presets.length > 0) {
             presetsCard.style.display = 'block';
+            const apLabel = window.tr ? window.tr('showcase_available_presets') : 'Available Presets';
+            const rdLabel = window.tr ? window.tr('showcase_reset_defaults') : 'Reset Defaults';
+            const rhHint = window.tr ? window.tr('showcase_random_gen_hint') : '= randomly generated';
+            const pvBtn = window.tr ? window.tr('showcase_btn_preview') : 'Preview';
+            const apSig = window.tr ? window.tr('showcase_btn_apply_signal') : 'Apply to SignalRGB';
+            const apTitle = window.tr ? window.tr('showcase_title_apply_signal') : 'Apply to SignalRGB';
             presetsZone.innerHTML = `
         <div class="mb-3">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <h6 class="fw-bold mb-0 text-uppercase tracking-wider" style="font-size: 0.8rem; letter-spacing: 1px;">
-                    <i class="bi bi-palette2 me-2 text-info"></i>Available Presets
+                    <i class="bi bi-palette2 me-2 text-info"></i>${apLabel}
                 </h6>
-                <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none small" id="reset-preview-btn">Reset Defaults</button>
+                <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none small" id="reset-preview-btn">${rdLabel}</button>
             </div>
             <p class="text-muted mb-0" style="font-size: 0.7rem; opacity: 0.8;">
-                <i class="bi bi-dice-5-fill text-white"></i> = randomly generated
+                <i class="bi bi-dice-5-fill text-white"></i> ${rhHint}
             </p>
         </div>
         <div class="preset-container">
@@ -1358,8 +1370,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
 
                     <div class="d-flex gap-2 flex-shrink-0">
-                        <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${preset.url}">Preview</button>
-                        <a href="${preset.url}" target="_blank" class="btn btn-sm btn-success" title="Apply to SignalRGB"><i class="bi bi-box-arrow-up-right"></i>Apply to SignalRGB</a>
+                        <button type="button" class="btn btn-sm btn-outline-info preview-preset-btn" data-url="${preset.url}">${pvBtn}</button>
+                        <a href="${preset.url}" target="_blank" class="btn btn-sm btn-success" title="${apTitle}"><i class="bi bi-box-arrow-up-right"></i>${apSig}</a>
                     </div>
                 </div>`;
             }).join('')}
@@ -1447,15 +1459,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function handleViewCode(effect) {
-        codePreviewTitle.textContent = `${effect.title} - Source Code`;
-        codePreviewContent.textContent = 'Loading...';
+        const suf = window.tr ? window.tr('showcase_source_suffix') : ' - Source Code';
+        codePreviewTitle.textContent = effect.title + suf;
+        codePreviewContent.textContent = window.tr ? window.tr('showcase_code_loading') : 'Loading...';
         if (codePreviewModal) codePreviewModal.show();
         try {
             const res = await fetch(effect.effectUrl);
             const text = await res.text();
             codePreviewContent.textContent = text;
             if (window.Prism) Prism.highlightElement(codePreviewContent);
-        } catch (e) { codePreviewContent.textContent = 'Error loading code.'; }
+        } catch (e) { codePreviewContent.textContent = window.tr ? window.tr('showcase_code_error') : 'Error loading code.'; }
     }
 
     async function handleDownloadZip(effect, btn) {
@@ -1487,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', function () {
             a.download = effect.filename.replace('.html', '.zip');
             a.click();
             URL.revokeObjectURL(url);
-        } catch (err) { console.error(err); alert('Download failed.'); }
+        } catch (err) { console.error(err); alert(window.tr ? window.tr('showcase_alert_download_failed') : 'Download failed.'); }
         finally { btn.innerHTML = oldHtml; btn.disabled = false; }
     }
 
@@ -1498,7 +1511,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             await navigator.clipboard.writeText(url);
             const oldHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            btn.innerHTML = '<i class="bi bi-check"></i> ' + (window.tr ? window.tr('showcase_btn_copy_link_ok') : 'Copied!');
             btn.classList.replace('btn-outline-info', 'btn-info');
 
             setTimeout(() => {
@@ -1520,6 +1533,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const details = document.getElementById('effect-details-section');
             if (details) details.remove();
+
+            const titleEl = document.getElementById('effect-view-title');
+            if (titleEl) titleEl.textContent = window.tr ? window.tr('showcase_modal_view_effect') : 'View Effect';
 
             if (window.location.hash) {
                 history.pushState("", document.title, window.location.pathname + window.location.search);
@@ -1559,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const canvas = effectIframe.contentDocument.querySelector('canvas');
             if (!canvas) {
-                alert("Please wait a moment for the effect to fully load before recording.");
+                alert(window.tr ? window.tr('showcase_alert_record_wait') : 'Please wait a moment for the effect to fully load before recording.');
                 return;
             }
 
@@ -1607,16 +1623,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (err) {
             console.error("Recording failed.", err);
-            alert("Recording failed. This may be due to browser security restrictions on cross-origin iframes.");
+            alert(window.tr ? window.tr('showcase_alert_record_failed') : 'Recording failed. This may be due to browser security restrictions on cross-origin iframes.');
 
             // Restore button UI on error
             if (btnElement) {
-                btnElement.innerHTML = `<i class="bi bi-camera-video me-1"></i> Record 5s Video`;
+                const rt = window.tr ? window.tr('showcase_record_tooltip') : 'Record 5s Video';
+                btnElement.innerHTML = `<i class="bi bi-camera-video me-1"></i> ${rt}`;
                 btnElement.classList.replace('btn-danger', 'btn-outline-danger');
                 btnElement.disabled = false;
             }
         }
     }
+
+    window.addEventListener('i18n:changed', () => {
+        if (window.I18N) window.I18N.updateStaticUI();
+        updateGalleryDisplay();
+    });
 
     // Start
     initializeGallery().then(() => {

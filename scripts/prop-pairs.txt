@@ -1,0 +1,173 @@
+Angular Width|Anchura angular
+Animation Mode|Modo de animación
+Animation Speed|Velocidad de animación
+Audio Metric|Métrica de audio
+Audio Sensitivity|Sensibilidad de audio
+Audio Smoothing|Suavizado de audio
+Audio Target|Objetivo de audio
+Beat Threshold|Umbral de ritmo
+Controls the {label}|Controla {label}
+Cycle Colors|Rotar colores
+Cycle Speed|Velocidad del ciclo
+Enable Animation|Activar animación
+Enable Audio Reactivity|Activar reactividad al audio
+Enable Global Cycle|Activar ciclo global
+Enable Palette|Activar paleta
+Enable Sensor Reactivity|Activar reactividad del sensor
+Enable Sound|Activar sonido
+Enable Stroke|Activar contorno
+Enable Wave Animation|Activar animación de onda
+Fill Shape|Rellenar forma
+Fire (radial)|Fuego (radial)
+Fire Spread|Propagación del fuego
+Font Size|Tamaño de fuente
+Frequency|Frecuencia
+Gif Filter|Filtro GIF
+Gif Filter Value|Valor del filtro GIF
+Gif Fit|Ajuste del GIF
+Gif Url|URL del GIF
+Global Cycle Speed|Velocidad del ciclo global
+Global Gradient Stops|Paradas del degradado global
+Grad Type|Tipo de degradado
+Gradient Stops|Paradas del degradado
+Height|Alto
+Inner Diameter|Diámetro interior
+Line Width|Grosor de línea
+Number Of Columns|Número de columnas
+Number Of Rows|Número de filas
+Number Of Segments|Número de segmentos
+Osc Animation Speed|Velocidad de animación (osciloscopio)
+Osc Display Mode|Modo de visualización (osciloscopio)
+Path Anim_animation Mode|Trayectoria: modo de animación
+Path Anim_animation Speed|Trayectoria: velocidad de animación
+Path Anim_behavior|Trayectoria: comportamiento
+Path Anim_cycle Colors|Trayectoria: colores del ciclo
+Path Anim_cycle Speed|Trayectoria: velocidad del ciclo
+Path Anim_enable|Trayectoria: activar
+Path Anim_grad Color1|Trayectoria: color degradado 1
+Path Anim_grad Color2|Trayectoria: color degradado 2
+Path Anim_grad Type|Trayectoria: tipo de degradado
+Path Anim_object Count|Trayectoria: número de objetos
+Path Anim_object Spacing|Trayectoria: espacio entre objetos
+Path Anim_scroll Dir|Trayectoria: dirección de desplazamiento
+Path Anim_shape|Trayectoria: forma
+Path Anim_size|Trayectoria: tamaño
+Path Anim_speed|Trayectoria: velocidad
+Path Anim_trail|Trayectoria: estela
+Path Anim_trail Color|Trayectoria: color de estela
+Path Anim_trail Length|Trayectoria: longitud de estela
+Path Anim_use Sharp Gradient|Trayectoria: degradado definido
+Phase Offset|Desfase de fase
+Pixel Art Frames|Fotogramas de pixel art
+Pixel Font|Fuente pixelada
+Points|Puntos
+Polyline Curve Style|Estilo de curva de polilínea
+Polyline Nodes|Nodos de polilínea
+Pulse Depth|Profundidad del pulso
+Rotation|Rotación
+Rotation Speed|Velocidad de rotación
+Scroll Dir|Dirección de desplazamiento
+Sensor Color Mode|Modo de color del sensor
+Sensor Max Threshold|Umbral máximo del sensor
+Sensor Meter Show Value|Medidor: mostrar valor
+Sensor Mid Threshold|Umbral medio del sensor
+Sensor Target|Objetivo del sensor
+Shape|Forma
+Show Date|Mostrar fecha
+Show Time|Mostrar hora
+Sides|Lados
+Spawn_animation|Emisión: animación
+Spawn_audio Target|Emisión: objetivo de audio
+Spawn_count|Emisión: cantidad
+Spawn_enable Trail|Emisión: activar estela
+Spawn_gravity|Emisión: gravedad
+Spawn_initial Rotation_random|Emisión: rotación inicial aleatoria
+Spawn_lifetime|Emisión: duración
+Spawn_matrix Char Set|Matriz de emisión: juego de caracteres
+Spawn_matrix Enable Glow|Matriz de emisión: activar brillo
+Spawn_matrix Glow Color|Matriz de emisión: color del brillo
+Spawn_matrix Glow Size|Matriz de emisión: tamaño del brillo
+Spawn_matrix Trail Length|Matriz de emisión: longitud de estela
+Spawn_rotation Speed|Emisión: velocidad de rotación
+Spawn_rotation Variance|Emisión: variación de rotación
+Spawn_shape Type|Emisión: tipo de forma
+Spawn_size|Emisión: tamaño
+Spawn_size_randomness|Emisión: aleatoriedad de tamaño
+Spawn_spawn Rate|Emisión: frecuencia de generación
+Spawn_speed|Emisión: velocidad
+Spawn_speed Variance|Emisión: variación de velocidad
+Spawn_spread|Emisión: dispersión
+Spawn_svg_path|Emisión: ruta SVG
+Spawn_trail Length|Emisión: longitud de estela
+Spawn_trail Spacing|Emisión: espacio de estela
+Spawner|Generador de partículas
+Star Inner Radius|Radio interior de estrella
+Strimer|Strimer
+Strimer Animation|Strimer: animación
+Strimer Animation Speed|Strimer: velocidad de animación
+Strimer Audio Sensitivity|Strimer: sensibilidad de audio
+Strimer Audio Smoothing|Strimer: suavizado de audio
+Strimer Bass Level|Strimer: nivel de graves
+Strimer Block Count|Strimer: número de bloques
+Strimer Block Size|Strimer: tamaño de bloque
+Strimer Block Spacing|Strimer: espacio entre bloques
+Strimer Columns|Strimer: columnas
+Strimer Direction|Strimer: dirección
+Strimer Easing|Strimer: interpolación
+Strimer Glitch Frequency|Strimer: frecuencia de glitch
+Strimer Pulse Speed|Strimer: velocidad de pulso
+Strimer Pulse Sync|Strimer: sincronización de pulso
+Strimer Rows|Strimer: filas
+Strimer Snake Direction|Strimer: dirección serpiente
+Strimer Treble Boost|Strimer: refuerzo de agudos
+Stroke Animation Mode|Contorno: modo de animación
+Stroke Animation Speed|Contorno: velocidad de animación
+Stroke Cycle Colors|Contorno: colores del ciclo
+Stroke Cycle Speed|Contorno: velocidad del ciclo
+Stroke Grad Type|Contorno: tipo de degradado
+Stroke Gradient Stops|Contorno: paradas del degradado
+Stroke Phase Offset|Contorno: desfase de fase
+Stroke Rotation Speed|Contorno: velocidad de rotación
+Stroke Scroll Dir|Contorno: dirección de desplazamiento
+Stroke Use Sharp Gradient|Contorno: degradado definido
+Stroke Width|Grosor del contorno
+Tetris Animation|Tetris: animación
+Tetris Block Count|Tetris: número de bloques
+Tetris Blur Edges|Tetris: difuminar bordes
+Tetris Bounce|Tetris: rebote
+Tetris Custom Mix Color|Tetris: color de mezcla personalizado
+Tetris Hold|Tetris: retención
+Tetris Hold Time|Tetris: tiempo de retención
+Tetris Mix Color Mode|Tetris: modo de mezcla de color
+Tetris Speed|Tetris: velocidad
+Text Align|Alineación del texto
+Text Animation|Animación del texto
+Text Animation Speed|Velocidad de animación del texto
+Time Plot Axes Style|Gráfico temporal: estilo de ejes
+Time Plot Fill Area|Gráfico temporal: rellenar área
+Time Plot Line Thickness|Gráfico temporal: grosor de línea
+Time Plot Time Scale|Gráfico temporal: escala de tiempo
+Use Sharp Gradient|Usar degradado definido
+User Sensor|Sensor de usuario
+Viz Auto Scale|Visualización: escala automática
+Viz Bar Count|Visualización: número de barras
+Viz Bar Spacing|Visualización: espacio entre barras
+Viz Bass Level|Visualización: nivel de graves
+Viz Draw Style|Visualización: estilo de dibujo
+Viz Dynamic Range|Visualización: rango dinámico
+Viz Inner Radius|Visualización: radio interior
+Viz Layout|Visualización: disposición
+Viz Line Width|Visualización: grosor de línea
+Viz Max Bar Height|Visualización: altura máxima de barras
+Viz Segment Count|Visualización: número de segmentos
+Viz Segment Spacing|Visualización: espacio entre segmentos
+Viz Smoothing|Visualización: suavizado
+Viz Style|Visualización: estilo
+Viz Treble Boost|Visualización: refuerzo de agudos
+Viz Use Segments|Visualización: usar segmentos
+Wave Count|Número de ondas
+Wave Style|Estilo de onda
+Wave Type|Tipo de onda
+Width|Ancho
+X|X
+Y|Y

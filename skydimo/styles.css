@@ -1,0 +1,81 @@
+/* Skydimo — layout (Bootstrap handles forms, typography, buttons). */
+
+.skydimo-split {
+    min-height: 0;
+}
+
+.skydimo-sidebar {
+    width: min(420px, 100%);
+    max-width: min(420px, 100%);
+}
+
+@media (min-width: 992px) {
+    .skydimo-sidebar {
+        width: min(420px, var(--app-left-panel-width, 420px));
+    }
+}
+
+.skydimo-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-secondary-bg) var(--bs-tertiary-bg);
+}
+
+.skydimo-sidebar-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.skydimo-sidebar-scroll::-webkit-scrollbar-track {
+    background: var(--bs-tertiary-bg);
+}
+
+.skydimo-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-bg);
+    border-radius: 10px;
+}
+
+.skydimo-presets-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.skydimo-presets-list .preset-item {
+    font-size: 0.875rem;
+}
+
+.skydimo-preview-wrap {
+    background-color: var(--bs-dark);
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+[data-bs-theme="light"] .skydimo-preview-wrap {
+    background-color: #dee2e6;
+}
+
+.skydimo-preview-inner {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.skydimo-canvas-shell {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    background-color: #000;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.65);
+}
+
+#preview-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    image-rendering: pixelated;
+}
+
+.skydimo-lua-textarea {
+    resize: vertical;
+    min-height: 140px;
+    max-height: 40vh;
+}

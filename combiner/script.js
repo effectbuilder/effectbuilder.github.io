@@ -115,12 +115,16 @@ const Library = {
         try {
             const db = await IDB.getAll();
             const countEl = document.getElementById('lib-count');
-            if (countEl) countEl.innerText = `(${db.length})`;
+            if (countEl) countEl.textContent = String(db.length);
 
             if (db.length === 0) {
-                // I18N Replacement
-                const emptyMsg = typeof I18N !== 'undefined' ? I18N.t('lib_empty') : "No effects saved.";
-                grid.innerHTML = `<p style='color:#666; width:100%; text-align:center; margin-top:50px;'>${emptyMsg}</p>`;
+                const t = (k, fb) => (typeof I18N !== 'undefined' ? I18N.t(k) : fb);
+                grid.innerHTML = `
+                    <div class="lib-empty-state">
+                        <i class="bi bi-inboxes lib-empty-icon" aria-hidden="true"></i>
+                        <p class="lib-empty-title">${t('lib_empty_title', 'No saved effects yet')}</p>
+                        <p class="lib-empty-hint text-body-secondary small mb-0">${t('lib_empty_hint', 'Drag .html files onto this window, or use Add HTML Effects in the sidebar.')}</p>
+                    </div>`;
                 return;
             }
 
@@ -151,21 +155,26 @@ const Library = {
     addCardToGrid(item, gridElement = null) {
         const grid = gridElement || document.getElementById('lib-grid');
 
-        // Remove empty message if exists
-        if (grid.querySelector('p')) grid.innerHTML = "";
+        if (grid.querySelector('.lib-empty-state')) grid.innerHTML = "";
 
         const card = document.createElement('div');
         card.className = `lib-card ${this.selectedIds.has(item.id) ? 'selected' : ''}`;
         card.id = `card-${item.id}`;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-pressed', this.selectedIds.has(item.id) ? 'true' : 'false');
 
         const thumbSrc = item.thumb || "";
         const displayName = item.title || item.name;
         const displayDesc = item.desc || "";
 
+        const removeLabel = typeof I18N !== 'undefined' ? I18N.t('lib_remove_effect_title') : 'Remove from library';
         card.innerHTML = `
-            <div class="lib-delete" onclick="event.stopPropagation(); Library.remove('${item.id}')">✖</div>
+            <button type="button" class="lib-delete" title="${removeLabel.replace(/"/g, '&quot;')}" aria-label="${removeLabel.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); Library.remove('${item.id}')">
+                <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+            </button>
             <div class="lib-thumb-container" id="thumb-con-${item.id}">
-                <img src="${thumbSrc}" class="lib-thumb">
+                <img src="${thumbSrc}" class="lib-thumb" alt="" loading="lazy" onerror="this.classList.add('d-none'); var el=this.nextElementSibling; if(el) el.classList.remove('d-none');">
+                <div class="thumb-fallback d-none lib-thumb-fallback"><i class="bi bi-image text-body-secondary" aria-hidden="true"></i></div>
             </div>
             <div class="lib-info">
                 <div class="lib-title" title="${displayName}">${displayName}</div>
@@ -176,33 +185,42 @@ const Library = {
         card.onclick = () => {
             this.toggleSelection(item.id);
         };
+        card.tabIndex = 0;
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.toggleSelection(item.id);
+            }
+        });
 
         grid.appendChild(card);
     },
 
     toggleSelection(id) {
+        const el = document.getElementById(`card-${id}`);
         if (this.selectedIds.has(id)) {
             this.selectedIds.delete(id);
-            document.getElementById(`card-${id}`).classList.remove('selected');
+            if (el) {
+                el.classList.remove('selected');
+                el.setAttribute('aria-pressed', 'false');
+            }
         } else {
             this.selectedIds.add(id);
-            document.getElementById(`card-${id}`).classList.add('selected');
+            if (el) {
+                el.classList.add('selected');
+                el.setAttribute('aria-pressed', 'true');
+            }
         }
         this.updateSelectionUI();
     },
 
     updateSelectionUI() {
         const btn = document.getElementById('btn-add-sel');
+        if (!btn) return;
         const count = this.selectedIds.size;
-        // I18N Replacement
-        const label = typeof I18N !== 'undefined' ? I18N.t('add_selected') : "Add Selected";
-        btn.innerText = `${label} (${count})`;
-
-        if (count > 0) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        const label = typeof I18N !== 'undefined' ? I18N.t('add_selected') : 'Add Selected';
+        btn.textContent = `${label} (${count})`;
+        btn.disabled = count === 0;
     },
 
     async addSelectedToWorkspace() {
@@ -229,7 +247,8 @@ const Library = {
 
         // Update count
         const db = await IDB.getAll();
-        document.getElementById('lib-count').innerText = `(${db.length})`;
+        const countBadge = document.getElementById('lib-count');
+        if (countBadge) countBadge.textContent = String(db.length);
     },
 
     async clearAll() {
@@ -276,10 +295,11 @@ const Library = {
                 // Live Update: Add the new card immediately
                 if (newItem && document.getElementById('lib-modal').style.display === 'flex') {
                     this.addCardToGrid(newItem);
-                    // Update count
                     const countEl = document.getElementById('lib-count');
-                    const cur = parseInt(countEl.innerText.replace('(', '').replace(')', '')) || 0;
-                    countEl.innerText = `(${cur + 1})`;
+                    if (countEl) {
+                        const cur = parseInt(countEl.textContent, 10);
+                        countEl.textContent = String(Number.isFinite(cur) ? cur + 1 : 1);
+                    }
                 }
                 this.processQueue();
             });
@@ -287,14 +307,18 @@ const Library = {
     },
 
     updateStatus() {
-        const el = document.getElementById('loading-indicator');
+        const wrap = document.getElementById('loading-indicator');
+        const txt = document.getElementById('loading-indicator-text');
+        if (!wrap || !txt) return;
         const remaining = this.fileQueue.length + this.activeWorkers;
-        const msg = typeof I18N !== 'undefined' ? I18N.t('processing') : "Processing...";
+        const msg = typeof I18N !== 'undefined' ? I18N.t('processing') : 'Processing...';
         if (remaining > 0) {
-            el.style.display = 'inline-block';
-            el.innerText = `${msg} ${remaining}`;
+            wrap.classList.remove('d-none');
+            wrap.classList.add('d-flex');
+            txt.textContent = `${msg} · ${remaining}`;
         } else {
-            el.style.display = 'none';
+            wrap.classList.add('d-none');
+            wrap.classList.remove('d-flex');
         }
     },
 
@@ -707,16 +731,16 @@ class Compositor {
 
         this.layers.forEach((layer, idx) => {
             const div = document.createElement('div');
-            div.className = 'control-group';
+            div.className = 'card border border-secondary border-opacity-50 mb-2 p-2 bg-body-secondary bg-opacity-25';
             const propsList = layer.props.map(p => p.label).join(', ');
 
             div.innerHTML = `
-    <div class="card-header">
-        <span class="layer-title">${idx + 1}. ${layer.name.substring(0, 15)}...</span>
-        <div class="actions">
-            <button class="icon-btn" onclick="compositor.moveLayer(${idx}, -1)">▲</button>
-            <button class="icon-btn" onclick="compositor.moveLayer(${idx}, 1)">▼</button>
-            <button class="icon-btn btn-close" onclick="compositor.removeLayer(${idx})">✖</button>
+    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-50">
+        <span class="layer-title small fw-semibold">${idx + 1}. ${layer.name.substring(0, 15)}...</span>
+        <div class="actions d-flex gap-1">
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="compositor.moveLayer(${idx}, -1)" aria-label="Move up">▲</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="compositor.moveLayer(${idx}, 1)" aria-label="Move down">▼</button>
+            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="compositor.removeLayer(${idx})" aria-label="Remove">✖</button>
         </div>
     </div>
     <label>
@@ -728,11 +752,11 @@ class Compositor {
         <span data-i18n="layer_opacity">Opacity</span>: 
         <span id="op-val-${idx}">${Math.round(layer.opacity * 100)}%</span>
     </label>
-    <input type="range" min="0" max="1" step="0.05" value="${layer.opacity}" 
+    <input type="range" class="form-range" min="0" max="1" step="0.05" value="${layer.opacity}" 
         oninput="compositor.updateLayerProp(${idx}, 'opacity', parseFloat(this.value)); document.getElementById('op-val-${idx}').innerText = Math.round(this.value*100) + '%'">
     
-    <label data-i18n="layer_blend">Blend Mode</label>
-    <select onchange="compositor.updateLayerProp(${idx}, 'blend', this.value)">
+    <label class="form-label small mb-1" data-i18n="layer_blend">Blend Mode</label>
+    <select class="form-select form-select-sm mb-2" onchange="compositor.updateLayerProp(${idx}, 'blend', this.value)">
         <option value="source-over" ${layer.blend === 'source-over' ? 'selected' : ''} data-i18n="blend_normal">Normal</option>
         <option value="screen" ${layer.blend === 'screen' ? 'selected' : ''} data-i18n="blend_screen">Screen</option>
         <option value="overlay" ${layer.blend === 'overlay' ? 'selected' : ''} data-i18n="blend_overlay">Overlay</option>
@@ -741,9 +765,9 @@ class Compositor {
         <option value="lighter" ${layer.blend === 'lighter' ? 'selected' : ''} data-i18n="blend_lighter">Lighter</option>
     </select>
 
-    <div style="margin-top:8px; border-top:1px solid #444; padding-top:5px;">
-        <span style="font-size:0.7rem; color:#888;" data-i18n="layer_controls">Detected Controls:</span><br>
-        <span class="prop-badge">${propsList || "None"}</span>
+    <div class="mt-2 pt-2 border-top border-secondary border-opacity-50">
+        <span class="small text-body-secondary" data-i18n="layer_controls">Detected Controls:</span>
+        <div class="combiner-detected-controls small mt-1 rounded border border-secondary border-opacity-25 bg-body-tertiary px-2 py-1 text-body text-wrap text-break">${propsList || "None"}</div>
     </div>
 `;
 
@@ -1090,38 +1114,59 @@ function changeLanguage(lang) {
     }
 }
 
-function toggleDropdown(event) {
-    event.stopPropagation(); // Stops the click from reaching the window instantly
-    document.getElementById("toolDropdownMenu").classList.toggle("show");
-}
-
-// Close the dropdown if the user clicks outside of it
-window.onclick = function (event) {
-    // Only close if clicking outside the toggle AND outside the menu itself
-    if (!event.target.closest('.dropdown-toggle') && !event.target.closest('.dropdown-menu')) {
-        var dropdowns = document.getElementsByClassName("dropdown-menu");
-        for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains('show')) {
-                openDropdown.classList.remove('show');
-            }
-        }
-    }
-}
-
 // --- INITIALIZATION ---
 let compositor;
 
+const COMBINER_LANG_LABELS = { en: 'English', es: 'Español', zh: '中文', hi: 'हिन्दी', ja: '日本語' };
+
+function updateCombinerLangLabel() {
+    const el = document.getElementById('combiner-lang-label');
+    if (el && typeof I18N !== 'undefined') {
+        el.textContent = COMBINER_LANG_LABELS[I18N.cur] || I18N.cur;
+    }
+}
+
+function initCombinerTheme() {
+    function getPreferredTheme() {
+        const s = localStorage.getItem('theme');
+        if (s === 'light' || s === 'dark') return s;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function setTheme(theme) {
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        const icon = document.getElementById('theme-icon');
+        if (icon) {
+            icon.classList.remove('bi-moon-stars-fill', 'bi-sun-fill');
+            icon.classList.add(theme === 'dark' ? 'bi-moon-stars-fill' : 'bi-sun-fill');
+        }
+    }
+    setTheme(getPreferredTheme());
+    const btn = document.getElementById('theme-switcher-btn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            const cur = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+            setTheme(cur === 'dark' ? 'light' : 'dark');
+        });
+    }
+}
+
 window.onload = async () => {
+    initCombinerTheme();
+
     // 1. Initialize I18N and WAIT for JSON to load
     if (typeof I18N !== 'undefined') {
         await I18N.init();
-
-        // SYNC DROPDOWN: Ensure the selector shows the correct saved language
-        const selector = document.getElementById('lang-selector');
-        if (selector) {
-            selector.value = I18N.cur;
-        }
+        updateCombinerLangLabel();
+        document.querySelectorAll('.combiner-lang-item').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const lang = btn.getAttribute('data-lang');
+                if (lang) {
+                    changeLanguage(lang);
+                    updateCombinerLangLabel();
+                }
+            });
+        });
     }
 
     // 2. Initialize other systems

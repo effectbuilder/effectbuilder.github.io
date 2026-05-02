@@ -12,6 +12,111 @@ const elements = {
     presetsList: document.getElementById('presets-list')
 };
 
+function initSkydimoTheme() {
+    function getPreferredTheme() {
+        const s = localStorage.getItem('theme');
+        if (s === 'light' || s === 'dark') return s;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function setTheme(theme) {
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        const icon = document.getElementById('theme-icon');
+        if (icon) {
+            icon.classList.remove('bi-moon-stars-fill', 'bi-sun-fill');
+            icon.classList.add(theme === 'dark' ? 'bi-moon-stars-fill' : 'bi-sun-fill');
+        }
+    }
+    setTheme(getPreferredTheme());
+    const btn = document.getElementById('theme-switcher-btn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            const cur = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+            setTheme(cur === 'dark' ? 'light' : 'dark');
+        });
+    }
+}
+
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+const SKYDIMO_LANG_LABELS = { en: 'English', es: 'Español', zh: '中文', hi: 'हिन्दी', ja: '日本語' };
+
+function updateSkydimoLangLabel() {
+    const el = document.getElementById('skydimo-lang-label');
+    if (el && typeof I18N !== 'undefined') {
+        el.textContent = SKYDIMO_LANG_LABELS[I18N.cur] || I18N.cur;
+    }
+}
+
+/** Maps effect-type option values to locale keys (filled by translateSkydimoEffectSelect). */
+const SKYDIMO_EFFECT_VALUE_KEYS = {
+    solid: 'eff_solid',
+    rainbow: 'eff_rainbow',
+    wave: 'eff_wave',
+    scanner: 'eff_scanner',
+    sweep: 'eff_sweep',
+    breathing: 'eff_breathing',
+    strobe: 'eff_strobe',
+    comet: 'eff_comet',
+    sine_pulse: 'eff_sine_pulse',
+    bounce_sine: 'eff_bounce_sine',
+    fire: 'eff_fire',
+    sparkle: 'eff_sparkle',
+    theater: 'eff_theater',
+    police: 'eff_police',
+    glitch: 'eff_glitch',
+    matrix_rain: 'eff_matrix_rain',
+    grid_scan: 'eff_grid_scan',
+    v_sweep: 'eff_v_sweep',
+    radial_pulse: 'eff_radial_pulse',
+    diagonal_wave: 'eff_diagonal_wave',
+    aurora: 'eff_aurora',
+    plasma: 'eff_plasma',
+    heartbeat: 'eff_heartbeat',
+    helix: 'eff_helix',
+    dual_sine: 'eff_dual_sine',
+    ripple: 'eff_ripple',
+    radar: 'eff_radar',
+    waterfall: 'eff_waterfall',
+    vortex: 'eff_vortex',
+    kaleidoscope: 'eff_kaleidoscope',
+    snake_chase: 'eff_snake_chase',
+    fill_wipe: 'eff_fill_wipe',
+    ping_pong: 'eff_ping_pong',
+    twinkle_soft: 'eff_twinkle_soft',
+    meteor_shower: 'eff_meteor_shower',
+    hue_rotation: 'eff_hue_rotation',
+    dual_meet: 'eff_dual_meet',
+    ping_pong_dual: 'eff_ping_pong_dual',
+    stripe_slide: 'eff_stripe_slide',
+    beam_soft: 'eff_beam_soft',
+    rings_multi: 'eff_rings_multi',
+    noise_cloud: 'eff_noise_cloud',
+    echo_chase: 'eff_echo_chase',
+    audio_idle: 'eff_audio_idle'
+};
+
+function translateSkydimoEffectSelect() {
+    if (typeof I18N === 'undefined') return;
+    const sel = document.getElementById('effect-type');
+    if (!sel) return;
+    const ogs = sel.querySelectorAll('optgroup');
+    const ogKeys = ['skydimo_og_basic', 'skydimo_og_1d', 'skydimo_og_2d', 'skydimo_og_extended'];
+    ogs.forEach((og, i) => {
+        if (ogKeys[i]) og.label = I18N.t(ogKeys[i]);
+    });
+    sel.querySelectorAll('option').forEach((opt) => {
+        const key = SKYDIMO_EFFECT_VALUE_KEYS[opt.value];
+        if (key) opt.textContent = I18N.t(key);
+    });
+}
+
+window.translateSkydimoEffectSelect = translateSkydimoEffectSelect;
+
 const syncPairs = ['brightness', 'speed'];
 let startTime = Date.now();
 const rows = 15;
@@ -43,11 +148,6 @@ function setupSyncing() {
         if (slider && num) {
             slider.addEventListener('input', () => {
                 num.value = slider.value;
-                saveState();
-                generateSkydimoLua();
-            });
-            num.addEventListener('input', () => {
-                slider.value = num.value;
                 saveState();
                 generateSkydimoLua();
             });
@@ -103,16 +203,20 @@ function generateSkydimoLua() {
     const hue2Param = hueToSkydimo(rgbToHsv(r2, g2, b2));
 
     // Dynamic header name based on selection
-    let luaCode = `-- Skydimo Effect: ${typeName}\nlocal cfg = {\n    brightness = ${brightness} / 100,\n    speed = ${speed} / 1000,\n    hue1 = ${hue1Param},\n    hue2 = ${hue2Param}\n}\n\n`;
+    let luaCode = `-- Skydimo Effect: ${typeName}\n`;
+    if (type === 'audio_idle') {
+        luaCode += `-- Placeholder: audio reactive API not used; breathing pulse only.\n`;
+    }
+    luaCode += `local cfg = {\n    brightness = ${brightness} / 100,\n    speed = ${speed} / 1000,\n    hue1 = ${hue1Param},\n    hue2 = ${hue2Param}\n}\n\n`;
 
     luaCode += `function get_hue(val)\n    return math.floor((val + 100) * 1.8) % 360\nend\n\n`;
     
     // Global memory table for throttled random effects
-    if (type === 'sparkle' || type === 'glitch') {
+    if (type === 'sparkle' || type === 'glitch' || type === 'twinkle_soft') {
         luaCode += `local led_states = {}\n\n`;
     }
 
-    const needsBlending = ['aurora', 'plasma', 'helix', 'dual_sine'].includes(type);
+    const needsBlending = ['aurora', 'plasma', 'helix', 'dual_sine', 'dual_meet', 'ping_pong_dual'].includes(type);
 
     if (needsBlending) {
         luaCode += `function blend_hsv(mix, intensity)\n    local h1 = get_hue(cfg.hue1)\n    local h2 = get_hue(cfg.hue2)\n    local d = h2 - h1\n    if d > 180 then d = d - 360 elseif d < -180 then d = d + 360 end\n    local h = (h1 + d * (1 - mix)) % 360\n    if h < 0 then h = h + 360 end\n    return hsv(math.floor(h), 255, math.floor(intensity * cfg.brightness * 255))\nend\n\n`;
@@ -179,14 +283,62 @@ end`; break;
         case 'plasma': luaCode += `function get_color(x, y, width, height, env)\n    local mix = (math.sin(x/5 + env.time*cfg.speed*5) + math.sin(y/5 - env.time*cfg.speed*2.5) + 2) / 4\n    return blend_hsv(mix, 1)\nend`; break;
         case 'helix': luaCode += `function get_color(x, y, width, height, env)\n    local s1 = math.max(0, math.sin(x/8 + env.time*cfg.speed*5))\n    local s2 = math.max(0, math.sin(x/8 + env.time*cfg.speed*5 + math.pi))\n    local mix = s1 / (s1 + s2 + 0.001)\n    return blend_hsv(mix, math.min(1, s1 + s2))\nend`; break;
         case 'dual_sine': luaCode += `function get_color(x, y, width, height, env)\n    local s1 = (math.sin(x/10 + env.time * cfg.speed * 2.5) + 1) / 2\n    local s2 = (math.cos(x/15 - env.time * cfg.speed * 4) + 1) / 2\n    local mix = s1 / (s1 + s2 + 0.001)\n    return blend_hsv(mix, (s1 + s2) / 2)\nend`; break;
-        
+
+        case 'snake_chase': luaCode += `function get_color(x, y, width, height, env)\n    local head = (env.time * cfg.speed * 25) % width\n    local seg = math.max(6, width / 5)\n    local d = (head - x + width) % width\n    local i = (d < seg) and ((1 - d / seg) ^ 2) or 0\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'fill_wipe': luaCode += `function get_color(x, y, width, height, env)\n    local frac = (env.time * cfg.speed * 8) % 1\n    local i = x < frac * width and 1 or 0\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'ping_pong': luaCode += `function get_color(x, y, width, height, env)\n    local per = width * 2\n    local u = (env.time * cfg.speed * 20) % per\n    local pos = u < width and u or (per - u - 1)\n    local i = math.max(0, 1 - math.abs(x - pos) / 5)\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'twinkle_soft': luaCode += `function get_color(x, y, width, height, env)
+    local tick = math.floor(env.time * cfg.speed * 10)
+    local id = x .. "_" .. y
+    if not led_states[id] or led_states[id].tick ~= tick then
+        led_states[id] = { val = math.random(1, 100), tick = tick }
+    end
+    local chance = led_states[id].val
+    if chance > 98 then return hsv(get_hue(cfg.hue1), 255, math.floor(255 * cfg.brightness))
+    elseif chance > 94 then return hsv(get_hue(cfg.hue2), 255, math.floor(255 * cfg.brightness))
+    else return hsv(0, 0, 0) end
+end`; break;
+        case 'meteor_shower': luaCode += `function get_color(x, y, width, height, env)
+    local mx = 0
+    for k = 0, 2 do
+        local ph = k * width / 3
+        local cx = ((env.time * cfg.speed * 30 + ph * 40) % (width + 30)) - 15
+        local d = math.abs(x - cx)
+        mx = math.max(mx, math.exp(-(d * d) / 20))
+    end
+    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * mx * cfg.brightness))
+end`; break;
+        case 'hue_rotation': luaCode += `function get_color(x, y, width, height, env)\n    local gh = (get_hue(cfg.hue1) + env.time * cfg.speed * 50) % 360\n    return hsv(math.floor(gh), 255, math.floor(255 * cfg.brightness))\nend`; break;
+        case 'dual_meet': luaCode += `function get_color(x, y, width, height, env)\n    local t = env.time * cfg.speed * 25\n    local posL = t % width\n    local posR = width - 1 - (t % width)\n    local iL = math.exp(-((x - posL) ^ 2) / 35)\n    local iR = math.exp(-((x - posR) ^ 2) / 35)\n    local mix = iR / (iL + iR + 0.0001)\n    return blend_hsv(mix, math.min(1, iL + iR))\nend`; break;
+        case 'ping_pong_dual': luaCode += `function get_color(x, y, width, height, env)\n    local per = width * 2\n    local u1 = (env.time * cfg.speed * 22) % per\n    local p1 = u1 < width and u1 or (per - u1 - 1)\n    local u2 = (env.time * cfg.speed * 22 + width / 2) % per\n    local p2 = u2 < width and u2 or (per - u2 - 1)\n    local i1 = math.exp(-((x - p1) ^ 2) / 30)\n    local i2 = math.exp(-((x - p2) ^ 2) / 30)\n    local mix = i2 / (i1 + i2 + 0.0001)\n    return blend_hsv(mix, math.min(1, i1 + i2))\nend`; break;
+        case 'stripe_slide': luaCode += `function get_color(x, y, width, height, env)\n    local w = 4\n    local shift = math.floor(env.time * cfg.speed * 15)\n    local band = math.floor((x + shift) / w) % 2\n    if band == 0 then return hsv(get_hue(cfg.hue1), 255, math.floor(255 * cfg.brightness))\n    else return hsv(get_hue(cfg.hue2), 255, math.floor(255 * cfg.brightness)) end\nend`; break;
+        case 'beam_soft': luaCode += `function get_color(x, y, width, height, env)\n    local angle = math.atan2(y - height/2, x - width/2)\n    local beam = (env.time * cfg.speed * 2.5) % (math.pi * 2)\n    local da = angle - beam\n    while da > math.pi do da = da - math.pi * 2 end\n    while da < -math.pi do da = da + math.pi * 2 end\n    local i = math.max(0, math.cos(da * 2.5)) ^ 2\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'rings_multi': luaCode += `function get_color(x, y, width, height, env)\n    local cx, cy = width/2, height/2\n    local dist = math.sqrt((x-cx)^2 + (y-cy)^2)\n    local i = (math.sin(dist/4 - env.time*cfg.speed*5) + math.sin(dist/7 + env.time*cfg.speed*3) + 2) / 4\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'noise_cloud': luaCode += `function get_color(x, y, width, height, env)\n    local v = math.sin(x/3+y/4+env.time*cfg.speed*4) + math.sin(x/7-env.time*cfg.speed*2) + math.sin(y/5+env.time*cfg.speed*3)\n    local i = (v + 3) / 6\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+        case 'echo_chase': luaCode += `function get_color(x, y, width, height, env)\n    local mx = 0\n    for k = 0, 2 do\n        local lag = k * 0.15\n        local head = (((env.time - lag) * cfg.speed * 25) % width + width) % width\n        mx = math.max(mx, math.exp(-((x - head) ^ 2) / 40) * (1 - k * 0.28))\n    end\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * mx * cfg.brightness))\nend`; break;
+        case 'audio_idle': luaCode += `function get_color(x, y, width, height, env)\n    local i = (math.sin(env.time * cfg.speed * 3) + 1) / 2\n    return hsv(get_hue(cfg.hue1), 255, math.floor(255 * i * cfg.brightness))\nend`; break;
+
         default: luaCode += `function get_color(x, y, width, height, env)\n    return hsv(0, 0, 0)\nend`;
     }
 
     elements.out.value = luaCode;
 }
 
+/** Resize canvas bitmap to fill `.skydimo-canvas-shell` (live preview uses full flex area). */
+function fitPreviewCanvasToShell() {
+    const shell = document.querySelector('.skydimo-canvas-shell');
+    const canvas = elements.canvas;
+    if (!shell || !canvas) return;
+    const w = Math.max(2, Math.floor(shell.clientWidth));
+    const h = Math.max(2, Math.floor(shell.clientHeight));
+    if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+    }
+}
+
 function renderPreview() {
+    fitPreviewCanvasToShell();
     const type = elements.type.value;
     const speed = document.getElementById('speed').value / 1000;
     const brightness = document.getElementById('brightness').value / 100;
@@ -289,7 +441,68 @@ function renderPreview() {
                 let t = (time * speed * 1) % 1; 
                 final_i = Math.exp(-60 * Math.pow(t - 0.1, 2)) + Math.exp(-60 * Math.pow(t - 0.35, 2)); isSingleColor = true;
             }
-            
+            else if (type === 'snake_chase') {
+                let head = (time * speed * 25) % cols;
+                let seg = Math.max(6, cols / 5);
+                let d = (head - ix + cols) % cols;
+                final_i = d < seg ? (1 - d / seg) ** 2 : 0;
+                isSingleColor = true;
+            }
+            else if (type === 'fill_wipe') {
+                let frac = (time * speed * 8) % 1;
+                final_i = ix < frac * cols ? 1 : 0;
+                isSingleColor = true;
+            }
+            else if (type === 'ping_pong') {
+                let per = cols * 2;
+                let u = (time * speed * 20) % per;
+                let pos = u < cols ? u : per - u - 1;
+                final_i = Math.max(0, 1 - Math.abs(ix - pos) / 5);
+                isSingleColor = true;
+            }
+            else if (type === 'twinkle_soft') {
+                if (!ledStates[stateId] || ledStates[stateId].tick !== currentTick) {
+                    ledStates[stateId] = { val: Math.random(), tick: currentTick };
+                }
+                let chance = ledStates[stateId].val;
+                if (chance > 0.98) { final_i = 1; isAlternating = true; useColor2 = false; }
+                else if (chance > 0.94) { final_i = 1; isAlternating = true; useColor2 = true; }
+                else { isOff = true; }
+            }
+            else if (type === 'meteor_shower') {
+                let mx = 0;
+                for (let k = 0; k < 3; k++) {
+                    let ph = k * cols / 3;
+                    let cx = ((time * speed * 30 + ph * 40) % (cols + 30)) - 15;
+                    let d = Math.abs(ix - cx);
+                    mx = Math.max(mx, Math.exp(-d * d / 20));
+                }
+                final_i = mx;
+                isSingleColor = true;
+            }
+            else if (type === 'stripe_slide') {
+                let w = 4;
+                let shift = Math.floor(time * speed * 15);
+                let band = Math.floor((ix + shift) / w) % 2;
+                final_i = 1;
+                isAlternating = true;
+                useColor2 = band !== 0;
+            }
+            else if (type === 'echo_chase') {
+                let mx = 0;
+                for (let k = 0; k < 3; k++) {
+                    let lag = k * 0.15;
+                    let head = (((time - lag) * speed * 25) % cols + cols) % cols;
+                    mx = Math.max(mx, Math.exp(-((ix - head) ** 2) / 40) * (1 - k * 0.28));
+                }
+                final_i = mx;
+                isSingleColor = true;
+            }
+            else if (type === 'audio_idle') {
+                final_i = (Math.sin(time * speed * 3) + 1) / 2;
+                isSingleColor = true;
+            }
+
             // PREVIEW RENDER 2D EFFECTS
             else if (type === 'radar') {
                 let angle = Math.atan2(iy - rows/2, ix - cols/2);
@@ -311,6 +524,26 @@ function renderPreview() {
             else if (type === 'kaleidoscope') {
                 let dx = Math.abs(ix - cols/2), dy = Math.abs(iy - rows/2);
                 final_i = (Math.sin(dx/3 + time*speed*2.5) + Math.sin(dy/3 - time*speed*2) + 2) / 4; isSingleColor = true;
+            }
+            else if (type === 'beam_soft') {
+                let angle = Math.atan2(iy - rows / 2, ix - cols / 2);
+                let beam = (time * speed * 2.5) % (Math.PI * 2);
+                let da = angle - beam;
+                while (da > Math.PI) da -= Math.PI * 2;
+                while (da < -Math.PI) da += Math.PI * 2;
+                final_i = Math.pow(Math.max(0, Math.cos(da * 2.5)), 2);
+                isSingleColor = true;
+            }
+            else if (type === 'rings_multi') {
+                let cx = cols / 2, cy = rows / 2;
+                let dist = Math.sqrt((ix - cx) ** 2 + (iy - cy) ** 2);
+                final_i = (Math.sin(dist / 4 - time * speed * 5) + Math.sin(dist / 7 + time * speed * 3) + 2) / 4;
+                isSingleColor = true;
+            }
+            else if (type === 'noise_cloud') {
+                let v = Math.sin(ix / 3 + iy / 4 + time * speed * 4) + Math.sin(ix / 7 - time * speed * 2) + Math.sin(iy / 5 + time * speed * 3);
+                final_i = (v + 3) / 6;
+                isSingleColor = true;
             }
 
             // ALTERNATING WITH TICK-THROTTLED MATH.RANDOM()
@@ -367,6 +600,39 @@ function renderPreview() {
                 mix = s1 / (s1 + s2 + 0.001);
                 final_i = (s1 + s2) / 2; isBlending = true;
             }
+            else if (type === 'dual_meet') {
+                let t = time * speed * 25;
+                let posL = t % cols;
+                let posR = cols - 1 - (t % cols);
+                let iL = Math.exp(-((ix - posL) ** 2) / 35);
+                let iR = Math.exp(-((ix - posR) ** 2) / 35);
+                mix = iR / (iL + iR + 0.0001);
+                final_i = Math.min(1, iL + iR);
+                isBlending = true;
+            }
+            else if (type === 'ping_pong_dual') {
+                let per = cols * 2;
+                let u1 = (time * speed * 22) % per;
+                let p1 = u1 < cols ? u1 : per - u1 - 1;
+                let u2 = (time * speed * 22 + cols / 2) % per;
+                let p2 = u2 < cols ? u2 : per - u2 - 1;
+                let i1 = Math.exp(-((ix - p1) ** 2) / 30);
+                let i2 = Math.exp(-((ix - p2) ** 2) / 30);
+                mix = i2 / (i1 + i2 + 0.0001);
+                final_i = Math.min(1, i1 + i2);
+                isBlending = true;
+            }
+
+            if (type === 'hue_rotation') {
+                let hueDeg = (h1 + time * speed * 60) % 360;
+                let rgbArr = hsvToRgb(hueDeg, 1, 1);
+                let pr = rgbArr[0] * 255 * brightness;
+                let pg = rgbArr[1] * 255 * brightness;
+                let pb = rgbArr[2] * 255 * brightness;
+                elements.ctx.fillStyle = `rgb(${Math.floor(pr)},${Math.floor(pg)},${Math.floor(pb)})`;
+                elements.ctx.fillRect(ix * cellW, iy * cellH, cellW - 1, cellH - 1);
+                continue;
+            }
 
             let r = 0, g = 0, b = 0;
 
@@ -402,24 +668,38 @@ function renderPreview() {
 }
 
 elements.resetBtn.addEventListener('click', () => {
-    if (confirm("Are you sure you want to reset all settings?")) {
+    const msg = typeof I18N !== 'undefined'
+        ? I18N.t('confirm_reset_skydimo')
+        : 'Reset all settings to defaults? Your saved presets stay in this browser.';
+    if (confirm(msg)) {
         localStorage.removeItem('skydimoConfig');
         location.reload();
     }
 });
 
 elements.copyBtn.addEventListener('click', () => {
+    const span = elements.copyBtn.querySelector('[data-i18n="btn_copy_lua"]');
+    const icon = elements.copyBtn.querySelector('i');
+    const origIconClass = icon ? icon.className : '';
     navigator.clipboard.writeText(elements.out.value).then(() => {
-        elements.copyBtn.innerText = 'Copied!';
-        setTimeout(() => elements.copyBtn.innerText = 'Copy to Clipboard', 2000);
+        if (span) span.textContent = typeof I18N !== 'undefined' ? I18N.t('btn_copied') : 'Copied!';
+        if (icon) icon.className = 'bi bi-check-lg me-1';
+        setTimeout(() => {
+            if (span) span.textContent = typeof I18N !== 'undefined' ? I18N.t('btn_copy_lua') : 'Copy to clipboard';
+            if (icon) icon.className = origIconClass;
+        }, 2000);
     });
 });
 
-[elements.type, elements.color, elements.color2].forEach(el => el.addEventListener('input', () => { 
-    ledStates = {}; // Clear random states when switching effects
-    saveState(); 
-    generateSkydimoLua(); 
-}));
+function onEffectParamsChanged() {
+    ledStates = {};
+    saveState();
+    generateSkydimoLua();
+}
+
+elements.type.addEventListener('change', onEffectParamsChanged);
+elements.color.addEventListener('input', onEffectParamsChanged);
+elements.color2.addEventListener('input', onEffectParamsChanged);
 
 let savedPresets = JSON.parse(localStorage.getItem('skydimoPresets')) || [];
 
@@ -427,15 +707,26 @@ function updatePresetsUI() {
     elements.presetsList.innerHTML = '';
     savedPresets.forEach((preset, index) => {
         const row = document.createElement('div');
-        row.className = "preset-item";
-        row.style = "display: flex; justify-content: space-between; align-items: center; background: #333; padding: 5px; border-radius: 4px; margin-bottom: 5px;";
-        row.innerHTML = `<span style="cursor:pointer; flex-grow:1; font-size:0.85rem;">${preset.name}</span><button style="background:none; border:none; color:#ff5555; cursor:pointer; font-weight:bold; font-size:1.2rem;">×</button>`;
-        row.querySelector('span').onclick = () => applyPreset(preset);
-        row.querySelector('button').onclick = () => { 
-            savedPresets.splice(index, 1); 
-            localStorage.setItem('skydimoPresets', JSON.stringify(savedPresets)); 
-            updatePresetsUI(); 
-        };
+        const name = typeof preset.name === 'string' ? preset.name : '';
+        row.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-2 gap-2 preset-item';
+        row.innerHTML = `<span class="text-truncate flex-grow-1 preset-load" role="button" tabindex="0">${escapeHtml(name)}</span>
+            <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 preset-remove"><i class="bi bi-x-lg" aria-hidden="true"></i></button>`;
+        const loadEl = row.querySelector('.preset-load');
+        const removeEl = row.querySelector('.preset-remove');
+        loadEl.setAttribute('title', typeof I18N !== 'undefined' ? I18N.t('preset_load_title') : 'Load preset');
+        removeEl.setAttribute('title', typeof I18N !== 'undefined' ? I18N.t('preset_remove_title') : 'Remove preset');
+        removeEl.setAttribute('aria-label', typeof I18N !== 'undefined' ? I18N.t('preset_remove_aria') : 'Remove preset');
+        const load = () => applyPreset(preset);
+        loadEl.addEventListener('click', load);
+        loadEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); load(); }
+        });
+        removeEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            savedPresets.splice(index, 1);
+            localStorage.setItem('skydimoPresets', JSON.stringify(savedPresets));
+            updatePresetsUI();
+        });
         elements.presetsList.appendChild(row);
     });
 }
@@ -458,7 +749,8 @@ function applyPreset(preset) {
 }
 
 elements.savePresetBtn.addEventListener('click', () => {
-    const name = elements.presetName.value.trim() || "Untitled Preset";
+    const name = elements.presetName.value.trim()
+        || (typeof I18N !== 'undefined' ? I18N.t('preset_untitled') : 'Untitled preset');
     const preset = { name, type: elements.type.value, color: elements.color.value, color2: elements.color2.value };
     syncPairs.forEach(id => {
         const el = document.getElementById(id);
@@ -470,10 +762,31 @@ elements.savePresetBtn.addEventListener('click', () => {
     updatePresetsUI();
 });
 
-window.addEventListener('DOMContentLoaded', () => { 
-    setupSyncing(); 
-    loadState(); 
+window.addEventListener('DOMContentLoaded', async () => {
+    initSkydimoTheme();
+    if (typeof I18N !== 'undefined') {
+        await I18N.init();
+        updateSkydimoLangLabel();
+        document.querySelectorAll('.skydimo-lang-item').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const lang = btn.getAttribute('data-lang');
+                if (!lang) return;
+                await I18N.setLanguage(lang);
+                updateSkydimoLangLabel();
+                updatePresetsUI();
+                generateSkydimoLua();
+            });
+        });
+    }
+    setupSyncing();
+    loadState();
     updatePresetsUI();
-    generateSkydimoLua(); 
-    renderPreview(); 
+    generateSkydimoLua();
+
+    const previewShell = document.querySelector('.skydimo-canvas-shell');
+    if (previewShell && typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(() => fitPreviewCanvasToShell()).observe(previewShell);
+    }
+    fitPreviewCanvasToShell();
+    renderPreview();
 });

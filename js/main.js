@@ -330,7 +330,7 @@ function timeAgo(date) {
 async function handleNotificationClick(projectId, notificationId) {
     const user = window.auth.currentUser;
     if (!user) {
-        showToast("Please sign in to load effects.", "warning");
+        showToast(window.tr("toast_sign_in_load_effects"), "warning");
         return;
     }
 
@@ -340,7 +340,7 @@ async function handleNotificationClick(projectId, notificationId) {
         const projectDoc = await window.getDoc(projectDocRef);
 
         if (!projectDoc.exists()) {
-            showToast("The associated effect was not found.", "danger");
+            showToast(window.tr("toast_effect_not_found"), "danger");
             // Do not return, still mark as read
         } else {
             // Prepare the workspace object
@@ -364,7 +364,7 @@ async function handleNotificationClick(projectId, notificationId) {
 
     } catch (error) {
         console.error("Error loading effect from notification:", error);
-        showToast("Failed to load the effect.", "danger");
+        showToast(window.tr("toast_failed_load_effect"), "danger");
         // We still proceed to mark as read even if the load failed.
     }
 
@@ -391,7 +391,7 @@ function renderNotificationDropdown(allNotifications) { // <-- [MODIFIED] Parame
         // but serves as a failsafe.
         listContainer.innerHTML = `
             <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                <i class="bi bi-person-fill me-1"></i> ${window.tr('notif_sign_in_prompt')}
             </li>
         `;
         markAllBtn.style.display = 'none';
@@ -404,7 +404,7 @@ function renderNotificationDropdown(allNotifications) { // <-- [MODIFIED] Parame
     // --- [END MODIFICATION] ---
 
     if (allNotifications.length === 0) { // <-- [MODIFIED]
-        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">You have no new notifications.</li>';
+        listContainer.innerHTML = '<li class="dropdown-item disabled text-center text-body-secondary small p-3">' + window.tr('notif_empty') + '</li>';
         return;
     }
 
@@ -417,14 +417,13 @@ function renderNotificationDropdown(allNotifications) { // <-- [MODIFIED] Parame
         let notificationIcon = '';
 
         if (notification.eventType === 'like') {
-            notificationText = `Your effect <strong>${notification.projectName}</strong> was liked by <strong>${notification.senderName}</strong>!`;
+            notificationText = window.tr('notif_like_html', { project: notification.projectName, sender: notification.senderName });
             notificationIcon = `<i class="bi bi-heart-fill text-danger fs-5 mt-1 flex-shrink-0"></i>`;
         } else if (notification.eventType === 'comment') {
-            notificationText = `<strong>${notification.senderName}</strong> commented on your effect <strong>${notification.projectName}</strong>.`;
+            notificationText = window.tr('notif_comment_html', { sender: notification.senderName, project: notification.projectName });
             notificationIcon = `<i class="bi bi-chat-left-text-fill text-info fs-5 mt-1 flex-shrink-0"></i>`;
         } else {
-            // Fallback for any other event types
-            notificationText = `New event: ${notification.eventType} from <strong>${notification.senderName}</strong>.`;
+            notificationText = window.tr('notif_generic_html', { event: notification.eventType, sender: notification.senderName });
             notificationIcon = `<i class="bi bi-bell-fill text-warning fs-5 mt-1 flex-shrink-0"></i>`;
         }
 
@@ -444,7 +443,7 @@ function renderNotificationDropdown(allNotifications) { // <-- [MODIFIED] Parame
                     <p class="mb-0 small">
                         ${notificationText}
                     </p>
-                    <small class="text-body-secondary">${timeAgo(timestamp)} ago</small> 
+                    <small class="text-body-secondary">${window.tr('notif_timestamp_line', { time: timeAgo(timestamp) })}</small> 
                 </div>
             </a>
         `;
@@ -824,7 +823,8 @@ async function setVersionWithCaching() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    if (window.I18N) await window.I18N.init();
     setVersionWithCaching();
 
     /**
@@ -835,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function likeEffect(docId) {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to like or unlike an effect.", 'danger');
+            showToast(window.tr("toast_must_login_like"), 'danger');
             return;
         }
 
@@ -877,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error liking/unliking effect:", error);
-            showToast("Could not process like/unlike action.", 'danger');
+            showToast(window.tr("toast_like_action_failed"), 'danger');
         } finally {
             // Re-enable button. The listener will have updated the state.
             if (likeEffectBtn) likeEffectBtn.disabled = false;
@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function () {
             gifInfoDisplay.style.display = 'block'; // Show the info
         } catch (err) {
             console.error("Error pre-processing GIF:", err);
-            showToast("Could not read GIF properties.", "danger");
+            showToast(window.tr("toast_gif_read_props_failed"), "danger");
         }
     }
 
@@ -964,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!append) resultsContainer.innerHTML = '';
 
             if (data.data.length === 0 && !append) {
-                resultsContainer.innerHTML = `<p class="text-body-secondary text-center w-100 mt-4">No results found for \`${term}\`.</p>`;
+                resultsContainer.innerHTML = `<p class="text-body-secondary text-center w-100 mt-4">${window.tr('giphy_no_results', { term })}</p>`;
             }
 
             data.data.forEach(gif => {
@@ -991,7 +991,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 card.addEventListener('click', async () => {
                     // This logic remains the same
-                    card.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Fetching...</span></div></div>`;
+                    card.innerHTML = `<div class="d-flex align-items-center justify-content-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">${window.tr('aria_fetching')}</span></div></div>`;
                     if (window.isGifUrlSearch) {
                         // --- GIF OBJECT PATH ---
                         const originalGifUrl = gif.images.original.url;
@@ -1015,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Close Modal
                         const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
                         searchModal.hide();
-                        showToast("GIF URL applied!", "success");
+                        showToast(window.tr("toast_gif_url_applied"), "success");
 
                     } else {
                         try {
@@ -1029,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             optionsModal.show();
                         } catch (err) {
                             console.error("Error fetching selected GIF:", err);
-                            showToast("Failed to fetch the selected GIF.", "danger");
+                            showToast(window.tr("toast_gif_fetch_failed"), "danger");
                             card.innerHTML = '';
                             card.appendChild(img);
                         }
@@ -1044,8 +1044,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (err) {
             console.error("Giphy search failed:", err);
-            showToast("Giphy search failed. Check your API key and network connection.", "danger");
-            resultsContainer.innerHTML = `<p class="text-danger text-center w-100 mt-4">Search failed.</p>`;
+            showToast(window.tr("toast_giphy_search_failed"), "danger");
+            resultsContainer.innerHTML = `<p class="text-danger text-center w-100 mt-4">${window.tr('giphy_search_failed_inline')}</p>`;
         } finally {
             // Remove the loading spinner
             const spinner = document.getElementById('gif-loading-spinner');
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function regenerateAndSaveThumbnail(effectId) {
-        showToast("Regenerating thumbnail...", "info");
+        showToast(window.tr("toast_regenerating_thumbnail"), "info");
 
         // Wait a moment for the effect to render fully
         setTimeout(async () => {
@@ -1068,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     thumbnail: newThumbnail
                 });
 
-                showToast("Thumbnail regenerated and saved successfully! This tab will now close.", "success");
+                showToast(window.tr("toast_thumbnail_saved_close_tab"), "success");
 
                 // Close the tab after a short delay
                 setTimeout(() => {
@@ -1077,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             } catch (error) {
                 console.error("Error regenerating thumbnail:", error);
-                showToast("Failed to save new thumbnail.", "danger");
+                showToast(window.tr("toast_thumbnail_save_failed"), "danger");
             }
         }, 3000); // 3.0 second delay to ensure rendering is complete
     }
@@ -1334,12 +1334,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (payload.finalHtml) {
                 navigator.clipboard.writeText(payload.finalHtml).then(() => {
-                    showToast("HTML code copied to clipboard!", 'success');
+                    showToast(window.tr("toast_html_copied"), 'success');
                     const exportModal = bootstrap.Modal.getInstance(exportOptionsModalEl);
                     if (exportModal) exportModal.hide();
                 }).catch(err => {
                     console.error('Failed to copy text: ', err);
-                    showToast("Could not copy code. See console for details.", 'danger');
+                    showToast(window.tr("toast_copy_code_failed"), 'danger');
                 });
             }
         });
@@ -1488,10 +1488,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
 
-                showToast("Skydimo LUA file downloaded successfully!", 'success');
+                showToast(window.tr("toast_skydimo_download_ok"), 'success');
             } catch (error) {
                 console.error('Skydimo Export failed:', error);
-                showToast('Failed to export Skydimo LUA file: ' + error.message, 'danger');
+                showToast(window.tr('toast_skydimo_export_fail', { detail: error.message }), 'danger');
             }
         }
 
@@ -1918,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.warn('persistExportedHtmlToFirestore', err);
                 if (!silent) {
                     const msg = err && err.message ? err.message : String(err);
-                    showToast('Could not save export HTML to cloud (document may still be too large, or rules/network). ' + msg, 'warning');
+                    showToast(window.tr('toast_export_html_cloud_warn', { detail: msg }), 'warning');
                 }
             }
         }
@@ -2022,7 +2022,7 @@ document.addEventListener('DOMContentLoaded', function () {
         async function generateAndDownloadZip(exposedProperties = []) {
             const exportButton = document.getElementById('export-btn');
             exportButton.disabled = true;
-            exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Exporting...';
+            exportButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ' + window.tr('toast_exporting_zip');
 
             try {
                 const { safeFilename, finalHtml, thumbnailDataUrl, imageExtension, exportDate } = buildExportPayload(exposedProperties);
@@ -2047,16 +2047,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
 
-                showToast("Zip file download started.", 'info');
+                showToast(window.tr("toast_zip_download_started"), 'info');
                 await incrementDownloadCount();
                 await persistExportedHtmlToFirestore({ silent: true });
 
             } catch (error) {
                 console.error('Export failed:', error);
-                showToast('Failed to export file: ' + error.message, 'danger');
+                showToast(window.tr('toast_export_file_fail', { detail: error.message }), 'danger');
             } finally {
                 exportButton.disabled = false;
-                exportButton.innerHTML = '<i class="bi bi-download me-1"></i> Export';
+                var exportLabel = window.I18N ? window.I18N.t('btn_export') : 'Export';
+                exportButton.innerHTML = '<i class="bi bi-download me-1"></i> ' + exportLabel;
             }
         }
     }
@@ -2134,14 +2135,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const handleGifPaste = async (gifBlob, objectId) => {
         try {
             if (!preParsedGif) {
-                showToast("Error: GIF data was not pre-processed.", "danger");
+                showToast(window.tr("toast_gif_not_preprocessed"), "danger");
                 return;
             }
             const gif = preParsedGif;
             const frames = preParsedGif.frames;
 
             if (!frames || !frames.length) {
-                showToast("Could not extract frames from GIF.", "warning");
+                showToast(window.tr("toast_gif_extract_failed"), "warning");
                 return;
             }
 
@@ -2162,7 +2163,7 @@ document.addEventListener('DOMContentLoaded', function () {
             frames.forEach(frame => addColorsFromTable(frame.lct));
 
             if (allColors.size === 0) {
-                showToast("Could not find a valid color palette in this GIF.", "danger");
+                showToast(window.tr("toast_gif_no_palette"), "danger");
                 return;
             }
 
@@ -2291,11 +2292,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (uploadModal) uploadModal.hide();
             const searchModal = bootstrap.Modal.getInstance(document.getElementById('gif-search-modal'));
             if (searchModal) searchModal.hide();
-            showToast(`${newFramesData.length} GIF frames processed with ${sortedColors.length} colors!`, "success");
+            showToast(window.tr("toast_gif_frames_done", { frames: newFramesData.length, colors: sortedColors.length }), "success");
 
         } catch (err) {
             console.error("Error processing GIF: " + err.message, err);
-            showToast("Could not process GIF file. It may be corrupt or in an unsupported format.", "danger");
+            showToast(window.tr("toast_gif_process_failed"), "danger");
         }
     };
 
@@ -2303,14 +2304,14 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             // Use the globally stored image blob instead of reading the clipboard again
             if (!prePastedImageBlob) {
-                showToast("No image was prepared for pasting. Please copy the image again.", "danger");
+                showToast(window.tr("toast_paste_no_image"), "danger");
                 return;
             }
 
             const pasteModalEl = document.getElementById('paste-sprite-modal');
             const objectId = pasteModalEl.dataset.targetObjectId;
             if (!objectId) {
-                showToast("Error: No target object was specified for pasting.", "danger");
+                showToast(window.tr("toast_paste_no_target"), "danger");
                 return;
             }
 
@@ -2330,7 +2331,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const frameHeight = parseInt(document.getElementById('sprite-frame-height').value, 10);
 
                 if (!frameWidth || !frameHeight || frameWidth <= 0 || frameHeight <= 0) {
-                    showToast("Frame dimensions must be positive numbers.", "danger");
+                    showToast(window.tr("toast_frame_dims_positive"), "danger");
                     return;
                 }
 
@@ -2419,13 +2420,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 URL.revokeObjectURL(imageUrl);
                 const spritePasteModal = bootstrap.Modal.getInstance(document.getElementById('paste-sprite-modal'));
                 if (spritePasteModal) spritePasteModal.hide();
-                showToast(`${newFrames.length} frame(s) processed with ${sortedColors.length} colors!`, "success");
+                showToast(window.tr("toast_sprite_frames_done", { frames: newFrames.length, colors: sortedColors.length }), "success");
             };
             image.src = imageUrl;
 
         } catch (err) {
             console.error("Paste Error:", err);
-            showToast("Could not paste sprite: " + err.message, "danger");
+            showToast(window.tr("toast_sprite_paste_fail", { detail: err.message }), "danger");
         } finally {
             // Clean up the global variable after the operation
             prePastedImageBlob = null;
@@ -2630,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const newFramesArray = allFrameItems.map(item => ({ data: item.querySelector('.frame-data-input').value, duration: parseFloat(item.querySelector('.frame-duration-input').value) }));
                             mainTextarea.value = JSON.stringify(newFramesArray);
                             mainTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                            showToast(`Shifted pixels in all ${allFrameItems.length} frames!`, 'info');
+                            showToast(window.tr('toast_pixels_shifted_all', { count: allFrameItems.length }), 'info');
                         }
                     }
                     editorActionHandled = true;
@@ -2667,7 +2668,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const clipboardItems = await navigator.clipboard.read();
                                 const imageItem = clipboardItems.find(item => item.types.some(type => type.startsWith('image/')));
                                 if (!imageItem) {
-                                    showToast("No image found on clipboard.", "info");
+                                    showToast(window.tr("toast_clipboard_no_image"), "info");
                                     return;
                                 }
 
@@ -2694,7 +2695,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 image.src = imageUrl;
                             } catch (err) {
                                 console.error('Paste error:', err);
-                                showToast('Could not read image from clipboard.', 'danger');
+                                showToast(window.tr('toast_clipboard_read_failed'), 'danger');
                             }
                         })();
                     }
@@ -2830,14 +2831,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 6. Finalize the changes
                 initializeFrameSorters(); // Re-initialize drag-and-drop functionality
                 recordHistory();
-                showToast('Frame duplicated!', 'success');
+                showToast(window.tr('toast_frame_duplicated'), 'success');
             });
         }
 
         if (deleteFrameBtnModal) {
             deleteFrameBtnModal.addEventListener('click', () => {
                 if (totalFramesInEditor <= 1) {
-                    showToast("Cannot delete the last frame.", "warning");
+                    showToast(window.tr("toast_cannot_delete_last_frame"), "warning");
                     return;
                 }
 
@@ -2877,7 +2878,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 initializeFrameSorters();
                 recordHistory();
-                showToast('Frame deleted!', 'success');
+                showToast(window.tr('toast_frame_deleted'), 'success');
             });
         }
 
@@ -3162,7 +3163,7 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             const button = e.target.closest('button.dynamic-color');
             if (!button || currentGradientStops.length <= 2) {
-                if (currentGradientStops.length <= 2) showToast("A gradient must have at least 2 colors.", "warning");
+                if (currentGradientStops.length <= 2) showToast(window.tr("toast_gradient_min_colors"), "warning");
                 return;
             }
             const valueToDelete = parseFloat(button.dataset.value);
@@ -3183,7 +3184,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             if (isColorUsedInAnyFrame) {
-                showToast("Cannot delete a color that is in use in one or more animation frames.", "danger");
+                showToast(window.tr("toast_color_in_use"), "danger");
                 return;
             }
 
@@ -3382,7 +3383,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 likeEffect(currentProjectDocId);
             } else {
                 // User clicked "Like" on an unsaved project
-                showToast("Please save your effect to the cloud before liking it.", "info");
+                showToast(window.tr("toast_save_before_like"), "info");
             }
         });
     }
@@ -3522,6 +3523,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const galleryList = document.getElementById('gallery-project-list');
     const galleryBody = galleryOffcanvasEl.querySelector('.offcanvas-body');
 
+    window.addEventListener('i18n:changed', () => {
+        const labelEl = document.getElementById('galleryOffcanvasLabel');
+        if (labelEl && galleryOffcanvasEl) {
+            const mode = galleryOffcanvasEl.getAttribute('data-gallery-mode');
+            labelEl.textContent = mode === 'user'
+                ? window.tr('gallery_my_effects_title')
+                : window.tr('gallery_offcanvas_title');
+        }
+        if (typeof renderForm === 'function') renderForm();
+    });
+
     async function toggleFeaturedStatus(buttonEl, docIdToToggle) {
         buttonEl.disabled = true;
         buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
@@ -3564,19 +3576,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     const isNowFeatured = !buttonEl.classList.contains('btn-warning');
                     btn.className = `btn btn-sm btn-feature ${isNowFeatured ? 'btn-warning' : 'btn-warning'}`;
                     btn.innerHTML = isNowFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                    btn.title = isNowFeatured ? 'Unfeature this effect' : 'Feature this effect';
+                    btn.title = isNowFeatured ? window.tr('tooltip_unfeature_this_effect') : window.tr('tooltip_feature_this_effect');
                 } else {
                     btn.className = 'btn btn-sm btn-feature btn-warning';
                     btn.innerHTML = '<i class="bi bi-star"></i>';
-                    btn.title = 'Feature this effect';
+                    btn.title = window.tr('tooltip_feature_this_effect');
                 }
             });
 
-            showToast("Featured effect updated successfully!", 'success');
+            showToast(window.tr("toast_feature_updated"), 'success');
 
         } catch (error) {
             console.error("Error updating featured status: ", error);
-            showToast("Failed to update featured status.", 'danger');
+            showToast(window.tr("toast_feature_update_failed"), 'danger');
         } finally {
             buttonEl.disabled = false;
         }
@@ -3585,7 +3597,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function showLikersModal(docId, projectName) {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be signed in to view likers.", 'danger');
+            showToast(window.tr("toast_must_login_likers"), 'danger');
             return;
         }
 
@@ -3594,7 +3606,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const projectDoc = await window.getDoc(docRef);
 
             if (!projectDoc.exists()) {
-                showToast("Project not found.", 'danger');
+                showToast(window.tr("toast_project_not_found"), 'danger');
                 return;
             }
 
@@ -3603,7 +3615,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const likerUids = Object.keys(likedBy);
 
             if (likerUids.length === 0) {
-                showToast(`No users have liked "${projectName}" yet.`, 'info');
+                showToast(window.tr('toast_no_likers_yet', { name: projectName }), 'info');
                 return;
             }
 
@@ -3616,10 +3628,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Use the existing confirm modal as a simple display container
             showConfirmModal(
-                `Users Who Liked: ${projectName} (${likerUids.length})`,
-                `<p>Note: Display names are not available in this tool. These are User IDs.</p>
-             <ul class="list-group list-group-flush">${content}</ul>`,
-                'Close',
+                window.tr('modal_users_who_liked_title', { name: projectName, count: likerUids.length }),
+                window.tr('modal_likers_uid_note_html') +
+             `<ul class="list-group list-group-flush">${content}</ul>`,
+                window.tr('btn_close'),
                 () => { /* Do nothing on close */ }
             );
 
@@ -3629,7 +3641,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error fetching likers:", error);
-            showToast("Failed to retrieve the list of likers.", 'danger');
+            showToast(window.tr("toast_likers_fetch_failed"), 'danger');
         }
     }
 
@@ -3660,7 +3672,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return window.getDocs(q).then(snapshot => {
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    namesMap.set(doc.id, data.displayName || 'Anonymous User');
+                    namesMap.set(doc.id, data.displayName || window.tr('display_name_anonymous'));
                 });
             });
         });
@@ -3677,7 +3689,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleNotificationClick(projectId, notificationId) {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("Please sign in to load effects.", "warning");
+            showToast(window.tr("toast_sign_in_load_effects"), "warning");
             return;
         }
 
@@ -3687,7 +3699,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const projectDoc = await window.getDoc(projectDocRef);
 
             if (!projectDoc.exists()) {
-                showToast("The associated effect was not found.", "danger");
+                showToast(window.tr("toast_effect_not_found"), "danger");
                 return;
             }
 
@@ -3706,7 +3718,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error loading effect from notification:", error);
-            showToast("Failed to load the effect.", "danger");
+            showToast(window.tr("toast_failed_load_effect"), "danger");
             // We still proceed to mark as read even if the load failed.
         }
 
@@ -3759,7 +3771,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function likeEffect(docId) {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to like or unlike an effect.", 'danger');
+            showToast(window.tr("toast_must_login_like"), 'danger');
             return;
         }
 
@@ -3831,7 +3843,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 likeBtn.classList.toggle('btn-danger', isLiked);
                 likeBtn.classList.toggle('btn-outline-danger', !isLiked); // <-- Fixed bug from my previous code
                 likeBtn.innerHTML = isLiked ? '<i class="bi bi-heart-fill me-1"></i>' : '<i class="bi bi-heart me-1"></i>';
-                likeBtn.title = isLiked ? "Unlike this effect" : "Like this effect";
+                likeBtn.title = isLiked ? window.tr('tooltip_unlike_effect') : window.tr('tooltip_like_effect');
             }
 
             // 2. Update main navbar UI (if this is the currently loaded effect)
@@ -3844,7 +3856,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // }
                 const tooltip = bootstrap.Tooltip.getInstance(navLikeBtn);
                 if (tooltip) {
-                    tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+                    tooltip.setContent({ '.tooltip-inner': isLiked ? window.tr('tooltip_unlike_effect') : window.tr('tooltip_like_effect') });
                 }
             }
             // --- END UI Update Logic ---
@@ -3853,7 +3865,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error liking/unliking effect:", error);
-            showToast("Could not process like/unlike action. Check permissions/log.", 'danger');
+            showToast(window.tr("toast_like_action_failed_perm"), 'danger');
         }
     }
 
@@ -3876,7 +3888,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (listContainer) {
                 listContainer.innerHTML = `
             <li class="dropdown-item disabled text-center text-body-secondary small p-3">
-                <i class="bi bi-person-fill me-1"></i> Sign in to view notifications.
+                <i class="bi bi-person-fill me-1"></i> ${window.tr('notif_sign_in_prompt')}
             </li>
         `;
             }
@@ -3919,8 +3931,8 @@ document.addEventListener('DOMContentLoaded', function () {
             // 6. Finalize notification list with names and project names
             const finalNotifications = allNotifications.map(notification => ({
                 ...notification,
-                senderName: namesMap.get(notification.senderId) || 'A User',
-                projectName: projectNamesMap.get(notification.projectId) || 'Undefined Effect'
+                senderName: namesMap.get(notification.senderId) || window.tr('notif_fallback_sender'),
+                projectName: projectNamesMap.get(notification.projectId) || window.tr('notif_fallback_project')
             }));
 
             // 7. Update the UI
@@ -4006,7 +4018,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const tooltip = bootstrap.Tooltip.getInstance(likeEffectBtn);
             if (tooltip) {
-                tooltip.setContent({ '.tooltip-inner': isLiked ? 'Unlike this effect' : 'Like this effect' });
+                tooltip.setContent({ '.tooltip-inner': isLiked ? window.tr('tooltip_unlike_effect') : window.tr('tooltip_like_effect') });
             }
 
             // --- State 2: Component not loaded or user is logged out (Reset/Disabled state) ---
@@ -4021,12 +4033,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (navLikeLabel) { // <-- ADDED BLOCK
-                navLikeLabel.textContent = 'Like';
+                navLikeLabel.textContent = window.tr('tooltip_like');
             }
 
             const tooltip = bootstrap.Tooltip.getInstance(likeEffectBtn);
             if (tooltip) {
-                tooltip.setContent({ '.tooltip-inner': 'Like this effect' });
+                tooltip.setContent({ '.tooltip-inner': window.tr('tooltip_like_effect') });
             }
         }
 
@@ -4173,7 +4185,7 @@ document.addEventListener('DOMContentLoaded', function () {
         dirtyProperties.clear();
         baselineStateForURL = getControlValues();
 
-        showToast("New workspace created.", "info");
+        showToast(window.tr("toast_workspace_new"), "info");
     }
 
     /**
@@ -4197,7 +4209,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (projects.length === 0 && !append) {
-            galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><p>No effects found.</p></div>';
+            galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><p>' + window.tr('gallery_no_effects') + '</p></div>';
             return;
         }
 
@@ -4233,15 +4245,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const subtitle = document.createElement('small');
             subtitle.className = 'card-subtitle mb-2 text-body-secondary';
-            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString() : 'N/A';
-            subtitle.textContent = `By ${project.creatorName || 'Anonymous'} on ${formattedDate}`;
+            const formattedDate = project.createdAt ? project.createdAt.toLocaleDateString() : window.tr('gallery_na_date');
+            subtitle.textContent = window.tr('gallery_by_on', {
+                author: project.creatorName || window.tr('gallery_anonymous'),
+                date: formattedDate
+            });
 
             const statsEl = document.createElement('div');
             statsEl.className = 'mt-auto d-flex justify-content-start small text-body-secondary gap-3';
             statsEl.innerHTML = `
-            <span title="Views"><i class="bi bi-eye-fill me-1"></i>${project.viewCount || 0}</span>
-            <span title="Downloads"><i class="bi bi-download me-1"></i>${project.downloadCount || 0}</span>
-            <span id="like-count-span-${project.docId}" title="Likes" style="cursor: pointer;">
+            <span title="${window.tr('title_views')}"><i class="bi bi-eye-fill me-1"></i>${project.viewCount || 0}</span>
+            <span title="${window.tr('title_downloads')}"><i class="bi bi-download me-1"></i>${project.downloadCount || 0}</span>
+            <span id="like-count-span-${project.docId}" title="${window.tr('tooltip_like_effect')}" style="cursor: pointer;">
                 <i class="bi bi-heart-fill me-1"></i>
                 <span id="like-count-value-${project.docId}">${project.likes || 0}</span>
             </span>
@@ -4261,8 +4276,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const loadBtn = document.createElement('button');
             loadBtn.className = 'btn btn-primary';
-            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-1"></i> Load';
-            loadBtn.title = "Load Effect";
+            loadBtn.innerHTML = '<i class="bi bi-box-arrow-down me-1"></i> ' + window.tr('btn_load_effect');
+            loadBtn.title = window.tr('tooltip_load_effect');
             loadBtn.onclick = () => {
                 loadWorkspace(project);
                 const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
@@ -4276,9 +4291,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- START MODIFIED BLOCK ---
             // FIX: Use btn-outline-danger when not liked and add text
             likeBtn.className = `btn ${isInitiallyLiked ? 'btn-danger' : 'btn-outline-danger'}`;
-            likeBtn.innerHTML = isInitiallyLiked ? '<i class="bi bi-heart-fill me-1"></i> Liked' : '<i class="bi bi-heart me-1"></i> Like';
+            likeBtn.innerHTML = isInitiallyLiked
+                ? '<i class="bi bi-heart-fill me-1"></i> ' + window.tr('btn_liked')
+                : '<i class="bi bi-heart me-1"></i> ' + window.tr('btn_like');
             // --- END MODIFIED BLOCK ---
-            likeBtn.title = isInitiallyLiked ? "Unlike" : "Like";
+            likeBtn.title = isInitiallyLiked ? window.tr('tooltip_unlike') : window.tr('tooltip_like');
             likeBtn.onclick = () => likeEffect(project.docId);
             btnGroup.appendChild(likeBtn);
 
@@ -4290,10 +4307,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'btn btn-sm btn-danger ms-2';
                     deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                    deleteBtn.title = "Delete Effect";
+                    deleteBtn.title = window.tr('modal_delete_project_title');
                     deleteBtn.onclick = () => {
                         showConfirmModal(
-                            'Delete Project', `Are you sure you want to delete "${project.name}"?`, 'Delete',
+                            window.tr('modal_delete_project_title'), window.tr('modal_delete_project_body', { name: project.name }), window.tr('btn_delete'),
                             async () => {
                                 await window.deleteDoc(window.doc(window.db, "projects", project.docId));
                             }
@@ -4306,7 +4323,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const featureBtn = document.createElement('button');
                     featureBtn.className = `btn btn-sm ms-2 ${isFeatured ? 'btn-warning' : 'btn-warning'}`;
                     featureBtn.innerHTML = isFeatured ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>';
-                    featureBtn.title = isFeatured ? 'Unfeature' : 'Feature';
+                    featureBtn.title = isFeatured ? window.tr('tooltip_unfeature_effect') : window.tr('tooltip_feature_effect');
                     featureBtn.dataset.docId = project.docId;
                     featureBtn.onclick = function () { toggleFeaturedStatus(this, project.docId); };
                     ownerControls.appendChild(featureBtn);
@@ -4433,7 +4450,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateGallery(newProjects, true);
         } catch (error) {
             console.error("Error loading more projects:", error);
-            showToast("Could not load more effects.", 'danger');
+            showToast(window.tr("toast_load_more_failed"), 'danger');
         } finally {
             isLoadingMore = false;
         }
@@ -4465,7 +4482,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateGallery(projects);
         } catch (error) {
             console.error("Error loading initial projects:", error);
-            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load effects.</li>';
+            galleryList.innerHTML = '<li class="list-group-item text-danger">' + window.tr('gallery_load_failed_list') + '</li>';
         } finally {
             isLoadingMore = false;
         }
@@ -4561,6 +4578,61 @@ document.addEventListener('DOMContentLoaded', function () {
         return grouped;
     }
 
+    function suffixToPropI18nKey(suffix) {
+        const norm = String(suffix).replace(/-/g, '_');
+        return 'prop_' + norm.replace(/([A-Z])/g, '_$1').replace(/^_/, '').toLowerCase();
+    }
+
+    const PANEL_GROUP_I18N_KEYS = {
+        'Geometry': 'panel_group_geometry',
+        'Polyline': 'panel_group_polyline',
+        'Stroke': 'panel_group_stroke',
+        'Object': 'panel_group_object_path',
+        'Object Fill': 'panel_group_object_fill',
+        'Fill-Animation': 'panel_group_fill_animation',
+        'Text': 'panel_group_text',
+        'Oscilloscope': 'panel_group_oscilloscope',
+        'Tetris': 'panel_group_tetris',
+        'Fire': 'panel_group_fire',
+        'Pixel Art': 'panel_group_pixel_art',
+        'Visualizer': 'panel_group_visualizer',
+        'Audio Responsiveness': 'panel_group_audio',
+        'Sensor Responsiveness': 'panel_group_sensor',
+        'Strimer': 'panel_group_strimer',
+        'Spawner': 'panel_group_spawner',
+        'Particle': 'panel_group_particle',
+        'GIF Settings': 'panel_group_gif'
+    };
+
+    function translatePanelGroupTitle(groupName) {
+        const key = PANEL_GROUP_I18N_KEYS[groupName];
+        const fallback = groupName.replace(/-/g, ' & ');
+        if (!key) return fallback;
+        const t = window.tr(key);
+        return t !== key ? t : fallback;
+    }
+
+    function translatePropertyLabel(config, cleanLabel) {
+        const prop = config.property;
+        const nm = config.name;
+        if (nm === 'title') return window.tr('label_effect_title');
+        if (nm === 'description') return window.tr('label_description');
+        if (nm === 'publisher') return window.tr('label_developer_name');
+        if (!prop) return cleanLabel;
+        const us = prop.indexOf('_');
+        const suffix = us >= 0 ? prop.slice(us + 1) : prop;
+        const key = suffixToPropI18nKey(suffix);
+        const t = window.tr(key);
+        return t !== key ? t : cleanLabel;
+    }
+
+    function translateShapeSelectOption(val) {
+        const nk = String(val).replace(/-/g, '_');
+        const key = 'shape_option_' + nk;
+        const t = window.tr(key);
+        return t !== key ? t : val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
+    }
+
     /**
      * Creates an HTML form control element based on a configuration object.
      * @param {object} config - The configuration for the control.
@@ -4578,8 +4650,10 @@ document.addEventListener('DOMContentLoaded', function () {
             labelEl.className = 'form-label';
             if (label) {
                 const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
-                labelEl.textContent = cleanLabel;
-                labelEl.title = description || `Controls the ${cleanLabel.toLowerCase()}`;
+                const displayLabel = translatePropertyLabel(config, cleanLabel);
+                labelEl.textContent = displayLabel;
+                const tip = window.tr('prop_controls_tooltip', { label: displayLabel.toLowerCase() });
+                labelEl.title = description || (tip !== 'prop_controls_tooltip' ? tip : `Controls the ${cleanLabel.toLowerCase()}`);
             }
             labelEl.dataset.bsToggle = 'tooltip';
             formGroup.appendChild(labelEl);
@@ -4625,10 +4699,11 @@ document.addEventListener('DOMContentLoaded', function () {
             select.id = controlId;
             select.className = 'form-select';
             select.name = controlId;
+            const isShapeSelect = property && (property.endsWith('_shape') || property === 'shape');
             vals.forEach(val => {
                 const option = document.createElement('option');
                 option.value = val;
-                option.textContent = val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
+                option.textContent = isShapeSelect ? translateShapeSelectOption(val) : val.charAt(0).toUpperCase() + val.slice(1).replace(/-/g, ' ');
                 if (val === defaultValue) option.selected = true;
                 select.appendChild(option);
             });
@@ -4647,7 +4722,7 @@ document.addEventListener('DOMContentLoaded', function () {
             checkLabel.htmlFor = controlId;
             if (label) {
                 const cleanLabel = label.includes(':') ? label.substring(label.indexOf(':') + 1).trim() : label;
-                checkLabel.textContent = cleanLabel;
+                checkLabel.textContent = translatePropertyLabel(config, cleanLabel);
             }
             checkGroup.appendChild(check);
             checkGroup.appendChild(checkLabel);
@@ -4666,7 +4741,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 toolLink.target = '_blank';
                 toolLink.rel = 'noopener noreferrer';
                 toolLink.className = 'form-text d-block mt-2';
-                toolLink.innerHTML = 'Open Pixel Art Data Generator <i class="bi bi-box-arrow-up-right"></i>';
+                toolLink.innerHTML = window.tr('link_open_pixel_generator_html');
                 formGroup.appendChild(toolLink);
             } else if (controlId.endsWith('_spawn_svg_path')) {
                 const toolLink = document.createElement('a');
@@ -4674,13 +4749,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 toolLink.target = '_blank';
                 toolLink.rel = 'noopener noreferrer';
                 toolLink.className = 'form-text d-block mt-2';
-                toolLink.innerHTML = 'Open SVG Path Editor <i class="bi bi-box-arrow-up-right"></i>';
+                toolLink.innerHTML = window.tr('link_open_svg_editor_html');
                 formGroup.appendChild(toolLink);
             } else if (controlId.endsWith('_gifUrl')) {
                 const searchBtn = document.createElement('button');
                 searchBtn.type = 'button';
                 searchBtn.className = 'btn btn-sm btn-outline-primary mt-2 w-100 btn-search-gif'; // Reuse existing class or new one
-                searchBtn.innerHTML = '<i class="bi bi-search"></i> Search Giphy';
+                searchBtn.innerHTML = '<i class="bi bi-search"></i> ' + window.tr('btn_search_giphy_label');
                 formGroup.appendChild(searchBtn);
             }
         } else if (type === 'color') {
@@ -4689,7 +4764,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const swatch = document.createElement('div');
             swatch.className = 'color-picker-swatch';
             swatch.style.backgroundColor = defaultValue;
-            swatch.title = "Double-click to open color picker"; // Add tooltip hint
+            swatch.title = window.tr('tooltip_double_click_color_picker'); // Add tooltip hint
             const hexInput = document.createElement('input');
             hexInput.type = 'text';
             hexInput.className = 'form-control';
@@ -4697,14 +4772,14 @@ document.addEventListener('DOMContentLoaded', function () {
             hexInput.value = defaultValue;
             hexInput.id = controlId;
             hexInput.name = controlId;
-            hexInput.title = "Double-click to open color picker"; // Add tooltip hint
+            hexInput.title = window.tr('tooltip_double_click_color_picker'); // Add tooltip hint
 
             // --- MODIFIED openPicker FUNCTION ---
             const openPicker = () => {
                 // *** Debugging Check ***
                 if (!window.globalIroColorPicker || !window.globalGeneralColorPickerModal) {
                     console.error("Error: Global color picker instances not found or not initialized when trying to open picker for:", controlId);
-                    showToast("Color picker components failed to load.", "danger"); // Inform user
+                    showToast(window.tr("toast_color_picker_failed"), "danger"); // Inform user
                     return; // Stop if instances are missing
                 }
 
@@ -4763,7 +4838,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeControlsContainer.style.display = 'none';
             const helpText = document.createElement('div');
             helpText.className = 'form-text text-body-secondary small mt-2';
-            helpText.innerHTML = `<strong>Add:</strong> Click empty space | <strong>Edit:</strong> Click HEX input or double-click marker | <strong>Delete:</strong> Drag marker down`;
+            helpText.innerHTML = window.tr('gradient_picker_help_html');
 
             const hiddenInput = document.createElement('textarea');
             hiddenInput.id = controlId;
@@ -5020,7 +5095,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // hiddenTextarea.textContent = defaultValue;
             const table = document.createElement('table');
             table.className = 'table table-dark table-sm node-table';
-            table.innerHTML = `<thead><tr><th scope="col">#</th><th scope="col">X</th><th scope="col">Y</th><th scope="col" style="width: 80px;">Actions</th></tr></thead><tbody></tbody>`;
+            table.innerHTML = `<thead><tr><th scope="col">${window.tr('node_col_index')}</th><th scope="col">${window.tr('node_col_x')}</th><th scope="col">${window.tr('node_col_y')}</th><th scope="col" style="width: 80px;">${window.tr('node_col_actions')}</th></tr></thead><tbody></tbody>`;
             const tbody = table.querySelector('tbody');
             let nodes = [];
 
@@ -5039,13 +5114,13 @@ document.addEventListener('DOMContentLoaded', function () {
             nodes.forEach((node, index) => {
                 const tr = document.createElement('tr');
                 tr.dataset.index = index;
-                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tr.innerHTML = `<td class="align-middle">${index + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${Math.round(node.x)}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${Math.round(node.y)}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="${window.tr('tooltip_delete_node')}"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-success mt-2 btn-add-node';
-            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Node';
+            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> ' + window.tr('btn_add_node');
             container.appendChild(hiddenTextarea);
             container.appendChild(table);
             container.appendChild(addButton);
@@ -5091,7 +5166,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 frameItem.dataset.index = index;
                 const textareaId = `frame-data-${objectId}-${index}`;
                 const frameDataStr = typeof frame.data === 'string' ? frame.data : JSON.stringify(frame.data);
-                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="Drag to reorder frame"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="Frame Preview"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">Frame #${index + 1}</strong><div><button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="Edit Frame"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="Delete Frame" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="Duration (seconds)"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
+                frameItem.innerHTML = `<div class="frame-drag-handle text-body-secondary me-1 d-flex align-items-center" style="cursor: grab;" title="${window.tr('pixel_frame_drag_title')}"><i class="bi bi-grip-vertical"></i></div><canvas class="pixel-art-preview-canvas border rounded" width="60" height="60" title="${window.tr('pixel_frame_preview_title')}"></canvas><div class="flex-grow-1"><div class="d-flex justify-content-between align-items-center mb-1"><strong class="frame-item-header small">${window.tr('pixel_frame_number', { n: index + 1 })}</strong><div><button type="button" class="btn btn-sm btn-info p-1" style="line-height: 1;" data-bs-toggle="modal" data-bs-target="#pixelArtEditorModal" data-target-id="${textareaId}" title="${window.tr('tooltip_edit_frame')}"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-danger p-1 btn-delete-frame" title="${window.tr('tooltip_delete_frame')}" style="line-height: 1;"><i class="bi bi-trash"></i></button></div></div><div class="input-group input-group-sm"><span class="input-group-text" title="${window.tr('tooltip_frame_duration')}"><i class="bi bi-clock"></i></span><input type="number" class="form-control form-control-sm frame-duration-input" value="${frame.duration || 0.1}" min="0.01" step="0.01"></div><textarea class="form-control form-control-sm frame-data-input d-none" id="${textareaId}" rows="6">${frameDataStr}</textarea></div>`;
                 framesContainer.appendChild(frameItem);
                 const previewCanvas = frameItem.querySelector('.pixel-art-preview-canvas');
                 renderPixelArtPreview(previewCanvas, frameDataStr, gradientStops);
@@ -5101,7 +5176,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'btn btn-sm btn-success btn-add-frame';
-            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> Add Frame';
+            addButton.innerHTML = '<i class="bi bi-plus-circle"></i> ' + window.tr('btn_add_frame');
             // const pasteSpriteButton = document.createElement('button');
             // pasteSpriteButton.type = 'button';
             // pasteSpriteButton.className = 'btn btn-sm btn-secondary btn-paste-sprite';
@@ -5111,13 +5186,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const uploadGifButton = document.createElement('button');
             uploadGifButton.type = 'button';
             uploadGifButton.className = 'btn btn-sm btn-warning';
-            uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> Upload GIF';
+            uploadGifButton.innerHTML = '<i class="bi bi-filetype-gif"></i> ' + window.tr('btn_upload_gif');
             uploadGifButton.dataset.bsToggle = 'modal';
             uploadGifButton.dataset.bsTarget = '#upload-gif-modal';
             const browseButton = document.createElement('button');
             browseButton.type = 'button';
             browseButton.className = 'btn btn-sm btn-info';
-            browseButton.innerHTML = '<i class="bi bi-images"></i> Browse Gallery';
+            browseButton.innerHTML = '<i class="bi bi-images"></i> ' + window.tr('btn_browse_pixel_gallery');
             browseButton.dataset.bsToggle = 'modal';
             browseButton.dataset.bsTarget = '#pixel-art-gallery-modal';
 
@@ -5125,8 +5200,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const searchGifButton = document.createElement('button');
             searchGifButton.type = 'button';
             searchGifButton.className = 'btn btn-sm btn-primary btn-search-gif';
-            searchGifButton.innerHTML = '<i class="bi bi-search"></i> Search GIFs';
-            searchGifButton.title = "Search Giphy for animations";
+            searchGifButton.innerHTML = '<i class="bi bi-search"></i> ' + window.tr('btn_search_gifs');
+            searchGifButton.title = window.tr('tooltip_search_giphy_animations');
             // --- END NEW ---
 
             buttonGroup.appendChild(addButton);
@@ -5293,16 +5368,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const headerBar = document.createElement('div');
         headerBar.className = 'd-flex justify-content-between align-items-center w-100 px-2 py-1';
         const collapseId = `collapse-obj-${id}`;
-        const showObject = activeCollapseStates[id] === true || selectedObjectIds.includes(id);
+        const showObject = activeCollapseStates[id] === true
+            || (!isRestoring && selectedObjectIds.includes(id));
         headerBar.style.cursor = 'pointer';
-        headerBar.dataset.bsToggle = 'collapse';
-        headerBar.dataset.bsTarget = `#${collapseId}`;
         headerBar.setAttribute('aria-expanded', showObject);
         headerBar.setAttribute('aria-controls', collapseId);
-        const stopPropagation = (e) => e.stopPropagation();
         const leftGroup = document.createElement('div');
         leftGroup.className = 'd-flex align-items-center';
-        leftGroup.addEventListener('click', stopPropagation);
         const dragHandle = document.createElement('div');
         dragHandle.className = 'drag-handle me-2 text-body-secondary';
         dragHandle.style.cursor = 'grab';
@@ -5331,10 +5403,21 @@ document.addEventListener('DOMContentLoaded', function () {
         editableArea.appendChild(pencilIcon);
         leftGroup.appendChild(editableArea);
         headerBar.appendChild(leftGroup);
+        headerBar.addEventListener('click', (e) => {
+            if (e.target.closest('.object-panel-controls')) return;
+            if (e.target.closest('.object-name')) return;
+            if (e.target.closest('.bi-pencil-fill')) return;
+            const collapseEl = document.getElementById(collapseId);
+            if (!collapseEl) return;
+            bootstrap.Collapse.getOrCreateInstance(collapseEl).toggle();
+        });
+
         const controlsGroup = document.createElement('div');
         controlsGroup.className = 'd-flex align-items-center flex-shrink-0';
+        const actionsInner = document.createElement('div');
+        actionsInner.className = 'object-panel-controls d-flex align-items-center';
         controlsGroup.addEventListener('click', (e) => {
-            e.stopPropagation();
+            if (!e.target.closest('.object-panel-controls')) return;
             const lockBtn = e.target.closest('.btn-lock');
             const deleteBtn = e.target.closest('.btn-delete');
             const duplicateBtn = e.target.closest('.btn-duplicate');
@@ -5461,26 +5544,26 @@ document.addEventListener('DOMContentLoaded', function () {
         lockButton.type = 'button';
         lockButton.dataset.id = id;
         lockButton.dataset.bsToggle = 'tooltip';
-        lockButton.title = isLocked ? 'Unlock Object' : 'Lock Object';
+        lockButton.title = isLocked ? window.tr('tooltip_unlock_object') : window.tr('tooltip_lock_object');
         lockButton.innerHTML = `<i class="bi ${isLocked ? 'bi-lock-fill' : 'bi-unlock-fill'}"></i>`;
-        controlsGroup.appendChild(lockButton);
+        actionsInner.appendChild(lockButton);
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
-        dropdown.innerHTML = `<button class="btn btn-sm btn-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>Duplicate</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>Delete</a></li></ul>`;
-        controlsGroup.appendChild(dropdown);
+        dropdown.innerHTML = `<button class="btn btn-sm btn-secondary d-flex align-items-center justify-content-center px-2 ms-2" style="height: 28px;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Duplicate or delete"><i class="bi bi-list fs-5"></i></button><ul class="dropdown-menu dropdown-menu-dark"><li><a class="dropdown-item btn-duplicate" href="#" data-id="${id}"><i class="bi bi-copy me-2"></i>${window.tr('object_menu_duplicate')}</a></li><li><a class="dropdown-item btn-delete text-danger" href="#" data-id="${id}"><i class="bi bi-trash me-2"></i>${window.tr('object_menu_delete')}</a></li></ul>`;
+        actionsInner.appendChild(dropdown);
+        controlsGroup.appendChild(actionsInner);
         const collapseIcon = document.createElement('span');
         collapseIcon.className = `legend-button ${showObject ? '' : 'collapsed'} ms-2`;
         collapseIcon.innerHTML = `<i class="bi bi-chevron-up"></i>`;
+        collapseIcon.title = showObject ? 'Collapse panel' : 'Expand panel';
         controlsGroup.appendChild(collapseIcon);
         headerBar.appendChild(controlsGroup);
         const collapseWrapper = document.createElement('div');
         collapseWrapper.id = collapseId;
         collapseWrapper.className = `collapse p-3 ${showObject ? 'show' : ''}`;
-        collapseWrapper.appendChild(document.createElement('hr'));
 
-        // --- 4. TABBED INTERFACE CREATION ---
         const tabNav = document.createElement('ul');
-        tabNav.className = 'nav nav-tabs';
+        tabNav.className = 'nav nav-pills object-prop-tabs flex-row flex-wrap gap-1 mb-2';
         tabNav.id = `object-tabs-${id}`;
         tabNav.setAttribute('role', 'tablist');
         const tabContent = document.createElement('div');
@@ -5490,6 +5573,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const validPropsForShape = shapePropertyMap[obj.shape] || shapePropertyMap['rectangle'];
         let isFirstTab = true;
         let firstTabId = null;
+        let geometryTabId = null;
         for (const groupName in controlGroupMap) {
             const groupProps = controlGroupMap[groupName].props;
             const relevantProps = objectConfigs.filter(conf => {
@@ -5502,6 +5586,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (relevantProps.length > 0) {
                 const safeGroupName = groupName.replace(/[\s&]/g, '-');
                 const tabId = `tab-${id}-${safeGroupName}`;
+                if (groupName === 'Geometry') {
+                    geometryTabId = tabId;
+                }
                 if (isFirstTab) {
                     firstTabId = tabId;
                 }
@@ -5510,7 +5597,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 tabItem.className = 'nav-item';
                 tabItem.setAttribute('role', 'presentation');
                 const tabButton = document.createElement('button');
-                tabButton.className = `nav-link`;
+                tabButton.className = 'nav-link object-prop-tab-btn py-1 px-2 d-inline-flex align-items-center gap-1';
                 tabButton.id = tabId;
                 tabButton.dataset.bsToggle = 'tab';
                 tabButton.dataset.bsTarget = `#${paneId}`;
@@ -5518,22 +5605,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 tabButton.setAttribute('role', 'tab');
                 tabButton.setAttribute('aria-controls', paneId);
                 const icon = document.createElement('i');
-                icon.className = `bi ${controlGroupMap[groupName].icon} me-2`;
+                icon.className = `bi ${controlGroupMap[groupName].icon} flex-shrink-0`;
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'object-prop-tab-label';
+                labelSpan.textContent = translatePanelGroupTitle(groupName);
                 tabButton.appendChild(icon);
-                tabButton.appendChild(document.createTextNode(groupName.replace(/-/g, ' & ')));
+                tabButton.appendChild(labelSpan);
                 tabItem.appendChild(tabButton);
                 tabNav.appendChild(tabItem);
                 const pane = document.createElement('div');
-                pane.className = `tab-pane fade`;
+                pane.className = 'tab-pane fade';
                 pane.id = paneId;
                 pane.setAttribute('role', 'tabpanel');
                 pane.setAttribute('aria-labelledby', tabId);
                 const groupCard = document.createElement('div');
-                groupCard.className = 'card card-body bg-body mb-3';
-                const groupHeader = document.createElement('h6');
-                groupHeader.className = 'text-body-secondary border-bottom pb-1 mb-3';
-                groupHeader.textContent = groupName.replace(/-/g, ' & ');
-                groupCard.appendChild(groupHeader);
+                groupCard.className = 'card card-body bg-body mb-0 border-secondary border-opacity-25 py-2 px-2';
                 relevantProps.forEach(conf => {
                     groupCard.appendChild(createFormControl(conf));
                 });
@@ -5546,29 +5632,49 @@ document.addEventListener('DOMContentLoaded', function () {
         collapseWrapper.appendChild(tabContent);
         fieldset.appendChild(headerBar);
         fieldset.appendChild(collapseWrapper);
-        form.appendChild(fieldset);
 
-        const savedTabId = activeTabStates[id] || firstTabId;
-        if (savedTabId) {
-            const tabToActivate = document.getElementById(savedTabId);
-            if (tabToActivate) {
-                const paneId = tabToActivate.dataset.bsTarget;
-                const paneToActivate = document.querySelector(paneId);
-                tabToActivate.classList.add('active');
-                tabToActivate.setAttribute('aria-selected', 'true');
-                if (paneToActivate) {
-                    paneToActivate.classList.add('show', 'active');
-                }
-            } else {
-                const firstTabButton = fieldset.querySelector('.nav-tabs .nav-link');
-                if (firstTabButton) {
-                    const paneId = firstTabButton.dataset.bsTarget;
-                    const paneToActivate = document.querySelector(paneId);
+        collapseWrapper.addEventListener('shown.bs.collapse', () => {
+            collapseIcon.classList.remove('collapsed');
+            headerBar.setAttribute('aria-expanded', 'true');
+            collapseIcon.title = 'Collapse panel';
+        });
+        collapseWrapper.addEventListener('hidden.bs.collapse', () => {
+            collapseIcon.classList.add('collapsed');
+            headerBar.setAttribute('aria-expanded', 'false');
+            collapseIcon.title = 'Expand panel';
+        });
+        tabNav.addEventListener('click', (e) => {
+            if (e.target.closest('button.nav-link')) {
+                e.stopPropagation();
+            }
+        }, true);
 
-                    if (paneToActivate) {
-                        firstTabButton.classList.add('active');
-                        firstTabButton.setAttribute('aria-selected', 'true');
-                        paneToActivate.classList.add('show', 'active');
+        const defaultTabId = geometryTabId || firstTabId;
+        const savedTabId = activeTabStates[id] ?? defaultTabId;
+        if (savedTabId && collapseWrapper.querySelector('.object-prop-tabs')) {
+            const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape : (s) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            let tabBtn = collapseWrapper.querySelector(`#${esc(savedTabId)}`);
+            if (!tabBtn && geometryTabId) {
+                tabBtn = collapseWrapper.querySelector(`#${esc(geometryTabId)}`);
+            }
+            if (!tabBtn) {
+                tabBtn = collapseWrapper.querySelector('.object-prop-tabs .nav-link');
+            }
+            if (tabBtn) {
+                collapseWrapper.querySelectorAll('.object-prop-tabs .nav-link').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                collapseWrapper.querySelectorAll('.tab-content .tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                tabBtn.classList.add('active');
+                tabBtn.setAttribute('aria-selected', 'true');
+                const paneSel = tabBtn.dataset.bsTarget;
+                if (paneSel) {
+                    const paneEl = collapseWrapper.querySelector(paneSel);
+                    if (paneEl) {
+                        paneEl.classList.add('show', 'active');
                     }
                 }
             }
@@ -5639,6 +5745,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const generalCollapseEl = form.querySelector('#collapse-general');
+        // Default open on first load (no prior markup); preserve collapsed/expanded across re-renders.
         const generalCollapseState = generalCollapseEl ? generalCollapseEl.classList.contains('show') : true;
 
         const activeCollapseStates = {};
@@ -5657,7 +5764,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (collapseEl) {
                 activeCollapseStates[id] = collapseEl.classList.contains('show');
             }
-            const activeTabButton = fieldset.querySelector('.nav-tabs .nav-link.active');
+            const activeTabButton = fieldset.querySelector('.object-prop-tabs .nav-link.active');
             if (activeTabButton) {
                 activeTabStates[id] = activeTabButton.id;
             }
@@ -5682,7 +5789,7 @@ document.addEventListener('DOMContentLoaded', function () {
         generalLeftGroup.className = 'd-flex align-items-center';
         const generalHeaderText = document.createElement('span');
         generalHeaderText.className = 'fs-5 fw-semibold';
-        generalHeaderText.textContent = 'General Settings';
+        generalHeaderText.textContent = window.tr('panel_general_settings');
         generalLeftGroup.appendChild(generalHeaderText);
         generalHeaderBar.appendChild(generalLeftGroup);
         const generalRightGroup = document.createElement('div');
@@ -5716,7 +5823,7 @@ document.addEventListener('DOMContentLoaded', function () {
             overridesHeader.dataset.bsTarget = '#collapse-overrides';
             overridesHeader.setAttribute('aria-expanded', 'false'); // Start collapsed
             overridesHeader.innerHTML = `
-            <span class="fs-6 fw-semibold">Global Overrides</span>
+            <span class="fs-6 fw-semibold">${window.tr('panel_global_overrides')}</span>
             <span class="legend-button collapsed"><i class="bi bi-chevron-up"></i></span>
         `;
             generalCollapseWrapper.appendChild(overridesHeader);
@@ -5811,7 +5918,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Update the frame number text in the UI
                         const header = item.querySelector('.frame-item-header');
                         if (header) {
-                            header.textContent = `Frame #${index + 1}`;
+                            header.textContent = window.tr('pixel_frame_number', { n: index + 1 });
                         }
                         item.dataset.index = index; // Update the data-index attribute
 
@@ -6777,7 +6884,7 @@ document.addEventListener('DOMContentLoaded', function () {
             recordHistory();
         } catch (error) {
             console.error("Error in _loadFromConfigArray:", error);
-            showToast("Failed to process configuration.", 'danger');
+            showToast(window.tr("toast_config_process_failed"), 'danger');
         } finally {
             isRestoring = false;
         }
@@ -6791,7 +6898,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function loadWorkspace(workspace) {
         if (!workspace || !workspace.configs) {
-            showToast("Invalid workspace data provided.", 'danger');
+            showToast(window.tr("toast_workspace_invalid"), 'danger');
             return;
         }
 
@@ -6845,7 +6952,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateAll();
         } catch (error) {
             console.error("Error loading workspace:", error);
-            showToast("Failed to load workspace.", 'danger');
+            showToast(window.tr("toast_workspace_load_failed"), 'danger');
         } finally {
             isRestoring = false;
         }
@@ -7257,7 +7364,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const lastY = lastNode ? parseInt(lastNode.querySelector('.node-y-input').value, 10) : 0;
                 const tr = document.createElement('tr');
                 tr.dataset.index = newIndex;
-                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="Delete Node"><i class="bi bi-trash"></i></button></td>`;
+                tr.innerHTML = `<td class="align-middle">${newIndex + 1}</td><td><input type="number" class="form-control form-control-sm node-x-input" value="${lastX + 50}"></td><td><input type="number" class="form-control form-control-sm node-y-input" value="${lastY + 50}"></td><td class="align-middle"><button type="button" class="btn btn-sm btn-danger btn-delete-node" title="${window.tr('tooltip_delete_node')}"><i class="bi bi-trash"></i></button></td>`;
                 tbody.appendChild(tr);
 
                 const hiddenTextarea = container.querySelector('textarea');
@@ -7283,7 +7390,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         tr.firstElementChild.textContent = index + 1;
                     });
                 } else {
-                    showToast("A polyline must have at least 2 nodes.", "danger");
+                    showToast(window.tr("toast_polyline_min_nodes"), "danger");
                 }
                 const hiddenTextarea = container.querySelector('textarea');
                 const newNodes = Array.from(tbody.children).map(tr => ({
@@ -7379,7 +7486,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         item.querySelector('.frame-item-header').textContent = `Frame #${index + 1}`;
                     });
                 } else {
-                    showToast("Pixel Art object must have at least one frame.", "warning");
+                    showToast(window.tr("toast_pixel_art_min_frame"), "warning");
                 }
 
                 const hiddenTextarea = container.querySelector('textarea[name$="_pixelArtFrames"]');
@@ -7454,7 +7561,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 // If creation failed or only one node exists, delete the object.
                 deleteObjects([shape.id]);
-                showToast("Polyline creation failed (too few nodes).", "danger");
+                showToast(window.tr("toast_polyline_create_failed"), "danger");
             }
         }
 
@@ -7467,7 +7574,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (shape) {
             recordHistory();
             drawFrame();
-            showToast("Polyline created!", "success");
+            showToast(window.tr("toast_polyline_created"), "success");
         }
     }
 
@@ -7523,7 +7630,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('save-ws-btn').addEventListener('click', async () => {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to save.", 'danger');
+            showToast(window.tr("toast_must_login_save"), 'danger');
             return;
         }
 
@@ -7537,9 +7644,9 @@ document.addEventListener('DOMContentLoaded', function () {
             // This is the OVERWRITE logic for an existing effect you own.
             const existingDocId = querySnapshot.docs[0].id;
             showConfirmModal(
-                'Confirm Overwrite',
-                `A project named "${trimmedName}" already exists. Do you want to overwrite it?`,
-                'Overwrite',
+                window.tr('modal_confirm_overwrite_title'),
+                window.tr('modal_confirm_overwrite_body'),
+                window.tr('btn_overwrite'),
                 async () => {
                     try {
                         syncConfigStoreWithForm(); // Sync before creating data
@@ -7560,10 +7667,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         loadComments(currentProjectDocId);
 
                         await persistExportedHtmlToFirestore({ silent: true });
-                        showToast(`Project "${trimmedName}" was overwritten successfully!`, 'success');
+                        showToast(window.tr('toast_project_overwritten', { name: trimmedName }), 'success');
                     } catch (error) {
                         console.error("Error overwriting document: ", error);
-                        showToast("Error overwriting project: " + error.message, 'danger');
+                        showToast(window.tr('toast_project_overwrite_error', { detail: error.message }), 'danger');
                     }
                 }
             );
@@ -7604,10 +7711,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadComments(currentProjectDocId);
 
                 await persistExportedHtmlToFirestore({ silent: true });
-                showToast(`Effect "${trimmedName}" was saved successfully!`, 'success');
+                showToast(window.tr('toast_effect_saved', { name: trimmedName }), 'success');
             } catch (error) {
                 console.error("Error saving new document: ", error);
-                showToast("Error saving project: " + error.message, 'danger');
+                showToast(window.tr('toast_save_project_error', { detail: error.message }), 'danger');
             }
         }
     });
@@ -7616,13 +7723,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('load-ws-btn').addEventListener('click', () => {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to see your projects.", 'danger');
+            showToast(window.tr("toast_must_login_projects"), 'danger');
             const galleryOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('gallery-offcanvas'));
             galleryOffcanvas.hide();
             return;
         }
 
-        document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+        galleryOffcanvasEl.setAttribute('data-gallery-mode', 'user');
+        document.getElementById('galleryOffcanvasLabel').textContent = window.tr('gallery_my_effects_title');
         const galleryList = document.getElementById('gallery-project-list');
         galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
 
@@ -7640,7 +7748,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateGallery(projects);
         }, (error) => {
             console.error("My Projects listener error:", error);
-            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load your projects.</li>';
+            galleryList.innerHTML = '<li class="list-group-item text-danger">' + window.tr('gallery_load_my_failed') + '</li>';
         });
     });
 
@@ -7767,13 +7875,10 @@ document.addEventListener('DOMContentLoaded', function () {
         constrainToCanvas = !constrainToCanvas;
 
         // Remove all possible style classes first to avoid conflicts
-        constrainBtn.classList.remove('btn-primary', 'btn-secondary', 'btn-secondary');
-
-        // Add the correct class based on the new state
+        constrainBtn.classList.remove('btn-primary', 'btn-secondary', 'btn-outline-secondary', 'active');
+        constrainBtn.classList.add('btn-outline-secondary');
         if (constrainToCanvas) {
-            constrainBtn.classList.add('btn-secondary');
-        } else {
-            constrainBtn.classList.add('btn-secondary');
+            constrainBtn.classList.add('active');
         }
     });
 
@@ -8334,11 +8439,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             // Save to LocalStorage (Try/Catch because images can be large)
                             try {
                                 localStorage.setItem('srgb_layout_image_data', result);
-                                if (typeof showToast === 'function') showToast("Layout image pasted and saved!", 'success');
+                                if (typeof showToast === 'function') showToast(window.tr("toast_layout_pasted"), 'success');
                                 else alert("Layout image pasted!");
                             } catch (err) {
                                 console.warn("Image too large for LocalStorage, but loaded for this session.");
-                                if (typeof showToast === 'function') showToast("Image loaded (too large to save).", 'warning');
+                                if (typeof showToast === 'function') showToast(window.tr("toast_layout_large_no_save"), 'warning');
                             }
                         };
                     };
@@ -8373,7 +8478,7 @@ document.addEventListener('DOMContentLoaded', function () {
             layoutOverlayLoaded = false;
             showLayoutOverlay = false;
             updateLayoutButtonState();
-            if (typeof showToast === 'function') showToast("Layout screenshot deleted.", 'info');
+            if (typeof showToast === 'function') showToast(window.tr("toast_layout_deleted"), 'info');
         }
     }
 
@@ -8388,13 +8493,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const deleteBtn = document.getElementById('delete-layout-btn');
 
         if (toggleBtn) {
+            toggleBtn.classList.remove('btn-secondary', 'btn-info', 'btn-outline-secondary', 'btn-outline-info', 'active');
             if (showLayoutOverlay && layoutOverlayLoaded) {
-                toggleBtn.classList.remove('btn-outline-secondary');
-                toggleBtn.classList.add('btn-info');
+                toggleBtn.classList.add('btn-outline-info', 'active');
                 toggleBtn.innerHTML = '<i class="bi bi-eye-fill"></i>';
             } else {
                 toggleBtn.classList.add('btn-outline-secondary');
-                toggleBtn.classList.remove('btn-info');
                 toggleBtn.innerHTML = '<i class="bi bi-eye"></i>';
             }
         }
@@ -8451,11 +8555,12 @@ document.addEventListener('DOMContentLoaded', function () {
     async function init() {
         handleURLParameters();
         const constrainBtn = document.getElementById('constrain-btn');
-        constrainBtn.classList.remove('btn-secondary', 'btn-secondary');
-        if (constrainToCanvas) {
-            constrainBtn.classList.add('btn-secondary');
-        } else {
-            constrainBtn.classList.add('btn-secondary');
+        if (constrainBtn) {
+            constrainBtn.classList.remove('btn-secondary', 'btn-outline-secondary', 'active');
+            constrainBtn.classList.add('btn-outline-secondary');
+            if (constrainToCanvas) {
+                constrainBtn.classList.add('active');
+            }
         }
 
         if (window.db) {
@@ -8538,7 +8643,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 1. You must be logged in to save or update any effect.
         if (!user) {
-            showToast("You must be logged in to share.", 'danger');
+            showToast(window.tr("toast_must_login_share"), 'danger');
             return;
         }
 
@@ -8567,7 +8672,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 docRef = window.doc(projectsRef, effectIdToShare);
                 await window.updateDoc(docRef, projectData);
                 await persistExportedHtmlToFirestore({ silent: true });
-                showToast(`Effect "${name}" updated and share link generated!`, 'success');
+                showToast(window.tr('toast_share_updated', { name }), 'success');
             } else {
                 // Case 2: Project is NOT saved (no ID). SAVE AS NEW.
                 const newProjectData = {
@@ -8584,14 +8689,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 currentProjectDocId = docRef.id; // Update current ID
                 updateShareButtonState();
                 await persistExportedHtmlToFirestore({ silent: true });
-                showToast(`New effect "${name}" saved and share link copied!`, 'success');
+                showToast(window.tr('toast_share_new_saved', { name }), 'success');
             }
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?effectId=${effectIdToShare}`;
 
             // Final action: Open the modal and copy the link
             navigator.clipboard.writeText(shareUrl)
-                .catch(() => prompt("Copy this link:", shareUrl));
+                .catch(() => prompt(window.tr('prompt_copy_link'), shareUrl));
 
             const shareLinkInput = document.getElementById('share-link-input');
             shareLinkInput.value = shareUrl;
@@ -8600,7 +8705,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error creating/updating share link: ", error);
-            showToast("Could not share effect: " + error.message, 'danger');
+            showToast(window.tr('toast_share_failed', { detail: error.message }), 'danger');
         }
     });
 
@@ -8672,25 +8777,25 @@ document.addEventListener('DOMContentLoaded', function () {
                         } else if (params.get('exportPlain') === '1') {
                             runPlainTextExportDownload();
                         } else {
-                            showToast("Shared effect loaded!", 'success');
+                            showToast(window.tr("toast_shared_loaded"), 'success');
                         }
 
                         return true;
                     } else {
-                        showToast("This effect is not public.", 'danger');
+                        showToast(window.tr("toast_effect_not_public"), 'danger');
                         if (params.get('adminBackfillExport') === '1') {
                             postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'effect_not_public' });
                         }
                     }
                 } else {
-                    showToast("Shared effect not found.", 'danger');
+                    showToast(window.tr("toast_shared_not_found"), 'danger');
                     if (params.get('adminBackfillExport') === '1') {
                         postAdminBackfillDoneToOpener(effectId, { ok: false, error: 'effect_not_found' });
                     }
                 }
             } catch (error) {
                 console.error("Error loading shared effect:", error);
-                showToast("Could not load the shared effect.", 'danger');
+                showToast(window.tr("toast_shared_load_failed"), 'danger');
                 if (params.get('adminBackfillExport') === '1') {
                     postAdminBackfillDoneToOpener(effectId, { ok: false, error: String(error && error.message ? error.message : error) });
                 }
@@ -8706,13 +8811,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('load-ws-btn').addEventListener('click', async () => {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to see your projects.", 'danger');
+            showToast(window.tr("toast_must_login_projects"), 'danger');
             const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
             if (galleryOffcanvas) galleryOffcanvas.hide();
             return;
         }
 
-        document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+        galleryOffcanvasEl.setAttribute('data-gallery-mode', 'user');
+        document.getElementById('galleryOffcanvasLabel').textContent = window.tr('gallery_my_effects_title');
         const galleryList = document.getElementById('gallery-project-list');
         galleryList.innerHTML = '<li class="list-group-item text-center"><div class="spinner-border spinner-border-sm"></div></li>';
 
@@ -8729,7 +8835,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateGallery(projects);
         } catch (error) {
             console.error("Error loading user projects:", error);
-            galleryList.innerHTML = '<li class="list-group-item text-danger">Could not load your projects.</li>';
+            galleryList.innerHTML = '<li class="list-group-item text-danger">' + window.tr('gallery_load_my_failed') + '</li>';
         }
     });
 
@@ -8767,30 +8873,36 @@ document.addEventListener('DOMContentLoaded', function () {
         const toastBody = document.getElementById('app-toast-body');
         const toastIcon = document.getElementById('app-toast-icon');
 
-        toastBody.innerHTML = message.replace(/\n/g, '<br>');
+        toastBody.innerHTML = String(message).replace(/\n/g, '<br>');
 
-        toastHeader.classList.remove('bg-success', 'bg-danger', 'bg-primary');
+        const tnorm = type === 'error' ? 'danger' : type;
+
+        toastHeader.classList.remove('bg-success', 'bg-danger', 'bg-primary', 'bg-warning', 'text-dark');
         toastIcon.className = 'bi me-2';
 
-        switch (type) {
+        switch (tnorm) {
             case 'success':
                 toastHeader.classList.add('bg-success');
-                toastTitle.textContent = 'Success';
+                toastTitle.textContent = window.tr('toast_header_success');
                 toastIcon.classList.add('bi-check-circle-fill');
                 break;
             case 'danger':
                 toastHeader.classList.add('bg-danger');
-                toastTitle.textContent = 'Error';
+                toastTitle.textContent = window.tr('toast_header_error');
                 toastIcon.classList.add('bi-exclamation-triangle-fill');
                 break;
-            default: // 'info'
+            case 'warning':
+                toastHeader.classList.add('bg-warning', 'text-dark');
+                toastTitle.textContent = window.tr('toast_header_warning');
+                toastIcon.classList.add('bi-exclamation-triangle-fill');
+                break;
+            default:
                 toastHeader.classList.add('bg-primary');
-                toastTitle.textContent = 'Notification';
+                toastTitle.textContent = window.tr('toast_header_notification');
                 toastIcon.classList.add('bi-info-circle-fill');
                 break;
         }
 
-        // Use Bootstrap's recommended 'getOrCreateInstance' method, which is more robust.
         const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
         toast.show();
     }
@@ -8871,7 +8983,7 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function loadEffectFromMetaHTML(htmlString) {
         if (!htmlString || !htmlString.trim()) {
-            showToast("The provided file or text is empty.", 'danger');
+            showToast(window.tr("toast_import_empty"), 'danger');
             return;
         }
 
@@ -8903,7 +9015,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (loadedConfigMap.size === 0 && constantsMap.size === 0) {
-                showToast("No valid properties were found in the file.", 'danger');
+                showToast(window.tr("toast_import_no_props"), 'danger');
                 isRestoring = false;
                 return;
             }
@@ -9054,7 +9166,7 @@ document.addEventListener('DOMContentLoaded', function () {
             drawFrame();
             recordHistory();
 
-            showToast("Effect loaded successfully!", 'success');
+            showToast(window.tr("toast_effect_import_ok"), 'success');
 
             const importModalEl = document.getElementById('import-meta-modal');
             if (importModalEl) {
@@ -9063,7 +9175,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             console.error("Error importing file:", error);
-            showToast("Could not parse the provided file. Please check the format.", 'danger');
+            showToast(window.tr("toast_import_parse_failed"), 'danger');
         } finally {
             isRestoring = false;
         }
@@ -9094,7 +9206,7 @@ document.addEventListener('DOMContentLoaded', function () {
             loadEffectFromMetaHTML(fileContent);
         };
         reader.onerror = () => {
-            showToast(`Error reading file: ${reader.error}`, 'danger');
+            showToast(window.tr('toast_read_file_error', { detail: reader.error }), 'danger');
         };
         reader.readAsText(file);
 
@@ -9109,15 +9221,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('copy-share-link-btn').addEventListener('click', () => {
         const shareLinkInput = document.getElementById('share-link-input');
         navigator.clipboard.writeText(shareLinkInput.value).then(() => {
-            showToast("Link copied to clipboard!", 'success');
+            showToast(window.tr("toast_link_copied"), 'success');
         });
     });
 
     document.getElementById('new-ws-btn').addEventListener('click', () => {
         showConfirmModal(
-            'Create New Workspace',
-            'Are you sure you want to clear the current workspace? Any unsaved changes will be lost.',
-            'Clear Workspace',
+            window.tr('modal_new_workspace_title'),
+            window.tr('modal_new_workspace_body'),
+            window.tr('btn_clear_workspace'),
             () => {
                 resetWorkspace();
             }
@@ -9130,7 +9242,7 @@ document.addEventListener('DOMContentLoaded', function () {
         isDrawingPolyline = false; // Reset state
         currentlyDrawingShapeId = null;
         previewLine.active = false;
-        showToast("Polyline tool activated. Click on the canvas to start drawing. Double-click to finish.", "info");
+        showToast(window.tr("toast_polyline_tool_hint"), "info");
     });
 
     addObjectBtn.addEventListener('click', () => {
@@ -9475,7 +9587,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             propertyClipboard = propsToCopy;
             updateToolbarState();
-            showToast("Properties copied!", 'info');
+            showToast(window.tr("toast_props_copied"), 'info');
             copyPropsModal.hide();
         });
 
@@ -9509,7 +9621,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateFormValuesFromObjects();
             drawFrame();
             recordHistory();
-            showToast(`Properties pasted to ${destObjects.length} object(s).`, 'success');
+            showToast(window.tr('toast_props_pasted_count', { count: destObjects.length }), 'success');
         });
     }
 
@@ -9619,14 +9731,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Update the button UI
             const startBtn = document.getElementById('startAudioBtn');
-            startBtn.textContent = 'Listening...';
+            startBtn.textContent = window.tr('btn_listening');
             startBtn.disabled = true;
-            showToast("Tab audio connected! Your visualizer is now live.", "success");
+            showToast(window.tr("toast_tab_audio_connected"), "success");
 
         } catch (err) {
             // This error happens if the user clicks "Cancel".
             console.error('Error capturing tab:', err);
-            showToast("Tab capture was canceled or failed.", "error");
+            showToast(window.tr("toast_tab_capture_failed"), "danger");
         }
     }
 
@@ -9784,7 +9896,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     projectData.createdAt = projectData.createdAt.toDate();
                 }
                 loadWorkspace(projectData);
-                showToast(`Featured effect "${projectData.name}" loaded!`, 'success');
+                showToast(window.tr('toast_featured_effect_loaded', { name: projectData.name }), 'success');
                 return true;
             } else {
                 console.log("No featured effect found in the database.");
@@ -9879,7 +9991,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const container = document.getElementById('modal-pixel-art-container');
         if (!container) return;
         isPixelArtGalleryLoaded = true; // Prevents re-loading
-        container.innerHTML = `<div class="col text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+        container.innerHTML = `<div class="col text-center p-4"><div class="spinner-border" role="status"><span class="visually-hidden">${window.tr('loading')}</span></div></div>`;
 
         (async () => {
             try {
@@ -9909,8 +10021,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                         framesData: framesConf.default,
                                         gradientData: gradientConf ? gradientConf.default : '[]',
                                         projectName: project.name,
-                                        creatorName: project.creatorName || 'Anonymous',
-                                        objectName: objectNameConf?.label.split(':')[0] || 'Pixel Art'
+                                        creatorName: project.creatorName || window.tr('gallery_anonymous'),
+                                        objectName: objectNameConf?.label.split(':')[0] || window.tr('pixel_art_object_default')
                                     });
                                 }
                             }
@@ -9922,7 +10034,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             } catch (error) {
                 console.error("Error fetching pixel art:", error);
-                container.innerHTML = `<div class="col"><p class="text-danger">Could not load pixel art gallery.</p></div>`;
+                container.innerHTML = `<div class="col"><p class="text-danger">${window.tr('pixel_art_gallery_error')}</p></div>`;
             }
         })();
     }
@@ -9948,7 +10060,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         container.innerHTML = '';
         if (itemsForPage.length === 0) {
-            container.innerHTML = `<div class="col"><p class="text-body-secondary">No matching pixel art found.</p></div>`;
+            container.innerHTML = `<div class="col"><p class="text-body-secondary">${window.tr('pixel_art_no_matches')}</p></div>`;
         }
 
         itemsForPage.forEach((art) => {
@@ -9971,11 +10083,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const subtitle = document.createElement('p');
             subtitle.className = 'card-text text-body-secondary mb-2';
-            subtitle.innerHTML = `From: <em>${art.projectName}</em><br>By: ${art.creatorName}`;
+            subtitle.innerHTML = window.tr('pixel_art_card_byline_html', { project: art.projectName, creator: art.creatorName });
 
             const insertBtn = document.createElement('button');
             insertBtn.className = 'btn btn-sm btn-success';
-            insertBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> Insert`;
+            insertBtn.innerHTML = `<i class="bi bi-plus-lg me-1"></i> ${window.tr('btn_insert')}`;
             insertBtn.addEventListener('click', () => handlePixelArtInsert(art.framesData, art.gradientData));
 
             infoDiv.appendChild(title);
@@ -10051,12 +10163,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function handlePixelArtInsert(framesDataString, gradientDataString) {
         if (selectedObjectIds.length !== 1) {
-            showToast("Please select exactly one pixel art object to insert frames into.", "warning");
+            showToast(window.tr("toast_pick_one_pixel_art"), "warning");
             return;
         }
         const targetObject = objects.find(o => o.id === selectedObjectIds[0]);
         if (!targetObject || targetObject.shape !== 'pixel-art') {
-            showToast("The selected object is not a pixel art object.", "warning");
+            showToast(window.tr("toast_not_pixel_art"), "warning");
             return;
         }
 
@@ -10093,11 +10205,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // Close the modal and show a success message
             const modalInstance = bootstrap.Modal.getInstance(document.getElementById('pixel-art-gallery-modal'));
             modalInstance.hide();
-            showToast(`Replaced frames and colors successfully!`, 'success');
+            showToast(window.tr('toast_pixel_frames_replaced'), 'success');
 
         } catch (error) {
             console.error("Insert error:", error);
-            showToast("Could not insert frames. Data might be invalid.", "danger");
+            showToast(window.tr("toast_insert_frames_failed"), "danger");
         }
     }
 
@@ -10107,16 +10219,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const galleryOffcanvas = document.getElementById('gallery-offcanvas');
         if (galleryOffcanvas && galleryOffcanvas.classList.contains('show')) {
             // Find the active gallery type (My Projects or Community) and re-load it.
-            const galleryLabel = document.getElementById('galleryOffcanvasLabel').textContent;
-            // Check if the current user is logged in
+            const galleryMode = galleryOffcanvasEl.getAttribute('data-gallery-mode');
             const isLoggedIn = !!window.auth.currentUser;
 
-            if (galleryLabel === 'My Effects' && isLoggedIn) {
-                // Re-run the 'My Effects' logic
+            if (galleryMode === 'user' && isLoggedIn) {
                 document.getElementById('load-ws-btn').click();
-            } else if (galleryLabel.includes('Gallery') || !isLoggedIn) {
-                // Re-run the 'Community Gallery' logic
-                document.getElementById('browse-btn').click();
+            } else if (galleryMode === 'community' || !isLoggedIn) {
+                fetchAndDisplayGallery('community');
             }
             // Note: We don't need to re-run 'My Effects' if the user logs out 
             // because the 'Community Gallery' logic will show (or the list will be empty).
@@ -10170,7 +10279,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchAndDisplayGallery(galleryType = 'community') {
         const user = window.auth.currentUser;
         if (galleryType === 'user' && !user) {
-            showToast("You must be logged in to see your projects.", 'danger');
+            showToast(window.tr("toast_must_login_projects"), 'danger');
             const galleryOffcanvas = bootstrap.Offcanvas.getInstance(galleryOffcanvasEl);
             if (galleryOffcanvas) galleryOffcanvas.hide();
             return;
@@ -10178,17 +10287,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         lastVisibleDoc = null; // Reset pagination
         const galleryList = document.getElementById('gallery-project-list');
-        galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><div class="spinner-border spinner-border-sm"></div><p class="mt-2">Loading...</p></div>';
+        galleryList.innerHTML = '<div class="col-12 text-center text-body-secondary mt-4"><div class="spinner-border spinner-border-sm"></div><p class="mt-2">' + window.tr('loading') + '</p></div>';
         galleryFooter.style.display = 'none';
 
         const projectsRef = window.collection(window.db, "projects");
 
         // Set the base query based on gallery type
         if (galleryType === 'user') {
-            document.getElementById('galleryOffcanvasLabel').textContent = 'My Effects';
+            galleryOffcanvasEl.setAttribute('data-gallery-mode', 'user');
+            document.getElementById('galleryOffcanvasLabel').textContent = window.tr('gallery_my_effects_title');
             currentBaseQuery = window.query(projectsRef, window.where("userId", "==", user.uid));
         } else {
-            document.getElementById('galleryOffcanvasLabel').textContent = 'Community Gallery';
+            galleryOffcanvasEl.setAttribute('data-gallery-mode', 'community');
+            document.getElementById('galleryOffcanvasLabel').textContent = window.tr('gallery_offcanvas_title');
             currentBaseQuery = window.query(projectsRef, window.where("isPublic", "==", true));
         }
 
@@ -10225,7 +10336,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (error) {
                 console.error("Gallery query error:", error);
-                galleryList.innerHTML = `<div class="col-12"><p class="text-danger">Could not load effects. Please ensure database indexes are configured.</p></div>`;
+                galleryList.innerHTML = '<div class="col-12"><p class="text-danger">' + window.tr('gallery_load_failed_index') + '</p></div>';
             }
 
         } else {
@@ -10312,7 +10423,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             console.error("Error loading more projects:", error);
-            showToast("Failed to load more effects.", 'danger');
+            showToast(window.tr("toast_load_more_failed"), 'danger');
         } finally {
             // This check now works safely because documentSnapshots is always defined
             if (documentSnapshots && documentSnapshots.docs.length > 0) {
@@ -10333,8 +10444,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Update event listeners to call the new master function
-    gallerySearchInput.addEventListener('input', debounce(() => {
-        const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+        gallerySearchInput.addEventListener('input', debounce(() => {
+        const galleryType = galleryOffcanvasEl.getAttribute('data-gallery-mode') === 'user' ? 'user' : 'community';
         fetchAndDisplayGallery(galleryType);
     }, 300));
 
@@ -10342,7 +10453,7 @@ document.addEventListener('DOMContentLoaded', function () {
         option.addEventListener('click', (e) => {
             e.preventDefault();
             currentSortOption = e.target.dataset.sort;
-            const galleryType = document.getElementById('galleryOffcanvasLabel').textContent === 'My Effects' ? 'user' : 'community';
+            const galleryType = galleryOffcanvasEl.getAttribute('data-gallery-mode') === 'user' ? 'user' : 'community';
             fetchAndDisplayGallery(galleryType);
         });
     });
@@ -10423,9 +10534,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // When the modal is about to show, change the button text if a GIF is pre-selected
         uploadGifModalEl.addEventListener('show.bs.modal', () => {
             if (selectedGifBlob) {
-                confirmGifUploadBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Process Selected GIF';
+                confirmGifUploadBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i>' + window.tr('gif_btn_process_selected');
             } else {
-                confirmGifUploadBtn.innerHTML = '<i class="bi bi-upload me-2"></i>Choose File and Process';
+                confirmGifUploadBtn.innerHTML = '<i class="bi bi-upload me-2"></i>' + window.tr('gif_btn_choose_file_process');
             }
         });
 
@@ -10440,7 +10551,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // This replaces the old, simpler click listener for this button
         confirmGifUploadBtn.addEventListener('click', async () => {
             if (selectedObjectIds.length !== 1) {
-                showToast("Please select a single pixel art object first.", "warning");
+                showToast(window.tr("toast_select_pixel_art_first"), "warning");
                 return;
             }
             const objectId = selectedObjectIds[0];
@@ -10565,7 +10676,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
 
             if (querySnapshot.empty && commentList.innerHTML === '') {
-                commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">No comments yet. Be the first!</p>';
+                commentList.innerHTML = '<p id="no-comments-placeholder" class="text-muted">' + window.tr('comments_none_yet') + '</p>';
                 return;
             }
 
@@ -10576,9 +10687,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }, (error) => {
             console.error("Error loading comments:", error);
-            showToast('Comment Error', 'Could not load comments.', 'danger');
+            showToast(window.tr('toast_comments_load_failed'), 'danger');
             if (commentsLoadingPlaceholder) commentsLoadingPlaceholder.style.display = 'none';
-            if (commentList) commentList.innerHTML = '<p class="text-danger">Error loading comments.</p>';
+            if (commentList) commentList.innerHTML = '<p class="text-danger">' + window.tr('comments_error_loading') + '</p>';
         });
     }
 
@@ -10642,22 +10753,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const lowerComment = commentText.toLowerCase();
         const foundWord = DISALLOWED_WORDS.find(word => lowerComment.includes(word));
         if (foundWord) {
-            showToast('Moderation', 'Your comment contains a disallowed word. Please revise it.', 'warning');
+            showToast(window.tr('toast_comment_disallowed'), 'warning');
             return;
         }
 
         const user = window.auth.currentUser;
         if (!user) {
-            showToast('Error', 'You must be logged in to comment.', 'danger');
+            showToast(window.tr('toast_must_login_comment'), 'danger');
             return;
         }
         if (!currentProjectDocId) {
-            showToast('Error', 'Cannot post comment: No effect selected.', 'danger');
+            showToast(window.tr('toast_comment_no_effect'), 'danger');
             return;
         }
 
         commentSubmitBtn.disabled = true;
-        commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+        commentSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ' + window.tr('comment_posting');
 
         const commentData = {
             projectId: currentProjectDocId, // Link to the effect
@@ -10717,7 +10828,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error posting comment:", error);
-            showToast('Error', 'Could not post your comment.', 'danger');
+            showToast(window.tr('toast_comment_post_failed'), 'danger');
         } finally {
             commentSubmitBtn.disabled = false;
             commentSubmitBtn.innerHTML = '<i class="bi bi-send me-1"></i> Post Comment';
@@ -10735,15 +10846,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        showToast('Deleting...', 'Removing comment...', 'info');
+        showToast(window.tr('toast_comment_deleting'), 'info');
 
         try {
             const docRef = window.doc(window.db, "srgb-effect-comments", commentId);
             await window.deleteDoc(docRef); // Use window global
-            showToast('Success', 'Comment deleted.', 'success');
+            showToast(window.tr('toast_comment_deleted'), 'success');
         } catch (error) {
             console.error("Error deleting comment:", error);
-            showToast('Error', 'Could not delete comment.', 'danger');
+            showToast(window.tr('toast_comment_delete_failed'), 'danger');
         }
     }
     // --- [END NEW COMMENT FUNCTIONS] ---
@@ -10779,7 +10890,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function markAllNotificationsAsRead() {
         const user = window.auth.currentUser;
         if (!user) {
-            showToast("You must be logged in to perform this action.", "warning");
+            showToast(window.tr("toast_must_login_action"), "warning");
             return;
         }
 
@@ -10810,7 +10921,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error marking all notifications as read:", error);
-            showToast("Could not mark all notifications as read.", "danger");
+            showToast(window.tr("toast_notifications_mark_failed"), "danger");
         }
     }
 
@@ -10860,12 +10971,12 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 await window.signOut(window.auth);
                 if (typeof showToast === 'function') {
-                    showToast("Signed out successfully.", 'success');
+                    showToast(window.tr("toast_signed_out"), 'success');
                 }
             } catch (error) {
                 console.error("Error signing out:", error);
                 if (typeof showToast === 'function') {
-                    showToast("Error signing out. Please try again.", 'danger');
+                    showToast(window.tr("toast_sign_out_failed"), 'danger');
                 }
             }
         }
@@ -10992,64 +11103,3 @@ document.addEventListener('DOMContentLoaded', function () {
     init();
     setupCommentListeners()
 });
-
-//Hide Google Translate banner if it appears (it seems to inject elements with class names that match this pattern)
-(function() {
-  // This Regex matches the exact format of your examples:
-  // 4 or 5 groups of exactly 6 alphanumeric characters separated by dashes.
-  const classPattern = /^[A-Za-z0-9]{6}-[A-Za-z0-9]{6}-[A-Za-z0-9]{6}-[A-Za-z0-9]{6}(-[A-Za-z0-9]{6})?$/;
-  
-  // As a fallback, we can also look for exact lengths if the dash pattern changes
-  const targetLengths = [27, 34];
-
-  // Function to evaluate a single element
-  const hideIfMatches = (el) => {
-    // Skip text nodes, comments, or elements without classes
-    if (el.nodeType !== Node.ELEMENT_NODE || !el.classList || el.classList.length === 0) {
-      return; 
-    }
-
-    let isMatch = false;
-    
-    // Loop through all classes on the element
-    for (let i = 0; i < el.classList.length; i++) {
-      const className = el.classList[i];
-      
-      // Check if the class matches the dash-pattern OR the exact character length
-      if (classPattern.test(className) || targetLengths.includes(className.length)) {
-        isMatch = true;
-        break; // Stop checking classes once we find a match
-      }
-    }
-
-    // Hide it if a match was found
-    if (isMatch && el.style.display !== 'none') {
-      el.style.display = 'none !important';
-      el.style.setProperty('display', 'none', 'important'); // Enforce override
-    }
-  };
-
-  // 1. Scan the existing DOM immediately on script execution
-  document.querySelectorAll('*').forEach(hideIfMatches);
-
-  // 2. Watch for any dynamically loaded elements
-  const observer = new MutationObserver((mutations) => {
-    for (let mutation of mutations) {
-      for (let node of mutation.addedNodes) {
-        // Check the newly added node itself
-        hideIfMatches(node);
-        
-        // If the new node contains nested elements, check them too
-        if (node.querySelectorAll) {
-          node.querySelectorAll('*').forEach(hideIfMatches);
-        }
-      }
-    }
-  });
-
-  // Start observing the page
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
-})();

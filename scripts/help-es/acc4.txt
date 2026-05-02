@@ -1,0 +1,5 @@
+<p>Haz tus efectos dinámicos activando reactividad en las pestañas <strong>Audio</strong> o <strong>Sensor</strong> del objeto.</p>
+                                        <ul>
+                                            <li><strong>Reactividad al audio:</strong> Para previsualizar, pulsa <strong>Empezar a escuchar</strong> en la barra y comparte el audio de otra pestaña del navegador.</li>
+                                            <li><strong>Reactividad del sensor:</strong> Responde a datos en tiempo real (p. ej. carga de CPU). Convierte un objeto en <strong>Medidor de sensor</strong> (barra de relleno) o <strong>Gráfico temporal</strong> (gráfico en vivo).</li>
+                                        </ul>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- HTML Meta Tags -->
-    <title>RGBJunkie Effect Builder: Generate SignalRGB Effects!</title>
+    <title id="page-title">RGBJunkie Effect Builder: Generate SignalRGB Effects!</title>
     <meta name="description" content="A tool for creating effects for SignalRGB.">
 
     <meta property="og:url" content="https://rgbjunkie.com/">
@@ -47,103 +47,100 @@
 <body class="d-flex flex-column vh-100">
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <div class="dropdown me-3" style="position: relative; display: inline-block;">
-                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle pulse-on-load" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" style="cursor: pointer; margin: 0; padding: 0.25rem 0.5rem;">
-                    <img src="/images/rgbjunkielogo2.png" alt="Effect Builder Logo" class="me-2" style="height: 1.5em;">
-                    <span>RGBJunkie Effect Builder</span>
+            <div class="dropdown me-3 brand-dropdown-wrapper">
+                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle pulse-on-load brand-toggle-btn" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                    <img src="/images/rgbjunkielogo2.png" alt="" class="me-2 brand-logo-img">
+                    <span data-i18n="nav_brand">RGBJunkie Effect Builder</span>
                     <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
                 </a>
 
-                <ul class="dropdown-menu shadow" style="right: 0; left: auto; margin-top: 10px; min-width: 220px;">
-                    <li><a class="dropdown-item active" href="/">RGBJunkie Effect Builder</a></li>
-                    <li><a class="dropdown-item" href="/builder/">RGBJunkie Component Builder</a></li>
-                    <li><a class="dropdown-item" href="/combiner/">RGBJunkie Effect Combiner</a></li>
-                    <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
+                <ul class="dropdown-menu shadow custom-dropdown-menu">
+                    <li><a class="dropdown-item active" href="/" aria-current="page" data-i18n="nav_dd_effect_builder">RGBJunkie Effect Builder</a></li>
+                    <li><a class="dropdown-item" href="/builder/" data-i18n="nav_dd_component_builder">RGBJunkie Component Builder</a></li>
+                    <li><a class="dropdown-item" href="/combiner/" data-i18n="nav_dd_combiner">RGBJunkie Effect Combiner</a></li>
+                    <li><a class="dropdown-item" href="/skydimo/" data-i18n="nav_dd_skydimo">Skydimo LUA Builder</a></li>
                 </ul>
             </div>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" data-i18n-aria-label="aria_nav_toggle" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarContent">
-                <div class="ms-auto d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3 gap-lg-0 mt-3 mt-lg-0">
+                <div class="d-flex flex-grow-1 flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 gap-lg-0 mt-3 mt-lg-0 w-100">
 
-                    <div class="btn-group me-lg-3" role="group" aria-label="Project management actions">
-                        <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> New</button>
-                        <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> Open</button>
-                        <button class="btn btn-primary" id="save-ws-btn" data-bs-toggle="tooltip" title="Save current workspace to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> Save</button>
-                        <button class="btn btn-primary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Export </button>
-                    </div>
-                    <div class="btn-group me-lg-3" role="group" aria-label="Community">
-                        <a href="./gallery/" class="btn btn-primary" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i>Gallery</a>
-                        <a href="./showcase/" class="btn btn-primary" title="Browse the Effect Showcase page"> <i class="bi bi-view-list me-1"></i> Effect Showcase </a>
-                    </div>
-
-                    <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
-
-                    <div class="btn-group me-lg-3" role="group" aria-label="Help and settings">
-                        <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" title="Help"><i class="bi bi-question-circle"></i> Help</button>
-                        <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" title="About"><i class="bi bi-info-circle"></i> About</button>
-                        <button class="btn btn-secondary" type="button" id="theme-switcher-btn" title="Change Theme">
-                            <i class="bi" id="theme-icon"></i> Theme
-                        </button>
-                    </div>
-
-                    <div class="d-flex align-items-center mb-2 mb-lg-0">
-                        <div class="translate-container">
-                            <i class="bi bi-translate translate-icon"></i>
-
-                            <div class="gtranslate_wrapper"></div>
+                    <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3 gap-lg-0 flex-wrap">
+                        <div class="btn-group me-lg-3" role="group" data-i18n-aria-label="aria_project_mgmt" aria-label="Project management actions">
+                            <button class="btn btn-primary" id="new-ws-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_new_ws" title="New Workspace"><i class="bi bi-file-earmark-plus me-1"></i> <span data-i18n="btn_new">New</span></button>
+                            <button class="btn btn-primary" id="load-ws-btn" data-bs-toggle="offcanvas" data-bs-target="#gallery-offcanvas" aria-controls="gallery-offcanvas" data-i18n-title="tooltip_open_ws" title="Load one of your saved projects" disabled><i class="bi bi-folder2-open me-1"></i> <span data-i18n="btn_open">Open</span></button>
+                            <button class="btn btn-primary" id="save-ws-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_save_ws" title="Save current workspace to the cloud" disabled><i class="bi bi-cloud-arrow-up me-1"></i> <span data-i18n="btn_save">Save</span></button>
+                            <button class="btn btn-primary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" data-i18n-title="tooltip_export_nav" title="Download complete HTML file"><i class="bi bi-download me-1"></i> <span data-i18n="btn_export">Export</span></button>
+                        </div>
+                        <div class="btn-group me-lg-3" role="group" data-i18n-aria-label="aria_community" aria-label="Community">
+                            <a href="./gallery/" class="btn btn-primary" data-i18n-title="tooltip_gallery" title="Browse the Community Gallery"><i class="bi bi-view-list me-1"></i><span data-i18n="btn_gallery">Gallery</span></a>
+                            <a href="./showcase/" class="btn btn-primary" data-i18n-title="tooltip_showcase" title="Browse the Effect Showcase page"><i class="bi bi-view-list me-1"></i> <span data-i18n="btn_showcase">Effect Showcase</span></a>
                         </div>
 
-                        <script>
-                            window.gtranslateSettings = {
-                                "default_language": "en",
-                                "native_language_names": true,
-                                "detect_browser_language": true,
-                                "languages": ["en", "es", "fr", "de", "pt", "zh-CN", "hi"],
-                                "wrapper_selector": ".gtranslate_wrapper"
-                            }
-                        </script>
-                        <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
+                        <input type="file" id="effect-file-input" style="display: none;" accept=".html, .htm">
+
+                        <div class="btn-group me-lg-3" role="group" data-i18n-aria-label="aria_help_settings" aria-label="Help and settings">
+                            <button class="btn btn-secondary" id="help-btn" data-bs-toggle="modal" data-bs-target="#help-modal" data-i18n-title="btn_help" title="Help"><i class="bi bi-question-circle"></i> <span data-i18n="btn_help">Help</span></button>
+                            <button class="btn btn-secondary" id="about-btn" data-bs-toggle="modal" data-bs-target="#about-modal" data-i18n-title="btn_about" title="About"><i class="bi bi-info-circle"></i> <span data-i18n="btn_about">About</span></button>
+                            <button class="btn btn-secondary" type="button" id="theme-switcher-btn" data-i18n-title="btn_theme" title="Change Theme">
+                                <i class="bi" id="theme-icon"></i> <span data-i18n="btn_theme">Theme</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div id="auth-notification-block" class="d-flex align-items-center justify-content-center">
-
-                        <button class="btn btn-success w-100 w-lg-auto" id="login-btn"><i class="bi bi-google me-2"></i>Sign In</button>
-
-                        <div class="btn-group d-none w-100 w-lg-auto" id="user-session-group" role="group" aria-label="User actions">
-
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-bell"></i>
-                                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
-                                        0
-                                        <span class="visually-hidden">new notifications</span>
-                                    </span>
+                    <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-3 ms-lg-auto">
+                        <div class="d-flex align-items-center mb-2 mb-lg-0">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="lang-switcher-btn" data-bs-toggle="dropdown" data-bs-auto-close="true" data-i18n-title="lang_switcher_title" title="Language" aria-expanded="false">
+                                    <i class="bi bi-translate"></i>
+                                    <span class="d-none d-md-inline ms-1" id="lang-switcher-label">English</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
-                                    <li class="dropdown-header d-flex justify-content-between align-items-center">
-                                        <strong>Notifications</strong>
-                                        <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn">Mark All Read</button>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <div id="notification-list-container" style="max-height: 400px; overflow-y: auto;">
-                                    </div>
-                                </ul>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm" id="lang-switcher-menu"></ul>
+                            </div>
+                        </div>
+
+                        <div id="auth-notification-block" class="d-flex align-items-center justify-content-center justify-content-lg-end">
+
+                            <button class="btn btn-success w-100 w-lg-auto" id="login-btn"><i class="bi bi-google me-2"></i><span data-i18n="btn_sign_in">Sign In</span></button>
+
+                            <div class="btn-group d-none w-100 w-lg-auto" id="user-session-group" role="group" data-i18n-aria-label="aria_user_actions" aria-label="User actions">
+
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-info dropdown-toggle position-relative" type="button" id="notification-dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-bell"></i>
+                                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                            0
+                                            <span class="visually-hidden" data-i18n="visually_hidden_new_notifications">new notifications</span>
+                                        </span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-2" aria-labelledby="notification-dropdown-toggle" style="min-width: 300px;">
+                                        <li class="dropdown-header d-flex justify-content-between align-items-center">
+                                            <strong data-i18n="notifications_title">Notifications</strong>
+                                            <button class="btn btn-sm btn-link text-info p-0" id="mark-all-read-btn" data-i18n="mark_all_read">Mark All Read</button>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li class="list-unstyled px-2">
+                                            <div id="notification-list-container" style="max-height: 400px; overflow-y: auto;">
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
+                                    <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
+                                    <span id="user-display"></span>
+                                </span>
+
+                                <button class="btn btn-danger" id="logout-btn" data-i18n-title="tooltip_sign_out" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
                             </div>
 
-                            <span class="btn btn-secondary d-flex align-items-center disabled" style="pointer-events: none;">
-                                <img id="user-photo" class="rounded-circle me-2" style="width: 24px; height: 24px;" alt="User profile photo">
-                                <span id="user-display"></span>
-                            </span>
-
-                            <button class="btn btn-danger" id="logout-btn" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -152,74 +149,78 @@
 
     <div class="container-fluid flex-grow-1 overflow-hidden p-0">
         <div class="h-100" id="main-split">
-            <div id="left-panel" class="h-100 p-3 border-end bg-body-tertiary" style="overflow: auto;">
-                <div class="h-100 d-flex flex-column">
-                    <div class="flex-grow-1 overflow-auto pe-2">
-                        <h4 class="text-body-emphasis">Controls</h4>
-                        <form id="controls-form"></form>
-                    </div>
-                    <div class="mt-3 d-flex gap-2">
-                        <button class="btn btn-success w-100" id="add-object-btn" data-bs-toggle="tooltip" title="Add a new default object to the scene"><i class="bi bi-plus-circle"></i> Add Object</button>
-                        <button class="btn btn-primary w-100" id="add-polyline-btn" data-bs-toggle="tooltip" title="Draw a new polyline"><i class="bi bi-pen"></i> Add Polyline</button>
-                    </div>
+            <div id="left-panel" class="h-100 p-3 border-end border-secondary border-opacity-25 bg-body-tertiary">
+                <div class="flex-grow-1 overflow-auto pe-2">
+                    <h4 class="text-body-emphasis mb-3" data-i18n="controls_heading">Controls</h4>
+                    <form id="controls-form"></form>
+                </div>
+                <div class="mt-3 d-flex gap-2 flex-shrink-0">
+                    <button class="btn btn-success w-100" id="add-object-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_add_object" title="Add a new default object to the scene"><i class="bi bi-plus-circle"></i> <span data-i18n="btn_add_object">Add Object</span></button>
+                    <button class="btn btn-primary w-100" id="add-polyline-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_add_polyline" title="Draw a new polyline"><i class="bi bi-pen"></i> <span data-i18n="btn_add_polyline">Add Polyline</span></button>
                 </div>
             </div>
 
             <div id="right-panel" class="d-flex flex-column h-100">
-                <div id="toolbar" class="bg-body-tertiary p-2 rounded d-flex flex-wrap">
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group" aria-label="History actions">
-                        <button class="btn btn-secondary" id="undo-btn" data-bs-toggle="tooltip" title="Undo (Ctrl+Z)" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
-                        <button class="btn btn-secondary" id="redo-btn" data-bs-toggle="tooltip" title="Redo (Ctrl+Y)" disabled><i class="bi bi-arrow-clockwise"></i></button>
+                <div id="toolbar" class="app-subtoolbar bg-body-tertiary border-bottom d-flex flex-wrap align-items-center gap-2 gap-sm-3 px-3 py-2">
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="History actions">
+                        <button class="btn btn-outline-secondary" id="undo-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_undo" title="Undo (Ctrl+Z)" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+                        <button class="btn btn-outline-secondary" id="redo-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_redo" title="Redo (Ctrl+Y)" disabled><i class="bi bi-arrow-clockwise"></i></button>
                     </div>
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" id="copy-props-btn" data-bs-toggle="tooltip" title="Copy Properties"><i class="bi bi-clipboard-plus"></i></button>
-                        <button type="button" class="btn btn-secondary" id="paste-props-btn" data-bs-toggle="tooltip" title="Paste Properties" disabled><i class="bi bi-clipboard-check"></i></button>
+                    <div class="vr bg-secondary opacity-50 d-none d-sm-block align-self-stretch my-1"></div>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Clipboard">
+                        <button type="button" class="btn btn-outline-secondary" id="copy-props-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_copy_props" title="Copy Properties"><i class="bi bi-clipboard-plus"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" id="paste-props-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_paste_props" title="Paste Properties" disabled><i class="bi bi-clipboard-check"></i></button>
                     </div>
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-left" data-bs-toggle="tooltip" title="Align Left to Screen"><i class="bi bi-align-start"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-h-center" data-bs-toggle="tooltip" title="Align Horizontal Center to Screen"><i class="bi bi-align-center"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-right" data-bs-toggle="tooltip" title="Align Right to Screen"><i class="bi bi-align-end"></i></button>
+                    <div class="vr bg-secondary opacity-50 d-none d-md-block align-self-stretch my-1"></div>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Align horizontal">
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-left" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_left" title="Align Left to Screen"><i class="bi bi-align-start"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-h-center" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_h_center" title="Align Horizontal Center to Screen"><i class="bi bi-align-center"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-right" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_right" title="Align Right to Screen"><i class="bi bi-align-end"></i></button>
                     </div>
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-top" data-bs-toggle="tooltip" title="Align Top to Screen"><i class="bi bi-align-top"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-v-center" data-bs-toggle="tooltip" title="Align Vertical Center to Screen"><i class="bi bi-align-middle"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="align-screen-bottom" data-bs-toggle="tooltip" title="Align Bottom to Screen"><i class="bi bi-align-bottom"></i></button>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Align vertical">
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-top" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_top" title="Align Top to Screen"><i class="bi bi-align-top"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-v-center" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_v_center" title="Align Vertical Center to Screen"><i class="bi bi-align-middle"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="align-screen-bottom" data-bs-toggle="tooltip" data-i18n-title="tooltip_align_bottom" title="Align Bottom to Screen"><i class="bi bi-align-bottom"></i></button>
                     </div>
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" data-action="match-width" data-bs-toggle="tooltip" title="Match Width of First Selected"><i class="bi bi-arrows-expand-vertical"></i> W</button>
-                        <button type="button" class="btn btn-secondary" data-action="match-height" data-bs-toggle="tooltip" title="Match Height of First Selected"><i class="bi bi-arrows-expand"></i> H</button>
-                        <button type="button" class="btn btn-secondary" data-action="match-both" data-bs-toggle="tooltip" title="Match Size of First Selected"><i class="bi bi-fullscreen"></i></button>
-                        <button type="button" class="btn btn-secondary" data-action="fit-canvas" data-bs-toggle="tooltip" title="Fit to Canvas"><i class="bi bi-arrows-fullscreen"></i></button>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Match size">
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-width" data-bs-toggle="tooltip" data-i18n-title="tooltip_match_width" title="Match Width of First Selected"><i class="bi bi-arrows-expand-vertical"></i> W</button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-height" data-bs-toggle="tooltip" data-i18n-title="tooltip_match_height" title="Match Height of First Selected"><i class="bi bi-arrows-expand"></i> H</button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="match-both" data-bs-toggle="tooltip" data-i18n-title="tooltip_match_both" title="Match Size of First Selected"><i class="bi bi-fullscreen"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="fit-canvas" data-bs-toggle="tooltip" data-i18n-title="tooltip_fit_canvas" title="Fit to Canvas"><i class="bi bi-arrows-fullscreen"></i></button>
                     </div>
-                    <div class="btn-group btn-group-sm me-2 mb-1" role="group">
-                        <button type="button" class="btn btn-secondary" id="constrain-btn" data-bs-toggle="tooltip" title="Snap to Canvas"><i class="bi bi-magnet-fill"></i></button>
-                        <button type="button" class="btn btn-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" title="Match Text Size to Cell Height" disabled><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
-                        <button id="startAudioBtn" class="btn btn-primary">Start Listening</button>
+                    <div class="vr bg-secondary opacity-50 d-none d-md-block align-self-stretch my-1"></div>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Snap and text">
+                        <button type="button" class="btn btn-outline-secondary active" id="constrain-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_constrain" title="Snap to Canvas"><i class="bi bi-magnet-fill"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" id="match-text-size-btn" data-action="match-text-size" data-bs-toggle="tooltip" data-i18n-title="tooltip_match_text_size" title="Match Text Size to Cell Height" disabled><i class="bi bi-fonts"></i> <i class="bi bi-grid-3x3"></i></button>
                     </div>
 
-                    <div class="btn-group btn-group-sm me-2 mb-1 align-items-center" role="group">
-                        <button type="button" class="btn btn-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" title="Paste Layout Screenshot from Clipboard">
-                            <i class="bi bi-clipboard-plus"></i> Paste Layout Screenshot
+                    <div class="vr bg-secondary opacity-50 d-none d-sm-block align-self-stretch my-1"></div>
+                    <div class="btn-group btn-group-sm shadow-sm align-items-center" role="group" aria-label="Layout overlay">
+                        <button type="button" class="btn btn-outline-info" onclick="pasteLayoutFromClipboard()" data-bs-toggle="tooltip" data-i18n-title="tooltip_paste_layout" title="Paste Layout Screenshot from Clipboard">
+                            <i class="bi bi-clipboard-plus"></i> <span data-i18n="btn_paste_layout">Paste Layout Screenshot</span>
                         </button>
-                        <button type="button" class="btn btn-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" title="Toggle Overlay">
+                        <button type="button" class="btn btn-outline-secondary" id="toggle-layout-btn" onclick="toggleLayoutOverlay()" data-bs-toggle="tooltip" data-i18n-title="tooltip_toggle_overlay" title="Toggle Overlay">
                             <i class="bi bi-eye"></i>
                         </button>
-                        <button type="button" class="btn btn-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" title="Delete Layout Screenshot" disabled>
+                        <button type="button" class="btn btn-outline-danger" id="delete-layout-btn" onclick="deleteLayoutOverlay()" data-bs-toggle="tooltip" data-i18n-title="tooltip_delete_layout" title="Delete Layout Screenshot" disabled>
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
-                    <div class="d-inline-flex align-items-center ms-2" style="width: 100px;">
-                        <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" title="Overlay Opacity">
+                    <div class="d-inline-flex align-items-center" style="width: 100px;">
+                        <input type="range" class="form-range" id="layout-opacity-slider" min="0" max="1" step="0.1" value="0.3" oninput="updateLayoutOpacity(this.value)" data-bs-toggle="tooltip" data-i18n-title="tooltip_overlay_opacity" title="Overlay Opacity">
+                    </div>
+                    <div class="btn-group btn-group-sm shadow-sm" role="group" aria-label="Audio">
+                        <button id="startAudioBtn" class="btn btn-primary" data-i18n="btn_start_listening">Start Listening</button>
                     </div>
                 </div>
                 <div id="right-panel-top" class="d-flex flex-column" style="overflow: auto; min-height: 0;">
 
                     <div id="mobile-effect-header" class="text-center w-100 pb-3 d-none">
-                        <h4 id="mobile-effect-name" class="mb-1 text-body-emphasis fw-bold">Effect Name</h4>
+                        <h4 id="mobile-effect-name" class="mb-1 text-body-emphasis fw-bold" data-i18n="mobile_effect_name">Effect Name</h4>
                         <div class="mb-2">
-                            <span id="mobile-effect-author" class="text-body-secondary small">by Developer</span>
+                            <span id="mobile-effect-author" class="text-body-secondary small" data-i18n="mobile_effect_by">by Developer</span>
                         </div>
-                        <p id="mobile-effect-description" class="text-body small px-3 mb-0" style="max-width: 600px; margin: 0 auto;">Effect description goes here...</p>
+                        <p id="mobile-effect-description" class="text-body small px-3 mb-0" style="max-width: 600px; margin: 0 auto;" data-i18n="mobile_effect_description">Effect description goes here...</p>
                     </div>
 
                     <div id="canvas-container" class="mx-auto">
@@ -227,7 +228,7 @@
                         <div id="dom-overlay-container"></div>
                     </div>
                 </div>
-                <div class="ms-auto ps-3 text-body-secondary d-flex align-items-center">
+                <div class="ps-3 text-body-secondary d-flex align-items-center">
                     <i class="bi bi-crosshair me-2"></i>
                     <span id="coords-display" class="font-monospace notranslate" style="min-width: 100px;">---, ---</span>
                 </div>
@@ -235,54 +236,54 @@
                 <hr>
 
                 <div id="effect-details-row" class="d-flex align-items-center px-4 gap-3">
-                    <button class="btn btn-sm btn-outline-danger" id="like-effect-btn" data-bs-toggle="tooltip" title="Like this effect" disabled>
+                    <button class="btn btn-sm btn-outline-danger" id="like-effect-btn" data-bs-toggle="tooltip" data-i18n-title="tooltip_like_effect" title="Like this effect" disabled>
                         <i class="bi bi-heart"></i>
                         <span id="like-effect-btn-label"></span>
                         <span id="like-count-display" class="badge bg-danger ms-2" style="display: none; font-size: 0.9em;">0</span>
                     </button>
 
-                    <span class="text-body-secondary small align-items-center" id="view-count-display" style="display: none;" title="Views">
+                    <span class="text-body-secondary small align-items-center" id="view-count-display" style="display: none;" data-i18n-title="title_views" title="Views">
                         <i class="bi bi-eye-fill"></i> <span class="ms-1">0</span>
                     </span>
-                    <span class="text-body-secondary small align-items-center" id="download-count-display" style="display: none;" title="Downloads">
+                    <span class="text-body-secondary small align-items-center" id="download-count-display" style="display: none;" data-i18n-title="title_downloads" title="Downloads">
                         <i class="bi bi-download"></i> <span class="ms-1">0</span>
                     </span>
-                    <button class="btn btn-sm btn-primary" id="share-btn" data-bs-toggle="modal" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> Share</button>
-                    <button class="btn btn-sm btn-primary" id="export-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" title="Download complete HTML file"> <i class="bi bi-download me-1"></i> Download this effect </button>
+                    <button class="btn btn-sm btn-primary" id="share-btn" data-bs-toggle="modal" data-i18n-title="tooltip_share" title="Get a shareable link to this effect" disabled><i class="bi bi-share me-1"></i> <span data-i18n="btn_share">Share</span></button>
+                    <button class="btn btn-sm btn-primary" id="download-effect-btn" data-bs-toggle="modal" data-bs-target="#export-options-modal" data-i18n-title="tooltip_download_effect" title="Download complete HTML file"><i class="bi bi-download me-1"></i> <span data-i18n="btn_download_effect">Download this effect</span></button>
                 </div>
                 <div id="component-comments-section" class="m-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="text-body-emphasis mb-0">Comments</h4>
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="true" aria-controls="comment-collapse-wrapper" title="Toggle Comments">
+                        <h4 class="text-body-emphasis mb-0" data-i18n="comments_heading">Comments</h4>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#comment-collapse-wrapper" aria-expanded="true" aria-controls="comment-collapse-wrapper" data-i18n-title="tooltip_toggle_comments" title="Toggle Comments">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
 
                     <div class="collapse" id="comment-collapse-wrapper">
                         <div class="alert alert-info small p-2" role="alert">
-                            <i class="bi bi-info-circle me-1"></i> Comments are public. Please be respectful and courteous.
+                            <i class="bi bi-info-circle me-1"></i> <span data-i18n="comments_public_notice">Comments are public. Please be respectful and courteous.</span>
                         </div>
                         <div id="comment-list" class="pe-2 mb-3" style="max-height: 400px; overflow-y: auto;">
                             <p id="comments-loading-placeholder" class="text-muted" style="display: none;">
                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                Loading comments...
+                                <span data-i18n="comments_loading">Loading comments...</span>
                             </p>
-                            <p id="comments-save-prompt" class="text-muted" style="display: none;">
+                            <p id="comments-save-prompt" class="text-muted" style="display: none;" data-i18n="comments_save_prompt">
                                 Save this component to the cloud to enable comments.
                             </p>
                         </div>
 
                         <form id="comment-form" class="pe-2" style="display: none;">
                             <div class="mb-2">
-                                <label for="comment-textarea" class="form-label form-label-sm">Add a comment</label>
-                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" placeholder="Write your comment..." required></textarea>
+                                <label for="comment-textarea" class="form-label form-label-sm" data-i18n="label_add_comment">Add a comment</label>
+                                <textarea id="comment-textarea" class="form-control form-control-sm" rows="3" data-i18n-placeholder="placeholder_comment" placeholder="Write your comment..." required></textarea>
                             </div>
                             <button id="comment-submit-btn" type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-send me-1"></i> Post Comment
+                                <i class="bi bi-send me-1"></i> <span data-i18n="btn_post_comment">Post Comment</span>
                             </button>
                         </form>
 
-                        <div id="comment-login-prompt" class="alert alert-info" style="display: none;">
+                        <div id="comment-login-prompt" class="alert alert-info" style="display: none;" data-i18n="comments_login_prompt_html" data-i18n-html>
                             Please <a href="#" id="comment-login-link">sign in</a> to post a comment.
                         </div>
                     </div>
@@ -294,8 +295,8 @@
             <div id="app-toast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000" style="width: 350px; font-size: 1.1rem;">
                 <div id="app-toast-header" class="toast-header text-white d-flex align-items-center">
                     <i id="app-toast-icon" class="bi me-2"></i>
-                    <strong class="me-auto" id="app-toast-title">Notification</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    <strong class="me-auto" id="app-toast-title" data-i18n="toast_title_default">Notification</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                 </div>
                 <div class="toast-body bg-dark" id="app-toast-body">
                 </div>
@@ -306,11 +307,11 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="loadProjectModalLabel">Load Project</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="loadProjectModalLabel" data-i18n="modal_load_project_title">Load Project</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Select a project to load. This will overwrite your current workspace.</p>
+                        <p data-i18n="modal_load_project_body">Select a project to load. This will overwrite your current workspace.</p>
                         <ul class="list-group" id="load-project-list"></ul>
                     </div>
                 </div>
@@ -320,22 +321,22 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="saveProjectModalLabel">Save Project</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="saveProjectModalLabel" data-i18n="modal_save_project_title">Save Project</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="save-project-name-input" class="form-label">Project Name:</label>
-                            <input type="text" class="form-control" id="save-project-name-input" placeholder="Enter a name for your project...">
+                            <label for="save-project-name-input" class="form-label" data-i18n="label_project_name">Project Name:</label>
+                            <input type="text" class="form-control" id="save-project-name-input" data-i18n-placeholder="placeholder_project_name" placeholder="Enter a name for your project...">
                         </div>
                         <hr>
-                        <p>Existing Projects:</p>
+                        <p data-i18n="existing_projects">Existing Projects:</p>
                         <ul class="list-group" id="save-project-existing-list">
                         </ul>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-save-btn">Save Project</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-save-btn" data-i18n="btn_save_project">Save Project</button>
                     </div>
                 </div>
             </div>
@@ -344,13 +345,13 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="notificationModalLabel">Success</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="notificationModalLabel" data-i18n="modal_success_title">Success</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" id="notification-modal-body">
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="btn_ok">OK</button>
                     </div>
                 </div>
             </div>
@@ -359,15 +360,15 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="confirmOverwriteModalLabel">Confirm Overwrite</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="confirmOverwriteModalLabel" data-i18n="modal_confirm_overwrite_title">Confirm Overwrite</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" id="confirm-overwrite-modal-body">
+                    <div class="modal-body" id="confirm-overwrite-modal-body" data-i18n="modal_confirm_overwrite_body">
                         A project with this name already exists. Do you want to overwrite it?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger" id="confirm-overwrite-btn">Overwrite</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirm-overwrite-btn" data-i18n="btn_overwrite">Overwrite</button>
                     </div>
                 </div>
             </div>
@@ -377,15 +378,15 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title me-auto" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i>How to Use the Effect Builder</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title me-auto" id="helpModalLabel"><i class="bi bi-question-circle me-2"></i><span data-i18n="help_modal_title">How to Use the Effect Builder</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Welcome to the RGBJunkie Interactive Effect Builder! This guide explains the features to help you create stunning visual effects.</p>
+                        <div data-i18n="help_welcome_html" data-i18n-html></div>
 
                         <div class="ratio ratio-16x9 mb-4 position-relative bg-body-secondary">
-                            <iframe id="help-youtube-iframe" title="RGBJunkie Interactive Effect Builder tutorial" width="560" height="315" data-src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" src="about:blank" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>
-                            <p id="help-youtube-hint" class="position-absolute top-50 start-50 translate-middle text-center small text-body-secondary px-3 mb-0" style="pointer-events: none;">Video loads when you open this help tab.</p>
+                            <iframe id="help-youtube-iframe" data-i18n-title="help_youtube_title" title="RGBJunkie Interactive Effect Builder tutorial" width="560" height="315" data-src="https://www.youtube.com/embed/KSasPw0HScc?si=vCThireMBH0jnnHj" src="about:blank" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>
+                            <p id="help-youtube-hint" class="position-absolute top-50 start-50 translate-middle text-center small text-body-secondary px-3 mb-0" style="pointer-events: none;" data-i18n="help_youtube_hint">Video loads when you open this help tab.</p>
                         </div>
 
                         <div class="accordion" id="help-accordion">
@@ -393,223 +394,72 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-1">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-1" aria-expanded="true" aria-controls="help-collapse-1">
-                                        <i class="bi bi-layout-split me-2"></i> Interface Overview
+                                        <i class="bi bi-layout-split me-2"></i><span data-i18n="help_acc_1_title">Interface Overview</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-1" class="accordion-collapse collapse show" aria-labelledby="help-heading-1">
-                                    <div class="accordion-body">
-                                        <p>The builder is divided into two main panels:</p>
-                                        <ul>
-                                            <li>The <strong>Controls Panel</strong> on the left is where you manage all the objects and global settings for your effect.</li>
-                                            <li>The <strong>Canvas Panel</strong> on the right contains the visual editor and the main <strong>Toolbar</strong>.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Controls Panel (Left)</h6>
-                                        <p>Each object gets its own collapsible panel containing tabbed sections for its properties (e.g., Geometry, Fill-Animation, Stroke). You can perform several actions on these panels:</p>
-                                        <ul>
-                                            <li><strong>Rename:</strong> Click the object's name (e.g., "Object 1") to edit it.</li>
-                                            <li><strong>Reorder:</strong> Click and drag the <i class="bi bi-grip-vertical"></i> icon to change the rendering order (layering).</li>
-                                            <li><strong>Lock/Unlock:</strong> Use the <i class="bi bi-unlock-fill"></i> / <i class="bi bi-lock-fill"></i> button to prevent an object from being moved on the canvas.</li>
-                                            <li><strong>Duplicate/Delete:</strong> Use the menu button (<i class="bi bi-list"></i>) to access options for duplicating or deleting an object.</li>
-                                        </ul>
-                                        <p>Use the <strong>Global Overrides</strong> in the "General Settings" panel to apply a master color palette or color cycle effect to all objects at once.</p>
-                                    </div>
+                                    <div class="accordion-body" data-i18n="help_acc_1_html" data-i18n-html></div>
                                 </div>
                             </div>
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-2">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-2" aria-expanded="false" aria-controls="help-collapse-2">
-                                        <i class="bi bi-easel2-fill me-2"></i> The Canvas & Toolbar
+                                        <i class="bi bi-easel2-fill me-2"></i><span data-i18n="help_acc_2_title">The Canvas & Toolbar</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-2" class="accordion-collapse collapse" aria-labelledby="help-heading-2">
-                                    <div class="accordion-body">
-                                        <h6>Canvas Interaction</h6>
-                                        <ul>
-                                            <li><strong>Select:</strong> Click an object to select it. Hold <kbd>Shift</kbd> or <kbd>Ctrl</kbd> to select multiple objects.</li>
-                                            <li><strong>Manipulate:</strong> Drag a selected object to move it, drag its square handles to resize, or drag its circular handle to rotate.</li>
-                                            <li><strong>Snapping:</strong> Objects will automatically snap to the edges and centers of other objects and the canvas for easy alignment.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Toolbar</h6>
-                                        <p>The toolbar above the canvas provides quick access to powerful tools:</p>
-                                        <ul>
-                                            <li><strong>History (<i class="bi bi-arrow-counterclockwise"></i> / <i class="bi bi-arrow-clockwise"></i>):</strong> Undo and Redo your recent changes.</li>
-                                            <li><strong>Copy/Paste Properties (<i class="bi bi-clipboard-plus"></i> / <i class="bi bi-clipboard-check"></i>):</strong> Copy property groups (like size, color, animation) from one object and paste them onto others.</li>
-                                            <li><strong>Alignment & Matching:</strong> With object(s) selected, you can align them to the screen, match their sizes, or fit them to the canvas instantly.</li>
-                                            <li><strong>Constrain to Canvas:</strong> Toggle whether objects are allowed to be moved or resized outside the canvas boundaries.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Keyboard Shortcuts</h6>
-                                        <ul>
-                                            <li><kbd>Arrow Keys</kbd>: Nudge selected objects by a small amount.</li>
-                                            <li><kbd>Shift</kbd> + <kbd>Arrow Keys</kbd>: Nudge in larger steps.</li>
-                                            <li><kbd>Delete</kbd> / <kbd>Backspace</kbd>: Delete selected objects.</li>
-                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>Z</kbd> / <kbd>Y</kbd>: Undo and Redo.</li>
-                                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>C</kbd> / <kbd>V</kbd>: Copy/Paste properties.</li>
-                                            <li><kbd>Escape</kbd>: Deselect all objects.</li>
-                                        </ul>
-                                    </div>
+                                    <div class="accordion-body" data-i18n="help_acc_2_html" data-i18n-html></div>
                                 </div>
                             </div>
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-3">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-3" aria-expanded="false" aria-controls="help-collapse-3">
-                                        <i class="bi bi-stars me-2"></i> Advanced Shapes & Tools
+                                        <i class="bi bi-stars me-2"></i><span data-i18n="help_acc_3_title">Advanced Shapes & Tools</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-3" class="accordion-collapse collapse" aria-labelledby="help-heading-3">
-                                    <div class="accordion-body">
-                                        <p>The real power of the builder lies in its specialized shapes and tools. When you change an object's <strong>Shape</strong> property, different settings will appear.</p>
-                                        <h6>The Polyline Tool</h6>
-                                        <ul>
-                                            <li><strong>Drawing:</strong> Click the <strong><i class="bi bi-pen"></i> Add Polyline</strong> button. Click on the canvas to place points, then <strong>Double-click</strong> or press <kbd>Enter</kbd> to finish.</li>
-                                            <li><strong>Editing Nodes:</strong> After creating a polyline, select it and drag its nodes. <strong>Double-click</strong> a line segment to add a node, or <strong>Alt+Click</strong> a node to delete it.</li>
-                                            <li><strong>Path Animation:</strong> Animate a sub-object (particle) that travels along the path. You can customize its shape, speed, trail, and how it behaves when it reaches the end.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>The Pixel Art Editor</h6>
-                                        <ul>
-                                            <li><strong>Editing:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-pencil-square"></i> Edit</kbd> button on any frame to open the built-in editor.</li>
-                                            <li><strong>Tools:</strong> Use the editor's tools to paint, <kbd><i class="bi bi-paint-bucket"></i> Fill</kbd> areas, or <kbd><i class="bi bi-arrow-left-right"></i></kbd> / <kbd><i class="bi bi-arrow-down-up"></i></kbd> flip your art.</li>
-                                            <li><strong>Special Colors:</strong> Use the editor's palette to paint with special values that are interpreted by the renderer, like forcing a pixel to be opaque White (1.0), the object's Color 1 (0.3), or Color 2 (0.4).</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Importing Spritesheets & GIFs</h6>
-                                        <ul>
-                                            <li><strong>Paste from Clipboard:</strong> You can quickly paste an image or GIF from your clipboard directly into a `pixel-art` object. Press <kbd>Ctrl</kbd>+<kbd>V</kbd> when a pixel art object is selected to open the paste menu.</li>
-                                            <li><strong>Sprite Sheets:</strong> A sprite sheet is a single image file containing a sequence of animation frames. The tool will automatically split the image into individual frames based on the frame dimensions you provide.</li>
-                                            <li><strong>GIF Upload:</strong> Click the <kbd><i class="bi bi-film"></i> Upload GIF</kbd> button in the object's settings to process an animated GIF file into a series of frames.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>The Pixel Art Gallery</h6>
-                                        <ul>
-                                            <li><strong>Access:</strong> On a `pixel-art` object, click the <kbd><i class="bi bi-images"></i> Browse Gallery</kbd> button in the "Pixel Art" tab to open the community gallery.</li>
-                                            <li><strong>Functionality:</strong> Browse and search for pixel art from public community effects.</li>
-                                            <li><strong>Usage:</strong> Clicking <kbd><i class="bi bi-plus-lg me-1"></i> Insert</kbd> on an item will append its animation frames to your currently selected `pixel-art` object.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Other Shapes</h6>
-                                        <p>Explore other shapes like the <strong>Spawner</strong>, <strong>Strimer</strong>, and <strong>Audio Visualizer</strong>, each with their own unique set of properties to discover.</p>
-                                        <ul>
-                                            <li><strong>Spawner:</strong> A particle system that generates shapes and text with customizable physics like gravity, speed, rotation, and trails. You can even use a custom SVG path for the particle shape.</li>
-                                            <li><strong>Strimer:</strong> Creates a dynamic effect of blocks moving in columns, designed to simulate animated cables or other vertical elements. Features include various animations like 'Bounce' or a 'Snake' effect.</li>
-                                            <li><strong>Audio Visualizer:</strong> Renders audio data as bars or a line. You can choose from linear, circular, or polyline layouts and customize the number of bars, spacing, and smoothing.</li>
-                                        </ul>
-                                    </div>
+                                    <div class="accordion-body" data-i18n="help_acc_3_html" data-i18n-html></div>
                                 </div>
                             </div>
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-4">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-4" aria-expanded="false" aria-controls="help-collapse-4">
-                                        <i class="bi bi-soundwave me-2"></i> Audio & Sensor Reactivity
+                                        <i class="bi bi-soundwave me-2"></i><span data-i18n="help_acc_4_title">Audio & Sensor Reactivity</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-4" class="accordion-collapse collapse" aria-labelledby="help-heading-4">
-                                    <div class="accordion-body">
-                                        <p>Make your effects dynamic by enabling reactivity in an object's <strong>Audio</strong> or <strong>Sensor</strong> tabs.</p>
-                                        <ul>
-                                            <li><strong>Audio Reactivity:</strong> To preview, click the <strong>Start Listening</strong> button on the toolbar and share the audio from another browser tab.</li>
-                                            <li><strong>Sensor Reactivity:</strong> Create effects that respond to real-time data like CPU load. You can turn an object into a <strong>Sensor Meter</strong> (a filling bar) or a <strong>Time Plot</strong> (a real-time graph).</li>
-                                        </ul>
-                                    </div>
+                                    <div class="accordion-body" data-i18n="help_acc_4_html" data-i18n-html></div>
                                 </div>
                             </div>
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-5">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-5" aria-expanded="false" aria-controls="help-collapse-5">
-                                        <i class="bi bi-box-arrow-up-right me-2"></i> Saving, Loading & Exporting
+                                        <i class="bi bi-box-arrow-up-right me-2"></i><span data-i18n="help_acc_5_title">Saving, Loading & Exporting</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-5" class="accordion-collapse collapse" aria-labelledby="help-heading-5">
-                                    <div class="accordion-body">
-                                        <ul>
-                                            <li><kbd><i class="bi bi-cloud-arrow-up"></i> Save</kbd>: Saves your current project to your "My Projects" gallery in the cloud. You must be signed in.</li>
-                                            <li><kbd><i class="bi bi-folder2-open"></i> Open</kbd>: Opens the gallery panel to load one of your saved projects.</li>
-                                            <li><kbd><i class="bi bi-view-list"></i> Community Gallery</kbd>: Opens the gallery panel to browse public effects from all users.</li>
-                                            <li><kbd><i class="bi bi-upload"></i> Upload</kbd>: Load an effect from a `.html` file from your computer.</li>
-                                            <li><kbd><i class="bi bi-download"></i> Export</kbd>: Generates a <strong>.zip file</strong> containing your effect and a thumbnail, ready to be imported into SignalRGB.</li>
-                                            <li><kbd><i class="bi bi-share"></i> Share</kbd>: Saves your project and generates a unique URL that can be opened by other Effect Builder users.</li>
-                                            <li><kbd><i class="bi bi-link-45deg"></i> Import to SignalRGB</kbd>: Creates a special link to apply your effect's settings to an *already installed* effect in SignalRGB.</li>
-                                        </ul>
-                                        <hr>
-                                        <h6>Export Presets</h6>
-                                        <p>When you click the <kbd><i class="bi bi-download"></i> Export</kbd> button, the "Export Properties" modal allows you to decide which properties a user can change in SignalRGB. Unchecked properties will be hardcoded with the value you set in the builder. The preset buttons help you quickly select common configurations:</p>
-                                        <ul>
-                                            <li><strong>Expose All / Hardcode All:</strong> These buttons provide a quick way to check or uncheck every single property for all objects.</li>
-                                            <li><strong>Minimal (User-Friendly):</strong> Selects only the most common properties (like a main color gradient and master speed), hiding more complex options from the end-user.</li>
-                                            <li><strong>Static (No Animation):</strong> Selects all properties *except* for those related to speed and animation, creating a non-moving effect.</li>
-                                            <li><strong>Animation / Colors / Geometry / Gradients:</strong> These presets select logical groups of properties, allowing you to quickly expose only the controls relevant to that category.</li>
-                                        </ul>
-                                    </div>
+                                    <div class="accordion-body" data-i18n="help_acc_5_html" data-i18n-html></div>
                                 </div>
                             </div>
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="help-heading-6">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help-collapse-6" aria-expanded="false" aria-controls="help-collapse-6">
-                                        <i class="bi bi-box-arrow-in-down me-2"></i> Installing Custom Effects in SignalRGB
+                                        <i class="bi bi-box-arrow-in-down me-2"></i><span data-i18n="help_acc_6_title">Installing Custom Effects in SignalRGB</span>
                                     </button>
                                 </h2>
                                 <div id="help-collapse-6" class="accordion-collapse collapse" aria-labelledby="help-heading-6">
-                                    <div class="accordion-body bg-dark-subtle rounded p-3">
-                                        <p class="lead">Once you've exported an effect (via the <strong>Export</strong> button), follow these steps to install it in SignalRGB:</p>
-                                        <ol class="list-group list-group-numbered">
-                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
-                                                <div class="ms-2 me-auto">
-                                                    <div class="fw-bold">Download the Effect Files</div>
-                                                    Click the <span class="badge text-bg-success py-2"><i class="bi bi-download me-1"></i> Zip</span> button for the effect you want to install and download the archive file. Inside, you'll find the <code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code> file and its <code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code> preview.
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
-                                                <div class="ms-2 me-auto">
-                                                    <div class="fw-bold">Locate the Custom Effects Folder</div>
-                                                    Navigate to the correct folder on your PC. <strong>The path depends on your setup (especially if you use OneDrive or a custom installation).</strong> You may need to enable "Show hidden files" in your Windows Explorer settings.
-
-                                                    <h6 class="mt-3 mb-1">Common Locations (try these in order):</h6>
-                                                    <p class="mb-1 fw-medium text-warning">1. Standard Documents Location:</p>
-                                                    <div class="input-group mb-3">
-                                                        <code id="path-text-1" class="form-control bg-dark text-white border-secondary small d-flex align-items-center">%userprofile%\Documents\WhirlwindFX\Effects\</code>
-                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-1')">Copy</button>
-                                                    </div>
-
-                                                    <p class="mb-1 fw-medium text-warning mt-2">2. OneDrive Sync Location (for users with OneDrive):</p>
-                                                    <div class="input-group mb-3">
-                                                        <code id="path-text-2" class="form-control bg-dark text-white border-secondary small d-flex align-items-center overflow-hidden">C:\Users\%username%\OneDrive\Documents\WhirlwindFX\Effects\</code>
-                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-2')">Copy</button>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
-                                                <div class="ms-2 me-auto">
-                                                    <div class="fw-bold">Copy the Files</div>
-                                                    Place both the <strong><code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code> effect file</strong> and the <strong><code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code> preview image</strong> directly into the correct effects folder.
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
-                                                <div class="ms-2 me-auto">
-                                                    <div class="fw-bold">Restart SignalRGB</div>
-                                                    The SignalRGB application must be <strong>restarted</strong> to detect the new effect file.
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
-                                                <div class="ms-2 me-auto">
-                                                    <div class="fw-bold">Apply the Effect</div>
-                                                    The new effect will now appear in the <strong>Installed</strong> section of the SignalRGB Library, ready for you to use!
-                                                </div>
-                                            </li>
-                                        </ol>
-                                    </div>
+                                    <div class="accordion-body bg-dark-subtle rounded p-3" data-i18n="help_acc_6_html" data-i18n-html></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="btn_got_it">Got it!</button>
                     </div>
                 </div>
             </div>
@@ -619,36 +469,36 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="aboutModalLabel">RGBJunkie Effect Builder</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="aboutModalLabel" data-i18n="about_modal_title">RGBJunkie Effect Builder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p><img src="/images/rgbjunkie.png" width="100%"></p>
-                        <p><strong>RGBJunkie Effect Builder</strong> is a web-based visual tool designed to simplify the creation of complex animated effects for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p>
-                        <p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p>
+                        <p><img src="/images/rgbjunkie.png" width="100%" alt="RGBJunkie"></p>
+                        <div data-i18n="about_intro_html" data-i18n-html><p><strong>RGBJunkie Effect Builder</strong> is a web-based visual tool designed to simplify the creation of complex animated effects for the <a href="https://signalrgb.com/" target="_blank">SignalRGB</a> platform.</p></div>
+                        <div data-i18n="about_author_html" data-i18n-html><p>Built by José A. Miranda Vélez in the beautiful island of Puerto Rico, this project aims to provide an intuitive, WYSIWYG interface for designers and enthusiasts to bring their ideas to life without needing to write code from scratch.</p></div>
                         <ul class="list-group">
                             <li class="list-group-item">
-                                <strong>Version:</strong> <span id="version-display">1.651</span>
+                                <strong data-i18n="about_version">Version:</strong> <span id="version-display">1.651</span>
                             </li>
                             <li class="list-group-item">
-                                <strong>Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">View on GitHub</a>
+                                <strong data-i18n="about_project_home">Project Home:</strong> <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank" data-i18n="about_view_github">View on GitHub</a>
                             </li>
                             <li class="list-group-item">
-                                <strong>Terms & Privacy:</strong>
-                                <a href="/terms-of-usage.html">Terms of Usage</a> |
-                                <a href="/privacy-policy.html">Privacy Policy</a>
+                                <strong data-i18n="about_terms_privacy">Terms & Privacy:</strong>
+                                <a href="/terms-of-usage.html" data-i18n="about_terms_link">Terms of Usage</a> |
+                                <a href="/privacy-policy.html" data-i18n="about_privacy_link">Privacy Policy</a>
                             </li>
                         </ul>
-                        <h6 class="mt-4">Credits & Inspirations</h6>
-                        <p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p>
+                        <h6 class="mt-4" data-i18n="about_credits_heading">Credits & Inspirations</h6>
+                        <div data-i18n="about_credits_html" data-i18n-html><p>This tool stands on the shoulders of giants. Special thanks to the creators of the external <a href="https://pixelart.nolliergb.com/" target="_blank">Pixel Art Data Generator</a>, which inspired the built-in pixel editor.</p></div>
 
-                        <h6 class="mt-4">For Developers & Contributors</h6>
-                        <p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p>
+                        <h6 class="mt-4" data-i18n="about_dev_heading">For Developers & Contributors</h6>
+                        <div data-i18n="about_dev_html" data-i18n-html><p>This is an open-source project. If you're interested in contributing or learning how to add new shapes and properties, please see the project's <a href="https://github.com/effectbuilder/effectbuilder.github.io" target="_blank">README on GitHub</a> for a technical guide.</p></div>
 
                     </div>
                     <div class="modal-footer">
-                        <div class="text-muted small me-auto">© 2025 José A. Miranda Vélez. All Rights Reserved.</div>
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                        <div class="text-muted small me-auto" data-i18n="about_footer_rights">© 2025 José A. Miranda Vélez. All Rights Reserved.</div>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="btn_close">Close</button>
                     </div>
                 </div>
             </div>
@@ -658,8 +508,8 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="termsModalLabel">Terms of Usage</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="termsModalLabel" data-i18n="terms_modal_title">Terms of Usage</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p>By using this Interactive Effect Builder (the "Tool"), you agree to the following terms:</p>
@@ -688,7 +538,7 @@
                         <p>By saving or sharing an effect, you are making it public. You grant a perpetual, worldwide, non-exclusive, royalty-free license to other users and to this website to use, display, reproduce, and distribute your created effect. This allows features like the Community Gallery to function.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal">I Accept</button>
+                        <button type="button" class="btn btn-primary" id="accept-terms2-btn" data-bs-dismiss="modal" data-i18n="btn_accept_terms">I Accept</button>
                     </div>
                 </div>
             </div>
@@ -698,8 +548,8 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="privacyPolicyModalLabel">Privacy Policy</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="privacyPolicyModalLabel" data-i18n="privacy_modal_title">Privacy Policy</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p><em>Last Updated: September 21, 2025</em></p>
@@ -726,7 +576,7 @@
                         <p>You have the right to delete your saved effects. This can be done from the "My Projects" section of the gallery when you are signed in.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="btn_close">Close</button>
                     </div>
                 </div>
             </div>
@@ -736,45 +586,44 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="importMetaModalLabel"><i class="bi bi-code-slash me-2"></i>Import from Meta Tags</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="importMetaModalLabel"><i class="bi bi-code-slash me-2"></i><span data-i18n="import_meta_title">Import from Meta Tags</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.</p>
-                        </p>
-                        <textarea class="form-control font-monospace" id="import-textarea" rows="10" placeholder="<meta title=... />&#10;<meta description=... />&#10;..."></textarea>
+                        <div data-i18n="import_meta_body_html" data-i18n-html><p>Paste the full block of <strong>&lt;meta&gt;</strong> tags from an old effect file below. This will overwrite your current workspace.</p></div>
+                        <textarea class="form-control font-monospace" id="import-textarea" rows="10" data-i18n-placeholder="placeholder_import_meta" placeholder="<meta title=... />&#10;<meta description=... />&#10;..."></textarea>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-import-btn">Import Effect</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-import-btn" data-i18n="btn_import_effect">Import Effect</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="gallery-offcanvas" aria-labelledby="galleryOffcanvasLabel" style="width: 700px;">
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="gallery-offcanvas" data-gallery-mode="community" aria-labelledby="galleryOffcanvasLabel" style="width: 700px;">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i>Community Gallery</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <h5 class="offcanvas-title" id="galleryOffcanvasLabel"><i class="bi bi-view-list me-2"></i><span data-i18n="gallery_offcanvas_title">Community Gallery</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-i18n-aria-label="aria_close" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column">
                 <div class="mb-3 d-flex gap-2">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="gallery-search-input" class="form-control" placeholder="Search effects...">
-                        <button class="btn btn-outline-secondary d-none" type="button" id="gallery-search-clear-btn" title="Clear search">
+                        <input type="text" id="gallery-search-input" class="form-control" data-i18n-placeholder="placeholder_search_effects" placeholder="Search effects...">
+                        <button class="btn btn-outline-secondary d-none" type="button" id="gallery-search-clear-btn" data-i18n-title="title_clear_search" title="Clear search">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-sort-down me-1"></i> Sort By
+                            <i class="bi bi-sort-down me-1"></i> <span data-i18n="sort_by">Sort By</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="createdAt">Newest</a></li>
-                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="likes">Most Liked</a></li>
-                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="downloadCount">Most Downloaded</a></li>
-                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="name">Alphabetical</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="createdAt" data-i18n="sort_newest">Newest</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="likes" data-i18n="sort_most_liked">Most Liked</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="downloadCount" data-i18n="sort_most_downloaded">Most Downloaded</a></li>
+                            <li><a class="dropdown-item gallery-sort-option" href="#" data-sort="name" data-i18n="sort_alphabetical">Alphabetical</a></li>
                         </ul>
                     </div>
                 </div>
@@ -785,7 +634,7 @@
 
                     <div id="gallery-footer" class="text-center py-3" style="display: none;">
                         <div id="gallery-loading-spinner" class="spinner-border text-secondary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden" data-i18n="loading">Loading...</span>
                         </div>
                     </div>
                 </div>
@@ -796,15 +645,15 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="shareModalLabel"><i class="bi bi-share-fill me-2"></i>Share Your Effect</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="shareModalLabel"><i class="bi bi-share-fill me-2"></i><span data-i18n="share_modal_title">Share Your Effect</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Anyone with this link can view and load your effect.</p>
+                        <p data-i18n="share_modal_body">Anyone with this link can view and load your effect.</p>
                         <div class="input-group">
                             <input type="text" class="form-control" id="share-link-input" readonly>
                             <button class="btn btn-primary" type="button" id="copy-share-link-btn">
-                                <i class="bi bi-clipboard"></i> Copy
+                                <i class="bi bi-clipboard"></i> <span data-i18n="btn_copy">Copy</span>
                             </button>
                         </div>
                     </div>
@@ -816,19 +665,19 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-sliders me-2"></i>Export Properties</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="exportOptionsModalLabel"><i class="bi bi-sliders me-2"></i><span data-i18n="export_modal_title">Export Properties</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" id="export-options-body">
-                        <p class="text-body-secondary">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
+                        <p class="text-body-secondary" data-i18n="export_modal_intro">Select which properties will be editable by users in SignalRGB. Unchecked properties will be hardcoded into the effect.</p>
                         <div class="accordion" id="export-options-accordion">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="export-copy-code-btn"><i class="bi bi-clipboard me-2"></i>Copy Code</button>
-                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i>Generate .zip File</button>
-                        <button type="button" class="btn btn-info" id="export-skydimo-lua-btn"><i class="bi bi-file-earmark-code me-2"></i>Export Skydimo LUA</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="export-copy-code-btn"><i class="bi bi-clipboard me-2"></i><span data-i18n="btn_copy_code">Copy Code</span></button>
+                        <button type="button" class="btn btn-primary" id="confirm-export-zip-btn"><i class="bi bi-file-earmark-zip-fill me-2"></i><span data-i18n="btn_generate_zip">Generate .zip File</span></button>
+                        <button type="button" class="btn btn-info" id="export-skydimo-lua-btn"><i class="bi bi-file-earmark-code me-2"></i><span data-i18n="btn_export_skydimo_lua">Export Skydimo LUA</span></button>
                     </div>
                 </div>
             </div>
@@ -838,13 +687,13 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i>Terms & Privacy</h5>
+                        <h5 class="modal-title" id="acceptTermsModalLabel"><i class="bi bi-shield-check me-2"></i><span data-i18n="accept_terms_modal_title">Terms & Privacy</span></h5>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body" data-i18n="accept_terms_body_html" data-i18n-html>
                         <p>By using this tool, you agree to the <a href="/terms-of-usage.html">Terms of Usage</a> and acknowledge our <a href="/privacy-policy.html">Privacy Policy</a>.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal">I Accept</button>
+                        <button type="button" class="btn btn-primary" id="accept-terms-btn" data-bs-dismiss="modal" data-i18n="btn_accept_terms">I Accept</button>
                     </div>
                 </div>
             </div>
@@ -854,50 +703,50 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="copyPropsModalLabel"><i class="bi bi-clipboard-plus me-2"></i>Copy Properties</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="copyPropsModalLabel"><i class="bi bi-clipboard-plus me-2"></i><span data-i18n="copy_props_modal_title">Copy Properties</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <form id="copy-props-form">
                         <div class="modal-body">
-                            <p>Select the property groups you want to copy from the source object.</p>
+                            <p data-i18n="copy_props_intro">Select the property groups you want to copy from the source object.</p>
                             <div class="list-group">
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-position" checked>
-                                    Position (X, Y)
+                                    <span data-i18n="copy_props_position">Position (X, Y)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-size" checked>
-                                    Size (Width, Height)
+                                    <span data-i18n="copy_props_size">Size (Width, Height)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-rotation" checked>
-                                    Rotation & Rotation Speed
+                                    <span data-i18n="copy_props_rotation">Rotation & Rotation Speed</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-fill-style" checked>
-                                    Fill Style (Type, Colors, Gradient)
+                                    <span data-i18n="copy_props_fill">Fill Style (Type, Colors, Gradient)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-animation" checked>
-                                    Fill Animation (Mode, Speed, Direction)
+                                    <span data-i18n="copy_props_animation">Fill Animation (Mode, Speed, Direction)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-color-animation" checked>
-                                    Color Animation (Cycle Colors & Speed)
+                                    <span data-i18n="copy_props_color_anim">Color Animation (Cycle Colors & Speed)</span>
                                 </label>
                                 <label class="list-group-item">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-shape-type">
-                                    Shape Type
+                                    <span data-i18n="copy_props_shape_type">Shape Type</span>
                                 </label>
                                 <label class="list-group-item d-none" id="shape-specific-props-container">
                                     <input class="form-check-input me-1" type="checkbox" name="copy-shape-specific">
-                                    Shape-Specific Properties (<span id="shape-specific-name"></span>)
+                                    <span data-i18n="copy_props_shape_specific">Shape-Specific Properties</span> (<span id="shape-specific-name"></span>)
                                 </label>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn">Copy to Clipboard</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="confirm-copy-props-btn" data-i18n="btn_copy_clipboard">Copy to Clipboard</button>
                         </div>
                     </form>
                 </div>
@@ -908,51 +757,51 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtEditorModalLabel">Pixel Art Editor</h5>
+                        <h5 class="modal-title" id="pixelArtEditorModalLabel" data-i18n="pixel_editor_title">Pixel Art Editor</h5>
                         <div class="ms-auto d-flex align-items-center gap-2">
                             <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-prev-frame-btn" title="Save and Go to Previous Frame"><i class="bi bi-arrow-left-circle"></i></button>
                             <span id="pixel-editor-frame-counter" class="text-body-secondary small font-monospace"></span>
                             <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-next-frame-btn" title="Save and Go to Next Frame"><i class="bi bi-arrow-right-circle"></i></button>
                             <div class="vr mx-1"></div>
-                            <button type="button" class="btn btn-sm btn-primary" id="pixel-editor-duplicate-frame-btn" title="Duplicate Current Frame"><i class="bi bi-copy"></i> Duplicate</button>
-                            <button type="button" class="btn btn-sm btn-danger" id="pixel-editor-delete-frame-btn" title="Delete Current Frame"><i class="bi bi-trash"></i> Delete</button>
+                            <button type="button" class="btn btn-sm btn-primary" id="pixel-editor-duplicate-frame-btn" title="Duplicate Current Frame"><i class="bi bi-copy"></i> <span data-i18n="pixel_editor_duplicate">Duplicate</span></button>
+                            <button type="button" class="btn btn-sm btn-danger" id="pixel-editor-delete-frame-btn" title="Delete Current Frame"><i class="bi bi-trash"></i> <span data-i18n="pixel_editor_delete">Delete</span></button>
                         </div>
-                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
 
                     <div class="modal-body">
                         <div class="row align-items-end mb-3">
                             <div class="col-md-4">
-                                <label for="pixel-editor-width" class="form-label-sm">Grid Width</label>
+                                <label for="pixel-editor-width" class="form-label-sm" data-i18n="label_grid_width">Grid Width</label>
                                 <input type="number" class="form-control" id="pixel-editor-width" value="16" min="1" max="64">
                             </div>
                             <div class="col-md-4">
-                                <label for="pixel-editor-height" class="form-label-sm">Grid Height</label>
+                                <label for="pixel-editor-height" class="form-label-sm" data-i18n="label_grid_height">Grid Height</label>
                                 <input type="number" class="form-control" id="pixel-editor-height" value="16" min="1" max="64">
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-secondary w-100" id="pixel-editor-resize-btn">Apply New Size</button>
+                                <button type="button" class="btn btn-secondary w-100" id="pixel-editor-resize-btn" data-i18n="btn_apply_new_size">Apply New Size</button>
                             </div>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
-                                <strong class="me-3">Tools:</strong>
+                                <strong class="me-3" data-i18n="pixel_tools_heading">Tools:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-tools">
-                                    <button type="button" class="btn btn-sm btn-secondary active" id="pixel-editor-paint-btn" title="Paint Tool"><i class="bi bi-pencil-fill"></i> Paint</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-fill-btn" title="Fill Area"><i class="bi bi-paint-bucket"></i> Fill</button>
+                                    <button type="button" class="btn btn-sm btn-secondary active" id="pixel-editor-paint-btn" title="Paint Tool"><i class="bi bi-pencil-fill"></i> <span data-i18n="pixel_paint">Paint</span></button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-fill-btn" title="Fill Area"><i class="bi bi-paint-bucket"></i> <span data-i18n="pixel_fill">Fill</span></button>
                                     <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-h-btn" title="Flip Horizontal"><i class="bi bi-arrow-left-right"></i></button>
                                     <button type="button" class="btn btn-sm btn-secondary" id="pixel-editor-mirror-v-btn" title="Flip Vertical"><i class="bi bi-arrow-down-up"></i></button>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center">
-                                <strong class="me-3">Paint:</strong>
+                                <strong class="me-3" data-i18n="pixel_editor_paint_heading">Paint:</strong>
                                 <div class="btn-group" role="group" id="pixel-editor-palette">
                                     <button type="button" class="btn btn-sm btn-light active" data-value="0.7" style="background: repeating-conic-gradient(#4169E1 0% 25%, #6495ED 0% 50%) 50% / 10px 10px;" title="Use object's main fill style (value: 0.7)">Selected Fill</button>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-text text-center mt-2">
+                        <div class="form-text text-center mt-2" data-i18n="pixel_paint_hint" data-i18n-html>
                             Use <kbd>Ctrl</kbd>+<kbd>Arrows</kbd> to shift the current frame, or <kbd>Shift</kbd>+<kbd>Arrows</kbd> to shift all frames.
                             <br>You can also press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste an image.
                         </div>
@@ -961,20 +810,20 @@
                         <hr>
                         <p>
                             <a class="btn btn-sm btn-secondary" data-bs-toggle="collapse" href="#collapseRawData" role="button" aria-expanded="false" aria-controls="collapseRawData">
-                                <i class="bi bi-code-slash"></i> View Raw Data
+                                <i class="bi bi-code-slash"></i> <span data-i18n="btn_view_raw_data">View Raw Data</span>
                             </a>
                         </p>
                         <div class="collapse" id="collapseRawData">
                             <div class="card card-body bg-dark">
-                                <label for="pixel-editor-raw-data" class="form-label-sm">JSON Data (Advanced)</label>
+                                <label for="pixel-editor-raw-data" class="form-label-sm" data-i18n="label_json_data">JSON Data (Advanced)</label>
                                 <textarea id="pixel-editor-raw-data" class="form-control font-monospace" rows="5"></textarea>
-                                <div class="form-text">Changes here will override the visual editor if the JSON is valid.</div>
+                                <div class="form-text" data-i18n="json_data_hint">Changes here will override the visual editor if the JSON is valid.</div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="pixel-editor-save-btn">Apply Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="pixel-editor-save-btn" data-i18n="btn_apply_changes">Apply Changes</button>
                     </div>
                 </div>
             </div>
@@ -984,33 +833,33 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pasteSpriteModalLabel"><i class="bi bi-clipboard-image me-2"></i>Paste Sprite Sheet</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="pasteSpriteModalLabel"><i class="bi bi-clipboard-image me-2"></i><span data-i18n="paste_sprite_title">Paste Sprite Sheet</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
-                        <p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p>
+                        <p data-i18n="paste_sprite_intro">Enter the dimensions of a **single frame**. The code will automatically detect the number of rows and columns in the sprite sheet you paste.</p>
+                        <div data-i18n="paste_sprite_itch_hint_html" data-i18n-html><p class="form-text">Looking for sprites? <a href="https://itch.io/game-assets/free/tag-16x16" target="_blank" rel="noopener">Find free sprite assets on itch.io <i class="bi bi-box-arrow-up-right"></i></a></p></div>
                         <div class="row">
                             <div class="col">
-                                <label for="sprite-frame-width" class="form-label-sm">Single Frame Width</label>
+                                <label for="sprite-frame-width" class="form-label-sm" data-i18n="label_frame_width">Single Frame Width</label>
                                 <input type="number" class="form-control" id="sprite-frame-width" value="16" min="1" max="128">
                             </div>
                             <div class="col">
-                                <label for="sprite-frame-height" class="form-label-sm">Single Frame Height</label>
+                                <label for="sprite-frame-height" class="form-label-sm" data-i18n="label_frame_height">Single Frame Height</label>
                                 <input type="number" class="form-control" id="sprite-frame-height" value="16" min="1" max="128">
                             </div>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-downsample">
-                            <label class="form-check-label" for="sprite-downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
+                            <label class="form-check-label" for="sprite-downsample" data-i18n="sprite_downsample">Downsample to frame dimensions (for hi-res pixel art)</label>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="sprite-paste-append">
-                            <label class="form-check-label" for="sprite-paste-append">Append to existing frames (instead of replacing)</label>
+                            <label class="form-check-label" for="sprite-paste-append" data-i18n="sprite_append_frames">Append to existing frames (instead of replacing)</label>
                         </div>
                         <hr>
                         <div class="d-grid">
-                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn"><i class="bi bi-clipboard-check-fill me-2"></i>Paste from Clipboard</button>
+                            <button type="button" class="btn btn-primary" id="confirm-sprite-paste-btn"><i class="bi bi-clipboard-check-fill me-2"></i><span data-i18n="btn_paste_clipboard">Paste from Clipboard</span></button>
                         </div>
                     </div>
                 </div>
@@ -1021,15 +870,15 @@
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtGalleryModalLabel"><i class="bi bi-substack me-2"></i>Community Pixel Art</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="pixelArtGalleryModalLabel"><i class="bi bi-substack me-2"></i><span data-i18n="pixel_art_gallery_title">Community Pixel Art</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" id="pixel-art-search-input" class="form-control" placeholder="Search by effect name or creator...">
+                                    <input type="text" id="pixel-art-search-input" class="form-control" data-i18n-placeholder="placeholder_pixel_art_search" placeholder="Search by effect name or creator...">
                                 </div>
                             </div>
                         </div>
@@ -1037,7 +886,7 @@
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-center">
-                        <nav aria-label="Pixel Art Gallery Pagination">
+                        <nav data-i18n-aria-label="pixel_art_pagination_label" aria-label="Pixel Art Gallery Pagination">
                             <ul class="pagination mb-0" id="pixel-art-pagination-container">
                             </ul>
                         </nav>
@@ -1050,38 +899,38 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="uploadGifModalLabel"><i class="bi bi-film me-2"></i>Upload GIF Options</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="uploadGifModalLabel"><i class="bi bi-film me-2"></i><span data-i18n="upload_gif_title">Upload GIF Options</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Specify the target pixel art dimensions for your animation.</p>
+                        <p data-i18n="upload_gif_intro">Specify the target pixel art dimensions for your animation.</p>
                         <div class="row">
                             <div class="col">
-                                <label for="gif-target-width" class="form-label-sm">Target Width</label>
+                                <label for="gif-target-width" class="form-label-sm" data-i18n="label_target_width">Target Width</label>
                                 <input type="number" class="form-control" id="gif-target-width" value="16" min="1" max="128">
                             </div>
                             <div class="col">
-                                <label for="gif-target-height" class="form-label-sm">Target Height</label>
+                                <label for="gif-target-height" class="form-label-sm" data-i18n="label_target_height">Target Height</label>
                                 <input type="number" class="form-control" id="gif-target-height" value="16" min="1" max="128">
                             </div>
                         </div>
                         <div class="row mt-3">
                             <div class="col">
-                                <label for="gif-max-colors" class="form-label-sm">Max Colors (2-32)</label>
+                                <label for="gif-max-colors" class="form-label-sm" data-i18n="label_max_colors">Max Colors (2-32)</label>
                                 <input type="number" class="form-control" id="gif-max-colors" value="16" min="2" max="32">
-                                <div class="form-text">Reduces the GIF's palette to the specified number of colors.</div>
+                                <div class="form-text" data-i18n="gif_max_colors_hint">Reduces the GIF's palette to the specified number of colors.</div>
                             </div>
                         </div>
                         <div class="form-check form-switch my-3">
                             <input class="form-check-input" type="checkbox" id="gif-append-frames">
-                            <label class="form-check-label" for="gif-append-frames">Append to existing frames (instead of replacing)</label>
+                            <label class="form-check-label" for="gif-append-frames" data-i18n="gif_append">Append to existing frames (instead of replacing)</label>
                         </div>
                         <hr>
                         <div id="gif-info-display" class="text-body-secondary small" style="display: none;">
-                            <p class="mb-1"><strong>Original GIF Info:</strong></p>
+                            <p class="mb-1"><strong data-i18n="gif_original_info">Original GIF Info:</strong></p>
                             <ul class="list-unstyled mb-0">
-                                <li>Dimensions: <span id="gif-info-dims">--</span></li>
-                                <li>Unique Colors: <span id="gif-info-colors">--</span></li>
+                                <li><span data-i18n="gif_info_dimensions">Dimensions:</span> <span id="gif-info-dims">--</span></li>
+                                <li><span data-i18n="gif_info_colors">Unique Colors:</span> <span id="gif-info-colors">--</span></li>
                             </ul>
                         </div>
                         <hr>
@@ -1097,26 +946,26 @@
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="colorMapperModalLabel"><i class="bi bi-palette-fill me-2"></i>Map Colors</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="colorMapperModalLabel"><i class="bi bi-palette-fill me-2"></i><span data-i18n="color_mapper_title">Map Colors</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Assign the most common colors from the first frame to the available slots in your object's palette.</p>
+                        <p data-i18n="color_mapper_intro">Assign the most common colors from the first frame to the available slots in your object's palette.</p>
                         <div class="row">
                             <div class="col-md-5">
-                                <h6 class="text-center">First Frame Preview</h6>
+                                <h6 class="text-center" data-i18n="color_mapper_preview">First Frame Preview</h6>
                                 <canvas id="color-mapper-preview" class="w-100 border rounded" style="image-rendering: pixelated;"></canvas>
                             </div>
                             <div class="col-md-7">
-                                <h6 class="text-center">Color Assignments</h6>
+                                <h6 class="text-center" data-i18n="color_mapper_assignments">Color Assignments</h6>
                                 <div id="color-mapper-assignments" class="d-grid gap-2">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="confirm-color-map-btn">Process Image</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_cancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="confirm-color-map-btn" data-i18n="btn_process_image">Process Image</button>
                     </div>
                 </div>
             </div>
@@ -1126,26 +975,26 @@
             <div class="modal-dialog modal-dialog-centered" style="width: 280px;">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="pixelArtColorPickerModalLabel">Edit Color</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="pixelArtColorPickerModalLabel" data-i18n="edit_color_title">Edit Color</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body d-flex flex-column justify-content-center">
                         <div id="modal-picker-container"></div>
                         <div class="custom-color-inputs mt-3">
                             <div class="input-group input-group-sm mb-2">
-                                <span class="input-group-text">HEX</span>
+                                <span class="input-group-text" data-i18n="label_hex">HEX</span>
                                 <input type="text" class="form-control" id="pixel-editor-hex-input">
                             </div>
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text">RGB</span>
-                                <input type="number" class="form-control" id="pixel-editor-r-input" min="0" max="255" aria-label="Red">
-                                <input type="number" class="form-control" id="pixel-editor-g-input" min="0" max="255" aria-label="Green">
-                                <input type="number" class="form-control" id="pixel-editor-b-input" min="0" max="255" aria-label="Blue">
+                                <span class="input-group-text" data-i18n="label_rgb">RGB</span>
+                                <input type="number" class="form-control" id="pixel-editor-r-input" min="0" max="255" data-i18n-aria-label="aria_red" aria-label="Red">
+                                <input type="number" class="form-control" id="pixel-editor-g-input" min="0" max="255" data-i18n-aria-label="aria_green" aria-label="Green">
+                                <input type="number" class="form-control" id="pixel-editor-b-input" min="0" max="255" data-i18n-aria-label="aria_blue" aria-label="Blue">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="btn_done">Done</button>
                     </div>
                 </div>
             </div>
@@ -1155,7 +1004,7 @@
             <div class="modal-dialog modal-dialog-centered" style="width: 280px;">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Select Color</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title" data-i18n="select_color_title">Select Color</h5><button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body d-flex justify-content-center">
                         <div id="general-picker-container"></div>
@@ -1168,23 +1017,23 @@
             <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="gifSearchModalLabel"><i class="bi bi-film me-2"></i>Search for GIFs</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="gifSearchModalLabel"><i class="bi bi-film me-2"></i><span data-i18n="gif_search_title">Search for GIFs</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form id="gif-search-form" class="mb-3">
                             <div class="input-group">
-                                <input type="text" id="gif-search-input" class="form-control" placeholder="Search for GIFs..." required>
-                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+                                <input type="text" id="gif-search-input" class="form-control" data-i18n-placeholder="placeholder_gif_search" placeholder="Search for GIFs..." required>
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> <span data-i18n="btn_search">Search</span></button>
                             </div>
                         </form>
                         <div id="gif-results-container" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between align-items-center">
-                        <div>Powered by: <img src="/images/xQVVOLyi.png" alt="Powered by Giphy" height="30"></div>
+                        <div><span data-i18n="gif_modal_powered_by">Powered by:</span> <img src="/images/xQVVOLyi.png" alt="" height="30" data-i18n-alt="gif_powered_by_alt"></div>
                         <div id="gif-search-footer" style="display: none;"></div>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn_close">Close</button>
                     </div>
                 </div>
             </div>
@@ -1212,6 +1061,7 @@
             window.parseGIF = parseGIF;
             window.decompressFrames = decompressFrames;
         </script>
+        <script src="/js/i18n.js"></script>
         <script src="/js/Shape.js?v1.1"></script>
         <script src="/js/util.js?v1.1"></script>
         <script src="/js/main.js?v1.1"></script>
@@ -1222,7 +1072,7 @@
 
                 navigator.clipboard.writeText(text).then(() => {
                     const originalText = btn.innerText;
-                    btn.innerText = 'Copied!';
+                    btn.innerText = (window.I18N && window.I18N.t('toast_copied_path')) || 'Copied!';
 
                     // Swap colors temporarily
                     btn.classList.replace('btn-outline-warning', 'btn-success');

@@ -52,14 +52,12 @@ const I18N = {
         // Translate INNER TEXT via [data-i18n] tags
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            const translation = this.t(key);
-            
-            // Safety: Only update if translation exists and doesn't destroy nested logic spans
-            if (el.id === 'lib-count-header') {
-                el.firstChild.textContent = translation + " ";
-            } else {
-                el.innerText = translation;
-            }
+            el.textContent = this.t(key);
+        });
+
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+            const key = el.getAttribute('data-i18n-aria-label');
+            el.setAttribute('aria-label', this.t(key));
         });
 
         // Translate PLACEHOLDERS via [data-i18n-ph] tags
