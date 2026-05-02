@@ -452,7 +452,10 @@ export function updateLedCount() {
     }
 
     const count = componentState.leds.length;
-    ledCountDisplay.textContent = `${count} LED${count === 1 ? '' : 's'}`;
+    const tr = typeof window !== 'undefined' && window.tr ? window.tr.bind(window) : null;
+    ledCountDisplay.textContent = tr
+        ? tr(count === 1 ? 'builder_led_count_single' : 'builder_led_count_plural', { count })
+        : `${count} LED${count === 1 ? '' : 's'}`;
 
     if (count > 120) {
         ledCountDisplay.classList.remove('bg-secondary');
@@ -1437,6 +1440,10 @@ export function drawCanvas() {
         }
     }
     drawMarqueeBox();
+
+    if (typeof window.updateSelectionToolbarButtons === 'function') {
+        window.updateSelectionToolbarButtons();
+    }
 }
 
 window.drawCanvas = drawCanvas;

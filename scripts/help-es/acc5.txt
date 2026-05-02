@@ -1,0 +1,18 @@
+<ul>
+                                            <li><kbd><i class="bi bi-cloud-arrow-up"></i> Guardar</kbd>: Guarda el proyecto en la galería «Mis proyectos» en la nube. Debes tener sesión iniciada.</li>
+                                            <li><kbd><i class="bi bi-folder2-open"></i> Abrir</kbd>: Abre el panel de galería para cargar un proyecto guardado.</li>
+                                            <li><kbd><i class="bi bi-view-list"></i> Galería comunitaria</kbd>: Abre la galería de efectos públicos de todos los usuarios.</li>
+                                            <li><kbd><i class="bi bi-upload"></i> Subir</kbd>: Carga un efecto desde un archivo `.html` de tu equipo.</li>
+                                            <li><kbd><i class="bi bi-download"></i> Exportar</kbd>: Genera un archivo <strong>.zip</strong> con el efecto y una miniatura, listo para importar en SignalRGB.</li>
+                                            <li><kbd><i class="bi bi-share"></i> Compartir</kbd>: Guarda el proyecto y genera una URL única que otros usuarios del Constructor pueden abrir.</li>
+                                            <li><kbd><i class="bi bi-link-45deg"></i> Importar a SignalRGB</kbd>: Crea un enlace para aplicar la configuración de tu efecto a un efecto <em>ya instalado</em> en SignalRGB.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Presets de exportación</h6>
+                                        <p>Al pulsar <kbd><i class="bi bi-download"></i> Exportar</kbd>, el modal «Propiedades de exportación» define qué puede cambiar el usuario en SignalRGB. Lo no marcado queda fijado al valor del constructor. Los presets aceleran la configuración:</p>
+                                        <ul>
+                                            <li><strong>Exponer todo / Fijar todo:</strong> Marca o desmarca rápidamente todas las propiedades de todos los objetos.</li>
+                                            <li><strong>Mínimo (fácil de usar):</strong> Solo las propiedades más habituales (p. ej. degradado principal y velocidad general).</li>
+                                            <li><strong>Estático (sin animación):</strong> Todas las propiedades salvo las de velocidad y animación; efecto sin movimiento.</li>
+                                            <li><strong>Animación / Colores / Geometría / Degradados:</strong> Grupos lógicos para exponer solo los controles de esa categoría.</li>
+                                        </ul>

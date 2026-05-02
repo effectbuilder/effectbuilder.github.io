@@ -1,0 +1,46 @@
+<p class="lead">Cuando hayas exportado un efecto (botón <strong>Exportar</strong>), sigue estos pasos para instalarlo en SignalRGB:</p>
+                                        <ol class="list-group list-group-numbered">
+                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
+                                                <div class="ms-2 me-auto">
+                                                    <div class="fw-bold">Descargar los archivos del efecto</div>
+                                                    Pulsa el botón <span class="badge text-bg-success py-2"><i class="bi bi-download me-1"></i> Zip</span> del efecto y descarga el archivo. Dentro están el <code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code> y la vista previa <code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code>.
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
+                                                <div class="ms-2 me-auto">
+                                                    <div class="fw-bold">Localizar la carpeta de efectos personalizados</div>
+                                                    Ve a la carpeta correcta en tu PC. <strong>La ruta depende de tu configuración (sobre todo con OneDrive o instalaciones personalizadas).</strong> Puede que necesites mostrar archivos ocultos en el Explorador de Windows.
+
+                                                    <h6 class="mt-3 mb-1">Ubicaciones habituales (prueba en este orden):</h6>
+                                                    <p class="mb-1 fw-medium text-warning">1. Ubicación estándar en Documentos:</p>
+                                                    <div class="input-group mb-3">
+                                                        <code id="path-text-1" class="form-control bg-dark text-white border-secondary small d-flex align-items-center">%userprofile%\Documents\WhirlwindFX\Effects\</code>
+                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-1')">Copiar</button>
+                                                    </div>
+
+                                                    <p class="mb-1 fw-medium text-warning mt-2">2. Ubicación sincronizada con OneDrive:</p>
+                                                    <div class="input-group mb-3">
+                                                        <code id="path-text-2" class="form-control bg-dark text-white border-secondary small d-flex align-items-center overflow-hidden">C:\Users\%username%\OneDrive\Documents\WhirlwindFX\Effects\</code>
+                                                        <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-2')">Copiar</button>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
+                                                <div class="ms-2 me-auto">
+                                                    <div class="fw-bold">Copiar los archivos</div>
+                                                    Coloca el archivo <strong><code class="bg-light-subtle text-body-secondary p-1 rounded">.html</code></strong> y la imagen <strong><code class="bg-light-subtle text-body-secondary p-1 rounded">.png</code></strong> directamente en la carpeta de efectos correcta.
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
+                                                <div class="ms-2 me-auto">
+                                                    <div class="fw-bold">Reiniciar SignalRGB</div>
+                                                    Debes <strong>reiniciar</strong> SignalRGB para que detecte el nuevo efecto.
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-start bg-transparent">
+                                                <div class="ms-2 me-auto">
+                                                    <div class="fw-bold">Aplicar el efecto</div>
+                                                    El efecto aparecerá en la sección <strong>Instalado</strong> de la biblioteca de SignalRGB, ¡listo para usar!
+                                                </div>
+                                            </li>
+                                        </ol>

@@ -1,0 +1,1 @@
+<p>Bienvenido al Constructor de efectos interactivo RGBJunkie. Esta guía explica las funciones para ayudarte a crear efectos visuales espectaculares.</p>

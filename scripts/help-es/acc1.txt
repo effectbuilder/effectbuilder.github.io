@@ -1,0 +1,15 @@
+<p>El constructor se divide en dos paneles principales:</p>
+                                        <ul>
+                                            <li>El <strong>panel de controles</strong>, a la izquierda, es donde gestionas todos los objetos y la configuración global de tu efecto.</li>
+                                            <li>El <strong>panel del lienzo</strong>, a la derecha, contiene el editor visual y la <strong>barra de herramientas</strong> principal.</li>
+                                        </ul>
+                                        <hr>
+                                        <h6>Panel de controles (izquierda)</h6>
+                                        <p>Cada objeto tiene su propio panel plegable con pestañas para sus propiedades (por ejemplo Geometría, Relleno-animación, Contorno). Puedes hacer lo siguiente:</p>
+                                        <ul>
+                                            <li><strong>Renombrar:</strong> Haz clic en el nombre del objeto (p. ej. «Objeto 1») para editarlo.</li>
+                                            <li><strong>Reordenar:</strong> Arrastra el icono <i class="bi bi-grip-vertical"></i> para cambiar el orden de renderizado (capas).</li>
+                                            <li><strong>Bloquear/desbloquear:</strong> Usa el botón <i class="bi bi-unlock-fill"></i> / <i class="bi bi-lock-fill"></i> para impedir que un objeto se mueva en el lienzo.</li>
+                                            <li><strong>Duplicar/eliminar:</strong> Usa el menú (<i class="bi bi-list"></i>) para duplicar o borrar un objeto.</li>
+                                        </ul>
+                                        <p>Usa los <strong>ajustes globales</strong> del panel «Configuración general» para aplicar una paleta maestra o un ciclo de color a todos los objetos a la vez.</p>

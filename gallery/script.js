@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    if (window.I18N) await window.I18N.init();
     const ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
