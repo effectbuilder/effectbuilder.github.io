@@ -205,7 +205,10 @@
             });
             document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
                 var key = el.getAttribute('data-i18n-title');
-                if (key) el.title = self.t(key);
+                if (!key) return;
+                /* Bootstrap keeps a copy here; leaving it forces the old language on the next Tooltip. */
+                el.removeAttribute('data-bs-original-title');
+                el.title = self.t(key);
             });
             document.querySelectorAll('[data-i18n-aria-label]').forEach(function (el) {
                 var key = el.getAttribute('data-i18n-aria-label');
@@ -217,7 +220,17 @@
             });
         },
 
+        hideLangDropdown: function () {
+            var toggleBtn = document.getElementById('lang-switcher-btn');
+            if (!toggleBtn || typeof bootstrap === 'undefined' || !bootstrap.Dropdown) return;
+            try {
+                bootstrap.Dropdown.getOrCreateInstance(toggleBtn).hide();
+            } catch (e) { /* ignore */ }
+            toggleBtn.blur();
+        },
+
         populateLangSwitcher: function () {
+            this.hideLangDropdown();
             var menu = document.getElementById('lang-switcher-menu');
             var label = document.getElementById('lang-switcher-label');
             var self = this;
@@ -225,16 +238,17 @@
                 menu.innerHTML = '';
                 LANGUAGE_CODES.forEach(function (entry) {
                     var li = document.createElement('li');
-                    var a = document.createElement('a');
-                    a.className = 'dropdown-item' + (entry.code === self.cur ? ' active' : '');
-                    a.href = '#';
-                    a.setAttribute('hreflang', entry.code);
-                    a.textContent = self.t(entry.labelKey);
-                    a.addEventListener('click', function (e) {
-                        e.preventDefault();
+                    /** Use <button> so we do not need preventDefault on <a href="#"> (that can block BS5 dropdown close). */
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'dropdown-item' + (entry.code === self.cur ? ' active' : '');
+                    btn.setAttribute('data-lang', entry.code);
+                    btn.textContent = self.t(entry.labelKey);
+                    btn.addEventListener('click', function () {
+                        self.hideLangDropdown();
                         self.setLanguage(entry.code);
                     });
-                    li.appendChild(a);
+                    li.appendChild(btn);
                     menu.appendChild(li);
                 });
             }

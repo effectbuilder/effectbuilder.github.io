@@ -5728,7 +5728,8 @@ document.addEventListener('DOMContentLoaded', async function () {
      */
     function renderForm() {
         // --- 1. PREPARATION & STATE PRESERVATION ---
-        const existingTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        /* Only dispose tooltips inside the controls form — not navbar/header (i18n refreshes those separately). */
+        const existingTooltips = form ? form.querySelectorAll('[data-bs-toggle="tooltip"]') : [];
         existingTooltips.forEach(el => {
             const tooltip = bootstrap.Tooltip.getInstance(el);
             if (tooltip) tooltip.dispose();
