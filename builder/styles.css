@@ -351,6 +351,12 @@
     border-radius: 0.5rem;
 }
 
+/* Navbar above app toolbar so dropdowns (language, brand, etc.) are not covered */
+nav.navbar {
+    position: relative;
+    z-index: 1030;
+}
+
 /* Secondary toolbar below navbar — match Effect Builder */
 #toolbar.app-subtoolbar {
     z-index: 2;

@@ -73,6 +73,15 @@ body {
     flex-direction: row;
 }
 
+/*
+ * Main content (#toolbar, canvas) comes after <nav> in the DOM, so without a stacking context
+ * the canvas toolbar can paint over open navbar dropdowns (e.g. language menu).
+ */
+nav.navbar {
+    position: relative;
+    z-index: 1030;
+}
+
 /* Secondary toolbar below navbar (Effect Builder + Component Builder #toolbar) */
 #toolbar.app-subtoolbar {
     z-index: 2;
