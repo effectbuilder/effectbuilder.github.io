@@ -1,206 +1,382 @@
 /*
- * styles-alt.css — alternate visual theme (CSS-only experiment)
+ * styles-alt.css — RGB / gamer-forward theme (CSS-only)
  *
- * How to try it: in index.html (and builder/index.html, etc.), load AFTER styles.css:
- *   <link rel="stylesheet" href="/styles-alt.css">
- * Remove that line to revert.
+ * Load AFTER styles.css. Tailored for gamers & RGB enthusiasts: neon accents,
+ * dark-first ambient glow, subtle animated chrome (respects prefers-reduced-motion).
  */
 
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap");
 
 :root {
-    --alt-surface-glow: rgba(34, 211, 238, 0.04);
-    --alt-radius: 0.65rem;
-    --alt-radius-lg: 0.85rem;
+    --alt-radius: 0.55rem;
+    --alt-radius-lg: 0.75rem;
+    /* Neon stack — cyan / magenta / violet */
+    --rgb-cyan: #00f0ff;
+    --rgb-cyan-dim: rgba(0, 240, 255, 0.12);
+    --rgb-magenta: #ff2d7a;
+    --rgb-magenta-dim: rgba(255, 45, 122, 0.1);
+    --rgb-violet: #a855f7;
+    --rgb-violet-dim: rgba(168, 85, 247, 0.1);
+    --rgb-glow-cyan: rgba(0, 240, 255, 0.45);
+    --rgb-glow-magenta: rgba(255, 45, 122, 0.35);
+    --rgb-strip-speed: 10s;
 }
 
-/* --- Bootstrap theme tokens (dark) --------------------------------------- */
+/* --- Bootstrap theme tokens (dark) — battlestation desk -------------------------------- */
 [data-bs-theme="dark"] {
     color-scheme: dark;
-    --bs-body-font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --bs-body-bg: #070a0f;
-    --bs-body-color: #e8edf5;
-    --bs-secondary-bg: #0f141c;
-    --bs-tertiary-bg: #141b28;
-    --bs-emphasis-color: #f1f5f9;
-    --bs-border-color: rgba(148, 163, 184, 0.22);
-    --bs-border-color-translucent: rgba(148, 163, 184, 0.14);
-    /* Cyan accent — reads well on deep slate */
-    --bs-primary: #22d3ee;
-    --bs-primary-rgb: 34, 211, 238;
-    --bs-link-color: #67e8f9;
-    --bs-link-hover-color: #cffafe;
-    --bs-focus-ring-color: rgba(34, 211, 238, 0.35);
+    --bs-body-font-family: "Rajdhani", system-ui, "Segoe UI", sans-serif;
+    --bs-body-bg: #050508;
+    --bs-body-color: #e8ecf4;
+    --bs-secondary-bg: #0c0e14;
+    --bs-tertiary-bg: #12151f;
+    --bs-emphasis-color: #f8fafc;
+    --bs-border-color: rgba(148, 163, 184, 0.18);
+    --bs-border-color-translucent: rgba(100, 116, 139, 0.2);
+    --bs-primary: var(--rgb-cyan);
+    --bs-primary-rgb: 0, 240, 255;
+    --bs-link-color: #5cefff;
+    --bs-link-hover-color: #a8fbff;
+    --bs-focus-ring-color: rgba(0, 240, 255, 0.4);
     --bs-border-radius: var(--alt-radius);
     --bs-border-radius-lg: var(--alt-radius-lg);
-    --bs-border-radius-sm: 0.45rem;
+    --bs-border-radius-sm: 0.4rem;
 }
 
 [data-bs-theme="dark"] .navbar.bg-body-tertiary {
     --bs-navbar-bg: transparent;
 }
 
-/* --- Bootstrap theme tokens (light) -------------------------------------- */
+/* --- Light theme — showroom floor (still RGB-accented) ---------------------------------- */
 [data-bs-theme="light"] {
     color-scheme: light;
-    --bs-body-font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --bs-body-bg: #f8fafc;
+    --bs-body-font-family: "Rajdhani", system-ui, "Segoe UI", sans-serif;
+    --bs-body-bg: #f4f6f8;
     --bs-body-color: #0f172a;
-    --bs-secondary-bg: #f1f5f9;
-    --bs-tertiary-bg: #e8eef5;
-    --bs-border-color: rgba(15, 23, 42, 0.12);
-    --bs-primary: #0d9488;
-    --bs-primary-rgb: 13, 148, 136;
-    --bs-link-color: #0f766e;
-    --bs-link-hover-color: #115e59;
-    --bs-focus-ring-color: rgba(13, 148, 136, 0.35);
+    --bs-secondary-bg: #eef1f5;
+    --bs-tertiary-bg: #e2e8f0;
+    --bs-border-color: rgba(15, 23, 42, 0.1);
+    --bs-primary: #0891b2;
+    --bs-primary-rgb: 8, 145, 178;
+    --bs-link-color: #0e7490;
+    --bs-link-hover-color: #155e75;
+    --bs-focus-ring-color: rgba(8, 145, 178, 0.35);
     --bs-border-radius: var(--alt-radius);
     --bs-border-radius-lg: var(--alt-radius-lg);
-    --bs-border-radius-sm: 0.45rem;
+    --bs-border-radius-sm: 0.4rem;
 }
 
 [data-bs-theme="light"] .navbar.bg-body-tertiary {
     --bs-navbar-bg: transparent;
 }
 
-/* --- Global typography polish -------------------------------------------- */
+/* --- Global typography & ambient field (dark) ----------------------------------------- */
 body {
-    letter-spacing: 0.015em;
-    font-feature-settings: "kern" 1, "liga" 1;
+    letter-spacing: 0.04em;
+    font-weight: 500;
 }
 
-/* --- Top navigation — glass strip ---------------------------------------- */
+[data-bs-theme="dark"] body {
+    background-image:
+        radial-gradient(ellipse 100% 70% at 15% -20%, var(--rgb-magenta-dim), transparent 55%),
+        radial-gradient(ellipse 90% 50% at 85% -10%, var(--rgb-cyan-dim), transparent 50%),
+        radial-gradient(ellipse 80% 45% at 50% 110%, var(--rgb-violet-dim), transparent 55%);
+    background-attachment: fixed;
+}
+
+[data-bs-theme="dark"] ::selection {
+    background: rgba(0, 240, 255, 0.35);
+    color: #fff;
+}
+
+h1, h2, h3, h4, h5, h6,
+.navbar-brand,
+.modal-title {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+/* --- Animated RGB accent bar under navbar ---------------------------------------------- */
 .navbar.bg-body-tertiary {
-    background-color: rgba(var(--bs-tertiary-bg-rgb), 0.78) !important;
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-    border-bottom: 1px solid var(--bs-border-color-translucent);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+    position: relative;
+    background-color: rgba(var(--bs-tertiary-bg-rgb), 0.82) !important;
+    backdrop-filter: blur(16px) saturate(1.25);
+    -webkit-backdrop-filter: blur(16px) saturate(1.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.35),
+        0 0 40px rgba(0, 240, 255, 0.04);
 }
 
-[data-bs-theme="dark"] .navbar.bg-body-tertiary {
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+.navbar.bg-body-tertiary::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        var(--rgb-cyan),
+        var(--rgb-magenta),
+        var(--rgb-violet),
+        var(--rgb-cyan)
+    );
+    background-size: 200% 100%;
+    opacity: 0.85;
+    pointer-events: none;
+    animation: rgb-bar-shift var(--rgb-strip-speed) linear infinite;
 }
 
-/* --- Effect Builder: left rail ------------------------------------------- */
+@keyframes rgb-bar-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navbar.bg-body-tertiary::after {
+        animation: none;
+        background: linear-gradient(90deg, var(--rgb-cyan), var(--rgb-magenta), var(--rgb-violet));
+        background-size: 100% 100%;
+    }
+}
+
+[data-bs-theme="light"] .navbar.bg-body-tertiary {
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="light"] .navbar.bg-body-tertiary::after {
+    opacity: 0.65;
+    background: linear-gradient(90deg, #06b6d4, #d946ef, #7c3aed);
+    animation: none;
+}
+
+/* --- Left rail — control deck ----------------------------------------------------------- */
 #left-panel {
     background: linear-gradient(
         165deg,
-        rgba(var(--bs-tertiary-bg-rgb), 0.97) 0%,
-        rgba(var(--bs-secondary-bg-rgb), 0.55) 45%,
+        rgba(18, 21, 31, 0.98) 0%,
+        rgba(12, 14, 20, 0.88) 40%,
         var(--bs-body-bg) 100%
     );
     border-right: 1px solid var(--bs-border-color);
-    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
+    box-shadow:
+        inset -1px 0 0 rgba(0, 240, 255, 0.06),
+        inset 0 0 60px rgba(168, 85, 247, 0.03);
 }
 
 [data-bs-theme="light"] #left-panel {
+    background: linear-gradient(165deg, #f8fafc 0%, #eef2f7 100%);
     box-shadow: inset -1px 0 0 rgba(15, 23, 42, 0.06);
 }
 
-/* --- Canvas stage — subtle frame ----------------------------------------- */
+/* --- Canvas stage — “viewport” frame -------------------------------------------------- */
 #canvas-container {
     border-radius: var(--alt-radius-lg);
     overflow: hidden;
     box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-        0 12px 40px rgba(0, 0, 0, 0.35);
+        inset 0 0 0 1px rgba(0, 240, 255, 0.12),
+        inset 0 0 40px rgba(168, 85, 247, 0.04),
+        0 12px 48px rgba(0, 0, 0, 0.45),
+        0 0 60px rgba(0, 240, 255, 0.06);
+}
+
+[data-bs-theme="dark"] #canvas-container {
+    animation: rgb-viewport-pulse 6s ease-in-out infinite;
+}
+
+@keyframes rgb-viewport-pulse {
+    0%,
+    100% {
+        box-shadow:
+            inset 0 0 0 1px rgba(0, 240, 255, 0.12),
+            inset 0 0 40px rgba(168, 85, 247, 0.04),
+            0 12px 48px rgba(0, 0, 0, 0.45),
+            0 0 50px rgba(0, 240, 255, 0.05);
+    }
+    50% {
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 45, 122, 0.15),
+            inset 0 0 48px rgba(0, 240, 255, 0.06),
+            0 12px 48px rgba(0, 0, 0, 0.45),
+            0 0 70px rgba(255, 45, 122, 0.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-bs-theme="dark"] #canvas-container {
+        animation: none;
+    }
 }
 
 [data-bs-theme="light"] #canvas-container {
     box-shadow:
-        inset 0 0 0 1px rgba(15, 23, 42, 0.08),
-        0 16px 40px rgba(15, 23, 42, 0.08);
+        inset 0 0 0 1px rgba(8, 145, 178, 0.15),
+        0 16px 40px rgba(15, 23, 42, 0.1);
 }
 
 #right-panel-top {
-    background: radial-gradient(ellipse 80% 60% at 50% 40%, var(--alt-surface-glow), transparent 55%),
+    background:
+        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0, 240, 255, 0.05), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255, 45, 122, 0.04), transparent 55%),
         var(--bs-secondary-bg);
 }
 
-/* --- Toolbar band --------------------------------------------------------- */
+/* --- Sub-toolbar ---------------------------------------------------------------------- */
 #toolbar.app-subtoolbar {
-    padding-block: 0.35rem;
+    padding-block: 0.4rem;
     border-bottom: 1px solid var(--bs-border-color-translucent);
-    background: linear-gradient(180deg, rgba(var(--bs-tertiary-bg-rgb), 0.65), transparent);
+    background: linear-gradient(
+        180deg,
+        rgba(18, 21, 31, 0.9) 0%,
+        rgba(12, 14, 20, 0.4) 100%
+    );
 }
 
-/* --- Buttons & chips ------------------------------------------------------- */
+[data-bs-theme="light"] #toolbar.app-subtoolbar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent);
+}
+
+/* --- Buttons — arcade punch-through (avoid uppercase on every control in forms) --------- */
 .btn {
     font-weight: 600;
-    letter-spacing: 0.02em;
+}
+
+.navbar .btn,
+#toolbar.app-subtoolbar .btn {
+    letter-spacing: 0.05em;
 }
 
 .btn-primary {
-    box-shadow: 0 2px 12px rgba(var(--bs-primary-rgb), 0.28);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.875rem;
+    background: linear-gradient(135deg, #00d4e8 0%, #00a8bb 50%, #0891b2 100%);
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow:
+        0 0 20px var(--rgb-glow-cyan),
+        0 4px 14px rgba(0, 0, 0, 0.35);
+    color: #041014;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #33f3ff 0%, #00d4e8 100%);
+    border-color: #7ffaff;
+    box-shadow:
+        0 0 28px var(--rgb-glow-cyan),
+        0 6px 20px rgba(0, 0, 0, 0.4);
+    color: #041014;
+}
+
+[data-bs-theme="light"] .btn-primary {
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(8, 145, 178, 0.35);
 }
 
 .btn-outline-secondary {
     border-width: 1.5px;
 }
 
-/* --- Dropdowns & popovers ------------------------------------------------ */
+[data-bs-theme="dark"] #toolbar.app-subtoolbar .btn.btn-outline-secondary:not(:disabled):not(.disabled):hover {
+    --bs-btn-bg: rgba(0, 240, 255, 0.15);
+    --bs-btn-border-color: rgba(0, 240, 255, 0.55);
+    --bs-btn-color: var(--rgb-cyan);
+}
+
+/* --- Dropdowns -------------------------------------------------------------------------- */
 .dropdown-menu {
     border-radius: var(--alt-radius);
-    border: 1px solid var(--bs-border-color);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 45, 122, 0.08),
+        0 0 32px rgba(0, 240, 255, 0.08);
     padding: 0.4rem;
+    background: rgba(12, 14, 20, 0.95);
+    backdrop-filter: blur(12px);
 }
 
 [data-bs-theme="light"] .dropdown-menu {
-    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
 }
 
 .dropdown-item,
 .dropdown-item:focus {
     border-radius: calc(var(--alt-radius) - 2px);
+    letter-spacing: 0.04em;
 }
 
 .dropdown-item.active,
 .dropdown-item:active {
-    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.28), rgba(var(--bs-primary-rgb), 0.12));
+    background: linear-gradient(
+        135deg,
+        rgba(0, 240, 255, 0.25),
+        rgba(168, 85, 247, 0.15)
+    );
+    color: #fff;
 }
 
-/* --- Form controls ------------------------------------------------------- */
+/* --- Forms ------------------------------------------------------------------------------ */
 .form-control,
 .form-select {
     border-radius: var(--alt-radius-sm);
     border-width: 1.5px;
 }
 
-.form-range::-webkit-slider-thumb {
-    box-shadow: 0 2px 8px rgba(var(--bs-primary-rgb), 0.45);
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    border-color: rgba(0, 240, 255, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(0, 240, 255, 0.18);
 }
 
-/* --- Modals & offcanvas -------------------------------------------------- */
+.form-range::-webkit-slider-thumb {
+    box-shadow: 0 0 12px var(--rgb-glow-cyan);
+}
+
+/* --- Modals ----------------------------------------------------------------------------- */
 .modal-content {
     border-radius: var(--alt-radius-lg);
-    border: 1px solid var(--bs-border-color);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(0, 240, 255, 0.12);
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(168, 85, 247, 0.08);
 }
 
 [data-bs-theme="light"] .modal-content {
+    border: 1px solid var(--bs-border-color);
     box-shadow: 0 24px 80px rgba(15, 23, 42, 0.15);
 }
 
-/* --- Cards / lists (gallery & tooling) ----------------------------------- */
+/* --- Cards — gallery tiles -------------------------------------------------------------- */
 .card {
     border-radius: var(--alt-radius);
     border: 1px solid var(--bs-border-color-translucent);
     overflow: hidden;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    transform: translateY(-3px);
+    box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.35),
+        0 0 24px rgba(0, 240, 255, 0.08);
 }
 
 [data-bs-theme="dark"] .card:hover {
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    border-color: rgba(0, 240, 255, 0.2);
+    box-shadow:
+        0 20px 48px rgba(0, 0, 0, 0.55),
+        0 0 32px rgba(255, 45, 122, 0.06);
 }
 
-/* --- Scrollbars (WebKit) -------------------------------------------------- */
+/* --- Scrollbars — LED strip vibe -------------------------------------------------------- */
 #left-panel ::-webkit-scrollbar,
 .overflow-auto::-webkit-scrollbar {
     width: 8px;
@@ -209,12 +385,86 @@ body {
 
 #left-panel ::-webkit-scrollbar-thumb,
 .overflow-auto::-webkit-scrollbar-thumb {
-    background: rgba(var(--bs-primary-rgb), 0.35);
+    background: linear-gradient(180deg, var(--rgb-cyan), var(--rgb-magenta));
     border-radius: 999px;
 }
 
 #left-panel ::-webkit-scrollbar-track,
 .overflow-auto::-webkit-scrollbar-track {
+    background: rgba(var(--bs-emphasis-rgb), 0.06);
+    border-radius: 999px;
+}
+
+/* =============================================================================
+   Effect Combiner + Skydimo — same RGB deck / viewport as Effect Builder
+   (those apps use #sidebar / #viewport / .skydimo-canvas-shell, not #left-panel)
+   ============================================================================= */
+
+[data-bs-theme="dark"] aside#sidebar.combiner-sidebar,
+[data-bs-theme="dark"] aside#skydimo-sidebar.skydimo-sidebar {
+    background: linear-gradient(
+        165deg,
+        rgba(18, 21, 31, 0.98) 0%,
+        rgba(12, 14, 20, 0.88) 45%,
+        var(--bs-body-bg) 100%
+    );
+    border-right: 1px solid var(--bs-border-color);
+    box-shadow:
+        inset -1px 0 0 rgba(0, 240, 255, 0.06),
+        inset 0 0 60px rgba(168, 85, 247, 0.03);
+}
+
+[data-bs-theme="light"] aside#sidebar.combiner-sidebar,
+[data-bs-theme="light"] aside#skydimo-sidebar.skydimo-sidebar {
+    background: linear-gradient(165deg, #f8fafc 0%, #eef2f7 100%);
+    box-shadow: inset -1px 0 0 rgba(15, 23, 42, 0.06);
+}
+
+[data-bs-theme="dark"] #viewport.combiner-viewport,
+[data-bs-theme="dark"] .skydimo-canvas-shell {
+    border-radius: var(--alt-radius-lg);
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 0 1px rgba(0, 240, 255, 0.12),
+        inset 0 0 40px rgba(168, 85, 247, 0.04),
+        0 12px 48px rgba(0, 0, 0, 0.45),
+        0 0 60px rgba(0, 240, 255, 0.06);
+    animation: rgb-viewport-pulse 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-bs-theme="dark"] #viewport.combiner-viewport,
+    [data-bs-theme="dark"] .skydimo-canvas-shell {
+        animation: none;
+    }
+}
+
+[data-bs-theme="light"] #viewport.combiner-viewport,
+[data-bs-theme="light"] .skydimo-canvas-shell {
+    box-shadow:
+        inset 0 0 0 1px rgba(8, 145, 178, 0.15),
+        0 16px 40px rgba(15, 23, 42, 0.1);
+}
+
+main.skydimo-main .skydimo-preview-wrap {
+    background:
+        radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0, 240, 255, 0.05), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255, 45, 122, 0.04), transparent 55%),
+        var(--bs-secondary-bg);
+}
+
+.combiner-split {
+    background: var(--bs-body-bg);
+}
+
+.combiner-sidebar-scroll::-webkit-scrollbar-thumb,
+.skydimo-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--rgb-cyan), var(--rgb-magenta));
+    border-radius: 999px;
+}
+
+.combiner-sidebar-scroll::-webkit-scrollbar-track,
+.skydimo-sidebar-scroll::-webkit-scrollbar-track {
     background: rgba(var(--bs-emphasis-rgb), 0.08);
     border-radius: 999px;
 }

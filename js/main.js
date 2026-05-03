@@ -9946,9 +9946,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function initializeTooltips() {
+        document.querySelectorAll('[title]').forEach(el => {
+            const toggle = (el.getAttribute('data-bs-toggle') || '').toLowerCase();
+            if (toggle.indexOf('dropdown') === -1) return;
+            const inst = bootstrap.Tooltip.getInstance(el);
+            if (inst) inst.dispose();
+        });
         const tooltipTriggerList = document.querySelectorAll('[title]');
         tooltipTriggerList.forEach(tooltipTriggerEl => {
-            // Only initialize if it doesn't already have one
+            /** Same rule as js/i18n.js: never Tooltip a dropdown toggle — conflicts with BS Dropdown (stuck tip). */
+            const toggle = (tooltipTriggerEl.getAttribute('data-bs-toggle') || '').toLowerCase();
+            if (toggle.indexOf('dropdown') !== -1) return;
             if (!bootstrap.Tooltip.getInstance(tooltipTriggerEl)) {
                 new bootstrap.Tooltip(tooltipTriggerEl);
             }

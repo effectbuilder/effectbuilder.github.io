@@ -1,79 +1,106 @@
 /**
- * Internationalization (i18n) Module
- * Asynchronously loads JSON translation files from the /locales folder.
+ * Internationalization — loads ./locales/{lang}.json
+ * Language preference is shared site-wide via localStorage key rgbjunkie_lang (same as js/i18n.js).
  */
 const I18N = {
     cur: 'en',
-    STORAGE_KEY: 'srgb_combiner_lang',
-    strings: {}, // Holds the current translation data loaded from JSON
+    /** Canonical key shared with /js/i18n.js (Effect Builder, showcase, etc.) */
+    STORAGE_KEY: 'rgbjunkie_lang',
+    LEGACY_KEYS: ['srgb_combiner_lang', 'srgb_skydimo_lang'],
+    strings: {},
 
-    /**
-     * Initializes the language settings by checking local storage 
-     * or browser defaults, then fetches the appropriate JSON file.
-     */
+    readStoredLang() {
+        let v = localStorage.getItem(this.STORAGE_KEY);
+        if (v) return v;
+        for (let i = 0; i < this.LEGACY_KEYS.length; i++) {
+            v = localStorage.getItem(this.LEGACY_KEYS[i]);
+            if (v) {
+                localStorage.setItem(this.STORAGE_KEY, v);
+                return v;
+            }
+        }
+        return null;
+    },
+
+    /** Map site locale codes to JSON filenames available under ./locales/ */
+    localeFilename(lang) {
+        if (lang === 'zh-CN') return 'zh';
+        return lang;
+    },
+
     async init() {
-        const savedLang = localStorage.getItem(this.STORAGE_KEY) || 'en';
+        const savedLang = this.readStoredLang() || 'en';
         await this.setLanguage(savedLang);
     },
 
-    /**
-     * Fetches the requested language JSON file and updates the UI.
-     * @param {string} lang - The language code (e.g., 'en', 'es', 'zh').
-     */
     async setLanguage(lang) {
-        try {
-            const response = await fetch(`./locales/${lang}.json`);
-            if (!response.ok) throw new Error(`Translation file for "${lang}" not found.`);
-            
-            this.strings = await response.json();
-            this.cur = lang;
-            localStorage.setItem(this.STORAGE_KEY, lang);
-            
-            this.updateStaticUI();
-        } catch (e) {
-            console.error("I18N Error:", e);
-            if (lang !== 'en') await this.setLanguage('en');
+        const preferred = lang;
+        const candidates = [];
+        const mapped = this.localeFilename(preferred);
+        if (mapped !== preferred) candidates.push(mapped);
+        candidates.push(preferred);
+        if (!candidates.includes('en')) candidates.push('en');
+
+        let bundle = null;
+        let fileUsed = 'en';
+        for (let i = 0; i < candidates.length; i++) {
+            const code = candidates[i];
+            try {
+                const response = await fetch(`./locales/${code}.json`);
+                if (response.ok) {
+                    bundle = await response.json();
+                    fileUsed = code;
+                    break;
+                }
+            } catch (e) {
+                /* continue */
+            }
         }
+        if (!bundle) {
+            console.error('I18N: could not load any locale');
+            return;
+        }
+
+        this.strings = bundle;
+        localStorage.setItem(this.STORAGE_KEY, preferred);
+
+        if (fileUsed === 'en' && preferred !== 'en') {
+            this.cur = 'en';
+        } else if (preferred === 'zh-CN' && fileUsed === 'zh') {
+            this.cur = 'zh';
+        } else {
+            this.cur = preferred;
+        }
+
+        this.updateStaticUI();
     },
 
-    /**
-     * Returns the translated string for a given key.
-     * @param {string} key - The translation key.
-     */
     t(key) {
         return this.strings[key] || key;
     },
 
-    /**
-     * Scans the DOM for elements with data-i18n or data-i18n-ph 
-     * attributes and updates their content or placeholders.
-     */
     updateStaticUI() {
-        // Translate INNER TEXT via [data-i18n] tags
-        document.querySelectorAll('[data-i18n]').forEach(el => {
+        document.querySelectorAll('[data-i18n]').forEach((el) => {
             const key = el.getAttribute('data-i18n');
             el.textContent = this.t(key);
         });
 
-        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+        document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
             const key = el.getAttribute('data-i18n-aria-label');
             el.setAttribute('aria-label', this.t(key));
         });
 
-        // Translate PLACEHOLDERS via [data-i18n-ph] tags
-        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
             const key = el.getAttribute('data-i18n-ph');
             el.placeholder = this.t(key);
         });
 
-        // Sync Layout Buttons (for consistency with generated layers)
         const layoutButtons = ['layered', 'side', 'vert', 'grid', 'pip'];
-        layoutButtons.forEach(id => {
+        layoutButtons.forEach((id) => {
             const btn = document.getElementById(`btn-${id}`);
             if (btn) btn.innerText = this.t(`layout_${id}`);
         });
 
-        // Update Library Sort Dropdown manually
         const sort = document.getElementById('lib-sort');
         if (sort) {
             sort.options[0].text = this.t('sort_new');
