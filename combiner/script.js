@@ -1097,11 +1097,10 @@ const exporter = {
 };
 
 // --- LANGUAGE SWITCHER FUNCTION ---
-function changeLanguage(lang) {
+async function changeLanguage(lang) {
     if (typeof I18N === 'undefined') return;
 
-    // Use the unified setter that handles storage
-    I18N.setLanguage(lang);
+    await I18N.setLanguage(lang);
 
     // Refresh dynamic components
     if (compositor) {
@@ -1117,12 +1116,24 @@ function changeLanguage(lang) {
 // --- INITIALIZATION ---
 let compositor;
 
-const COMBINER_LANG_LABELS = { en: 'English', es: 'Español', zh: '中文', hi: 'हिन्दी', ja: '日本語' };
+/** Display names — align with /js/i18n.js LANGUAGE_CODES and zh-CN storage */
+const COMBINER_LANG_LABELS = {
+    en: 'English',
+    es: 'Español',
+    fr: 'Français',
+    de: 'Deutsch',
+    pt: 'Português',
+    zh: '中文',
+    'zh-CN': '中文',
+    hi: 'हिन्दी',
+    ja: '日本語'
+};
 
 function updateCombinerLangLabel() {
     const el = document.getElementById('combiner-lang-label');
     if (el && typeof I18N !== 'undefined') {
-        el.textContent = COMBINER_LANG_LABELS[I18N.cur] || I18N.cur;
+        const k = I18N.cur === 'zh' ? 'zh' : I18N.cur;
+        el.textContent = COMBINER_LANG_LABELS[k] || COMBINER_LANG_LABELS[I18N.cur] || I18N.cur;
     }
 }
 
@@ -1159,10 +1170,10 @@ window.onload = async () => {
         await I18N.init();
         updateCombinerLangLabel();
         document.querySelectorAll('.combiner-lang-item').forEach((btn) => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const lang = btn.getAttribute('data-lang');
                 if (lang) {
-                    changeLanguage(lang);
+                    await changeLanguage(lang);
                     updateCombinerLangLabel();
                 }
             });

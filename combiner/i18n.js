@@ -62,7 +62,6 @@ const I18N = {
         }
 
         this.strings = bundle;
-        localStorage.setItem(this.STORAGE_KEY, preferred);
 
         if (fileUsed === 'en' && preferred !== 'en') {
             this.cur = 'en';
@@ -71,6 +70,13 @@ const I18N = {
         } else {
             this.cur = preferred;
         }
+
+        // Persist codes compatible with /js/i18n.js; keep preferred if we fell back (no locale file) so other pages still respect choice
+        let stored = this.cur === 'zh' ? 'zh-CN' : this.cur;
+        if (fileUsed === 'en' && preferred !== 'en') {
+            stored = preferred;
+        }
+        localStorage.setItem(this.STORAGE_KEY, stored);
 
         this.updateStaticUI();
     },

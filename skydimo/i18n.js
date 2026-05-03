@@ -60,7 +60,6 @@ const I18N = {
         }
 
         this.strings = bundle;
-        localStorage.setItem(this.STORAGE_KEY, preferred);
 
         if (fileUsed === 'en' && preferred !== 'en') {
             this.cur = 'en';
@@ -69,6 +68,12 @@ const I18N = {
         } else {
             this.cur = preferred;
         }
+
+        let stored = this.cur === 'zh' ? 'zh-CN' : this.cur;
+        if (fileUsed === 'en' && preferred !== 'en') {
+            stored = preferred;
+        }
+        localStorage.setItem(this.STORAGE_KEY, stored);
 
         this.updateStaticUI();
     },

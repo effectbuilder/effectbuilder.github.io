@@ -43,12 +43,23 @@ function escapeHtml(s) {
     return d.innerHTML;
 }
 
-const SKYDIMO_LANG_LABELS = { en: 'English', es: 'Español', zh: '中文', hi: 'हिन्दी', ja: '日本語' };
+const SKYDIMO_LANG_LABELS = {
+    en: 'English',
+    es: 'Español',
+    fr: 'Français',
+    de: 'Deutsch',
+    pt: 'Português',
+    zh: '中文',
+    'zh-CN': '中文',
+    hi: 'हिन्दी',
+    ja: '日本語'
+};
 
 function updateSkydimoLangLabel() {
     const el = document.getElementById('skydimo-lang-label');
     if (el && typeof I18N !== 'undefined') {
-        el.textContent = SKYDIMO_LANG_LABELS[I18N.cur] || I18N.cur;
+        const k = I18N.cur === 'zh' ? 'zh' : I18N.cur;
+        el.textContent = SKYDIMO_LANG_LABELS[k] || SKYDIMO_LANG_LABELS[I18N.cur] || I18N.cur;
     }
 }
 
