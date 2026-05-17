@@ -1,0 +1,11 @@
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Legacy URLs (before pages moved into folders)
+    RewriteRule ^releases\.php$ releases/ [R=301,L,NC]
+    RewriteRule ^terms\.php$ terms/ [R=301,L,NC]
+    RewriteRule ^supported\.html$ supported/ [R=301,L,NC]
+    RewriteRule ^index\.html$ ./ [R=301,L,NC]
+</IfModule>

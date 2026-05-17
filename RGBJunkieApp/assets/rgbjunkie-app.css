@@ -1,0 +1,200 @@
+/* RGBJunkie for Windows landing page (RGBJunkieApp/) */
+
+/* Hero feature badges */
+.rgbj-hero-badges {
+    gap: 0.625rem;
+    align-items: center;
+}
+
+.rgbj-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.875rem;
+    border-radius: 50rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+}
+
+.rgbj-hero-badge--accent {
+    border-color: rgba(0, 240, 255, 0.4);
+    background: rgba(0, 240, 255, 0.12);
+    color: #c8f7ff;
+}
+
+[data-bs-theme="light"] .rgbj-hero-badge {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.06);
+    color: rgba(15, 23, 42, 0.82);
+}
+
+[data-bs-theme="light"] .rgbj-hero-badge--accent {
+    border-color: rgba(8, 145, 178, 0.35);
+    background: rgba(8, 145, 178, 0.1);
+    color: #0e7490;
+}
+
+/* Hero CTAs — matched pair (overrides global .btn-primary uppercase) */
+.rgbj-hero-cta {
+    align-items: center;
+}
+
+.rgbj-hero-cta .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.625rem 1.35rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.rgbj-hero-cta .btn .bi {
+    font-size: 1.125rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.rgbj-hero-cta .btn-primary {
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 0.9375rem;
+}
+
+.rgbj-hero-cta .btn-outline-secondary {
+    border-width: 1.5px;
+    border-color: rgba(255, 255, 255, 0.32);
+    color: var(--bs-body-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.rgbj-hero-cta .btn-outline-secondary:hover,
+.rgbj-hero-cta .btn-outline-secondary:focus-visible {
+    border-color: rgba(0, 240, 255, 0.45);
+    color: var(--bs-body-color);
+    background-color: rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-hero-cta .btn-outline-secondary {
+    border-color: rgba(15, 23, 42, 0.2);
+    background-color: rgba(255, 255, 255, 0.85);
+}
+
+.rgbj-feature-card {
+    overflow: hidden;
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color) !important;
+}
+
+.rgbj-feature-card__media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background-color: #0d0e14;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.rgbj-feature-card__media::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 40%;
+    background: linear-gradient(to top, var(--bs-body-bg) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.rgbj-feature-card__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+}
+
+.rgbj-feature-card__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 1rem;
+    text-align: center;
+    color: var(--bs-secondary-color);
+}
+
+.rgbj-feature-card__placeholder .bi {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.rgbj-feature-card__placeholder-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bs-secondary-color);
+    margin-bottom: 0.25rem;
+}
+
+.rgbj-feature-card__placeholder-hint {
+    font-size: 0.8125rem;
+    max-width: 16rem;
+    line-height: 1.35;
+}
+
+.rgbj-feature-card .card-body {
+    padding-top: 1rem;
+}
+
+.rgbj-feature-card .card-title .bi {
+    font-size: 1rem;
+    vertical-align: -0.125em;
+}
+
+.rgbj-feature-card .card-text a {
+    font-weight: 500;
+}
+
+/* Supported gear page — Amazon Associates links */
+.gear-line__name {
+    min-width: 0;
+}
+
+.gear-amazon-link {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.375rem;
+    background: #2c2c30;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-decoration: none !important;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.gear-amazon-link:hover {
+    background: #36363c;
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.gear-amazon-logo {
+    display: block;
+    height: 18px;
+    width: auto;
+    max-width: 72px;
+    object-fit: contain;
+}

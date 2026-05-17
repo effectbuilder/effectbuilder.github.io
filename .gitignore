@@ -1,8 +1,6 @@
 deploy-config.local.php
 
 # Kept locally only (not published). Repo previously used RGBJunkieApp.hidden/
-RGBJunkieApp/
-RGBJunkieApp.hidden/
 node_modules/
 .DS_Store
 npm-debug.log*
@@ -14,4 +12,3 @@ test-results/
 /generator
 generator/index.html
 generator/index.html
-/RGBJunkieApp

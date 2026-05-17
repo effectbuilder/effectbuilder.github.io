@@ -1,0 +1,181 @@
+<#!
+  Rebuilds _supported-data.json from your RGBJunkie app plugin/component trees,
+  then embeds that JSON into supported.html (so the gear page works offline and without a separate fetch).
+
+  Device Amazon URLs come from docs/supported-devices-data.json when present; otherwise a US search link is built.
+  Layout components always get a generated Amazon search link (display name + brand).
+
+  To refresh only the embed from an existing JSON file:
+    .\embed-supported-json.ps1
+#>
+$ErrorActionPreference = 'Stop'
+$repoRoot = 'C:\Users\josea\RGBJunkieApp'
+$pluginsRoot = Join-Path $repoRoot 'plugins'
+$compsRoot = Join-Path $repoRoot 'components'
+$devicesCatalogPath = Join-Path $repoRoot 'docs\supported-devices-data.json'
+$outPath = Join-Path $PSScriptRoot '_supported-data.json'
+$AmazonTag = 'rgbjunkie-20'
+
+if (-not (Test-Path -LiteralPath $pluginsRoot)) { throw "Missing plugins: $pluginsRoot" }
+if (-not (Test-Path -LiteralPath $compsRoot)) { throw "Missing components: $compsRoot" }
+
+function ConvertTo-PrettyName {
+    param([string]$Slug)
+    return (($Slug -replace '_', ' ') -replace '\s+', ' ').Trim()
+}
+
+function Get-AmazonSearchUrl {
+    param([string]$Query)
+    $q = if ([string]::IsNullOrWhiteSpace($Query)) { 'RGB PC lighting' } else { $Query.Trim() }
+    $encoded = [uri]::EscapeDataString($q)
+    return "https://www.amazon.com/s?k=$encoded&tag=$AmazonTag"
+}
+
+function Ensure-AmazonAssociateTag {
+    param([string]$Url)
+    if ([string]::IsNullOrWhiteSpace($Url)) { return $Url }
+    if ($Url -notmatch '(?i)amazon\.') { return $Url }
+    if ($Url -match '[?&]tag=') {
+        return [regex]::Replace($Url, '([?&])tag=[^&]*', "`${1}tag=$AmazonTag")
+    }
+    $sep = if ($Url -match '\?') { '&' } else { '?' }
+    return $Url + $sep + 'tag=' + $AmazonTag
+}
+
+function Get-AmazonSearchQuery {
+    param(
+        [string]$DisplayName,
+        [string]$Brand
+    )
+    $name = ConvertTo-PrettyName $DisplayName
+    $brand = if ($Brand) { $Brand.Trim() } else { '' }
+    $parts = @()
+    if ($name) { $parts += $name }
+    if ($brand -and $brand -ne '-' -and ($name.ToLowerInvariant().IndexOf($brand.ToLowerInvariant()) -lt 0)) {
+        $parts += $brand
+    }
+    $joined = ($parts -join ' ').Trim()
+    if ($joined.Length -eq 0) { return 'RGB PC lighting' }
+    return $joined
+}
+
+function Read-DeviceAmazonMap {
+    param([string]$Path)
+    $map = @{}
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Warning "Device catalog not found ($Path); using generated Amazon search URLs for devices."
+        return $map
+    }
+    $raw = [System.IO.File]::ReadAllText($Path, [System.Text.UTF8Encoding]::new($false))
+    $doc = $raw | ConvertFrom-Json
+    foreach ($entry in @($doc.entries)) {
+        if (-not $entry.relativePath -or -not $entry.amazonUrl) { continue }
+        $rel = ($entry.relativePath -replace '\\', '/').ToLowerInvariant()
+        $map[$rel] = Ensure-AmazonAssociateTag ([string]$entry.amazonUrl)
+    }
+    Write-Host "Loaded $($map.Count) device Amazon URLs from catalog."
+    return $map
+}
+
+function New-GearEntry {
+    param(
+        [string]$Vendor,
+        [string]$Slug,
+        [hashtable]$AmazonByRelPath
+    )
+    $pretty = ConvertTo-PrettyName $Slug
+    $rel = ($Vendor + '/' + $Slug + '.js').ToLowerInvariant()
+    $url = $null
+    if ($AmazonByRelPath.ContainsKey($rel)) {
+        $url = $AmazonByRelPath[$rel]
+    } else {
+        $url = Get-AmazonSearchUrl (Get-AmazonSearchQuery -DisplayName $pretty -Brand $Vendor)
+    }
+    return [ordered]@{
+        name      = $Slug
+        amazonUrl = $url
+    }
+}
+
+function New-ComponentEntry {
+    param(
+        [string]$Vendor,
+        [string]$Slug
+    )
+    $pretty = ConvertTo-PrettyName $Slug
+    return [ordered]@{
+        name      = $Slug
+        amazonUrl = (Get-AmazonSearchUrl (Get-AmazonSearchQuery -DisplayName $pretty -Brand $Vendor))
+    }
+}
+
+$amazonByRelPath = Read-DeviceAmazonMap -Path $devicesCatalogPath
+
+$devices = [ordered]@{}
+Get-ChildItem -LiteralPath $pluginsRoot -Directory |
+    Where-Object { $_.Name -notmatch '^(?i)custom$' } |
+    Sort-Object Name |
+    ForEach-Object {
+        $vendor = $_.Name
+        $items = @(Get-ChildItem -LiteralPath $_.FullName -File -Filter '*.js' -ErrorAction SilentlyContinue |
+            Sort-Object Name |
+            ForEach-Object {
+                $slug = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
+                New-GearEntry -Vendor $vendor -Slug $slug -AmazonByRelPath $amazonByRelPath
+            })
+        if ($items.Count -gt 0) { $devices[$vendor] = $items }
+    }
+
+$components = [ordered]@{}
+Get-ChildItem -LiteralPath $compsRoot -Directory |
+    Where-Object { $_.Name -notmatch '^(?i)custom$' } |
+    Sort-Object Name |
+    ForEach-Object {
+        $vendor = $_.Name
+        $items = @(Get-ChildItem -LiteralPath $_.FullName -File -Filter '*.json' -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object FullName |
+            ForEach-Object {
+                $slug = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
+                New-ComponentEntry -Vendor $vendor -Slug $slug
+            })
+        if ($items.Count -gt 0) { $components[$vendor] = $items }
+    }
+
+$obj = [ordered]@{
+    generated  = (Get-Date).ToString('yyyy-MM-dd')
+    amazonTag  = $AmazonTag
+    devices    = $devices
+    components = $components
+}
+$json = $obj | ConvertTo-Json -Depth 12
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+
+$dc = ($devices.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+$cc = ($components.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
+if ($dc -eq 0 -and $cc -eq 0 -and (Test-Path -LiteralPath $outPath)) {
+    Write-Warning "Scan produced no entries; keeping existing _supported-data.json (check plugins/components paths)."
+    $json = [System.IO.File]::ReadAllText($outPath, $utf8NoBom)
+} else {
+    [System.IO.File]::WriteAllText($outPath, $json, $utf8NoBom)
+    Write-Host "Wrote $outPath | device plugins: $dc | components: $cc"
+}
+
+# Embed same JSON into supported.html so the page works from file:// and if _supported-data.json is missing on the server.
+$supportedPath = Join-Path $PSScriptRoot 'supported.html'
+$begin = '<!-- SUPPORTED_GEAR_JSON:BEGIN -->'
+$end = '<!-- SUPPORTED_GEAR_JSON:END -->'
+if (Test-Path -LiteralPath $supportedPath) {
+    $safeJson = $json.Replace('</textarea', '<\/textarea')
+    $nl = "`r`n"
+    $block = $begin + $nl + '<textarea id="supported-gear-data" class="d-none" readonly aria-hidden="true">' + $safeJson + '</textarea>' + $nl + $end
+    $html = [System.IO.File]::ReadAllText($supportedPath, [System.Text.UTF8Encoding]::new($false))
+    $pattern = [regex]::Escape($begin) + '[\s\S]*?' + [regex]::Escape($end)
+    $rx = [regex]::new($pattern)
+    if (-not $rx.IsMatch($html)) {
+        Write-Warning "supported.html missing SUPPORTED_GEAR_JSON markers; skipping embed."
+    } else {
+        $html2 = $rx.Replace($html, $block, 1)
+        [System.IO.File]::WriteAllText($supportedPath, $html2, $utf8NoBom)
+        Write-Host "Embedded JSON into supported.html"
+    }
+}
