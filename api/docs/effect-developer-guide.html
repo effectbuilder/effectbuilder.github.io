@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <!--
+    SPDX-FileCopyrightText: © 2026 José A Miranda Velez <admin@rgbjunkie.com>
+    SPDX-License-Identifier: LicenseRef-RGBJunkie-Proprietary
+    https://www.rgbjunkie.com
+  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RGBJunkie effect developer guide</title>
+  <link rel="icon" type="image/x-icon" href="/rgbjunkielogo2.ico" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles-alt.css">
+  <link rel="stylesheet" href="/api/docs/docs-guide-overrides.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" crossorigin="anonymous" />
+</head>
+<body class="docs-guide-body">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom docs-site-nav">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <img src="/images/rgbjunkie.png" alt="RGBJunkie" class="docs-brand-logo rounded" width="40" height="40" />
+        <span class="fw-semibold">RGBJunkie</span>
+      </a>
+      <span class="navbar-text small text-body-secondary me-auto ms-1 d-none d-md-inline">Effect developer guide</span>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/supported-devices.html">Supported devices</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-functional-developer-guide.html">Functional (.mjs)</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/plugin-developer-guide.html">Plugin guide</a>
+        <a class="btn btn-sm btn-primary" href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a>
+      </div>
+    </div>
+  </nav>
+  <div class="docs-page-shell">
+  <aside class="docs-nav" aria-label="Guide sections">
+    <p class="docs-nav-title">Contents</p>
+    <div class="docs-nav-group">
+      <p class="docs-nav-group-title" id="nav-group-html-canvas">HTML canvas</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-group-html-canvas">
+      <li><a href="#canvas-primer">Simple motion &amp; shapes</a></li>
+      <li><a href="#what">1. What an effect is</a></li>
+      <li><a href="#shape">2. Minimal document shape</a></li>
+      <li><a href="#discovery">3. Discovery metadata</a></li>
+      <li class="docs-nav-sub"><a href="#discovery-grouping">3.1 Sidebar grouping &amp; tooltips</a></li>
+      <li><a href="#settings">4. Settings</a></li>
+      <li><a href="#globals">5. Host-injected globals</a></li>
+      <li><a href="#engine">6. <code>engine</code> API</a></li>
+      <li><a href="#rendering">7. Rendering</a></li>
+      <li><a href="#input">8. Keyboard / tap hooks</a></li>
+      <li><a href="#logging">9. Logging</a></li>
+      <li><a href="#distribution">10. Distribution</a></li>
+      <li><a href="#help">11. Help</a></li>
+      </ul>
+    </div>
+    <div class="docs-nav-group docs-nav-group--crosslink">
+      <p class="docs-nav-group-title" id="nav-group-also">Also available</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-group-also">
+        <li><a class="docs-nav-external" href="/api/docs/effect-functional-developer-guide.html">Functional effects (<code>.mjs</code>) — separate guide</a></li>
+      </ul>
+    </div>
+    <div class="docs-nav-group">
+      <p class="docs-nav-group-title" id="nav-group-worked-examples">HTML worked examples</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-group-worked-examples">
+      <li><a href="#examples-detail">12. Worked examples</a></li>
+      <li class="docs-nav-sub"><a href="#ex-gradient">12.1 Color profile gradient</a></li>
+      <li class="docs-nav-sub"><a href="#ex-audio">12.2 Audio bars</a></li>
+      <li class="docs-nav-sub"><a href="#ex-screen">12.3 Screen sample</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-content">
+  <div class="wrap">
+    <article>
+      <h1>RGBJunkie effect developer guide</h1>
+      <p class="lede">
+        For anyone who wants to build <strong>HTML canvas effects</strong> that run when users choose <strong>Effect</strong> lighting mode in the RGBJunkie desktop application — including <strong>beginners</strong> who are still learning JavaScript.
+        If that is you, read <strong><a href="#canvas-primer">Simple motion &amp; shapes</a></strong> first, then skim the <strong>worked examples</strong> below before diving into the numbered sections.
+      </p>
+      <p class="lede">
+        The rest of this page is a <strong>technical reference</strong> (metadata, sidebar controls, <code>engine</code> API). It does not require access to RGBJunkie source code.
+      </p>
+      <p class="lede">
+        <strong>Functional (<code>.mjs</code>) effects</strong> use one JavaScript module with <code>sampleLed</code> instead of a canvas. They have their own <a href="/api/docs/effect-functional-developer-guide.html">end-user guide (HTML)</a> so this page stays focused on HTML canvas.
+      </p>
+      <p class="lede">
+        Effect Builder, gallery publishing, and downloads:
+        <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a>
+      </p>
+
+      <h2 id="canvas-primer">Making simple effects (start here)</h2>
+      <p>
+        RGBJunkie effects are normal web pages with a <code>&lt;canvas&gt;</code>. You draw one <strong>frame</strong> at a time; the app shows that picture on your LEDs.
+        You do <strong>not</strong> need to be an expert — many beautiful effects are just a handful of shapes moving in a pattern.
+      </p>
+      <figure class="docs-figure">
+        <!-- Replace the inner div with: <img class="docs-figure-img" src="/api/docs/images/effect-guide/effect-in-workspace.png" alt="…" /> -->
+        <div class="docs-image-slot" aria-hidden="true">
+          <span class="docs-image-slot-text">Image placeholder — Effect mode and canvas preview in RGBJunkie</span>
+        </div>
+        <figcaption class="docs-figure-caption">Screenshot or diagram: how the workspace shows your canvas and LEDs (add file under <code>docs/images/effect-guide/</code> and point <code>src</code> here).</figcaption>
+      </figure>
+
+      <h3>A simple animation loop</h3>
+      <p>
+        Browsers expose <code>requestAnimationFrame</code>: you register a function that runs before the next repaint, usually about 60 times per second.
+        Inside that function you clear (or paint over) the canvas, draw your shapes using the current time, then schedule the next frame.
+      </p>
+      <ul>
+        <li><code>const ctx = canvas.getContext("2d")</code> — the “pencil” for rectangles, circles, lines, gradients, and text.</li>
+        <li><code>canvas.width</code> / <code>canvas.height</code> — pixel size RGBJunkie sets for you; always use these for layout (see <a href="#canvas-container">§2.1</a>).</li>
+      </ul>
+
+      <h3>Drawing basic shapes</h3>
+      <p>Common building blocks on a 2D canvas:</p>
+      <ul>
+        <li><strong>Filled rectangle</strong> — <code>ctx.fillStyle = "#3399ff"; ctx.fillRect(x, y, width, height);</code></li>
+        <li><strong>Circle or disc</strong> — <code>ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();</code></li>
+        <li><strong>Line or trail</strong> — <code>ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();</code></li>
+        <li><strong>Smooth color</strong> — build a string like <code>"hsl(" + hue + ", 80%, 55%)"</code> and assign it to <code>ctx.fillStyle</code> (hue from 0–360).</li>
+      </ul>
+      <figure class="docs-figure">
+        <!-- <img class="docs-figure-img" src="/api/docs/images/effect-guide/canvas-shapes.png" alt="Rectangle, circle, and line on a canvas" /> -->
+        <div class="docs-image-slot" aria-hidden="true">
+          <span class="docs-image-slot-text">Image placeholder — sketch of basic canvas shapes (rect, arc, line)</span>
+        </div>
+        <figcaption class="docs-figure-caption">Optional reference graphic for beginners (static PNG or SVG).</figcaption>
+      </figure>
+
+      <h3>Why <code>Math.sin</code> and <code>Math.cos</code> are your friends</h3>
+      <p>
+        <code>Math.sin</code> and <code>Math.cos</code> always return numbers between <strong>−1</strong> and <strong>1</strong>.
+        Feed them an angle that grows smoothly with time (for example <code>performance.now() / 1000</code>) and you get a gentle wave — perfect for motion and pulsing colors without jarring jumps.
+      </p>
+      <ul>
+        <li><strong>Move in a circle</strong> — pick a center <code>(cx, cy)</code>, a radius <code>R</code>, and an angle <code>t</code> in radians. Then <code>x = cx + Math.cos(t) * R</code> and <code>y = cy + Math.sin(t) * R</code>. Increase <code>t</code> each frame and a dot orbits the center.</li>
+        <li><strong>Slide left and right</strong> — <code>x = cx + Math.sin(t) * amplitude</code> (no <code>cos</code> needed). The same idea works for vertical motion with <code>y</code>.</li>
+        <li><strong>Breathe a color</strong> — map sine to 0…1: <code>const u = Math.sin(t) * 0.5 + 0.5</code>, then use <code>u</code> for hue, opacity, or the mix between two palettes.</li>
+      </ul>
+      <p>Minimal pattern (drop inside your <code>draw</code> / frame loop after you have <code>canvas</code> and <code>ctx</code>):</p>
+      <pre><code class="language-javascript">const t = performance.now() / 1000;
+const w = canvas.width, h = canvas.height;
+const cx = w * 0.5, cy = h * 0.5;
+const R = Math.min(w, h) * 0.28;
+const x = cx + Math.cos(t) * R;
+const y = cy + Math.sin(t) * R;
+
+ctx.fillStyle = "#0a0a12";
+ctx.fillRect(0, 0, w, h);
+ctx.beginPath();
+ctx.arc(x, y, 14, 0, Math.PI * 2);
+ctx.fillStyle = "hsl(" + ((Math.sin(t * 0.6) * 0.5 + 0.5) * 360) + ", 85%, 58%)";
+ctx.fill();</code></pre>
+      <figure class="docs-figure">
+        <!-- <img class="docs-figure-img" src="/api/docs/images/effect-guide/orbiting-dot.png" alt="Orbiting dot sample output" /> -->
+        <div class="docs-image-slot" aria-hidden="true">
+          <span class="docs-image-slot-text">Image placeholder — still or short GIF of the orbiting-dot sample above</span>
+        </div>
+        <figcaption class="docs-figure-caption">What the minimal code can look like in motion (still frame is enough).</figcaption>
+      </figure>
+
+      <h3>Learn more (free, general web — not RGBJunkie-specific)</h3>
+      <p>These resources are about <strong>canvas and JavaScript in the browser</strong>. They apply anywhere; RGBJunkie then hosts your finished page as an effect.</p>
+      <ul>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial" rel="noopener">MDN — Canvas tutorial</a> (drawing, transforms, animation)</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D" rel="noopener">MDN — Canvas 2D drawing reference</a> (<code>fillRect</code>, <code>arc</code>, colors, …)</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/sin" rel="noopener">MDN — <code>Math.sin</code></a> and <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/cos" rel="noopener"><code>Math.cos</code></a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame" rel="noopener">MDN — <code>requestAnimationFrame</code></a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/JavaScript_basics" rel="noopener">MDN — JavaScript basics</a> (variables, functions, if you are brand new)</li>
+        <li><a href="https://javascript.info/" rel="noopener">javascript.info</a> — clear modern JS tutorials (first chapters are enough to start)</li>
+        <li><a href="https://thecodingtrain.com/" rel="noopener">The Coding Train</a> — creative coding and math explained in a friendly way (videos + p5.js)</li>
+      </ul>
+      <p>
+        When a moving shape on a canvas makes sense, continue with <strong><a href="#what">section 1</a></strong> for how RGBJunkie loads your file, then use the <strong>worked examples</strong> right below for tiny effects that call the host APIs.
+      </p>
+
+      <aside class="examples-banner" id="examples" aria-labelledby="examples-banner-title">
+        <p class="examples-banner-kicker">Worked examples</p>
+        <p id="examples-banner-title" class="examples-banner-title">Jump to a full listing</p>
+        <p class="examples-banner-lede">
+          Each card opens <strong><a href="#examples-detail">section 12</a></strong> on this page at the right place — complete HTML plus a short “how it works.”
+          That content is written so you can <strong>read</strong> or republish it without a live <code>engine</code>; the matching <code>.html</code> files are only for <strong>running inside RGBJunkie</strong> (the app injects globals a normal website does not provide).
+          Optional repo copies for the desktop app: <code>examples/effects/</code>.
+        </p>
+        <div class="example-cards">
+          <div class="example-card">
+            <div class="docs-image-slot docs-image-slot--thumb" aria-hidden="true">
+              <span class="docs-image-slot-text">Thumb — 12.1 gradient</span>
+            </div>
+            <h3><a href="#ex-gradient">12.1 Color profile gradient</a></h3>
+            <p class="example-card-desc"><code>colorProfile</code> meta, host-resolved <code>colorProfileStops</code></p>
+          </div>
+          <div class="example-card">
+            <div class="docs-image-slot docs-image-slot--thumb" aria-hidden="true">
+              <span class="docs-image-slot-text">Thumb — 12.2 audio bars</span>
+            </div>
+            <h3><a href="#ex-audio">12.2 Audio spectrum bars</a></h3>
+            <p class="example-card-desc"><code>engine.audio.freq</code> · 200 bins</p>
+          </div>
+          <div class="example-card">
+            <div class="docs-image-slot docs-image-slot--thumb" aria-hidden="true">
+              <span class="docs-image-slot-text">Thumb — 12.3 screen</span>
+            </div>
+            <h3><a href="#ex-screen">12.3 Screen sample</a></h3>
+            <p class="example-card-desc"><code>requestNativeScreenBitmap</code> · host-managed capture</p>
+          </div>
+        </div>
+      </aside>
+
+      <h2 id="what">1. What an effect is</h2>
+      <ul>
+        <li>A <strong>single HTML document</strong> (markup, styles, scripts) loaded in an isolated iframe when the user selects your effect.</li>
+        <li>The host injects <code>window.engine</code>, <code>window.points</code>, <code>RGBJunkie_Ready</code>, and one <strong>global variable per setting</strong> from your <code>&lt;meta property&gt;</code> rows (<a href="#settings">Section 4</a>).</li>
+        <li>You normally draw each frame to a <code>&lt;canvas&gt;</code>; the workspace engine samples it for LEDs and hardware.</li>
+        <li>
+          <strong>Alternatively</strong>, a <strong>functional</strong> effect is a single <code>.mjs</code> file exporting <code>meta</code> and <code>sampleLed</code> — the host calls <code>sampleLed</code> per LED instead of sampling a canvas.
+          See the <a href="/api/docs/effect-functional-developer-guide.html">functional effects guide</a>.
+        </li>
+      </ul>
+      <figure class="docs-figure">
+        <!-- <img class="docs-figure-img" src="/api/docs/images/effect-guide/effect-iframe.png" alt="Effect document inside RGBJunkie iframe" /> -->
+        <div class="docs-image-slot" aria-hidden="true">
+          <span class="docs-image-slot-text">Image placeholder — effect loaded in the app (iframe / dev view)</span>
+        </div>
+        <figcaption class="docs-figure-caption">Where the HTML file runs relative to the rest of the UI (optional).</figcaption>
+      </figure>
+
+      <h2 id="shape">2. Minimal document shape</h2>
+      <p>Use HTML5 with metadata and settings in <code>&lt;head&gt;</code>. Make the page and canvas <strong>fill the iframe</strong> with CSS; the host sets the canvas <strong>bitmap</strong> size (<a href="#canvas-container">Section 2.1</a>).</p>
+      <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8" /&gt;
+  &lt;title&gt;My Effect&lt;/title&gt;
+  &lt;meta name="developer" content="Your Name" /&gt;
+  &lt;meta name="description" content="Short description for the effect browser." /&gt;
+  &lt;meta name="tags" content="ambient, gradient" /&gt;
+
+  &lt;meta property="speed" label="Speed" type="number" min="1" max="100" default="40" /&gt;
+
+  &lt;style&gt;
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Host sets canvas.width/height; omit fixed width/height unless you need a stub for testing outside RGBJunkie --&gt;
+  &lt;canvas id="fx"&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    const canvas = document.getElementById("fx");
+    const ctx = canvas.getContext("2d");
+    function draw() {
+      const w = canvas.width, h = canvas.height;
+      /* use w/h; do not assume fixed 320×200 */
+    }
+    function frame() { requestAnimationFrame(frame); draw(); }
+    window.addEventListener("resize", function () { /* refresh cached layout if needed */ });
+    requestAnimationFrame(frame);
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+      <h3 id="canvas-container">2.1 Canvas and workspace container</h3>
+      <p>The effect iframe fills the <strong>workspace preview</strong> (<code>width</code>/<code>height</code>: 100%). Use <code>html, body { height: 100%; }</code> and stretch the <code>&lt;canvas&gt;</code> with <code>width</code>/<code>height</code>: 100% so the <strong>element</strong> always matches the panel.</p>
+      <figure class="docs-figure">
+        <!-- <img class="docs-figure-img" src="/api/docs/images/effect-guide/canvas-bitmap-vs-css.png" alt="Canvas element filling preview vs bitmap size" /> -->
+        <div class="docs-image-slot" aria-hidden="true">
+          <span class="docs-image-slot-text">Image placeholder — CSS layout vs host-set <code>canvas.width</code> / <code>height</code> (callouts)</span>
+        </div>
+        <figcaption class="docs-figure-caption">Annotated screenshot: preview region, element box, and bitmap dimensions (optional).</figcaption>
+      </figure>
+      <p><strong>Bitmap resolution</strong> (for 2D drawing) is set by the host on the <strong>largest</strong> <code>&lt;canvas&gt;</code> in the page: it matches the user’s <strong>Engine Resolution</strong>, but is <strong>never larger than the iframe’s client box</strong> — if the configured resolution would not fit, the bitmap is <strong>scaled down</strong> with aspect preserved. On change, the host dispatches <code>resize</code> on the effect <code>window</code>.</p>
+      <table>
+        <thead><tr><th>Source</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>canvas.width</code>, <code>canvas.height</code></td><td>Drawable pixel size after host sync — <strong>use for coordinates</strong>.</td></tr>
+          <tr><td><code>engine.canvas.width</code>, <code>engine.canvas.height</code></td><td>Logical Engine Resolution. When the iframe is smaller than that size, the bitmap may be <strong>smaller</strong> — still draw using the element’s <code>width</code>/<code>height</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>Prefer a <strong>single</strong> primary canvas so the host targets the right surface.</p>
+
+      <h2 id="discovery">3. Discovery metadata</h2>
+      <p>
+        The host reads the metas below when building the <strong>effect browser</strong> (search, filters, cards) and the compact <strong>effect details</strong> line in the sidebar.
+        They are ordinary <code>&lt;meta&gt;</code> rows in <code>&lt;head&gt;</code> — not <code>&lt;meta property&gt;</code> settings.
+      </p>
+      <table>
+        <thead><tr><th>Role</th><th>Declaration</th></tr></thead>
+        <tbody>
+          <tr><td>Developer</td><td><code>&lt;meta name="developer" content="…"&gt;</code> — also <code>author</code>, <code>publisher</code>, <code>creator</code>, or <code>property</code> equivalents.</td></tr>
+          <tr><td>Description</td><td><code>&lt;meta name="description" …&gt;</code> or <code>property="description"</code>.</td></tr>
+          <tr><td>Tags</td><td><code>&lt;meta name="tags" content="a, b, c"&gt;</code> — comma-separated; <code>keywords</code> is an alias. Tags (with the name, developer, and description) feed <strong>search and style filters</strong> in the effect browser — use clear words users might look for (<em>ambient</em>, <em>audio</em>, <em>spectrum</em>, …) so your effect groups well with similar entries.</td></tr>
+        </tbody>
+      </table>
+      <p>If omitted, the UI shows sensible placeholders.</p>
+
+      <h3 id="discovery-grouping">Grouping and tooltips on <code>&lt;meta property&gt;</code> (sidebar)</h3>
+      <p>
+        The same <code>&lt;head&gt;</code> usually contains <strong><code>&lt;meta property="…"&gt;</code></strong> rows for user-facing controls (see <a href="#settings">section 4</a>).
+        Those rows are <strong>not</strong> part of the discovery parser above, but they <strong>do</strong> control how options appear in the workspace <strong>Effect</strong> panel:
+      </p>
+      <ul>
+        <li>
+          <strong>Category tab (<code>group</code>)</strong> — Set <code>group="Display"</code>, <code>group="Audio"</code>, or any short tab name so the control lands in that <strong>top-level category</strong>.
+          The alias <code>setting-group</code> (or <code>settingGroup</code>) is accepted. If you omit <code>group</code>, RGBJunkie picks a tab from the property name and label (e.g. properties whose names mention <code>audio</code> lean toward <strong>Audio</strong>).
+        </li>
+        <li>
+          <strong>Sub-tab from <code>label</code></strong> — If the label contains <code>:</code>, the text <strong>before</strong> the first colon is a <strong>sub-tab</strong> inside the category, and the text after is the row title (example: <code>label="Fans: Row 1 count"</code>). Labels without <code>:</code> use the category’s default sub-tab (often <strong>General</strong>).
+        </li>
+        <li>
+          <strong>Tooltips</strong> — Add <code>tooltip="Longer help text"</code> on any <code>&lt;meta property&gt;</code> row. The host shows it as the row’s native <strong>hover tooltip</strong> (<code>title</code>) on the label and control strip so users can read a sentence or two without cluttering the label.
+        </li>
+      </ul>
+      <p>Full attribute reference: <a href="#settings-attrs">Section 4.1</a> (defaults, min/max, combobox <code>values</code>, …).</p>
+
+      <h2 id="settings">4. Settings (<code>&lt;meta property&gt;</code>)</h2>
+      <p class="section-outline">
+        <strong>In this section:</strong>
+        <a href="#settings-attrs">4.1 Attributes</a> ·
+        <a href="#settings-types">4.2 Supported types</a>
+      </p>
+      <pre><code class="language-html">&lt;meta
+  property="speed"
+  label="Speed"
+  type="number"
+  min="1"
+  max="100"
+  step="1"
+  default="40"
+/&gt;</code></pre>
+
+      <h3 id="settings-attrs">4.1 Attributes</h3>
+      <table>
+        <thead><tr><th>Attribute</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>property</code></td><td><strong>Required.</strong> Global variable name in the iframe (<code>speed</code>, <code>hueShift</code>, …). Stable names persist in profiles.</td></tr>
+          <tr><td><code>label</code></td><td><strong>Recommended.</strong> Sidebar text. If the label contains <code>:</code>, text before the first colon is a <strong>sub-tab</strong> inside the category; text after is the row title (e.g. <code>Object 1: Radius</code>). Without <code>:</code>, the row uses the category’s default sub-tab.</td></tr>
+          <tr><td><code>type</code></td><td>Widget and injection type — see <a href="#settings-types">Section 4.2</a>.</td></tr>
+          <tr><td><code>default</code></td><td>Initial value when no saved profile exists.</td></tr>
+          <tr><td><code>min</code>, <code>max</code>, <code>step</code></td><td>For numeric controls.</td></tr>
+          <tr><td><code>values</code></td><td>For <code>combobox</code>: comma-separated options (Unicode commas supported).</td></tr>
+          <tr><td><code>group</code></td><td>Optional <strong>top-level category tab</strong> for this control (e.g. <code>Display</code>, <code>Audio</code>, <code>Motion</code>). Aliases: <code>setting-group</code>, <code>settingGroup</code>. Omitted → host infers from property name + label heuristics.</td></tr>
+          <tr><td><code>tooltip</code></td><td>Optional longer help; shown as the row’s hover tooltip (<code>title</code>). Alias: HTML <code>title</code> attribute on the same <code>&lt;meta&gt;</code> row.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="settings-types">4.2 Supported <code>type</code> values</h3>
+      <p>The host normalizes aliases (e.g. <code>list</code> → <code>combobox</code>, <code>slider</code> → <code>number</code>). Unknown types fall back to text.</p>
+      <table>
+        <thead><tr><th><code>type</code></th><th>Sidebar</th><th>Injected global</th></tr></thead>
+        <tbody>
+          <tr><td><code>number</code></td><td>Range slider</td><td>JavaScript number</td></tr>
+          <tr><td><code>boolean</code></td><td>Checkbox</td><td>boolean</td></tr>
+          <tr><td><code>color</code></td><td>Color picker</td><td>string — use <code>default="#rrggbb"</code></td></tr>
+          <tr><td><code>string</code> / <code>text</code></td><td>Text input</td><td>string</td></tr>
+          <tr><td><code>combobox</code></td><td>Dropdown</td><td>string (one of <code>values</code>)</td></tr>
+          <tr><td><code>colorprofile</code></td><td>Color-profile picker</td><td>Host injects <strong>two</strong> globals: <code>&lt;propName&gt;</code> (the profile id) and <code>&lt;propName&gt;Stops</code> (a ready-to-draw closed array of hex stops — host resolves Rainbow / None / Custom modes for you). The full catalog is still available at <code>window.__rgbjColorProfiles</code> for effects that need labels or modes. Full walkthrough: <a href="#ex-gradient">Section 12.1</a>.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="globals">5. Host-injected globals</h2>
+      <table>
+        <thead><tr><th>Global</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>engine</code></td><td>Parent <code>rgbEngine</code> (<a href="#engine">Section 6</a>).</td></tr>
+          <tr><td><code>points</code></td><td>Array, initialized empty (legacy compatibility).</td></tr>
+          <tr><td><code>RGBJunkie_Ready</code></td><td>Set <code>true</code> after bootstrap.</td></tr>
+          <tr><td><em>each <code>property</code></em></td><td><code>window[property]</code> holds the current parameter value.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="engine">6. <code>engine</code> API (summary)</h2>
+      <p>Use <code>engine</code> or <code>window.engine</code>. Capability statements may change by version — confirm on <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a>.</p>
+      <table>
+        <thead><tr><th>Member</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>engine.audio</code></td><td><code>freq</code> — 200 bins (<strong>0…255</strong>); <code>level</code>, <code>density</code>. Example: <a href="#ex-audio">Section 12.2</a>.</td></tr>
+          <tr><td><code>engine.canvas</code></td><td><code>width</code> / <code>height</code> — <strong>Engine Resolution</strong> (logical). For drawing, use your <code>&lt;canvas&gt;</code> element’s <code>width</code>/<code>height</code>; they cap to the iframe when needed (<a href="#canvas-container">Section 2.1</a>).</td></tr>
+          <tr><td><code>engine.requestNativeScreenBitmap()</code></td><td><strong>Recommended.</strong> Returns <code>Promise&lt;ImageBitmap&gt;</code> — one frame of the user's desktop ready to draw. <strong>Zero arguments.</strong> Monitor, capture rate, and capture size are all host-managed: the app injects a <em>Display</em> picker, a <em>Capture rate</em> slider (FPS budget — the Promise resolves no faster than the chosen rate), and a <em>Capture size</em> slider (max-edge pixels) whenever an effect uses this API. Effects do not declare these as <code>&lt;meta property&gt;</code>.</td></tr>
+          <tr><td><code>engine.requestNativeScreenFrame()</code></td><td>Raw-pixel variant for analysis effects (e.g. extracting a dominant color without drawing). Returns a <code>Promise</code> resolving to <code>{ width, height, data, toImageData() }</code>. Same host-managed plumbing as the bitmap variant; legacy <code>maxWidth</code>/<code>maxHeight</code>/<code>monitorIndex</code> opts are accepted but ignored.</td></tr>
+          <tr><td><code>engine.listScreenMonitors()</code></td><td><code>Promise</code> of display rows for multi-monitor UI.</td></tr>
+          <tr><td><code>engine.systemScreen</code> / <code>engine.screen</code></td><td>Last capture buffer (<code>width</code>, <code>height</code>, <code>data</code>, <code>updatedAt</code>).</td></tr>
+          <tr><td><code>engine.getScreenCaptureImageData()</code></td><td><code>ImageData</code> or <code>null</code> from the <strong>last</strong> native frame (same buffer as <code>systemScreen</code>).</td></tr>
+          <tr><td><code>engine.getSensorValue(name)</code></td><td>Compatibility stub — verify before relying on it.</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Screen capture:</strong> Full teaching listing in <a href="#ex-screen">Section 12.3</a> (<code>requestNativeScreenFrame</code>, <code>toImageData</code>).
+        The built-in <strong>Screen Ambience</strong> catalog effect is the production reference for an effect-side canvas-width control. Whenever an effect references either screen-capture API the app injects <strong>three</strong> sidebar controls: <strong>Display</strong> (which monitor to capture), <strong>Capture rate</strong> (FPS budget — the Promise resolves no faster than the chosen rate), and <strong>Capture size</strong> (max-edge pixels of the capture). Effects must <strong>not</strong> declare <code>screen_monitor_index</code>, <code>screen_capture_fps</code>, or <code>screen_capture_size</code> via <code>&lt;meta property&gt;</code>, must <strong>not</strong> pass <code>maxWidth</code>/<code>maxHeight</code>/<code>monitorIndex</code>, and must <strong>not</strong> hand-roll a <code>setTimeout</code> loop.
+      </p>
+
+      <h2 id="rendering">7. Rendering and compositing</h2>
+      <ul>
+        <li>Draw to a <code>&lt;canvas&gt;</code>; the host reads the <strong>largest</strong> canvas and maps pixels to LED output.</li>
+        <li>Fill the iframe with CSS; use <code>canvas.width</code>/<code>height</code> for drawing and listen for <code>resize</code> (<a href="#canvas-container">Section 2.1</a>).</li>
+        <li>Use <code>requestAnimationFrame</code> for animation loops.</li>
+        <li>Call <code>requestNativeScreenFrame</code> only when you need a frame; duplicate requests may share one OS capture.</li>
+      </ul>
+
+      <h2 id="input">8. Optional: keyboard → canvas coordinates (privacy)</h2>
+      <ul>
+        <li>The host sends only <strong><code>KeyboardEvent.code</code></strong> into the effect (physical key), never <code>key</code> / typed text.</li>
+        <li>Set <code>window.__rgbjKeyboardSpotByCode</code> to map each <code>code</code> to <code>{ x, y }</code> in your canvas pixel space.</li>
+        <li>Implement <code>onKeyboardCanvasPoint(x, y)</code> to react to presses at those coordinates.</li>
+        <li>Nested combiner effects may set <code>window.__rgbjForwardKeyEventsToChildLayers = true</code> to forward the same payload to child iframes.</li>
+      </ul>
+
+      <h2 id="logging">9. Logging</h2>
+      <p><code>console.log</code>, <code>warn</code>, <code>error</code> are forwarded to the host effect log so users can troubleshoot without iframe devtools.</p>
+
+      <h2 id="distribution">10. Distribution</h2>
+      <ul>
+        <li><strong>Local:</strong> install <code>.html</code> (canvas effects) or <code>.mjs</code> (functional effects) in the user effects folder described in the application settings or documentation.</li>
+        <li><strong>Gallery:</strong> publishing and <code>effect.json</code> flows are documented on <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a> — separate from this single-file ABI.</li>
+      </ul>
+
+      <h2 id="help">11. Where to get help</h2>
+      <p><a href="https://www.rgbjunkie.com" rel="noopener">https://www.rgbjunkie.com</a> — Effect Builder, downloads, and published developer materials.</p>
+      <p>
+        For <strong>functional <code>.mjs</code> effects</strong> (no canvas), use the dedicated
+        <a href="/api/docs/effect-functional-developer-guide.html">functional effects guide</a>
+        — same site section as this page, written for end users without repo-only Markdown files.
+      </p>
+
+      <h2 id="examples-detail">12. Worked examples (full source)</h2><p class="doc-host-note"><strong>Minimal teaching code.</strong> Each example below is the smallest file that exercises one API surface — no clamping, no fallbacks, no defensive coding. They will only run inside RGBJunkie because they call host-injected globals (<code>window.engine</code>, <code>window.__rgbjColorProfiles</code>, settings declared via <code>&lt;meta property&gt;</code>). Copy a file into the user effects folder to try it, or just read it here.</p>
+<h3 id="ex-gradient">12.1 Color profile gradient</h3>
+<p class="how-it-works"><strong>How it works.</strong> Declaring <code>&lt;meta property="colorProfile" type="colorProfile"&gt;</code> tells the host to inject <em>two</em> globals into the effect: <code>colorProfile</code> (the profile id, useful for display) and <code>colorProfileStops</code> (a ready-to-draw <strong>closed</strong> array of hex strings — the host resolves Rainbow/None/Custom modes and closes the palette so the seam is invisible). The effect just reads <code>colorProfileStops</code> and paints. The actual teaching trick in this example is the seamless slide: the gradient is built <em>twice the canvas width</em> with both copies of the palette inside it, so as <code>slide</code> cycles 0 → 1 the visible region always falls within the gradient — no wrap visible.</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8" /&gt;
+  &lt;title&gt;Color profile gradient&lt;/title&gt;
+  &lt;meta name="description" content="Animated gradient driven by the user's selected color profile." /&gt;
+
+  &lt;!--
+    The `type="colorProfile"` meta tells RGBJunkie to inject TWO globals:
+      * `colorProfile`      — the profile id (e.g. "Rainbow", "Sunset")
+      * `colorProfileStops` — a ready-to-draw, closed hex-stop array
+    Most effects only need `colorProfileStops`.
+  --&gt;
+  &lt;meta property="colorProfile" label="Color profile" type="colorProfile" default="Rainbow" /&gt;
+
+  &lt;style&gt;
+    html, body { margin: 0; height: 100%; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;canvas id="fx"&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    const canvas = document.getElementById("fx");
+    const ctx = canvas.getContext("2d");
+
+    function draw() {
+      const stops = colorProfileStops;
+      const w = canvas.width, h = canvas.height;
+      const slide = (performance.now() / 5000) % 1;
+
+      // The gradient is 2× wide and holds two copies of the palette, so the
+      // visible canvas always falls inside it as `slide` cycles 0 → 1.
+      const grad = ctx.createLinearGradient(-slide * w, 0, (2 - slide) * w, 0);
+      for (let i = 0; i &lt; stops.length; i++) {
+        const p = (i / (stops.length - 1)) * 0.5;
+        grad.addColorStop(p, stops[i]);
+        grad.addColorStop(p + 0.5, stops[i]);
+      }
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      requestAnimationFrame(draw);
+    }
+    draw();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3 id="ex-audio">12.2 Audio spectrum bars</h3>
+<p class="how-it-works"><strong>How it works.</strong> <code>engine.audio.freq</code> is a 200-element array of spectrum bins (each 0–255), refreshed in place by the native audio pipeline. The loop bins those 200 raw values down to <code>BARS</code> = 64 visualizer columns by sampling at even intervals — real audio visualizers always bin (most of the upper-frequency bins are near zero in normal music, so rendering all 200 looks blurry and busy). The <code>&lt;canvas&gt;</code> declares an explicit internal resolution of 640×320 so each bar lands on a whole-pixel boundary. <strong>Note the explicit black <code>fillRect</code> background each frame</strong> instead of <code>clearRect</code> — the host's canvas sampler treats fully transparent pixels (which <code>clearRect</code> produces) as "keep previous value", leaving a trail. Effects that paint a non-transparent background every frame (or fill the whole canvas with their gradient, like the previous example) sidestep this entirely.</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8" /&gt;
+  &lt;title&gt;Audio bars&lt;/title&gt;
+  &lt;meta name="description" content="Vertical bars driven by the audio spectrum." /&gt;
+
+  &lt;style&gt;
+    html, body { margin: 0; height: 100%; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Explicit internal resolution so each bar is a whole number of pixels wide. --&gt;
+  &lt;canvas id="fx" width="640" height="320"&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    const canvas = document.getElementById("fx");
+    const ctx = canvas.getContext("2d");
+    const BARS = 64;
+
+    function draw() {
+      // `engine.audio.freq` is a 200-element array of spectrum bins (each 0–255).
+      // Bin down to BARS by sampling at even intervals — 64 bars is a comfortable
+      // visualizer width, and most of the raw bins above the audible mid-range are
+      // near zero anyway.
+      const freq = engine.audio.freq;
+      const w = canvas.width, h = canvas.height;
+      const barW = w / BARS;
+
+      // Paint an opaque black background each frame. `clearRect` would only zero the
+      // alpha channel, and the host's per-frame canvas sampler treats fully
+      // transparent pixels as "keep previous value" — that leaves a trail.
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i &lt; BARS; i++) {
+        const v = freq[Math.floor(i * freq.length / BARS)] / 255;
+        ctx.fillStyle = `hsl(${(i / BARS) * 360}, 80%, 55%)`;
+        ctx.fillRect(i * barW, h - v * h, barW, v * h);
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3 id="ex-screen">12.3 Screen sample</h3>
+<p class="how-it-works"><strong>How it works.</strong> <code>engine.requestNativeScreenBitmap()</code> returns a <code>Promise&lt;ImageBitmap&gt;</code> — one frame of the user's desktop, ready to <code>drawImage</code>. The loop <code>await</code>s it, paints it, closes the bitmap, then schedules the next iteration with <code>requestAnimationFrame</code>. <strong>Everything else is host-managed.</strong> Whenever an effect calls this API the app injects three sidebar controls automatically: <em>Display</em> (which monitor), <em>Capture rate</em> (FPS budget — the Promise does not resolve faster than the user-chosen rate), and <em>Capture size</em> (max-edge pixels of the capture). The effect itself takes <strong>no arguments</strong>, declares no screen-capture metas, and does not throttle its own loop. For a production-grade reference that also exposes an effect-side canvas-width control, see the shipped <em>Screen Ambience</em> effect.</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8" /&gt;
+  &lt;title&gt;Screen sample&lt;/title&gt;
+  &lt;meta name="description" content="Draws a downscaled copy of the user's desktop into the canvas." /&gt;
+
+  &lt;style&gt;
+    html, body { margin: 0; height: 100%; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;canvas id="fx"&gt;&lt;/canvas&gt;
+  &lt;script&gt;
+    const canvas = document.getElementById("fx");
+    const ctx = canvas.getContext("2d");
+
+    async function loop() {
+      // Monitor, capture rate, and capture size are all host-managed — the app injects
+      // sidebar controls for them. The effect just asks for the next frame.
+      const bmp = await engine.requestNativeScreenBitmap();
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      bmp.close();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><p><small>Optional repo copies for desktop testing: <code>examples/effects/</code> — keep in sync with this section when editing.</small></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <footer>
+        <p>© RGBJunkie. Documentation for independent effect authors.</p>
+      </footer>
+    </article>
+  </div>
+  </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof hljs !== "undefined") hljs.highlightAll();
+
+      var main = document.querySelector(".docs-content");
+      var headings = main ? main.querySelectorAll("h2[id]") : [];
+      var navLinks = document.querySelectorAll(".docs-nav-list a[href^='#']");
+      if (!headings.length || !navLinks.length) return;
+
+      function setActive(id) {
+        navLinks.forEach(function (a) {
+          a.classList.toggle("is-active", a.getAttribute("href") === "#" + id);
+        });
+      }
+
+      function syncFromScroll() {
+        var marker = window.innerHeight * 0.22;
+        var current = headings[0] ? headings[0].id : "";
+        headings.forEach(function (h) {
+          var rect = h.getBoundingClientRect();
+          if (rect.top <= marker) current = h.id;
+        });
+        setActive(current);
+      }
+
+      window.addEventListener("scroll", syncFromScroll, { passive: true });
+      if (main) main.addEventListener("scroll", syncFromScroll, { passive: true });
+      syncFromScroll();
+    });
+  </script>
+</body>
+</html>

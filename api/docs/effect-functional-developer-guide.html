@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <!--
+    SPDX-FileCopyrightText: © 2026 José A Miranda Velez <admin@rgbjunkie.com>
+    SPDX-License-Identifier: LicenseRef-RGBJunkie-Proprietary
+    https://www.rgbjunkie.com
+  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RGBJunkie functional effects (.mjs)</title>
+  <link rel="icon" type="image/x-icon" href="/rgbjunkielogo2.ico" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles-alt.css">
+  <link rel="stylesheet" href="/api/docs/docs-guide-overrides.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" crossorigin="anonymous" />
+</head>
+<body class="docs-guide-body">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom docs-site-nav">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <img src="/images/rgbjunkie.png" alt="RGBJunkie" class="docs-brand-logo rounded" width="40" height="40" />
+        <span class="fw-semibold">RGBJunkie</span>
+      </a>
+      <span class="navbar-text small text-body-secondary me-auto ms-1 d-none d-md-inline">Functional effects (.mjs)</span>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/supported-devices.html">Supported devices</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-developer-guide.html">HTML canvas guide</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/plugin-developer-guide.html">Plugin guide</a>
+        <a class="btn btn-sm btn-primary" href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a>
+      </div>
+    </div>
+  </nav>
+  <div class="docs-page-shell">
+  <aside class="docs-nav" aria-label="Functional effect guide sections">
+    <p class="docs-nav-title">Contents</p>
+    <div class="docs-nav-group">
+      <p class="docs-nav-group-title" id="nav-fn-start">Start here</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-fn-start">
+        <li><a href="#what-is">What you are writing</a></li>
+        <li><a href="#vs-html">Compared to HTML effects</a></li>
+        <li><a href="#minimal">Minimal working example</a></li>
+      </ul>
+    </div>
+    <div class="docs-nav-group">
+      <p class="docs-nav-group-title" id="nav-fn-detail">Authoring</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-fn-detail">
+        <li><a href="#meta"><code>meta</code> (catalog)</a></li>
+        <li><a href="#params">Sidebar controls</a></li>
+        <li><a href="#sampleled"><code>sampleLed</code></a></li>
+        <li><a href="#context">Audio &amp; color profiles</a></li>
+        <li><a href="#rules">Rules &amp; tips</a></li>
+        <li><a href="#install">Install your file</a></li>
+      </ul>
+    </div>
+    <div class="docs-nav-group">
+      <p class="docs-nav-group-title" id="nav-fn-more">See also</p>
+      <ul class="docs-nav-list" aria-labelledby="nav-fn-more">
+        <li><a class="docs-nav-external" href="/api/docs/effect-developer-guide.html">↗ HTML canvas effect guide</a></li>
+      </ul>
+    </div>
+  </aside>
+  <main class="docs-content">
+  <div class="wrap">
+    <article>
+      <h1>Functional effects (<code>.mjs</code>)</h1>
+      <p class="lede">
+        This page is for authors who want a <strong>single JavaScript file</strong> that drives Effect lighting <strong>without a canvas</strong>.
+        You export a small <strong>catalog object</strong> and one <strong>color function</strong>; RGBJunkie calls that function for each LED.
+      </p>
+      <p class="lede">
+        For <strong>HTML + canvas</strong> effects (iframe, <code>engine</code>, drawing), use the
+        <a href="/api/docs/effect-developer-guide.html">HTML canvas effect guide</a> instead.
+      </p>
+      <p class="lede">
+        Effect Builder, gallery, and downloads: <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a>
+      </p>
+
+      <h2 id="what-is">What you are writing</h2>
+      <p>Save one file with the extension <code>.mjs</code>. It must export two names:</p>
+      <table>
+        <thead><tr><th>Export</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>meta</code></td><td>Plain object: stable <code>id</code>, human <code>name</code>, optional <code>description</code> / <code>publisher</code>, and <code>params</code> for the sidebar.</td></tr>
+          <tr><td><code>sampleLed</code></td><td>A function <code>(args) =&gt; { r, g, b }</code>. Each channel should be <strong>0–255</strong> (the host clamps if needed).</td></tr>
+        </tbody>
+      </table>
+      <p>
+        There is <strong>no</strong> <code>&lt;canvas&gt;</code> and <strong>no</strong> <code>requestAnimationFrame</code> in your module.
+        The app passes time as <code>args.tSec</code> (seconds since your effect started) and tells you which LED you are with <code>args.ledIndex</code>, <code>args.ledCount</code>, and often <code>args.stripU</code> (0…1 along the strip).
+      </p>
+
+      <h2 id="vs-html">Compared to HTML canvas effects</h2>
+      <table>
+        <thead><tr><th>Topic</th><th>HTML (<code>.html</code>)</th><th>Functional (<code>.mjs</code>)</th></tr></thead>
+        <tbody>
+          <tr><td>Output</td><td>You draw; the host <strong>reads pixels</strong> from your canvas.</td><td>You return <strong>RGB</strong> from <code>sampleLed</code>.</td></tr>
+          <tr><td>Time</td><td>Your own animation loop.</td><td><code>args.tSec</code> and <code>args.frameIndex</code> from the host.</td></tr>
+          <tr><td>Settings</td><td><code>&lt;meta property&gt;</code> → globals on <code>window</code>.</td><td><code>meta.params</code> → <code>args.params[key]</code>.</td></tr>
+          <tr><td>Audio</td><td><code>engine.audio</code></td><td><code>args.context.audio</code> (same idea: 200-bin <code>freq</code>, <code>level</code>, <code>density</code>).</td></tr>
+          <tr><td>Color profiles</td><td>Globals like <code>colorProfileStops</code>.</td><td>Add <code>type: "colorProfile"</code> in <code>params</code>, then <code>args.context.sampleColorProfile(id, t)</code>.</td></tr>
+          <tr><td>Browser APIs</td><td>Allowed inside the iframe.</td><td><strong>Not inside <code>sampleLed</code></strong> — no <code>window</code>, <code>document</code>, or network calls there.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="minimal">Minimal working example</h2>
+      <p>Drop this in your user effects folder (or the app’s <code>effects</code> tree while developing) as e.g. <code>MyFirstSweep.mjs</code>. Pick a unique <code>meta.id</code>.</p>
+      <pre><code class="language-javascript">export const meta = {
+  id: "my_first_sweep",
+  name: "My First Sweep",
+  description: "A hue that travels along the strip using host time.",
+  publisher: "Your Name",
+  contractVersion: 1,
+  params: [
+    { key: "speed", label: "Speed", type: "number", min: 1, max: 200, default: 80 },
+  ],
+};
+
+function hueToRgb(p, q, t) {
+  let tt = t;
+  if (tt &lt; 0) tt += 1;
+  if (tt &gt; 1) tt -= 1;
+  if (tt &lt; 1 / 6) return p + (q - p) * 6 * tt;
+  if (tt &lt; 1 / 2) return q;
+  if (tt &lt; 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+  return p;
+}
+
+function hslToRgb(h, s, l) {
+  if (s === 0) {
+    const v = Math.round(l * 255);
+    return { r: v, g: v, b: v };
+  }
+  const q = l &lt; 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const r = hueToRgb(p, q, h + 1 / 3);
+  const g = hueToRgb(p, q, h);
+  const b = hueToRgb(p, q, h - 1 / 3);
+  return {
+    r: Math.round(Math.max(0, Math.min(255, r * 255))),
+    g: Math.round(Math.max(0, Math.min(255, g * 255))),
+    b: Math.round(Math.max(0, Math.min(255, b * 255))),
+  };
+}
+
+export function sampleLed(args) {
+  const speed = Number(args.params.speed ?? 80);
+  const n = Math.max(1, args.ledCount - 1);
+  const su = args.stripU;
+  const u =
+    typeof su === "number" &amp;&amp; Number.isFinite(su)
+      ? Math.max(0, Math.min(1, su))
+      : n &lt;= 0
+        ? 0.5
+        : args.ledIndex / n;
+  const phase = (args.tSec * speed * 0.012 + u) % 1;
+  return hslToRgb(phase, 0.85, 0.55);
+}</code></pre>
+      <ul>
+        <li><strong><code>stripU</code></strong> is the best way to get “where on the strip” when the host provides it; otherwise divide <code>ledIndex</code> by <code>ledCount - 1</code>.</li>
+        <li>Shipped examples under <code>effects/*.mjs</code> in the RGBJunkie source tree show audio, color profiles, and more patterns.</li>
+      </ul>
+
+      <h2 id="meta"><code>meta</code> (catalog)</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>Yes</td><td>Stable id (profiles use it). Lowercase, digits, underscores.</td></tr>
+          <tr><td><code>name</code></td><td>Yes</td><td>Short title in the effect list.</td></tr>
+          <tr><td><code>params</code></td><td>No</td><td>Array of control definitions (see below).</td></tr>
+          <tr><td><code>description</code></td><td>No</td><td>Shown in the browser / tooltips.</td></tr>
+          <tr><td><code>publisher</code></td><td>No</td><td>Your name or brand.</td></tr>
+          <tr><td><code>contractVersion</code></td><td>No</td><td>Defaults to <code>1</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="params">Sidebar controls (<code>meta.params</code>)</h2>
+      <p>Each entry needs <code>key</code> and <code>type</code>. Use <code>label</code>, <code>default</code>, <code>min</code>, <code>max</code>, and <code>values</code> (for lists) like you would for HTML metas.</p>
+      <table>
+        <thead><tr><th><code>type</code></th><th>Control</th><th><code>args.params[key]</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>number</code></td><td>Slider</td><td>Number</td></tr>
+          <tr><td><code>boolean</code></td><td>Checkbox</td><td>Boolean</td></tr>
+          <tr><td><code>color</code></td><td>Color picker</td><td>String <code>#rrggbb</code></td></tr>
+          <tr><td><code>string</code></td><td>Text field</td><td>String</td></tr>
+          <tr><td><code>list</code></td><td>Dropdown</td><td>String (one of <code>values</code>)</td></tr>
+          <tr><td><code>colorProfile</code></td><td>Same picker as HTML effects</td><td>String profile id (e.g. <code>Rainbow</code>)</td></tr>
+        </tbody>
+      </table>
+      <p>For <code>colorProfile</code>, set <code>allowNone: true</code> on the param if you want the <strong>None</strong> option (same idea as HTML <code>allowNone="true"</code>).</p>
+
+      <h2 id="sampleled"><code>sampleLed(args)</code></h2>
+      <table>
+        <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>tSec</code></td><td>Seconds since the effect was mounted.</td></tr>
+          <tr><td><code>frameIndex</code></td><td>Host frame counter.</td></tr>
+          <tr><td><code>ledIndex</code> / <code>ledCount</code></td><td>Which LED (same ordering the host uses for hardware).</td></tr>
+          <tr><td><code>layout</code></td><td><code>{ x, y }</code> in workspace coordinates.</td></tr>
+          <tr><td><code>stripU</code></td><td><code>0…1</code> along the strip, or <code>null</code>.</td></tr>
+          <tr><td><code>params</code></td><td>Current control values.</td></tr>
+          <tr><td><code>context</code></td><td>Host extras — see below.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Performance:</strong> this function may run <em>many</em> times per frame. Keep math tight; avoid allocating large objects per call.</p>
+
+      <h2 id="context">Audio &amp; color profiles</h2>
+      <p><strong>Audio</strong> — read <code>args.context.audio</code> when present:</p>
+      <ul>
+        <li><code>freq</code>: array of 200 values, roughly <code>0…255</code> per bin.</li>
+        <li><code>level</code>: overall loudness (about <code>-100…0</code>).</li>
+        <li><code>density</code>: <code>0…1</code> “how much spectrum energy” for simple reactions.</li>
+      </ul>
+      <p><strong>Color profiles</strong> — add a param <code>{ key: "colorProfile", type: "colorProfile", default: "Rainbow" }</code>. At runtime, call:</p>
+      <pre><code class="language-javascript">const fn = args.context &amp;&amp; args.context.sampleColorProfile;
+if (typeof fn === "function") {
+  const id = String(args.params.colorProfile ?? "Rainbow");
+  const rgb = fn(id, t01WrappedTo0Through1);
+}</code></pre>
+      <p>Built-in effects tint their math through the profile so colors stay on the user’s palette (often by scaling profile RGB by the <strong>luminance</strong> of the color they would have drawn without a profile).</p>
+
+      <h2 id="rules">Rules &amp; tips</h2>
+      <ul>
+        <li><strong>Pure <code>sampleLed</code>:</strong> no DOM, no <code>window</code>, no fetches, no timers — only math from the arguments.</li>
+        <li><strong>One file:</strong> put helpers in the same module; avoid importing unknown URLs.</li>
+        <li><strong>Multi-tab workspaces</strong> use the same saved params model as HTML effects; each tab can remember its own effect.</li>
+      </ul>
+
+      <h2 id="install">Install your file</h2>
+      <p>Use the same <strong>user effects</strong> folder (or product-specific path) as for <code>.html</code> effects. The catalog picks up <code>.mjs</code> automatically. Keep the file basename unique next to any <code>.html</code> in the same folder.</p>
+
+      <footer>
+        <p>© RGBJunkie. Documentation for independent effect authors.</p>
+      </footer>
+    </article>
+  </div>
+  </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof hljs !== "undefined") hljs.highlightAll();
+
+      var main = document.querySelector(".docs-content");
+      var headings = main ? main.querySelectorAll("h2[id]") : [];
+      var navLinks = document.querySelectorAll(".docs-nav-list a[href^='#']");
+      if (!headings.length || !navLinks.length) return;
+
+      function setActive(id) {
+        navLinks.forEach(function (a) {
+          a.classList.toggle("is-active", a.getAttribute("href") === "#" + id);
+        });
+      }
+
+      function syncFromScroll() {
+        var marker = window.innerHeight * 0.22;
+        var current = headings[0] ? headings[0].id : "";
+        headings.forEach(function (h) {
+          var rect = h.getBoundingClientRect();
+          if (rect.top <= marker) current = h.id;
+        });
+        setActive(current);
+      }
+
+      window.addEventListener("scroll", syncFromScroll, { passive: true });
+      if (main) main.addEventListener("scroll", syncFromScroll, { passive: true });
+      syncFromScroll();
+    });
+  </script>
+</body>
+</html>

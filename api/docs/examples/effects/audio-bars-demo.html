@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Audio bars</title>
+  <meta name="description" content="Vertical bars driven by the audio spectrum." />
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Explicit internal resolution so each bar is a whole number of pixels wide. -->
+  <canvas id="fx" width="640" height="320"></canvas>
+  <script>
+    const canvas = document.getElementById("fx");
+    const ctx = canvas.getContext("2d");
+    const BARS = 64;
+
+    function draw() {
+      // `engine.audio.freq` is a 200-element array of spectrum bins (each 0–255).
+      // Bin down to BARS by sampling at even intervals — 64 bars is a comfortable
+      // visualizer width, and most of the raw bins above the audible mid-range are
+      // near zero anyway.
+      const freq = engine.audio.freq;
+      const w = canvas.width, h = canvas.height;
+      const barW = w / BARS;
+
+      // Paint an opaque black background each frame. `clearRect` would only zero the
+      // alpha channel, and the host's per-frame canvas sampler treats fully
+      // transparent pixels as "keep previous value" — that leaves a trail.
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < BARS; i++) {
+        const v = freq[Math.floor(i * freq.length / BARS)] / 255;
+        ctx.fillStyle = `hsl(${(i / BARS) * 360}, 80%, 55%)`;
+        ctx.fillRect(i * barW, h - v * h, barW, v * h);
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
