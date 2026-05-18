@@ -80,7 +80,7 @@ function rgbj_tos_sections(): array
         [
             'heading' => '11. Governing Law',
             'body' => [
-                'These Terms are governed by the laws of the jurisdiction in which RGBJunkie operates, without regard to its conflict-of-law principles, and any dispute arising under or in connection with these Terms is subject to the exclusive jurisdiction of the courts located there.',
+                'These Terms are governed by the laws of Puerto Rico, USA, without regard to its conflict-of-law principles, and any dispute arising under or in connection with these Terms is subject to the exclusive jurisdiction of the courts located there.',
             ],
         ],
         [

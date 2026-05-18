@@ -50,6 +50,7 @@ $pageDesc = 'RGBJunkie Terms of Service, the same agreement shown in the Windows
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url()) ?>">RGBJunkie for Windows</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported USB devices &amp; parts</a></li>
+                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
                 </ul>
             </div>
 
@@ -63,6 +64,7 @@ $pageDesc = 'RGBJunkie Terms of Service, the same agreement shown in the Windows
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('#download')) ?>">Download</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported gear</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
                     <li class="nav-item"><a class="nav-link active" href="<?= rgbj_h(rgbj_url('terms/')) ?>" aria-current="page">Terms</a></li>
                 </ul>
             </div>

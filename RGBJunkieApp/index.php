@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/includes/installers.php';
 require_once __DIR__ . '/includes/feature-cards.php';
+require_once __DIR__ . '/includes/developer-docs.php';
 
 $rgbj_installers = rgbj_discover_installer_pairs(__DIR__);
 $rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
@@ -66,6 +67,7 @@ $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on m
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms of Service</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported USB devices &amp; parts</a></li>
+                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
                 </ul>
             </div>
 
@@ -79,6 +81,7 @@ $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on m
                     <li class="nav-item"><a class="nav-link" href="#download"><i class="bi bi-download me-1"></i>Download</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('releases/')) ?>"><i class="bi bi-archive me-1"></i>Previous releases</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('supported/')) ?>"><i class="bi bi-plugin me-1"></i>Supported gear</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('docs/')) ?>"><i class="bi bi-journal-code me-1"></i>Documentation</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('terms/')) ?>"><i class="bi bi-file-text me-1"></i>Terms</a></li>
                     <li class="nav-item"><a class="nav-link" href="#requirements"><i class="bi bi-pc-display me-1"></i>Requirements</a></li>
                     <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="#download"><i class="bi bi-box-arrow-in-down me-1"></i>Download</a></li>
@@ -153,6 +156,20 @@ $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on m
                     </div>
                     <?php endforeach; ?>
                 </div>
+            </div>
+        </section>
+
+        <section id="developers" class="py-5 bg-body-tertiary border-top border-bottom">
+            <div class="container">
+                <h2 class="h3 fw-bold text-body-emphasis mb-2"><i class="bi bi-journal-code me-2 text-info"></i>Build plugins &amp; effects</h2>
+                <p class="text-body-secondary col-lg-8 mb-4">
+                    RGBJunkie is extensible: ship USB device plugins, HTML canvas effects, or functional <code>.mjs</code> effects.
+                    Full API guides and links to the browser creative tools are on the <a href="<?= rgbj_h(rgbj_url('docs/')) ?>">documentation page</a>.
+                </p>
+                <div class="text-center mb-4">
+                    <a class="btn btn-outline-info" href="<?= rgbj_h(rgbj_url('docs/')) ?>"><i class="bi bi-journal-code me-1"></i>View all documentation</a>
+                </div>
+                <?php rgbj_render_developer_doc_teaser(); ?>
             </div>
         </section>
 

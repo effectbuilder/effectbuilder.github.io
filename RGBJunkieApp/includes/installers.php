@@ -9,6 +9,7 @@ require_once __DIR__ . '/site.php';
 
 const RGBJ_NSIS_DIR = 'downloads/nsis';
 const RGBJ_MSI_DIR = 'downloads/msi';
+const RGBJ_PORTABLE_DIR = 'downloads/portable';
 
 /** @return array{nsis:string,msi:string} Absolute directory paths. */
 function rgbj_installer_directories(string $siteRoot): array
@@ -35,6 +36,14 @@ function rgbj_version_from_msi_name(string $filename): ?string
     return null;
 }
 
+function rgbj_version_from_portable_name(string $filename): ?string
+{
+    if (preg_match('/^RGBJunkie_(.+)_x64-portable\.zip$/i', $filename, $m)) {
+        return $m[1];
+    }
+    return null;
+}
+
 /** @return array{file:string,webPath:string,size:int,mtime:int}|null */
 function rgbj_installer_file_meta(string $dir, string $webSubdir, string $filename): ?array
 {
@@ -54,14 +63,41 @@ function rgbj_installer_file_meta(string $dir, string $webSubdir, string $filena
  * @return list<array{
  *   version:string,
  *   sortKey:string,
- *   setup:array{file:string,webPath:string,size:int,mtime:int},
- *   msi:array{file:string,webPath:string,size:int,mtime:int}
+ *   portable:array{file:string,webPath:string,size:int,mtime:int}|null,
+ *   setup:array{file:string,webPath:string,size:int,mtime:int}|null,
+ *   msi:array{file:string,webPath:string,size:int,mtime:int}|null
  * }>
  */
-function rgbj_discover_installer_pairs(string $siteRoot): array
+function rgbj_discover_releases(string $siteRoot): array
 {
     $dirs = rgbj_installer_directories($siteRoot);
-    $pairs = [];
+    $portableDir = $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, RGBJ_PORTABLE_DIR);
+    /** @var array<string, array{version:string,sortKey:string,portable:?array,setup:?array,msi:?array}> $byVer */
+    $byVer = [];
+
+    $ensure = static function (string $ver) use (&$byVer): void {
+        if (!isset($byVer[$ver])) {
+            $byVer[$ver] = [
+                'version' => $ver,
+                'sortKey' => $ver,
+                'portable' => null,
+                'setup' => null,
+                'msi' => null,
+            ];
+        }
+    };
+
+    if (is_dir($portableDir)) {
+        foreach (glob($portableDir . DIRECTORY_SEPARATOR . 'RGBJunkie_*_x64-portable.zip') ?: [] as $path) {
+            $name = basename($path);
+            $ver = rgbj_version_from_portable_name($name);
+            if ($ver === null) {
+                continue;
+            }
+            $ensure($ver);
+            $byVer[$ver]['portable'] = rgbj_installer_file_meta($portableDir, RGBJ_PORTABLE_DIR, $name);
+        }
+    }
 
     if (is_dir($dirs['nsis'])) {
         foreach (glob($dirs['nsis'] . DIRECTORY_SEPARATOR . 'RGBJunkie_*_x64-setup.exe') ?: [] as $path) {
@@ -70,10 +106,8 @@ function rgbj_discover_installer_pairs(string $siteRoot): array
             if ($ver === null) {
                 continue;
             }
-            if (!isset($pairs[$ver])) {
-                $pairs[$ver] = ['version' => $ver, 'setup' => null, 'msi' => null];
-            }
-            $pairs[$ver]['setup'] = rgbj_installer_file_meta($dirs['nsis'], RGBJ_NSIS_DIR, $name);
+            $ensure($ver);
+            $byVer[$ver]['setup'] = rgbj_installer_file_meta($dirs['nsis'], RGBJ_NSIS_DIR, $name);
         }
     }
 
@@ -84,19 +118,18 @@ function rgbj_discover_installer_pairs(string $siteRoot): array
             if ($ver === null) {
                 continue;
             }
-            if (!isset($pairs[$ver])) {
-                $pairs[$ver] = ['version' => $ver, 'setup' => null, 'msi' => null];
-            }
-            $pairs[$ver]['msi'] = rgbj_installer_file_meta($dirs['msi'], RGBJ_MSI_DIR, $name);
+            $ensure($ver);
+            $byVer[$ver]['msi'] = rgbj_installer_file_meta($dirs['msi'], RGBJ_MSI_DIR, $name);
         }
     }
 
     $complete = [];
-    foreach ($pairs as $ver => $row) {
-        if ($row['setup'] === null || $row['msi'] === null) {
+    foreach ($byVer as $row) {
+        $hasPortable = $row['portable'] !== null;
+        $hasPair = $row['setup'] !== null && $row['msi'] !== null;
+        if (!$hasPortable && !$hasPair) {
             continue;
         }
-        $row['sortKey'] = $ver;
         $complete[] = $row;
     }
 
@@ -105,6 +138,31 @@ function rgbj_discover_installer_pairs(string $siteRoot): array
     });
 
     return $complete;
+}
+
+/**
+ * @return list<array{
+ *   version:string,
+ *   sortKey:string,
+ *   setup:array{file:string,webPath:string,size:int,mtime:int},
+ *   msi:array{file:string,webPath:string,size:int,mtime:int}
+ * }>
+ */
+function rgbj_discover_installer_pairs(string $siteRoot): array
+{
+    $paired = [];
+    foreach (rgbj_discover_releases($siteRoot) as $row) {
+        if ($row['setup'] === null || $row['msi'] === null) {
+            continue;
+        }
+        $paired[] = [
+            'version' => $row['version'],
+            'sortKey' => $row['sortKey'],
+            'setup' => $row['setup'],
+            'msi' => $row['msi'],
+        ];
+    }
+    return $paired;
 }
 
 function rgbj_format_bytes(int $bytes): string

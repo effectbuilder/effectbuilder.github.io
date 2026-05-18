@@ -1,14 +1,12 @@
 <?php declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/installers.php';
+require_once dirname(__DIR__) . '/includes/developer-docs.php';
 
-$rgbj_installers = rgbj_discover_installer_pairs(rgbj_app_root());
-$rgbj_nav_active = 'releases';
-$rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
-$rgbj_release_rows = array_slice($rgbj_installers, 1);
+$rgbj_nav_active = 'docs';
 
-$pageTitle = 'Previous releases | RGBJunkie for Windows';
-$pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs for 64-bit Windows 10 or later.';
+$pageTitle = 'Documentation | RGBJunkie for Windows';
+$pageDesc = 'Developer guides for RGBJunkie plugins, effects, and APIs, plus links to browser creative tools.';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
@@ -24,6 +22,7 @@ $pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs fo
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/styles-alt.css">
+    <link rel="stylesheet" href="../assets/rgbjunkie-app.css">
 </head>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WS7MGSDJSB"></script>
@@ -50,10 +49,10 @@ $pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs fo
                     <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url()) ?>">RGBJunkie for Windows</a></li>
-                    <li><a class="dropdown-item active" href="<?= rgbj_h(rgbj_url('releases/')) ?>" aria-current="page">Previous releases</a></li>
+                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms of Service</a></li>
                     <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported USB devices &amp; parts</a></li>
-                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
+                    <li><a class="dropdown-item active" href="<?= rgbj_h(rgbj_url('docs/')) ?>" aria-current="page">Documentation</a></li>
                 </ul>
             </div>
 
@@ -65,11 +64,11 @@ $pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs fo
                 <ul class="navbar-nav ms-auto gap-lg-2">
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('#features')) ?>">Features</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('#download')) ?>">Download</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="<?= rgbj_h(rgbj_url('releases/')) ?>" aria-current="page">Previous releases</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported gear</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="<?= rgbj_h(rgbj_url('docs/')) ?>" aria-current="page">Documentation</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms</a></li>
-                    <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="<?= rgbj_h(rgbj_url('#download')) ?>"><i class="bi bi-box-arrow-in-down me-1"></i>Latest download</a></li>
+                    <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="<?= rgbj_h(rgbj_url('#download')) ?>"><i class="bi bi-box-arrow-in-down me-1"></i>Download</a></li>
                 </ul>
             </div>
         </div>
@@ -78,60 +77,32 @@ $pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs fo
     <main class="flex-grow-1 py-4">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-10 col-xl-8">
+                <div class="col-lg-10 col-xl-9">
                     <nav aria-label="breadcrumb" class="mb-3">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="<?= rgbj_h(rgbj_url()) ?>">RGBJunkie for Windows</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Previous releases</li>
+                            <li class="breadcrumb-item active" aria-current="page">Documentation</li>
                         </ol>
                     </nav>
 
-                    <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-archive me-2 text-info"></i>Previous releases</h1>
+                    <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-journal-code me-2 text-info"></i>Documentation</h1>
                     <p class="text-body-secondary mb-4">
-                        Older installers stay available if you need to match a prior version on your PC.
-                        <?php if ($rgbj_latest_version !== null) : ?>
-                        For the newest experience, use <a href="<?= rgbj_h(rgbj_url('#download')) ?>">v<?= rgbj_h($rgbj_latest_version) ?></a> on the main download page.
-                        <?php endif; ?>
+                        Extend RGBJunkie with custom plugins and effects, or use the free browser tools to prototype before you install the Windows app.
+                        End-user hardware lists live on the <a href="<?= rgbj_h(rgbj_url('supported/')) ?>">supported gear</a> page; the API reference below is aimed at authors.
                     </p>
 
-                    <?php require dirname(__DIR__) . '/includes/previous-releases-section.php'; ?>
+                    <?php rgbj_render_developer_doc_sections(); ?>
                 </div>
             </div>
         </div>
     </main>
 
     <?php
-    $rgbj_footer_extra_link = '<a href="' . rgbj_h(rgbj_url('#download')) . '">Latest download</a>';
+    $rgbj_footer_blurb = 'Guides for plugin authors, effect builders, and anyone extending RGBJunkie for Windows.';
     require dirname(__DIR__) . '/includes/page-footer.php';
     ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        (function () {
-            var base = window.location.href.replace(/[^/]*$/, '');
-            document.querySelectorAll('input[data-base-path]').forEach(function (el) {
-                el.value = base + el.dataset.basePath;
-            });
-            document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var tid = btn.getAttribute('data-copy-target');
-                    var inp = document.getElementById(tid);
-                    if (!inp || !inp.value) return;
-                    navigator.clipboard.writeText(inp.value).then(function () {
-                        var prev = btn.innerHTML;
-                        btn.innerHTML = '<i class="bi bi-check2"></i>';
-                        btn.classList.add('btn-success');
-                        btn.classList.remove('btn-outline-secondary');
-                        setTimeout(function () {
-                            btn.innerHTML = prev;
-                            btn.classList.remove('btn-success');
-                            btn.classList.add('btn-outline-secondary');
-                        }, 1500);
-                    });
-                });
-            });
-        })();
-    </script>
 </body>
 
 </html>

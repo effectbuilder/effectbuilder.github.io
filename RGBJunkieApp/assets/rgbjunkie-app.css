@@ -198,3 +198,21 @@
     max-width: 72px;
     object-fit: contain;
 }
+
+/* Documentation hub cards */
+.rgbj-doc-card {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    background-color: var(--bs-body-bg);
+}
+
+.rgbj-doc-card:hover,
+.rgbj-doc-card:focus-visible {
+    border-color: rgba(0, 240, 255, 0.45) !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.rgbj-doc-card:focus-visible {
+    outline: 2px solid rgba(0, 240, 255, 0.5);
+    outline-offset: 2px;
+}
