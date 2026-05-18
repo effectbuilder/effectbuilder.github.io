@@ -6,6 +6,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/site.php';
+require_once __DIR__ . '/page-layout.php';
 
 const RGBJ_NSIS_DIR = 'downloads/nsis';
 const RGBJ_MSI_DIR = 'downloads/msi';

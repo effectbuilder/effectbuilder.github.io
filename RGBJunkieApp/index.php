@@ -4,93 +4,20 @@ require_once __DIR__ . '/includes/installers.php';
 require_once __DIR__ . '/includes/feature-cards.php';
 require_once __DIR__ . '/includes/developer-docs.php';
 
+$rgbj_nav_active = 'home';
 $rgbj_installers = rgbj_discover_installer_pairs(__DIR__);
 $rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
 
 $pageTitle = 'RGBJunkie for Windows | Plan, preview, and light up your setup';
 $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on multiple canvases, preview effects, and control supported USB lighting from one polished app.';
+
+rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc, 'og' => true]);
+rgbj_page_analytics();
+rgbj_render_page_nav();
+
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= rgbj_h($pageTitle) ?></title>
-    <meta name="description" content="<?= rgbj_h($pageDesc) ?>">
-
-    <meta property="og:url" content="https://rgbjunkie.com/RGBJunkieApp/">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="<?= rgbj_h($pageTitle) ?>">
-    <meta property="og:description" content="Your desk, your vibe: multiple layout canvases, gorgeous effects, and broad hardware support. Built for gamers and PC enthusiasts.">
-    <meta property="og:image" content="https://www.rgbjunkie.com/images/rgbjunkie.png">
-
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:domain" content="rgbjunkie.com">
-    <meta name="twitter:url" content="https://rgbjunkie.com/RGBJunkieApp/">
-    <meta name="twitter:title" content="<?= rgbj_h($pageTitle) ?>">
-    <meta name="twitter:description" content="Your desk, your vibe: multiple layout canvases, gorgeous effects, and broad hardware support.">
-    <meta name="twitter:image" content="https://www.rgbjunkie.com/images/rgbjunkie.png">
-
-    <link rel="icon" type="image/x-icon" href="/rgbjunkielogo2.ico">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/styles-alt.css">
-    <link rel="stylesheet" href="assets/rgbjunkie-app.css">
-</head>
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-WS7MGSDJSB"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-WS7MGSDJSB');
-</script>
-
-<body class="d-flex flex-column min-vh-100">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="overflow: visible;">
-        <div class="container-fluid" style="overflow: visible;">
-            <div class="dropdown me-3" style="position: relative; display: inline-block;">
-                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin: 0; padding: 0.25rem 0.5rem;">
-                    <img src="/images/rgbjunkielogo.png" alt="RGBJunkie" class="me-2" style="height: 1.5em;">
-                    <span>RGBJunkie</span>
-                    <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-start shadow mt-2" style="min-width: 280px;">
-                    <li><a class="dropdown-item" href="/">RGBJunkie Effect Builder</a></li>
-                    <li><a class="dropdown-item" href="/builder/">RGBJunkie Component Builder</a></li>
-                    <li><a class="dropdown-item" href="/combiner/">RGBJunkie Effect Combiner</a></li>
-                    <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item active" href="<?= rgbj_h(rgbj_url()) ?>" aria-current="page">RGBJunkie for Windows</a></li>
-                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('releases/')) ?>">Previous releases</a></li>
-                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms of Service</a></li>
-                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('supported/')) ?>">Supported USB devices &amp; parts</a></li>
-                    <li><a class="dropdown-item" href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a></li>
-                </ul>
-            </div>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav" aria-controls="appNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="appNav">
-                <ul class="navbar-nav ms-auto gap-lg-2">
-                    <li class="nav-item"><a class="nav-link" href="#features"><i class="bi bi-grid-3x3-gap me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#download"><i class="bi bi-download me-1"></i>Download</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('releases/')) ?>"><i class="bi bi-archive me-1"></i>Previous releases</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('supported/')) ?>"><i class="bi bi-plugin me-1"></i>Supported gear</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('docs/')) ?>"><i class="bi bi-journal-code me-1"></i>Documentation</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h(rgbj_url('terms/')) ?>"><i class="bi bi-file-text me-1"></i>Terms</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#requirements"><i class="bi bi-pc-display me-1"></i>Requirements</a></li>
-                    <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="#download"><i class="bi bi-box-arrow-in-down me-1"></i>Download</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <header class="py-5 border-bottom bg-body-tertiary">
+    <header class="py-5 border-bottom bg-body-tertiary rgbj-subpage-glow">
         <div class="container">
             <div class="row align-items-center g-4">
                 <div class="col-lg-5">
@@ -234,8 +161,6 @@ $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on m
     $rgbj_footer_blurb = 'The Windows companion to the free RGBJunkie creative tools in your browser, now with multiple canvases, rich effects, and room-scale control.';
     require __DIR__ . '/includes/page-footer.php';
     ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (function () {
             var base = window.location.href.replace(/[^/]*$/, '');
@@ -317,6 +242,4 @@ $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on m
             }
         })();
     </script>
-</body>
-
-</html>
+<?php rgbj_page_scripts_end(); ?>

@@ -1,5 +1,38 @@
 /* RGBJunkie for Windows landing page (RGBJunkieApp/) */
 
+/* Shared site navigation */
+.rgbj-site-nav {
+    overflow: visible;
+}
+
+.rgbj-site-nav .container-fluid {
+    overflow: visible;
+}
+
+.rgbj-brand-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.rgbj-brand-dropdown .navbar-brand {
+    cursor: pointer;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+}
+
+.rgbj-brand-logo {
+    height: 1.5em;
+}
+
+.rgbj-brand-menu {
+    min-width: 280px;
+}
+
+.rgbj-site-nav .nav-link .bi,
+.rgbj-site-nav .btn .bi {
+    vertical-align: -0.125em;
+}
+
 /* Hero feature badges */
 .rgbj-hero-badges {
     gap: 0.625rem;
@@ -215,4 +248,400 @@
 .rgbj-doc-card:focus-visible {
     outline: 2px solid rgba(0, 240, 255, 0.5);
     outline-offset: 2px;
+}
+
+/* Subpage / hero top glow (shared across site pages) */
+.rgbj-subpage-glow {
+    position: relative;
+}
+
+.rgbj-subpage-glow::before {
+    content: "";
+    position: absolute;
+    inset: -2rem -1rem auto -1rem;
+    height: 12rem;
+    background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0, 240, 255, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.rgbj-subpage-glow > * {
+    position: relative;
+    z-index: 1;
+}
+
+[data-bs-theme="light"] .rgbj-subpage-glow::before {
+    background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0, 180, 200, 0.1) 0%, transparent 70%);
+}
+
+/* Changelog timeline (synced from docs/CHANGELOG.md) */
+.rgbj-changelog-page > * {
+    position: relative;
+    z-index: 1;
+}
+
+.rgbj-changelog-intro {
+    margin-bottom: 2rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0, 240, 255, 0.22);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.rgbj-changelog-intro__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: var(--bs-body-emphasis);
+}
+
+.rgbj-changelog-intro__lead {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.55;
+}
+
+.rgbj-changelog-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.rgbj-changelog-release {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: 0 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.rgbj-changelog-release--last .rgbj-changelog-timeline-line {
+    display: none;
+}
+
+.rgbj-changelog-release__rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0.35rem;
+}
+
+.rgbj-changelog-timeline-line {
+    flex: 1;
+    width: 2px;
+    min-height: 1.5rem;
+    margin-top: 0.5rem;
+    background: linear-gradient(to bottom, rgba(0, 240, 255, 0.55), rgba(0, 240, 255, 0.08));
+    border-radius: 1px;
+}
+
+.rgbj-changelog-date-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.rgbj-changelog-date-badge--release {
+    color: #0a1628;
+    background: linear-gradient(145deg, #00f0ff 0%, #38bdf8 45%, #818cf8 100%);
+}
+
+.rgbj-changelog-date-badge--notes {
+    color: #fff;
+    background: linear-gradient(145deg, #0ea5e9 0%, #6366f1 100%);
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.1rem;
+}
+
+.rgbj-changelog-release__card {
+    overflow: hidden;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rgbj-changelog-release__card:hover {
+    border-color: rgba(0, 240, 255, 0.35) !important;
+    box-shadow: 0 0 28px rgba(0, 240, 255, 0.08);
+}
+
+.rgbj-changelog-release__header {
+    padding: 1.25rem 1.35rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.06) 0%, transparent 55%);
+}
+
+.rgbj-changelog-release__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.rgbj-changelog-version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+    color: #0a1628;
+    background: linear-gradient(135deg, #00f0ff 0%, #a78bfa 100%);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+}
+
+.rgbj-changelog-release__date-label {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--bs-secondary-color);
+}
+
+.rgbj-changelog-date-badge--version {
+    color: #0a1628;
+    background: linear-gradient(145deg, #a78bfa 0%, #00f0ff 55%, #38bdf8 100%);
+}
+
+.rgbj-changelog-release--versioned .rgbj-changelog-release__card {
+    border-color: rgba(167, 139, 250, 0.28) !important;
+}
+
+.rgbj-changelog-versions-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.rgbj-changelog-versions-nav__label {
+    width: 100%;
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+}
+
+.rgbj-changelog-versions-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 50rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--bs-body-color);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.rgbj-changelog-versions-nav a:hover,
+.rgbj-changelog-versions-nav a:focus-visible {
+    border-color: rgba(0, 240, 255, 0.45);
+    background: rgba(0, 240, 255, 0.1);
+    color: #c8f7ff;
+}
+
+.rgbj-changelog-versions-nav a.rgbj-changelog-versions-nav__current {
+    border-color: rgba(0, 240, 255, 0.5);
+    background: rgba(0, 240, 255, 0.15);
+    color: #c8f7ff;
+}
+
+.rgbj-changelog-release:target .rgbj-changelog-release__card {
+    border-color: rgba(0, 240, 255, 0.55) !important;
+    box-shadow: 0 0 32px rgba(0, 240, 255, 0.15);
+}
+
+.rgbj-changelog-release__summary {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+}
+
+.rgbj-changelog-release__body {
+    padding: 1rem 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.rgbj-changelog-group {
+    padding: 0.9rem 1rem;
+    margin: 0;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.rgbj-changelog-group__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bs-body-emphasis);
+}
+
+.rgbj-changelog-group__title .bi {
+    font-size: 1rem;
+    color: rgba(0, 240, 255, 0.85);
+}
+
+.rgbj-changelog-group__intro {
+    margin: 0 0 0.65rem;
+    font-size: 0.875rem;
+    font-style: italic;
+    color: var(--bs-secondary-color);
+}
+
+.rgbj-changelog-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.rgbj-changelog-feature {
+    margin: 0;
+    padding: 0.65rem 0.75rem 0.65rem 0.85rem;
+    border-left: 3px solid rgba(0, 240, 255, 0.45);
+    border-radius: 0 0.375rem 0.375rem 0;
+    background: rgba(0, 240, 255, 0.04);
+}
+
+.rgbj-changelog-feature__title {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--bs-body-emphasis);
+}
+
+.rgbj-changelog-feature__title .bi {
+    margin-top: 0.1rem;
+    font-size: 0.8rem;
+    color: #fbbf24;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+}
+
+.rgbj-changelog-feature__text {
+    margin: 0 0 0.35rem;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--bs-body-color);
+}
+
+.rgbj-changelog-list {
+    margin: 0;
+    padding-left: 1.15rem;
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.rgbj-changelog-list li {
+    margin-bottom: 0.4rem;
+}
+
+.rgbj-changelog-list li::marker {
+    color: rgba(0, 240, 255, 0.7);
+}
+
+.rgbj-changelog-list--compact {
+    margin-top: 0.25rem;
+}
+
+.rgbj-changelog-notes {
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(99, 102, 241, 0.08) 100%) !important;
+}
+
+.rgbj-changelog-notes__inner {
+    display: flex;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    align-items: flex-start;
+}
+
+.rgbj-changelog-notes__title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.rgbj-changelog-notes__content p {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+}
+
+.rgbj-changelog-notes .rgbj-changelog-list--notes {
+    margin: 0;
+}
+
+.rgbj-changelog a {
+    font-weight: 500;
+}
+
+[data-bs-theme="light"] .rgbj-changelog-intro {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1) 0%, rgba(99, 102, 241, 0.06) 100%);
+    border-color: rgba(8, 145, 178, 0.25);
+}
+
+[data-bs-theme="light"] .rgbj-changelog-release__date {
+    color: #0e7490;
+}
+
+[data-bs-theme="light"] .rgbj-changelog-release__card {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+[data-bs-theme="light"] .rgbj-changelog-group {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+[data-bs-theme="light"] .rgbj-changelog-feature {
+    background: rgba(8, 145, 178, 0.06);
+    border-left-color: rgba(8, 145, 178, 0.45);
+}
+
+@media (max-width: 575.98px) {
+    .rgbj-changelog-release {
+        grid-template-columns: 2.5rem minmax(0, 1fr);
+        gap: 0 0.75rem;
+    }
+
+    .rgbj-changelog-date-badge {
+        width: 2.35rem;
+        height: 2.35rem;
+        font-size: 1rem;
+    }
+
+    .rgbj-changelog-release__header,
+    .rgbj-changelog-release__body {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
 }

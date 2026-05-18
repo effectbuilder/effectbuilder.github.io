@@ -28,7 +28,7 @@ function rgbj_base_path(): string
         }
     }
 
-    $sectionDirs = ['releases', 'terms', 'supported', 'docs'];
+    $sectionDirs = ['releases', 'terms', 'supported', 'docs', 'changelog'];
     if ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
         array_pop($segments);
     }

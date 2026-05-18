@@ -1,74 +1,22 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<?php declare(strict_types=1);
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supported USB devices &amp; layout parts | RGBJunkie for Windows</title>
-    <meta name="description" content="USB lighting devices and on-screen layout components included with RGBJunkie for Windows, grouped by brand.">
+require_once dirname(__DIR__) . '/includes/installers.php';
 
-    <link rel="icon" type="image/x-icon" href="/rgbjunkielogo2.ico">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/styles-alt.css">
-    <link rel="stylesheet" href="../assets/rgbjunkie-app.css">
-</head>
+$rgbj_nav_active = 'supported';
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-WS7MGSDJSB"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-    gtag('config', 'G-WS7MGSDJSB');
-</script>
+$pageTitle = 'Supported USB devices & layout parts | RGBJunkie for Windows';
+$pageDesc = 'USB lighting devices and on-screen layout components included with RGBJunkie for Windows, grouped by brand.';
 
-<body class="d-flex flex-column min-vh-100">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="overflow: visible;">
-        <div class="container-fluid" style="overflow: visible;">
-            <div class="dropdown me-3" style="position: relative; display: inline-block;">
-                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin: 0; padding: 0.25rem 0.5rem;">
-                    <img src="/images/rgbjunkielogo.png" alt="RGBJunkie" class="me-2" style="height: 1.5em;">
-                    <span>RGBJunkie</span>
-                    <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-start shadow mt-2" style="min-width: 280px;">
-                    <li><a class="dropdown-item" href="/">RGBJunkie Effect Builder</a></li>
-                    <li><a class="dropdown-item" href="/builder/">RGBJunkie Component Builder</a></li>
-                    <li><a class="dropdown-item" href="/combiner/">RGBJunkie Effect Combiner</a></li>
-                    <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="../">RGBJunkie for Windows</a></li>
-                    <li><a class="dropdown-item" href="../releases/">Previous releases</a></li>
-                    <li><a class="dropdown-item" href="../changelog/">Changelog</a></li>
-                    <li><a class="dropdown-item" href="../terms/">Terms of Service</a></li>
-                    <li><a class="dropdown-item active" href="./" aria-current="page">Supported gear</a></li>
-                    <li><a class="dropdown-item" href="../docs/">Documentation</a></li>
-                </ul>
-            </div>
+rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
+rgbj_page_analytics();
+rgbj_render_page_nav();
+rgbj_subpage_open([
+    ['label' => 'RGBJunkie for Windows', 'href' => rgbj_url()],
+    ['label' => 'Supported gear'],
+], 'col-12');
+?>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav" aria-controls="appNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="appNav">
-                <ul class="navbar-nav ms-auto gap-lg-2">
-                    <li class="nav-item"><a class="nav-link" href="../#features">Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../#download">Download</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../releases/">Previous releases</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../changelog/">Changelog</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../terms/">Terms</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="./" aria-current="page">Supported gear</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../docs/">Documentation</a></li>
-                    <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="../#download"><i class="bi bi-box-arrow-in-down me-1"></i>Download</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <main class="flex-grow-1 py-4">
-        <div class="container">
-            <h1 class="h2 fw-bold text-body-emphasis mb-2">Supported USB devices &amp; layout parts</h1>
+<h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-plugin me-2 text-info"></i>Supported USB devices &amp; layout parts</h1>
             <p class="text-body-secondary col-lg-9 mb-2">These lists reflect what ships with RGBJunkie for Windows today: <strong class="text-body">USB device plugins</strong> (real hardware you can connect) and <strong class="text-body">layout components</strong> (parts you drag onto the virtual desk). Custom entries you add yourself are not shown here.</p>
             <p class="small text-body-secondary mb-4" id="meta-updated"></p>
             <p class="small text-body-secondary mb-4">Some links on this page go to Amazon. As an Amazon Associate, I earn from qualifying purchases. Links open US search results in a new tab.</p>
@@ -1254,30 +1202,15 @@
                 </div>
             </div>
 
-            <p class="small text-body-secondary mt-5 mb-0">Lists are refreshed when the app bundle is updated. If something is missing, your device may still work after a future update, or it may use a profile you added under Custom.</p>
-        </div>
-    </main>
+<p class="small text-body-secondary mt-5 mb-0">Lists are refreshed when the app bundle is updated. If something is missing, your device may still work after a future update, or it may use a profile you added under Custom.</p>
 
-    <footer class="py-4 mt-auto border-top bg-body-tertiary">
-        <div class="container">
-            <div class="row align-items-center g-3">
-                <div class="col-md-6 text-center text-md-start">
-                    <a href="../" class="text-decoration-none text-body-emphasis fw-semibold d-block mb-1"><i class="bi bi-arrow-left me-1"></i>Back to RGBJunkie for Windows</a>
-                    <p class="small text-body-secondary mb-0">
-                        <a href="../docs/">Documentation</a>
-                        <span class="text-muted mx-1">·</span>
-                        <a href="../terms/">Terms of Service</a>
-                    </p>
-                </div>
-                <div class="col-md-6 text-center text-md-end small text-body-secondary">
-                    <p class="mb-0">&copy; <span id="footer-year"></span> RGBJunkie. All rights reserved.</p>
-                </div>
-            </div>
-        </div>
-    </footer>
+<?php
+rgbj_subpage_close();
+$rgbj_footer_blurb = 'USB devices and layout parts that ship with RGBJunkie for Windows today.';
+require dirname(__DIR__) . '/includes/page-footer.php';
+?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+<script>
         (function () {
             var AMAZON_TAG = 'rgbjunkie-20';
 
@@ -1322,7 +1255,7 @@
                 var norm = normalizeItem(item);
                 var href = buildAmazonUrl(vendor, norm.name, norm.amazonUrl);
                 return '<a class="gear-amazon-link" href="' + escapeAttr(href) + '" target="_blank" rel="nofollow sponsored noopener noreferrer" title="Search on Amazon (US)">' +
-                    '<img class="gear-amazon-logo" src="../images/amazon-wordmark-on-dark.svg" alt="" width="72" height="22" loading="lazy" decoding="async">' +
+                    '<img class="gear-amazon-logo" src="/images/amazon-wordmark-on-dark.svg" alt="" width="72" height="22" loading="lazy" decoding="async">' +
                     '<span class="visually-hidden">Amazon</span></a>';
             }
             function gearLineHtml(vendor, item) {
@@ -1470,12 +1403,4 @@
             }
         })();
     </script>
-    <script>
-        (function () {
-            var y = document.getElementById('footer-year');
-            if (y) y.textContent = String(new Date().getFullYear());
-        })();
-    </script>
-</body>
-
-</html>
+<?php rgbj_page_scripts_end(); ?>

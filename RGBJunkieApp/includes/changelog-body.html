@@ -1,0 +1,123 @@
+<div class="rgbj-changelog"><header class="rgbj-changelog-intro">
+<h2 class="rgbj-changelog-intro__title">RGBJunkie for Windows — What's new</h2>
+<p class="rgbj-changelog-intro__lead">Plain-language release notes for the desktop app. Newest changes are listed first.</p>
+<p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.</p>
+</header>
+<div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-48" data-version="0.2.48">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.48</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Release notes for this version — fill in before publishing.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release" id="may-8-9-2026" data-version="">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release"><i class="bi bi-calendar2-event-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 8–9, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary">Plain-language summary of changes users may notice. (Exact shipping date depends on your update channel.)</p>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-calendar-day-fill" aria-hidden="true"></i><span>May 8</span></h4>
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Share your effect settings</span></h5>
+<p class="rgbj-changelog-feature__text">You can <strong>share a link</strong> (or similar flow, depending on build) so others can open the same effect configuration. This is meant for presets, support, and showing setups without manually copying every slider.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Cleaner device support</span></h5>
+<p class="rgbj-changelog-feature__text">Many device plugins were <strong>trimmed to lighting-related behavior</strong> so the app stays focused on RGB and control surfaces you actually use. The <strong>device list</strong> and related data were refreshed so names and entries stay consistent.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>General improvements</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Look and feel</strong> — Updated layout and styling in parts of the main window.</li><li><strong>App icon</strong> — Refreshed icons for Windows, shortcuts, and related sizes so the app matches the current branding.</li><li><strong>Reliability and quality</strong> — Under-the-hood work on lighting output, plugins, WLED behavior, color handling, and diagnostics so sessions stay smoother and odd edge cases are less likely.</li><li><strong>Component library</strong> — Many fan, strip, and similar <strong>layout parts</strong> were touched for consistency and accuracy when you build a desk setup.</li></ul>
+</article></div>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-calendar-day-fill" aria-hidden="true"></i><span>May 9</span></h4>
+<p class="rgbj-changelog-group__intro"><em>(These updates are in development builds; they may not all be in every installer until the next release.)</em></p>
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace and side panels</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Collapsible columns</strong> — The <strong>devices</strong> list and <strong>effects</strong> panel can be collapsed to a slim bar so the <strong>center workspace</strong> (layout + effect preview) gets more room.</li><li><strong>Peek while collapsed</strong> — When a column is collapsed, moving the pointer over the slim bar can <strong>temporarily expand</strong> it so you can glance at devices or settings without fully pinning the panel open.</li><li><strong>Smoother peek</strong> — Small gaps next to the center area no longer “flicker” the peek panel closed when you move the mouse toward the middle of the screen.</li><li><strong>Same width</strong> — The two side columns are matched in width so the layout feels balanced.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect preview and canvas</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>More preview, less empty frame</strong> — The dark border around the <strong>live effect preview</strong> is reduced so the colorful preview uses more of the available space.</li><li><strong>Softer edge</strong> — The outer frame no longer reads as an extra harsh black ring around the preview when the effect doesn’t paint those pixels.</li><li><strong>Tighter fit</strong> — Margins around the preview area were slightly reduced so the canvas uses the window a bit better.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Layout editor</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>No dashed outline</strong> — The dotted rectangle around the main layout area was <strong>removed</strong> so the workspace looks cleaner (the optional grid, when turned on, is unchanged).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device list</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Visibility</strong> — Device visibility is shown with the familiar <strong>eye</strong> control again (not a brand logo in that spot).</li><li><strong>Easier to scan</strong> — The device column uses horizontal space a bit better, and row alignment was improved so labels, chevrons, and buttons line up more naturally.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release" id="may-6-7-2026" data-version="">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release"><i class="bi bi-calendar2-event-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 6–7, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Color profiles &amp; built-in effects</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>One palette system everywhere</strong> — A large set of <strong>built-in HTML effects</strong> now reads colors from the same <strong>Color profiles</strong> you manage under <strong>Settings → Color profiles</strong> (built-in gradients plus your own).</li><li><strong>Accurate previews</strong> — Profile swatches use the real gradient <strong>stops</strong> from the app, not hard-coded color tables inside each effect.</li><li><strong>Smarter defaults</strong> — Several effects were retuned so their default profile matches the new catalog.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Effect settings UI (Color tab)</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Profile chooser as a modal gallery</strong> — Picking a color profile opens a <strong>modal</strong> with <strong>card-style</strong> gradient previews instead of a long plain dropdown.</li><li><strong>Your profiles first</strong> — <strong>Custom profiles you created</strong> appear in their own section <strong>above</strong> built-in themes.</li><li><strong>Jump to profile editor</strong> — A control in that modal sends you straight to <strong>Settings → Color profiles</strong> when you want to add or edit gradients.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Settings → Color profiles</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Import from Coolors</strong> — Paste a <strong>Coolors.co</strong> share URL or hex values to create a new profile in one step.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Layout, workspace &amp; sidebar</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Identify hardware</strong> — <strong>Identify</strong> from the workspace or sidebar helps you match on-screen components to physical devices.</li><li><strong>Device tree</strong> — Summary rows for device groups can <strong>collapse</strong> again after you open them.</li><li><strong>Rotated layouts</strong> — Moving <strong>rotated</strong> selections along the workspace edge uses the correct dimensions.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Support &amp; bug reports</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>In-app bug report flow</strong> — Send diagnostics with optional <strong>note</strong>, <strong>contact</strong> fields, application log, and USB / HID hardware snapshot.</li><li><strong>Toolbar shortcut</strong> — <strong>Report</strong> on the main bar jumps straight to <strong>Settings → Logs</strong>.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>USB hot-plug &amp; Rescan hardware</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Plug and unplug (Windows)</strong> — The app reacts to USB topology changes so devices don’t stay in the sidebar after removal or return without lighting until a restart.</li><li><strong>Sidebar Rescan</strong> — <strong>Rescan hardware</strong> clears stale HID handles before reloading enumeration, which fixes many “ghost device” and dark-LED cases after replugging.</li></ul>
+</section>
+</div>
+</div>
+</article>
+<aside class="rgbj-changelog-notes card border-info border-opacity-25 shadow-sm">
+<div class="rgbj-changelog-notes__inner">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--notes"><i class="bi bi-info-circle-fill" aria-hidden="true"></i></span>
+<div class="rgbj-changelog-notes__content">
+<h3 class="rgbj-changelog-notes__title">Notes</h3>
+<ul class="rgbj-changelog-list rgbj-changelog-list--notes"><li>Newer sections appear first. Your installed version may include only a subset until you update.</li><li>Check <strong>Settings → About</strong> (or your usual update path) for the app version if something above does not match what you see.</li></ul>
+</div>
+</div>
+</aside>
+</div></div>
