@@ -10,12 +10,12 @@ function rgbj_developer_doc_sections(): array
     return [
         [
             'heading' => 'Desktop app API',
-            'intro' => 'Author plugins, effects, and integrations that run inside RGBJunkie for Windows. These guides describe the public ABI and host APIs — no app source required.',
+            'intro' => 'Author plugins, effects, and integrations that run inside RGBJunkie for Windows. These guides describe the public plugin and effect APIs — no app source required.',
             'items' => [
                 [
                     'icon' => 'bi-plugin',
                     'title' => 'Plugin developer guide',
-                    'text' => 'Build USB HID lighting plugins: ABI descriptor, lifecycle exports, and the device API.',
+                    'text' => 'Build USB HID lighting plugins: plugin descriptor, lifecycle exports, and the device API.',
                     'href' => '/api/docs/plugin-developer-guide.html',
                 ],
                 [

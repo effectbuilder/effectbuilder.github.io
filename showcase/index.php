@@ -1,0 +1,398 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/includes/showcase-lib.php';
+
+try {
+    $showcaseManifest = showcase_get_manifest(__DIR__);
+    $showcaseManifestJson = showcase_json_for_script($showcaseManifest);
+} catch (Throwable $e) {
+    $showcaseManifest = [];
+    $showcaseManifestJson = '[]';
+    error_log('showcase manifest: ' . $e->getMessage());
+}
+?>
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGBJunkie Effect Gallery</title>
+    <meta name="description" content="Explore the intersection of vibrant lighting and high-performance hardware through a curated gallery of custom desktop aesthetics.">
+    <meta property="og:url" content="https://rgbjunkie.com/showcase">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RGBJunkie Effect Showcase | Hand crafted SignalRGB Effects Collection">
+    <meta property="og:description" content="Explore the intersection of vibrant lighting and high-performance hardware through a curated gallery of custom desktop aesthetics. This showcase highlights the creative integration of RGB technology in modern workspace design and enthusiast builds.">
+    <meta property="og:image" content="https://www.rgbjunkie.com/images/rgbjunkie.png">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:domain" content="rgbjunkie.com">
+    <meta name="twitter:url" content="https://rgbjunkie.com/showcase">
+    <meta name="twitter:title" content="RGBJunkie Effect Showcase | Hand crafted SignalRGB Effects Collection">
+    <meta name="twitter:description" content="Explore the intersection of vibrant lighting and high-performance hardware through a curated gallery of custom desktop aesthetics. This showcase highlights the creative integration of RGB technology in modern workspace design and enthusiast builds.">
+    <meta name="twitter:image" content="https://www.rgbjunkie.com/images/rgbjunkie.png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles-alt.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="../js/i18n.js"></script>
+</head>
+
+<body data-i18n-doc="showcase">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <div class="dropdown me-3" style="position: relative; display: inline-block;">
+                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle pulse-on-load" href="#" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" style="cursor: pointer; margin: 0; padding: 0.25rem 0.5rem; border-radius: 0.5rem;">
+                    <img src="../images/rgbjunkielogo2.png" alt="Effect Builder Logo" data-i18n-alt="effect_builder_logo_alt" class="me-2" style="height: 1.5em;">
+                    <span data-i18n="nav_brand">RGBJunkie Effect Builder</span>
+                    <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
+                </a>
+
+                <ul class="dropdown-menu shadow" style="right: 0; left: auto; margin-top: 10px; min-width: 220px;">
+                    <li><a class="dropdown-item" href="/" data-i18n="nav_dd_effect_builder">RGBJunkie Effect Builder</a></li>
+                    <li><a class="dropdown-item" href="/builder/" data-i18n="nav_dd_component_builder">RGBJunkie Component Builder</a></li>
+                    <li><a class="dropdown-item" href="/combiner/" data-i18n="nav_dd_combiner">RGBJunkie Effect Combiner</a></li>
+                    <li><a class="dropdown-item" href="/skydimo/" data-i18n="nav_dd_skydimo">Skydimo LUA Builder</a></li>
+                    <li><a class="dropdown-item active" href="/showcase/" data-i18n="btn_showcase">Effect Showcase</a></li>
+                </ul>
+            </div>
+            <div class="ms-auto d-flex align-items-center flex-wrap gap-2 gap-lg-3 justify-content-end">
+                <a href="#" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#installation-modal">
+                    <i class="bi bi-download me-2"></i><span data-i18n="showcase_install_nav">How to Install</span>
+                </a>
+                <a href="#" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#disclaimer-modal" data-i18n="showcase_disclaimer_nav">Disclaimer</a>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="lang-switcher-btn" data-bs-toggle="dropdown" data-bs-auto-close="true" data-i18n-title="lang_switcher_title" title="Language" aria-expanded="false">
+                        <i class="bi bi-translate"></i>
+                        <span class="d-none d-md-inline ms-1" id="lang-switcher-label">English</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" id="lang-switcher-menu"></ul>
+                </div>
+                <a href="../" class="btn btn-primary"><i class="bi bi-pencil-square me-2"></i><span data-i18n="showcase_back_editor">Back to Editor</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="mb-3"><i class="bi bi-stars me-2"></i><span data-i18n="showcase_title_heading">RGBJunkie Effects Showcase</span></h2>
+                <p class="text-body-secondary" data-i18n="showcase_subtitle">A curated collection of SignalRGB effects, coded manually. Hover over each effect to preview its animation.</p>
+                <hr>
+
+                <div class="row g-3 mb-4 align-items-center bg-body-tertiary p-3 rounded shadow-sm border">
+                    <div class="col-12 col-md-5">
+                        <label for="effect-search-input" class="form-label small fw-bold text-muted mb-1" data-i18n="showcase_search_label">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="effect-search-input" data-i18n-placeholder="showcase_search_placeholder" placeholder="Search by title, description, or author...">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="tag-filter" class="form-label small fw-bold text-muted mb-1" data-i18n="showcase_filter_tag_label">Filter by Tag</label>
+                        <select class="form-select" id="tag-filter">
+                            <option value="" data-i18n="showcase_tag_all_categories">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label for="sort-order" class="form-label small fw-bold text-muted mb-1" data-i18n="showcase_sort_label">Sort Order</label>
+                        <select class="form-select" id="sort-order">
+                            <option value="newest" selected data-i18n="showcase_sort_newest">Newest Added</option>
+                            <option value="name-asc" data-i18n="showcase_sort_name_asc">Name (A-Z)</option>
+                            <option value="name-desc" data-i18n="showcase_sort_name_desc">Name (Z-A)</option>
+                            <option value="downloads" data-i18n="showcase_sort_downloads">Most Popular</option>
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <span class="badge bg-secondary" id="total-count-badge" data-i18n="showcase_loading_badge">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="showcase-project-list">
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body text-center p-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden" data-i18n="showcase_loading_badge">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted" data-i18n="showcase_loading_library">Loading Library...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="effect-view-modal" tabindex="-1" aria-labelledby="effectViewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark text-white border-secondary overflow-hidden">
+
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="effect-view-title">View Effect</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-0">
+                    <div class="row g-0 h-100">
+
+                        <div class="col-12 col-lg-6 col-xl-5 border-end border-secondary bg-black d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden" style="min-height: 400px;">
+
+                            <div id="effect-iframe-container" class="d-flex justify-content-center align-items-center flex-shrink-0">
+                                <iframe id="effect-preview-iframe" style="width: 320px; height: 200px; border: none; background-color: #000; transform-origin: center center;" data-i18n-title="showcase_effect_preview_title" title="Effect Preview" scrolling="no"></iframe>
+                            </div>
+
+                        </div>
+
+                        <div class="col-lg-6 col-xl-7 p-4 overflow-y-auto custom-scrollbar" style="max-height: 75vh;">
+
+                            <div class="section-card mb-4">
+                                <div id="effect-main-info"></div>
+                            </div>
+
+                            <div class="section-card mb-4" id="properties-section-card" style="display: none;">
+                                <div class="accordion accordion-flush" id="propertiesAccordion">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button bg-transparent shadow-none px-0 py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProps" aria-expanded="true">
+                                                <div class="w-100 d-flex align-items-center">
+                                                    <h6 class="section-title small text-uppercase fw-bold mb-0 tracking-wider">
+                                                        <i class="bi bi-sliders me-2 text-info"></i><span data-i18n="showcase_modal_adjustable_props">Adjustable Properties</span>
+                                                    </h6>
+                                                    <span class="ms-3 text-muted" style="font-size: 0.65rem; text-transform: none; opacity: 0.6;" data-i18n="showcase_modal_click_to_expand">(Click to view)</span>
+                                                </div>
+                                            </button>
+                                        </h2>
+                                        <div id="collapseProps" class="accordion-collapse collapse show">
+                                            <div class="accordion-body p-0 pt-2" id="properties-table-container"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-card mb-4" id="presets-section-card" style="display: none;">
+                                <div id="presets-injection-zone"></div>
+                            </div>
+
+                            <div class="section-card">
+                                <div id="community-section">
+                                    <h6 class="section-title fw-bold text-uppercase small tracking-wider mb-3">
+                                        <i class="bi bi-people-fill me-2 text-info"></i><span data-i18n="showcase_section_community">Community Feed</span>
+                                    </h6>
+
+                                    <div id="login-prompt-container" class="text-center p-4 bg-dark-subtle rounded border border-secondary mb-4 shadow-sm">
+                                        <p class="text-muted small mb-3" data-i18n="showcase_join_prompt">Join the community to post comments and share your custom mixes!</p>
+                                        <button id="btn-google-login" class="btn btn-outline-light btn-sm px-4">
+                                            <i class="bi bi-google me-2 text-danger"></i><span data-i18n="showcase_sign_in_google">Sign in with Google</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="comment-form-container" class="bg-dark-subtle p-3 rounded mb-4 border border-secondary shadow-sm" style="display: none;">
+                                        <label class="small fw-bold text-muted mb-1" data-i18n="showcase_posting_as">Posting as:</label>
+                                        <input type="text" id="comment-name" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" data-i18n-placeholder="showcase_placeholder_user_name" placeholder="User Name" readonly autocomplete="off">
+                                        <textarea id="comment-text" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" rows="2" data-i18n-placeholder="showcase_placeholder_comment" placeholder="Share a comment or your custom mix..." autocomplete="off"></textarea>
+
+                                        <div class="input-group input-group-sm mb-2">
+                                            <input type="text" id="comment-preset" class="form-control bg-dark text-white border-secondary" data-i18n-placeholder="showcase_placeholder_preset_url" placeholder="Paste SignalRGB Preset URL (Optional)" autocomplete="off">
+                                            <button class="btn btn-outline-secondary" type="button" id="btn-paste-preset" data-i18n-title="showcase_title_paste_clipboard" title="Paste from Clipboard">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary help-btn-trigger" type="button" data-i18n-title="showcase_title_preset_help" title="How to get a preset link?">
+                                                <i class="bi bi-question-circle"></i>
+                                            </button>
+                                        </div>
+
+                                        <div class="text-end">
+                                            <button class="btn btn-sm btn-primary px-3" id="btn-post-comment" data-i18n="showcase_btn_post_feed">Post to Feed</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="comments-feed" class="small"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-secondary justify-content-between">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-info" id="effect-share-btn" data-i18n-title="showcase_share_tooltip" title="Copy Link"><i class="bi bi-link-45deg"></i></button>
+                        <button type="button" class="btn btn-outline-danger" id="effect-record-btn" data-i18n-title="showcase_record_tooltip" title="Record 5s Video"><i class="bi bi-camera-video"></i></button>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary px-3" id="effect-code-btn"><i class="bi bi-code-slash me-1"></i> <span data-i18n="showcase_btn_view_source">View Source</span></button>
+
+                        <button type="button" class="btn btn-success px-3" id="effect-download-btn"><i class="bi bi-download me-1"></i> <span data-i18n="showcase_download_title">Download</span></button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="showcase_btn_close">Close</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="installation-modal" tabindex="-1" aria-labelledby="installationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="installationModalLabel"><i class="bi bi-box-arrow-in-down me-2"></i><span data-i18n="showcase_install_modal_title">How to Install Custom Effects in SignalRGB</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="lead" data-i18n="showcase_install_lead">Installing a custom effect is easy, but it requires placing the files into a specific directory on your computer.</p>
+                    <ol class="list-group list-group-numbered">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold" data-i18n="showcase_install_step1_title">Download the Effect Files</div>
+                                <div data-i18n="showcase_install_step1_body" data-i18n-html>Step 1 body</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold" data-i18n="showcase_install_step2_title">Locate the Custom Effects Folder</div>
+                                <div data-i18n="showcase_install_step2_intro" data-i18n-html>Step 2 intro</div>
+
+                                <h6 class="mt-3 mb-1" data-i18n="showcase_install_locations_heading">Common Locations (try these in order):</h6>
+                                <p class="mb-1 fw-medium text-warning" data-i18n="showcase_install_path_standard_label">1. Standard Documents Location:</p>
+                                <div class="input-group mb-3">
+                                    <code id="path-text-1" class="form-control bg-dark text-white border-secondary small d-flex align-items-center">%userprofile%\Documents\WhirlwindFX\Effects\</code>
+                                    <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-1')" data-i18n="showcase_copy_path_btn">Copy</button>
+                                </div>
+
+                                <p class="mb-1 fw-medium text-warning mt-2" data-i18n="showcase_install_path_onedrive_label">2. OneDrive Sync Location (for users with OneDrive):</p>
+                                <div class="input-group mb-3">
+                                    <code id="path-text-2" class="form-control bg-dark text-white border-secondary small d-flex align-items-center overflow-hidden">C:\Users\%username%\OneDrive\Documents\WhirlwindFX\Effects\</code>
+                                    <button class="btn btn-outline-warning" type="button" onclick="copyPath(event, 'path-text-2')" data-i18n="showcase_copy_path_btn">Copy</button>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold" data-i18n="showcase_install_step3_title">Copy the Files</div>
+                                <div data-i18n="showcase_install_step3_body" data-i18n-html>Step 3 body</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold" data-i18n="showcase_install_step4_title">Restart SignalRGB</div>
+                                <div data-i18n="showcase_install_step4_body" data-i18n-html>Step 4 body</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold" data-i18n="showcase_install_step5_title">Apply the Effect</div>
+                                <div data-i18n="showcase_install_step5_body" data-i18n-html>Step 5 body</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="showcase_install_close_btn">Close Instructions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="disclaimer-modal" tabindex="-1" aria-labelledby="disclaimerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="disclaimerModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i><span data-i18n="showcase_disclaimer_modal_title">Official Disclaimer</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body small bg-dark-subtle text-body">
+                    <p class="mb-3" data-i18n="showcase_disclaimer_p1" data-i18n-html>Disclaimer p1</p>
+                    <hr>
+                    <p class="mb-0" data-i18n="showcase_disclaimer_p2" data-i18n-html>Disclaimer p2</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n="showcase_disclaimer_btn">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="code-preview-modal" tabindex="-1" aria-labelledby="codePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="code-preview-title" data-i18n="showcase_source_modal_title">View Source Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <pre class="m-0" style="max-height: 70vh;"><code id="code-preview-content" class="language-html"></code></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="copy-code-btn">
+                        <i class="bi bi-clipboard me-2"></i><span data-i18n="showcase_btn_copy_code">Copy Code</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="showcase_btn_close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="presetHelpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary">
+
+                <div class="modal-header border-secondary py-2">
+                    <h6 class="modal-title fw-bold small"><i class="bi bi-info-circle text-info me-2"></i><span data-i18n="showcase_preset_help_title">How to get the preset link?</span></h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-i18n-aria-label="aria_close" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body text-center p-3">
+                    <ol class="text-start small text-light mb-3 ps-3">
+                        <li class="mb-1" data-i18n="showcase_preset_help_li1" data-i18n-html>Li1</li>
+                        <li class="mb-1" data-i18n="showcase_preset_help_li2" data-i18n-html>Li2</li>
+                        <li data-i18n="showcase_preset_help_li3" data-i18n-html>Li3</li>
+                    </ol>
+
+                    <div class="bg-black border border-secondary rounded p-1">
+                        <video src="./get_preset_link.mp4" class="img-fluid rounded" style="opacity: 0.9;" autoplay loop muted playsinline>
+                            <span data-i18n="showcase_video_no_support">Your browser does not support the video tag.</span>
+                        </video>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script id="showcase-manifest" type="application/json"><?= $showcaseManifestJson ?></script>
+    <script type="module" src="script.js"></script>
+    <script>
+        function copyPath(event, elementId) {
+            const text = document.getElementById(elementId).innerText.trim();
+            const btn = event.currentTarget;
+            var tr = window.tr || function (k) { return k; };
+            var copiedLabel = tr('showcase_btn_copied');
+            var copyLabel = tr('showcase_copy_path_btn');
+
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerText = copiedLabel;
+
+                btn.classList.replace('btn-outline-warning', 'btn-success');
+
+                setTimeout(() => {
+                    btn.innerText = copyLabel;
+                    btn.classList.replace('btn-success', 'btn-outline-warning');
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+
+</html>

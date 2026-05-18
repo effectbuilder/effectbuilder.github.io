@@ -40,7 +40,7 @@
     <p class="docs-nav-title">Contents</p>
     <ul class="docs-nav-list">
       <li><a href="#what">1. What a plugin is</a></li>
-      <li><a href="#descriptor">2. ABI descriptor</a></li>
+      <li><a href="#descriptor">2. Plugin descriptor</a></li>
       <li><a href="#lifecycle">3. Lifecycle exports</a></li>
       <li><a href="#device">4. <code>device</code> API</a></li>
       <li><a href="#patterns">5. Common patterns</a></li>
@@ -55,7 +55,7 @@
       <h1>RGBJunkie plugin developer guide</h1>
       <p class="lede">
         For <strong>third-party developers</strong> building USB HID lighting plugins that run inside the RGBJunkie desktop application.
-        This document describes the public plugin ABI and the <code>device</code> API. It does not require access to RGBJunkie source code.
+        This document describes the public plugin API and the <code>device</code> API. It does not require access to RGBJunkie source code.
       </p>
       <p class="lede">
         Downloads, licensing, templates, and tooling:
@@ -73,12 +73,12 @@
       <h2 id="what">1. What a plugin is</h2>
       <ul>
         <li>A single <strong>JavaScript module</strong> (ES module syntax) loaded from RGBJunkie’s configured <strong>plugin directory</strong> (see app documentation for the path on your system).</li>
-        <li>The module exports <code>export const rgbjunkie</code> (ABI v1 descriptor) and <code>initialize</code>, <code>render</code>, and <code>shutdown</code>.</li>
+        <li>The module exports <code>export const rgbjunkie</code> (v1 plugin descriptor with <code>abiVersion: 1</code>) and <code>initialize</code>, <code>render</code>, and <code>shutdown</code>.</li>
         <li>RGBJunkie runs the script in a sandbox and provides globals such as <code>device</code> (HID and layout), <code>bus</code>, and other stable entrypoints.</li>
       </ul>
 
-      <h2 id="descriptor">2. ABI descriptor (<code>rgbjunkie</code>)</h2>
-      <p>Export an object with <code>abiVersion: 1</code>.</p>
+      <h2 id="descriptor">2. Plugin descriptor (<code>rgbjunkie</code>)</h2>
+      <p>Export an object with <code>abiVersion: 1</code>. That field is the version number the host checks when loading your module; the rest of this section documents the descriptor shape.</p>
       <p class="section-outline">
         <strong>In this section:</strong>
         <a href="#abi-fields">2.1</a> ·

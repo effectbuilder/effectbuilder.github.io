@@ -1,0 +1,11 @@
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /showcase/
+
+    RewriteRule ^index\.html$ index.php [R=301,L]
+
+    # Optional JSON manifest (cached server-side)
+    RewriteRule ^manifest\.json$ manifest.php [L,QSA]
+</IfModule>

@@ -564,40 +564,6 @@ async function handlePostComment(filename) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // --- CONFIGURATION ---
-    // Note: The order here represents the "Newest Added" sort order (Assuming you append new files to the end)
-    const effectFilenames = [
-        "SwirlCirclesAudio.html", "RotatingBeam.html", "NoiseMap.html", "Policing.html",
-        "MovingPanes.html", "SpectrumCycling.html", "Sunrise.html", "Stack.html",
-        "Mosaic.html", "Marquee.html", "Swap.html", "Mask.html", "ZigZag.html",
-        "AudioBubbles.html", "Wavy.html", "Visor.html", "StarryNight.html",
-        "Spiral.html", "Sequence.html", "SmoothBlink.html", "SparkleFade.html",
-        "RandomMarquee.html", "RotatingRainbow.html", "RandomSpin.html",
-        "RadialRainbow.html", "Rain.html", "RainbowWave.html", "Lightning.html",
-        "MotionPoints.html", "GradientWave.html", "FractalMotion.html",
-        "Hypnotoad.html", "Fill.html", "DoubleRotatingRainbow.html",
-        "BreathingCircle.html", "BubbleCollision.html", "ColorWheel.html",
-        "CustomMarque.html", "CrossingBeams.html", "Comet.html",
-        "CustomGradientWave.html", "CustomBlink.html", "Clock.html",
-        "Bubbles.html", "Breathing.html", "BouncingBall.html", "Bloom.html",
-        "AudioVUMeter.html", "AudioVisualizer.html", "AudioSync.html",
-        "AudioStar.html", "AudioSine.html", "AudioParty.html", "Ambient.html",
-        "ParticleSwarm.html", "NeonHex.html", "fractal_explorer.html",
-        "audio_eclipse.html", "RetroWave.html", "infinity_spiral.html",
-        "PRFlag.html", "SolarSystem.html", "tunnel.html",
-        "particle_eq_bars.html", "laserShapes.html", "concertLasers.html",
-        "ink_drops.html", "starfield.html", "digital_noiseform.html",
-        "bouncingCubes.html", "clouds.html", "polyPlanet.html",
-        "serenityWaves.html", "systemBouncer.html", "picasso.html",
-        "void_and_silk.html", "SouthPark.html", "spirograph.html", "Borealis.html",
-        "DigitalDecay.html", "KineticSand.html", "arcraiders.html", "windowrain.html",
-        "prismLaser.html", "AudioLines.html", "audioLinesCanvas.html", "qmkKeyboardVisualizer.html",
-        "skyMap.html", "stellarSynapse.html", "Fireflies.html", "BioluminiscentDeep.html", "DragonSkin.html", "DragonSkin2.html",
-        "police.html", "neuralAutomata.html", "fanTracer.html", "grandLineVoyage.html",
-        "chuck.html", "fanTracerTwoColor.html", "flowfield.html", "Morpheus.html",
-        "ferromagneticResonance.html"
-    ];
-
     const effectsFolder = "effects";
     const projectListContainer = document.getElementById('showcase-project-list');
 
@@ -629,110 +595,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const effectShareBtn = document.getElementById('effect-share-btn');
     const effectRecordBtn = document.getElementById('effect-record-btn');
 
-    async function fetchEffectMetadata(filename, index) {
-        const effectUrl = `${effectsFolder}/${filename}`;
-        const staticUrl = effectUrl.replace(/\.html$/, '.png');
-
+    function loadShowcaseManifest() {
+        const el = document.getElementById('showcase-manifest');
+        if (!el || !el.textContent.trim()) {
+            return null;
+        }
         try {
-            const response = await fetch(effectUrl);
-            if (!response.ok) throw new Error(`Failed to fetch ${effectUrl}: ${response.statusText}`);
-            const htmlText = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, 'text/html');
-
-            // --- META ATTRIBUTES ---
-            const getCustomMeta = (attrName) => {
-                const el = doc.querySelector(`meta[${attrName}]`) || doc.querySelector(`meta[name="${attrName}"]`);
-                return el ? (el.getAttribute(attrName) || el.getAttribute('content')) : null;
-            };
-
-            const title = getCustomMeta('title') || doc.querySelector('title')?.textContent || (window.tr ? window.tr('showcase_fallback_untitled') : 'Untitled Effect');
-            const description = getCustomMeta('description') || getCustomMeta('og:description') || (window.tr ? window.tr('showcase_fallback_no_description') : 'No description available.');
-            const author = getCustomMeta('publisher') || getCustomMeta('author') || (window.tr ? window.tr('showcase_fallback_unknown_author') : 'Unknown Author');
-
-            // --- PROPERTIES ---
-            const propertyMetas = doc.querySelectorAll('meta[property]');
-            let structuredControls = [];
-
-            if (propertyMetas.length > 0) {
-                propertyMetas.forEach(meta => {
-                    const prop = meta.getAttribute('property');
-                    if (!prop) return;
-
-                    const label = meta.getAttribute('label') || prop;
-                    const type = meta.getAttribute('type') || 'text';
-                    const tooltip = meta.getAttribute('tooltip') || '';
-                    const def = meta.getAttribute('default') || '';
-
-                    structuredControls.push({
-                        label,
-                        variable: prop,
-                        type: type,
-                        min: meta.getAttribute('min') || '0',
-                        max: meta.getAttribute('max') || '100',
-                        step: meta.getAttribute('step') || '1',
-                        valuesStr: meta.getAttribute('values') || '',
-                        def: def,
-                        description: tooltip
-                    });
-                });
-            }
-
-            // --- TAG DETECTION ---
-            let tags = [];
-            const tagsMeta = getCustomMeta('tags') || getCustomMeta('keywords');
-            if (tagsMeta) tags = tagsMeta.split(',').map(t => t.trim()).filter(t => t.length > 0);
-
-            const textToAnalyze = `${title} ${description} ${filename}`.toLowerCase();
-            const addTag = (t) => { if (!tags.some(x => x.toLowerCase() === t.toLowerCase())) tags.push(t); };
-
-            // Check for the meta tag explicitly
-            const audioMeta = doc.querySelector('meta[property="audio_reactive"]');
-            const hasAudioKeywords = textToAnalyze.match(/audio|sound|music|beat|freq|mic|visualizer|spect|vu meter|rhythm/);
-
-            // Apply the tag if EITHER condition is met
-            if (audioMeta || hasAudioKeywords) {
-                if (!tags.includes('Sound Responsive')) tags.unshift('Sound Responsive');
-            }
-            if (textToAnalyze.match(/mouse|click|drag|interactive|cursor|touch/)) addTag('Interactive');
-            if (textToAnalyze.match(/rainbow|color cycle|gradient|hues|spectrum/)) addTag('Rainbow');
-            if (textToAnalyze.match(/fractal|mandelbrot|julia|math|geometry/)) addTag('Fractal');
-            if (textToAnalyze.match(/particle|swarm|dots|dust|starfield/)) addTag('Particles');
-
-            if (structuredControls.length > 0 && !tags.includes('Customizable')) {
-                tags.push('Customizable');
-            }
-
-            // --- PRESET DETECTION ---
-            const presets = [];
-            const presetNodes = doc.querySelectorAll('script.effect-preset');
-
-            presetNodes.forEach(node => {
-                try {
-                    // Standard SignalRGB presets are often valid JS objects but invalid JSON.
-                    // Using a safer evaluation to capture the preset object.
-                    const presetData = node.textContent.trim();
-                    if (presetData.startsWith('{')) {
-                        // Use a Function constructor for safer execution than eval
-                        const parsed = new Function(`return ${presetData}`)();
-                        presets.push(parsed);
-                    }
-                } catch (e) {
-                    console.warn(`Invalid preset format in ${filename}:`, e);
-                }
-            });
-
-            return {
-                title, description, author, effectUrl, staticUrl, filename,
-                tags,
-                structuredControls,
-                presets,
-                originalIndex: index,
-                downloads: 0
-            };
-
-        } catch (error) {
-            console.error(`Error processing ${filename}:`, error);
+            const data = JSON.parse(el.textContent);
+            return Array.isArray(data) ? data : null;
+        } catch (err) {
+            console.error('Invalid showcase manifest JSON:', err);
             return null;
         }
     }
@@ -740,17 +612,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- MAIN DATA FLOW ---
 
     async function initializeGallery() {
-        // 1. Fetch Metadata
-        const effects = await Promise.all(effectFilenames.map((f, i) => fetchEffectMetadata(f, i)));
-        allEffects = effects.filter(effect => effect !== null);
+        const manifest = loadShowcaseManifest();
+        if (!manifest || manifest.length === 0) {
+            projectListContainer.innerHTML = '<div class="col-12 text-center text-muted py-5"><h3><i class="bi bi-exclamation-triangle"></i></h3><p>' + (window.tr ? window.tr('showcase_no_results') : 'Could not load the effect library.') + '</p></div>';
+            totalCountBadge.textContent = window.tr ? window.tr('showcase_effect_count', { count: 0 }) : '0 Effects';
+            return;
+        }
 
-        // 2. Build Filter Options
+        allEffects = manifest.map((effect) => ({
+            ...effect,
+            effectUrl: effect.effectUrl || `${effectsFolder}/${effect.filename}`,
+            staticUrl: effect.staticUrl || (effect.effectUrl || `${effectsFolder}/${effect.filename}`).replace(/\.html$/i, '.png'),
+            downloads: effect.downloads ?? 0,
+        }));
+
         populateTagFilter();
-
-        // 3. Render Initial Grid (Alphabetical default)
         updateGalleryDisplay();
-
-        // 4. Background Fetch Stats
         fetchAndAttachStats();
     }
 

@@ -21,6 +21,11 @@ ErrorDocument 404 /404.html
 # This prevents the server from guessing and ensures it finds the index file
 RewriteRule ^showcase\.html$ /showcase/ [R=301,L]
 
+# Showcase index: prefer PHP manifest (fast load)
+RewriteRule ^showcase/?$ /showcase/index.php [L]
+RewriteRule ^showcase/index\.html$ /showcase/index.php [R=301,L]
+RewriteRule ^showcase/manifest\.json$ /showcase/manifest.php [L,QSA]
+
 # 3. Redirect gallery.html to the gallery folder
 RewriteRule ^gallery\.html$ /gallery/ [R=301,L]
 
