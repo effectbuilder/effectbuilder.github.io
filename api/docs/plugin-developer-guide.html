@@ -27,7 +27,7 @@
       </a>
       <span class="navbar-text small text-body-secondary me-auto ms-1 d-none d-md-inline">Plugin developer guide</span>
       <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/supported-devices.html">Supported devices</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/supported/">Supported devices</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-developer-guide.html">Effect (HTML)</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-functional-developer-guide.html">Effect (.mjs)</a>
         <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/docs/">Windows app docs</a>
@@ -67,7 +67,7 @@
         (§12 worked HTML examples). Functional <code>.mjs</code> effects have a separate
         <a href="/api/docs/effect-functional-developer-guide.html"><strong>functional effects guide</strong></a>.
         Optional HTML copies for desktop testing live under <code>examples/effects/</code>.
-        <strong>USB / device coverage</strong> — <a href="/api/docs/supported-devices.html"><strong>Supported devices</strong></a> (search VID/PID, transport, kind).
+        <strong>USB / device coverage</strong> — <a href="/RGBJunkieApp/supported/"><strong>Supported devices</strong></a> (search VID/PID, transport, kind).
       </p>
 
       <h2 id="what">1. What a plugin is</h2>
@@ -236,7 +236,7 @@
       <p>Set <code>rgbjunkie.imageUrl</code> to the brand tile URL when you ship one so the descriptor matches the tree.</p>
       <ul>
         <li><strong>Maintainers (RGBJunkie repo):</strong> <code>npm run plugins:brand-image-urls</code> runs <code>scripts/update-plugin-brand-image-urls.mjs</code> and sets quoted <code>imageUrl</code> inside <code>export const rgbjunkie</code> when a matching brand PNG exists in the inventory. Non-string <code>imageUrl</code> (e.g. another object’s field) is skipped.</li>
-        <li><strong>Public device list:</strong> <code>npm run docs:supported-devices</code> rebuilds <code>docs/supported-devices-data.json</code> for <a href="/api/docs/supported-devices.html">supported devices</a>; it re-reads each plugin file’s <code>imageUrl</code> so the page stays current without re-harvesting <code>data/device-catalog.json</code>. The <strong>Brand</strong> column matches the app (organizational folders, <code>OemRgb/</code> OEM filename lines, then publisher).</li>
+        <li><strong>Public device list:</strong> <code>npm run docs:supported-devices</code> rebuilds <code>docs/supported-devices-data.json</code> for <a href="/RGBJunkieApp/supported/">supported devices</a>; it re-reads each plugin file’s <code>imageUrl</code> so the page stays current without re-harvesting <code>data/device-catalog.json</code>. The <strong>Brand</strong> column matches the app (organizational folders, <code>OemRgb/</code> OEM filename lines, then publisher).</li>
         <li><strong>Publish docs locally:</strong> <code>npm run docs:sync-wamp</code> copies guides and supported-devices assets into your web root (default <code>C:\wamp64\www\api\docs</code>).</li>
       </ul>
 
@@ -375,7 +375,7 @@ export async function shutdown(systemSuspending) {
       <p><a href="https://www.rgbjunkie.com" rel="noopener">https://www.rgbjunkie.com</a> — downloads, licensing, and published developer materials.</p>
       <p>
         <strong>Supported devices (browsable):</strong>
-        <a href="/api/docs/supported-devices.html">supported-devices.html</a> — search VID/PID, transport, and device kind (data from shipped plugins).
+        <a href="/RGBJunkieApp/supported/">supported devices</a> — search VID/PID, transport, and device kind (data from shipped plugins).
       </p>
 
       <footer>

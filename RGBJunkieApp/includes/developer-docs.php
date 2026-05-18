@@ -34,7 +34,7 @@ function rgbj_developer_doc_sections(): array
                     'icon' => 'bi-usb-plug',
                     'title' => 'Supported devices reference',
                     'text' => 'Search VID/PID, transport, and device kind from shipped plugins — useful when matching hardware in your plugin.',
-                    'href' => '/api/docs/supported-devices.html',
+                    'href' => '/RGBJunkieApp/supported/',
                 ],
             ],
         ],

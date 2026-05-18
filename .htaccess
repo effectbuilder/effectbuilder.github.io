@@ -26,6 +26,10 @@ RewriteRule ^showcase/?$ /showcase/index.php [L]
 RewriteRule ^showcase/index\.html$ /showcase/index.php [R=301,L]
 RewriteRule ^showcase/manifest\.json$ /showcase/manifest.php [L,QSA]
 
+# Supported devices: canonical page under RGBJunkieApp
+RewriteRule ^api/docs/supported-devices\.html$ /RGBJunkieApp/supported/ [R=301,L,QSA]
+RewriteRule ^RGBJunkieApp/supported/supported-devices-data\.json$ /api/docs/supported-devices-data.json [L]
+
 # 3. Redirect gallery.html to the gallery folder
 RewriteRule ^gallery\.html$ /gallery/ [R=301,L]
 
