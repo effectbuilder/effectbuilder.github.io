@@ -17,6 +17,10 @@ The desktop app UI can run in **English**, **Español**, or **Simplified Chinese
 - **Fix:** Changing language no longer clears the device list (the tree is rebuilt instead of wiping dynamic content).
 - **Still in English:** full Terms of Service legal text; effect, plugin, and catalog names loaded from your disk; some low-level API error strings and OpenRGB SDK diagnostic dumps. Contributors: see `docs/I18N-CONTRACT.md`.
 
+#### Setup wizard dismiss and new hardware
+
+Closing or skipping the **initial setup wizard** now warns you when channels still have no components assigned, reminds you that you can run it again from the device panel (magic wand), and will not auto-open again until **new hardware** is detected — then RGBJunkie asks whether to open the wizard for those devices.
+
 #### Privacy Policy page (website)
 
 The RGBJunkie for Windows marketing site now includes a **Privacy Policy** at `/RGBJunkieApp/privacy/`, linked from the site navigation and footer. It covers website analytics, support reports, downloads, and local desktop app data in plain language.
