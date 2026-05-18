@@ -21,6 +21,8 @@ declare(strict_types=1);
                     <a href="<?= rgbj_h(rgbj_url('changelog/')) ?>">Changelog</a>
                     <span class="text-muted mx-1">·</span>
                     <a href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms of Service</a>
+                    <span class="text-muted mx-1">·</span>
+                    <a href="<?= rgbj_h(rgbj_url('privacy/')) ?>">Privacy Policy</a>
                     <?php if (!empty($rgbj_footer_extra_link)) : ?>
                     <span class="text-muted mx-1">·</span>
                     <?= $rgbj_footer_extra_link ?>

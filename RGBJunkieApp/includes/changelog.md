@@ -8,7 +8,15 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.2.48 — May 18, 2026
 
-*(Release notes for this version — fill in before publishing.)*
+#### Quieter diagnostic logs
+
+The app’s background **freeze / stall watchdog** used to write a `heapJump` line to `freeze-events.txt` every few seconds when the JavaScript heap bounced during normal use (for example after garbage collection). That made the log hard to read when nothing was actually wrong.
+
+- **Throttled** — At most about **one `heapJump` entry per minute** under typical churn (still logs sooner if something serious is happening).
+- **Smarter detection** — A jump is measured from a recent **low point**, not from the previous 2-second sample, so routine up/down swings are less likely to spam the file.
+- **Baseline check** — Entries are only written when heap stays **meaningfully above** its recent 30-second low, not on tiny oscillations around normal levels.
+
+Console output for heap jumps was already quiet unless memory stayed very high; this change mainly keeps the on-disk log useful for real investigations.
 
 ---
 

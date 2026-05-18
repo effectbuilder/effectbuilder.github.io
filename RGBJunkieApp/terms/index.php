@@ -18,7 +18,7 @@ rgbj_subpage_open([
 ?>
 
 <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-file-text me-2 text-info"></i>Terms of Service</h1>
-<p class="text-body-secondary mb-4">This is the same agreement presented in the RGBJunkie Windows app when you first run it or when the terms are updated.</p>
+<p class="text-body-secondary mb-4">This is the same agreement presented in the RGBJunkie Windows app when you first run it or when the terms are updated. See our <a href="<?= rgbj_h(rgbj_url('privacy/')) ?>">Privacy Policy</a> for how we handle data.</p>
 
 <?php $w = 'div'; ?>
 <<?= $w ?> class="card border-secondary bg-body-tertiary shadow-sm">

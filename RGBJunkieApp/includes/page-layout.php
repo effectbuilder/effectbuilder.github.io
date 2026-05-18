@@ -110,6 +110,7 @@ function rgbj_render_page_nav(): void
                     <li><a class="dropdown-item<?= $dropClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $dropCurrent('supported') ?>>Supported USB devices &amp; parts</a></li>
                     <li><a class="dropdown-item<?= $dropClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $dropCurrent('docs') ?>>Documentation</a></li>
                     <li><a class="dropdown-item<?= $dropClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $dropCurrent('terms') ?>>Terms of Service</a></li>
+                    <li><a class="dropdown-item<?= $dropClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $dropCurrent('privacy') ?>>Privacy Policy</a></li>
                 </ul>
             </<?= $w ?>>
 
@@ -126,6 +127,7 @@ function rgbj_render_page_nav(): void
                     <li class="nav-item"><a class="nav-link<?= $navClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $navCurrent('supported') ?>><i class="bi bi-plugin me-1"></i>Supported gear</a></li>
                     <li class="nav-item"><a class="nav-link<?= $navClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $navCurrent('docs') ?>><i class="bi bi-journal-code me-1"></i>Documentation</a></li>
                     <li class="nav-item"><a class="nav-link<?= $navClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $navCurrent('terms') ?>><i class="bi bi-file-text me-1"></i>Terms</a></li>
+                    <li class="nav-item"><a class="nav-link<?= $navClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $navCurrent('privacy') ?>><i class="bi bi-shield-check me-1"></i>Privacy</a></li>
                     <?php if ($isHome) : ?>
                     <li class="nav-item"><a class="nav-link" href="<?= rgbj_h($requirementsHref) ?>"><i class="bi bi-pc-display me-1"></i>Requirements</a></li>
                     <?php endif; ?>
