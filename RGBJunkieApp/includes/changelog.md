@@ -8,6 +8,27 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.2.48 — May 18, 2026
 
+#### Languages: English, Español, 简体中文
+
+The desktop app UI can run in **English**, **Español**, or **Simplified Chinese (简体中文)**. Open **Settings → App look → Language** — labels update immediately without restarting, and your choice is remembered for the next launch. If you have not picked a language yet, the app defaults to Spanish or Chinese when your Windows or browser language matches.
+
+**What switches with the language:** toolbar and side panels; **Settings** (every tab, including Help cards, confirm dialogs, and toasts); effect browser; component library; setup wizard; device tree (visibility, rescan, favorites, filters); canvas and component context menus; workspace tabs; status bar; app update notices; startup splash phases; and the first-run Terms of Service summary and buttons.
+
+- **Fix:** Changing language no longer clears the device list (the tree is rebuilt instead of wiping dynamic content).
+- **Still in English:** full Terms of Service legal text; effect, plugin, and catalog names loaded from your disk; some low-level API error strings and OpenRGB SDK diagnostic dumps. Contributors: see `docs/I18N-CONTRACT.md`.
+
+#### Privacy Policy page (website)
+
+The RGBJunkie for Windows marketing site now includes a **Privacy Policy** at `/RGBJunkieApp/privacy/`, linked from the site navigation and footer. It covers website analytics, support reports, downloads, and local desktop app data in plain language.
+
+#### About / settings copyright
+
+Settings **About** now shows **© 2026 RGBJunkie** instead of a personal name.
+
+#### Friendlier Terms of Service dialog
+
+The first-run agreement screen is smaller and easier to scan: a short plain-language **summary** stays visible, and the full legal text lives in an expandable **Full Terms of Service** section. The yellow warning banner and long checkbox wording are gone; buttons are labeled **Continue** and **Exit**. Summary copy is warmer and avoids dollar amounts; agreement is described as continuing to use the app.
+
 #### Quieter diagnostic logs
 
 The app’s background **freeze / stall watchdog** used to write a `heapJump` line to `freeze-events.txt` every few seconds when the JavaScript heap bounced during normal use (for example after garbage collection). That made the log hard to read when nothing was actually wrong.

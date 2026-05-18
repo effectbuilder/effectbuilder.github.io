@@ -19,6 +19,24 @@
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Languages: English, Español, 简体中文</span></h5>
+<p class="rgbj-changelog-feature__text">The desktop app UI can run in <strong>English</strong>, <strong>Español</strong>, or <strong>Simplified Chinese (简体中文)</strong>. Open <strong>Settings → App look → Language</strong> — labels update immediately without restarting, and your choice is remembered for the next launch. If you have not picked a language yet, the app defaults to Spanish or Chinese when your Windows or browser language matches.</p>
+<p class="rgbj-changelog-feature__text"><strong>What switches with the language:</strong> toolbar and side panels; <strong>Settings</strong> (every tab, including Help cards, confirm dialogs, and toasts); effect browser; component library; setup wizard; device tree (visibility, rescan, favorites, filters); canvas and component context menus; workspace tabs; status bar; app update notices; startup splash phases; and the first-run Terms of Service summary and buttons.</p>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Fix:</strong> Changing language no longer clears the device list (the tree is rebuilt instead of wiping dynamic content).</li><li><strong>Still in English:</strong> full Terms of Service legal text; effect, plugin, and catalog names loaded from your disk; some low-level API error strings and OpenRGB SDK diagnostic dumps. Contributors: see `docs/I18N-CONTRACT.md`.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Privacy Policy page (website)</span></h5>
+<p class="rgbj-changelog-feature__text">The RGBJunkie for Windows marketing site now includes a <strong>Privacy Policy</strong> at `/RGBJunkieApp/privacy/`, linked from the site navigation and footer. It covers website analytics, support reports, downloads, and local desktop app data in plain language.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>About / settings copyright</span></h5>
+<p class="rgbj-changelog-feature__text">Settings <strong>About</strong> now shows <strong>© 2026 RGBJunkie</strong> instead of a personal name.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Friendlier Terms of Service dialog</span></h5>
+<p class="rgbj-changelog-feature__text">The first-run agreement screen is smaller and easier to scan: a short plain-language <strong>summary</strong> stays visible, and the full legal text lives in an expandable <strong>Full Terms of Service</strong> section. The yellow warning banner and long checkbox wording are gone; buttons are labeled <strong>Continue</strong> and <strong>Exit</strong>. Summary copy is warmer and avoids dollar amounts; agreement is described as continuing to use the app.</p>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Quieter diagnostic logs</span></h5>
 <p class="rgbj-changelog-feature__text">The app’s background <strong>freeze / stall watchdog</strong> used to write a `heapJump` line to `freeze-events.txt` every few seconds when the JavaScript heap bounced during normal use (for example after garbage collection). That made the log hard to read when nothing was actually wrong.</p>
 <p class="rgbj-changelog-feature__text">Console output for heap jumps was already quiet unless memory stayed very high; this change mainly keeps the on-disk log useful for real investigations.</p>
