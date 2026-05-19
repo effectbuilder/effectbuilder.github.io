@@ -87,54 +87,69 @@ function rgbj_render_page_nav(): void
     $navCurrent = static fn (string $page): string => rgbj_nav_is_active($page) ? ' aria-current="page"' : '';
     $dropClass = static fn (string $page): string => rgbj_nav_is_active($page) ? ' active' : '';
     $dropCurrent = static fn (string $page): string => rgbj_nav_is_active($page) ? ' aria-current="page"' : '';
+    $moreActive = in_array($active, ['releases', 'changelog', 'terms', 'privacy'], true);
     ?>
 <body class="d-flex flex-column min-vh-100">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom rgbj-site-nav">
-        <?php $w = 'div'; ?>
-        <<?= $w ?> class="container-fluid">
-            <<?= $w ?> class="dropdown me-3 rgbj-brand-dropdown">
-                <a class="navbar-brand d-flex align-items-center me-0 brand-dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="/images/rgbjunkielogo.png" alt="RGBJunkie" class="me-2 rgbj-brand-logo">
-                    <span>RGBJunkie</span>
-                    <i class="bi bi-chevron-down ms-2 dropdown-indicator"></i>
+    <nav class="navbar navbar-expand-xl bg-body-tertiary border-bottom rgbj-site-nav">
+        <div class="container-fluid rgbj-nav-container">
+            <div class="d-flex align-items-center flex-shrink-0 rgbj-brand-wrap">
+                <a class="navbar-brand d-flex align-items-center mb-0" href="<?= rgbj_h(rgbj_url()) ?>">
+                    <img src="/images/rgbjunkielogo.png" alt="" class="me-2 rgbj-brand-logo" width="28" height="28">
+                    <span class="rgbj-brand-text">RGBJunkie</span>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-start shadow mt-2 rgbj-brand-menu">
-                    <li><a class="dropdown-item" href="/">RGBJunkie Effect Builder</a></li>
-                    <li><a class="dropdown-item" href="/builder/">RGBJunkie Component Builder</a></li>
-                    <li><a class="dropdown-item" href="/combiner/">RGBJunkie Effect Combiner</a></li>
-                    <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item<?= $dropClass('home') ?>" href="<?= rgbj_h(rgbj_url()) ?>"<?= $dropCurrent('home') ?>>RGBJunkie for Windows</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('releases') ?>" href="<?= rgbj_h(rgbj_url('releases/')) ?>"<?= $dropCurrent('releases') ?>>Previous releases</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $dropCurrent('changelog') ?>>Changelog</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $dropCurrent('supported') ?>>Supported USB devices &amp; parts</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $dropCurrent('docs') ?>>Documentation</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $dropCurrent('terms') ?>>Terms of Service</a></li>
-                    <li><a class="dropdown-item<?= $dropClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $dropCurrent('privacy') ?>>Privacy Policy</a></li>
-                </ul>
-            </<?= $w ?>>
+                <div class="dropdown rgbj-brand-dropdown">
+                    <button class="btn btn-link btn-sm text-body-secondary rgbj-brand-menu-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More RGBJunkie sites">
+                        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-start shadow mt-2 rgbj-brand-menu">
+                        <li class="dropdown-header small text-body-secondary">Web tools</li>
+                        <li><a class="dropdown-item" href="/">Effect Builder</a></li>
+                        <li><a class="dropdown-item" href="/builder/">Component Builder</a></li>
+                        <li><a class="dropdown-item" href="/combiner/">Effect Combiner</a></li>
+                        <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li class="dropdown-header small text-body-secondary">Desktop app</li>
+                        <li><a class="dropdown-item<?= $dropClass('home') ?>" href="<?= rgbj_h(rgbj_url()) ?>"<?= $dropCurrent('home') ?>>App home</a></li>
+                        <li><a class="dropdown-item<?= $dropClass('releases') ?>" href="<?= rgbj_h(rgbj_url('releases/')) ?>"<?= $dropCurrent('releases') ?>>Previous releases</a></li>
+                        <li><a class="dropdown-item<?= $dropClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $dropCurrent('changelog') ?>>Changelog</a></li>
+                        <li><a class="dropdown-item<?= $dropClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $dropCurrent('supported') ?>>Supported gear</a></li>
+                        <li><a class="dropdown-item<?= $dropClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $dropCurrent('docs') ?>>Documentation</a></li>
+                    </ul>
+                </div>
+            </div>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav" aria-controls="appNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#appNav" aria-controls="appNav" aria-expanded="false" aria-label="Open menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <<?= $w ?> class="collapse navbar-collapse" id="appNav">
-                <ul class="navbar-nav ms-auto gap-lg-2">
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h($featuresHref) ?>"><i class="bi bi-grid-3x3-gap me-1"></i>Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h($downloadHref) ?>"><i class="bi bi-download me-1"></i>Download</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('releases') ?>" href="<?= rgbj_h(rgbj_url('releases/')) ?>"<?= $navCurrent('releases') ?>><i class="bi bi-archive me-1"></i>Previous releases</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $navCurrent('changelog') ?>><i class="bi bi-journal-text me-1"></i>Changelog</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $navCurrent('supported') ?>><i class="bi bi-plugin me-1"></i>Supported gear</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $navCurrent('docs') ?>><i class="bi bi-journal-code me-1"></i>Documentation</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $navCurrent('terms') ?>><i class="bi bi-file-text me-1"></i>Terms</a></li>
-                    <li class="nav-item"><a class="nav-link<?= $navClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $navCurrent('privacy') ?>><i class="bi bi-shield-check me-1"></i>Privacy</a></li>
+            <div class="collapse navbar-collapse" id="appNav">
+                <ul class="navbar-nav ms-xl-auto align-items-xl-center rgbj-nav-list">
                     <?php if ($isHome) : ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= rgbj_h($requirementsHref) ?>"><i class="bi bi-pc-display me-1"></i>Requirements</a></li>
+                    <li class="nav-item"><a class="nav-link rgbj-nav-link" href="<?= rgbj_h($featuresHref) ?>"><i class="bi bi-grid-3x3-gap rgbj-nav-icon" aria-hidden="true"></i><span>Features</span></a></li>
                     <?php endif; ?>
-                    <li class="nav-item"><a class="btn btn-primary mt-2 mt-lg-0 ms-lg-2" href="<?= rgbj_h($downloadHref) ?>"><i class="bi bi-box-arrow-in-down me-1"></i>Download</a></li>
+                    <li class="nav-item"><a class="nav-link rgbj-nav-link<?= $navClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $navCurrent('supported') ?>><i class="bi bi-usb-symbol rgbj-nav-icon" aria-hidden="true"></i><span>Supported gear</span></a></li>
+                    <li class="nav-item"><a class="nav-link rgbj-nav-link<?= $navClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $navCurrent('docs') ?>><i class="bi bi-journal-code rgbj-nav-icon" aria-hidden="true"></i><span>Documentation</span></a></li>
+                    <li class="nav-item dropdown rgbj-nav-more">
+                        <a class="nav-link dropdown-toggle rgbj-nav-link<?= $moreActive ? ' active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots rgbj-nav-icon" aria-hidden="true"></i><span>More</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item<?= $dropClass('releases') ?>" href="<?= rgbj_h(rgbj_url('releases/')) ?>"<?= $dropCurrent('releases') ?>>Previous releases</a></li>
+                            <li><a class="dropdown-item<?= $dropClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $dropCurrent('changelog') ?>>Changelog</a></li>
+                            <li><a class="dropdown-item<?= $dropClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $dropCurrent('terms') ?>>Terms of Service</a></li>
+                            <li><a class="dropdown-item<?= $dropClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $dropCurrent('privacy') ?>>Privacy Policy</a></li>
+                            <?php if ($isHome) : ?>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="<?= rgbj_h($requirementsHref) ?>">Requirements</a></li>
+                            <?php endif; ?>
+                        </ul>
+                    </li>
+                    <li class="nav-item rgbj-nav-cta">
+                        <a class="btn btn-primary btn-sm w-100" href="<?= rgbj_h($downloadHref) ?>"><i class="bi bi-download me-1" aria-hidden="true"></i>Download</a>
+                    </li>
                 </ul>
-            </<?= $w ?>>
-        </<?= $w ?>>
+            </div>
+        </div>
     </nav>
     <?php
 }

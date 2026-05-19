@@ -52,11 +52,29 @@ Destructive or important actions no longer use the WebView’s **“localhost sa
 
 *(Add release notes for v0.2.62.)*
 
+## v0.2.64 — May 19, 2026
+
+*(Add release notes for v0.2.64.)*
+
+---
+
 ---
 
 ## v0.2.63 — May 19, 2026
 
-*(Add release notes for v0.2.63.)*
+#### Linux: correct status-bar memory and bundled effects
+
+On Ubuntu and WSL, the bottom **Proc.** line could show hundreds of thousands of MB and inflated **CPU** because Linux reports each thread as a separate process with full RSS. The app now counts main processes only, so memory and CPU match what you would expect (~hundreds of MB, not hundreds of GB).
+
+Installed Linux builds (`.deb`, AppImage) now find **built-in effects** from the installer’s resource folder (not only effects downloaded from rgbjunkie.com). Paths under `/usr/lib/.../resources/effects` and Tauri’s resource resolver are included.
+
+#### Linux / WSL without a sound card
+
+On machines with no ALSA playback device (common in WSL), RGBJunkie no longer retries audio capture in a tight loop, which avoids repeated **ALSA lib … Unknown PCM default** messages on the console. Audio-reactive effects stay off until a real sound device is present; use a normal Ubuntu desktop or PipeWire/PulseAudio setup for microphone/loopback capture.
+
+#### Discord invite opens #welcome-and-rules
+
+The toolbar **Discord** button now uses [discord.gg/adHsQG8czv](https://discord.gg/adHsQG8czv), which lands in **#welcome-and-rules** instead of the old invite that opened **#bot-spam**.
 
 ---
 

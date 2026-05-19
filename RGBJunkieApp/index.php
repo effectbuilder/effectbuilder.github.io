@@ -10,8 +10,8 @@ $rgbj_latest_release = rgbj_latest_release_for_download(__DIR__);
 $rgbj_older_releases = array_slice($rgbj_releases, 1);
 $rgbj_latest_version = $rgbj_latest_release['version'] ?? null;
 
-$pageTitle = 'RGBJunkie for Windows | Plan, preview, and light up your setup';
-$pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on multiple canvases, preview effects, and control supported USB lighting from one polished app.';
+$pageTitle = 'RGBJunkie | Plan, preview, and light up your setup';
+$pageDesc = 'Download RGBJunkie for Windows and Linux. Arrange your RGB battlestation on multiple canvases, preview effects, and control supported USB lighting from one polished desktop app.';
 
 rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc, 'og' => true]);
 rgbj_page_analytics();
@@ -23,7 +23,14 @@ rgbj_render_page_nav();
         <div class="container">
             <div class="row align-items-center g-4">
                 <div class="col-lg-5">
-                    <p class="text-info small fw-semibold text-uppercase tracking-wide mb-2">RGBJunkie · Windows desktop app</p>
+                    <img
+                        src="/images/rgbjunkie.png"
+                        alt="RGBJunkie"
+                        class="rgbj-hero-logo mb-3"
+                        width="260"
+                        height="auto"
+                    >
+                    <p class="text-info small fw-semibold text-uppercase tracking-wide mb-2">Windows &amp; Linux desktop app</p>
                     <h1 class="display-5 fw-bold text-body-emphasis mb-3">Light up your battlestation, the easy way!</h1>
                     <p class="lead text-body-secondary mb-4">
                         Plan every strip, keyboard, and accent on a visual desk. Switch between workspace canvases for different zones, preview stunning effects in real time, and push colors to the USB gear you already own, without scripting or juggling five separate apps.
@@ -35,9 +42,10 @@ rgbj_render_page_nav();
                         <span class="rgbj-hero-badge">Multiple layout canvases</span>
                         <span class="rgbj-hero-badge">Wide device support</span>
                         <span class="rgbj-hero-badge">Effect &amp; color profiles</span>
+                        <span class="rgbj-hero-badge">Windows &amp; Linux</span>
                     </div>
                     <div class="rgbj-hero-cta d-flex flex-wrap gap-2">
-                        <a class="btn btn-primary btn-lg" href="#download"><i class="bi bi-download" aria-hidden="true"></i><span>Download for Windows</span></a>
+                        <a class="btn btn-primary btn-lg" href="#download"><i class="bi bi-download" aria-hidden="true"></i><span>Download</span></a>
                         <a class="btn btn-outline-secondary btn-lg" href="<?= rgbj_h(rgbj_url('supported/')) ?>"><i class="bi bi-usb-symbol" aria-hidden="true"></i><span>See supported gear</span></a>
                     </div>
                 </div>
@@ -106,14 +114,12 @@ rgbj_render_page_nav();
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-lg-10 col-xl-8">
-                        <h2 class="h3 fw-bold text-body-emphasis mb-4 text-center"><i class="bi bi-cloud-download me-2 text-info"></i>Download RGBJunkie</h2>
+                        <h2 class="h3 fw-bold text-body-emphasis mb-4 text-center"><i class="bi bi-cloud-download me-2 text-info"></i>Download</h2>
 
                         <?php require __DIR__ . '/includes/download-section.php'; ?>
 
-                        <div class="alert alert-info border-info bg-dark mb-0" role="note">
-                            <h3 class="alert-heading h6"><i class="bi bi-shield-check me-2"></i>Windows may ask you to confirm the first time</h3>
-                            <p class="small mb-0">New apps sometimes show a SmartScreen notice. Choose “More info,” then “Run anyway” if you trust this download from RGBJunkie. Signed installers reduce these prompts over time.</p>
-                        </div>
+                        <p class="small text-body-secondary text-center mt-3 mb-0" data-rgbj-download-tip="windows">On Windows, SmartScreen may ask you to confirm the first run — choose “More info,” then “Run anyway” if you trust this download.</p>
+                        <p class="small text-body-secondary text-center mt-3 mb-0 d-none" data-rgbj-download-tip="linux">On Linux, install the package with your distro’s tools, or mark the AppImage executable before running it.</p>
                     </div>
                 </div>
             </div>
@@ -125,7 +131,8 @@ rgbj_render_page_nav();
                     <div class="col-lg-6">
                         <h2 class="h4 fw-bold text-body-emphasis mb-3"><i class="bi bi-pc-display-horizontal me-2 text-info"></i>What you need</h2>
                         <ul class="list-group list-group-flush border rounded border-secondary overflow-hidden">
-                            <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">PC:</strong> Windows 10 or newer, 64-bit.</li>
+                            <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Windows:</strong> Windows 10 or newer, 64-bit.</li>
+                            <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Linux:</strong> Recent 64-bit distro — install the .deb or .rpm, or use the AppImage.</li>
                             <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Lighting:</strong> USB RGB devices supported by RGBJunkie. See our <a href="<?= rgbj_h(rgbj_url('supported/')) ?>">compatibility list</a>.</li>
                             <li class="list-group-item bg-body-tertiary text-body-secondary"><strong class="text-body">Display:</strong> A comfortable window around 1200×800 or larger for the full workspace.</li>
                         </ul>
@@ -135,14 +142,14 @@ rgbj_render_page_nav();
                         <ol class="list-group list-group-numbered list-group-flush border rounded border-secondary overflow-hidden">
                             <li class="list-group-item bg-body-tertiary text-body-secondary d-flex justify-content-between align-items-start">
                                 <div class="ms-2 me-auto">
-                                    <div class="fw-bold text-body">Download the installer</div>
-                                    Use the button above. No account required.
+                                    <div class="fw-bold text-body">Download for your OS</div>
+                                    Choose Windows or Linux from the section above. No account required.
                                 </div>
                             </li>
                             <li class="list-group-item bg-body-tertiary text-body-secondary d-flex justify-content-between align-items-start">
                                 <div class="ms-2 me-auto">
-                                    <div class="fw-bold text-body">Run setup</div>
-                                    Accept the defaults unless you need a custom folder.
+                                    <div class="fw-bold text-body">Install or unpack</div>
+                                    Run the Windows installer, unzip the portable build, or install the Linux package you prefer.
                                 </div>
                             </li>
                             <li class="list-group-item bg-body-tertiary text-body-secondary d-flex justify-content-between align-items-start">
@@ -159,10 +166,11 @@ rgbj_render_page_nav();
     </main>
 
     <?php
-    $rgbj_footer_blurb = 'The Windows companion to the free RGBJunkie creative tools in your browser, now with multiple canvases, rich effects, and room-scale control.';
+    $rgbj_footer_blurb = 'The Windows and Linux companion to the free RGBJunkie creative tools in your browser — multiple canvases, rich effects, and room-scale control.';
     require __DIR__ . '/includes/page-footer.php';
     ?>
     <?php require __DIR__ . '/includes/download-share-scripts.php'; ?>
+    <script src="<?= rgbj_h(rgbj_url('assets/download-platform.js')) ?>" defer></script>
     <script>
         (function () {
             var heroVideo = document.getElementById('hero-video');
