@@ -62,3 +62,18 @@ function rgbj_nav_is_active(string $page): bool
 {
     return ($GLOBALS['rgbj_nav_active'] ?? 'home') === $page;
 }
+
+/** Absolute URL for a file under this site (e.g. downloads/portable/foo.zip). */
+function rgbj_download_absolute_url(string $webPath): string
+{
+    $webPath = ltrim(str_replace('\\', '/', $webPath), '/');
+    if (preg_match('#^https?://#i', $webPath)) {
+        return $webPath;
+    }
+
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $base = rgbj_base_path();
+
+    return $scheme . '://' . $host . ($base === '' ? '/' : $base . '/') . $webPath;
+}

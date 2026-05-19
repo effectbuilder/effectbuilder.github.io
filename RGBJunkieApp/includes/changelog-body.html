@@ -4,6 +4,193 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-56" data-version="0.2.56">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.56</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.56.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-58" data-version="0.2.58">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.58</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Desktop shell: no browser right-click menu or Find (Ctrl+F)</span></h5>
+<p class="rgbj-changelog-feature__text">The embedded WebView no longer shows the <strong>Edge-style default context menu</strong> (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. <strong>Ctrl+F</strong> / <strong>F3</strong> Find on page, <strong>Ctrl+P</strong> print, <strong>Ctrl+R</strong> / <strong>F5</strong> reload, and <strong>Ctrl+Plus/Minus</strong> zoom are disabled so the app feels like a desktop tool, not a browser tab. Your <strong>canvas and component right-click menus</strong> (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the <strong>devtools</strong> feature is enabled.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-60" data-version="0.2.60">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.60</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>build.bat: automatic release prerequisites</span></h5>
+<p class="rgbj-changelog-feature__text">`build.bat` now runs <strong>`setup-release-prerequisites.mjs`</strong> first: creates <strong>`scripts/sftp-upload.config.local.json`</strong> from the example when missing, checks the FTP password, installs <strong>WSL Ubuntu apt packages</strong> for Linux builds when needed (one sudo prompt), and warns if <strong>OpenRGB</strong> is not vendored. Use <strong>`RGBJUNKIE_GIT_PULL=1`</strong> to pull latest code before the build. Old <strong>`RGBJunkie.AppDir`</strong> and unpack folders under `bundle/` are cleaned before FTP upload.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WSL setup: auto-install Node.js and Rust</span></h5>
+<p class="rgbj-changelog-feature__text">The WSL prerequisites script now installs <strong>Node.js LTS</strong> (NodeSource) and <strong>rustup stable</strong> when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Release FTP: clearer Linux upload failures</span></h5>
+<p class="rgbj-changelog-feature__text">If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old <strong>0.2.48</strong> files after a bump to <strong>0.2.62</strong>), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux downloads on the website (release pipeline)</span></h5>
+<p class="rgbj-changelog-feature__text">`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes <strong>`.deb`</strong>, <strong>`.rpm`</strong>, and <strong>AppImage</strong> files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux WSL build: fix Vite EPERM on `C:`</span></h5>
+<p class="rgbj-changelog-feature__text">Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: toolbar layout like the design mockup</span></h5>
+<p class="rgbj-changelog-feature__text">The LED Studio controls are laid out in one horizontal strip: <strong>Component</strong> (device dropdown), <strong>Brush tools</strong> (color + HEX in one capsule, Paint/Erase in another), and <strong>Actions</strong> (three rounded buttons, with <strong>Clear all</strong> in red). Sections are separated by vertical dividers with small uppercase labels above each group.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: confirm before Clear all</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Clear all</strong> in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on <strong>every component</strong> on the canvas, not only the one selected in the dropdown.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>In-app confirmation dialogs (no more browser popups)</span></h5>
+<p class="rgbj-changelog-feature__text">Destructive or important actions no longer use the WebView’s <strong>“localhost says”</strong> `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio <strong>Clear all</strong>, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-62" data-version="0.2.62">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.62</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.62.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-63" data-version="0.2.63">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.63</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.63.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-61" data-version="0.2.61">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.61</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.61.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-59" data-version="0.2.59">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.59</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Right-click → LED Studio on every component</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>LED Studio…</strong> is on the canvas and Devices sidebar menus for <strong>every</strong> component. It opens <strong>Settings → Colors → LED Studio</strong> with that component already selected. Components with no LED grid show the item disabled (tooltip explains why). Fixed-layout plugin rows in the sidebar can use the menu too (not only removable components).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Save confirmation toasts for device layout and effect settings</span></h5>
+<p class="rgbj-changelog-feature__text">When you click <strong>Save current layout</strong> or <strong>Save current effect settings</strong>, a short success toast shows the profile name that was written. If the save fails, you get an error toast instead of only a console message.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App-wide links open in your browser (not inside the WebView)</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>http</strong>, <strong>https</strong>, and <strong>mailto</strong> links across the main app window now open in your default browser — Settings (About, Help, RAM/OpenRGB help text, bug-report footer, and similar), update dialogs, and other host UI. The embedded WebView no longer swallows those clicks. <strong>Effect</strong> panels are unchanged (they run in their own iframe). In <strong>About</strong>, the <strong>build</strong> stamp is always a link to this version’s release notes on rgbjunkie.com, including after you’re already up to date.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-57" data-version="0.2.57">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.57</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.57.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-48" data-version="0.2.48">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -27,6 +214,27 @@
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Setup wizard dismiss and new hardware</span></h5>
 <p class="rgbj-changelog-feature__text">Closing or skipping the <strong>initial setup wizard</strong> now warns you when channels still have no components assigned, reminds you that you can run it again from the device panel (magic wand), and will not auto-open again until <strong>new hardware</strong> is detected — then RGBJunkie asks whether to open the wizard for those devices.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Discord community link</span></h5>
+<p class="rgbj-changelog-feature__text">The top toolbar (next to Help and Settings) has a <strong>Discord</strong> button that opens the official RGBJunkie server invite: <a href="https://discord.gg/ZXkqMPjzcB" rel="noopener noreferrer">discord.gg/ZXkqMPjzcB</a>.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Bug fix: device layout autosave when you move components</span></h5>
+<p class="rgbj-changelog-feature__text">Moving strips, fans, or keyboards on the canvas now reliably updates <strong>`devices/autosave_device.json`</strong> (the layout autosave was not wired for all drag paths). On quit, RGBJunkie flushes device and effect autosave before shutdown colors. If USB or WLED plugins attach a moment after startup, the app <strong>re-applies</strong> the saved layout so positions are not lost when a row was skipped with “no matching plugin” on the first pass.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliable WLED device removal</span></h5>
+<p class="rgbj-changelog-feature__text">Removing a row under <strong>Settings → Devices → WLED</strong> now disconnects that controller from the device list immediately (with confirmation), not only after a separate save. Orphaned WLED plugins are pruned whenever the saved WLED list changes, including during fast hardware rescans that previously left removed devices running.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WLED discovery deduplication</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Discover WLED</strong> no longer lists the same controller twice when SSDP/ARP reports both `192.168.x.x` and `192.168.x.x:80` — results use one canonical address (port <strong>80</strong> is omitted; other ports are kept).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Bug fix: effect settings and autosave restore the correct library effect</span></h5>
+<p class="rgbj-changelog-feature__text">Loading <strong>effect autosave</strong> could open the wrong entry from the Effect Library (a random slot until you picked the effect again manually). That is fixed. Effect behavior now matches the intended model:</p>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>`effects/autosave_effect.json`</strong> is the only state restored on startup (your last session).</li><li><strong>Named effect setting files</strong> are snapshots: save them when you want a backup, or pick one in the dropdown and use <strong>Reload</strong> to load it — that updates autosave for the next launch. The dropdown selection is remembered, but startup does not silently re-load an old file over autosave.</li><li>Live slider and effect changes always save to <strong>autosave only</strong> (named files are not overwritten on every tweak).</li><li><strong>Fix:</strong> Restores use <strong>stable effect ids</strong> (gallery id, disk <strong>source</strong> + path, or display name) instead of trusting a bare `effect_3` list index after the rgbjunkie.com gallery merges or the library order changes.</li><li><strong>Fix:</strong> A local <strong>effects identity registry</strong> in AppData (`cache/effects_identity_registry_v1.json`) helps match older saves when the catalog changes between sessions.</li><li><strong>Fix:</strong> After the gallery catalog finishes loading, the app re-applies your saved effect so sliders and parameters stay tied to the right HTML effect.</li><li><strong>Fix:</strong> Release builds no longer launch a blank `effect_0` during hardware init before autosave runs — your saved sliders are pushed into the effect iframe after restore (including when the iframe is reused without a full reload).</li><li><strong>Fix:</strong> During startup restore, the effect iframe always reloads so saved sliders apply in release builds (not only when dev reuses a warm iframe).</li><li><strong>Fix:</strong> Built-in effects match across dev (`effects/` in the repo), installed (`Program Files`), and bundled paths using the same `effects/…` folder tail — not only the `.html` file name — so autosave tied to Fan Tracer (and similar) resolves to the same library entry in both modes.</li><li><strong>Fix:</strong> If nothing matches, the effect stays <strong>paused</strong> instead of defaulting to the first library entry.</li><li><strong>Diagnostics:</strong> On effect autosave load, the app logs the full path to `autosave_effect.json` under `%APPDATA%\RGBJunkie` (override with env `RGBJUNKIE_APP_DATA` if needed). Dev and release read the same file; if settings differ, compare that path in the log or F12 console.</li><li><strong>Fix:</strong> Effect launches are serialized during restore so an early `effect_0` launch cannot strip another effect’s saved slider keys from memory before your effect loads; saved globals are re-applied to the iframe several times after load so Fan Tracer–style effects pick up autosave values.</li><li><strong>Fix:</strong> Effect restore prefers the saved `effectParams` block (your live sliders) over empty placeholders in `effectCache`, so the control panel and preview no longer reset to defaults when an old cache slot matched first.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Privacy Policy page (website)</span></h5>

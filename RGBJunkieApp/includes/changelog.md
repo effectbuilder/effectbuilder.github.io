@@ -4,6 +4,96 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.
 
+## v0.2.56 — May 18, 2026
+
+*(Add release notes for v0.2.56.)*
+
+## v0.2.58 — May 19, 2026
+
+#### Desktop shell: no browser right-click menu or Find (Ctrl+F)
+
+The embedded WebView no longer shows the **Edge-style default context menu** (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. **Ctrl+F** / **F3** Find on page, **Ctrl+P** print, **Ctrl+R** / **F5** reload, and **Ctrl+Plus/Minus** zoom are disabled so the app feels like a desktop tool, not a browser tab. Your **canvas and component right-click menus** (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the **devtools** feature is enabled.
+
+## v0.2.60 — May 19, 2026
+
+#### build.bat: automatic release prerequisites
+
+`build.bat` now runs **`setup-release-prerequisites.mjs`** first: creates **`scripts/sftp-upload.config.local.json`** from the example when missing, checks the FTP password, installs **WSL Ubuntu apt packages** for Linux builds when needed (one sudo prompt), and warns if **OpenRGB** is not vendored. Use **`RGBJUNKIE_GIT_PULL=1`** to pull latest code before the build. Old **`RGBJunkie.AppDir`** and unpack folders under `bundle/` are cleaned before FTP upload.
+
+#### WSL setup: auto-install Node.js and Rust
+
+The WSL prerequisites script now installs **Node.js LTS** (NodeSource) and **rustup stable** when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.
+
+#### Release FTP: clearer Linux upload failures
+
+If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old **0.2.48** files after a bump to **0.2.62**), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.
+
+#### Linux downloads on the website (release pipeline)
+
+`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes **`.deb`**, **`.rpm`**, and **AppImage** files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.
+
+#### Linux WSL build: fix Vite EPERM on `C:`
+
+Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.
+
+#### LED Studio: toolbar layout like the design mockup
+
+The LED Studio controls are laid out in one horizontal strip: **Component** (device dropdown), **Brush tools** (color + HEX in one capsule, Paint/Erase in another), and **Actions** (three rounded buttons, with **Clear all** in red). Sections are separated by vertical dividers with small uppercase labels above each group.
+
+#### LED Studio: confirm before Clear all
+
+**Clear all** in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on **every component** on the canvas, not only the one selected in the dropdown.
+
+#### In-app confirmation dialogs (no more browser popups)
+
+Destructive or important actions no longer use the WebView’s **“localhost says”** `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio **Clear all**, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).
+
+## v0.2.62 — May 19, 2026
+
+*(Add release notes for v0.2.62.)*
+
+---
+
+## v0.2.63 — May 19, 2026
+
+*(Add release notes for v0.2.63.)*
+
+---
+
+---
+
+## v0.2.61 — May 19, 2026
+
+*(Add release notes for v0.2.61.)*
+
+---
+
+---
+
+## v0.2.59 — May 19, 2026
+
+#### Right-click → LED Studio on every component
+
+**LED Studio…** is on the canvas and Devices sidebar menus for **every** component. It opens **Settings → Colors → LED Studio** with that component already selected. Components with no LED grid show the item disabled (tooltip explains why). Fixed-layout plugin rows in the sidebar can use the menu too (not only removable components).
+
+#### Save confirmation toasts for device layout and effect settings
+
+When you click **Save current layout** or **Save current effect settings**, a short success toast shows the profile name that was written. If the save fails, you get an error toast instead of only a console message.
+
+#### App-wide links open in your browser (not inside the WebView)
+
+**http**, **https**, and **mailto** links across the main app window now open in your default browser — Settings (About, Help, RAM/OpenRGB help text, bug-report footer, and similar), update dialogs, and other host UI. The embedded WebView no longer swallows those clicks. **Effect** panels are unchanged (they run in their own iframe). In **About**, the **build** stamp is always a link to this version’s release notes on rgbjunkie.com, including after you’re already up to date.
+
+---
+
+---
+
+## v0.2.57 — May 18, 2026
+
+*(Add release notes for v0.2.57.)*
+
+---
+
 ---
 
 ## v0.2.48 — May 18, 2026
@@ -20,6 +110,41 @@ The desktop app UI can run in **English**, **Español**, or **Simplified Chinese
 #### Setup wizard dismiss and new hardware
 
 Closing or skipping the **initial setup wizard** now warns you when channels still have no components assigned, reminds you that you can run it again from the device panel (magic wand), and will not auto-open again until **new hardware** is detected — then RGBJunkie asks whether to open the wizard for those devices.
+
+#### Discord community link
+
+The top toolbar (next to Help and Settings) has a **Discord** button that opens the official RGBJunkie server invite: [discord.gg/ZXkqMPjzcB](https://discord.gg/ZXkqMPjzcB).
+
+#### Bug fix: device layout autosave when you move components
+
+Moving strips, fans, or keyboards on the canvas now reliably updates **`devices/autosave_device.json`** (the layout autosave was not wired for all drag paths). On quit, RGBJunkie flushes device and effect autosave before shutdown colors. If USB or WLED plugins attach a moment after startup, the app **re-applies** the saved layout so positions are not lost when a row was skipped with “no matching plugin” on the first pass.
+
+#### Reliable WLED device removal
+
+Removing a row under **Settings → Devices → WLED** now disconnects that controller from the device list immediately (with confirmation), not only after a separate save. Orphaned WLED plugins are pruned whenever the saved WLED list changes, including during fast hardware rescans that previously left removed devices running.
+
+#### WLED discovery deduplication
+
+**Discover WLED** no longer lists the same controller twice when SSDP/ARP reports both `192.168.x.x` and `192.168.x.x:80` — results use one canonical address (port **80** is omitted; other ports are kept).
+
+#### Bug fix: effect settings and autosave restore the correct library effect
+
+Loading **effect autosave** could open the wrong entry from the Effect Library (a random slot until you picked the effect again manually). That is fixed. Effect behavior now matches the intended model:
+
+- **`effects/autosave_effect.json`** is the only state restored on startup (your last session).
+- **Named effect setting files** are snapshots: save them when you want a backup, or pick one in the dropdown and use **Reload** to load it — that updates autosave for the next launch. The dropdown selection is remembered, but startup does not silently re-load an old file over autosave.
+- Live slider and effect changes always save to **autosave only** (named files are not overwritten on every tweak).
+
+- **Fix:** Restores use **stable effect ids** (gallery id, disk **source** + path, or display name) instead of trusting a bare `effect_3` list index after the rgbjunkie.com gallery merges or the library order changes.
+- **Fix:** A local **effects identity registry** in AppData (`cache/effects_identity_registry_v1.json`) helps match older saves when the catalog changes between sessions.
+- **Fix:** After the gallery catalog finishes loading, the app re-applies your saved effect so sliders and parameters stay tied to the right HTML effect.
+- **Fix:** Release builds no longer launch a blank `effect_0` during hardware init before autosave runs — your saved sliders are pushed into the effect iframe after restore (including when the iframe is reused without a full reload).
+- **Fix:** During startup restore, the effect iframe always reloads so saved sliders apply in release builds (not only when dev reuses a warm iframe).
+- **Fix:** Built-in effects match across dev (`effects/` in the repo), installed (`Program Files`), and bundled paths using the same `effects/…` folder tail — not only the `.html` file name — so autosave tied to Fan Tracer (and similar) resolves to the same library entry in both modes.
+- **Fix:** If nothing matches, the effect stays **paused** instead of defaulting to the first library entry.
+- **Diagnostics:** On effect autosave load, the app logs the full path to `autosave_effect.json` under `%APPDATA%\RGBJunkie` (override with env `RGBJUNKIE_APP_DATA` if needed). Dev and release read the same file; if settings differ, compare that path in the log or F12 console.
+- **Fix:** Effect launches are serialized during restore so an early `effect_0` launch cannot strip another effect’s saved slider keys from memory before your effect loads; saved globals are re-applied to the iframe several times after load so Fan Tracer–style effects pick up autosave values.
+- **Fix:** Effect restore prefers the saved `effectParams` block (your live sliders) over empty placeholders in `effectCache`, so the control panel and preview no longer reset to defaults when an old cache slot matched first.
 
 #### Privacy Policy page (website)
 

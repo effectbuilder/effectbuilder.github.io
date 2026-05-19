@@ -2,13 +2,13 @@
 
 require_once dirname(__DIR__) . '/includes/installers.php';
 
-$rgbj_installers = rgbj_discover_installer_pairs(rgbj_app_root());
+$rgbj_releases = rgbj_discover_releases(rgbj_app_root());
 $rgbj_nav_active = 'releases';
-$rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
-$rgbj_release_rows = array_slice($rgbj_installers, 1);
+$rgbj_latest_version = $rgbj_releases[0]['version'] ?? null;
+$rgbj_release_rows = array_slice($rgbj_releases, 1);
 
-$pageTitle = 'Previous releases | RGBJunkie for Windows';
-$pageDesc = 'Download older RGBJunkie for Windows builds: setup and MSI pairs for 64-bit Windows 10 or later.';
+$pageTitle = 'Previous releases | RGBJunkie';
+$pageDesc = 'Download older RGBJunkie builds: Windows installers, portable ZIP, and Linux packages.';
 
 rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
 rgbj_page_analytics();
@@ -32,6 +32,7 @@ rgbj_subpage_open([
 
 <?php
 rgbj_subpage_close();
-$rgbj_footer_blurb = 'Download current or older RGBJunkie for Windows installers.';
+$rgbj_footer_blurb = 'Download current or older RGBJunkie builds for Windows and Linux.';
 require dirname(__DIR__) . '/includes/page-footer.php';
+require dirname(__DIR__) . '/includes/download-share-scripts.php';
 rgbj_page_scripts_end();

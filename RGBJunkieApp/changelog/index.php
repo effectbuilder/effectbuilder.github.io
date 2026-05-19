@@ -4,8 +4,7 @@ require_once dirname(__DIR__) . '/includes/installers.php';
 require_once dirname(__DIR__) . '/includes/changelog-content.php';
 
 $rgbj_nav_active = 'changelog';
-$rgbj_installers = rgbj_discover_installer_pairs(rgbj_app_root());
-$rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
+$rgbj_latest_version = rgbj_latest_release(rgbj_app_root())['version'] ?? null;
 $rgbj_changelog_synced = rgbj_changelog_last_sync_label();
 
 $pageTitle = 'Changelog | RGBJunkie for Windows';

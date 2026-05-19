@@ -1,6 +1,6 @@
 <?php
 /**
- * Discover paired RGBJunkie Windows installers under downloads/nsis and downloads/msi.
+ * Discover RGBJunkie release artifacts under downloads/{nsis,msi,portable,linux}.
  */
 
 declare(strict_types=1);
@@ -11,6 +11,7 @@ require_once __DIR__ . '/page-layout.php';
 const RGBJ_NSIS_DIR = 'downloads/nsis';
 const RGBJ_MSI_DIR = 'downloads/msi';
 const RGBJ_PORTABLE_DIR = 'downloads/portable';
+const RGBJ_LINUX_DIR = 'downloads/linux';
 
 /** @return array{nsis:string,msi:string} Absolute directory paths. */
 function rgbj_installer_directories(string $siteRoot): array
@@ -45,6 +46,108 @@ function rgbj_version_from_portable_name(string $filename): ?string
     return null;
 }
 
+/** @return 'deb'|'rpm'|'appimage'|null */
+function rgbj_linux_artifact_kind(string $filename): ?string
+{
+    $lower = strtolower($filename);
+    if (str_ends_with($lower, '.deb')) {
+        return 'deb';
+    }
+    if (str_ends_with($lower, '.rpm')) {
+        return 'rpm';
+    }
+    if (str_ends_with($lower, '.appimage')) {
+        return 'appimage';
+    }
+    return null;
+}
+
+/**
+ * @return array{version:string,kind:'deb'|'rpm'|'appimage'}|null
+ */
+function rgbj_parse_linux_artifact_name(string $filename): ?array
+{
+    $kind = rgbj_linux_artifact_kind($filename);
+    if ($kind === null) {
+        return null;
+    }
+    if (preg_match('/^RGBJunkie_(.+?)_(?:amd64|x86_64|x64)\.(?:deb|rpm|AppImage)$/i', $filename, $m)) {
+        return ['version' => $m[1], 'kind' => $kind];
+    }
+    if ($kind === 'rpm' && preg_match('/^RGBJunkie-([\d.]+)-\d+\.(?:x86_64|amd64|aarch64)\.rpm$/i', $filename, $m)) {
+        return ['version' => $m[1], 'kind' => $kind];
+    }
+    if (preg_match('/^RGBJunkie[_-](.+?)\.(?:deb|rpm|AppImage)$/i', $filename, $m)) {
+        return ['version' => $m[1], 'kind' => $kind];
+    }
+    if (preg_match('/^rgbjunkie[_-](.+?)_(?:amd64|x86_64)\.(?:deb|rpm)$/i', $filename, $m)) {
+        return ['version' => $m[1], 'kind' => $kind];
+    }
+    return null;
+}
+
+/** @return list<array{dir:string,webSubdir:string,kind:?string}> */
+function rgbj_linux_scan_locations(string $linuxDir): array
+{
+    $locations = [
+        ['dir' => $linuxDir, 'webSubdir' => RGBJ_LINUX_DIR, 'kind' => null],
+    ];
+    foreach (['deb', 'rpm', 'appimage'] as $kind) {
+        $sub = $linuxDir . DIRECTORY_SEPARATOR . $kind;
+        if (is_dir($sub)) {
+            $locations[] = [
+                'dir' => $sub,
+                'webSubdir' => RGBJ_LINUX_DIR . '/' . $kind,
+                'kind' => $kind,
+            ];
+        }
+    }
+    return $locations;
+}
+
+/**
+ * @param callable(string):void $ensure
+ */
+function rgbj_discover_linux_into(string $linuxDir, callable $ensure, array &$byVer): void
+{
+    foreach (rgbj_linux_scan_locations($linuxDir) as $loc) {
+        foreach (glob($loc['dir'] . DIRECTORY_SEPARATOR . '*') ?: [] as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+            $name = basename($path);
+            $parsed = rgbj_parse_linux_artifact_name($name);
+            if ($parsed === null) {
+                continue;
+            }
+            if ($loc['kind'] !== null && $parsed['kind'] !== $loc['kind']) {
+                continue;
+            }
+            $ensure($parsed['version']);
+            $existing = $byVer[$parsed['version']]['linux'][$parsed['kind']] ?? null;
+            $meta = rgbj_installer_file_meta($loc['dir'], $loc['webSubdir'], $name);
+            if ($meta === null) {
+                continue;
+            }
+            if ($existing === null || $meta['mtime'] >= $existing['mtime']) {
+                $byVer[$parsed['version']]['linux'][$parsed['kind']] = $meta;
+            }
+        }
+    }
+}
+
+/** @param array{deb:?array,rpm:?array,appimage:?array} $linux */
+function rgbj_release_has_linux(array $linux): bool
+{
+    return $linux['deb'] !== null || $linux['rpm'] !== null || $linux['appimage'] !== null;
+}
+
+/** @return array{deb:?array,rpm:?array,appimage:?array} */
+function rgbj_empty_linux_bundle(): array
+{
+    return ['deb' => null, 'rpm' => null, 'appimage' => null];
+}
+
 /** @return array{file:string,webPath:string,size:int,mtime:int}|null */
 function rgbj_installer_file_meta(string $dir, string $webSubdir, string $filename): ?array
 {
@@ -65,6 +168,7 @@ function rgbj_installer_file_meta(string $dir, string $webSubdir, string $filena
  *   version:string,
  *   sortKey:string,
  *   portable:array{file:string,webPath:string,size:int,mtime:int}|null,
+ *   linux:array{deb:?array,rpm:?array,appimage:?array},
  *   setup:array{file:string,webPath:string,size:int,mtime:int}|null,
  *   msi:array{file:string,webPath:string,size:int,mtime:int}|null
  * }>
@@ -73,7 +177,8 @@ function rgbj_discover_releases(string $siteRoot): array
 {
     $dirs = rgbj_installer_directories($siteRoot);
     $portableDir = $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, RGBJ_PORTABLE_DIR);
-    /** @var array<string, array{version:string,sortKey:string,portable:?array,setup:?array,msi:?array}> $byVer */
+    $linuxDir = $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, RGBJ_LINUX_DIR);
+    /** @var array<string, array{version:string,sortKey:string,portable:?array,linux:array{deb:?array,rpm:?array,appimage:?array},setup:?array,msi:?array}> $byVer */
     $byVer = [];
 
     $ensure = static function (string $ver) use (&$byVer): void {
@@ -82,6 +187,7 @@ function rgbj_discover_releases(string $siteRoot): array
                 'version' => $ver,
                 'sortKey' => $ver,
                 'portable' => null,
+                'linux' => rgbj_empty_linux_bundle(),
                 'setup' => null,
                 'msi' => null,
             ];
@@ -124,11 +230,16 @@ function rgbj_discover_releases(string $siteRoot): array
         }
     }
 
+    if (is_dir($linuxDir)) {
+        rgbj_discover_linux_into($linuxDir, $ensure, $byVer);
+    }
+
     $complete = [];
     foreach ($byVer as $row) {
         $hasPortable = $row['portable'] !== null;
         $hasPair = $row['setup'] !== null && $row['msi'] !== null;
-        if (!$hasPortable && !$hasPair) {
+        $hasLinux = rgbj_release_has_linux($row['linux']);
+        if (!$hasPortable && !$hasPair && !$hasLinux) {
             continue;
         }
         $complete[] = $row;
@@ -164,6 +275,46 @@ function rgbj_discover_installer_pairs(string $siteRoot): array
         ];
     }
     return $paired;
+}
+
+/** @return array<string, mixed>|null */
+function rgbj_latest_release(string $siteRoot): ?array
+{
+    $releases = rgbj_discover_releases($siteRoot);
+    return $releases[0] ?? null;
+}
+
+/**
+ * Latest release for the public download page.
+ * When the newest build lacks Windows installers, uses the newest version that has them.
+ *
+ * @return array<string, mixed>|null
+ */
+function rgbj_latest_release_for_download(string $siteRoot): ?array
+{
+    $releases = rgbj_discover_releases($siteRoot);
+    if ($releases === []) {
+        return null;
+    }
+
+    $latest = $releases[0];
+    if ($latest['setup'] !== null && $latest['msi'] !== null) {
+        return $latest;
+    }
+
+    foreach ($releases as $row) {
+        if ($row['setup'] === null || $row['msi'] === null) {
+            continue;
+        }
+        $latest['setup'] = $row['setup'];
+        $latest['msi'] = $row['msi'];
+        if ($row['version'] !== $latest['version']) {
+            $latest['windowsInstallerVersion'] = $row['version'];
+        }
+        return $latest;
+    }
+
+    return $latest;
 }
 
 function rgbj_format_bytes(int $bytes): string

@@ -5,8 +5,10 @@ require_once __DIR__ . '/includes/feature-cards.php';
 require_once __DIR__ . '/includes/developer-docs.php';
 
 $rgbj_nav_active = 'home';
-$rgbj_installers = rgbj_discover_installer_pairs(__DIR__);
-$rgbj_latest_version = $rgbj_installers[0]['version'] ?? null;
+$rgbj_releases = rgbj_discover_releases(__DIR__);
+$rgbj_latest_release = rgbj_latest_release_for_download(__DIR__);
+$rgbj_older_releases = array_slice($rgbj_releases, 1);
+$rgbj_latest_version = $rgbj_latest_release['version'] ?? null;
 
 $pageTitle = 'RGBJunkie for Windows | Plan, preview, and light up your setup';
 $pageDesc = 'Download RGBJunkie for Windows. Arrange your RGB battlestation on multiple canvases, preview effects, and control supported USB lighting from one polished app.';
@@ -104,8 +106,7 @@ rgbj_render_page_nav();
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-lg-10 col-xl-8">
-                        <h2 class="h3 fw-bold text-body-emphasis mb-2 text-center"><i class="bi bi-cloud-download me-2 text-info"></i>Download for Windows</h2>
-                        <p class="text-body-secondary text-center mb-4">Pick the installer that fits your PC. Both deliver the same RGBJunkie experience on 64-bit Windows 10 or later. New builds appear here automatically when you add files to the download folders.</p>
+                        <h2 class="h3 fw-bold text-body-emphasis mb-4 text-center"><i class="bi bi-cloud-download me-2 text-info"></i>Download RGBJunkie</h2>
 
                         <?php require __DIR__ . '/includes/download-section.php'; ?>
 
@@ -161,31 +162,9 @@ rgbj_render_page_nav();
     $rgbj_footer_blurb = 'The Windows companion to the free RGBJunkie creative tools in your browser, now with multiple canvases, rich effects, and room-scale control.';
     require __DIR__ . '/includes/page-footer.php';
     ?>
+    <?php require __DIR__ . '/includes/download-share-scripts.php'; ?>
     <script>
         (function () {
-            var base = window.location.href.replace(/[^/]*$/, '');
-            document.querySelectorAll('input[data-base-path]').forEach(function (el) {
-                el.value = base + el.dataset.basePath;
-            });
-            document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var tid = btn.getAttribute('data-copy-target');
-                    var inp = document.getElementById(tid);
-                    if (!inp || !inp.value) return;
-                    navigator.clipboard.writeText(inp.value).then(function () {
-                        var prev = btn.innerHTML;
-                        btn.innerHTML = '<i class="bi bi-check2"></i>';
-                        btn.classList.add('btn-success');
-                        btn.classList.remove('btn-outline-secondary');
-                        setTimeout(function () {
-                            btn.innerHTML = prev;
-                            btn.classList.remove('btn-success');
-                            btn.classList.add('btn-outline-secondary');
-                        }, 1500);
-                    });
-                });
-            });
-
             var heroVideo = document.getElementById('hero-video');
             var heroMuteBtn = document.getElementById('hero-video-mute');
             if (heroVideo && heroMuteBtn) {
