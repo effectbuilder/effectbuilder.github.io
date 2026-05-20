@@ -35,4 +35,5 @@ rgbj_subpage_close();
 $rgbj_footer_blurb = 'Download current or older RGBJunkie builds for Windows and Linux.';
 require dirname(__DIR__) . '/includes/page-footer.php';
 require dirname(__DIR__) . '/includes/download-share-scripts.php';
+rgbj_page_firebase_download_scripts();
 rgbj_page_scripts_end();

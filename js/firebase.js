@@ -1,5 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
+    signOut,
+    onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 // import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, getDocs, doc, deleteDoc, query, where, getDoc, onSnapshot, limit, orderBy, startAfter, updateDoc, runTransaction, increment, serverTimestamp, setDoc, writeBatch, documentId, arrayUnion, arrayRemove, Bytes, deleteField } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
@@ -18,22 +26,60 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Make Firebase services and functions globally available for other scripts
-window.auth = getAuth(app);
+export const auth = getAuth(app);
+window.auth = auth;
 
 // window.db = getFirestore(app); // Commented in preference of the more advanced initialization below that includes local caching.
 
 // This initializes Firestore with a local cache that can be shared across multiple tabs, improving performance and offline capabilities.
-window.db = initializeFirestore(app, {
+export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 });
+window.db = db;
 
 // --- Expose Auth Functions ---
 window.GoogleAuthProvider = GoogleAuthProvider;
 window.signInWithPopup = signInWithPopup;
+window.signInWithRedirect = signInWithRedirect;
+window.getRedirectResult = getRedirectResult;
 window.signOut = signOut;
 window.onAuthStateChanged = onAuthStateChanged;
 
+export {
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
+    signOut,
+    onAuthStateChanged,
+};
+
 // --- Expose Firestore Functions/Constants ---
+export {
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    deleteDoc,
+    query,
+    where,
+    getDoc,
+    onSnapshot,
+    limit,
+    orderBy,
+    startAfter,
+    updateDoc,
+    increment,
+    serverTimestamp,
+    setDoc,
+    writeBatch,
+    documentId,
+    arrayUnion,
+    arrayRemove,
+    Bytes,
+    deleteField,
+};
+
 window.collection = collection;
 window.addDoc = addDoc;
 window.getDocs = getDocs;

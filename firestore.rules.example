@@ -1,0 +1,30 @@
+// =============================================================================
+// ADD to your live rules (Firebase Console → effect-builder → Firestore → Rules)
+// Paste inside:  match /databases/{database}/documents { ... }
+// Place it after showcase_stats (or anywhere before the closing `}` of that match block).
+// Uses your existing isAdmin() helper — no other changes required.
+// =============================================================================
+
+    function rgbjDownloadEventValid(data) {
+      return data.keys().hasAll(['createdAt', 'filePath', 'fileName', 'kind', 'platform'])
+        && data.filePath is string
+        && data.filePath.matches('^downloads/(nsis|msi|portable|linux)/.+')
+        && data.fileName is string
+        && data.fileName.size() > 0
+        && data.fileName.size() < 256
+        && data.kind is string
+        && data.platform is string
+        && (!('version' in data) || data.version == null || data.version is string)
+        && (!('userAgent' in data) || (data.userAgent is string && data.userAgent.size() <= 512))
+        && (!('referer' in data) || (data.referer is string && data.referer.size() <= 512));
+    }
+
+    //
+    // --- RGBJUNKIE APP DOWNLOADS ---
+    //
+    match /rgbjunkie-app-downloads/{eventId} {
+      // Logged from RGBJunkieApp download buttons (download-track.js + /js/firebase.js)
+      allow create: if rgbjDownloadEventValid(request.resource.data);
+      allow read: if isLoggedIn() && isAdmin();
+      allow update, delete: if false;
+    }

@@ -5,6 +5,8 @@
  */
 declare(strict_types=1);
 
+require_once __DIR__ . '/download-tracker.php';
+
 if (empty($rgbj_release_rows)) : ?>
     <div class="alert alert-secondary border-secondary bg-dark mb-0" role="status">
         <p class="small mb-0">No older builds are hosted right now. <a href="<?= rgbj_h(rgbj_url('#download')) ?>">Download the current release</a>.</p>
@@ -39,27 +41,27 @@ endif;
                         <?php if ($hasWindows) : ?>
                         <p class="small text-muted mb-2 fw-semibold">Windows</p>
                         <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['setup']['webPath']) ?>" download><i class="bi bi-download me-2"></i>Setup (.exe) <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['setup']['size'])) ?>)</span></a>
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['msi']['webPath']) ?>" download><i class="bi bi-box-seam me-2"></i>MSI <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['msi']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['setup']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['setup']['webPath'])) ?>" download><i class="bi bi-download me-2"></i>Setup (.exe) <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['setup']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['msi']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['msi']['webPath'])) ?>" download><i class="bi bi-box-seam me-2"></i>MSI <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['msi']['size'])) ?>)</span></a>
                         </div>
                         <?php endif; ?>
                         <?php if ($hasPortable) : ?>
                         <p class="small text-muted mb-2 fw-semibold">Portable (Windows)</p>
                         <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['portable']['webPath']) ?>" download><i class="bi bi-file-earmark-zip me-2"></i>Portable ZIP <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['portable']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['portable']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['portable']['webPath'])) ?>" download><i class="bi bi-file-earmark-zip me-2"></i>Portable ZIP <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['portable']['size'])) ?>)</span></a>
                         </div>
                         <?php endif; ?>
                         <?php if ($hasLinux) : ?>
                         <p class="small text-muted mb-2 fw-semibold">Linux</p>
                         <div class="d-grid gap-2 d-sm-flex flex-sm-wrap mb-3">
                             <?php if ($row['linux']['deb'] !== null) : ?>
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['linux']['deb']['webPath']) ?>" download><i class="bi bi-download me-2"></i>.deb <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['deb']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['linux']['deb']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['linux']['deb']['webPath'])) ?>" download><i class="bi bi-download me-2"></i>.deb <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['deb']['size'])) ?>)</span></a>
                             <?php endif; ?>
                             <?php if ($row['linux']['rpm'] !== null) : ?>
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['linux']['rpm']['webPath']) ?>" download><i class="bi bi-download me-2"></i>.rpm <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['rpm']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['linux']['rpm']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['linux']['rpm']['webPath'])) ?>" download><i class="bi bi-download me-2"></i>.rpm <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['rpm']['size'])) ?>)</span></a>
                             <?php endif; ?>
                             <?php if ($row['linux']['appimage'] !== null) : ?>
-                            <a class="btn btn-outline-secondary flex-sm-fill" href="<?= rgbj_h($row['linux']['appimage']['webPath']) ?>" download><i class="bi bi-download me-2"></i>AppImage <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['appimage']['size'])) ?>)</span></a>
+                            <a<?= rgbj_tracked_download_attrs($row['linux']['appimage']['webPath'], 'btn btn-outline-secondary flex-sm-fill') ?> href="<?= rgbj_h(rgbj_download_link($row['linux']['appimage']['webPath'])) ?>" download><i class="bi bi-download me-2"></i>AppImage <span class="opacity-75">(<?= rgbj_h(rgbj_format_bytes($row['linux']['appimage']['size'])) ?>)</span></a>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>

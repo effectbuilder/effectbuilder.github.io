@@ -27,10 +27,9 @@
       </a>
       <span class="navbar-text small text-body-secondary me-auto ms-1 d-none d-md-inline">Plugin developer guide</span>
       <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/supported/">Supported devices</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/supported-devices.html">Supported devices</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-developer-guide.html">Effect (HTML)</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-functional-developer-guide.html">Effect (.mjs)</a>
-        <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/docs/">Windows app docs</a>
         <a class="btn btn-sm btn-primary" href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a>
       </div>
     </div>
@@ -40,13 +39,14 @@
     <p class="docs-nav-title">Contents</p>
     <ul class="docs-nav-list">
       <li><a href="#what">1. What a plugin is</a></li>
-      <li><a href="#descriptor">2. Plugin descriptor</a></li>
+      <li><a href="#descriptor">2. ABI descriptor</a></li>
       <li><a href="#lifecycle">3. Lifecycle exports</a></li>
       <li><a href="#device">4. <code>device</code> API</a></li>
       <li><a href="#patterns">5. Common patterns</a></li>
       <li><a href="#include">6. Shared code</a></li>
       <li><a href="#distribution">7. Distribution</a></li>
-      <li><a href="#help">8. Help</a></li>
+      <li><a href="#addons">8. Plugin add-ons</a></li>
+      <li><a href="#help">9. Help</a></li>
     </ul>
   </aside>
   <main class="docs-content">
@@ -55,7 +55,7 @@
       <h1>RGBJunkie plugin developer guide</h1>
       <p class="lede">
         For <strong>third-party developers</strong> building USB HID lighting plugins that run inside the RGBJunkie desktop application.
-        This document describes the public plugin API and the <code>device</code> API. It does not require access to RGBJunkie source code.
+        This document describes the public plugin ABI and the <code>device</code> API. It does not require access to RGBJunkie source code.
       </p>
       <p class="lede">
         Downloads, licensing, templates, and tooling:
@@ -67,18 +67,18 @@
         (§12 worked HTML examples). Functional <code>.mjs</code> effects have a separate
         <a href="/api/docs/effect-functional-developer-guide.html"><strong>functional effects guide</strong></a>.
         Optional HTML copies for desktop testing live under <code>examples/effects/</code>.
-        <strong>USB / device coverage</strong> — <a href="/RGBJunkieApp/supported/"><strong>Supported devices</strong></a> (search VID/PID, transport, kind).
+        <strong>USB / device coverage</strong> — <a href="/api/docs/supported-devices.html"><strong>Supported devices</strong></a> (search VID/PID, transport, kind).
       </p>
 
       <h2 id="what">1. What a plugin is</h2>
       <ul>
         <li>A single <strong>JavaScript module</strong> (ES module syntax) loaded from RGBJunkie’s configured <strong>plugin directory</strong> (see app documentation for the path on your system).</li>
-        <li>The module exports <code>export const rgbjunkie</code> (v1 plugin descriptor with <code>abiVersion: 1</code>) and <code>initialize</code>, <code>render</code>, and <code>shutdown</code>.</li>
+        <li>The module exports <code>export const rgbjunkie</code> (ABI v1 descriptor) and <code>initialize</code>, <code>render</code>, and <code>shutdown</code>.</li>
         <li>RGBJunkie runs the script in a sandbox and provides globals such as <code>device</code> (HID and layout), <code>bus</code>, and other stable entrypoints.</li>
       </ul>
 
-      <h2 id="descriptor">2. Plugin descriptor (<code>rgbjunkie</code>)</h2>
-      <p>Export an object with <code>abiVersion: 1</code>. That field is the version number the host checks when loading your module; the rest of this section documents the descriptor shape.</p>
+      <h2 id="descriptor">2. ABI descriptor (<code>rgbjunkie</code>)</h2>
+      <p>Export an object with <code>abiVersion: 1</code>.</p>
       <p class="section-outline">
         <strong>In this section:</strong>
         <a href="#abi-fields">2.1</a> ·
@@ -169,7 +169,14 @@
           <tr><td><code>slider</code></td><td>Slider</td></tr>
         </tbody>
       </table>
-      <p>Also set <code>default</code>, and when needed <code>min</code>, <code>max</code>, <code>step</code>, <code>values</code>, <code>group</code>, <code>description</code>.</p>
+      <p>Also set <code>default</code>, and when needed <code>min</code>, <code>max</code>, <code>step</code>, <code>values</code>, optional <code>valuesDisplay</code> (same length as <code>values</code>: friendly combobox labels while stored values stay <code>values[i]</code>), <code>group</code>, <code>description</code>.</p>
+      <p>
+        Optional <code>visibleWhen</code> toggles a row in the device settings panel: <code>{ property: "other_setting_id", equals: "Some mode" }</code>,
+        <code>{ property: "x", oneOf: ["a", "b"] }</code>, or <code>{ property: "x", notEquals: false }</code> (referenced by another setting’s <code>id</code>).
+        For <strong>logical AND</strong> across multiple controls, use <code>allOf</code>: <code>{ allOf: [{ property: "mode", oneOf: ["A"] }, { property: "flag", equals: true }] }</code> (when <code>allOf</code> is a non-empty array, top-level <code>property</code> / <code>equals</code> on the same object are ignored).
+        The same object is honored on legacy <code>getControllableParameters()</code> rows as <code>visibleWhen</code>.
+        Optional <code>appendTokenToProperty</code> on a <code>combobox</code> row: set it to another setting’s <code>id</code> (usually a multiline string field). Choosing a non-first option appends that token to the target value and resets the dropdown. Use a first <code>values</code> entry of <code>""</code> as the idle choice; the host shows “Insert LHM tag…” for that row when <code>appendTokenToProperty</code> is set and there is no <code>valuesDisplay[0]</code>, otherwise use <code>valuesDisplay</code> for friendly labels (same length as <code>values</code>).
+      </p>
 
       <h3 id="color-syntax">2.5 Color syntax</h3>
       <p>RGBJunkie treats plugin-facing colors as <strong>24-bit sRGB hex</strong>:</p>
@@ -236,7 +243,7 @@
       <p>Set <code>rgbjunkie.imageUrl</code> to the brand tile URL when you ship one so the descriptor matches the tree.</p>
       <ul>
         <li><strong>Maintainers (RGBJunkie repo):</strong> <code>npm run plugins:brand-image-urls</code> runs <code>scripts/update-plugin-brand-image-urls.mjs</code> and sets quoted <code>imageUrl</code> inside <code>export const rgbjunkie</code> when a matching brand PNG exists in the inventory. Non-string <code>imageUrl</code> (e.g. another object’s field) is skipped.</li>
-        <li><strong>Public device list:</strong> <code>npm run docs:supported-devices</code> rebuilds <code>docs/supported-devices-data.json</code> for <a href="/RGBJunkieApp/supported/">supported devices</a>; it re-reads each plugin file’s <code>imageUrl</code> so the page stays current without re-harvesting <code>data/device-catalog.json</code>. The <strong>Brand</strong> column matches the app (organizational folders, <code>OemRgb/</code> OEM filename lines, then publisher).</li>
+        <li><strong>Public device list:</strong> <code>npm run docs:supported-devices</code> rebuilds <code>docs/supported-devices-data.json</code> for <a href="/api/docs/supported-devices.html">supported devices</a>; it re-reads each plugin file’s <code>imageUrl</code> so the page stays current without re-harvesting <code>data/device-catalog.json</code>. The <strong>Brand</strong> column matches the app (organizational folders, <code>OemRgb/</code> OEM filename lines, then publisher).</li>
         <li><strong>Publish docs locally:</strong> <code>npm run docs:sync-wamp</code> copies guides and supported-devices assets into your web root (default <code>C:\wamp64\www\api\docs</code>).</li>
       </ul>
 
@@ -371,11 +378,173 @@ export async function shutdown(systemSuspending) {
         For brand <code>imageUrl</code> sweeps and the public device browser, see <a href="#device-thumbnails">§2.8</a>.
       </p>
 
-      <h2 id="help">8. Where to get help</h2>
+      <h2 id="addons">8. Plugin add-ons (WLED)</h2>
+      <p class="section-outline">
+        <strong>In this section:</strong>
+        <a href="#addons-what">8.1</a> ·
+        <a href="#addons-layout">8.2</a> ·
+        <a href="#addons-build">8.3</a> ·
+        <a href="#addons-rules">8.4</a> ·
+        <a href="#addons-hooks">8.5</a> ·
+        <a href="#addons-blueprint">8.6</a> ·
+        <a href="#addons-license">8.7</a>
+      </p>
+
+      <h3 id="addons-what">8.1 What an add-on is</h3>
+      <p>
+        For some <strong>network template</strong> plugins, RGBJunkie can merge an <strong>optional second JavaScript file</strong> after the main plugin body when virtual devices are created.
+        Today this is used for <strong>WLED</strong>: the stock plugin is <code>plugins/Network/WLED/WLED.js</code>; the add-on extends it with extra settings and optional matrix/clock behavior without forking the whole driver.
+      </p>
+      <p>
+        The host concatenates (in order): a small prelude (globals such as <code>controller</code>, <code>udp</code>, XHR proxy), the main <code>WLED.js</code> body, then the add-on text, then a discovery bridge.
+        Your add-on runs in the <strong>same sandbox eval unit</strong> as the base plugin, so names and lifecycle must not fight the stock exports.
+      </p>
+
+      <h3 id="addons-layout">8.2 File name and install location</h3>
+      <ul>
+        <li>Place the add-on next to the main file, same relative path under your plugin root (for example <code>%APPDATA%\RGBJunkie\plugins\Network\WLED\</code> on Windows).</li>
+        <li>Use either <code>wled.addon.js</code> or <code>WLED.addon.js</code> (the host tries both).</li>
+        <li>The main plugin must remain <code>WLED.js</code> (or whatever path your install uses for the WLED driver); the add-on is never loaded as a standalone device row.</li>
+      </ul>
+
+      <h3 id="addons-build">8.3 Building the WLED clock / matrix add-on from the repo</h3>
+      <ol>
+        <li>
+          Developers: you need a <strong>matrix-capable</strong> <code>WLED.js</code> source that contains the markers <code>let WLED;</code> and <code>export function Initialize</code> (the generator extracts the block between them). Run
+          <code>npm run gen:wled-clock-addon -- &lt;path-to-that-WLED.js&gt;</code>
+          or set <code>WLED_MATRIX_PLUGIN_SRC</code> to the same path and run <code>node scripts/gen-wled-clock-addon.mjs</code>.
+          That writes <code>dist/wled-clock-addon/wled.addon.sample.js</code> (gitignored — not bundled with the app). Rename/copy it to <code>wled.addon.js</code> in your user plugin folder.
+          The bundled settings support the full matrix surface (Components vs time, custom text with Small/Medium/Large/<strong>Chinese</strong> fonts, pixel art, Libre Hardware Monitor, scroll, RGBCW, shutdown soft-off, etc.) as implemented by your source file.
+        </li>
+        <li>
+          End users: place <code>wled.addon.js</code> (and the glyph siblings <code>WLED_Text.js</code> / <code>WLED_Text_ZH.min.js</code> next to it, as referenced by <code>@rgbj-include</code> lines in the bundle) beside <code>WLED.js</code> under <code>%APPDATA%\RGBJunkie\plugins\Network\WLED\</code> on Windows, then restart or rescan.
+        </li>
+        <li>
+          The sample uses <code>// @rgbj-include "./WLED_Text.js"</code> and <code>// @rgbj-include "./WLED_Text_ZH.min.js"</code> for glyph tables. Those sibling files must exist next to the add-on in your install (or the include resolver will fall back to the same path under other plugin scan roots).
+        </li>
+        <li>Restart RGBJunkie or trigger a plugin rescan so configured WLED virtual devices pick up the new bundle.</li>
+        <li>
+          On desktop, enable <strong>Settings → Engine → Hot-reload user plugins</strong> to watch <code>%APPDATA%\RGBJunkie\plugins</code> for <code>.js</code> / <code>.mjs</code> saves and rebuild sandboxes without a full restart (same idea as effect HTML hot-reload). Only the user plugin folder is watched — not the bundled <code>plugins/</code> tree inside the app install.
+        </li>
+      </ol>
+
+      <h3 id="addons-rules">8.4 Rules so the base plugin keeps working</h3>
+      <ul>
+        <li>
+          <strong>Only one “real” plugin descriptor.</strong> The merged unit must still expose a single <code>export const rgbjunkie</code> and the real <code>initialize</code> / <code>render</code> / <code>shutdown</code> from <code>WLED.js</code>.
+        </li>
+        <li>
+          <strong>Do not ship empty lifecycle stubs in included fragments.</strong> Glyph helper files that were written as standalone stub plugins may contain <code>export function initialize() {}</code> and <code>export function render() {}</code>.
+          When those files are inlined, the Rust expander may rewrite <code>export function</code> to <code>function</code>; in a single <code>new Function(…)</code> eval, <strong>hoisted function declarations</strong> can cause the stub to override the real WLED lifecycle even if the stub text appears <em>after</em> the stock code in the concatenated source.
+          Result: no <code>Strip</code> channel is registered and no UDP frames are sent. Remove those stubs from included libraries, or rely on a current RGBJunkie build that strips them when merging WLED add-ons.
+        </li>
+        <li>
+          <strong>Prefer includes for data and helpers only</strong> — constants, fonts, pure functions — not a second copy of <code>rgbjunkie</code> or lifecycle exports. Section <a href="#include">6</a> describes <code>@rgbj-include</code>; treat includes as fragments, not second entrypoints.
+        </li>
+        <li>
+          <strong>Extra settings</strong> can be merged into <code>rgbjunkie.settings</code> at load time (the sample uses a guarded push loop). Use unique <code>id</code> values so you do not collide with stock WLED settings keys.
+        </li>
+      </ul>
+
+      <h3 id="addons-hooks">8.5 Optional hook: <code>__rgbjPostWirePluginExports</code></h3>
+      <p>
+        If the add-on exports <code>export function __rgbjPostWirePluginExports()</code>, the host may replace that function’s body with a <strong>built-in shim</strong> (same merge step as stub stripping) so glyph-helper pitfalls stay fixed.
+        The shim wires <code>initialize</code> (runs <code>__wledClockAfterInit</code> after stock init), <code>shutdown</code> (matrix blackout + stock shutdown), and <code>render</code>:
+        when <code>__wledClockUseStockUdpCanvas()</code> is true (default for <strong>Components</strong> / effect canvas), it calls stock <code>render()</code> (DRGB/DNRGB);
+        when false (<strong>Time</strong>, <strong>Custom Text</strong>, <strong>Pixel Art</strong>, <strong>Libre Hardware Monitor</strong>), it calls <code>WLED.SendColorPackets(false)</code> so the matrix path runs.
+      </p>
+      <p>
+        To use your add-on file’s original <code>__rgbjPostWirePluginExports</code> verbatim (no host shim), set <code>globalThis.__RGBJUNKIE_WLED_CLOCK_MATRIX_RENDER = true</code> before WLED virtual plugins are injected.
+      </p>
+
+      <h3 id="addons-blueprint">8.6 Blueprint: custom WLED add-ons (read this first)</h3>
+      <p>
+        The matrix bundle produced by <code>npm run gen:wled-clock-addon</code> is long because it embeds a full matrix implementation <strong>between</strong> a small RGBJunkie header and footer. If you write a <strong>new</strong> add-on, keep yours short by following the same <em>shape</em>, not the same size.
+      </p>
+      <ol>
+        <li>
+          <strong>One eval unit.</strong> The host concatenates prelude + base <code>WLED.js</code> + your add-on + discovery bridge into a single module. Everything shares one global scope — avoid redeclaring <code>const rgbjunkie</code> or a second <code>function initialize() {}</code> that would override the stock lifecycle.
+        </li>
+        <li>
+          <strong>Stock owns lifecycle.</strong> Base <code>WLED.js</code> registers the <code>Strip</code> channel and sends UDP in <code>render()</code>. Your add-on usually <strong>merges</strong> extra entries into <code>rgbjunkie.settings</code> (see §8.4) and optionally wraps <code>exports.render</code> from <code>__rgbjPostWirePluginExports</code> (§8.5).
+        </li>
+        <li>
+          <strong>Add-on display name.</strong> Optional <code>export const __rgbjWledAddonDisplayName = "…"</code> in your add-on; RGBJunkie shows it as the heading above merged settings that use <code>group: "matrix"</code>. If omitted, a generic <strong>WLED add-on</strong> label is used.
+        </li>
+        <li>
+          <strong><code>@rgbj-include</code> = fragments only.</strong> Include glyph tables or pure helpers. Do <strong>not</strong> include files that declare empty <code>function initialize() {}</code> / <code>function render() {}</code> — hoisting can replace the real WLED lifecycle (§8.4). The host strips common empty stubs when merging, but fixing includes is clearer.
+        </li>
+        <li>
+          <strong>Matrix generator vs hand-written.</strong> The repo script only automates slicing a matrix <code>WLED.js</code> between <code>let WLED;</code> and <code>export function Initialize</code>, then injecting the RGBJunkie header/footer. A minimal custom add-on can skip the generator entirely: one <code>wled.addon.js</code> file with settings merge + your logic + <code>__rgbjPostWirePluginExports</code> if you need render interception.
+        </li>
+        <li>
+          <strong>Source map in code.</strong> For the exact merge and shim behaviour, read (in order) <code>createWledAuthoredPluginCode</code>, <code>stripEmptyLifecycleStubsFromMergedWledAddon</code>, and <code>rehostWledClockAddonForRgbJunkieUdpPath</code> in <code>src/core/system.ts</code>, and the long comment at the top of <code>scripts/gen-wled-clock-addon.mjs</code>.
+        </li>
+      </ol>
+      <p><strong>Minimal pattern (illustrative only):</strong></p>
+      <pre><code>/* Merge settings — unique ids; do not replace export const rgbjunkie */
+(function () {
+  try {
+    var d = typeof rgbjunkie !== "undefined" ? rgbjunkie : null;
+    if (!d || !Array.isArray(d.settings)) return;
+    d.settings.push({
+      id: "my_matrix_toggle",
+      group: "matrix",
+      label: "Example",
+      type: "boolean",
+      default: false
+    });
+  } catch (e) {}
+})();
+
+/* Optional: run after the host wires exports (see §8.5) */
+export function __rgbjPostWirePluginExports() {
+  try {
+    if (!exports || typeof exports.render !== "function") return;
+    var base = exports.render;
+    exports.render = function () {
+      if (typeof my_matrix_toggle !== "undefined" &amp;&amp; my_matrix_toggle) {
+        /* your UDP / layout path */
+      }
+      return base();
+    };
+    exports.Render = exports.render;
+  } catch (e) {}
+}
+</code></pre>
+      <p class="text-body-secondary small">
+        Today only WLED uses this sibling-file merge. Other network templates would need the same host support before they could load an add-on the same way.
+      </p>
+
+      <h3 id="addons-license">8.7 Licensing (open source, share-alike)</h3>
+      <p>
+        Add-on files are <strong>open source</strong> under a <strong>copyleft</strong> license so anyone who improves an add-on must share their source.
+        Stock <code>WLED.js</code> and the RGBJunkie application remain under their own terms; your add-on is a separate GPL (or compatible) work merged at runtime.
+      </p>
+      <ul>
+        <li>
+          Put this in the <strong>first lines</strong> of <code>wled.addon.js</code> (and in any <code>@rgbj-include</code> files you ship with it):
+          <code>SPDX-License-Identifier: GPL-3.0-or-later</code> plus your copyright line.
+        </li>
+        <li>
+          <strong>Recommended:</strong> <code>GPL-3.0-or-later</code>. RGBJunkie also accepts <code>GPL-2.0-*</code> and <code>AGPL-3.0-*</code> identifiers.
+          Permissive licenses alone (MIT, Apache-2.0, …) are rejected because they do not require publishing derivatives.
+        </li>
+        <li>
+          The host <strong>refuses to load</strong> an add-on without a valid copyleft SPDX header. Stock WLED keeps working.
+        </li>
+        <li>Template: <code>plugins/_templates/wled.addon.template.js</code>. Full policy: <code>docs/ADDON-LICENSING.md</code>.</li>
+      </ul>
+      <pre><code>/**
+ * SPDX-FileCopyrightText: © 2026 Your Name &lt;you@example.com&gt;
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */</code></pre>
+
+      <h2 id="help">9. Where to get help</h2>
       <p><a href="https://www.rgbjunkie.com" rel="noopener">https://www.rgbjunkie.com</a> — downloads, licensing, and published developer materials.</p>
       <p>
         <strong>Supported devices (browsable):</strong>
-        <a href="/RGBJunkieApp/supported/">supported devices</a> — search VID/PID, transport, and device kind (data from shipped plugins).
+        <a href="/api/docs/supported-devices.html">supported-devices.html</a> — search VID/PID, transport, and device kind (data from shipped plugins).
       </p>
 
       <footer>

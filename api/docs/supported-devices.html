@@ -1,13 +1,799 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark" class="sd-page">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0;url=/RGBJunkieApp/supported/">
-  <link rel="canonical" href="https://rgbjunkie.com/RGBJunkieApp/supported/">
-  <title>Redirecting…</title>
-  <script>location.replace("/RGBJunkieApp/supported/" + location.search + location.hash);</script>
+  <!--
+    SPDX-FileCopyrightText: © 2026 José A Miranda Velez <admin@rgbjunkie.com>
+    SPDX-License-Identifier: LicenseRef-RGBJunkie-Proprietary
+    https://www.rgbjunkie.com
+  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RGBJunkie — supported devices</title>
+  <link rel="icon" type="image/x-icon" href="/rgbjunkielogo2.ico" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    /* Standalone page: do not load site /styles.css — it often sets html/body height chains that
+       balloon scroll height next to a capped inner table. */
+    html.sd-page,
+    html.sd-page body.sd-body {
+      height: auto !important;
+      min-height: unset !important;
+      max-height: none !important;
+    }
+    /* Device cards: stretched row height + internal flex so Amazon rows align; strict label/value grid. */
+    .sd-nav-logo {
+      height: 3.25rem;
+      width: auto;
+      max-height: 52px;
+      object-fit: contain;
+    }
+    .sd-device-panel {
+      border: 1px solid var(--bs-border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      background: var(--bs-body-bg);
+    }
+    .sd-device-grid {
+      display: grid;
+      align-items: stretch;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 23.5rem), 1fr));
+      gap: 1rem;
+    }
+    @media (min-width: 576px) {
+      .sd-device-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 25rem), 1fr)); }
+    }
+    @media (min-width: 1200px) {
+      .sd-device-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 26.5rem), 1fr)); }
+    }
+    .sd-device-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      padding: 1rem 1rem 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.12) 100%);
+      background-color: var(--bs-secondary-bg);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      gap: 0.65rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .sd-device-card:hover {
+      border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.45);
+    }
+    .sd-device-card__head {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      flex-shrink: 0;
+    }
+    .sd-device-card__thumb {
+      flex-shrink: 0;
+      width: 150px;
+      height: 150px;
+      box-sizing: border-box;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .sd-device-card__thumb img {
+      width: 100%;
+      height: 100%;
+      max-width: 150px;
+      max-height: 150px;
+      object-fit: contain;
+    }
+    .sd-device-card__hero {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .sd-device-card__head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .sd-device-card__name {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.28;
+      letter-spacing: 0.045em;
+      text-transform: uppercase;
+      color: var(--bs-emphasis-color, #fff);
+    }
+    .sd-card-share {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      height: auto;
+      min-width: 2.5rem;
+      min-height: 2.5rem;
+      padding: 0.2rem;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #fff !important;
+      opacity: 1 !important;
+    }
+    .sd-card-share__icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .sd-card-share:hover {
+      color: #fff !important;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .sd-device-card__sheet {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .sd-meta-grid {
+      display: grid;
+      grid-template-columns: 6.75rem minmax(0, 1fr);
+      column-gap: 0.7rem;
+      row-gap: 0.45rem;
+      align-items: start;
+    }
+    .sd-mlabel {
+      margin: 0;
+      padding-top: 0.12rem;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bs-secondary-color);
+    }
+    .sd-mval {
+      margin: 0;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      font-weight: 400;
+      color: var(--bs-body-color);
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .sd-mval .sd-mono {
+      font-size: 0.88em;
+    }
+    .sd-tech-block {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.12);
+    }
+    .sd-meta-grid--tech {
+      padding: 0.5rem 0.65rem 0.55rem;
+      grid-template-columns: 5rem minmax(0, 1fr);
+      column-gap: 0;
+      row-gap: 0.25rem;
+    }
+    .sd-pids-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding-top: 0.45rem;
+      margin-top: 0.1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .sd-pids-wrap .sd-mlabel {
+      padding-top: 0;
+    }
+    .sd-device-card__pids {
+      flex: 1 1 auto;
+      min-height: 3.25rem;
+      max-height: 10.5rem;
+      overflow: auto;
+      padding: 0.45rem 0.55rem;
+      border-radius: 7px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.74rem;
+      line-height: 1.42;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sd-device-card__shop {
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .sd-device-card__shop .sd-amazon-link {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      padding: 0.65rem 1rem;
+      border-radius: 9px;
+      background: #2c2c30;
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      text-decoration: none !important;
+      box-shadow: none;
+    }
+    .sd-device-card__shop .sd-amazon-link:hover {
+      background: #36363c;
+      border-color: rgba(255, 255, 255, 0.92);
+    }
+    .sd-amazon-link-text {
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .sd-amazon-logo-img {
+      height: 20px;
+      width: auto;
+      max-width: 86px;
+      display: block;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .sd-mono { font-family: ui-monospace, "Cascadia Code", monospace; font-size: 0.82em; }
+    .sd-pid-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.35rem 0.55rem;
+      margin-top: 0.32rem;
+    }
+    .sd-pid-row:first-child {
+      margin-top: 0;
+    }
+    .sd-pid-pill {
+      display: inline-block;
+      padding: 0.12rem 0.42rem;
+      border-radius: 999px;
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .sd-pid-pill--0 {
+      background: rgba(25, 135, 84, 0.28);
+      color: #8cf0c0;
+      border: 1px solid rgba(25, 135, 84, 0.4);
+    }
+    .sd-pid-pill--1 {
+      background: rgba(253, 126, 20, 0.22);
+      color: #ffd4a8;
+      border: 1px solid rgba(253, 126, 20, 0.38);
+    }
+    .sd-pid-pill--2 {
+      background: rgba(220, 53, 69, 0.22);
+      color: #ffb3bc;
+      border: 1px solid rgba(220, 53, 69, 0.35);
+    }
+    .sd-pid-name {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.7rem;
+    }
+    .sd-muted { color: var(--bs-secondary-color); }
+    .sd-device-card.sd-permalink-target {
+      scroll-margin-top: 3.25rem;
+      border-color: rgba(13, 110, 253, 0.55) !important;
+      box-shadow: inset 3px 0 0 0 rgba(13, 110, 253, 0.85);
+      background: rgba(13, 110, 253, 0.1) !important;
+    }
+    .sd-device-card.sd-permalink-target:hover {
+      background: rgba(13, 110, 253, 0.14) !important;
+    }
+    .sd-permalink { opacity: 0.7; }
+    .sd-permalink:hover { opacity: 1; }
+    @keyframes sd-card-flash {
+      0% { box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.65); }
+      100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+    }
+    .sd-row-flash { animation: sd-card-flash 1.4s ease-out 1; }
+  </style>
 </head>
-<body>
-  <p>Moved to <a href="/RGBJunkieApp/supported/">RGBJunkie supported devices</a>.</p>
+<body class="sd-body bg-body text-body">
+  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <img src="/images/rgbjunkie.png" alt="RGBJunkie" class="rounded sd-nav-logo" width="56" height="56" />
+        <span class="fw-semibold">RGBJunkie</span>
+      </a>
+      <span class="navbar-text small text-secondary me-auto ms-1 d-none d-md-inline">Supported devices</span>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/plugin-developer-guide.html">Plugin guide</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/plugin-developer-guide.html#addons" title="Optional wled.addon.js beside WLED.js">WLED add-ons</a>
+        <a class="btn btn-sm btn-primary" href="/">Home</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="sd-main container-fluid py-4 px-3 px-lg-4" style="max-width: 120rem;">
+    <h1 class="h3 mb-2">Supported devices</h1>
+    <p class="text-secondary mb-3 col-lg-10">
+      See hardware RGBJunkie can light up and control. Use <strong>Search</strong> to find a product by name or maker,
+      or narrow the list with <strong>Brand</strong> and <strong>Device type</strong>.
+      If you have the USB numbers from Windows (sometimes shown as vendor and product), you can paste those into Search as well.
+      Each card can open a <strong>US Amazon</strong> search to help you shop; RGBJunkie may earn a small commission on qualifying purchases.
+    </p>
+
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-12 col-lg-4">
+        <label for="sd-search" class="form-label mb-1">Search</label>
+        <input id="sd-search" type="search" class="form-control" placeholder="Search by name, maker, or USB numbers…" autocomplete="off" />
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <label for="sd-brand" class="form-label mb-1">Brand</label>
+        <select id="sd-brand" class="form-select">
+          <option value="">All brands</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-6 col-lg-3">
+        <label for="sd-kind" class="form-label mb-1">Device type</label>
+        <select id="sd-kind" class="form-select">
+          <option value="">All types</option>
+        </select>
+      </div>
+      <div class="col-12 col-lg-2">
+        <p id="sd-count" class="mb-0 small text-secondary pt-md-4"></p>
+      </div>
+    </div>
+
+    <p id="sd-err" class="alert alert-warning d-none" role="alert"></p>
+
+    <div id="sd-permalink-banner" class="alert d-none mb-3 py-2 px-3" role="status" aria-live="polite">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span id="sd-permalink-banner-text" class="me-2"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0 d-none" id="sd-permalink-clear">
+          Browse all devices
+        </button>
+      </div>
+    </div>
+
+    <div class="sd-device-panel" role="region" aria-label="Supported devices">
+      <div id="sd-list" class="sd-device-grid"></div>
+    </div>
+  </main>
+
+  <footer class="border-top py-3 mt-4 small text-secondary">
+    <div class="container-fluid px-3 px-lg-4">
+      <p class="mb-1">As an Amazon Associate, RGBJunkie earns from qualifying purchases when you use the Amazon buttons on this page.</p>
+      <p class="mb-0 text-secondary">© RGBJunkie</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var KIND_LABELS = {
+        keyboard: "Keyboard",
+        mouse: "Mouse",
+        mousepad: "Mousepad",
+        gpu: "Graphics / GPU",
+        motherboard: "Motherboard",
+        ram: "RAM",
+        lightingcontroller: "LED / lighting controller",
+        headphones: "Headset",
+        "headset-stand": "Headset stand",
+        speakers: "Speakers",
+        microphone: "Microphone",
+        aio: "AIO / cooler",
+        case: "Case",
+        dongle: "Dongle / receiver",
+        gamepad: "Gamepad",
+        network: "Network",
+        virtual: "Virtual",
+        unknown: "Unknown",
+        other: "Other",
+      };
+
+      function kindLabel(k) {
+        return KIND_LABELS[k] || (k ? k.charAt(0).toUpperCase() + k.slice(1) : "Other");
+      }
+
+      function normHex(s) {
+        return String(s || "")
+          .toLowerCase()
+          .replace(/^0x/, "")
+          .replace(/[^0-9a-f]/g, "");
+      }
+
+      function tokensFromQuery(q) {
+        return String(q || "")
+          .toLowerCase()
+          .split(/[\s,;&]+/)
+          .map(function (t) { return t.replace(/^0x/, "").trim(); })
+          .filter(Boolean);
+      }
+
+      function entryMatches(entry, q) {
+        if (!q || !String(q).trim()) return true;
+        var blob = entry.searchBlob || "";
+        var toks = tokensFromQuery(q);
+        if (!toks.length) return true;
+        for (var i = 0; i < toks.length; i++) {
+          if (blob.indexOf(toks[i]) === -1) return false;
+        }
+        return true;
+      }
+
+      function entryMatchesBrand(entry, brandKey) {
+        if (!brandKey) return true;
+        var b = entry.brand != null ? String(entry.brand).trim() : "";
+        if (brandKey === "__none__") return b === "";
+        return b === brandKey;
+      }
+
+      function fillBrandSelect(entries) {
+        var sel = document.getElementById("sd-brand");
+        while (sel.options.length > 1) sel.remove(1);
+        var seen = {};
+        var hasEmpty = false;
+        var names = [];
+        for (var i = 0; i < entries.length; i++) {
+          var b = entries[i].brand != null ? String(entries[i].brand).trim() : "";
+          if (!b) {
+            hasEmpty = true;
+            continue;
+          }
+          if (!seen[b]) {
+            seen[b] = true;
+            names.push(b);
+          }
+        }
+        names.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { sensitivity: "base" });
+        });
+        if (hasEmpty) {
+          var o0 = document.createElement("option");
+          o0.value = "__none__";
+          o0.textContent = "— (no brand)";
+          sel.appendChild(o0);
+        }
+        for (var j = 0; j < names.length; j++) {
+          var o = document.createElement("option");
+          o.value = names[j];
+          o.textContent = names[j];
+          sel.appendChild(o);
+        }
+      }
+
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function vidCell(entry) {
+        if (entry.vendorIdHex == null && entry.vendorId == null) {
+          return '<span class="sd-muted">—</span>';
+        }
+        var hex = esc(entry.vendorIdHex || "");
+        var dec = "";
+        return '<div class="sd-mono">' + hex + "</div>" + dec;
+      }
+
+      function pidsCell(entry) {
+        var pairs = entry.usbPairs;
+        if (!pairs || !pairs.length) {
+          var pids = entry.productIdsHex || [];
+          if (!pids.length) return '<span class="sd-muted">—</span>';
+          pairs = pids.map(function (pidHex) {
+            return { pidHex: pidHex, label: null };
+          });
+        }
+        var lines = [];
+        for (var i = 0; i < pairs.length; i++) {
+          var pid = esc(pairs[i].pidHex);
+          var lab = pairs[i].label
+            ? '<span class="sd-pid-name sd-muted">(' + esc(pairs[i].label) + ")</span>"
+            : "";
+          var mod = i % 3;
+          lines.push(
+            '<div class="sd-pid-row"><span class="sd-pid-pill sd-pid-pill--' +
+              mod +
+              '">' +
+              pid +
+              "</span>" +
+              lab +
+              "</div>"
+          );
+        }
+        return lines.join("");
+      }
+
+      function thumbCell(entry) {
+        var src = entry.imageUrl;
+        if (!src) return '<span class="sd-muted">—</span>';
+        return '<img alt="" loading="lazy" width="150" height="150" src="' + esc(src) + '" />';
+      }
+
+      function shopCell(entry) {
+        var href = entry.amazonUrl;
+        if (!href || typeof href !== "string") return '<span class="sd-muted">—</span>';
+        return (
+          '<a class="sd-amazon-link" href="' +
+          esc(href) +
+          '" target="_blank" rel="nofollow sponsored noopener noreferrer" title="Search for this device on Amazon (US)">' +
+          '<img class="sd-amazon-logo-img" src="images/amazon-wordmark-on-dark.svg" alt="" width="96" height="29" loading="lazy" decoding="async" />' +
+          '<span class="sd-amazon-link-text">View on Amazon</span></a>'
+        );
+      }
+
+      function permalinkHref(entry) {
+        var id = entry.permalinkId;
+        if (!id || typeof id !== "string") return "";
+        return "#sd-" + id;
+      }
+
+      function render(rows, markPermalinkId) {
+        var list = document.getElementById("sd-list");
+        list.innerHTML = "";
+        for (var i = 0; i < rows.length; i++) {
+          var e = rows[i];
+          var card = document.createElement("article");
+          card.className = "sd-device-card";
+          if (e.permalinkId && typeof e.permalinkId === "string") {
+            card.id = "sd-" + e.permalinkId;
+          }
+          if (markPermalinkId && e.permalinkId === markPermalinkId) {
+            card.classList.add("sd-permalink-target");
+          }
+          var ph = permalinkHref(e);
+          var share =
+            ph !== ""
+              ? '<a class="sd-card-share sd-permalink text-decoration-none" href="' +
+                esc(ph) +
+                '" title="Open a page that shows only this device" aria-label="Share link to this device">' +
+                '<i class="bi bi-share-fill sd-card-share__icon" aria-hidden="true"></i>' +
+                '<span class="visually-hidden">Share</span></a>'
+              : "";
+          var nameUpper = esc(String(e.displayName || "")).toUpperCase();
+          var techBlock =
+            '<div class="sd-tech-block">' +
+            '<div class="sd-meta-grid sd-meta-grid--tech">' +
+            '<span class="sd-mlabel">Brand</span><div class="sd-mval">' +
+            esc(e.brand || "—") +
+            "</div>" +
+            '<span class="sd-mlabel">Type</span><div class="sd-mval">' +
+            esc(kindLabel(e.deviceKind)) +
+            "</div>" +
+            '<span class="sd-mlabel">USB vendor</span><div class="sd-mval">' +
+            vidCell(e) +
+            "</div>" +
+            '<span class="sd-mlabel">Transport</span><div class="sd-mval">' +
+            esc(e.transportType || "—") +
+            "</div>" +
+            "</div>" +
+            "</div>";
+          var head =
+            '<div class="sd-device-card__head">' +
+            '<div class="sd-device-card__thumb">' +
+            thumbCell(e) +
+            "</div>" +
+            '<div class="sd-device-card__hero">' +
+            '<div class="sd-device-card__head-top">' +
+            '<p class="sd-device-card__name">' +
+            nameUpper +
+            "</p>" +
+            share +
+            "</div>" +
+            techBlock +
+            "</div>" +
+            "</div>";
+          var sheet =
+            '<div class="sd-device-card__sheet">' +
+            '<div class="sd-pids-wrap">' +
+            '<span class="sd-mlabel">Product codes</span>' +
+            '<div class="sd-device-card__pids">' +
+            pidsCell(e) +
+            "</div>" +
+            "</div>" +
+            "</div>";
+          var shop = '<div class="sd-device-card__shop">' + shopCell(e) + "</div>";
+          card.innerHTML = head + sheet + shop;
+          list.appendChild(card);
+        }
+      }
+
+      var allEntries = [];
+      var debTimer;
+
+      function getPermalinkIdFromHash() {
+        var m = /^#sd-(.+)$/.exec(window.location.hash || "");
+        return m ? m[1] : "";
+      }
+
+      function clearPermalinkHash() {
+        try {
+          var u = new URL(window.location.href);
+          history.replaceState(null, "", u.pathname + u.search);
+        } catch (err) {
+          try {
+            window.location.hash = "";
+          } catch (e2) {}
+        }
+      }
+
+      function findEntryByPermalinkId(pid) {
+        for (var i = 0; i < allEntries.length; i++) {
+          if (allEntries[i].permalinkId === pid) return allEntries[i];
+        }
+        return null;
+      }
+
+      function syncPermalinkBanner(perm, linkedEntry) {
+        var banner = document.getElementById("sd-permalink-banner");
+        var textEl = document.getElementById("sd-permalink-banner-text");
+        var btn = document.getElementById("sd-permalink-clear");
+        if (!banner || !textEl || !btn) return;
+        banner.classList.remove("alert-primary", "alert-warning");
+        if (perm && linkedEntry) {
+          banner.classList.add("alert-primary");
+          textEl.innerHTML =
+            'Showing one device: <strong>' +
+            esc(linkedEntry.displayName) +
+            "</strong>";
+          btn.classList.remove("d-none");
+          banner.classList.remove("d-none");
+        } else if (perm && !linkedEntry) {
+          banner.classList.add("alert-warning");
+          textEl.textContent =
+            'No saved device matched that link. Showing the full list instead.';
+          btn.classList.remove("d-none");
+          banner.classList.remove("d-none");
+        } else {
+          textEl.innerHTML = "";
+          btn.classList.add("d-none");
+          banner.classList.add("d-none");
+        }
+      }
+
+      function applyFilters() {
+        var q = document.getElementById("sd-search").value;
+        var kind = document.getElementById("sd-kind").value;
+        var brand = document.getElementById("sd-brand").value;
+        var searchEl = document.getElementById("sd-search");
+        var kindEl = document.getElementById("sd-kind");
+        var brandEl = document.getElementById("sd-brand");
+        var perm = getPermalinkIdFromHash();
+        var linkedEntry = perm ? findEntryByPermalinkId(perm) : null;
+        var linkedOnly = !!(perm && linkedEntry);
+        var out = [];
+        var markId = "";
+
+        if (linkedOnly) {
+          out = [linkedEntry];
+          markId = linkedEntry.permalinkId;
+        } else {
+          for (var i = 0; i < allEntries.length; i++) {
+            var e = allEntries[i];
+            if (kind && e.deviceKind !== kind) continue;
+            if (!entryMatchesBrand(e, brand)) continue;
+            if (!entryMatches(e, q)) continue;
+            out.push(e);
+          }
+        }
+
+        searchEl.disabled = !!linkedOnly;
+        kindEl.disabled = !!linkedOnly;
+        brandEl.disabled = !!linkedOnly;
+
+        syncPermalinkBanner(perm, linkedEntry);
+
+        render(out, markId);
+
+        var countEl = document.getElementById("sd-count");
+        if (linkedOnly) {
+          countEl.textContent = "1 device (shared link) · " + allEntries.length + " total";
+        } else {
+          countEl.textContent = out.length + " / " + allEntries.length + " shown";
+        }
+
+        try {
+          var u = new URL(window.location.href);
+          if (q.trim()) u.searchParams.set("search", q.trim());
+          else u.searchParams.delete("search");
+          if (brand) u.searchParams.set("brand", brand);
+          else u.searchParams.delete("brand");
+          history.replaceState(null, "", u.pathname + u.search + u.hash);
+        } catch (err) {}
+
+        if (linkedOnly && markId) {
+          requestAnimationFrame(function () {
+            var card = document.getElementById("sd-" + markId);
+            if (card) {
+              card.scrollIntoView({ block: "center", behavior: "smooth" });
+              card.classList.remove("sd-row-flash");
+              void card.offsetWidth;
+              card.classList.add("sd-row-flash");
+              setTimeout(function () {
+                card.classList.remove("sd-row-flash");
+              }, 1600);
+            }
+          });
+        }
+      }
+
+      function scheduleApply() {
+        clearTimeout(debTimer);
+        debTimer = setTimeout(applyFilters, 120);
+      }
+
+      document.getElementById("sd-permalink-clear").addEventListener("click", function () {
+        clearPermalinkHash();
+        applyFilters();
+      });
+
+      document.getElementById("sd-search").addEventListener("input", scheduleApply);
+      document.getElementById("sd-kind").addEventListener("change", applyFilters);
+      document.getElementById("sd-brand").addEventListener("change", applyFilters);
+
+      window.addEventListener("hashchange", function () {
+        applyFilters();
+      });
+
+      var dataUrl = new URL("supported-devices-data.json", window.location.href).toString();
+      fetch(dataUrl)
+        .then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          allEntries = data.entries || [];
+          var kinds = data.meta && data.meta.deviceKinds ? data.meta.deviceKinds : [];
+          var sel = document.getElementById("sd-kind");
+          for (var i = 0; i < kinds.length; i++) {
+            var k = kinds[i];
+            var opt = document.createElement("option");
+            opt.value = k;
+            opt.textContent = kindLabel(k);
+            sel.appendChild(opt);
+          }
+          fillBrandSelect(allEntries);
+          var params = new URLSearchParams(window.location.search);
+          var qs = params.get("search");
+          if (qs) document.getElementById("sd-search").value = qs;
+          var bq = params.get("brand");
+          if (bq !== null && bq !== "") {
+            var brandSel = document.getElementById("sd-brand");
+            var ok = false;
+            for (var bi = 0; bi < brandSel.options.length; bi++) {
+              if (brandSel.options[bi].value === bq) {
+                ok = true;
+                break;
+              }
+            }
+            if (ok) brandSel.value = bq;
+          }
+          applyFilters();
+        })
+        .catch(function (e) {
+          var el = document.getElementById("sd-err");
+          el.classList.remove("d-none");
+          el.textContent =
+            "The device list could not be loaded. Please refresh the page, or try again later.";
+        });
+    })();
+  </script>
 </body>
 </html>

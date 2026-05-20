@@ -28,8 +28,9 @@ function rgbj_base_path(): string
         }
     }
 
-    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'changelog'];
-    if ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
+  // Nested paths under RGBJunkieApp (e.g. stats/downloads/) — strip all section segments.
+    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'changelog', 'stats', 'downloads'];
+    while ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
         array_pop($segments);
     }
 
@@ -63,7 +64,7 @@ function rgbj_nav_is_active(string $page): bool
     return ($GLOBALS['rgbj_nav_active'] ?? 'home') === $page;
 }
 
-/** Absolute URL for a file under this site (e.g. downloads/portable/foo.zip). */
+/** Absolute URL for a file under this site (tracked when under downloads/). */
 function rgbj_download_absolute_url(string $webPath): string
 {
     $webPath = ltrim(str_replace('\\', '/', $webPath), '/');
@@ -73,7 +74,14 @@ function rgbj_download_absolute_url(string $webPath): string
 
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $base = rgbj_base_path();
+    if (str_starts_with($webPath, 'downloads/')) {
+        if (!function_exists('rgbj_download_link')) {
+            require_once __DIR__ . '/download-tracker.php';
+        }
+        $path = rgbj_download_link($webPath);
+    } else {
+        $path = rgbj_url($webPath);
+    }
 
-    return $scheme . '://' . $host . ($base === '' ? '/' : $base . '/') . $webPath;
+    return $scheme . '://' . $host . $path;
 }

@@ -58,6 +58,10 @@
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect profiles: deleted canvas tabs no longer come back</span></h5>
+<p class="rgbj-changelog-feature__text">Saving or loading an <strong>Effect Settings</strong> profile (for example <strong>Audio Party</strong>) could bring back a removed <strong>Canvas B</strong> tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include <strong>Canvas B</strong> whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single <strong>Main</strong> canvas only.</p>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>build.bat: automatic release prerequisites</span></h5>
 <p class="rgbj-changelog-feature__text">`build.bat` now runs <strong>`setup-release-prerequisites.mjs`</strong> first: creates <strong>`scripts/sftp-upload.config.local.json`</strong> from the example when missing, checks the FTP password, installs <strong>WSL Ubuntu apt packages</strong> for Linux builds when needed (one sudo prompt), and warns if <strong>OpenRGB</strong> is not vendored. Use <strong>`RGBJUNKIE_GIT_PULL=1`</strong> to pull latest code before the build. Old <strong>`RGBJunkie.AppDir`</strong> and unpack folders under `bundle/` are cleaned before FTP upload.</p>
 </article>
@@ -121,9 +125,41 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.2.64</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.64.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect browser: rescan local effects when opened</span></h5>
+<p class="rgbj-changelog-feature__text">Opening <strong>Browse effects</strong> now runs a full disk rescan (built-in and user folders), merges the online gallery, and refreshes the list — so new or edited `.html` / `.mjs` files show up without restarting the app.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>New effect: Topographic Contours</span></h5>
+<p class="rgbj-changelog-feature__text">A calm <strong>elevation-map</strong> look — drifting hills drawn as contour lines with optional shading from your <strong>color profile</strong>, and optional bass response so lines shift slightly with music.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>New effect: Chromatic Split</span></h5>
+<p class="rgbj-changelog-feature__text">Soft floating shapes tinted by your <strong>color profile</strong>, then separated into <strong>red / green / blue</strong> channels — prismatic fringing that widens on bass hits. No text rain or digital noise; adjustable split distance, direction, and wobble.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect settings no longer reset when opening Browse effects</span></h5>
+<p class="rgbj-changelog-feature__text">Opening the effect browser rescans disk and merges the gallery <strong>without</strong> switching to a different effect, relaunching the iframe, or reapplying autosave parameters — sidebar sliders and the running effect stay as they were.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Brainstorm effect pack — fixes and removals</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Removed:</strong> Gray-Scott, SEM Lithography, Origami Fold, PCB Traces, Fan Tachograph, Network Pulse, Ambient Pulse, Slime Mold, Cymatics, Rope Chain, plus earlier weak HUD/layout effects (Pendulum Wave, Solar Day Arc, Path Runner, Corner Reflector, Desk Lamp, Terrarium, Star Ceiling, Health Rings, Cooldown Sweep, Loot Flash, Minimap Ping).</p>
+<p class="rgbj-changelog-feature__text"><strong>Tuned:</strong> <strong>Halftone</strong> drifts faster and has a <strong>movement angle</strong> slider. <strong>Fibre Optic</strong> sways slower with visible <strong>sound response</strong> (sway, brightness, and traveling pulses on bass). <strong>Segment Chase</strong> <strong>scrolls</strong> profile colors through bands and offers <strong>segment shapes</strong> (vertical, horizontal, diagonal, radial rings, wedges); wedge mode rotates profile colors with the spokes (not locked to the screen). <strong>Dominant Color Wash</strong> weights screen <strong>center</strong> more. <strong>Seasonal Slow</strong> density updates live; autumn vs spring look distinct. Double Pendulum has <strong>arm length</strong> controls.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Brainstorm effect pack (remaining canvas + strip `.mjs`)</span></h5>
+<p class="rgbj-changelog-feature__text">Open <strong>Browse effects</strong> to rescan the disk.</p>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Physics &amp; math:</strong> Double Pendulum</li><li><strong>Visual style:</strong> Halftone, Fibre Optic</li><li><strong>PC / mood:</strong> Dominant Color Wash (screen sampling)</li><li><strong>Layout / chase:</strong> Segment Chase</li><li><strong>Calm / HUD:</strong> Seasonal Slow</li><li><strong>Strip functional (`.mjs`):</strong> Hilbert Walker, Euclidean Beats, Thermodynamic Noise, Palindrome Symmetry, Morse Stream</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect developer guide: scaling shapes to canvas size</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>`EFFECT-DEVELOPER-GUIDE.md`</strong> (and the HTML guide on the site) now documents <strong>§2.2</strong> — how to scale radii, spacing, and stroke width using <strong>`canvas.width`/`height`</strong>, <strong>`engine.canvas`</strong>, <strong>`rgbjSetupCanvas`</strong>, and the 320×200 reference size.</p>
+<p class="rgbj-changelog-feature__text"><em>(Add other release notes for v0.2.64.)</em></p>
+</article></div>
+</section>
 </div>
 </div>
 </article>

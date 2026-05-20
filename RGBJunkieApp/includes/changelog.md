@@ -16,6 +16,10 @@ The embedded WebView no longer shows the **Edge-style default context menu** (Ba
 
 ## v0.2.60 — May 19, 2026
 
+#### Effect profiles: deleted canvas tabs no longer come back
+
+Saving or loading an **Effect Settings** profile (for example **Audio Party**) could bring back a removed **Canvas B** tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include **Canvas B** whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single **Main** canvas only.
+
 #### build.bat: automatic release prerequisites
 
 `build.bat` now runs **`setup-release-prerequisites.mjs`** first: creates **`scripts/sftp-upload.config.local.json`** from the example when missing, checks the FTP password, installs **WSL Ubuntu apt packages** for Linux builds when needed (one sudo prompt), and warns if **OpenRGB** is not vendored. Use **`RGBJUNKIE_GIT_PULL=1`** to pull latest code before the build. Old **`RGBJunkie.AppDir`** and unpack folders under `bundle/` are cleaned before FTP upload.
@@ -54,7 +58,44 @@ Destructive or important actions no longer use the WebView’s **“localhost sa
 
 ## v0.2.64 — May 19, 2026
 
-*(Add release notes for v0.2.64.)*
+#### Effect browser: rescan local effects when opened
+
+Opening **Browse effects** now runs a full disk rescan (built-in and user folders), merges the online gallery, and refreshes the list — so new or edited `.html` / `.mjs` files show up without restarting the app.
+
+#### New effect: Topographic Contours
+
+A calm **elevation-map** look — drifting hills drawn as contour lines with optional shading from your **color profile**, and optional bass response so lines shift slightly with music.
+
+#### New effect: Chromatic Split
+
+Soft floating shapes tinted by your **color profile**, then separated into **red / green / blue** channels — prismatic fringing that widens on bass hits. No text rain or digital noise; adjustable split distance, direction, and wobble.
+
+#### Effect settings no longer reset when opening Browse effects
+
+Opening the effect browser rescans disk and merges the gallery **without** switching to a different effect, relaunching the iframe, or reapplying autosave parameters — sidebar sliders and the running effect stay as they were.
+
+#### Brainstorm effect pack — fixes and removals
+
+**Removed:** Gray-Scott, SEM Lithography, Origami Fold, PCB Traces, Fan Tachograph, Network Pulse, Ambient Pulse, Slime Mold, Cymatics, Rope Chain, plus earlier weak HUD/layout effects (Pendulum Wave, Solar Day Arc, Path Runner, Corner Reflector, Desk Lamp, Terrarium, Star Ceiling, Health Rings, Cooldown Sweep, Loot Flash, Minimap Ping).
+
+**Tuned:** **Halftone** drifts faster and has a **movement angle** slider. **Fibre Optic** sways slower with visible **sound response** (sway, brightness, and traveling pulses on bass). **Segment Chase** **scrolls** profile colors through bands and offers **segment shapes** (vertical, horizontal, diagonal, radial rings, wedges); wedge mode rotates profile colors with the spokes (not locked to the screen). **Dominant Color Wash** weights screen **center** more. **Seasonal Slow** density updates live; autumn vs spring look distinct. Double Pendulum has **arm length** controls.
+
+#### Brainstorm effect pack (remaining canvas + strip `.mjs`)
+
+Open **Browse effects** to rescan the disk.
+
+- **Physics & math:** Double Pendulum  
+- **Visual style:** Halftone, Fibre Optic  
+- **PC / mood:** Dominant Color Wash (screen sampling)  
+- **Layout / chase:** Segment Chase  
+- **Calm / HUD:** Seasonal Slow  
+- **Strip functional (`.mjs`):** Hilbert Walker, Euclidean Beats, Thermodynamic Noise, Palindrome Symmetry, Morse Stream  
+
+#### Effect developer guide: scaling shapes to canvas size
+
+**[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
+
+*(Add other release notes for v0.2.64.)*
 
 ---
 

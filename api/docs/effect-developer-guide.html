@@ -27,10 +27,9 @@
       </a>
       <span class="navbar-text small text-body-secondary me-auto ms-1 d-none d-md-inline">Effect developer guide</span>
       <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/supported/">Supported devices</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/api/docs/supported-devices.html">Supported devices</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/effect-functional-developer-guide.html">Functional (.mjs)</a>
         <a class="btn btn-sm btn-outline-secondary" href="/api/docs/plugin-developer-guide.html">Plugin guide</a>
-        <a class="btn btn-sm btn-outline-secondary" href="/RGBJunkieApp/docs/">Windows app docs</a>
         <a class="btn btn-sm btn-primary" href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a>
       </div>
     </div>
@@ -44,6 +43,8 @@
       <li><a href="#canvas-primer">Simple motion &amp; shapes</a></li>
       <li><a href="#what">1. What an effect is</a></li>
       <li><a href="#shape">2. Minimal document shape</a></li>
+      <li class="docs-nav-sub"><a href="#canvas-container">2.1 Canvas size</a></li>
+      <li class="docs-nav-sub"><a href="#canvas-scaling">2.2 Scaling shapes</a></li>
       <li><a href="#discovery">3. Discovery metadata</a></li>
       <li class="docs-nav-sub"><a href="#discovery-grouping">3.1 Sidebar grouping &amp; tooltips</a></li>
       <li><a href="#settings">4. Settings</a></li>
@@ -111,7 +112,7 @@
       </p>
       <ul>
         <li><code>const ctx = canvas.getContext("2d")</code> — the “pencil” for rectangles, circles, lines, gradients, and text.</li>
-        <li><code>canvas.width</code> / <code>canvas.height</code> — pixel size RGBJunkie sets for you; always use these for layout (see <a href="#canvas-container">§2.1</a>).</li>
+        <li><code>canvas.width</code> / <code>canvas.height</code> — pixel size RGBJunkie sets for you; always use these for layout and scale shapes to match (<a href="#canvas-container">§2.1</a>, <a href="#canvas-scaling">§2.2</a>).</li>
       </ul>
 
       <h3>Drawing basic shapes</h3>
@@ -282,6 +283,32 @@ ctx.fill();</code></pre>
       </table>
       <p>Prefer a <strong>single</strong> primary canvas so the host targets the right surface.</p>
 
+      <h3 id="canvas-scaling">2.2 Scaling shapes to canvas size</h3>
+      <p>Users change <strong>Engine Resolution</strong> in settings. The host sets your drawable bitmap to that size and fires <code>resize</code> when it changes. <strong>Shapes must grow or shrink with <code>canvas.width</code> / <code>canvas.height</code></strong> — do not hard-code radii, spacing, or positions as if the canvas were always 320×200.</p>
+      <table>
+        <thead><tr><th>Source</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><code>canvas.width</code>, <code>canvas.height</code></td><td><strong>All drawing coordinates</strong> each frame.</td></tr>
+          <tr><td><code>engine.canvas.width</code>, <code>engine.canvas.height</code></td><td>Logical <strong>Engine Resolution</strong> — design reference for tuned constants.</td></tr>
+          <tr><td><code>RGBJ_REF_W</code> (320), <code>RGBJ_REF_H</code> (200)</td><td>Legacy reference size used by many built-in effects.</td></tr>
+          <tr><td><code>rgbjSetupCanvas(canvas)</code></td><td>Returns <code>{ width, height, scale }</code> — uniform <code>min(w/320, h/200)</code> (clamped). Call each frame or on <code>resize</code>.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Normalized layout</strong> — fractions of width/height:</p>
+      <pre><code class="language-javascript">const w = canvas.width, h = canvas.height;
+const cx = w * 0.5, cy = h * 0.5;
+const radius = Math.min(w, h) * 0.35;
+ctx.arc(cx, cy, radius, 0, Math.PI * 2);</code></pre>
+      <p><strong>Reference constants × scale</strong> — keep design numbers (dot spacing <code>8</code>, link distance <code>60</code>) and multiply:</p>
+      <pre><code class="language-javascript">const w = Math.max(1, canvas.width | 0);
+const h = Math.max(1, canvas.height | 0);
+const layout = typeof rgbjSetupCanvas === "function"
+  ? rgbjSetupCanvas(canvas)
+  : { width: w, height: h, scale: Math.min(w / 320, h / 200) };
+const dotStep = 8 * layout.scale;
+ctx.lineWidth = 2 * layout.scale;</code></pre>
+      <p>Use <strong>uniform</strong> scale (<code>Math.min(w/baseW, h/baseH)</code>) so circles stay round. On <code>resize</code>, re-read canvas size and rebuild buffers (trail grids, offscreen canvases). Avoid fixed coordinates like <code>x = 160</code> or <code>radius = 40</code> without scaling, and avoid relying on hard-coded <code>width="320" height="200"</code> on <code>&lt;canvas&gt;</code> for production layout.</p>
+
       <h2 id="discovery">3. Discovery metadata</h2>
       <p>
         The host reads the metas below when building the <strong>effect browser</strong> (search, filters, cards) and the compact <strong>effect details</strong> line in the sidebar.
@@ -378,7 +405,9 @@ ctx.fill();</code></pre>
         <thead><tr><th>Member</th><th>Role</th></tr></thead>
         <tbody>
           <tr><td><code>engine.audio</code></td><td><code>freq</code> — 200 bins (<strong>0…255</strong>); <code>level</code>, <code>density</code>. Example: <a href="#ex-audio">Section 12.2</a>.</td></tr>
-          <tr><td><code>engine.canvas</code></td><td><code>width</code> / <code>height</code> — <strong>Engine Resolution</strong> (logical). For drawing, use your <code>&lt;canvas&gt;</code> element’s <code>width</code>/<code>height</code>; they cap to the iframe when needed (<a href="#canvas-container">Section 2.1</a>).</td></tr>
+          <tr><td><code>engine.canvas</code></td><td><code>width</code> / <code>height</code> — <strong>Engine Resolution</strong> (logical). For drawing, use your <code>&lt;canvas&gt;</code> element’s <code>width</code>/<code>height</code>; they cap to the iframe when needed (<a href="#canvas-container">Section 2.1</a>). Scale shapes with <a href="#canvas-scaling">Section 2.2</a>.</td></tr>
+          <tr><td><code>rgbjSetupCanvas(canvas)</code></td><td><code>{ width, height, scale }</code> — uniform scale vs 320×200 reference.</td></tr>
+          <tr><td><code>RGBJ_REF_W</code>, <code>RGBJ_REF_H</code></td><td>Reference constants <strong>320</strong> and <strong>200</strong>.</td></tr>
           <tr><td><code>engine.requestNativeScreenBitmap()</code></td><td><strong>Recommended.</strong> Returns <code>Promise&lt;ImageBitmap&gt;</code> — one frame of the user's desktop ready to draw. <strong>Zero arguments.</strong> Monitor, capture rate, and capture size are all host-managed: the app injects a <em>Display</em> picker, a <em>Capture rate</em> slider (FPS budget — the Promise resolves no faster than the chosen rate), and a <em>Capture size</em> slider (max-edge pixels) whenever an effect uses this API. Effects do not declare these as <code>&lt;meta property&gt;</code>.</td></tr>
           <tr><td><code>engine.requestNativeScreenFrame()</code></td><td>Raw-pixel variant for analysis effects (e.g. extracting a dominant color without drawing). Returns a <code>Promise</code> resolving to <code>{ width, height, data, toImageData() }</code>. Same host-managed plumbing as the bitmap variant; legacy <code>maxWidth</code>/<code>maxHeight</code>/<code>monitorIndex</code> opts are accepted but ignored.</td></tr>
           <tr><td><code>engine.listScreenMonitors()</code></td><td><code>Promise</code> of display rows for multi-monitor UI.</td></tr>
@@ -414,7 +443,7 @@ ctx.fill();</code></pre>
       <h2 id="distribution">10. Distribution</h2>
       <ul>
         <li><strong>Local:</strong> install <code>.html</code> (canvas effects) or <code>.mjs</code> (functional effects) in the user effects folder described in the application settings or documentation.</li>
-        <li><strong>Gallery:</strong> publishing and <code>effect.json</code> flows are documented on <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a> — separate from this standalone HTML effect format.</li>
+        <li><strong>Gallery:</strong> publishing and <code>effect.json</code> flows are documented on <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a> — separate from this single-file ABI.</li>
       </ul>
 
       <h2 id="help">11. Where to get help</h2>

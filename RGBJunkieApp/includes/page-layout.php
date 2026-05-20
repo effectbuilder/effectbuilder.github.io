@@ -197,6 +197,21 @@ function rgbj_subpage_close(): void
     <?php
 }
 
+function rgbj_page_firebase_download_scripts(): void
+{
+    if (!function_exists('rgbj_download_stats_config')) {
+        require_once __DIR__ . '/download-stats-config.php';
+    }
+    $cooldown = (int) (rgbj_download_stats_config()['count_cooldown_seconds'] ?? 45);
+    ?>
+    <script type="module" src="/js/firebase.js"></script>
+    <script src="<?= rgbj_h(rgbj_url('assets/download-track.js')) ?>" defer></script>
+    <script>
+        document.getElementById('rgbj-download-root')?.setAttribute('data-rgbj-cooldown', '<?= $cooldown ?>');
+    </script>
+    <?php
+}
+
 function rgbj_page_scripts_end(): void
 {
     ?>

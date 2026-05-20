@@ -6,6 +6,8 @@
  */
 declare(strict_types=1);
 
+require_once __DIR__ . '/download-tracker.php';
+
 if (empty($rgbj_latest_release)) : ?>
     <div class="alert alert-warning border-warning bg-dark mb-0" role="alert">
         <p class="small mb-0">Downloads are not available yet. Check back soon.</p>
@@ -33,6 +35,7 @@ $windowsPrimaryLabel = $hasWindows ? 'Download for Windows' : 'Download portable
     class="card border-secondary shadow-sm mb-0"
     data-has-windows="<?= $hasWindowsDownloads ? '1' : '0' ?>"
     data-has-linux="<?= $hasLinux ? '1' : '0' ?>"
+    data-rgbj-cooldown="<?= (int) rgbj_download_stats_config()['count_cooldown_seconds'] ?>"
 >
     <div class="card-body text-center px-4 py-4 py-lg-5">
         <p class="text-info small fw-semibold text-uppercase tracking-wide mb-2">Latest release</p>
@@ -46,7 +49,7 @@ $windowsPrimaryLabel = $hasWindows ? 'Download for Windows' : 'Download portable
         <div id="rgbj-download-panels" class="mt-4">
             <?php if ($hasWindowsDownloads && $windowsPrimary !== null) : ?>
             <section class="rgbj-download-panel mb-4" data-rgbj-platform="windows">
-                <a class="btn btn-primary btn-lg px-4" href="<?= rgbj_h($windowsPrimary['webPath']) ?>" download>
+                <a<?= rgbj_tracked_download_attrs($windowsPrimary['webPath'], 'btn btn-primary btn-lg px-4') ?> href="<?= rgbj_h(rgbj_download_link($windowsPrimary['webPath'])) ?>" download>
                     <i class="bi bi-download me-2"></i><?= rgbj_h($windowsPrimaryLabel) ?>
                 </a>
                 <p class="small text-body-secondary mt-2 mb-0">
@@ -59,11 +62,11 @@ $windowsPrimaryLabel = $hasWindows ? 'Download for Windows' : 'Download portable
                 <?php if ($hasWindows && ($hasPortable || $latest['msi'] !== null)) : ?>
                 <p class="small text-body-secondary mt-2 mb-0 rgbj-download-alt-links">
                     <?php if ($hasWindows && $latest['msi'] !== null) : ?>
-                    <a href="<?= rgbj_h($latest['msi']['webPath']) ?>" download>MSI</a>
+                    <a<?= rgbj_tracked_download_attrs($latest['msi']['webPath']) ?> href="<?= rgbj_h(rgbj_download_link($latest['msi']['webPath'])) ?>" download>MSI</a>
                     <?php endif; ?>
                     <?php if ($hasWindows && $hasPortable) : ?>
                     <?php if ($latest['msi'] !== null) : ?><span class="text-muted mx-1">·</span><?php endif; ?>
-                    <a href="<?= rgbj_h($latest['portable']['webPath']) ?>" download>Portable ZIP</a>
+                    <a<?= rgbj_tracked_download_attrs($latest['portable']['webPath']) ?> href="<?= rgbj_h(rgbj_download_link($latest['portable']['webPath'])) ?>" download>Portable ZIP</a>
                     <?php endif; ?>
                 </p>
                 <?php endif; ?>
@@ -78,7 +81,7 @@ $windowsPrimaryLabel = $hasWindows ? 'Download for Windows' : 'Download portable
                 $linuxPrimaryLabels = ['deb' => 'Download for Linux (.deb)', 'rpm' => 'Download for Linux (.rpm)', 'appimage' => 'Download for Linux (AppImage)'];
                 ?>
                 <?php if ($linuxPrimary !== null) : ?>
-                <a class="btn btn-primary btn-lg px-4" href="<?= rgbj_h($linuxPrimary['webPath']) ?>" download>
+                <a<?= rgbj_tracked_download_attrs($linuxPrimary['webPath'], 'btn btn-primary btn-lg px-4') ?> href="<?= rgbj_h(rgbj_download_link($linuxPrimary['webPath'])) ?>" download>
                     <i class="bi bi-download me-2"></i><?= rgbj_h($linuxPrimaryLabels[$linuxPrimaryKey]) ?>
                 </a>
                 <p class="small text-body-secondary mt-2 mb-0">64-bit Linux · <?= rgbj_h(rgbj_format_bytes($linuxPrimary['size'])) ?></p>
@@ -86,13 +89,13 @@ $windowsPrimaryLabel = $hasWindows ? 'Download for Windows' : 'Download portable
                 <?php
                 $linuxAlts = [];
                 if ($latest['linux']['rpm'] !== null && $linuxPrimaryKey !== 'rpm') {
-                    $linuxAlts[] = '<a href="' . rgbj_h($latest['linux']['rpm']['webPath']) . '" download>.rpm</a>';
+                    $linuxAlts[] = '<a' . rgbj_tracked_download_attrs($latest['linux']['rpm']['webPath']) . ' href="' . rgbj_h(rgbj_download_link($latest['linux']['rpm']['webPath'])) . '" download>.rpm</a>';
                 }
                 if ($latest['linux']['appimage'] !== null && $linuxPrimaryKey !== 'appimage') {
-                    $linuxAlts[] = '<a href="' . rgbj_h($latest['linux']['appimage']['webPath']) . '" download>AppImage</a>';
+                    $linuxAlts[] = '<a' . rgbj_tracked_download_attrs($latest['linux']['appimage']['webPath']) . ' href="' . rgbj_h(rgbj_download_link($latest['linux']['appimage']['webPath'])) . '" download>AppImage</a>';
                 }
                 if ($latest['linux']['deb'] !== null && $linuxPrimaryKey !== 'deb') {
-                    $linuxAlts[] = '<a href="' . rgbj_h($latest['linux']['deb']['webPath']) . '" download>.deb</a>';
+                    $linuxAlts[] = '<a' . rgbj_tracked_download_attrs($latest['linux']['deb']['webPath']) . ' href="' . rgbj_h(rgbj_download_link($latest['linux']['deb']['webPath'])) . '" download>.deb</a>';
                 }
                 ?>
                 <?php if ($linuxAlts !== []) : ?>

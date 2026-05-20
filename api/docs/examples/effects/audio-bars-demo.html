@@ -3,42 +3,464 @@
 <head>
   <meta charset="utf-8" />
   <title>Audio bars</title>
-  <meta name="description" content="Vertical bars driven by the audio spectrum." />
+  <meta name="description" content="Multi-mode audio spectrum visualizer — bars, radial, waves, matrix, tunnel, bloom, and more." />
+  <meta name="developer" content="RGBJunkie" />
+  <meta name="tags" content="audio, spectrum, bars, visualizer, radial, wave, matrix, demo" />
+
+  <meta property="colorProfile" label="Color profile" type="colorProfile" default="Rainbow" group="Colors"
+    tooltip="Uses host color profiles (Settings → Color profiles). Active when Bar colors is Profile." />
+  <meta property="barColorMode" label="Bar colors" type="combobox" values="Profile,Rainbow,Custom" default="Profile" group="Colors"
+    tooltip="Profile uses the color profile above; Rainbow cycles hue per bar; Custom uses a single color." />
+  <meta property="customColor" label="Custom color" type="color" default="#00ffaa" group="Colors" />
+
+  <meta property="layoutMode" label="Visualization" type="combobox"
+    values="Linear,Radial,Mountain,Wave,Orbit,Matrix,Rings,Spiral,Bloom,Tunnel" default="Linear" group="Visual"
+    tooltip="Pick a spectrum layout style." />
+  <meta property="barCount" label="Detail (bands / cells)" type="number" min="8" max="128" default="64" group="Visual" />
+  <meta property="barGap" label="Gap / spacing (%)" type="number" min="0" max="80" default="8" group="Visual" />
+  <meta property="mirrorBars" label="Mirror spectrum" type="boolean" default="false" group="Visual"
+    tooltip="Symmetric layout around center (linear, radial, mountain, wave)." />
+  <meta property="motionSpeed" label="Motion / spin" type="number" min="0" max="100" default="25" group="Visual"
+    tooltip="Rotation or drift for Orbit, Spiral, Rings, Tunnel, and Bloom." />
+  <meta property="radialInner" label="Inner radius (%)" type="number" min="0" max="70" default="18" group="Visual"
+    tooltip="Center hole for Radial, Orbit, Spiral, Bloom, and Rings." />
+  <meta property="radialRotation" label="Start angle (°)" type="number" min="0" max="360" default="0" group="Visual" />
+
+  <meta property="sensitivity" label="Sensitivity (%)" type="number" min="1" max="300" default="100" group="Audio" />
+  <meta property="minBarHeight" label="Min level (%)" type="number" min="0" max="40" default="2" group="Audio"
+    tooltip="Floor so quiet bins still show a sliver." />
 
   <style>
-    html, body { margin: 0; height: 100%; background: #000; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     canvas { display: block; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
-  <!-- Explicit internal resolution so each bar is a whole number of pixels wide. -->
-  <canvas id="fx" width="640" height="320"></canvas>
+  <canvas id="fx"></canvas>
   <script>
     const canvas = document.getElementById("fx");
     const ctx = canvas.getContext("2d");
-    const BARS = 64;
+    let spinPhase = 0;
+    let tunnelPhase = 0;
+
+    if (typeof engine === "undefined") {
+      engine = { audio: { freq: new Uint8Array(200) } };
+      (function sim() {
+        const t = performance.now() / 1000;
+        const arr = engine.audio.freq;
+        for (let i = 0; i < arr.length; i++) {
+          const wave = (Math.sin(t * 6 + i * 0.15) + 1) * 0.5;
+          arr[i] = Math.floor(wave * (i < 12 ? 220 : 120));
+        }
+        requestAnimationFrame(sim);
+      })();
+    }
+
+    function hexToRgb(hex) {
+      const h = String(hex || "#ffffff").replace("#", "").slice(0, 6);
+      return {
+        r: parseInt(h.slice(0, 2), 16) || 0,
+        g: parseInt(h.slice(2, 4), 16) || 0,
+        b: parseInt(h.slice(4, 6), 16) || 0,
+      };
+    }
+
+    function lerpRgb(a, b, t) {
+      return {
+        r: Math.round(a.r + (b.r - a.r) * t),
+        g: Math.round(a.g + (b.g - a.g) * t),
+        b: Math.round(a.b + (b.b - a.b) * t),
+      };
+    }
+
+    function colorFromProfile(amount) {
+      amount = Math.max(0, Math.min(1, amount));
+      if (typeof colorProfileStops !== "undefined" && colorProfileStops && colorProfileStops.length >= 2) {
+        const stops = colorProfileStops;
+        const segment = 1 / (stops.length - 1);
+        const index = Math.floor(amount / segment);
+        const local = (amount - index * segment) / segment;
+        return lerpRgb(hexToRgb(stops[index]), hexToRgb(stops[Math.min(index + 1, stops.length - 1)]), local);
+      }
+      if (typeof rgbjColorFromProfile === "function") {
+        const prof = typeof colorProfile !== "undefined" ? colorProfile : "Rainbow";
+        return rgbjColorFromProfile(prof, amount, null);
+      }
+      const hue = amount * 360;
+      return {
+        r: Math.round(127 + 127 * Math.sin((hue * Math.PI) / 180)),
+        g: Math.round(127 + 127 * Math.sin(((hue + 120) * Math.PI) / 180)),
+        b: Math.round(127 + 127 * Math.sin(((hue + 240) * Math.PI) / 180)),
+      };
+    }
+
+    function barFillStyle(index, total, mode) {
+      const amount = total > 1 ? index / (total - 1) : 0;
+      if (mode === "Custom") {
+        const c = hexToRgb(typeof customColor !== "undefined" ? customColor : "#00ffaa");
+        return `rgb(${c.r},${c.g},${c.b})`;
+      }
+      if (mode === "Rainbow") {
+        return `hsl(${(amount * 360) % 360}, 80%, 55%)`;
+      }
+      const c = colorFromProfile(amount);
+      return `rgb(${c.r},${c.g},${c.b})`;
+    }
+
+    function readProps() {
+      const bars = Math.max(8, Math.min(128, Math.floor(Number(typeof barCount !== "undefined" ? barCount : 64) || 64)));
+      const gapPct = Math.max(0, Math.min(80, Number(typeof barGap !== "undefined" ? barGap : 8) || 0)) / 100;
+      const sens = Math.max(0.01, (Number(typeof sensitivity !== "undefined" ? sensitivity : 100) || 100) / 100);
+      const minH = Math.max(0, Math.min(0.4, (Number(typeof minBarHeight !== "undefined" ? minBarHeight : 2) || 0) / 100));
+      const mirror = typeof mirrorBars !== "undefined" && (mirrorBars === true || mirrorBars === 1 || mirrorBars === "true");
+      const colorMode = typeof barColorMode !== "undefined" ? barColorMode : "Profile";
+      const layout = typeof layoutMode !== "undefined" ? layoutMode : "Linear";
+      const radialInnerPct = Math.max(0, Math.min(0.7, (Number(typeof radialInner !== "undefined" ? radialInner : 18) || 0) / 100));
+      const radialRot = ((Number(typeof radialRotation !== "undefined" ? radialRotation : 0) || 0) * Math.PI) / 180;
+      const motion = Math.max(0, (Number(typeof motionSpeed !== "undefined" ? motionSpeed : 25) || 0) / 100);
+      return { bars, gapPct, sens, minH, mirror, colorMode, layout, radialInnerPct, radialRot, motion };
+    }
+
+    function sampleBin(freq, barIndex, barCount) {
+      const idx = Math.floor((barIndex * freq.length) / barCount);
+      return (freq[idx] || 0) / 255;
+    }
+
+    function level(freq, binIndex, bars, sens, minH) {
+      return Math.max(minH, Math.min(1, sampleBin(freq, binIndex, bars) * sens));
+    }
+
+    /** @returns {{ binIndex: number, colorIndex: number }[]} */
+    function barSlots(bars, mirror) {
+      const slots = [];
+      if (mirror) {
+        const pairs = Math.ceil(bars / 2);
+        for (let i = 0; i < pairs; i++) {
+          const left = pairs - 1 - i;
+          const right = bars - pairs + i;
+          slots.push({ binIndex: i, colorIndex: left });
+          if (right < bars && right !== left) slots.push({ binIndex: i, colorIndex: right });
+        }
+      } else {
+        for (let i = 0; i < bars; i++) slots.push({ binIndex: i, colorIndex: i });
+      }
+      return slots;
+    }
+
+    function drawLinear(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode, mirror } = p;
+      const slotW = w / bars;
+      const drawW = slotW * (1 - gapPct);
+      for (const { binIndex, colorIndex } of barSlots(bars, mirror)) {
+        const v = level(freq, binIndex, bars, sens, minH);
+        const x = colorIndex * slotW + (slotW - drawW) * 0.5;
+        ctx.fillStyle = barFillStyle(colorIndex, bars, colorMode);
+        ctx.fillRect(x, h - v * h, drawW, v * h);
+      }
+    }
+
+    function drawRadial(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode, mirror, radialInnerPct, radialRot } = p;
+      const cx = w * 0.5, cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.46;
+      const minR = maxR * radialInnerPct;
+      const arcSpan = (Math.PI * 2) / bars;
+      ctx.lineCap = "round";
+      ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.018 * (1 - gapPct * 0.5));
+      for (const { binIndex, colorIndex } of barSlots(bars, mirror)) {
+        const v = level(freq, binIndex, bars, sens, minH);
+        const a = radialRot - Math.PI / 2 + (colorIndex + 0.5) * arcSpan;
+        const outerR = minR + (maxR - minR) * v;
+        ctx.strokeStyle = barFillStyle(colorIndex, bars, colorMode);
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * minR, cy + Math.sin(a) * minR);
+        ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+        ctx.stroke();
+      }
+    }
+
+    function drawMountain(freq, p, w, h) {
+      const { bars, sens, minH, colorMode, mirror } = p;
+      const cx = w * 0.5;
+      const amp = h * 0.42;
+      const baseY = h * 0.88;
+      const pts = [];
+
+      if (mirror) {
+        const half = Math.ceil(bars / 2);
+        pts.push({ x: 0, y: h });
+        for (let i = 0; i < half; i++) {
+          const v = level(freq, i, bars, sens, minH);
+          const t = (half - i) / half;
+          pts.push({ x: cx - t * cx * 0.95, y: baseY - v * amp });
+        }
+        pts.push({ x: cx, y: baseY - level(freq, 0, bars, sens, minH) * amp });
+        for (let i = 0; i < half; i++) {
+          const v = level(freq, i, bars, sens, minH);
+          const t = (i + 1) / half;
+          pts.push({ x: cx + t * cx * 0.95, y: baseY - v * amp });
+        }
+        pts.push({ x: w, y: h });
+      } else {
+        pts.push({ x: 0, y: h });
+        for (let i = 0; i < bars; i++) {
+          const v = level(freq, i, bars, sens, minH);
+          pts.push({ x: (i / Math.max(1, bars - 1)) * w, y: baseY - v * amp });
+        }
+        pts.push({ x: w, y: h });
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, barFillStyle(0, bars, colorMode));
+      grad.addColorStop(0.5, barFillStyle(Math.floor(bars / 2), bars, colorMode));
+      grad.addColorStop(1, barFillStyle(bars - 1, bars, colorMode));
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.88;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = barFillStyle(Math.floor(bars / 3), bars, colorMode);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 1; i < pts.length - 1; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+
+    function drawWave(freq, p, w, h) {
+      const { bars, sens, minH, colorMode, mirror } = p;
+      const cx = w * 0.5;
+      const midY = h * 0.5;
+      const amp = h * 0.38;
+      const steps = mirror ? Math.ceil(bars / 2) : bars;
+
+      ctx.lineWidth = Math.max(2, Math.min(w, h) * 0.012);
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const v = level(freq, Math.min(i, bars - 1), bars, sens, minH);
+        let x, y;
+        if (mirror) {
+          const t = i / steps;
+          x = cx + (t - 0.5) * w * 0.95 * 2;
+        } else {
+          x = (i / steps) * w;
+        }
+        y = midY - (v - 0.5) * amp * 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      if (mirror) {
+        for (let i = steps - 1; i >= 0; i--) {
+          const v = level(freq, i, bars, sens, minH);
+          const t = i / steps;
+          const x = cx + (0.5 - t) * w * 0.95 * 2;
+          const y = midY - (v - 0.5) * amp * 2;
+          ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = barFillStyle(Math.floor(bars / 2), bars, colorMode);
+        ctx.globalAlpha = 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, barFillStyle(0, bars, colorMode));
+      grad.addColorStop(1, barFillStyle(bars - 1, bars, colorMode));
+      ctx.strokeStyle = grad;
+      ctx.stroke();
+    }
+
+    function drawOrbit(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode, mirror, radialInnerPct, radialRot, motion } = p;
+      const cx = w * 0.5, cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.44;
+      const minR = maxR * radialInnerPct;
+      const arcSpan = (Math.PI * 2) / bars;
+      const dotR = Math.max(2, Math.min(w, h) * 0.014 * (1 - gapPct * 0.3));
+      spinPhase += motion * 0.035;
+
+      for (const { binIndex, colorIndex } of barSlots(bars, mirror)) {
+        const v = level(freq, binIndex, bars, sens, minH);
+        const a = radialRot + spinPhase - Math.PI / 2 + colorIndex * arcSpan;
+        const r = minR + (maxR - minR) * v;
+        ctx.fillStyle = barFillStyle(colorIndex, bars, colorMode);
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, dotR * (0.6 + v * 0.8), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawMatrix(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode } = p;
+      const cols = Math.max(8, Math.min(32, Math.round(Math.sqrt(bars) * 2.2)));
+      const rows = Math.max(4, Math.min(24, Math.round(bars / cols)));
+      const cellW = w / cols;
+      const cellH = h / rows;
+      const pad = gapPct * 0.4;
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const idx = (col + row * 3) % bars;
+          const v = level(freq, idx, bars, sens, minH);
+          const x = col * cellW + cellW * pad * 0.5;
+          const y = row * cellH + cellH * pad * 0.5;
+          const cw = cellW * (1 - pad);
+          const ch = cellH * (1 - pad) * v;
+          ctx.fillStyle = barFillStyle((col + row) % bars, bars, colorMode);
+          ctx.globalAlpha = 0.35 + v * 0.65;
+          ctx.fillRect(x, y + cellH * (1 - pad) - ch, cw, ch);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawRings(freq, p, w, h) {
+      const { bars, sens, minH, colorMode, radialInnerPct, motion } = p;
+      const cx = w * 0.5, cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.47;
+      const minR = maxR * radialInnerPct;
+      const ringCount = Math.max(4, Math.min(16, Math.round(bars / 6)));
+      spinPhase += motion * 0.02;
+
+      for (let r = 0; r < ringCount; r++) {
+        const t0 = r / ringCount;
+        const t1 = (r + 1) / ringCount;
+        const bin = Math.floor(t0 * bars);
+        const v = level(freq, bin, bars, sens, minH);
+        const radius = minR + (maxR - minR) * t1 * (0.55 + v * 0.45);
+        const wobble = Math.sin(spinPhase + r * 0.7) * v * maxR * 0.04;
+        ctx.strokeStyle = barFillStyle(r, ringCount, colorMode);
+        ctx.lineWidth = Math.max(1, (maxR - minR) / ringCount * 0.55 * v);
+        ctx.globalAlpha = 0.4 + v * 0.6;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + wobble, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawSpiral(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode, radialInnerPct, radialRot, motion } = p;
+      const cx = w * 0.5, cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.46;
+      const minR = maxR * radialInnerPct;
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      spinPhase += motion * 0.025;
+      const steps = bars;
+      ctx.lineCap = "round";
+
+      for (let i = 0; i < steps; i++) {
+        const v = level(freq, i % bars, bars, sens, minH);
+        const t = (i + 0.5) / steps;
+        const angle = radialRot + spinPhase + i * golden;
+        const r0 = minR + (maxR - minR) * t * 0.85;
+        const r1 = r0 + (maxR - minR) * 0.08 * v * (1 - gapPct);
+        ctx.strokeStyle = barFillStyle(i, bars, colorMode);
+        ctx.lineWidth = Math.max(1, 3 * v);
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * r0, cy + Math.sin(angle) * r0);
+        ctx.lineTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+        ctx.stroke();
+      }
+    }
+
+    function drawBloom(freq, p, w, h) {
+      const { bars, gapPct, sens, minH, colorMode, mirror, radialInnerPct, radialRot, motion } = p;
+      const cx = w * 0.5, cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.48;
+      const minR = maxR * radialInnerPct;
+      const arcSpan = (Math.PI * 2) / bars;
+      const gap = arcSpan * gapPct * 0.5;
+      spinPhase += motion * 0.015;
+
+      for (const { binIndex, colorIndex } of barSlots(bars, mirror)) {
+        const v = level(freq, binIndex, bars, sens, minH);
+        const a0 = radialRot + spinPhase - Math.PI / 2 + colorIndex * arcSpan + gap;
+        const a1 = a0 + arcSpan - gap * 2;
+        const r1 = minR + (maxR - minR) * v;
+        ctx.fillStyle = barFillStyle(colorIndex, bars, colorMode);
+        ctx.globalAlpha = 0.5 + v * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r1, a0, a1);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawTunnel(freq, p, w, h) {
+      const { bars, sens, minH, colorMode, motion } = p;
+      const cx = w * 0.5;
+      const layers = Math.max(6, Math.min(24, Math.round(bars / 4)));
+      tunnelPhase += motion * 0.04;
+      const vanishY = h * 0.08;
+
+      for (let L = 0; L < layers; L++) {
+        const depth = (L + ((tunnelPhase % 1) + 1) % 1) / layers;
+        const t = 1 - depth;
+        const y = vanishY + (h - vanishY) * depth * depth;
+        const halfW = w * 0.48 * t;
+        const bin = Math.floor(depth * bars) % bars;
+        const v = level(freq, bin, bars, sens, minH);
+        const thick = Math.max(1, v * h * 0.04 * t);
+
+        ctx.strokeStyle = barFillStyle(L, layers, colorMode);
+        ctx.globalAlpha = 0.15 + v * t * 0.85;
+        ctx.lineWidth = thick;
+        ctx.beginPath();
+        ctx.moveTo(cx - halfW, y);
+        ctx.lineTo(cx + halfW, y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx - halfW, y);
+        ctx.lineTo(cx, vanishY);
+        ctx.lineTo(cx + halfW, y);
+        ctx.strokeStyle = barFillStyle(bin, bars, colorMode);
+        ctx.globalAlpha = 0.08 + v * 0.12;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    const DRAWERS = {
+      Linear: drawLinear,
+      Radial: drawRadial,
+      Mountain: drawMountain,
+      Wave: drawWave,
+      Orbit: drawOrbit,
+      Matrix: drawMatrix,
+      Rings: drawRings,
+      Spiral: drawSpiral,
+      Bloom: drawBloom,
+      Tunnel: drawTunnel,
+    };
 
     function draw() {
-      // `engine.audio.freq` is a 200-element array of spectrum bins (each 0–255).
-      // Bin down to BARS by sampling at even intervals — 64 bars is a comfortable
-      // visualizer width, and most of the raw bins above the audible mid-range are
-      // near zero anyway.
-      const freq = engine.audio.freq;
-      const w = canvas.width, h = canvas.height;
-      const barW = w / BARS;
+      if (typeof rgbjSetupCanvas === "function") rgbjSetupCanvas(canvas);
 
-      // Paint an opaque black background each frame. `clearRect` would only zero the
-      // alpha channel, and the host's per-frame canvas sampler treats fully
-      // transparent pixels as "keep previous value" — that leaves a trail.
+      const freq =
+        typeof engine !== "undefined" && engine.audio && engine.audio.freq
+          ? engine.audio.freq
+          : new Uint8Array(200);
+
+      const props = readProps();
+      const w = canvas.width;
+      const h = canvas.height;
+
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < BARS; i++) {
-        const v = freq[Math.floor(i * freq.length / BARS)] / 255;
-        ctx.fillStyle = `hsl(${(i / BARS) * 360}, 80%, 55%)`;
-        ctx.fillRect(i * barW, h - v * h, barW, v * h);
-      }
+
+      const fn = DRAWERS[props.layout] || drawLinear;
+      fn(freq, props, w, h);
+
       requestAnimationFrame(draw);
     }
+
     draw();
   </script>
 </body>

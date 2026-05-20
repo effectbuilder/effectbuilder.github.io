@@ -13,3 +13,5 @@ test-results/
 generator/index.html
 generator/index.html
 /RGBJunkieApp/downloads
+/RGBJunkieApp/data/
+/RGBJunkieApp/includes/download-stats-secret.php

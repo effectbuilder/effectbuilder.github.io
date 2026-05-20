@@ -3,18 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <title>Color profile gradient</title>
-  <meta name="description" content="Animated gradient driven by the user's selected color profile." />
+  <meta name="description" content="Animated color-profile gradients — linear, radial, conic, spiral, aurora, plasma, and more." />
+  <meta name="developer" content="RGBJunkie" />
+  <meta name="tags" content="gradient, color profile, ambient, radial, conic, demo" />
 
   <!--
-    The `type="colorProfile"` meta tells RGBJunkie to inject TWO globals:
-      * `colorProfile`      — the profile id (e.g. "Rainbow", "Sunset")
-      * `colorProfileStops` — a ready-to-draw, closed hex-stop array
-    Most effects only need `colorProfileStops`.
+    `type="colorProfile"` injects `colorProfile` and `colorProfileStops` (closed hex-stop array).
   -->
-  <meta property="colorProfile" label="Color profile" type="colorProfile" default="Rainbow" />
+  <meta property="colorProfile" label="Color profile" type="colorProfile" default="Rainbow" group="Colors" />
+
+  <meta property="gradientStyle" label="Gradient style" type="combobox"
+    values="Linear Sweep,Linear Vertical,Radial Pulse,Radial Rings,Conic Spin,Conic Pulse,Diamond Rotate,Spiral Aurora,Plasma Flow,Mesh Wave,Shimmer Bands"
+    default="Linear Sweep" group="Animation"
+    tooltip="How the palette is mapped and animated on the canvas." />
+  <meta property="speed" label="Speed" type="number" min="1" max="100" default="35" group="Animation" />
+  <meta property="rotation" label="Base rotation (°)" type="number" min="0" max="360" default="0" group="Animation" />
+  <meta property="scale" label="Pattern scale (%)" type="number" min="25" max="300" default="100" group="Animation"
+    tooltip="Zoom the gradient pattern in or out." />
+  <meta property="intensity" label="Blend intensity (%)" type="number" min="20" max="150" default="100" group="Animation"
+    tooltip="Extra saturation / contrast of the animated blend." />
 
   <style>
-    html, body { margin: 0; height: 100%; background: #000; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     canvas { display: block; width: 100%; height: 100%; }
   </style>
 </head>
@@ -23,25 +33,364 @@
   <script>
     const canvas = document.getElementById("fx");
     const ctx = canvas.getContext("2d");
+    const FALLBACK_STOPS = ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ff0000"];
 
-    function draw() {
-      const stops = colorProfileStops;
-      const w = canvas.width, h = canvas.height;
-      const slide = (performance.now() / 5000) % 1;
+    function clamp01(v) {
+      return Math.max(0, Math.min(1, v));
+    }
 
-      // The gradient is 2× wide and holds two copies of the palette, so the
-      // visible canvas always falls inside it as `slide` cycles 0 → 1.
-      const grad = ctx.createLinearGradient(-slide * w, 0, (2 - slide) * w, 0);
-      for (let i = 0; i < stops.length; i++) {
-        const p = (i / (stops.length - 1)) * 0.5;
-        grad.addColorStop(p, stops[i]);
-        grad.addColorStop(p + 0.5, stops[i]);
+    function normalizeStops(stops) {
+      if (!stops || stops.length === 0) return FALLBACK_STOPS.slice();
+      const out = stops.map((s) => String(s || "#000000"));
+      if (out.length === 1) return [out[0], out[0]];
+      return out;
+    }
+
+    function getStops() {
+      if (typeof colorProfileStops !== "undefined" && colorProfileStops && colorProfileStops.length >= 2) {
+        return normalizeStops(colorProfileStops);
       }
+      if (typeof rgbjColorFromProfile === "function") {
+        const out = [];
+        for (let i = 0; i <= 16; i++) {
+          const c = rgbjColorFromProfile(
+            typeof colorProfile !== "undefined" ? colorProfile : "Rainbow",
+            i / 16,
+            null
+          );
+          out.push(
+            "#" +
+              [c.r, c.g, c.b]
+                .map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0"))
+                .join("")
+          );
+        }
+        return normalizeStops(out);
+      }
+      return FALLBACK_STOPS.slice();
+    }
 
+    function addStopsMonotone(grad, stops, start, end) {
+      const n = Math.max(1, stops.length - 1);
+      const a = clamp01(start);
+      const b = clamp01(end);
+      for (let i = 0; i < stops.length; i++) {
+        grad.addColorStop(a + (b - a) * (i / n), stops[i]);
+      }
+    }
+
+    function readProps() {
+      const speedVal = Math.max(0.01, (Number(typeof speed !== "undefined" ? speed : 35) || 35) / 100);
+      const rot = ((Number(typeof rotation !== "undefined" ? rotation : 0) || 0) * Math.PI) / 180;
+      const scaleVal = Math.max(0.25, (Number(typeof scale !== "undefined" ? scale : 100) || 100) / 100);
+      const intensityVal = Math.max(0.2, (Number(typeof intensity !== "undefined" ? intensity : 100) || 100) / 100);
+      const style = typeof gradientStyle !== "undefined" ? gradientStyle : "Linear Sweep";
+      return { speed: speedVal, rot, scale: scaleVal, intensity: intensityVal, style };
+    }
+
+    /**
+     * Two identical palette copies on [0, 0.5] and [0.5, 1] so a 2×-wide gradient scrolls without a seam.
+     * @param {number} tiles - palettes tiled into each half (Pattern scale > 1)
+     */
+    function addSeamlessStops(grad, stops, tiles) {
+      const n = Math.max(1, stops.length - 1);
+      const count = Math.max(1, Math.min(8, Math.round(tiles)));
+      const tileW = 0.5 / count;
+      for (let tile = 0; tile < count; tile++) {
+        for (let i = 0; i < stops.length; i++) {
+          const p = tile * tileW + (i / n) * tileW;
+          grad.addColorStop(p, stops[i]);
+          grad.addColorStop(p + 0.5, stops[i]);
+        }
+      }
+    }
+
+    function fillLinearSweep(stops, w, h, t, rot, scale) {
+      const slide = t - Math.floor(t);
+      const grad = ctx.createLinearGradient(-slide * w, 0, (2 - slide) * w, 0);
+      addSeamlessStops(grad, stops, scale);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
+    }
+
+    function fillLinearVertical(stops, w, h, t, rot, scale) {
+      const slide = t - Math.floor(t);
+      const grad = ctx.createLinearGradient(0, -slide * h, 0, (2 - slide) * h);
+      addSeamlessStops(grad, stops, scale);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function fillRadialPulse(stops, w, h, t, rot, scale) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const maxR = Math.max(w, h) * 0.72 * scale;
+      const pulse = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2));
+      const inner = Math.max(0, maxR * 0.05);
+      const outer = Math.max(inner + 1, maxR * pulse);
+      const grad = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+      addStopsMonotone(grad, stops, 0, 1);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function fillRadialRings(stops, w, h, t, rot, scale) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const maxR = Math.min(w, h) * 0.48 * scale;
+      const ringCount = 10;
+      const band = maxR / ringCount;
+
+      const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+      bg.addColorStop(0, stops[0]);
+      bg.addColorStop(1, stops[stops.length - 1]);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot + t * Math.PI * 2);
+      ctx.lineCap = "round";
+      for (let r = 0; r < ringCount; r++) {
+        const radius = band * (r + 0.55);
+        const idx = Math.floor(((r + t * ringCount) % ringCount) / ringCount * stops.length) % stops.length;
+        ctx.strokeStyle = stops[idx];
+        ctx.lineWidth = Math.max(1, band * 0.72);
+        ctx.globalAlpha = 0.35 + (r / ringCount) * 0.55;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function fillConicSpin(stops, w, h, t, rot, scale) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const angle = rot + t * Math.PI * 2;
+      if (typeof ctx.createConicGradient !== "function") {
+        fillLinearSweep(stops, w, h, t, rot, scale);
+        return;
+      }
+      const grad = ctx.createConicGradient(angle, cx, cy);
+      const n = stops.length;
+      for (let i = 0; i < n; i++) {
+        grad.addColorStop(i / n, stops[i]);
+      }
+      grad.addColorStop(1, stops[0]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function fillConicPulse(stops, w, h, t, rot, scale) {
+      const cx = w * 0.5 + Math.sin(t * Math.PI * 2) * w * 0.12;
+      const cy = h * 0.5 + Math.cos(t * Math.PI * 2 * 1.3) * h * 0.12;
+      if (typeof ctx.createConicGradient !== "function") {
+        fillRadialPulse(stops, w, h, t, rot, scale);
+        return;
+      }
+      const grad = ctx.createConicGradient(rot + t * Math.PI * 2, cx, cy);
+      const n = stops.length;
+      for (let i = 0; i < n; i++) {
+        grad.addColorStop(i / n, stops[i]);
+      }
+      grad.addColorStop(1, stops[0]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function fillDiamondRotate(stops, w, h, t, rot, scale) {
+      fillConicSpin(stops, w, h, t, rot, scale);
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const size = Math.max(w, h) * 0.85 * scale;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot + t * Math.PI * 0.5);
+      for (let q = 0; q < 4; q++) {
+        ctx.rotate(Math.PI / 2);
+        const grad = ctx.createLinearGradient(-size, 0, size, 0);
+        addSeamlessStops(grad, stops, 1);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(size, -size * 0.55);
+        ctx.lineTo(size, size * 0.55);
+        ctx.closePath();
+        ctx.globalAlpha = 0.5;
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function fillSpiralAurora(stops, w, h, t, rot, scale) {
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const arms = Math.max(3, Math.min(8, stops.length - 1));
+      const maxR = Math.min(w, h) * 0.48 * scale;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      for (let a = 0; a < arms; a++) {
+        const base = rot + (a / arms) * Math.PI * 2 + t * Math.PI * 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        for (let s = 0; s < 48; s++) {
+          const u = s / 48;
+          const angle = base + u * Math.PI * 3 + t * 2;
+          const r0 = maxR * u * 0.3;
+          const r1 = maxR * u;
+          const col = stops[Math.floor((u + t + a * 0.17) * stops.length) % stops.length];
+          ctx.strokeStyle = col;
+          ctx.lineWidth = Math.max(1, maxR * 0.018 * (1 - u * 0.5));
+          ctx.globalAlpha = 0.25 + (1 - u) * 0.75;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * r0, Math.sin(angle) * r0);
+          ctx.lineTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function hexToRgb(hex) {
+      const h = String(hex).replace("#", "").slice(0, 6);
+      return {
+        r: parseInt(h.slice(0, 2), 16) || 0,
+        g: parseInt(h.slice(2, 4), 16) || 0,
+        b: parseInt(h.slice(4, 6), 16) || 0,
+      };
+    }
+
+    function fillPlasmaFlow(stops, w, h, t, rot, scale) {
+      const maxPixels = 320 * 240;
+      const step = w * h > maxPixels ? Math.max(2, Math.ceil(Math.sqrt((w * h) / maxPixels))) : 1;
+      const pw = Math.max(1, Math.ceil(w / step));
+      const ph = Math.max(1, Math.ceil(h / step));
+      const img = ctx.createImageData(pw, ph);
+      const data = img.data;
+      const n = Math.max(1, stops.length - 1);
+      const freq = 3.5 / Math.max(0.25, scale);
+      for (let py = 0; py < ph; py++) {
+        for (let px = 0; px < pw; px++) {
+          const x = px * step;
+          const y = py * step;
+          const nx = (x / w - 0.5) * freq;
+          const ny = (y / h - 0.5) * freq;
+          const v =
+            0.5 +
+            0.5 *
+              Math.sin(nx + t * Math.PI * 2) *
+              Math.cos(ny + t * Math.PI * 1.7) *
+              Math.sin((nx + ny) * 0.7 + rot + t * 3);
+          const amount = clamp01(v);
+          const idx = Math.min(n, Math.floor(amount * n));
+          const local = n > 0 ? (amount - idx / n) * n : 0;
+          const c1 = hexToRgb(stops[idx]);
+          const c2 = hexToRgb(stops[Math.min(idx + 1, stops.length - 1)]);
+          const i = (py * pw + px) * 4;
+          data[i] = c1.r + (c2.r - c1.r) * local;
+          data[i + 1] = c1.g + (c2.g - c1.g) * local;
+          data[i + 2] = c1.b + (c2.b - c1.b) * local;
+          data[i + 3] = 255;
+        }
+      }
+      ctx.imageSmoothingEnabled = step > 1;
+      ctx.putImageData(img, 0, 0, 0, 0, pw, ph, 0, 0, w, h);
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    function fillMeshWave(stops, w, h, t, rot, scale) {
+      const cols = Math.max(6, Math.min(24, Math.round(12 * scale)));
+      const rows = Math.max(4, Math.min(16, Math.round(8 * scale)));
+      const cw = w / cols;
+      const ch = h / rows;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const u = col / (cols - 1 || 1);
+          const v = row / (rows - 1 || 1);
+          const wave =
+            0.5 +
+            0.5 *
+              Math.sin(u * Math.PI * 2 + t * Math.PI * 2) *
+              Math.cos(v * Math.PI * 2 + t * Math.PI * 1.5 + rot);
+          const amount = Math.max(0, Math.min(1, wave));
+          const idx = Math.floor(amount * (stops.length - 1));
+          ctx.fillStyle = stops[idx];
+          const ox = Math.sin(t * 2 + col * 0.4) * cw * 0.15;
+          const oy = Math.cos(t * 2 + row * 0.5) * ch * 0.15;
+          ctx.fillRect(col * cw + ox, row * ch + oy, cw + 1, ch + 1);
+        }
+      }
+    }
+
+    function fillShimmerBands(stops, w, h, t, rot, scale) {
+      fillLinearSweep(stops, w, h, t, rot, scale);
+      const bands = 5;
+      ctx.globalCompositeOperation = "screen";
+      for (let b = 0; b < bands; b++) {
+        const phase = (t * 1.3 + b / bands) % 1;
+        const y = phase * h * 1.2 - h * 0.1;
+        const grad = ctx.createLinearGradient(0, y, 0, y + h * 0.25);
+        const c = stops[Math.floor((b / bands) * stops.length) % stops.length];
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(0.5, c);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = 0.22;
+        ctx.fillRect(0, 0, w, h);
+      }
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+    }
+
+    function applyIntensity(intensity) {
+      if (intensity <= 1.01) return;
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = Math.min(0.4, (intensity - 1) * 0.3);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+    }
+
+    const STYLES = {
+      "Linear Sweep": fillLinearSweep,
+      "Linear Vertical": fillLinearVertical,
+      "Radial Pulse": fillRadialPulse,
+      "Radial Rings": fillRadialRings,
+      "Conic Spin": fillConicSpin,
+      "Conic Pulse": fillConicPulse,
+      "Diamond Rotate": fillDiamondRotate,
+      "Spiral Aurora": fillSpiralAurora,
+      "Plasma Flow": fillPlasmaFlow,
+      "Mesh Wave": fillMeshWave,
+      "Shimmer Bands": fillShimmerBands,
+    };
+
+    function draw() {
+      try {
+        if (typeof rgbjSetupCanvas === "function") rgbjSetupCanvas(canvas);
+
+        const stops = getStops();
+        const w = Math.max(1, canvas.width | 0);
+        const h = Math.max(1, canvas.height | 0);
+        const { speed, rot, scale, intensity, style } = readProps();
+        const t = (performance.now() / 1000) * speed * 0.35;
+
+        const fn = STYLES[style] || fillLinearSweep;
+        fn(stops, w, h, t, rot, scale);
+        applyIntensity(intensity);
+      } catch (err) {
+        console.error("[gradient-colorprofile-demo]", err);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
       requestAnimationFrame(draw);
     }
+
     draw();
   </script>
 </body>
