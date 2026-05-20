@@ -432,6 +432,24 @@
     outline-offset: 2px;
 }
 
+/* Post-download thank-you page tool cards */
+.rgbj-thanks-tool-card {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    background-color: var(--bs-body-bg);
+}
+
+.rgbj-thanks-tool-card:hover,
+.rgbj-thanks-tool-card:focus-visible {
+    border-color: rgba(0, 240, 255, 0.45) !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.rgbj-thanks-tool-card:focus-visible {
+    outline: 2px solid rgba(0, 240, 255, 0.5);
+    outline-offset: 2px;
+}
+
 /* Subpage / hero top glow (shared across site pages) */
 .rgbj-subpage-glow {
     position: relative;

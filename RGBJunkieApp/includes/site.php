@@ -29,7 +29,7 @@ function rgbj_base_path(): string
     }
 
   // Nested paths under RGBJunkieApp (e.g. stats/downloads/) — strip all section segments.
-    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'changelog', 'stats', 'downloads'];
+    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'changelog', 'stats', 'downloads', 'thanks'];
     while ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
         array_pop($segments);
     }
@@ -84,4 +84,42 @@ function rgbj_download_absolute_url(string $webPath): string
     }
 
     return $scheme . '://' . $host . $path;
+}
+
+/** Official RGBJunkie Discord invite (lands in #welcome-and-rules). */
+const RGBJ_DISCORD_INVITE_URL = 'https://discord.gg/adHsQG8czv';
+
+/**
+ * Free browser tools on rgbjunkie.com (sibling paths from site root).
+ *
+ * @return list<array{label: string, href: string, description: string, icon: string}>
+ */
+function rgbj_web_tools(): array
+{
+    return [
+        [
+            'label' => 'Effect Builder',
+            'href' => '/',
+            'description' => 'Design custom lighting effects in the browser and export them for SignalRGB.',
+            'icon' => 'bi-magic',
+        ],
+        [
+            'label' => 'Component Builder',
+            'href' => '/builder/',
+            'description' => 'Lay out LED strips and zones visually, then export a component for your rig.',
+            'icon' => 'bi-grid-3x3-gap',
+        ],
+        [
+            'label' => 'Effect Combiner',
+            'href' => '/combiner/',
+            'description' => 'Blend and layer existing effects into something new without starting from scratch.',
+            'icon' => 'bi-layers',
+        ],
+        [
+            'label' => 'Skydimo LUA Builder',
+            'href' => '/skydimo/',
+            'description' => 'Sketch Skydimo-compatible LUA effects with a live preview and generated code.',
+            'icon' => 'bi-code-slash',
+        ],
+    ];
 }

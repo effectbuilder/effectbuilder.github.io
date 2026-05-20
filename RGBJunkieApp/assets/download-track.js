@@ -102,6 +102,13 @@
                         console.warn('RGBJ download tracking failed:', err);
                     })
                     .finally(function () {
+                        var thanksBase = window.RGBJ_DOWNLOAD_THANKS_URL || '';
+                        if (thanksBase && meta.filePath) {
+                            var sep = thanksBase.indexOf('?') >= 0 ? '&' : '?';
+                            window.location.href =
+                                thanksBase + sep + 'f=' + encodeURIComponent(meta.filePath);
+                            return;
+                        }
                         window.location.href = href;
                     });
             },
