@@ -2,13 +2,6 @@
 
 require_once dirname(__DIR__, 2) . '/includes/download-tracker.php';
 
-if (!rgbj_download_stats_admin_authorized()) {
-    http_response_code(403);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'Forbidden. Set admin_key in includes/download-stats-secret.php and open this page with ?key=YOUR_KEY';
-    exit;
-}
-
 $statsCfg = rgbj_download_stats_config();
 $rgbj_nav_active = '';
 $pageTitle = 'Download stats | RGBJunkie';

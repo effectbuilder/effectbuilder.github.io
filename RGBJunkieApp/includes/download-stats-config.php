@@ -7,7 +7,7 @@ const RGBJ_FIREBASE_ADMIN_UID = 'zMj8mtfMjXeFMt072027JT7Jc7i1';
 
 const RGBJ_FIRESTORE_DOWNLOADS_COLLECTION = 'rgbjunkie-app-downloads';
 
-/** @return array{admin_key:string,admin_uid:string,count_cooldown_seconds:int} */
+/** @return array{admin_uid:string,count_cooldown_seconds:int} */
 function rgbj_download_stats_config(): array
 {
     static $config = null;
@@ -16,7 +16,6 @@ function rgbj_download_stats_config(): array
     }
 
     $defaults = [
-        'admin_key' => '',
         'admin_uid' => RGBJ_FIREBASE_ADMIN_UID,
         'count_cooldown_seconds' => 0,
     ];
