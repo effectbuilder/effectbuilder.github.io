@@ -1,6 +1,7 @@
 {
-  "version": "0.2.67",
-  "downloadUrl": "https://www.rgbjunkie.com/RGBJunkieApp/download.php?f=downloads%2Fportable%2FRGBJunkie_0.2.67_x64-portable.zip&channel=app-update",
-  "portableZip": "RGBJunkie_0.2.67_x64-portable.zip",
-  "releaseNotes": "https://www.rgbjunkie.com/RGBJunkieApp/changelog/#v-0-2-67"
+  "version": "0.2.68",
+  "downloadUrl": "https://www.rgbjunkie.com/RGBJunkieApp/downloads/portable/RGBJunkie_0.2.68_x64-portable.zip",
+  "trackedDownloadUrl": "https://www.rgbjunkie.com/RGBJunkieApp/download.php?f=downloads%2Fportable%2FRGBJunkie_0.2.68_x64-portable.zip&channel=app-update",
+  "portableZip": "RGBJunkie_0.2.68_x64-portable.zip",
+  "releaseNotes": "https://www.rgbjunkie.com/RGBJunkieApp/changelog/#v-0-2-68"
 }

@@ -144,6 +144,13 @@ function rgbj_render_page_nav(): void
                             <?php endif; ?>
                         </ul>
                     </li>
+                    <?php if ($isHome) : ?>
+                    <li class="nav-item d-none rgbj-admin-stats-nav">
+                        <a class="nav-link rgbj-nav-link" href="<?= rgbj_h(rgbj_url('stats/downloads/')) ?>">
+                            <i class="bi bi-bar-chart rgbj-nav-icon" aria-hidden="true"></i><span>Download stats</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
                     <li class="nav-item rgbj-nav-cta">
                         <a class="btn btn-primary btn-sm w-100" href="<?= rgbj_h($downloadHref) ?>"><i class="bi bi-download me-1" aria-hidden="true"></i>Download</a>
                     </li>
@@ -194,6 +201,20 @@ function rgbj_subpage_close(): void
             </<?= $w ?>>
         </<?= $w ?>>
     </main>
+    <?php
+}
+
+function rgbj_page_admin_nav_scripts(): void
+{
+    if (!function_exists('rgbj_download_stats_config')) {
+        require_once __DIR__ . '/download-stats-config.php';
+    }
+    $adminUid = (string) (rgbj_download_stats_config()['admin_uid'] ?? '');
+    ?>
+    <script>
+        window.RGBJ_ADMIN_NAV = { adminUid: <?= json_encode($adminUid, JSON_THROW_ON_ERROR) ?> };
+    </script>
+    <script src="<?= rgbj_h(rgbj_url('assets/admin-nav.js')) ?>" defer></script>
     <?php
 }
 

@@ -6,6 +6,14 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.2.65 — May 20, 2026
 
+#### In-app updates use tracked download.php URLs
+
+Portable auto-updates now download through **rgbjunkie.com/download.php** with **`channel=app-update`**, separate from website portable downloads (`channel=website` in the browser tracker). **`releases/latest.json`** points at the gateway URL. On the server, optional Firestore logging (service account in `download-stats-secret.php`) records app-update downloads; the stats page shows a **Channel** column.
+
+#### Workspace toolbar: snap and grid toggles show when they are on
+
+**Snap Grid**, **Snap Edges**, **Snap Center**, and **Show Grid** now get a visible pressed state (accent highlight) in the Windows minimal theme. The toggles were saving and working; only the on-state styling was missing because flat toolbar buttons use `!important` backgrounds that overrode the older active style.
+
 #### rgbjunkie.com gallery effects render again
 
 Effects downloaded from the site often call **`engine.getSensorValue()`** (Effect Builder export). The desktop app now implements that API on top of LibreHardwareMonitor readings, with a safe animated fallback when a sensor name is missing or LHM is still starting — so gallery effects no longer crash on launch with a blank canvas.

@@ -171,6 +171,7 @@ rgbj_render_page_nav();
     ?>
     <?php require __DIR__ . '/includes/download-share-scripts.php'; ?>
     <?php rgbj_page_firebase_download_scripts(); ?>
+    <?php rgbj_page_admin_nav_scripts(); ?>
     <script src="<?= rgbj_h(rgbj_url('assets/download-platform.js')) ?>" defer></script>
     <script>
         (function () {
