@@ -74,6 +74,7 @@ rgbj_subpage_open([
                 <tr>
                     <th>File</th>
                     <th>Kind</th>
+                    <th>Channel</th>
                     <th>Version</th>
                     <th class="text-end">Downloads (30d)</th>
                 </tr>

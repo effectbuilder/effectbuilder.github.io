@@ -4,6 +4,44 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.
 
+## v0.2.65 — May 20, 2026
+
+#### rgbjunkie.com gallery effects render again
+
+Effects downloaded from the site often call **`engine.getSensorValue()`** (Effect Builder export). The desktop app now implements that API on top of LibreHardwareMonitor readings, with a safe animated fallback when a sensor name is missing or LHM is still starting — so gallery effects no longer crash on launch with a blank canvas.
+
+#### Functional (.mjs) effects: preview grid and thumbnails
+
+The engine canvas preview for **`.mjs`** effects now maps each preview cell’s **`ledIndex`** along the **horizontal strip** (same as real LED sampling), instead of a diagonal mix of X and Y — so patterns like **Euclidean Beats**, **Morse Stream**, **VU Meter**, and **Palindrome Symmetry** look correct on the workspace and in generated catalog PNGs. Thumbnail generation also simulates **`audio.level`** and **`audio.density`** so level-meter and sound-reactive previews are not stuck dark.
+
+#### Maintainer: catalog thumbnails from effect canvas renders
+
+New script **`npm run generate:effect-thumbnails:canvas`** (after `npx playwright install chromium`) loads each built-in **HTML** effect in headless Chromium with the same host bridge the app injects, waits for the largest **canvas** to draw, and writes **`{effectName}.png`** next to the effect file for the Effect Browser. It also supports **functional `.mjs`** effects (**`npm run generate:effect-thumbnails:mjs`**) by rendering the same coarse **`sampleLed`** preview grid the app paints on the engine canvas. Use **`--skip-existing`** to fill in only missing images; use **`generate:effect-thumbnails`** when you want AI-generated art instead of a live frame grab.
+
+#### Effects: hardware sensors via bundled LibreHardwareMonitor
+
+Effects can read CPU/GPU load, temperatures, fan speeds, and other values from **`engine.sensors`** — a stable ID-based API (`list()`, `get(id)`, `normalize(id)`). The app can ship **LibreHardwareMonitor** in the installer (see `vendor/librehardwaremonitor/README.md`), start it as a background helper, and poll its `data.json` feed so effects do not talk to port 8085 directly. Sidebar **`type="sensor"`** controls are now sensor pickers populated from the live catalog. Sample effect: **System Vitals**. Enable **Options → Remote web server → Run** in the helper if sensor status stays on “starting”.
+
+#### Effects: LHM sensor list showed only one entry
+
+LibreHardwareMonitor reports readings as strings with units (for example `69.5 °C`, `1264 RPM`), not bare numbers. The parser now understands those values and uses LHM’s `SensorId` paths, so the sensor picker lists the full catalog (hundreds of sensors) instead of a single S.M.A.R.T. counter like Power On Count.
+
+#### Effect browser: cleaner filter bar layout
+
+The Effect Browser filter bar is **one shallow row** that uses the modal’s **width** (CSS grid): search and dropdowns share horizontal space, actions are **icon-only**, active filter chips scroll in their own slot, and **“N shown”** moved to the header. No second filter row unless you open **More filters** (advanced row only). Fixed the **Favorites** toolbar control overlapping neighbors (it was injecting “Favorites (10)” text into an icon-sized button).
+
+#### Effect browser: source badge and tags on one row
+
+Effect cards show **Built-in** / **MJS** badges and effect tags (audio, visualizer, **+N**, …) in a **single combined chip row** instead of two separate lines.
+
+#### Effect browser: card menu opens upward when needed
+
+The **⋯** menu on effect cards no longer gets cut off at the bottom of the browser. It opens in a fixed layer above the grid, flips **above** the button when needed, and closes when you click **⋯** again, pick an action, or click outside the menu. **Star** (favorite) sits on the **top-right** of the preview image; **⋯** (more actions) on the **bottom-right**, with icons centered in their round buttons.
+
+#### Effects: sensor tree picker in the sidebar
+
+Effect settings with **`type="sensor"`** now use a **searchable hardware tree** (same layout as LibreHardwareMonitor: PC → board → chip → group → sensor) instead of one long dropdown. **Type filter pills** (All, Temp, Load, Fan, …) narrow the list; each row shows a **live value** and updates when the catalog refreshes. The tree opens only when you click the sensor control (like the color-profile picker) and opens **to the left of the effects sidebar** over the canvas, not on top of the narrow panel. It closes when you pick a sensor, press **Escape**, or click outside. **Folder rows** start **collapsed**; expand and collapse with the chevron (▸/▾). Search still opens branches that contain matches. A second row of tabs filters by **hardware** (**CPU**, **GPU**, **RAM**, **Mobo**, and other buckets present on your PC) in addition to sensor type (Temp, Load, Fan, …). Choosing a hardware or type tab **expands all matching folders** so you see every sensor without clicking through the tree.
+
 ## v0.2.56 — May 18, 2026
 
 *(Add release notes for v0.2.56.)*
@@ -58,6 +96,34 @@ Destructive or important actions no longer use the WebView’s **“localhost sa
 
 ## v0.2.64 — May 19, 2026
 
+#### Workspace: Escape clears selection
+
+Press **Escape** to deselect all components and layout groups on the canvas (same as clicking empty workspace). Does not run while **Settings**, the effect browser, confirm dialogs, or a context menu is open. Fixed a case where the component library overlay was treated as always open (CSS-hidden modals no longer block Escape).
+
+#### Device tree: opening a device no longer jumps selection to the last channel
+
+Clicking a device in the left panel selects that device’s components on the canvas instead of leaving only the last component in the last channel selected.
+
+#### Dropdowns and fields match minimal panel buttons
+
+Profile pickers, effect/device layout selects, toolbar dropdowns, effect-browser filters, plugin settings, and Settings form controls now use the same flat look as icon buttons — ghost comboboxes (faint underline, larger chevron, light hover wash) and lighter text fields instead of heavy gray boxes.
+
+#### Custom dropdown menus (replacing the OS list)
+
+Opening a profile or settings select now shows an in-app list (dark panel, hover highlight, accent on the current item) instead of the default WebView2 popup. Native `<select>` is still used for values and keyboard accessibility; only the open menu is custom.
+
+#### Minimal sliders
+
+Brightness, effect parameters (e.g. **Overall pace**), plugin settings, and calibration sliders use a thin track: your theme accent from the start up to the thumb, faint line after, and an accent-colored thumb (matches tabs and other accent controls).
+
+#### Effect settings profile reload no longer adds extra canvases
+
+Reloading a saved **effect settings** profile restores effect choices and sliders only — it no longer auto-loads the paired **default device layout**, which could add workspace canvases that were not part of the profile when you saved it. Switching effects in the library still applies the default device layout mapping when you have one set.
+
+#### Warning before switching profiles with unsaved changes
+
+Changing the **effect settings** or **device layout** profile dropdown, reloading a profile, or picking a new **default device layout for effect** now warns you when the session has changed since that profile was loaded or last saved (for example adding a **canvas** tab). Autosave still runs in the background, but the prompt compares against that loaded baseline — not autosave alone — so edits like a new canvas are not missed. The dialog offers **Cancel**, **Continue without Saving**, and **Save and Continue** on one row. **Save and Continue** now writes the **named profile file** you were on (not only autosave), so switching back to that layout keeps new canvases and other edits.
+
 #### Effect browser: rescan local effects when opened
 
 Opening **Browse effects** now runs a full disk rescan (built-in and user folders), merges the online gallery, and refreshes the list — so new or edited `.html` / `.mjs` files show up without restarting the app.
@@ -91,11 +157,149 @@ Open **Browse effects** to rescan the disk.
 - **Calm / HUD:** Seasonal Slow  
 - **Strip functional (`.mjs`):** Hilbert Walker, Euclidean Beats, Thermodynamic Noise, Palindrome Symmetry, Morse Stream  
 
+#### Sidebar and Settings: hints behind icon-only help buttons
+
+**Device Layout Profiles** and **Effect Settings Profiles** no longer show gray subtitle lines under the headings. The same text is on the **?** icon beside each title (hover or focus).
+
+**Settings** uses the same control everywhere section intros used to be gray paragraphs: **App look** (language, theme, typography, canvas LEDs, labels), **Color profiles**, **Hardware** (OpenRGB RAM, WLED, unmatched devices), **RAM** / **GPU** tabs, **Engine** advanced options, **Backup**, **Computer**, **Logs**, **Installed files** (Git repos and media lists — click opens the full help dialog), and the **request missing device** dialog. Installed-files help no longer uses a bordered **?** text button.
+
+#### App-wide buttons: minimal flat style
+
+Buttons across RGBJunkie (toolbar, **Settings**, component/effect library modals, setup wizard, plugin settings, confirm dialogs, LED Studio, and the device/effect side panels) use the same light treatment: transparent by default, soft hover, accent when toggled on. **Browse effects**, **Submit**, and other primary actions still use the green **btn-primary-strong** style. Delete/remove controls keep a red hover hint. Top **toolbar** controls stay icon-only (labels hidden for space); icons keep an explicit size so they remain visible with the flat button style. Toolbar **button groups** no longer use a separate grey pill background — icons sit directly on the top bar. Tools that are unavailable (nothing selected, etc.) show **darker gray** icons instead of a washed-out fade.
+
+#### Sidebar panels: lighter icon buttons
+
+Small controls in the **Devices** and **Effects** docks (profile save/reload/delete, rescan, visibility/lock toolbar, transport buttons, share, reset, and per-device tree actions) use the same minimal **icon-only** style as the profile **?** help buttons — no heavy gray **btn** boxes; subtle hover and accent when active. Effect settings category tabs match (flat until selected).
+
+#### Settings: hardware notes and color profile delete buttons
+
+Removed the **RAM (OpenRGB)** and **GPU I2C** disclaimer notes from **Settings → Hardware**. Color profile and swatch **delete** controls now show an **×** icon (Bootstrap Icons) instead of a **?** placeholder.
+
+#### Effect hot-reload: stay on the same effect
+
+When you save an effect `.html` file while it is running, RGBJunkie reloads **that** effect instead of jumping to a different entry in the list (fixes wrong index after catalog rescan and profile restore overriding your selection).
+
 #### Effect developer guide: scaling shapes to canvas size
 
 **[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
 
 *(Add other release notes for v0.2.64.)*
+
+---
+
+## v0.2.65 — May 20, 2026
+
+#### Component Library: LED layout thumbnails
+
+When a catalog entry has no product image (common for **CompGen** and other layout-only JSON), the grid now shows a **rendered LED map** (dot positions from `LedCoordinates`) instead of the generic RGBJunkie logo. Entries with a real **ImageUrl** still use that artwork; failed downloads also fall back to the layout render when possible.
+
+#### Component Library: Escape closes the browser
+
+Press **Escape** to close the **Component Library** modal (same as the **X** button or the effect browser). If a rename/import prompt is open on top of the library, **Escape** dismisses that prompt first.
+
+#### Workspace: maximize layout canvas
+
+A **fullscreen** control in the **lower-right** of the layout canvas expands the render area **borderless on the current screen** (toolbar and side panels hidden for that view). Press **Escape** or click the button again to return to the normal layout. The stage rescales to fill the maximized area.
+
+#### Escape closes more overlays
+
+**Escape** now dismisses the **initial setup wizard** and **plugin device settings** modal (same as their close buttons, including the wizard’s “still unassigned channels?” confirm when needed). The **custom strip / rename prompt** cancels on **Escape** even when focus is not in the text field. Existing behavior is unchanged for **Settings**, **Browse effects**, **Component Library**, confirm dialogs, and canvas maximized view.
+
+#### Settings Help and website docs updated
+
+**Settings → Help** (all languages) now documents **Scene** profiles, the layout **maximize canvas** control, expanded **Escape** behavior, the **setup wizard**, **Component Library** LED thumbnails, and the refreshed **Devices / Effects** layout. The rgbjunkie.com **documentation** page adds an end-user guide section; release notes sync to the site changelog.
+
+#### Multi-canvas scenes: inactive tabs start their effects on load
+
+Loading a **Scene** with more than one workspace canvas now starts the saved effect on **every** tab, not only the active one. Inactive canvases use hidden effect runners (same as when you switch tabs); scene load and autosave restore now trigger that sync after profiles apply.
+
+#### Effect settings tabs match Audio Party layout
+
+Effects that declare a `group=` on each control (for example **Fan Align**) now use **one row of category tabs** (Layout, Colors, Pattern, …) like **Audio Party**, instead of turning `Label: Setting` prefixes into separate top-level tabs with an empty **General** panel. Multi-object builder exports (`Object 1: Width`) still get per-object tabs when needed.
+
+#### Multi-canvas scenes: keyboard layout follow on inactive tabs
+
+**Keyboard layout follow** on an inactive canvas tab now receives **keyboard input** and layout polling for that tab, not only the visible canvas. Previously, key events were wired to the active tab’s effect iframe only — so the hidden runner never triggered until you switched tabs (after which the last frame kept updating). Inactive runners also stay composited (`visibility: visible`, `opacity: 0`) so WebView2 does not pause their animation loop.
+
+#### Scene profiles: one save for layout and effects
+
+Device layout profiles and effect settings profiles are now a single **Scene** — layout, components, canvas tabs, and effect sliders live in one file under `profiles/scenes/`. The scene picker sits in a bar **above the workspace canvas tabs** (center column), not in the Devices or Effects side panels. **Share effect settings** is unchanged (effect-only link; no canvas data). Run `node scripts/merge-legacy-profiles-to-scenes.mjs` once to combine old `devices/` and `effects/` JSON on this PC.
+
+#### Layout: Scene and Effects on the right; canvas tabs above the workspace
+
+**Scene** (profile picker only) and **Effects** (current effect info, library, settings) stay in the **right column** with the **same dock shell as Devices** (one outer panel, scroll body, `.panel` sections) — no extra wrapper div that caused a double border at the top. **Devices** and **Effects** no longer appear twice at the top of each column (dock header vs section title). The effects **collapse rail** sits on the **canvas side** of the panel (not on the outer screen edge), matching the devices dock. **Canvas tabs** (Main [1], +, etc.) sit **centered above the workspace**, not in the Scene block. The Effects column no longer stacks old **Global Control** / **Effect Settings** boxes inside another box; controls flow as plain sections in one scroll (no duplicate **GLOBAL CONTROL** / **Effect Library:** headers, calmer **Browse effects** button, even 3-column settings tabs). The current-effect summary (title, author, tags) sits **below Auto-cycle** and **above Effect Settings**. A startup crash (“Initialization failed”) from removing the hidden **Effect Settings** container is fixed — that block is moved into the right rail but kept in the DOM for the engine. **Keyboards and other fixed-layout devices** no longer show a fake **Canvas layout** channel row; components attach under the device as before. Single-channel pads/strips still get a real **Canvas layout** channel row (with the color dot on that row only).
+
+#### Device tree: channel dots only on channel rows
+
+Colored channel indicators no longer appear on the **device** row (that was misleading — the dot is channel identity, not the device). Single-channel pads and strips (including **Prism Mini** when the firmware reports a generic “Channel 1” name) now show **Channel 01** on the channel row with the dot, identify, and **+** there — never **+** on the device row (including multi-channel rigs like **Nollie32**; use **+** on each channel row instead).
+
+#### Right column: one panel, one scroll
+
+Scene and Effects live in **one** glass column with a single scroll — no second bordered card around effect sliders or the current-effect summary.
+
+#### Lost canvas layout after scene migration
+
+If scene autosave only had a handful of components while your old **device layout autosave** still had the full rig, startup now **merges the larger list** from `profiles/devices/autosave_device.json` automatically. **Fan Tracer** and similar scenes that were merged from layout-only files (effect lived under a different name like **Fan Trail** in `profiles/effects/`) now pull the correct **Fan Tracer Pro Max** effect on load instead of keeping whatever effect was already open. Run `node scripts/restore-scene-components-from-legacy.mjs` once to rewrite `autosave_scene.json` on disk, or load the **Fan Tracer** (or other) scene that still lists 29 components in `profiles/scenes/`. Effect-only JSON must never replace device `components` when merging profiles.
+
+#### Scene load: layout sampling for single-channel devices
+
+After loading a scene, the app refreshes subdevice layout rows, rebinds components to plugins, and rebuilds the device tree. **Single-channel** devices with no canvas component (e.g. **Prism Mini**) get a default full-width strip on channel 0 so the active effect can reach the hardware again. Multi-channel devices (e.g. **Nollie32**) still need a layout component on each channel you use — expand the device and use **+** on that channel if LEDs stay dark.
+
+#### Device tree: hardware output flags (scene load)
+
+Scene load only applies **Output off** for devices that are actually connected, so stale profile keys cannot mute unrelated hardware.
+
+#### Scene list: WLED config file hidden
+
+`wled_devices.json` (saved WLED hosts for Settings, not a scene) no longer appears in the Scene dropdown if it was copied into `profiles/scenes/` during migration.
+
+#### Workspace canvases: new tabs no longer vanish when you switch away
+
+Adding a canvas with **+** and then clicking **Main** (or another tab) could remove the new tab from the strip. Switching tabs reloads the effect’s default device layout from disk, and older saves often only list **Main** — that overwrote tabs you had just added in memory. Runtime-added canvases are now kept until you save a device profile or remove the tab yourself.
+
+#### Workspace canvases: switching tabs updates the active layout
+
+Clicking another canvas tab (same effect on both tabs) no longer reloads the default device layout JSON from disk. The app now shows components for that canvas only and treats **active canvas** / layout edits as changed again (instead of resetting the session baseline). The default device layout file still loads when the other tab uses a **different** effect.
+
+#### Workspace tabs: canvas number beside the name
+
+Each workspace tab in the strip now shows its **1–9 shortcut slot** in brackets after the name (for example **Main [1]**, **Canvas B [2]**). The same numbering appears in the per-component canvas picker and context menu, so it matches pressing **1**–**9** on the keyboard to move the selection to that canvas.
+
+#### Device tree: workspace canvas button matches other icons
+
+The workspace picker pill on each component row shows **1**–**9** (same as keyboard shortcuts) instead of **M** for Main, and no longer uses the old gray beveled system button look — it uses the same flat icon style as the eye, lock, and identify controls beside it.
+
+#### Device tree: one lock / unlock button
+
+The separate **lock** and **unlock all** icons in the device sidebar are now a **single toggle**: when anything on the canvas is locked, the button shows the unlock icon and unlocks every component on click; otherwise it shows the lock icon and locks the current selection (disabled until you select something).
+
+#### Device tree: hardware rescan shows a spinning icon
+
+While USB hardware is rescanning, the **Rescan** button in the device sidebar no longer shows **Scanning…** text — only the same refresh icon, rotating until the scan finishes.
+
+#### Elgato Stream Deck Plus shows up again
+
+**Stream Deck Plus** (USB `0x0FD9` / `0x0084`) could appear under **Settings → Hardware → USB devices not matched to a plugin** even though the driver file was present. The Plus plugin reads its canvas size at load time; the host now wires **`Size()`** from the plugin descriptor before that line runs, and the Plus script uses **`rgbjunkie.size`** directly so detection succeeds on a rescan.
+
+#### Elgato Stream Deck plugins (Corsair-Elgato folder)
+
+The five Stream Deck scripts from the SRGBmods **Corsair-Elgato** pack now ship under **`plugins/Corsair-Elgato/`** (MK.2, XL, original 0x0060, Mini, Plus). They use the RGBJunkie plugin format and shared Elgato HID helpers. **Stream Deck Neo** stays in **`plugins/Elgato/`**.
+
+#### Settings: flat buttons and refreshed About tab
+
+Buttons across **Settings** (About, Backup, Logs, Hardware, and other tabs) now use the same minimal flat style as the side panels — no heavy gray bordered boxes. The **About** tab is reorganized with a clearer hero (version pill with accent highlight), grouped **Updates** and **Legal** sections, centered action buttons, and cleaner footer links.
+
+#### Toolbar: grid spacing dropdown no longer shifts the bar
+
+Opening the **Grid** spacing list in the top toolbar used a custom dropdown inside the bar’s clipped area; focus could scroll the page and make the whole toolbar jump. The list now opens in a fixed layer under the control without moving the toolbar.
+
+#### LED Studio: action buttons aligned left
+
+**Paint All**, **Clear Component**, and **Clear All** in **Settings → Colors → LED Studio** now line up under the **Actions** label on the left, use single-line labels, and are wide enough that the text does not wrap. The **Component** dropdown and **Brush tools** (color/HEX and Paint/Erase) no longer use the extra bordered wells around each control — only the controls themselves show focus/active styling. **Component**, **Brush tools**, and **Actions** section titles now share the same baseline at the top of the toolbar.
+
+#### UI accents: Crimson Pulse vs Rose Neon (color vision)
+
+**Crimson Pulse** is now a deeper **true red** and **Rose Neon** a brighter **fuchsia-pink** (more blue), so the two presets are easier to tell apart if you have mild deutan or similar red–green confusion — they no longer sit on the same magenta-pink range.
 
 ---
 

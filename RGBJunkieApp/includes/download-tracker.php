@@ -9,11 +9,18 @@ declare(strict_types=1);
 require_once __DIR__ . '/download-stats-config.php';
 require_once __DIR__ . '/site.php';
 require_once __DIR__ . '/installers.php';
+require_once __DIR__ . '/firestore-download-log.php';
 
-function rgbj_download_link(string $webPath): string
+function rgbj_download_link(string $webPath, string $channel = 'website'): string
 {
     $webPath = ltrim(str_replace('\\', '/', $webPath), '/');
-    return rgbj_url('download.php?f=' . rawurlencode($webPath));
+    $query = 'f=' . rawurlencode($webPath);
+    $channel = rgbj_download_normalize_channel($channel);
+    if ($channel !== 'website') {
+        $query .= '&channel=' . rawurlencode($channel);
+    }
+
+    return rgbj_url('download.php?' . $query);
 }
 
 /** Extra attributes for links logged to Firestore on click. */
@@ -29,7 +36,8 @@ function rgbj_tracked_download_attrs(string $webPath, string $class = ''): strin
         . ' data-rgbj-file-name="' . rgbj_h($fileName) . '"'
         . ' data-rgbj-version="' . rgbj_h((string) ($classified['version'] ?? '')) . '"'
         . ' data-rgbj-kind="' . rgbj_h($classified['kind']) . '"'
-        . ' data-rgbj-platform="' . rgbj_h($classified['platform']) . '"';
+        . ' data-rgbj-platform="' . rgbj_h($classified['platform']) . '"'
+        . ' data-rgbj-channel="website"';
 }
 
 function rgbj_download_normalize_path(string $webPath): string
@@ -128,7 +136,7 @@ function rgbj_download_serve_file(string $realFile, string $downloadName): void
     fclose($handle);
 }
 
-function rgbj_serve_tracked_download(string $webPath): void
+function rgbj_serve_tracked_download(string $webPath, string $channel = 'website'): void
 {
     $realFile = rgbj_download_resolve_file($webPath);
     if ($realFile === null) {
@@ -138,6 +146,25 @@ function rgbj_serve_tracked_download(string $webPath): void
         return;
     }
 
-    rgbj_download_serve_file($realFile, basename($realFile));
+    $channel = rgbj_download_normalize_channel($channel);
+    $fileName = basename($realFile);
+    $classified = rgbj_download_classify($webPath, $fileName);
+    $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+
+    if (rgbj_download_should_log_server_side($channel, $userAgent)) {
+        rgbj_firestore_log_download([
+            'filePath' => $webPath,
+            'fileName' => $fileName,
+            'version' => $classified['version'],
+            'kind' => $classified['kind'],
+            'platform' => $classified['platform'],
+            'channel' => $channel,
+            'userAgent' => $userAgent,
+            'referer' => $referer,
+        ]);
+    }
+
+    rgbj_download_serve_file($realFile, $fileName);
 }
-
+

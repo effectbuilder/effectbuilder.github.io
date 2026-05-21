@@ -4,6 +4,60 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-65" data-version="0.2.65">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.65</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 20, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>rgbjunkie.com gallery effects render again</span></h5>
+<p class="rgbj-changelog-feature__text">Effects downloaded from the site often call <strong>`engine.getSensorValue()`</strong> (Effect Builder export). The desktop app now implements that API on top of LibreHardwareMonitor readings, with a safe animated fallback when a sensor name is missing or LHM is still starting — so gallery effects no longer crash on launch with a blank canvas.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Functional (.mjs) effects: preview grid and thumbnails</span></h5>
+<p class="rgbj-changelog-feature__text">The engine canvas preview for <strong>`.mjs`</strong> effects now maps each preview cell’s <strong>`ledIndex`</strong> along the <strong>horizontal strip</strong> (same as real LED sampling), instead of a diagonal mix of X and Y — so patterns like <strong>Euclidean Beats</strong>, <strong>Morse Stream</strong>, <strong>VU Meter</strong>, and <strong>Palindrome Symmetry</strong> look correct on the workspace and in generated catalog PNGs. Thumbnail generation also simulates <strong>`audio.level`</strong> and <strong>`audio.density`</strong> so level-meter and sound-reactive previews are not stuck dark.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Maintainer: catalog thumbnails from effect canvas renders</span></h5>
+<p class="rgbj-changelog-feature__text">New script <strong>`npm run generate:effect-thumbnails:canvas`</strong> (after `npx playwright install chromium`) loads each built-in <strong>HTML</strong> effect in headless Chromium with the same host bridge the app injects, waits for the largest <strong>canvas</strong> to draw, and writes <strong>`{effectName}.png`</strong> next to the effect file for the Effect Browser. It also supports <strong>functional `.mjs`</strong> effects (<strong>`npm run generate:effect-thumbnails:mjs`</strong>) by rendering the same coarse <strong>`sampleLed`</strong> preview grid the app paints on the engine canvas. Use <strong>`--skip-existing`</strong> to fill in only missing images; use <strong>`generate:effect-thumbnails`</strong> when you want AI-generated art instead of a live frame grab.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects: hardware sensors via bundled LibreHardwareMonitor</span></h5>
+<p class="rgbj-changelog-feature__text">Effects can read CPU/GPU load, temperatures, fan speeds, and other values from <strong>`engine.sensors`</strong> — a stable ID-based API (`list()`, `get(id)`, `normalize(id)`). The app can ship <strong>LibreHardwareMonitor</strong> in the installer (see `vendor/librehardwaremonitor/README.md`), start it as a background helper, and poll its `data.json` feed so effects do not talk to port 8085 directly. Sidebar <strong>`type=&quot;sensor&quot;`</strong> controls are now sensor pickers populated from the live catalog. Sample effect: <strong>System Vitals</strong>. Enable <strong>Options → Remote web server → Run</strong> in the helper if sensor status stays on “starting”.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects: LHM sensor list showed only one entry</span></h5>
+<p class="rgbj-changelog-feature__text">LibreHardwareMonitor reports readings as strings with units (for example `69.5 °C`, `1264 RPM`), not bare numbers. The parser now understands those values and uses LHM’s `SensorId` paths, so the sensor picker lists the full catalog (hundreds of sensors) instead of a single S.M.A.R.T. counter like Power On Count.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect browser: cleaner filter bar layout</span></h5>
+<p class="rgbj-changelog-feature__text">The Effect Browser filter bar is <strong>one shallow row</strong> that uses the modal’s <strong>width</strong> (CSS grid): search and dropdowns share horizontal space, actions are <strong>icon-only</strong>, active filter chips scroll in their own slot, and <strong>“N shown”</strong> moved to the header. No second filter row unless you open <strong>More filters</strong> (advanced row only). Fixed the <strong>Favorites</strong> toolbar control overlapping neighbors (it was injecting “Favorites (10)” text into an icon-sized button).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect browser: source badge and tags on one row</span></h5>
+<p class="rgbj-changelog-feature__text">Effect cards show <strong>Built-in</strong> / <strong>MJS</strong> badges and effect tags (audio, visualizer, <strong>+N</strong>, …) in a <strong>single combined chip row</strong> instead of two separate lines.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect browser: card menu opens upward when needed</span></h5>
+<p class="rgbj-changelog-feature__text">The <strong>⋯</strong> menu on effect cards no longer gets cut off at the bottom of the browser. It opens in a fixed layer above the grid, flips <strong>above</strong> the button when needed, and closes when you click <strong>⋯</strong> again, pick an action, or click outside the menu. <strong>Star</strong> (favorite) sits on the <strong>top-right</strong> of the preview image; <strong>⋯</strong> (more actions) on the <strong>bottom-right</strong>, with icons centered in their round buttons.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects: sensor tree picker in the sidebar</span></h5>
+<p class="rgbj-changelog-feature__text">Effect settings with <strong>`type=&quot;sensor&quot;`</strong> now use a <strong>searchable hardware tree</strong> (same layout as LibreHardwareMonitor: PC → board → chip → group → sensor) instead of one long dropdown. <strong>Type filter pills</strong> (All, Temp, Load, Fan, …) narrow the list; each row shows a <strong>live value</strong> and updates when the catalog refreshes. The tree opens only when you click the sensor control (like the color-profile picker) and opens <strong>to the left of the effects sidebar</strong> over the canvas, not on top of the narrow panel. It closes when you pick a sensor, press <strong>Escape</strong>, or click outside. <strong>Folder rows</strong> start <strong>collapsed</strong>; expand and collapse with the chevron (▸/▾). Search still opens branches that contain matches. A second row of tabs filters by <strong>hardware</strong> (<strong>CPU</strong>, <strong>GPU</strong>, <strong>RAM</strong>, <strong>Mobo</strong>, and other buckets present on your PC) in addition to sensor type (Temp, Load, Fan, …). Choosing a hardware or type tab <strong>expands all matching folders</strong> so you see every sensor without clicking through the tree.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-56" data-version="0.2.56">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -129,6 +183,34 @@
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace: Escape clears selection</span></h5>
+<p class="rgbj-changelog-feature__text">Press <strong>Escape</strong> to deselect all components and layout groups on the canvas (same as clicking empty workspace). Does not run while <strong>Settings</strong>, the effect browser, confirm dialogs, or a context menu is open. Fixed a case where the component library overlay was treated as always open (CSS-hidden modals no longer block Escape).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: opening a device no longer jumps selection to the last channel</span></h5>
+<p class="rgbj-changelog-feature__text">Clicking a device in the left panel selects that device’s components on the canvas instead of leaving only the last component in the last channel selected.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Dropdowns and fields match minimal panel buttons</span></h5>
+<p class="rgbj-changelog-feature__text">Profile pickers, effect/device layout selects, toolbar dropdowns, effect-browser filters, plugin settings, and Settings form controls now use the same flat look as icon buttons — ghost comboboxes (faint underline, larger chevron, light hover wash) and lighter text fields instead of heavy gray boxes.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Custom dropdown menus (replacing the OS list)</span></h5>
+<p class="rgbj-changelog-feature__text">Opening a profile or settings select now shows an in-app list (dark panel, hover highlight, accent on the current item) instead of the default WebView2 popup. Native `&lt;select&gt;` is still used for values and keyboard accessibility; only the open menu is custom.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Minimal sliders</span></h5>
+<p class="rgbj-changelog-feature__text">Brightness, effect parameters (e.g. <strong>Overall pace</strong>), plugin settings, and calibration sliders use a thin track: your theme accent from the start up to the thumb, faint line after, and an accent-colored thumb (matches tabs and other accent controls).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect settings profile reload no longer adds extra canvases</span></h5>
+<p class="rgbj-changelog-feature__text">Reloading a saved <strong>effect settings</strong> profile restores effect choices and sliders only — it no longer auto-loads the paired <strong>default device layout</strong>, which could add workspace canvases that were not part of the profile when you saved it. Switching effects in the library still applies the default device layout mapping when you have one set.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Warning before switching profiles with unsaved changes</span></h5>
+<p class="rgbj-changelog-feature__text">Changing the <strong>effect settings</strong> or <strong>device layout</strong> profile dropdown, reloading a profile, or picking a new <strong>default device layout for effect</strong> now warns you when the session has changed since that profile was loaded or last saved (for example adding a <strong>canvas</strong> tab). Autosave still runs in the background, but the prompt compares against that loaded baseline — not autosave alone — so edits like a new canvas are not missed. The dialog offers <strong>Cancel</strong>, <strong>Continue without Saving</strong>, and <strong>Save and Continue</strong> on one row. <strong>Save and Continue</strong> now writes the <strong>named profile file</strong> you were on (not only autosave), so switching back to that layout keeps new canvases and other edits.</p>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect browser: rescan local effects when opened</span></h5>
 <p class="rgbj-changelog-feature__text">Opening <strong>Browse effects</strong> now runs a full disk rescan (built-in and user folders), merges the online gallery, and refreshes the list — so new or edited `.html` / `.mjs` files show up without restarting the app.</p>
 </article>
@@ -155,9 +237,160 @@
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Physics &amp; math:</strong> Double Pendulum</li><li><strong>Visual style:</strong> Halftone, Fibre Optic</li><li><strong>PC / mood:</strong> Dominant Color Wash (screen sampling)</li><li><strong>Layout / chase:</strong> Segment Chase</li><li><strong>Calm / HUD:</strong> Seasonal Slow</li><li><strong>Strip functional (`.mjs`):</strong> Hilbert Walker, Euclidean Beats, Thermodynamic Noise, Palindrome Symmetry, Morse Stream</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sidebar and Settings: hints behind icon-only help buttons</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Device Layout Profiles</strong> and <strong>Effect Settings Profiles</strong> no longer show gray subtitle lines under the headings. The same text is on the <strong>?</strong> icon beside each title (hover or focus).</p>
+<p class="rgbj-changelog-feature__text"><strong>Settings</strong> uses the same control everywhere section intros used to be gray paragraphs: <strong>App look</strong> (language, theme, typography, canvas LEDs, labels), <strong>Color profiles</strong>, <strong>Hardware</strong> (OpenRGB RAM, WLED, unmatched devices), <strong>RAM</strong> / <strong>GPU</strong> tabs, <strong>Engine</strong> advanced options, <strong>Backup</strong>, <strong>Computer</strong>, <strong>Logs</strong>, <strong>Installed files</strong> (Git repos and media lists — click opens the full help dialog), and the <strong>request missing device</strong> dialog. Installed-files help no longer uses a bordered <strong>?</strong> text button.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App-wide buttons: minimal flat style</span></h5>
+<p class="rgbj-changelog-feature__text">Buttons across RGBJunkie (toolbar, <strong>Settings</strong>, component/effect library modals, setup wizard, plugin settings, confirm dialogs, LED Studio, and the device/effect side panels) use the same light treatment: transparent by default, soft hover, accent when toggled on. <strong>Browse effects</strong>, <strong>Submit</strong>, and other primary actions still use the green <strong>btn-primary-strong</strong> style. Delete/remove controls keep a red hover hint. Top <strong>toolbar</strong> controls stay icon-only (labels hidden for space); icons keep an explicit size so they remain visible with the flat button style. Toolbar <strong>button groups</strong> no longer use a separate grey pill background — icons sit directly on the top bar. Tools that are unavailable (nothing selected, etc.) show <strong>darker gray</strong> icons instead of a washed-out fade.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sidebar panels: lighter icon buttons</span></h5>
+<p class="rgbj-changelog-feature__text">Small controls in the <strong>Devices</strong> and <strong>Effects</strong> docks (profile save/reload/delete, rescan, visibility/lock toolbar, transport buttons, share, reset, and per-device tree actions) use the same minimal <strong>icon-only</strong> style as the profile <strong>?</strong> help buttons — no heavy gray <strong>btn</strong> boxes; subtle hover and accent when active. Effect settings category tabs match (flat until selected).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings: hardware notes and color profile delete buttons</span></h5>
+<p class="rgbj-changelog-feature__text">Removed the <strong>RAM (OpenRGB)</strong> and <strong>GPU I2C</strong> disclaimer notes from <strong>Settings → Hardware</strong>. Color profile and swatch <strong>delete</strong> controls now show an <strong>×</strong> icon (Bootstrap Icons) instead of a <strong>?</strong> placeholder.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect hot-reload: stay on the same effect</span></h5>
+<p class="rgbj-changelog-feature__text">When you save an effect `.html` file while it is running, RGBJunkie reloads <strong>that</strong> effect instead of jumping to a different entry in the list (fixes wrong index after catalog rescan and profile restore overriding your selection).</p>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect developer guide: scaling shapes to canvas size</span></h5>
 <p class="rgbj-changelog-feature__text"><strong>`EFFECT-DEVELOPER-GUIDE.md`</strong> (and the HTML guide on the site) now documents <strong>§2.2</strong> — how to scale radii, spacing, and stroke width using <strong>`canvas.width`/`height`</strong>, <strong>`engine.canvas`</strong>, <strong>`rgbjSetupCanvas`</strong>, and the 320×200 reference size.</p>
 <p class="rgbj-changelog-feature__text"><em>(Add other release notes for v0.2.64.)</em></p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-65" data-version="0.2.65">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.65</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 20, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Component Library: LED layout thumbnails</span></h5>
+<p class="rgbj-changelog-feature__text">When a catalog entry has no product image (common for <strong>CompGen</strong> and other layout-only JSON), the grid now shows a <strong>rendered LED map</strong> (dot positions from `LedCoordinates`) instead of the generic RGBJunkie logo. Entries with a real <strong>ImageUrl</strong> still use that artwork; failed downloads also fall back to the layout render when possible.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Component Library: Escape closes the browser</span></h5>
+<p class="rgbj-changelog-feature__text">Press <strong>Escape</strong> to close the <strong>Component Library</strong> modal (same as the <strong>X</strong> button or the effect browser). If a rename/import prompt is open on top of the library, <strong>Escape</strong> dismisses that prompt first.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace: maximize layout canvas</span></h5>
+<p class="rgbj-changelog-feature__text">A <strong>fullscreen</strong> control in the <strong>lower-right</strong> of the layout canvas expands the render area <strong>borderless on the current screen</strong> (toolbar and side panels hidden for that view). Press <strong>Escape</strong> or click the button again to return to the normal layout. The stage rescales to fill the maximized area.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Escape closes more overlays</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Escape</strong> now dismisses the <strong>initial setup wizard</strong> and <strong>plugin device settings</strong> modal (same as their close buttons, including the wizard’s “still unassigned channels?” confirm when needed). The <strong>custom strip / rename prompt</strong> cancels on <strong>Escape</strong> even when focus is not in the text field. Existing behavior is unchanged for <strong>Settings</strong>, <strong>Browse effects</strong>, <strong>Component Library</strong>, confirm dialogs, and canvas maximized view.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings Help and website docs updated</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Settings → Help</strong> (all languages) now documents <strong>Scene</strong> profiles, the layout <strong>maximize canvas</strong> control, expanded <strong>Escape</strong> behavior, the <strong>setup wizard</strong>, <strong>Component Library</strong> LED thumbnails, and the refreshed <strong>Devices / Effects</strong> layout. The rgbjunkie.com <strong>documentation</strong> page adds an end-user guide section; release notes sync to the site changelog.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Multi-canvas scenes: inactive tabs start their effects on load</span></h5>
+<p class="rgbj-changelog-feature__text">Loading a <strong>Scene</strong> with more than one workspace canvas now starts the saved effect on <strong>every</strong> tab, not only the active one. Inactive canvases use hidden effect runners (same as when you switch tabs); scene load and autosave restore now trigger that sync after profiles apply.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect settings tabs match Audio Party layout</span></h5>
+<p class="rgbj-changelog-feature__text">Effects that declare a `group=` on each control (for example <strong>Fan Align</strong>) now use <strong>one row of category tabs</strong> (Layout, Colors, Pattern, …) like <strong>Audio Party</strong>, instead of turning `Label: Setting` prefixes into separate top-level tabs with an empty <strong>General</strong> panel. Multi-object builder exports (`Object 1: Width`) still get per-object tabs when needed.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Multi-canvas scenes: keyboard layout follow on inactive tabs</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Keyboard layout follow</strong> on an inactive canvas tab now receives <strong>keyboard input</strong> and layout polling for that tab, not only the visible canvas. Previously, key events were wired to the active tab’s effect iframe only — so the hidden runner never triggered until you switched tabs (after which the last frame kept updating). Inactive runners also stay composited (`visibility: visible`, `opacity: 0`) so WebView2 does not pause their animation loop.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene profiles: one save for layout and effects</span></h5>
+<p class="rgbj-changelog-feature__text">Device layout profiles and effect settings profiles are now a single <strong>Scene</strong> — layout, components, canvas tabs, and effect sliders live in one file under `profiles/scenes/`. The scene picker sits in a bar <strong>above the workspace canvas tabs</strong> (center column), not in the Devices or Effects side panels. <strong>Share effect settings</strong> is unchanged (effect-only link; no canvas data). Run `node scripts/merge-legacy-profiles-to-scenes.mjs` once to combine old `devices/` and `effects/` JSON on this PC.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Layout: Scene and Effects on the right; canvas tabs above the workspace</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Scene</strong> (profile picker only) and <strong>Effects</strong> (current effect info, library, settings) stay in the <strong>right column</strong> with the <strong>same dock shell as Devices</strong> (one outer panel, scroll body, `.panel` sections) — no extra wrapper div that caused a double border at the top. <strong>Devices</strong> and <strong>Effects</strong> no longer appear twice at the top of each column (dock header vs section title). The effects <strong>collapse rail</strong> sits on the <strong>canvas side</strong> of the panel (not on the outer screen edge), matching the devices dock. <strong>Canvas tabs</strong> (Main [1], +, etc.) sit <strong>centered above the workspace</strong>, not in the Scene block. The Effects column no longer stacks old <strong>Global Control</strong> / <strong>Effect Settings</strong> boxes inside another box; controls flow as plain sections in one scroll (no duplicate <strong>GLOBAL CONTROL</strong> / <strong>Effect Library:</strong> headers, calmer <strong>Browse effects</strong> button, even 3-column settings tabs). The current-effect summary (title, author, tags) sits <strong>below Auto-cycle</strong> and <strong>above Effect Settings</strong>. A startup crash (“Initialization failed”) from removing the hidden <strong>Effect Settings</strong> container is fixed — that block is moved into the right rail but kept in the DOM for the engine. <strong>Keyboards and other fixed-layout devices</strong> no longer show a fake <strong>Canvas layout</strong> channel row; components attach under the device as before. Single-channel pads/strips still get a real <strong>Canvas layout</strong> channel row (with the color dot on that row only).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: channel dots only on channel rows</span></h5>
+<p class="rgbj-changelog-feature__text">Colored channel indicators no longer appear on the <strong>device</strong> row (that was misleading — the dot is channel identity, not the device). Single-channel pads and strips (including <strong>Prism Mini</strong> when the firmware reports a generic “Channel 1” name) now show <strong>Channel 01</strong> on the channel row with the dot, identify, and <strong>+</strong> there — never <strong>+</strong> on the device row (including multi-channel rigs like <strong>Nollie32</strong>; use <strong>+</strong> on each channel row instead).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Right column: one panel, one scroll</span></h5>
+<p class="rgbj-changelog-feature__text">Scene and Effects live in <strong>one</strong> glass column with a single scroll — no second bordered card around effect sliders or the current-effect summary.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Lost canvas layout after scene migration</span></h5>
+<p class="rgbj-changelog-feature__text">If scene autosave only had a handful of components while your old <strong>device layout autosave</strong> still had the full rig, startup now <strong>merges the larger list</strong> from `profiles/devices/autosave_device.json` automatically. <strong>Fan Tracer</strong> and similar scenes that were merged from layout-only files (effect lived under a different name like <strong>Fan Trail</strong> in `profiles/effects/`) now pull the correct <strong>Fan Tracer Pro Max</strong> effect on load instead of keeping whatever effect was already open. Run `node scripts/restore-scene-components-from-legacy.mjs` once to rewrite `autosave_scene.json` on disk, or load the <strong>Fan Tracer</strong> (or other) scene that still lists 29 components in `profiles/scenes/`. Effect-only JSON must never replace device `components` when merging profiles.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene load: layout sampling for single-channel devices</span></h5>
+<p class="rgbj-changelog-feature__text">After loading a scene, the app refreshes subdevice layout rows, rebinds components to plugins, and rebuilds the device tree. <strong>Single-channel</strong> devices with no canvas component (e.g. <strong>Prism Mini</strong>) get a default full-width strip on channel 0 so the active effect can reach the hardware again. Multi-channel devices (e.g. <strong>Nollie32</strong>) still need a layout component on each channel you use — expand the device and use <strong>+</strong> on that channel if LEDs stay dark.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: hardware output flags (scene load)</span></h5>
+<p class="rgbj-changelog-feature__text">Scene load only applies <strong>Output off</strong> for devices that are actually connected, so stale profile keys cannot mute unrelated hardware.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene list: WLED config file hidden</span></h5>
+<p class="rgbj-changelog-feature__text">`wled_devices.json` (saved WLED hosts for Settings, not a scene) no longer appears in the Scene dropdown if it was copied into `profiles/scenes/` during migration.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace canvases: new tabs no longer vanish when you switch away</span></h5>
+<p class="rgbj-changelog-feature__text">Adding a canvas with <strong>+</strong> and then clicking <strong>Main</strong> (or another tab) could remove the new tab from the strip. Switching tabs reloads the effect’s default device layout from disk, and older saves often only list <strong>Main</strong> — that overwrote tabs you had just added in memory. Runtime-added canvases are now kept until you save a device profile or remove the tab yourself.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace canvases: switching tabs updates the active layout</span></h5>
+<p class="rgbj-changelog-feature__text">Clicking another canvas tab (same effect on both tabs) no longer reloads the default device layout JSON from disk. The app now shows components for that canvas only and treats <strong>active canvas</strong> / layout edits as changed again (instead of resetting the session baseline). The default device layout file still loads when the other tab uses a <strong>different</strong> effect.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace tabs: canvas number beside the name</span></h5>
+<p class="rgbj-changelog-feature__text">Each workspace tab in the strip now shows its <strong>1–9 shortcut slot</strong> in brackets after the name (for example <strong>Main [1]</strong>, <strong>Canvas B [2]</strong>). The same numbering appears in the per-component canvas picker and context menu, so it matches pressing <strong>1</strong>–<strong>9</strong> on the keyboard to move the selection to that canvas.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: workspace canvas button matches other icons</span></h5>
+<p class="rgbj-changelog-feature__text">The workspace picker pill on each component row shows <strong>1</strong>–<strong>9</strong> (same as keyboard shortcuts) instead of <strong>M</strong> for Main, and no longer uses the old gray beveled system button look — it uses the same flat icon style as the eye, lock, and identify controls beside it.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: one lock / unlock button</span></h5>
+<p class="rgbj-changelog-feature__text">The separate <strong>lock</strong> and <strong>unlock all</strong> icons in the device sidebar are now a <strong>single toggle</strong>: when anything on the canvas is locked, the button shows the unlock icon and unlocks every component on click; otherwise it shows the lock icon and locks the current selection (disabled until you select something).</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device tree: hardware rescan shows a spinning icon</span></h5>
+<p class="rgbj-changelog-feature__text">While USB hardware is rescanning, the <strong>Rescan</strong> button in the device sidebar no longer shows <strong>Scanning…</strong> text — only the same refresh icon, rotating until the scan finishes.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Elgato Stream Deck Plus shows up again</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Stream Deck Plus</strong> (USB `0x0FD9` / `0x0084`) could appear under <strong>Settings → Hardware → USB devices not matched to a plugin</strong> even though the driver file was present. The Plus plugin reads its canvas size at load time; the host now wires <strong>`Size()`</strong> from the plugin descriptor before that line runs, and the Plus script uses <strong>`rgbjunkie.size`</strong> directly so detection succeeds on a rescan.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Elgato Stream Deck plugins (Corsair-Elgato folder)</span></h5>
+<p class="rgbj-changelog-feature__text">The five Stream Deck scripts from the SRGBmods <strong>Corsair-Elgato</strong> pack now ship under <strong>`plugins/Corsair-Elgato/`</strong> (MK.2, XL, original 0x0060, Mini, Plus). They use the RGBJunkie plugin format and shared Elgato HID helpers. <strong>Stream Deck Neo</strong> stays in <strong>`plugins/Elgato/`</strong>.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings: flat buttons and refreshed About tab</span></h5>
+<p class="rgbj-changelog-feature__text">Buttons across <strong>Settings</strong> (About, Backup, Logs, Hardware, and other tabs) now use the same minimal flat style as the side panels — no heavy gray bordered boxes. The <strong>About</strong> tab is reorganized with a clearer hero (version pill with accent highlight), grouped <strong>Updates</strong> and <strong>Legal</strong> sections, centered action buttons, and cleaner footer links.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Toolbar: grid spacing dropdown no longer shifts the bar</span></h5>
+<p class="rgbj-changelog-feature__text">Opening the <strong>Grid</strong> spacing list in the top toolbar used a custom dropdown inside the bar’s clipped area; focus could scroll the page and make the whole toolbar jump. The list now opens in a fixed layer under the control without moving the toolbar.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: action buttons aligned left</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Paint All</strong>, <strong>Clear Component</strong>, and <strong>Clear All</strong> in <strong>Settings → Colors → LED Studio</strong> now line up under the <strong>Actions</strong> label on the left, use single-line labels, and are wide enough that the text does not wrap. The <strong>Component</strong> dropdown and <strong>Brush tools</strong> (color/HEX and Paint/Erase) no longer use the extra bordered wells around each control — only the controls themselves show focus/active styling. <strong>Component</strong>, <strong>Brush tools</strong>, and <strong>Actions</strong> section titles now share the same baseline at the top of the toolbar.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>UI accents: Crimson Pulse vs Rose Neon (color vision)</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Crimson Pulse</strong> is now a deeper <strong>true red</strong> and <strong>Rose Neon</strong> a brighter <strong>fuchsia-pink</strong> (more blue), so the two presets are easier to tell apart if you have mild deutan or similar red–green confusion — they no longer sit on the same magenta-pink range.</p>
 </article></div>
 </section>
 </div>

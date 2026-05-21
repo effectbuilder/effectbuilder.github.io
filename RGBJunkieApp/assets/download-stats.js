@@ -114,16 +114,19 @@
                 const filePath = d.filePath || '';
                 const fileName = d.fileName || filePath.split('/').pop() || '';
                 const key = filePath || fileName;
-                const prev = byFile.get(key) || {
+                const channel = d.channel === 'app-update' ? 'app-update' : 'website';
+                const fileKey = key + '|' + channel;
+                const prev = byFile.get(fileKey) || {
                     file_name: fileName,
                     file_path: filePath,
                     version: d.version ?? null,
                     kind: d.kind || 'other',
                     platform: d.platform || 'other',
+                    channel: channel,
                     downloads: 0,
                 };
                 prev.downloads += 1;
-                byFile.set(key, prev);
+                byFile.set(fileKey, prev);
 
                 const day = dayKey(createdAt);
                 if (day) {
@@ -136,6 +139,7 @@
                     created_at: formatTs(createdAt),
                     file_name: d.fileName || '',
                     version: d.version ?? null,
+                    channel: d.channel === 'app-update' ? 'app-update' : 'website',
                 });
             }
         });
@@ -180,7 +184,7 @@
             fileBody.innerHTML = '';
             if (summary.by_file.length === 0) {
                 fileBody.innerHTML =
-                    '<tr><td colspan="4" class="text-body-secondary">No downloads logged yet.</td></tr>';
+                    '<tr><td colspan="5" class="text-body-secondary">No downloads logged yet.</td></tr>';
             } else {
                 summary.by_file.forEach(function (row) {
                     const tr = document.createElement('tr');
@@ -189,6 +193,8 @@
                         escapeHtml(row.file_name) +
                         '</td><td>' +
                         escapeHtml(row.kind) +
+                        '</td><td>' +
+                        escapeHtml(row.channel || 'website') +
                         '</td><td>' +
                         (row.version ? 'v' + escapeHtml(String(row.version)) : '—') +
                         '</td><td class="text-end">' +
@@ -235,7 +241,10 @@
                         escapeHtml(row.file_name) +
                         (row.version
                             ? ' <span class="text-body-secondary">(v' + escapeHtml(String(row.version)) + ')</span>'
-                            : '');
+                            : '') +
+                        ' <span class="badge text-bg-secondary">' +
+                        escapeHtml(row.channel || 'website') +
+                        '</span>';
                     recentList.appendChild(li);
                 });
             }

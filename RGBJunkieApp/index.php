@@ -41,7 +41,7 @@ rgbj_render_page_nav();
                         <?php endif; ?>
                         <span class="rgbj-hero-badge">Multiple layout canvases</span>
                         <span class="rgbj-hero-badge">Wide device support</span>
-                        <span class="rgbj-hero-badge">Effect &amp; color profiles</span>
+                        <span class="rgbj-hero-badge">Scene profiles</span>
                         <span class="rgbj-hero-badge">Windows &amp; Linux</span>
                     </div>
                     <div class="rgbj-hero-cta d-flex flex-wrap gap-2">

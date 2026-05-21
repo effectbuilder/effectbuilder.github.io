@@ -2,6 +2,7 @@
 
 require_once dirname(__DIR__) . '/includes/installers.php';
 require_once dirname(__DIR__) . '/includes/developer-docs.php';
+require_once dirname(__DIR__) . '/includes/user-app-guide.php';
 
 $rgbj_nav_active = 'docs';
 
@@ -22,6 +23,8 @@ rgbj_subpage_open([
     Extend RGBJunkie with custom plugins and effects, or use the free browser tools to prototype before you install the Windows app.
     End-user hardware lists live on the <a href="<?= rgbj_h(rgbj_url('supported/')) ?>">supported gear</a> page; the API reference below is aimed at authors.
 </p>
+
+<?php rgbj_render_user_app_guide(); ?>
 
 <?php rgbj_render_developer_doc_sections(); ?>
 

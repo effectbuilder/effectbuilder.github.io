@@ -48,13 +48,13 @@ function rgbj_feature_cards(): array
             'image' => 'images/features/music.gif',
             'screenshot' => 'Music-reactive effect responding to audio levels',
         ],
-        // [
-        //     'icon' => 'bi-bookmark-star',
-        //     'title' => 'Save scenes & switch in seconds',
-        //     'text' => 'Store complete setups (layout, effects, and custom LED touches) so weekday chill and weekend showcase are one click apart.',
-        //     'image' => 'images/features/scenes.jpg',
-        //     'screenshot' => 'Saved scenes or profiles ready to load',
-        // ],
+        [
+            'icon' => 'bi-bookmark-star',
+            'title' => 'Scene profiles — one save for everything',
+            'text' => 'Store layout, canvas tabs, effect sliders, and components together as a <strong>Scene</strong>. Switch weekday focus and weekend showcase from the bar above your workspace tabs.',
+            'image' => 'images/features/scenes.jpg',
+            'screenshot' => 'Scene picker above workspace canvas tabs',
+        ],
     ];
 }
 

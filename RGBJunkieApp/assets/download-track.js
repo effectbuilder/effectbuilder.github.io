@@ -49,12 +49,14 @@
             return null;
         }
         const version = anchor.getAttribute('data-rgbj-version') || '';
+        const channel = anchor.getAttribute('data-rgbj-channel') || 'website';
         return {
             filePath,
             fileName: anchor.getAttribute('data-rgbj-file-name') || filePath.split('/').pop() || '',
             version: version === '' ? null : version,
             kind: anchor.getAttribute('data-rgbj-kind') || 'other',
             platform: anchor.getAttribute('data-rgbj-platform') || 'other',
+            channel: channel === 'app-update' ? 'app-update' : 'website',
         };
     }
 
@@ -74,6 +76,7 @@
             version: meta.version,
             kind: meta.kind,
             platform: meta.platform,
+            channel: meta.channel || 'website',
             userAgent: (navigator.userAgent || '').slice(0, 512),
             referer: (document.referrer || '').slice(0, 512),
         });
