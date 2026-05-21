@@ -1,0 +1,5 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Always generate latest.json from PHP (newest portable ZIP + SHA-256 on disk).
+    RewriteRule ^latest\.json$ latest.php [L]
+</IfModule>

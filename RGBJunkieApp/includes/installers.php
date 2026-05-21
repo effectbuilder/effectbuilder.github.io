@@ -317,6 +317,98 @@ function rgbj_latest_release_for_download(string $siteRoot): ?array
     return $latest;
 }
 
+/** Canonical public site root for absolute URLs in releases/latest.json (in-app update check). */
+function rgbj_public_manifest_base_url(): string
+{
+    return 'https://www.rgbjunkie.com/RGBJunkieApp';
+}
+
+function rgbj_version_to_changelog_url(string $version): string
+{
+    $slug = 'v-' . str_replace('.', '-', trim($version));
+
+    return rgbj_public_manifest_base_url() . '/changelog/#' . $slug;
+}
+
+/**
+ * @return array<string, string>|null Manifest fields for releases/latest.json, or null when no portable ZIP.
+ */
+function rgbj_build_latest_version_manifest(string $siteRoot): ?array
+{
+    $latest = rgbj_latest_release($siteRoot);
+    if ($latest === null) {
+        return null;
+    }
+    $portable = $latest['portable'] ?? null;
+    if (!is_array($portable)) {
+        return null;
+    }
+
+    $version = (string) ($latest['version'] ?? '');
+    $webPath = ltrim(str_replace('\\', '/', (string) ($portable['webPath'] ?? '')), '/');
+    $fileName = (string) ($portable['file'] ?? '');
+    if ($version === '' || $webPath === '' || $fileName === '') {
+        return null;
+    }
+
+    $absZip = $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $webPath);
+    if (!is_readable($absZip)) {
+        return null;
+    }
+
+    $sha = hash_file('sha256', $absZip);
+    if (!is_string($sha) || !preg_match('/^[a-f0-9]{64}$/', $sha)) {
+        return null;
+    }
+
+    $base = rgbj_public_manifest_base_url();
+
+    return [
+        'version' => $version,
+        'downloadUrl' => $base . '/' . $webPath,
+        'trackedDownloadUrl' => $base . '/download.php?f=' . rawurlencode($webPath) . '&channel=app-update',
+        'portableZip' => $fileName,
+        'releaseNotes' => rgbj_version_to_changelog_url($version),
+        'portableZipSha256' => strtolower($sha),
+    ];
+}
+
+/**
+ * JSON string for releases/latest.json (same shape as emit-latest-version-json.mjs).
+ */
+function rgbj_latest_version_manifest_json(string $siteRoot): ?string
+{
+    $manifest = rgbj_build_latest_version_manifest($siteRoot);
+    if ($manifest === null) {
+        return null;
+    }
+
+    return json_encode(
+        $manifest,
+        JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
+    ) . "\n";
+}
+
+/** Emit latest.json for HTTP clients (used by releases/latest.php). */
+function rgbj_send_latest_version_manifest(string $siteRoot): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+
+    $json = rgbj_latest_version_manifest_json($siteRoot);
+    if ($json === null) {
+        http_response_code(404);
+        echo json_encode(
+            ['error' => 'No portable ZIP found under downloads/portable/.'],
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
+        );
+        return;
+    }
+
+    http_response_code(200);
+    echo $json;
+}
+
 function rgbj_format_bytes(int $bytes): string
 {
     if ($bytes < 1024) {
