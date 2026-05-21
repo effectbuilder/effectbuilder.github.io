@@ -16,3 +16,5 @@ generator/index.html
 /RGBJunkieApp/data/
 /RGBJunkieApp/includes/download-stats-secret.php
 /RGBJunkieApp/includes/firebase-service-account.json
+/RGBJunkieApp/includes/rgbjunkie-download-logger.json
+/RGBJunkieApp/includes/rgbjunkie-download-logger..json
