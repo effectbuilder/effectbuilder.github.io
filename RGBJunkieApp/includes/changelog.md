@@ -28,6 +28,10 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 - **Settings → Devices → WLED** now loads and saves only **`%APPDATA%\RGBJunkie\profiles\devices\wled_devices.json`**. Dev and release builds share the same list (no separate WebView `localStorage` copy). A one-time migration copies any legacy browser-stored rows into that file on first launch after the update.
 
+#### Nollie plugins — one brand folder
+
+- All Nollie controllers now live under **`plugins/Nollie/`** only. The old **`plugins/Firmware 2.x/`** folder (Nos 2.0 / CDC variants) and duplicate **`plugins/Default/Nollie*.js`** stubs are removed. **`Nollie32.js`** remains the unified plugin (V1 + Firmware 2.x protocols); Nos 2.0 and CDC builds are sibling files in the same folder. Saved bindings that pointed at **`Firmware 2.x/...`** or **`Default/Nollie...`** paths are redirected automatically.
+
 #### WLED — fewer periodic rapid flashes on long strips
 
 - When the PC pauses the lighting loop briefly (memory trim, DNS refresh, or a heavy rescan), stacked UDP frames are no longer blasted to the controller in one burst. Each host now sends **one latest frame at a time**, and hostname lookups **reuse the last good IP** while refreshing in the background (about every 5 minutes) instead of stalling mid-stream.

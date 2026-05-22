@@ -39,6 +39,10 @@
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Settings → Devices → WLED</strong> now loads and saves only <strong>`%APPDATA%\RGBJunkie\profiles\devices\wled_devices.json`</strong>. Dev and release builds share the same list (no separate WebView `localStorage` copy). A one-time migration copies any legacy browser-stored rows into that file on first launch after the update.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Nollie plugins — one brand folder</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>All Nollie controllers now live under <strong>`plugins/Nollie/`</strong> only. The old <strong>`plugins/Firmware 2.x/`</strong> folder (Nos 2.0 / CDC variants) and duplicate *<em>`plugins/Default/Nollie</em>.js`<strong> stubs are removed. </strong>`Nollie32.js`<strong> remains the unified plugin (V1 + Firmware 2.x protocols); Nos 2.0 and CDC builds are sibling files in the same folder. Saved bindings that pointed at </strong>`Firmware 2.x/...`<strong> or </strong>`Default/Nollie...`** paths are redirected automatically.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WLED — fewer periodic rapid flashes on long strips</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>When the PC pauses the lighting loop briefly (memory trim, DNS refresh, or a heavy rescan), stacked UDP frames are no longer blasted to the controller in one burst. Each host now sends <strong>one latest frame at a time</strong>, and hostname lookups <strong>reuse the last good IP</strong> while refreshing in the background (about every 5 minutes) instead of stalling mid-stream.</li></ul>
 </article>
