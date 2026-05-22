@@ -356,8 +356,8 @@ function rgbj_build_latest_version_manifest(string $siteRoot): ?array
         return null;
     }
 
-    $sha = hash_file('sha256', $absZip);
-    if (!is_string($sha) || !preg_match('/^[a-f0-9]{64}$/', $sha)) {
+    $sha = rgbj_portable_zip_sha256_hex($absZip);
+    if ($sha === null) {
         return null;
     }
 
@@ -389,24 +389,71 @@ function rgbj_latest_version_manifest_json(string $siteRoot): ?string
     ) . "\n";
 }
 
+/**
+ * SHA-256 of a portable ZIP. Prefer a sidecar `.sha256` (written at upload) so
+ * latest.json does not re-hash a large ZIP on every HTTP request (timeouts → HTTP 500).
+ */
+function rgbj_portable_zip_sha256_hex(string $absZip): ?string
+{
+    $sidecar = $absZip . '.sha256';
+    $zipMtime = @filemtime($absZip);
+    if ($zipMtime !== false && is_readable($sidecar)) {
+        $raw = @file_get_contents($sidecar);
+        if (is_string($raw)) {
+            $line = trim(explode("\n", $raw)[0] ?? '');
+            if (preg_match('/^([a-f0-9]{64})$/i', $line, $m)) {
+                $sidecarMtime = @filemtime($sidecar);
+                if ($sidecarMtime !== false && $sidecarMtime >= $zipMtime) {
+                    return strtolower($m[1]);
+                }
+            }
+        }
+    }
+
+    if (!is_readable($absZip)) {
+        return null;
+    }
+
+    $sha = @hash_file('sha256', $absZip);
+    if (!is_string($sha) || !preg_match('/^[a-f0-9]{64}$/', $sha)) {
+        return null;
+    }
+    $sha = strtolower($sha);
+    @file_put_contents($sidecar, $sha . "\n");
+
+    return $sha;
+}
+
 /** Emit latest.json for HTTP clients (used by releases/latest.php). */
 function rgbj_send_latest_version_manifest(string $siteRoot): void
 {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate');
 
-    $json = rgbj_latest_version_manifest_json($siteRoot);
-    if ($json === null) {
-        http_response_code(404);
-        echo json_encode(
-            ['error' => 'No portable ZIP found under downloads/portable/.'],
-            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
-        );
-        return;
-    }
+    try {
+        $json = rgbj_latest_version_manifest_json($siteRoot);
+        if ($json === null) {
+            http_response_code(404);
+            echo json_encode(
+                ['error' => 'No portable ZIP found under downloads/portable/.'],
+                JSON_UNESCAPED_SLASHES,
+            );
 
-    http_response_code(200);
-    echo $json;
+            return;
+        }
+
+        http_response_code(200);
+        echo $json;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(
+            [
+                'error' => 'Could not build update manifest.',
+                'detail' => $e->getMessage(),
+            ],
+            JSON_UNESCAPED_SLASHES,
+        );
+    }
 }
 
 function rgbj_format_bytes(int $bytes): string

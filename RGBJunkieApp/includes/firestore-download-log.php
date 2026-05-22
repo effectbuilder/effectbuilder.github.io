@@ -68,6 +68,9 @@ function rgbj_firestore_log_download(array $meta): bool
 
     $token = rgbj_firestore_access_token($sa);
     if ($token === null) {
+        error_log(
+            'rgbj_firestore_log_download: could not obtain access token (check openssl extension and service account JSON)'
+        );
         return false;
     }
 
@@ -90,12 +93,15 @@ function rgbj_firestore_log_download(array $meta): bool
             'kind' => ['stringValue' => $meta['kind']],
             'platform' => ['stringValue' => $meta['platform']],
             'channel' => ['stringValue' => rgbj_download_normalize_channel($meta['channel'])],
-            'userAgent' => ['stringValue' => mb_substr($meta['userAgent'], 0, 512)],
-            'referer' => ['stringValue' => mb_substr($meta['referer'], 0, 512)],
+            'userAgent' => ['stringValue' => substr((string) $meta['userAgent'], 0, 512)],
+            'referer' => ['stringValue' => substr((string) $meta['referer'], 0, 512)],
         ],
     ];
 
-    $json = json_encode($body, JSON_THROW_ON_ERROR);
+    $json = json_encode($body);
+    if ($json === false) {
+        return false;
+    }
     $ctx = stream_context_create([
         'http' => [
             'method' => 'POST',
@@ -108,6 +114,23 @@ function rgbj_firestore_log_download(array $meta): bool
 
     $resp = @file_get_contents($url, false, $ctx);
     if ($resp === false) {
+        error_log('rgbj_firestore_log_download: no response from Firestore API');
+        return false;
+    }
+
+    $httpCode = 0;
+    if (isset($http_response_header[0]) && preg_match('/\d{3}/', (string) $http_response_header[0], $m)) {
+        $httpCode = (int) $m[0];
+    }
+    if ($httpCode < 200 || $httpCode >= 300) {
+        error_log(
+            'rgbj_firestore_log_download: Firestore HTTP '
+                . $httpCode
+                . ' channel='
+                . rgbj_download_normalize_channel((string) ($meta['channel'] ?? 'website'))
+                . ' body='
+                . substr((string) $resp, 0, 400)
+        );
         return false;
     }
 
@@ -124,22 +147,35 @@ function rgbj_firestore_access_token(array $sa): ?string
     }
 
     $now = time();
-    $header = rgbj_firestore_b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'], JSON_THROW_ON_ERROR));
-    $claim = rgbj_firestore_b64url(json_encode([
+    $headerJson = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+    $claimJson = json_encode([
         'iss' => (string) $sa['client_email'],
         'scope' => 'https://www.googleapis.com/auth/datastore',
         'aud' => 'https://oauth2.googleapis.com/token',
         'iat' => $now,
         'exp' => $now + 3600,
-    ], JSON_THROW_ON_ERROR));
+    ]);
+    if ($headerJson === false || $claimJson === false) {
+        return null;
+    }
+    $header = rgbj_firestore_b64url($headerJson);
+    $claim = rgbj_firestore_b64url($claimJson);
     $unsigned = $header . '.' . $claim;
+
+    if (!function_exists('openssl_pkey_get_private') || !function_exists('openssl_sign')) {
+        error_log('rgbj_firestore_access_token: PHP openssl extension is not enabled');
+        return null;
+    }
 
     $key = openssl_pkey_get_private((string) $sa['private_key']);
     if ($key === false) {
+        error_log('rgbj_firestore_access_token: invalid private_key in service account JSON');
         return null;
     }
     $signature = '';
-    if (!openssl_sign($unsigned, $signature, $key, OPENSSL_ALGORITHM_SHA256)) {
+    $algo = defined('OPENSSL_ALGORITHM_SHA256') ? OPENSSL_ALGORITHM_SHA256 : 'sha256';
+    if (!openssl_sign($unsigned, $signature, $key, $algo)) {
+        error_log('rgbj_firestore_access_token: openssl_sign failed');
         return null;
     }
     $jwt = $unsigned . '.' . rgbj_firestore_b64url($signature);

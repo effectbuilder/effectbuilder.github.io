@@ -153,16 +153,21 @@ function rgbj_serve_tracked_download(string $webPath, string $channel = 'website
     $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
 
     if (rgbj_download_should_log_server_side($channel, $userAgent)) {
-        rgbj_firestore_log_download([
-            'filePath' => $webPath,
-            'fileName' => $fileName,
-            'version' => $classified['version'],
-            'kind' => $classified['kind'],
-            'platform' => $classified['platform'],
-            'channel' => $channel,
-            'userAgent' => $userAgent,
-            'referer' => $referer,
-        ]);
+        try {
+            rgbj_firestore_log_download([
+                'filePath' => $webPath,
+                'fileName' => $fileName,
+                'version' => $classified['version'],
+                'kind' => $classified['kind'],
+                'platform' => $classified['platform'],
+                'channel' => $channel,
+                'userAgent' => $userAgent,
+                'referer' => $referer,
+            ]);
+        } catch (Throwable $e) {
+            // Never block installer delivery when optional analytics logging fails.
+            error_log('rgbj_firestore_log_download: ' . $e->getMessage());
+        }
     }
 
     rgbj_download_serve_file($realFile, $fileName);
