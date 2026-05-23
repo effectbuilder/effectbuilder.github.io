@@ -41,9 +41,10 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 - Scene autosave may store **`wled:192.168.x.x-0`** while **Settings → WLED** lists **`wled-matrix.local`** (or the other way around). On load, RGBJunkie matches the same physical controller by **discovered IP**, configured hostname, and UDP maps — then rebinds and remaps canvas channels to the live plugin id. **Duplicate** autosave rows (two per controller — IP and `.local`) are collapsed to **one** strip per WLED device on load and save.
 - Restore still recreates skipped rows, merges missing WLED layout from **`devices/autosave_device.json`**, and avoids shrinking autosave when startup is partial. **Settings → WLED** keeps a stable device **id** per host when you save device settings.
 
-#### LED timing when minimized to tray — Web Worker tick driver
+#### LED timing when minimized to tray — Web Worker tick driver and effect rAF polyfill
 
 - **Tray / taskbar minimize** — LED FPS used to collapse to **1–2 Hz** when the window was minimized or hidden because Chromium's **IntensiveWakeUpThrottling** clamps hidden-page `setInterval` to ~1 second per tick, no matter what Tauri events tried to do. The lighting loop now ticks from a **dedicated Web Worker** that runs on its own thread (not subject to page visibility throttling) at the same ~100 Hz the focused window uses. WebView2 also gets the `IntensiveWakeUpThrottling` and `CalculateNativeWinOcclusion` features disabled, so timers, message ports, and IPC stop being slowed down when the window is occluded. The native Tokio pump and the JS `setInterval` remain as a belt-and-suspenders fallback.
+- **Effect animations stay alive when hidden** — Chromium **pauses** (not just throttles) `requestAnimationFrame` inside iframes whenever the parent page is hidden, so HTML effects froze and the LED loop kept sampling the same canvas. Every effect iframe now boots with a small polyfill that swaps `requestAnimationFrame` for a `setInterval`-backed driver while `document.visibilityState === "hidden"`, so JavaScript / Canvas2D / WebGL effects keep redrawing at ~60 Hz when the window is minimized or in the tray. Native `requestAnimationFrame` is restored automatically when the window is visible again.
 
 #### Workspace canvas tabs — device tree and component menu
 
