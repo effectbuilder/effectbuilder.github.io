@@ -4,6 +4,13 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.
 
+## v0.2.81 — May 22, 2026
+
+#### Developer workflow
+
+- **`compile.bat devtools`** — runs elevated `tauri dev` with **`RGBJUNKIE_OPEN_DEVTOOLS=1`** so WebView2 DevTools open on startup (tray → **Open developer tools** remains available). Plain **`compile.bat`** is unchanged.
+- **Tray FPS diagnostics** — in Edge DevTools, **`window.rgbEngine.getFrameTickDriverStatus()`** reports whether the background Web Worker tick driver is active while the window is minimized or in the tray (`workerActive`, `pageHidden`, target interval).
+
 ## v0.2.78 — May 21, 2026
 
 #### Settings → Hardware — Performance tab
