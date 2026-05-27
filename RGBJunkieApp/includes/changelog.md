@@ -6,19 +6,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.0 — May 27, 2026
 
+RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after portable updates, and adds a **Third party** page under About.
+
 #### Install layout
 
-- **No OpenRGB folder in the install directory** — OpenRGB is no longer copied next to the app. On Windows it can still auto-download into app data when RAM/OpenRGB needs it.
-- **Bundled helpers under `runtime/`** — PawnIO and LibreHardwareMonitor now install as `runtime/pawnio/` and `runtime/lhm/` instead of separate top-level folders. Older installs with `pawnio/`, `pawnio-runtime/`, or `lhm/` at the app root are still detected.
+- **Smaller install folder** — optional helpers now live under a single **`runtime/`** directory next to the app instead of scattered top-level folders.
+- **`runtime/pawnio/`** — PawnIO DLL and SMBus modules for ENE DRAM RGB on supported boards (Windows).
+- **`runtime/lhm/`** — LibreHardwareMonitor portable for sensor-driven effects (Windows).
+- **No `openrgb/` in the install directory** — OpenRGB is not copied beside the app anymore. On Windows, RAM/OpenRGB integration can still download a portable build into app data the first time it is needed.
+- **In-place upgrades** — if an older install left **`pawnio/`**, **`pawnio-runtime/`**, or top-level **`lhm/`** behind, RGBJunkie still finds them. After you confirm everything works, you can delete those legacy folders; new installs only need **`runtime/`**.
+- **PawnIO folder choice** — when more than one PawnIO folder exists (for example after several portable updates), RGBJunkie prefers the copy that has **both** `PawnIOLib.dll` and bundled `Smbus*.bin` modules.
 
 #### About
 
-- **Third party** — Settings → About has a **Third party** tab that thanks the open source and bundled helpers RGBJunkie uses (Tauri, Konva, optional Windows sensor/RAM helpers, and others), with license names and project links.
+- **Overview and Third party tabs** — **Settings → About** keeps updates, legal, and version info under **Overview**; **Third party** lists open source and bundled helpers RGBJunkie relies on (Tauri, Konva, Bootstrap, optional Windows sensor/RAM helpers, p5.js for P5 effects, and others) with license names and links to each project.
 
 #### Settings
 
-- **LED calibration** — **Settings → Colors → Calibration** shows each color’s percentage on the same line as **Red**, **Green**, and **Blue** (to the right of the name), with the slider on the row below.
-- **Windows startup** — **Settings → System → Startup → Open RGBJunkie when this computer starts** now re-registers the login entry on each launch (fixes stale paths after portable updates). If you do not use **Start minimized**, the window opens normally after sign-in instead of staying hidden in the tray only.
+- **LED calibration layout** — **Settings → Colors → Calibration** shows each channel’s percentage on the same row as **Red**, **Green**, and **Blue** (to the right of the label), with the slider directly underneath.
+- **Windows startup** — **Settings → System → Startup → Open RGBJunkie when this computer starts** re-registers the login entry on every launch so portable moves and updates do not leave a broken path in Windows. If **Start minimized** is off, the main window appears after sign-in instead of staying tray-only.
 
 ---
 
