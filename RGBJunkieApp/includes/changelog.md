@@ -2,7 +2,274 @@
 
 Plain-language release notes for the desktop app. Newest changes are listed first.
 
-**Version tags:** Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.
+**Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
+
+## v0.2.99 — May 26, 2026
+
+#### Effects
+
+- **ORGB port library** — the remaining OpenRGB ports under **ORGB_Port** now use host **Color profile** and eight **Custom** slots (same pattern as **Fractal Motion**, **Mosaic**, and **Custom Marquee**), resize with the engine canvas via `rgbjSetupCanvas` / `ImageData`, and share palette helpers injected with every effect iframe.
+- **Moving Panes** — **Color profile** and custom slots now drive pane colors (the port had left the old two-color blend in place).
+- **Policing** — scanner and flash colors follow **Color profile** / custom slots (alternates two profile samples each direction change).
+- **Rain** — droplets use **Color profile** and custom slots (each drop samples the active profile; profile changes apply to new and falling drops).
+- **Rainbow Wave** — sliding bands use **Color profile** and custom slots instead of a fixed HSL rainbow.
+- **Random Marquee** — rebuilt like **Custom Marquee** (scrolling profile-colored bands, **Bar width** / **Bar gap**, horizontal or vertical); each cycle still randomizes bar size, gap, axis, and speed; colors follow **Color profile** and custom slots.
+- **Noise Map** — fixed a broken render path after the ORGB port (`pixels` / canvas buffers were never initialized); colors come only from **Color profile** and custom slots (removed the old WLED **Color palette** list). Faster rendering (2D noise, color lookup table, optional **Render quality**); fixed oversized blobs after the speed pass (noise scale and upscaling).
+- **Swap** — each wipe now uses the next colors from your **Color profile** (all eight **Custom** slots, or stepped samples along presets like **Rainbow**), not only two fixed profile points.
+- **Starry Night** — fixed a broken render path after the ORGB port (`pixels` was never set from `framePixels`, so the effect threw an error and showed nothing). Stars re-initialize when the engine canvas is resized.
+- **Stack** — fixed **Speed** feeling stuck near minimum: stacking advanced one column per second at the default slider, so wide layouts took minutes; speed now scales with matrix size (default **50** fills in about four seconds). **Color profile** samples advance only when a new stack starts (full reset), not every column or frame. **When full** list: **None**, **Fade at end**, or **Stack out** (one choice only — not both).
+- **ORGB color profile audit** — remaining **ORGB_Port** effects now sample **Settings → Color profile** and eight **Custom** slots through the host API, not legacy `random_colors` / fixed hex pairs. **Sequence** cycles the full profile list; **Clock** uses three profile samples for hour/minute/second hands; **Mask** inside/outside colors follow the profile; **Visor** advances palette pairs each wipe like **Swap**; **Wavy**, **ZigZag**, **Smooth Blink**, and beam effects use profile phase colors; **Audio Sync**, **Audio VU Meter**, **Audio Bubbles** (new **Color profile** preset), and **Bloom** audio/rainbow modes map audio height or bins to profile colors; **Retro Wave** custom shapes use the profile; **Lightning** per-LED strikes use profile RGB. WLED-style palette pickers on **Bloom**, **audio eclipse**, and **Retro Wave** still work alongside the profile where noted.
+- **Custom Gradient Wave** — fixed inverted FPS in the status bar (very high when the window was in the background, ~30 when focused). The effect was calling `fillRect` once per pixel each frame, which blocked the main thread; it now uses the same fast `ImageData` path as **Gradient Wave**.
+- **Custom Marquee** — uses host color profiles via **Color profile**, or your eight custom slots when profile is **Custom**; **Bar width** and **Bar gap** adjust band thickness and spacing; each scrolling band keeps its color as it moves; fills engine resolution with fast `ImageData` rendering.
+- **Double Rotating Rainbow** — same host color profile and custom-slot support; engine-sized canvas with fast `ImageData` rendering; **Rotation speed** and **Frequency** plus color profile controls (removed non-functional **Color speed** slider).
+- **Fractal Motion** — uses host color profiles and custom slots (replaces single-color / random modes); engine-sized canvas with `ImageData` rendering; controls grouped under Motion, Wave, Harmonics, and Colors.
+- **Hypnotoad** — uses host color profiles and eight custom slots (replaces Rainbow/Custom list modes); engine-sized canvas with fast `ImageData` rendering; controls grouped under Motion, Pattern, and Colors.
+- **Mosaic** — uses host color profiles and eight custom slots (replaces Random Colors toggle and four fixed colors); engine-sized canvas with fast `ImageData` rendering; **Custom** profile spawns only from your slots, other profiles sample the active color profile.
+- **Effect HTML hot-reload** — saving an effect file reloads the active iframe from the newest on-disk copy (repo edits beat stale bundled duplicates); improved Windows file matching plus a lightweight mtime poll when OS notify misses a save.
+- **Effect edits during development** — the app loads HTML from your repo `effects/` folder before the bundled copy, so saving an effect file shows up after you re-select it (without stale installer resources winning by title).
+
+#### Effects panel
+
+- **Current effect summary** — effect name is larger; developer credit sits on its own line underneath (right **Effects** column).
+- **Effect settings scroll** — the right **Effects** column keeps brightness, browse/transport, and the current-effect summary fixed; long parameter lists scroll inside the **Effect settings** box (layout sync keeps the scroll region sized correctly in the desktop shell).
+
+#### Devices and layout
+
+- **USB power-cycle layout** — when a USB device (for example a Razer soundbar that sleeps when idle) drops off the bus and comes back, RGBJunkie keeps your canvas position instead of spawning a new centered copy. Reconnect matches the same physical unit by stable USB group id and reuses the existing layout component when the plugin signature changes.
+
+#### Updates and About
+
+- **What's new on update** — when a newer build is available, the update dialog shows release notes from the bundled changelog (every version between yours and the latest). **All release notes** opens the full in-app history.
+- **About → Release notes** — **Settings → About** has a **Release notes** button and the build label opens the same changelog modal for your installed version (scrollable, works offline; falls back to rgbjunkie.com when a version is missing from the bundle).
+- **Release notes headings** — section titles such as **Effects** and **Sleep and hibernate** render as proper headings instead of raw markdown text.
+
+---
+
+## v0.2.98 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **RAM after wake without restarting** — wake recovery now drops the in-app PawnIO SMBus session (same as quitting and reopening RGBJunkie), waits for motherboard firmware to finish its post-wake pattern, re-probes ENE DRAM, forces **direct mode** on each stick, and reinjects RAM plugins a few seconds after USB handles refresh.
+
+#### Effects panel
+
+- **Auto cycle per workspace tab** — when **Auto cycle effects** is on, each canvas tab keeps its own timer and advances through that tab’s saved effect list independently (not one global clock for the whole app).
+
+---
+
+## v0.2.97 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **RAM after wake without restarting** — hibernate left the in-app PawnIO SMBus session running with a stale “direct mode already set” cache while the motherboard firmware had reset the DIMMs to its own pattern. Wake recovery now drops that session (same as quitting and reopening the app), waits for post-wake SMBus traffic to settle, re-probes ENE DRAM, forces direct mode on each stick, and reinjects the virtual RAM plugins a few seconds after USB handles refresh.
+
+---
+
+## v0.2.96 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **RAM after wake** — post-hibernate recovery now runs the same full PawnIO RAM rediscovery as first boot and **Settings → Retry RAM discovery** (strip cached DIMM rows, probe SMBus, reinject fresh plugins) instead of only reconnecting the session. The USB watchdog does the same full replace after its reload finishes, so RAM should stay lit past the ~1 minute mark when the watchdog unpauses.
+
+---
+
+## v0.2.95 — May 25, 2026
+
+#### Settings
+
+- **Overview punctuation** — device cards and the workspace pill no longer show stray question marks between items (for example `1 channel · 1 layout component` and `PC · 2 tabs`). The same fix applies to LED calibration channel labels and a few Settings helper lines that used the wrong separator.
+
+#### Sleep and hibernate
+
+- **RAM staying dark after wake** — about a minute after hibernate, the USB watchdog could run a full rescan that stripped and re-probed PawnIO RAM over SMBus while USB was busy. Wake recovery now resets watchdog peek state, heals RAM without reinject on USB-only reloads, and re-heals PawnIO ~50s after wake when the watchdog unpauses.
+
+---
+
+## v0.2.94 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **RAM after wake** — hibernate recovery now re-connects PawnIO/OpenRGB SMBus and re-runs RAM discovery (same path as Settings → Retry RAM discovery), and clears color dedup so DIMMs get a fresh push without a full USB rescan.
+
+---
+
+## v0.2.93 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **Nollie32 flicker after wake** — logs showed resume was running a full hardware rescan *and* the USB watchdog reload at the same time, leaving multi‑second gaps between Nollie HID flushes (firmware blanks near 500 ms). Wake recovery now only reopens HID handles and repoints existing plugins; the USB watchdog stays paused briefly so Nollie keeps steady frames.
+
+---
+
+## v0.2.92 — May 25, 2026
+
+*(Add release notes for v0.2.92.)*
+
+---
+
+## v0.2.91 — May 25, 2026
+
+#### Sleep and hibernate
+
+- **Nollie32 after wake** — resume recovery no longer re-runs full plugin **Initialize** on Nollie-class controllers (they only need fresh HID handles). That extra init was causing ~3 Hz flicker while colors were otherwise correct.
+
+---
+
+## v0.2.90 — May 24, 2026
+
+#### Sleep and hibernate
+
+- **USB and OpenRGB after wake** — hibernate often leaves the same HID path open in Windows but the handle is dead, so effects kept playing while USB/OpenRGB gear stayed dark. Wake recovery now closes **all** cached HID handles, resets OpenRGB and GPU I2C sessions, reloads plugins, and re-runs **Initialize** on every active device (WLED still gets the HTTP live nudge).
+
+---
+
+## v0.2.89 — May 24, 2026
+
+#### Effects
+
+- **Mixing** — simplified to **two-band merge only** (removed the large multi-shape editor); bands meet at center, **Blend** or **Custom** merge color, **Color Profile**, soft edges, gravity modes, bass flash; fills engine resolution.
+- **Meteor** — **Speed** applies immediately while the comet is moving (not only after it hits an edge).
+- **Meteor** — **Band Thickness** now works intuitively (higher = thicker band).
+- **Meteor** — simplified to **comet only** (removed the large multi-shape editor); **Color Profile**, soft edges, optional gravity modes, and bass flash; fills engine resolution.
+- **Liquid Metal** — fixed effect not rendering (crash from **Audio Sensitivity** variable shadowing the host-injected setting).
+- **Liquid Metal** — fixed blank/black output: chrome ridges again lerp between profile **shadow and highlight** samples (full palette still drifts across the surface via **Color Flow**).
+- **Liquid Metal** — fills **engine resolution** with **Render Quality** scaling; **Color Profile** maps the full palette across chrome ridges (Custom still uses highlight/shadow pickers); **Color Flow** drifts the palette; bass drives extra turbulence via **Audio Sensitivity**; settings grouped under **Motion**, **Surface**, **Colors**, and **Audio**.
+- **Kyber Duel: Flashpoint** — each saber blade runs the **full color profile** from hilt to tip (left forward, right reversed); clash sparks sample random profile colors.
+- **Kyber Duel: Flashpoint** — saber inner core tints from each blade’s profile color instead of always rendering white.
+- **Kyber Duel: Flashpoint** — fills **engine resolution** (blade length, pivots, flash, and sparks scale with canvas); **Color Profile** via host profiles (Custom still uses saber overrides); settings grouped under **Sabers**, **Motion**, **Clash**, and **Colors**.
+- **Kinetic Sand** — fills **engine resolution** (simulation and spawn scale with canvas size); colors use **Color Profile** + **Color Spread**; settings grouped under **Spawning**, **Physics**, **Colors**, and **Audio** (removed legacy palette picker).
+- **Functional `.mjs` effects** — fixed freeze when the effect worker hung (batch timeout, main-thread fallback, effect switching clears the active worker); engine no longer deadlocks if sampling fails.
+- **Euclidean Beats** — fixed frozen animation (host now keeps a stable time origin and passes frame index; pattern uses continuous **Step speed** motion).
+- **Bass Reactive Pulse** (and other `.mjs` effects) — fixed stray dots on the engine canvas from per-LED 1×1 stamping (including manual **LED paint** overrides); the preview field now shows the effect only while hardware output is unchanged.
+- **Audio Star** — removed **Edge Beat** and related border-flash settings.
+- **Audio Star** — polar spectrum visualizer refresh: **Color Profile** + **Color Flow**, **Audio Reactivity**, **Star Points** rays, **Spoke Floor** for LED strips, engine-resolution canvas, and smoother bin response.
+- **Audio Sine** — tighter vertical glow (less halo above/below the wave); default **Glow** lowered.
+- **Audio Sine** — wave colors use **Color Profile** (Settings → Color profiles) with optional **Color Flow** on sound; removed Spectrum Cycle / static wave color.
+- **Audio Sine** — stronger sound reactivity (bass-weighted level, taller waves, faster response); default **Audio Reactivity** is 100.
+- **Audio Sine** — removed the always-on bounce and scroll; the wave height, drift, and spectrum colors now follow audio only (flat when silent).
+- **Effect Browser** — built-in effect preview images in nested `effects/` folders load again during development (served from `/effects/…` instead of blocked asset URLs); also finds folder-named or `.jpg`/`.webp` sidecars beside the effect file.
+- **Fractal Explorer** — fills the live **Engine Resolution** canvas (tracks `engine.canvas` each frame; no fixed 320×200 cap).
+- **Fractal Explorer** — scales with engine resolution, **Render Quality** slider for speed vs sharpness, **Smooth Colors** / **Color Bands**, **Profile** palette from color profiles, smoother Julia orbit motion, and improved bass/mid/treble sampling.
+- **Effect settings panel** — boolean options (e.g. **Enable Animation**, **Sound Responsive**) now use toggle switches instead of checkboxes; more vertical space between all options.
+- **Flags of the World** — all effect settings now appear on one panel tab (wave and audio controls were previously split into separate tabs).
+- **Flags of the World** — fixed startup crash (`Cannot read properties of null (reading 'style')`) when running inside RGBJunkie.
+- **Firefly Glade** — new defaults: **Audio Sensitivity** 8 and **Beat White Flare** off (0) for a softer, less flash-heavy swarm out of the box.
+- **Fibre Optic** — **Beat Reactivity** now speeds up glow pulses traveling down the strands on each beat (surges on beat hits).
+- **Fibre Optic** — **Sway Speed** and **Glow Intensity** now have a clear effect (sway rate and bloom halo were previously too subtle to see).
+- **Fibre Optic** — rebuilt with physics-based strand sway, traveling light pulses, neighbor color bleed, per-band **Bass / Mid / Beat** audio, **Strand Drape**, and **Glow**; works at engine resolution in RGBJunkie.
+- **Festive Lights** — the first string starts near the top of the canvas; additional strings fill downward from there.
+- **Festive Lights** — fixed blank preview: canvas now bootstraps at 320×200, uses host `rgbjSetupCanvas` when needed, and cords draw immediately from a sag shape instead of blocking on physics settle.
+- **Festive Lights** — new **Cord Drape** slider (0 = tight/straight, 100 = deep sag) adjusts rope slack and gravity on the physics cords.
+- **Festive Lights** — cords use **Verlet rope physics** (gravity, tension, slack) for natural catenary drape; audio shakes one anchored end and ripples propagate along the string.
+- **Festive Lights** — **Bass** and **Mid Reactivity** now drive cord motion along the full string and brighter bulb response (works with Random Beat Lights on; set **Cord Vibration** above 0 for cord shake).
+- **Festive Lights** — **Cord Variation** slider randomizes each string’s height, drape depth, end hang, and sag (0 = identical evenly spaced cords).
+- **Festive Lights** — **Random Beat Lights** now brightens **only** the picked bulbs on each beat (rest stay dim); no whole-string beat pulse. Turn it off to restore beat brightness on every bulb.
+- **Plasma Sphere** — updated effect description for the library (plasma-lamp lightning, layouts, and controls).
+- **Plasma Sphere** — **Screen edge**: the full bolt follows a drifting edge contact (not just the last point). Wiggle shape is seeded and rerolls on a **Particle Speed** interval; **Particle Amplitude** sets zigzag size.
+
+#### Scene profiles
+
+- **Color calibration from component menu** — right-click a component on the canvas or in the sidebar and choose **Color calibration…** to open Settings → Colors → Calibration with that component's hardware channel already selected.
+- **Color calibration stays global** — per-channel RGB calibration (Settings → Colors → Calibration) is saved in `profiles/devices/channel_calibration.json`, not in scene or layout files. Switching or saving a scene no longer overwrites your hardware calibration.
+- **Layout and lighting split** — scenes store your effect, sliders, and colors; strip positions and canvas tabs live in a paired **device layout** file (`profiles/devices/`, referenced by **`defaultLayout`** on the scene). Saving or loading a named scene updates both files. Older scenes that still embed `components` in the JSON keep working until you save again.
+- **Correct effect on load** — scene reload no longer picks the wrong Effect Library entry from a stale workspace tab or from clamping to the last slot when the saved effect cannot be resolved; re-save once if an old scene lacks stable effect ids.
+- **Save, reload, and switch** — named scenes (e.g. Audio Party) keep strip positions after reload; multiple components on the same controller channel restore by **instanceId** and strip **name**; switching scenes no longer asks to save when nothing changed.
+
+#### Nollie32 and high-FPS USB
+
+- **Throughput and stability** — higher stable refresh on long strips, prioritized HID flushes when many USB devices are connected, optional **hardware update cap**, and smoother HTML effects at high sample rates.
+- **Display off** — lights and effects keep moving when Windows blanks the monitor for power saving.
+
+#### Audio Party
+
+- **Wave floor** (General, default 14%) so bands do not drop to black between beats; **Glitch** off by default and softer when enabled.
+
+#### Sleep and hibernate
+
+- **USB controllers after wake** — resuming from sleep or hibernate runs a full device reload (stale HID handles cleared), relaunches the active effect, and retries if the app was still busy when Windows woke.
+- **WLED after wake** — each configured controller gets **`on:true`** then **`live:true`** over HTTP so strips that powered off during hibernate accept realtime UDP again.
+
+---
+
+## v0.2.88 — May 23, 2026
+
+#### Hardware update cap slider and high-FPS devices
+
+- **Settings → System → Engine → Hardware update cap** — the FPS slider drags smoothly again; the limit is applied when you release the slider instead of on every pixel while dragging.
+- **Nollie32 and other 100 Hz controllers** — when RGBJunkie is in the foreground, device updates are no longer stuck at ~60 FPS from monitor refresh; the engine keeps the rate your plugin or cap requests (up to 100 FPS by default).
+- **Nollie32 with many USB devices** — watchdog `hid_device_flush` calls now jump ahead of mouse/keyboard-sized flushes when the global USB slot pool is full (8+ HID devices used to cap at **2** parallel flushes and starve Nollie). Commit-packet pacing default is **1 ms** (was 2 ms).
+
+#### Scene load — component positions
+
+- **Named scenes (e.g. Audio Party)** — loading a saved scene no longer replaces the on-disk layout snapshot with live canvas positions mid-restore (which could shift strips after USB spawn/rebind). Saved **x/y**, size, and workspace are re-applied from the scene file after plugin layout passes finish.
+- **Save / reload named scenes** — saving a scene now writes the same snapshot to **autosave** as to the named `.json` file (instead of rebuilding autosave separately). Autosave no longer merges in **extra stale components** from an older autosave when a named scene is active, which made reload look like your save was ignored.
+- **Scene reload flash** — reloading a named scene no longer snaps back to old positions a moment later when plugin layout spawns, USB rescans, or `loadSystemData`'s deferred layout pass re-run after the file load; saved **x/y** are frozen from the named file and re-applied after every spawn (including hardware rescans).
+- **Multiple strips on one channel** — scenes like Audio Party can legitimately save several layout components on the same controller channel (e.g. three Nollie fan strips on `…-0`). Reload no longer maps every deferred re-apply to the first match on that channel; rows restore by **instanceId**, strip **name**, then nearest saved **x/y**.
+- **Scene switch save prompt** — switching to another scene no longer asks to save when you have not edited anything. The clean baseline is captured as soon as a scene finishes loading (not only after the 2 s layout settle), and the prompt stays off while deferred restore is still running.
+- **Focused high-FPS mode** — on-screen HTML effects keep updating at monitor refresh while hardware sampling runs faster, instead of repainting the effect iframe on every 100 Hz tick (which capped real throughput around 25–30 FPS).
+- **Nollie32 blanking** — watchdog controllers no longer get forced black during channel identify, setup wizard, or USB rescans; HID frames are queued through rescans instead of dropped so firmware does not blank the strip.
+- **Channel identify** — the old 4 Hz on/off hardware flash is removed; identify now pulses only on the workspace canvas so strips (especially Nollie32) stay steady. Saved layouts no longer restore a stuck identify selection.
+- **Nollie USB pacing** — shorter default gap between commit packets (2 ms instead of 8 ms) to reduce visible flicker during multi-packet frames.
+- **Nollie32 Firmware 2.x commit** — the group commit marker is now sent only on the last HID packet of each channel group (not on every packet for the highest channel). Long strips or multi-packet channels no longer commit mid-frame, which looked like a stutter or blink.
+- **Nollie32 whole-strip blink** — high-FPS hardware sampling no longer clears the engine canvas between effect frames, reuses the last good pixel read when sampling fails, and skips watchdog HID pushes during brief all-black canvas dropouts so the strip stays on the last good frame instead of flashing off.
+- **Nollie32 ~50 FPS cap** — the high-FPS engine timer now fires on a fixed schedule at the start of each frame instead of after frame work finishes (work time was doubling the interval). Nollie32 requests **108 Hz**; the default hardware update cap is **120 FPS** so you do not need to raise Settings unless you lowered it before.
+- **Nollie32 ~50–60 FPS (focused)** — watchdog `Render()` now runs on a dedicated interval decoupled from the heavy UI `frameLoop` (canvas read + Konva), so throughput can reach ~108 Hz while effects still composite at monitor refresh.
+- **Nollie32 strip stutter (HTML effects)** — high-FPS hardware no longer samples a ~60 Hz cached fallback while the fast timer runs at ~100 Hz (that uneven hold/jump pattern looked like stutter on long strips). The engine now blits the **live** effect canvas on the same tick as `getImageData`.
+- **Nollie32 HID flushes/s** — Strimer USB traffic (6–12 extra packets per frame) now runs only when that Strimer subdevice has LEDs on your layout, not just because **GPU/ATX Strimer connected** is enabled in device settings. Unmapped channels also report **0** mapped LEDs to the plugin instead of the full 256-LED cap, so strip-only setups send fewer packets per flush and **HID flushes/s** can track closer to your hardware update cap.
+
+#### Audio Party and physical LED strips
+
+- **Audio Party** — wave bands no longer drop to pure black at every trough (new **Wave floor** setting under General, default 14%). **Glitch** is off by default and is softer when enabled, so long strips (Nollie32) no longer look like they are blinking off between beats.
+
+#### Screen turns off from inactivity
+
+- When Windows blanks the monitor to save power, your **lights and on-screen effects keep moving smoothly** instead of slowing to a crawl.
+
+#### Smarter updates for some USB controllers
+
+- **Nollie32** — only updates the channels and LED counts you actually placed on your layout (not every empty port at full size).
+- **Prism Mini** — same for its strip channel.
+- **ASRock motherboards** — when **Per-LED / ARGB** mode is enabled in settings, motherboard headers and built-in zones follow only the LEDs you added.
+- **SteelSeries QcK Prism** (two-zone models) — sends less data when colors are not changing; animated effects still look normal.
+
+#### Many USB devices on one PC
+
+- When you run a lot of USB RGB gear, RGBJunkie spreads work across updates so one USB hub is less likely to stutter. **Wi‑Fi WLED** strips and **RAM** lighting behave as before.
+
+#### Memory number matches Task Manager
+
+- The memory shown in the **status bar** and under **Settings → System → Computer** now includes all parts of the app, so the total is closer to what you see for RGBJunkie in Task Manager.
+
+#### Tray, minimize, lock screen, and other apps
+
+- **Lights and effects stay smooth** when RGBJunkie is minimized, in the **system tray**, on the **lock screen** (Win+L), or while you use another program.
+- Fixed a bug where **everything looked like a slideshow (~1 update per second)** after minimize or close-to-tray.
+- The native background pump now calls the lighting loop **directly on the webview thread** (instead of throttled IPC events) and keeps the hidden WebView2 controller visible so tray/minimize timing stays at full speed.
+
+#### Smoother effects when RGBJunkie is in front
+
+- On-screen effects match your **monitor refresh** again instead of lagging behind slow device updates.
+- **New installs** default to **320×200** engine size (**Settings → Engine → Resolution**, 100% scale).
+
+#### Adjustable maximum device FPS
+
+- **Settings → System → Engine → Hardware update cap** — set the top speed for canvas sampling and device plugin updates (**15–240 FPS**, default **100**). Plugins can still request a lower rate via `device.setFrameRateTarget()` (for example **Nollie32** at 100 FPS, WLED at 60, mousepads at 25).
+- **Low power mode removed** — the old **Enable low power mode** toggle is gone. Use **Hardware update cap** to limit CPU/USB load instead (for example **30–60 FPS** on busy hubs). Saved low-power preferences are ignored on upgrade.
+
+#### Memory use
+
+- The app frees unused memory after big changes (switching effects, rescanning hardware) **without freezing your lights** for a long cleanup.
+- Automatic cleanup about every **2 minutes** when memory stays above about **600 MB** (was 5 minutes / 800 MB).
+- **Free RAM** from the status bar or **Ctrl+Shift+F** still does a deeper cleanup when you ask for it.
+- Less aggressive cleanup when you alt-tab away, which could cause small LED hiccups.
+
+#### Stays responsive in the background
+
+- Windows is less likely to **slow RGBJunkie down** while it runs in the tray and your lights are still on.
+
+#### After sleep or hibernate
+
+- Your gear **comes back on its own** after wake — similar to using **Rescan hardware**. **WLED** gets a quick refresh; everything else settles within a couple of seconds.
 
 ## v0.2.81 — May 22, 2026
 
@@ -52,6 +319,21 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 - **Tray / taskbar minimize** — LED FPS used to collapse to **1–2 Hz** when the window was minimized or hidden because Chromium's **IntensiveWakeUpThrottling** clamps hidden-page `setInterval` to ~1 second per tick, no matter what Tauri events tried to do. The lighting loop now ticks from a **dedicated Web Worker** that runs on its own thread (not subject to page visibility throttling) at the same ~100 Hz the focused window uses. WebView2 also gets the `IntensiveWakeUpThrottling` and `CalculateNativeWinOcclusion` features disabled, so timers, message ports, and IPC stop being slowed down when the window is occluded. The native Tokio pump and the JS `setInterval` remain as a belt-and-suspenders fallback.
 - **Effect animations stay alive when hidden** — Chromium **pauses** (not just throttles) `requestAnimationFrame` inside iframes whenever the parent page is hidden, so HTML effects froze and the LED loop kept sampling the same canvas. Every effect iframe now boots with a small polyfill that swaps `requestAnimationFrame` for a `setInterval`-backed driver while `document.visibilityState === "hidden"`, so JavaScript / Canvas2D / WebGL effects keep redrawing at ~60 Hz when the window is minimized or in the tray. Native `requestAnimationFrame` is restored automatically when the window is visible again.
+
+#### Workspace canvas tabs — device tree and component menu
+
+- **Devices panel** — every layout component stays listed under its device and channel, even when it belongs to a **different canvas tab** than the one selected above the workspace. Hiding other tabs on the layout (eye on the tab strip) only affects the **Konva canvas**, not the tree. Rows on another tab show a subtle **left-edge marker**, softer name text, and the **canvas pill** (1, 2, …) for which tab owns the strip.
+- **Identify** (canvas or tree) no longer wipes **LED Studio** brush colors on the layout — painted LEDs are restored when identify stops.
+- **Right-click a component** on the canvas (or in the Devices tree): removed **Clear LED paint for this component** (still in **Settings → Colors → LED Studio**); **Lock layout** is renamed **Lock component**; **Move to canvas** opens a flyout submenu with all workspace tabs (current tab marked).
+
+#### Scene bar, toolbar, and settings — Español and 简体中文
+
+- The **Scene** label, **Save**, **Reload**, **Delete**, scene dropdown placeholder, and related tooltips and dialogs translate when you choose **Español** or **简体中文** in Settings.
+- Layout toolbar buttons (align, distribute, flip, snap, grid, report, help, settings, and grid spacing) use translated **hover tooltips** in those languages.
+- **Settings → User media folders** — action buttons no longer stack Chinese text vertically; intro, tabs, **删除**, and **重新扫描硬件** are fully localized.
+- **Settings → System → Startup** help text uses **退出** / **关于** instead of English **Quit** / **About**; update copy no longer says **ZIP** alone.
+
+## v0.2.73 — May 21, 2026
 
 #### Workspace canvas tabs — device tree and component menu
 
@@ -238,58 +520,6 @@ Effects that declare `group=` on each control (for example **Fan Align**) now us
 
 **Crimson Pulse** is a deeper true red and **Rose Neon** a brighter fuchsia-pink so the two accent presets are easier to tell apart with mild red–green confusion.
 
-## v0.2.56 — May 18, 2026
-
-*(Add release notes for v0.2.56.)*
-
-## v0.2.58 — May 19, 2026
-
-#### Desktop shell: no browser right-click menu or Find (Ctrl+F)
-
-The embedded WebView no longer shows the **Edge-style default context menu** (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. **Ctrl+F** / **F3** Find on page, **Ctrl+P** print, **Ctrl+R** / **F5** reload, and **Ctrl+Plus/Minus** zoom are disabled so the app feels like a desktop tool, not a browser tab. Your **canvas and component right-click menus** (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the **devtools** feature is enabled.
-
-## v0.2.60 — May 19, 2026
-
-#### Effect profiles: deleted canvas tabs no longer come back
-
-Saving or loading an **Effect Settings** profile (for example **Audio Party**) could bring back a removed **Canvas B** tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include **Canvas B** whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single **Main** canvas only.
-
-#### build.bat: automatic release prerequisites
-
-`build.bat` now runs **`setup-release-prerequisites.mjs`** first: creates **`scripts/sftp-upload.config.local.json`** from the example when missing, checks the FTP password, installs **WSL Ubuntu apt packages** for Linux builds when needed (one sudo prompt), and warns if **OpenRGB** is not vendored. Use **`RGBJUNKIE_GIT_PULL=1`** to pull latest code before the build. Old **`RGBJunkie.AppDir`** and unpack folders under `bundle/` are cleaned before FTP upload.
-
-#### WSL setup: auto-install Node.js and Rust
-
-The WSL prerequisites script now installs **Node.js LTS** (NodeSource) and **rustup stable** when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.
-
-#### Release FTP: clearer Linux upload failures
-
-If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old **0.2.48** files after a bump to **0.2.62**), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.
-
-#### Linux downloads on the website (release pipeline)
-
-`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes **`.deb`**, **`.rpm`**, and **AppImage** files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.
-
-#### Linux WSL build: fix Vite EPERM on `C:`
-
-Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.
-
-#### LED Studio: toolbar layout like the design mockup
-
-The LED Studio controls are laid out in one horizontal strip: **Component** (device dropdown), **Brush tools** (color + HEX in one capsule, Paint/Erase in another), and **Actions** (three rounded buttons, with **Clear all** in red). Sections are separated by vertical dividers with small uppercase labels above each group.
-
-#### LED Studio: confirm before Clear all
-
-**Clear all** in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on **every component** on the canvas, not only the one selected in the dropdown.
-
-#### In-app confirmation dialogs (no more browser popups)
-
-Destructive or important actions no longer use the WebView’s **“localhost says”** `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio **Clear all**, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).
-
-## v0.2.62 — May 19, 2026
-
-*(Add release notes for v0.2.62.)*
-
 ## v0.2.64 — May 19, 2026
 
 #### Workspace: Escape clears selection
@@ -379,8 +609,6 @@ When you save an effect `.html` file while it is running, RGBJunkie reloads **th
 
 **[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
 
-*(Add other release notes for v0.2.64.)*
-
 ## v0.2.63 — May 19, 2026
 
 #### Linux: correct status-bar memory and bundled effects
@@ -397,17 +625,55 @@ On machines with no ALSA playback device (common in WSL), RGBJunkie no longer re
 
 The toolbar **Discord** button now uses [discord.gg/adHsQG8czv](https://discord.gg/adHsQG8czv), which lands in **#welcome-and-rules** instead of the old invite that opened **#bot-spam**.
 
----
+## v0.2.62 — May 19, 2026
 
----
+#### Patch release
+
+No separate release notes for this version. See **v0.2.64** for user-facing changes shipped in this period.
 
 ## v0.2.61 — May 19, 2026
 
-*(Add release notes for v0.2.61.)*
+#### Patch release
 
----
+No separate release notes for this version. See **v0.2.60** for user-facing changes shipped in this period.
 
----
+## v0.2.60 — May 19, 2026
+
+#### Effect profiles: deleted canvas tabs no longer come back
+
+Saving or loading an **Effect Settings** profile (for example **Audio Party**) could bring back a removed **Canvas B** tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include **Canvas B** whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single **Main** canvas only.
+
+#### build.bat: automatic release prerequisites
+
+`build.bat` now runs **`setup-release-prerequisites.mjs`** first: creates **`scripts/sftp-upload.config.local.json`** from the example when missing, checks the FTP password, installs **WSL Ubuntu apt packages** for Linux builds when needed (one sudo prompt), and warns if **OpenRGB** is not vendored. Use **`RGBJUNKIE_GIT_PULL=1`** to pull latest code before the build. Old **`RGBJunkie.AppDir`** and unpack folders under `bundle/` are cleaned before FTP upload.
+
+#### WSL setup: auto-install Node.js and Rust
+
+The WSL prerequisites script now installs **Node.js LTS** (NodeSource) and **rustup stable** when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.
+
+#### Release FTP: clearer Linux upload failures
+
+If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old **0.2.48** files after a bump to **0.2.62**), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.
+
+#### Linux downloads on the website (release pipeline)
+
+`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes **`.deb`**, **`.rpm`**, and **AppImage** files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.
+
+#### Linux WSL build: fix Vite EPERM on `C:`
+
+Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.
+
+#### LED Studio: toolbar layout like the design mockup
+
+The LED Studio controls are laid out in one horizontal strip: **Component** (device dropdown), **Brush tools** (color + HEX in one capsule, Paint/Erase in another), and **Actions** (three rounded buttons, with **Clear all** in red). Sections are separated by vertical dividers with small uppercase labels above each group.
+
+#### LED Studio: confirm before Clear all
+
+**Clear all** in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on **every component** on the canvas, not only the one selected in the dropdown.
+
+#### In-app confirmation dialogs (no more browser popups)
+
+Destructive or important actions no longer use the WebView’s **“localhost says”** `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio **Clear all**, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).
 
 ## v0.2.59 — May 19, 2026
 
@@ -423,17 +689,23 @@ When you click **Save current layout** or **Save current effect settings**, a sh
 
 **http**, **https**, and **mailto** links across the main app window now open in your default browser — Settings (About, Help, RAM/OpenRGB help text, bug-report footer, and similar), update dialogs, and other host UI. The embedded WebView no longer swallows those clicks. **Effect** panels are unchanged (they run in their own iframe). In **About**, the **build** stamp is always a link to this version’s release notes on rgbjunkie.com, including after you’re already up to date.
 
----
+## v0.2.58 — May 19, 2026
 
----
+#### Desktop shell: no browser right-click menu or Find (Ctrl+F)
+
+The embedded WebView no longer shows the **Edge-style default context menu** (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. **Ctrl+F** / **F3** Find on page, **Ctrl+P** print, **Ctrl+R** / **F5** reload, and **Ctrl+Plus/Minus** zoom are disabled so the app feels like a desktop tool, not a browser tab. Your **canvas and component right-click menus** (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the **devtools** feature is enabled.
 
 ## v0.2.57 — May 18, 2026
 
-*(Add release notes for v0.2.57.)*
+#### Patch release
 
----
+No separate release notes for this version. See **v0.2.58** for user-facing changes shipped in this period.
 
----
+## v0.2.56 — May 18, 2026
+
+#### Patch release
+
+No separate release notes for this version. See **v0.2.58** for user-facing changes shipped in this period.
 
 ## v0.2.48 — May 18, 2026
 
@@ -506,6 +778,98 @@ The app’s background **freeze / stall watchdog** used to write a `heapJump` li
 - **Baseline check** — Entries are only written when heap stays **meaningfully above** its recent 30-second low, not on tiny oscillations around normal levels.
 
 Console output for heap jumps was already quiet unless memory stayed very high; this change mainly keeps the on-disk log useful for real investigations.
+
+---
+
+## May 8–9, 2026
+
+Plain-language summary of changes users may notice. (Exact shipping date depends on your update channel.)
+
+### May 8
+
+#### Share your effect settings
+
+You can **share a link** (or similar flow, depending on build) so others can open the same effect configuration. This is meant for presets, support, and showing setups without manually copying every slider.
+
+#### Cleaner device support
+
+Many device plugins were **trimmed to lighting-related behavior** so the app stays focused on RGB and control surfaces you actually use. The **device list** and related data were refreshed so names and entries stay consistent.
+
+#### General improvements
+
+- **Look and feel** — Updated layout and styling in parts of the main window.
+- **App icon** — Refreshed icons for Windows, shortcuts, and related sizes so the app matches the current branding.
+- **Reliability and quality** — Under-the-hood work on lighting output, plugins, WLED behavior, color handling, and diagnostics so sessions stay smoother and odd edge cases are less likely.
+- **Component library** — Many fan, strip, and similar **layout parts** were touched for consistency and accuracy when you build a desk setup.
+
+### May 9
+
+*(These updates are in development builds; they may not all be in every installer until the next release.)*
+
+#### Workspace and side panels
+
+- **Collapsible columns** — The **devices** list and **effects** panel can be collapsed to a slim bar so the **center workspace** (layout + effect preview) gets more room.
+- **Peek while collapsed** — When a column is collapsed, moving the pointer over the slim bar can **temporarily expand** it so you can glance at devices or settings without fully pinning the panel open.
+- **Smoother peek** — Small gaps next to the center area no longer “flicker” the peek panel closed when you move the mouse toward the middle of the screen.
+- **Same width** — The two side columns are matched in width so the layout feels balanced.
+
+#### Effect preview and canvas
+
+- **More preview, less empty frame** — The dark border around the **live effect preview** is reduced so the colorful preview uses more of the available space.
+- **Softer edge** — The outer frame no longer reads as an extra harsh black ring around the preview when the effect doesn’t paint those pixels.
+- **Tighter fit** — Margins around the preview area were slightly reduced so the canvas uses the window a bit better.
+
+#### Layout editor
+
+- **No dashed outline** — The dotted rectangle around the main layout area was **removed** so the workspace looks cleaner (the optional grid, when turned on, is unchanged).
+
+#### Device list
+
+- **Visibility** — Device visibility is shown with the familiar **eye** control again (not a brand logo in that spot).
+- **Easier to scan** — The device column uses horizontal space a bit better, and row alignment was improved so labels, chevrons, and buttons line up more naturally.
+
+---
+
+## May 6–7, 2026
+
+### Color profiles & built-in effects
+
+- **One palette system everywhere** — A large set of **built-in HTML effects** now reads colors from the same **Color profiles** you manage under **Settings → Color profiles** (built-in gradients plus your own).
+- **Accurate previews** — Profile swatches use the real gradient **stops** from the app, not hard-coded color tables inside each effect.
+- **Smarter defaults** — Several effects were retuned so their default profile matches the new catalog.
+
+### Effect settings UI (Color tab)
+
+- **Profile chooser as a modal gallery** — Picking a color profile opens a **modal** with **card-style** gradient previews instead of a long plain dropdown.
+- **Your profiles first** — **Custom profiles you created** appear in their own section **above** built-in themes.
+- **Jump to profile editor** — A control in that modal sends you straight to **Settings → Color profiles** when you want to add or edit gradients.
+
+### Settings → Color profiles
+
+- **Import from Coolors** — Paste a **Coolors.co** share URL or hex values to create a new profile in one step.
+
+### Layout, workspace & sidebar
+
+- **Identify hardware** — **Identify** from the workspace or sidebar helps you match on-screen components to physical devices.
+- **Device tree** — Summary rows for device groups can **collapse** again after you open them.
+- **Rotated layouts** — Moving **rotated** selections along the workspace edge uses the correct dimensions.
+
+### Support & bug reports
+
+- **In-app bug report flow** — Send diagnostics with optional **note**, **contact** fields, application log, and USB / HID hardware snapshot.
+- **Toolbar shortcut** — **Report** on the main bar jumps straight to **Settings → Logs**.
+
+### USB hot-plug & Rescan hardware
+
+- **Plug and unplug (Windows)** — The app reacts to USB topology changes so devices don’t stay in the sidebar after removal or return without lighting until a restart.
+- **Sidebar Rescan** — **Rescan hardware** clears stale HID handles before reloading enumeration, which fixes many “ghost device” and dark-LED cases after replugging.
+
+---
+
+## Notes
+
+- Newer sections appear first. Your installed version may include only a subset until you update.
+- Check **Settings → About** (or your usual update path) for the app version if something above does not match what you see.
 
 ---
 

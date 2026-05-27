@@ -1,9 +1,352 @@
 <div class="rgbj-changelog"><header class="rgbj-changelog-intro">
 <h2 class="rgbj-changelog-intro__title">RGBJunkie for Windows — What's new</h2>
 <p class="rgbj-changelog-intro__lead">Plain-language release notes for the desktop app. Newest changes are listed first.</p>
-<p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Start each release with `## v0.2.48 — May 18, 2026` (semver + date). The website, in-app update dialog, and `releases/latest.json` link to that section. `build.bat` adds a stub heading automatically when the version is bumped.</p>
+<p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-99" data-version="0.2.99">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.99</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 26, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>ORGB port library</strong> — the remaining OpenRGB ports under <strong>ORGB_Port</strong> now use host <strong>Color profile</strong> and eight <strong>Custom</strong> slots (same pattern as <strong>Fractal Motion</strong>, <strong>Mosaic</strong>, and <strong>Custom Marquee</strong>), resize with the engine canvas via `rgbjSetupCanvas` / `ImageData`, and share palette helpers injected with every effect iframe.</li><li><strong>Moving Panes</strong> — <strong>Color profile</strong> and custom slots now drive pane colors (the port had left the old two-color blend in place).</li><li><strong>Policing</strong> — scanner and flash colors follow <strong>Color profile</strong> / custom slots (alternates two profile samples each direction change).</li><li><strong>Rain</strong> — droplets use <strong>Color profile</strong> and custom slots (each drop samples the active profile; profile changes apply to new and falling drops).</li><li><strong>Rainbow Wave</strong> — sliding bands use <strong>Color profile</strong> and custom slots instead of a fixed HSL rainbow.</li><li><strong>Random Marquee</strong> — rebuilt like <strong>Custom Marquee</strong> (scrolling profile-colored bands, <strong>Bar width</strong> / <strong>Bar gap</strong>, horizontal or vertical); each cycle still randomizes bar size, gap, axis, and speed; colors follow <strong>Color profile</strong> and custom slots.</li><li><strong>Noise Map</strong> — fixed a broken render path after the ORGB port (`pixels` / canvas buffers were never initialized); colors come only from <strong>Color profile</strong> and custom slots (removed the old WLED <strong>Color palette</strong> list). Faster rendering (2D noise, color lookup table, optional <strong>Render quality</strong>); fixed oversized blobs after the speed pass (noise scale and upscaling).</li><li><strong>Swap</strong> — each wipe now uses the next colors from your <strong>Color profile</strong> (all eight <strong>Custom</strong> slots, or stepped samples along presets like <strong>Rainbow</strong>), not only two fixed profile points.</li><li><strong>Starry Night</strong> — fixed a broken render path after the ORGB port (`pixels` was never set from `framePixels`, so the effect threw an error and showed nothing). Stars re-initialize when the engine canvas is resized.</li><li><strong>Stack</strong> — fixed <strong>Speed</strong> feeling stuck near minimum: stacking advanced one column per second at the default slider, so wide layouts took minutes; speed now scales with matrix size (default <strong>50</strong> fills in about four seconds). <strong>Color profile</strong> samples advance only when a new stack starts (full reset), not every column or frame. <strong>When full</strong> list: <strong>None</strong>, <strong>Fade at end</strong>, or <strong>Stack out</strong> (one choice only — not both).</li><li><strong>ORGB color profile audit</strong> — remaining <strong>ORGB_Port</strong> effects now sample <strong>Settings → Color profile</strong> and eight <strong>Custom</strong> slots through the host API, not legacy `random_colors` / fixed hex pairs. <strong>Sequence</strong> cycles the full profile list; <strong>Clock</strong> uses three profile samples for hour/minute/second hands; <strong>Mask</strong> inside/outside colors follow the profile; <strong>Visor</strong> advances palette pairs each wipe like <strong>Swap</strong>; <strong>Wavy</strong>, <strong>ZigZag</strong>, <strong>Smooth Blink</strong>, and beam effects use profile phase colors; <strong>Audio Sync</strong>, <strong>Audio VU Meter</strong>, <strong>Audio Bubbles</strong> (new <strong>Color profile</strong> preset), and <strong>Bloom</strong> audio/rainbow modes map audio height or bins to profile colors; <strong>Retro Wave</strong> custom shapes use the profile; <strong>Lightning</strong> per-LED strikes use profile RGB. WLED-style palette pickers on <strong>Bloom</strong>, <strong>audio eclipse</strong>, and <strong>Retro Wave</strong> still work alongside the profile where noted.</li><li><strong>Custom Gradient Wave</strong> — fixed inverted FPS in the status bar (very high when the window was in the background, ~30 when focused). The effect was calling `fillRect` once per pixel each frame, which blocked the main thread; it now uses the same fast `ImageData` path as <strong>Gradient Wave</strong>.</li><li><strong>Custom Marquee</strong> — uses host color profiles via <strong>Color profile</strong>, or your eight custom slots when profile is <strong>Custom</strong>; <strong>Bar width</strong> and <strong>Bar gap</strong> adjust band thickness and spacing; each scrolling band keeps its color as it moves; fills engine resolution with fast `ImageData` rendering.</li><li><strong>Double Rotating Rainbow</strong> — same host color profile and custom-slot support; engine-sized canvas with fast `ImageData` rendering; <strong>Rotation speed</strong> and <strong>Frequency</strong> plus color profile controls (removed non-functional <strong>Color speed</strong> slider).</li><li><strong>Fractal Motion</strong> — uses host color profiles and custom slots (replaces single-color / random modes); engine-sized canvas with `ImageData` rendering; controls grouped under Motion, Wave, Harmonics, and Colors.</li><li><strong>Hypnotoad</strong> — uses host color profiles and eight custom slots (replaces Rainbow/Custom list modes); engine-sized canvas with fast `ImageData` rendering; controls grouped under Motion, Pattern, and Colors.</li><li><strong>Mosaic</strong> — uses host color profiles and eight custom slots (replaces Random Colors toggle and four fixed colors); engine-sized canvas with fast `ImageData` rendering; <strong>Custom</strong> profile spawns only from your slots, other profiles sample the active color profile.</li><li><strong>Effect HTML hot-reload</strong> — saving an effect file reloads the active iframe from the newest on-disk copy (repo edits beat stale bundled duplicates); improved Windows file matching plus a lightweight mtime poll when OS notify misses a save.</li><li><strong>Effect edits during development</strong> — the app loads HTML from your repo `effects/` folder before the bundled copy, so saving an effect file shows up after you re-select it (without stale installer resources winning by title).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects panel</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Current effect summary</strong> — effect name is larger; developer credit sits on its own line underneath (right <strong>Effects</strong> column).</li><li><strong>Effect settings scroll</strong> — the right <strong>Effects</strong> column keeps brightness, browse/transport, and the current-effect summary fixed; long parameter lists scroll inside the <strong>Effect settings</strong> box (layout sync keeps the scroll region sized correctly in the desktop shell).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices and layout</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>USB power-cycle layout</strong> — when a USB device (for example a Razer soundbar that sleeps when idle) drops off the bus and comes back, RGBJunkie keeps your canvas position instead of spawning a new centered copy. Reconnect matches the same physical unit by stable USB group id and reuses the existing layout component when the plugin signature changes.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates and About</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>What's new on update</strong> — when a newer build is available, the update dialog shows release notes from the bundled changelog (every version between yours and the latest). <strong>All release notes</strong> opens the full in-app history.</li><li><strong>About → Release notes</strong> — <strong>Settings → About</strong> has a <strong>Release notes</strong> button and the build label opens the same changelog modal for your installed version (scrollable, works offline; falls back to rgbjunkie.com when a version is missing from the bundle).</li><li><strong>Release notes headings</strong> — section titles such as <strong>Effects</strong> and <strong>Sleep and hibernate</strong> render as proper headings instead of raw markdown text.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-98" data-version="0.2.98">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.98</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM after wake without restarting</strong> — wake recovery now drops the in-app PawnIO SMBus session (same as quitting and reopening RGBJunkie), waits for motherboard firmware to finish its post-wake pattern, re-probes ENE DRAM, forces <strong>direct mode</strong> on each stick, and reinjects RAM plugins a few seconds after USB handles refresh.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects panel</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Auto cycle per workspace tab</strong> — when <strong>Auto cycle effects</strong> is on, each canvas tab keeps its own timer and advances through that tab’s saved effect list independently (not one global clock for the whole app).</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-97" data-version="0.2.97">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.97</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM after wake without restarting</strong> — hibernate left the in-app PawnIO SMBus session running with a stale “direct mode already set” cache while the motherboard firmware had reset the DIMMs to its own pattern. Wake recovery now drops that session (same as quitting and reopening the app), waits for post-wake SMBus traffic to settle, re-probes ENE DRAM, forces direct mode on each stick, and reinjects the virtual RAM plugins a few seconds after USB handles refresh.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-96" data-version="0.2.96">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.96</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM after wake</strong> — post-hibernate recovery now runs the same full PawnIO RAM rediscovery as first boot and <strong>Settings → Retry RAM discovery</strong> (strip cached DIMM rows, probe SMBus, reinject fresh plugins) instead of only reconnecting the session. The USB watchdog does the same full replace after its reload finishes, so RAM should stay lit past the ~1 minute mark when the watchdog unpauses.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-95" data-version="0.2.95">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.95</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Overview punctuation</strong> — device cards and the workspace pill no longer show stray question marks between items (for example `1 channel · 1 layout component` and `PC · 2 tabs`). The same fix applies to LED calibration channel labels and a few Settings helper lines that used the wrong separator.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM staying dark after wake</strong> — about a minute after hibernate, the USB watchdog could run a full rescan that stripped and re-probed PawnIO RAM over SMBus while USB was busy. Wake recovery now resets watchdog peek state, heals RAM without reinject on USB-only reloads, and re-heals PawnIO ~50s after wake when the watchdog unpauses.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-94" data-version="0.2.94">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.94</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM after wake</strong> — hibernate recovery now re-connects PawnIO/OpenRGB SMBus and re-runs RAM discovery (same path as Settings → Retry RAM discovery), and clears color dedup so DIMMs get a fresh push without a full USB rescan.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-93" data-version="0.2.93">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.93</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Nollie32 flicker after wake</strong> — logs showed resume was running a full hardware rescan <em>and</em> the USB watchdog reload at the same time, leaving multi‑second gaps between Nollie HID flushes (firmware blanks near 500 ms). Wake recovery now only reopens HID handles and repoints existing plugins; the USB watchdog stays paused briefly so Nollie keeps steady frames.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-92" data-version="0.2.92">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.92</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.92.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-91" data-version="0.2.91">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.91</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Nollie32 after wake</strong> — resume recovery no longer re-runs full plugin <strong>Initialize</strong> on Nollie-class controllers (they only need fresh HID handles). That extra init was causing ~3 Hz flicker while colors were otherwise correct.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-90" data-version="0.2.90">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.90</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 24, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>USB and OpenRGB after wake</strong> — hibernate often leaves the same HID path open in Windows but the handle is dead, so effects kept playing while USB/OpenRGB gear stayed dark. Wake recovery now closes <strong>all</strong> cached HID handles, resets OpenRGB and GPU I2C sessions, reloads plugins, and re-runs <strong>Initialize</strong> on every active device (WLED still gets the HTTP live nudge).</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-89" data-version="0.2.89">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.89</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 24, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Mixing</strong> — simplified to <strong>two-band merge only</strong> (removed the large multi-shape editor); bands meet at center, <strong>Blend</strong> or <strong>Custom</strong> merge color, <strong>Color Profile</strong>, soft edges, gravity modes, bass flash; fills engine resolution.</li><li><strong>Meteor</strong> — <strong>Speed</strong> applies immediately while the comet is moving (not only after it hits an edge).</li><li><strong>Meteor</strong> — <strong>Band Thickness</strong> now works intuitively (higher = thicker band).</li><li><strong>Meteor</strong> — simplified to <strong>comet only</strong> (removed the large multi-shape editor); <strong>Color Profile</strong>, soft edges, optional gravity modes, and bass flash; fills engine resolution.</li><li><strong>Liquid Metal</strong> — fixed effect not rendering (crash from <strong>Audio Sensitivity</strong> variable shadowing the host-injected setting).</li><li><strong>Liquid Metal</strong> — fixed blank/black output: chrome ridges again lerp between profile <strong>shadow and highlight</strong> samples (full palette still drifts across the surface via <strong>Color Flow</strong>).</li><li><strong>Liquid Metal</strong> — fills <strong>engine resolution</strong> with <strong>Render Quality</strong> scaling; <strong>Color Profile</strong> maps the full palette across chrome ridges (Custom still uses highlight/shadow pickers); <strong>Color Flow</strong> drifts the palette; bass drives extra turbulence via <strong>Audio Sensitivity</strong>; settings grouped under <strong>Motion</strong>, <strong>Surface</strong>, <strong>Colors</strong>, and <strong>Audio</strong>.</li><li><strong>Kyber Duel: Flashpoint</strong> — each saber blade runs the <strong>full color profile</strong> from hilt to tip (left forward, right reversed); clash sparks sample random profile colors.</li><li><strong>Kyber Duel: Flashpoint</strong> — saber inner core tints from each blade’s profile color instead of always rendering white.</li><li><strong>Kyber Duel: Flashpoint</strong> — fills <strong>engine resolution</strong> (blade length, pivots, flash, and sparks scale with canvas); <strong>Color Profile</strong> via host profiles (Custom still uses saber overrides); settings grouped under <strong>Sabers</strong>, <strong>Motion</strong>, <strong>Clash</strong>, and <strong>Colors</strong>.</li><li><strong>Kinetic Sand</strong> — fills <strong>engine resolution</strong> (simulation and spawn scale with canvas size); colors use <strong>Color Profile</strong> + <strong>Color Spread</strong>; settings grouped under <strong>Spawning</strong>, <strong>Physics</strong>, <strong>Colors</strong>, and <strong>Audio</strong> (removed legacy palette picker).</li><li><strong>Functional `.mjs` effects</strong> — fixed freeze when the effect worker hung (batch timeout, main-thread fallback, effect switching clears the active worker); engine no longer deadlocks if sampling fails.</li><li><strong>Euclidean Beats</strong> — fixed frozen animation (host now keeps a stable time origin and passes frame index; pattern uses continuous <strong>Step speed</strong> motion).</li><li><strong>Bass Reactive Pulse</strong> (and other `.mjs` effects) — fixed stray dots on the engine canvas from per-LED 1×1 stamping (including manual <strong>LED paint</strong> overrides); the preview field now shows the effect only while hardware output is unchanged.</li><li><strong>Audio Star</strong> — removed <strong>Edge Beat</strong> and related border-flash settings.</li><li><strong>Audio Star</strong> — polar spectrum visualizer refresh: <strong>Color Profile</strong> + <strong>Color Flow</strong>, <strong>Audio Reactivity</strong>, <strong>Star Points</strong> rays, <strong>Spoke Floor</strong> for LED strips, engine-resolution canvas, and smoother bin response.</li><li><strong>Audio Sine</strong> — tighter vertical glow (less halo above/below the wave); default <strong>Glow</strong> lowered.</li><li><strong>Audio Sine</strong> — wave colors use <strong>Color Profile</strong> (Settings → Color profiles) with optional <strong>Color Flow</strong> on sound; removed Spectrum Cycle / static wave color.</li><li><strong>Audio Sine</strong> — stronger sound reactivity (bass-weighted level, taller waves, faster response); default <strong>Audio Reactivity</strong> is 100.</li><li><strong>Audio Sine</strong> — removed the always-on bounce and scroll; the wave height, drift, and spectrum colors now follow audio only (flat when silent).</li><li><strong>Effect Browser</strong> — built-in effect preview images in nested `effects/` folders load again during development (served from `/effects/…` instead of blocked asset URLs); also finds folder-named or `.jpg`/`.webp` sidecars beside the effect file.</li><li><strong>Fractal Explorer</strong> — fills the live <strong>Engine Resolution</strong> canvas (tracks `engine.canvas` each frame; no fixed 320×200 cap).</li><li><strong>Fractal Explorer</strong> — scales with engine resolution, <strong>Render Quality</strong> slider for speed vs sharpness, <strong>Smooth Colors</strong> / <strong>Color Bands</strong>, <strong>Profile</strong> palette from color profiles, smoother Julia orbit motion, and improved bass/mid/treble sampling.</li><li><strong>Effect settings panel</strong> — boolean options (e.g. <strong>Enable Animation</strong>, <strong>Sound Responsive</strong>) now use toggle switches instead of checkboxes; more vertical space between all options.</li><li><strong>Flags of the World</strong> — all effect settings now appear on one panel tab (wave and audio controls were previously split into separate tabs).</li><li><strong>Flags of the World</strong> — fixed startup crash (`Cannot read properties of null (reading 'style')`) when running inside RGBJunkie.</li><li><strong>Firefly Glade</strong> — new defaults: <strong>Audio Sensitivity</strong> 8 and <strong>Beat White Flare</strong> off (0) for a softer, less flash-heavy swarm out of the box.</li><li><strong>Fibre Optic</strong> — <strong>Beat Reactivity</strong> now speeds up glow pulses traveling down the strands on each beat (surges on beat hits).</li><li><strong>Fibre Optic</strong> — <strong>Sway Speed</strong> and <strong>Glow Intensity</strong> now have a clear effect (sway rate and bloom halo were previously too subtle to see).</li><li><strong>Fibre Optic</strong> — rebuilt with physics-based strand sway, traveling light pulses, neighbor color bleed, per-band <strong>Bass / Mid / Beat</strong> audio, <strong>Strand Drape</strong>, and <strong>Glow</strong>; works at engine resolution in RGBJunkie.</li><li><strong>Festive Lights</strong> — the first string starts near the top of the canvas; additional strings fill downward from there.</li><li><strong>Festive Lights</strong> — fixed blank preview: canvas now bootstraps at 320×200, uses host `rgbjSetupCanvas` when needed, and cords draw immediately from a sag shape instead of blocking on physics settle.</li><li><strong>Festive Lights</strong> — new <strong>Cord Drape</strong> slider (0 = tight/straight, 100 = deep sag) adjusts rope slack and gravity on the physics cords.</li><li><strong>Festive Lights</strong> — cords use <strong>Verlet rope physics</strong> (gravity, tension, slack) for natural catenary drape; audio shakes one anchored end and ripples propagate along the string.</li><li><strong>Festive Lights</strong> — <strong>Bass</strong> and <strong>Mid Reactivity</strong> now drive cord motion along the full string and brighter bulb response (works with Random Beat Lights on; set <strong>Cord Vibration</strong> above 0 for cord shake).</li><li><strong>Festive Lights</strong> — <strong>Cord Variation</strong> slider randomizes each string’s height, drape depth, end hang, and sag (0 = identical evenly spaced cords).</li><li><strong>Festive Lights</strong> — <strong>Random Beat Lights</strong> now brightens <strong>only</strong> the picked bulbs on each beat (rest stay dim); no whole-string beat pulse. Turn it off to restore beat brightness on every bulb.</li><li><strong>Plasma Sphere</strong> — updated effect description for the library (plasma-lamp lightning, layouts, and controls).</li><li><strong>Plasma Sphere</strong> — <strong>Screen edge</strong>: the full bolt follows a drifting edge contact (not just the last point). Wiggle shape is seeded and rerolls on a <strong>Particle Speed</strong> interval; <strong>Particle Amplitude</strong> sets zigzag size.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene profiles</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Color calibration from component menu</strong> — right-click a component on the canvas or in the sidebar and choose <strong>Color calibration…</strong> to open Settings → Colors → Calibration with that component's hardware channel already selected.</li><li><strong>Color calibration stays global</strong> — per-channel RGB calibration (Settings → Colors → Calibration) is saved in `profiles/devices/channel_calibration.json`, not in scene or layout files. Switching or saving a scene no longer overwrites your hardware calibration.</li><li><strong>Layout and lighting split</strong> — scenes store your effect, sliders, and colors; strip positions and canvas tabs live in a paired <strong>device layout</strong> file (`profiles/devices/`, referenced by <strong>`defaultLayout`</strong> on the scene). Saving or loading a named scene updates both files. Older scenes that still embed `components` in the JSON keep working until you save again.</li><li><strong>Correct effect on load</strong> — scene reload no longer picks the wrong Effect Library entry from a stale workspace tab or from clamping to the last slot when the saved effect cannot be resolved; re-save once if an old scene lacks stable effect ids.</li><li><strong>Save, reload, and switch</strong> — named scenes (e.g. Audio Party) keep strip positions after reload; multiple components on the same controller channel restore by <strong>instanceId</strong> and strip <strong>name</strong>; switching scenes no longer asks to save when nothing changed.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Nollie32 and high-FPS USB</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Throughput and stability</strong> — higher stable refresh on long strips, prioritized HID flushes when many USB devices are connected, optional <strong>hardware update cap</strong>, and smoother HTML effects at high sample rates.</li><li><strong>Display off</strong> — lights and effects keep moving when Windows blanks the monitor for power saving.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Audio Party</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Wave floor</strong> (General, default 14%) so bands do not drop to black between beats; <strong>Glitch</strong> off by default and softer when enabled.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>USB controllers after wake</strong> — resuming from sleep or hibernate runs a full device reload (stale HID handles cleared), relaunches the active effect, and retries if the app was still busy when Windows woke.</li><li><strong>WLED after wake</strong> — each configured controller gets <strong>`on:true`</strong> then <strong>`live:true`</strong> over HTTP so strips that powered off during hibernate accept realtime UDP again.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-88" data-version="0.2.88">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.88</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 23, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Hardware update cap slider and high-FPS devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Settings → System → Engine → Hardware update cap</strong> — the FPS slider drags smoothly again; the limit is applied when you release the slider instead of on every pixel while dragging.</li><li><strong>Nollie32 and other 100 Hz controllers</strong> — when RGBJunkie is in the foreground, device updates are no longer stuck at ~60 FPS from monitor refresh; the engine keeps the rate your plugin or cap requests (up to 100 FPS by default).</li><li><strong>Nollie32 with many USB devices</strong> — watchdog `hid_device_flush` calls now jump ahead of mouse/keyboard-sized flushes when the global USB slot pool is full (8+ HID devices used to cap at <strong>2</strong> parallel flushes and starve Nollie). Commit-packet pacing default is <strong>1 ms</strong> (was 2 ms).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene load — component positions</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Named scenes (e.g. Audio Party)</strong> — loading a saved scene no longer replaces the on-disk layout snapshot with live canvas positions mid-restore (which could shift strips after USB spawn/rebind). Saved <strong>x/y</strong>, size, and workspace are re-applied from the scene file after plugin layout passes finish.</li><li><strong>Save / reload named scenes</strong> — saving a scene now writes the same snapshot to <strong>autosave</strong> as to the named `.json` file (instead of rebuilding autosave separately). Autosave no longer merges in <strong>extra stale components</strong> from an older autosave when a named scene is active, which made reload look like your save was ignored.</li><li><strong>Scene reload flash</strong> — reloading a named scene no longer snaps back to old positions a moment later when plugin layout spawns, USB rescans, or `loadSystemData`'s deferred layout pass re-run after the file load; saved <strong>x/y</strong> are frozen from the named file and re-applied after every spawn (including hardware rescans).</li><li><strong>Multiple strips on one channel</strong> — scenes like Audio Party can legitimately save several layout components on the same controller channel (e.g. three Nollie fan strips on `…-0`). Reload no longer maps every deferred re-apply to the first match on that channel; rows restore by <strong>instanceId</strong>, strip <strong>name</strong>, then nearest saved <strong>x/y</strong>.</li><li><strong>Scene switch save prompt</strong> — switching to another scene no longer asks to save when you have not edited anything. The clean baseline is captured as soon as a scene finishes loading (not only after the 2 s layout settle), and the prompt stays off while deferred restore is still running.</li><li><strong>Focused high-FPS mode</strong> — on-screen HTML effects keep updating at monitor refresh while hardware sampling runs faster, instead of repainting the effect iframe on every 100 Hz tick (which capped real throughput around 25–30 FPS).</li><li><strong>Nollie32 blanking</strong> — watchdog controllers no longer get forced black during channel identify, setup wizard, or USB rescans; HID frames are queued through rescans instead of dropped so firmware does not blank the strip.</li><li><strong>Channel identify</strong> — the old 4 Hz on/off hardware flash is removed; identify now pulses only on the workspace canvas so strips (especially Nollie32) stay steady. Saved layouts no longer restore a stuck identify selection.</li><li><strong>Nollie USB pacing</strong> — shorter default gap between commit packets (2 ms instead of 8 ms) to reduce visible flicker during multi-packet frames.</li><li><strong>Nollie32 Firmware 2.x commit</strong> — the group commit marker is now sent only on the last HID packet of each channel group (not on every packet for the highest channel). Long strips or multi-packet channels no longer commit mid-frame, which looked like a stutter or blink.</li><li><strong>Nollie32 whole-strip blink</strong> — high-FPS hardware sampling no longer clears the engine canvas between effect frames, reuses the last good pixel read when sampling fails, and skips watchdog HID pushes during brief all-black canvas dropouts so the strip stays on the last good frame instead of flashing off.</li><li><strong>Nollie32 ~50 FPS cap</strong> — the high-FPS engine timer now fires on a fixed schedule at the start of each frame instead of after frame work finishes (work time was doubling the interval). Nollie32 requests <strong>108 Hz</strong>; the default hardware update cap is <strong>120 FPS</strong> so you do not need to raise Settings unless you lowered it before.</li><li><strong>Nollie32 ~50–60 FPS (focused)</strong> — watchdog `Render()` now runs on a dedicated interval decoupled from the heavy UI `frameLoop` (canvas read + Konva), so throughput can reach ~108 Hz while effects still composite at monitor refresh.</li><li><strong>Nollie32 strip stutter (HTML effects)</strong> — high-FPS hardware no longer samples a ~60 Hz cached fallback while the fast timer runs at ~100 Hz (that uneven hold/jump pattern looked like stutter on long strips). The engine now blits the <strong>live</strong> effect canvas on the same tick as `getImageData`.</li><li><strong>Nollie32 HID flushes/s</strong> — Strimer USB traffic (6–12 extra packets per frame) now runs only when that Strimer subdevice has LEDs on your layout, not just because <strong>GPU/ATX Strimer connected</strong> is enabled in device settings. Unmapped channels also report <strong>0</strong> mapped LEDs to the plugin instead of the full 256-LED cap, so strip-only setups send fewer packets per flush and <strong>HID flushes/s</strong> can track closer to your hardware update cap.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Audio Party and physical LED strips</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Audio Party</strong> — wave bands no longer drop to pure black at every trough (new <strong>Wave floor</strong> setting under General, default 14%). <strong>Glitch</strong> is off by default and is softer when enabled, so long strips (Nollie32) no longer look like they are blinking off between beats.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Screen turns off from inactivity</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>When Windows blanks the monitor to save power, your <strong>lights and on-screen effects keep moving smoothly</strong> instead of slowing to a crawl.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Smarter updates for some USB controllers</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Nollie32</strong> — only updates the channels and LED counts you actually placed on your layout (not every empty port at full size).</li><li><strong>Prism Mini</strong> — same for its strip channel.</li><li><strong>ASRock motherboards</strong> — when <strong>Per-LED / ARGB</strong> mode is enabled in settings, motherboard headers and built-in zones follow only the LEDs you added.</li><li><strong>SteelSeries QcK Prism</strong> (two-zone models) — sends less data when colors are not changing; animated effects still look normal.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Many USB devices on one PC</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>When you run a lot of USB RGB gear, RGBJunkie spreads work across updates so one USB hub is less likely to stutter. <strong>Wi‑Fi WLED</strong> strips and <strong>RAM</strong> lighting behave as before.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Memory number matches Task Manager</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>The memory shown in the <strong>status bar</strong> and under <strong>Settings → System → Computer</strong> now includes all parts of the app, so the total is closer to what you see for RGBJunkie in Task Manager.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Tray, minimize, lock screen, and other apps</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights and effects stay smooth</strong> when RGBJunkie is minimized, in the <strong>system tray</strong>, on the <strong>lock screen</strong> (Win+L), or while you use another program.</li><li>Fixed a bug where <strong>everything looked like a slideshow (~1 update per second)</strong> after minimize or close-to-tray.</li><li>The native background pump now calls the lighting loop <strong>directly on the webview thread</strong> (instead of throttled IPC events) and keeps the hidden WebView2 controller visible so tray/minimize timing stays at full speed.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Smoother effects when RGBJunkie is in front</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>On-screen effects match your <strong>monitor refresh</strong> again instead of lagging behind slow device updates.</li><li><strong>New installs</strong> default to <strong>320×200</strong> engine size (<strong>Settings → Engine → Resolution</strong>, 100% scale).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Adjustable maximum device FPS</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Settings → System → Engine → Hardware update cap</strong> — set the top speed for canvas sampling and device plugin updates (<strong>15–240 FPS</strong>, default <strong>100</strong>). Plugins can still request a lower rate via `device.setFrameRateTarget()` (for example <strong>Nollie32</strong> at 100 FPS, WLED at 60, mousepads at 25).</li><li><strong>Low power mode removed</strong> — the old <strong>Enable low power mode</strong> toggle is gone. Use <strong>Hardware update cap</strong> to limit CPU/USB load instead (for example <strong>30–60 FPS</strong> on busy hubs). Saved low-power preferences are ignored on upgrade.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Memory use</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>The app frees unused memory after big changes (switching effects, rescanning hardware) <strong>without freezing your lights</strong> for a long cleanup.</li><li>Automatic cleanup about every <strong>2 minutes</strong> when memory stays above about <strong>600 MB</strong> (was 5 minutes / 800 MB).</li><li><strong>Free RAM</strong> from the status bar or <strong>Ctrl+Shift+F</strong> still does a deeper cleanup when you ask for it.</li><li>Less aggressive cleanup when you alt-tab away, which could cause small LED hiccups.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Stays responsive in the background</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>Windows is less likely to <strong>slow RGBJunkie down</strong> while it runs in the tray and your lights are still on.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>After sleep or hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>Your gear <strong>comes back on its own</strong> after wake — similar to using <strong>Rescan hardware</strong>. <strong>WLED</strong> gets a quick refresh; everything else settles within a couple of seconds.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-81" data-version="0.2.81">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -77,6 +420,32 @@
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Tray / taskbar minimize</strong> — LED FPS used to collapse to <strong>1–2 Hz</strong> when the window was minimized or hidden because Chromium's <strong>IntensiveWakeUpThrottling</strong> clamps hidden-page `setInterval` to ~1 second per tick, no matter what Tauri events tried to do. The lighting loop now ticks from a <strong>dedicated Web Worker</strong> that runs on its own thread (not subject to page visibility throttling) at the same ~100 Hz the focused window uses. WebView2 also gets the `IntensiveWakeUpThrottling` and `CalculateNativeWinOcclusion` features disabled, so timers, message ports, and IPC stop being slowed down when the window is occluded. The native Tokio pump and the JS `setInterval` remain as a belt-and-suspenders fallback.</li><li><strong>Effect animations stay alive when hidden</strong> — Chromium <strong>pauses</strong> (not just throttles) `requestAnimationFrame` inside iframes whenever the parent page is hidden, so HTML effects froze and the LED loop kept sampling the same canvas. Every effect iframe now boots with a small polyfill that swaps `requestAnimationFrame` for a `setInterval`-backed driver while `document.visibilityState === &quot;hidden&quot;`, so JavaScript / Canvas2D / WebGL effects keep redrawing at ~60 Hz when the window is minimized or in the tray. Native `requestAnimationFrame` is restored automatically when the window is visible again.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace canvas tabs — device tree and component menu</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Devices panel</strong> — every layout component stays listed under its device and channel, even when it belongs to a <strong>different canvas tab</strong> than the one selected above the workspace. Hiding other tabs on the layout (eye on the tab strip) only affects the <strong>Konva canvas</strong>, not the tree. Rows on another tab show a subtle <strong>left-edge marker</strong>, softer name text, and the <strong>canvas pill</strong> (1, 2, …) for which tab owns the strip.</li><li><strong>Identify</strong> (canvas or tree) no longer wipes <strong>LED Studio</strong> brush colors on the layout — painted LEDs are restored when identify stops.</li><li><strong>Right-click a component</strong> on the canvas (or in the Devices tree): removed <strong>Clear LED paint for this component</strong> (still in <strong>Settings → Colors → LED Studio</strong>); <strong>Lock layout</strong> is renamed <strong>Lock component</strong>; <strong>Move to canvas</strong> opens a flyout submenu with all workspace tabs (current tab marked).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Scene bar, toolbar, and settings — Español and 简体中文</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li>The <strong>Scene</strong> label, <strong>Save</strong>, <strong>Reload</strong>, <strong>Delete</strong>, scene dropdown placeholder, and related tooltips and dialogs translate when you choose <strong>Español</strong> or <strong>简体中文</strong> in Settings.</li><li>Layout toolbar buttons (align, distribute, flip, snap, grid, report, help, settings, and grid spacing) use translated <strong>hover tooltips</strong> in those languages.</li><li><strong>Settings → User media folders</strong> — action buttons no longer stack Chinese text vertically; intro, tabs, <strong>删除</strong>, and <strong>重新扫描硬件</strong> are fully localized.</li><li><strong>Settings → System → Startup</strong> help text uses <strong>退出</strong> / <strong>关于</strong> instead of English <strong>Quit</strong> / <strong>About</strong>; update copy no longer says <strong>ZIP</strong> alone.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-73" data-version="0.2.73">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.73</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 21, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace canvas tabs — device tree and component menu</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Devices panel</strong> — every layout component stays listed under its device and channel, even when it belongs to a <strong>different canvas tab</strong> than the one selected above the workspace. Hiding other tabs on the layout (eye on the tab strip) only affects the <strong>Konva canvas</strong>, not the tree. Rows on another tab show a subtle <strong>left-edge marker</strong>, softer name text, and the <strong>canvas pill</strong> (1, 2, …) for which tab owns the strip.</li><li><strong>Identify</strong> (canvas or tree) no longer wipes <strong>LED Studio</strong> brush colors on the layout — painted LEDs are restored when identify stops.</li><li><strong>Right-click a component</strong> on the canvas (or in the Devices tree): removed <strong>Clear LED paint for this component</strong> (still in <strong>Settings → Colors → LED Studio</strong>); <strong>Lock layout</strong> is renamed <strong>Lock component</strong>; <strong>Move to canvas</strong> opens a flyout submenu with all workspace tabs (current tab marked).</li></ul>
 </article>
@@ -228,116 +597,6 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-56" data-version="0.2.56">
-<div class="rgbj-changelog-release__rail" aria-hidden="true">
-<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
-<span class="rgbj-changelog-timeline-line"></span>
-</div>
-<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
-<header class="rgbj-changelog-release__header">
-<div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.2.56</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
-</div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.56.)</em></p>
-</header>
-<div class="rgbj-changelog-release__body">
-</div>
-</div>
-</article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-58" data-version="0.2.58">
-<div class="rgbj-changelog-release__rail" aria-hidden="true">
-<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
-<span class="rgbj-changelog-timeline-line"></span>
-</div>
-<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
-<header class="rgbj-changelog-release__header">
-<div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.2.58</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
-</div>
-</header>
-<div class="rgbj-changelog-release__body">
-<section class="rgbj-changelog-group card border-secondary border-opacity-50">
-<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Desktop shell: no browser right-click menu or Find (Ctrl+F)</span></h5>
-<p class="rgbj-changelog-feature__text">The embedded WebView no longer shows the <strong>Edge-style default context menu</strong> (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. <strong>Ctrl+F</strong> / <strong>F3</strong> Find on page, <strong>Ctrl+P</strong> print, <strong>Ctrl+R</strong> / <strong>F5</strong> reload, and <strong>Ctrl+Plus/Minus</strong> zoom are disabled so the app feels like a desktop tool, not a browser tab. Your <strong>canvas and component right-click menus</strong> (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the <strong>devtools</strong> feature is enabled.</p>
-</article></div>
-</section>
-</div>
-</div>
-</article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-60" data-version="0.2.60">
-<div class="rgbj-changelog-release__rail" aria-hidden="true">
-<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
-<span class="rgbj-changelog-timeline-line"></span>
-</div>
-<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
-<header class="rgbj-changelog-release__header">
-<div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.2.60</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
-</div>
-</header>
-<div class="rgbj-changelog-release__body">
-<section class="rgbj-changelog-group card border-secondary border-opacity-50">
-<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect profiles: deleted canvas tabs no longer come back</span></h5>
-<p class="rgbj-changelog-feature__text">Saving or loading an <strong>Effect Settings</strong> profile (for example <strong>Audio Party</strong>) could bring back a removed <strong>Canvas B</strong> tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include <strong>Canvas B</strong> whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single <strong>Main</strong> canvas only.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>build.bat: automatic release prerequisites</span></h5>
-<p class="rgbj-changelog-feature__text">`build.bat` now runs <strong>`setup-release-prerequisites.mjs`</strong> first: creates <strong>`scripts/sftp-upload.config.local.json`</strong> from the example when missing, checks the FTP password, installs <strong>WSL Ubuntu apt packages</strong> for Linux builds when needed (one sudo prompt), and warns if <strong>OpenRGB</strong> is not vendored. Use <strong>`RGBJUNKIE_GIT_PULL=1`</strong> to pull latest code before the build. Old <strong>`RGBJunkie.AppDir`</strong> and unpack folders under `bundle/` are cleaned before FTP upload.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WSL setup: auto-install Node.js and Rust</span></h5>
-<p class="rgbj-changelog-feature__text">The WSL prerequisites script now installs <strong>Node.js LTS</strong> (NodeSource) and <strong>rustup stable</strong> when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Release FTP: clearer Linux upload failures</span></h5>
-<p class="rgbj-changelog-feature__text">If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old <strong>0.2.48</strong> files after a bump to <strong>0.2.62</strong>), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux downloads on the website (release pipeline)</span></h5>
-<p class="rgbj-changelog-feature__text">`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes <strong>`.deb`</strong>, <strong>`.rpm`</strong>, and <strong>AppImage</strong> files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux WSL build: fix Vite EPERM on `C:`</span></h5>
-<p class="rgbj-changelog-feature__text">Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: toolbar layout like the design mockup</span></h5>
-<p class="rgbj-changelog-feature__text">The LED Studio controls are laid out in one horizontal strip: <strong>Component</strong> (device dropdown), <strong>Brush tools</strong> (color + HEX in one capsule, Paint/Erase in another), and <strong>Actions</strong> (three rounded buttons, with <strong>Clear all</strong> in red). Sections are separated by vertical dividers with small uppercase labels above each group.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: confirm before Clear all</span></h5>
-<p class="rgbj-changelog-feature__text"><strong>Clear all</strong> in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on <strong>every component</strong> on the canvas, not only the one selected in the dropdown.</p>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>In-app confirmation dialogs (no more browser popups)</span></h5>
-<p class="rgbj-changelog-feature__text">Destructive or important actions no longer use the WebView’s <strong>“localhost says”</strong> `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio <strong>Clear all</strong>, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).</p>
-</article></div>
-</section>
-</div>
-</div>
-</article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-62" data-version="0.2.62">
-<div class="rgbj-changelog-release__rail" aria-hidden="true">
-<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
-<span class="rgbj-changelog-timeline-line"></span>
-</div>
-<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
-<header class="rgbj-changelog-release__header">
-<div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.2.62</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
-</div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.62.)</em></p>
-</header>
-<div class="rgbj-changelog-release__body">
-</div>
-</div>
-</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-64" data-version="0.2.64">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -430,7 +689,6 @@
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect developer guide: scaling shapes to canvas size</span></h5>
 <p class="rgbj-changelog-feature__text"><strong>`EFFECT-DEVELOPER-GUIDE.md`</strong> (and the HTML guide on the site) now documents <strong>§2.2</strong> — how to scale radii, spacing, and stroke width using <strong>`canvas.width`/`height`</strong>, <strong>`engine.canvas`</strong>, <strong>`rgbjSetupCanvas`</strong>, and the 320×200 reference size.</p>
-<p class="rgbj-changelog-feature__text"><em>(Add other release notes for v0.2.64.)</em></p>
 </article></div>
 </section>
 </div>
@@ -467,6 +725,28 @@
 </div>
 </div>
 </article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-62" data-version="0.2.62">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.62</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Patch release</span></h5>
+<p class="rgbj-changelog-feature__text">No separate release notes for this version. See <strong>v0.2.64</strong> for user-facing changes shipped in this period.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-61" data-version="0.2.61">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -478,9 +758,68 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.2.61</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.61.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Patch release</span></h5>
+<p class="rgbj-changelog-feature__text">No separate release notes for this version. See <strong>v0.2.60</strong> for user-facing changes shipped in this period.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-60" data-version="0.2.60">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.60</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect profiles: deleted canvas tabs no longer come back</span></h5>
+<p class="rgbj-changelog-feature__text">Saving or loading an <strong>Effect Settings</strong> profile (for example <strong>Audio Party</strong>) could bring back a removed <strong>Canvas B</strong> tab. Workspace tabs are stored in both effect and device autosave; a later device layout restore could re-add a tab you had deleted, and the app’s default workspace used to include <strong>Canvas B</strong> whenever tabs were empty. Profiles now prune stale per-tab effect snapshots on save/load, treat saved `workspaceTabs` as authoritative over old component rows, sync device autosave after effect profile changes, and default to a single <strong>Main</strong> canvas only.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>build.bat: automatic release prerequisites</span></h5>
+<p class="rgbj-changelog-feature__text">`build.bat` now runs <strong>`setup-release-prerequisites.mjs`</strong> first: creates <strong>`scripts/sftp-upload.config.local.json`</strong> from the example when missing, checks the FTP password, installs <strong>WSL Ubuntu apt packages</strong> for Linux builds when needed (one sudo prompt), and warns if <strong>OpenRGB</strong> is not vendored. Use <strong>`RGBJUNKIE_GIT_PULL=1`</strong> to pull latest code before the build. Old <strong>`RGBJunkie.AppDir`</strong> and unpack folders under `bundle/` are cleaned before FTP upload.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WSL setup: auto-install Node.js and Rust</span></h5>
+<p class="rgbj-changelog-feature__text">The WSL prerequisites script now installs <strong>Node.js LTS</strong> (NodeSource) and <strong>rustup stable</strong> when missing, instead of only printing a warning. First `build.bat` on a new Ubuntu WSL image may take a few minutes for apt + rustup.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Release FTP: clearer Linux upload failures</span></h5>
+<p class="rgbj-changelog-feature__text">If Linux `.deb`/`.rpm`/AppImage versions do not match `package.json` (for example old <strong>0.2.48</strong> files after a bump to <strong>0.2.62</strong>), FTP upload now prints an explicit error instead of silently skipping Linux. `build.bat` runs `verify-linux-bundles.mjs` before upload; `build-linux-via-wsl.mjs` removes stale Linux artifacts when copying a new build back from WSL.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux downloads on the website (release pipeline)</span></h5>
+<p class="rgbj-changelog-feature__text">`build.bat` can produce Linux installers via WSL, and the FTP upload step now publishes <strong>`.deb`</strong>, <strong>`.rpm`</strong>, and <strong>AppImage</strong> files under `downloads/linux/` on rgbjunkie.com (alongside Windows NSIS, MSI, and the portable ZIP). If a Linux build was skipped, the upload continues with Windows artifacts only.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux WSL build: fix Vite EPERM on `C:`</span></h5>
+<p class="rgbj-changelog-feature__text">Building on `/mnt/c/...` from WSL could fail with `EPERM` when Vite copies `public/` into `dist/`. The WSL build script stages under `~/RGBJunkieApp-wsl-build`, builds on the Linux filesystem, then copies `.deb`/`.rpm`/AppImage back through Windows (`\\wsl$\...`) — not with Linux `cp` into `/mnt/c`, which often hits the same permission error.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: toolbar layout like the design mockup</span></h5>
+<p class="rgbj-changelog-feature__text">The LED Studio controls are laid out in one horizontal strip: <strong>Component</strong> (device dropdown), <strong>Brush tools</strong> (color + HEX in one capsule, Paint/Erase in another), and <strong>Actions</strong> (three rounded buttons, with <strong>Clear all</strong> in red). Sections are separated by vertical dividers with small uppercase labels above each group.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>LED Studio: confirm before Clear all</span></h5>
+<p class="rgbj-changelog-feature__text"><strong>Clear all</strong> in LED Studio now asks for confirmation first. It reminds you that painted LED colors will be removed on <strong>every component</strong> on the canvas, not only the one selected in the dropdown.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>In-app confirmation dialogs (no more browser popups)</span></h5>
+<p class="rgbj-changelog-feature__text">Destructive or important actions no longer use the WebView’s <strong>“localhost says”</strong> `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio <strong>Clear all</strong>, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).</p>
+</article></div>
+</section>
 </div>
 </div>
 </article>
@@ -514,6 +853,28 @@
 </div>
 </div>
 </article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-58" data-version="0.2.58">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.58</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Desktop shell: no browser right-click menu or Find (Ctrl+F)</span></h5>
+<p class="rgbj-changelog-feature__text">The embedded WebView no longer shows the <strong>Edge-style default context menu</strong> (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. <strong>Ctrl+F</strong> / <strong>F3</strong> Find on page, <strong>Ctrl+P</strong> print, <strong>Ctrl+R</strong> / <strong>F5</strong> reload, and <strong>Ctrl+Plus/Minus</strong> zoom are disabled so the app feels like a desktop tool, not a browser tab. Your <strong>canvas and component right-click menus</strong> (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the <strong>devtools</strong> feature is enabled.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-57" data-version="0.2.57">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -525,9 +886,36 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.2.57</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.57.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Patch release</span></h5>
+<p class="rgbj-changelog-feature__text">No separate release notes for this version. See <strong>v0.2.58</strong> for user-facing changes shipped in this period.</p>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-56" data-version="0.2.56">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.56</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Patch release</span></h5>
+<p class="rgbj-changelog-feature__text">No separate release notes for this version. See <strong>v0.2.58</strong> for user-facing changes shipped in this period.</p>
+</article></div>
+</section>
 </div>
 </div>
 </article>
@@ -598,6 +986,105 @@
 </div>
 </div>
 </article>
+<article class="rgbj-changelog-release" id="may-8-9-2026" data-version="">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release"><i class="bi bi-calendar2-event-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 8–9, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary">Plain-language summary of changes users may notice. (Exact shipping date depends on your update channel.)</p>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-calendar-day-fill" aria-hidden="true"></i><span>May 8</span></h4>
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Share your effect settings</span></h5>
+<p class="rgbj-changelog-feature__text">You can <strong>share a link</strong> (or similar flow, depending on build) so others can open the same effect configuration. This is meant for presets, support, and showing setups without manually copying every slider.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Cleaner device support</span></h5>
+<p class="rgbj-changelog-feature__text">Many device plugins were <strong>trimmed to lighting-related behavior</strong> so the app stays focused on RGB and control surfaces you actually use. The <strong>device list</strong> and related data were refreshed so names and entries stay consistent.</p>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>General improvements</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Look and feel</strong> — Updated layout and styling in parts of the main window.</li><li><strong>App icon</strong> — Refreshed icons for Windows, shortcuts, and related sizes so the app matches the current branding.</li><li><strong>Reliability and quality</strong> — Under-the-hood work on lighting output, plugins, WLED behavior, color handling, and diagnostics so sessions stay smoother and odd edge cases are less likely.</li><li><strong>Component library</strong> — Many fan, strip, and similar <strong>layout parts</strong> were touched for consistency and accuracy when you build a desk setup.</li></ul>
+</article></div>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-calendar-day-fill" aria-hidden="true"></i><span>May 9</span></h4>
+<p class="rgbj-changelog-group__intro"><em>(These updates are in development builds; they may not all be in every installer until the next release.)</em></p>
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace and side panels</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Collapsible columns</strong> — The <strong>devices</strong> list and <strong>effects</strong> panel can be collapsed to a slim bar so the <strong>center workspace</strong> (layout + effect preview) gets more room.</li><li><strong>Peek while collapsed</strong> — When a column is collapsed, moving the pointer over the slim bar can <strong>temporarily expand</strong> it so you can glance at devices or settings without fully pinning the panel open.</li><li><strong>Smoother peek</strong> — Small gaps next to the center area no longer “flicker” the peek panel closed when you move the mouse toward the middle of the screen.</li><li><strong>Same width</strong> — The two side columns are matched in width so the layout feels balanced.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect preview and canvas</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>More preview, less empty frame</strong> — The dark border around the <strong>live effect preview</strong> is reduced so the colorful preview uses more of the available space.</li><li><strong>Softer edge</strong> — The outer frame no longer reads as an extra harsh black ring around the preview when the effect doesn’t paint those pixels.</li><li><strong>Tighter fit</strong> — Margins around the preview area were slightly reduced so the canvas uses the window a bit better.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Layout editor</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>No dashed outline</strong> — The dotted rectangle around the main layout area was <strong>removed</strong> so the workspace looks cleaner (the optional grid, when turned on, is unchanged).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Device list</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Visibility</strong> — Device visibility is shown with the familiar <strong>eye</strong> control again (not a brand logo in that spot).</li><li><strong>Easier to scan</strong> — The device column uses horizontal space a bit better, and row alignment was improved so labels, chevrons, and buttons line up more naturally.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release" id="may-6-7-2026" data-version="">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release"><i class="bi bi-calendar2-event-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 6–7, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Color profiles &amp; built-in effects</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>One palette system everywhere</strong> — A large set of <strong>built-in HTML effects</strong> now reads colors from the same <strong>Color profiles</strong> you manage under <strong>Settings → Color profiles</strong> (built-in gradients plus your own).</li><li><strong>Accurate previews</strong> — Profile swatches use the real gradient <strong>stops</strong> from the app, not hard-coded color tables inside each effect.</li><li><strong>Smarter defaults</strong> — Several effects were retuned so their default profile matches the new catalog.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Effect settings UI (Color tab)</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Profile chooser as a modal gallery</strong> — Picking a color profile opens a <strong>modal</strong> with <strong>card-style</strong> gradient previews instead of a long plain dropdown.</li><li><strong>Your profiles first</strong> — <strong>Custom profiles you created</strong> appear in their own section <strong>above</strong> built-in themes.</li><li><strong>Jump to profile editor</strong> — A control in that modal sends you straight to <strong>Settings → Color profiles</strong> when you want to add or edit gradients.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Settings → Color profiles</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Import from Coolors</strong> — Paste a <strong>Coolors.co</strong> share URL or hex values to create a new profile in one step.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Layout, workspace &amp; sidebar</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Identify hardware</strong> — <strong>Identify</strong> from the workspace or sidebar helps you match on-screen components to physical devices.</li><li><strong>Device tree</strong> — Summary rows for device groups can <strong>collapse</strong> again after you open them.</li><li><strong>Rotated layouts</strong> — Moving <strong>rotated</strong> selections along the workspace edge uses the correct dimensions.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>Support &amp; bug reports</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>In-app bug report flow</strong> — Send diagnostics with optional <strong>note</strong>, <strong>contact</strong> fields, application log, and USB / HID hardware snapshot.</li><li><strong>Toolbar shortcut</strong> — <strong>Report</strong> on the main bar jumps straight to <strong>Settings → Logs</strong>.</li></ul>
+</section>
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<h4 class="rgbj-changelog-group__title"><i class="bi bi-layers-fill" aria-hidden="true"></i><span>USB hot-plug &amp; Rescan hardware</span></h4>
+<ul class="rgbj-changelog-list"><li><strong>Plug and unplug (Windows)</strong> — The app reacts to USB topology changes so devices don’t stay in the sidebar after removal or return without lighting until a restart.</li><li><strong>Sidebar Rescan</strong> — <strong>Rescan hardware</strong> clears stale HID handles before reloading enumeration, which fixes many “ghost device” and dark-LED cases after replugging.</li></ul>
+</section>
+</div>
+</div>
+</article>
+<aside class="rgbj-changelog-notes card border-info border-opacity-25 shadow-sm">
+<div class="rgbj-changelog-notes__inner">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--notes"><i class="bi bi-info-circle-fill" aria-hidden="true"></i></span>
+<div class="rgbj-changelog-notes__content">
+<h3 class="rgbj-changelog-notes__title">Notes</h3>
+<ul class="rgbj-changelog-list rgbj-changelog-list--notes"><li>Newer sections appear first. Your installed version may include only a subset until you update.</li><li>Check <strong>Settings → About</strong> (or your usual update path) for the app version if something above does not match what you see.</li></ul>
+</div>
+</div>
+</aside>
 <article class="rgbj-changelog-release" id="may-8-9-2026" data-version="">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release"><i class="bi bi-calendar2-event-fill" aria-hidden="true"></i></span>

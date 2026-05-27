@@ -223,11 +223,17 @@ function rgbj_page_firebase_download_scripts(): void
     if (!function_exists('rgbj_download_stats_config')) {
         require_once __DIR__ . '/download-stats-config.php';
     }
+    if (!function_exists('rgbj_download_server_logging_enabled')) {
+        require_once __DIR__ . '/firestore-download-log.php';
+    }
     $cooldown = (int) (rgbj_download_stats_config()['count_cooldown_seconds'] ?? 45);
+    $serverLog = rgbj_download_server_logging_enabled();
     ?>
     <script type="module" src="/js/firebase.js"></script>
     <script>
         window.RGBJ_DOWNLOAD_THANKS_URL = <?= json_encode(rgbj_url('thanks/'), JSON_THROW_ON_ERROR) ?>;
+        window.RGBJ_DOWNLOAD_LOG_URL = <?= json_encode(rgbj_url('log-download.php'), JSON_THROW_ON_ERROR) ?>;
+        window.RGBJ_DOWNLOAD_SERVER_LOG = <?= $serverLog ? 'true' : 'false' ?>;
     </script>
     <script src="<?= rgbj_h(rgbj_url('assets/download-track.js')) ?>" defer></script>
     <script>

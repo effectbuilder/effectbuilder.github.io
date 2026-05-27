@@ -432,6 +432,35 @@
     outline-offset: 2px;
 }
 
+/* Download stats — sortable tables */
+.rgbj-stats-sortable th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.rgbj-stats-sortable th[data-sort]:hover {
+    color: var(--bs-info);
+}
+
+.rgbj-stats-sortable th[data-sort].rgbj-sort-active {
+    color: var(--bs-info);
+}
+
+.rgbj-stats-sortable th[data-sort].rgbj-sort-active::after {
+    font-size: 0.65em;
+    opacity: 0.9;
+    margin-left: 0.2em;
+}
+
+.rgbj-stats-sortable th[data-sort].rgbj-sort-asc.rgbj-sort-active::after {
+    content: '▲';
+}
+
+.rgbj-stats-sortable th[data-sort].rgbj-sort-desc.rgbj-sort-active::after {
+    content: '▼';
+}
+
 /* Post-download thank-you page tool cards */
 .rgbj-thanks-tool-card {
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;

@@ -3,6 +3,7 @@
 require_once dirname(__DIR__, 2) . '/includes/download-tracker.php';
 
 $statsCfg = rgbj_download_stats_config();
+$rgbj_server_download_log = rgbj_download_server_logging_enabled();
 $rgbj_nav_active = '';
 $pageTitle = 'Download stats | RGBJunkie';
 
@@ -19,8 +20,17 @@ rgbj_subpage_open([
 <p class="text-body-secondary mb-3">
     Firestore collection <code><?= rgbj_h(RGBJ_FIRESTORE_DOWNLOADS_COLLECTION) ?></code>
     · project <code>effect-builder</code> (same as <code>/js/firebase.js</code>).
-    Every tracked download click is logged separately.
+    Every tracked download is logged separately. With a service account configured, events include <strong>IP address</strong>, country/region/city, and ISP (via <code>download.php</code>).
 </p>
+<?php if (!$rgbj_server_download_log) : ?>
+<div class="alert alert-warning small mb-3" role="alert">
+    <strong>IP / location logging is off.</strong>
+    Browser-only events do not include IP addresses. Add a Firebase service account JSON and set
+    <code>firebase_service_account_json</code> in <code>includes/download-stats-secret.php</code>
+    (see <code>download-stats-secret.php.example</code>). The file
+    <code>includes/rgbjunkie-download-logger.json</code> must exist and be readable by PHP.
+</div>
+<?php endif; ?>
 <p class="small text-body-secondary mb-3">
     If you see a permission error after sign-in, add the <code>rgbjunkie-app-downloads</code> rules from
     <code>firestore.rules.example</code> in the
@@ -69,17 +79,30 @@ rgbj_subpage_open([
 
     <h2 class="h5 fw-semibold mb-3">Downloads per file</h2>
     <div class="table-responsive mb-4">
-        <table class="table table-sm table-dark table-striped align-middle mb-0">
+        <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="file" data-default-sort="version" data-default-dir="desc">
             <thead>
                 <tr>
-                    <th>File</th>
-                    <th>Kind</th>
-                    <th>Channel</th>
-                    <th>Version</th>
-                    <th class="text-end">Downloads (30d)</th>
+                    <th scope="col" data-sort="file_name" data-sort-type="string">File</th>
+                    <th scope="col" data-sort="kind" data-sort-type="string">Kind</th>
+                    <th scope="col" data-sort="channel" data-sort-type="string">Channel</th>
+                    <th scope="col" data-sort="version" data-sort-type="version">Version</th>
+                    <th scope="col" class="text-end" data-sort="downloads" data-sort-type="number">Downloads (30d)</th>
                 </tr>
             </thead>
             <tbody id="rgbj-stats-by-file"></tbody>
+        </table>
+    </div>
+
+    <h2 class="h5 fw-semibold mb-3">By country (30d)</h2>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="country" data-default-sort="downloads" data-default-dir="desc">
+            <thead>
+                <tr>
+                    <th scope="col" data-sort="country" data-sort-type="string">Country</th>
+                    <th scope="col" class="text-end" data-sort="downloads" data-sort-type="number">Downloads</th>
+                </tr>
+            </thead>
+            <tbody id="rgbj-stats-by-country"></tbody>
         </table>
     </div>
 
@@ -87,11 +110,11 @@ rgbj_subpage_open([
         <div class="col-lg-5">
             <h2 class="h5 fw-semibold mb-3">By day (30d)</h2>
             <div class="table-responsive">
-                <table class="table table-sm table-dark table-striped align-middle mb-0">
+                <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="day" data-default-sort="day" data-default-dir="desc">
                     <thead>
                         <tr>
-                            <th>Day</th>
-                            <th class="text-end">Downloads</th>
+                            <th scope="col" data-sort="day" data-sort-type="string">Day</th>
+                            <th scope="col" class="text-end" data-sort="downloads" data-sort-type="number">Downloads</th>
                         </tr>
                     </thead>
                     <tbody id="rgbj-stats-by-day"></tbody>
@@ -99,8 +122,21 @@ rgbj_subpage_open([
             </div>
         </div>
         <div class="col-lg-7">
-            <h2 class="h5 fw-semibold mb-3">Recent</h2>
-            <ul class="list-group list-group-flush border rounded border-secondary" id="rgbj-stats-recent"></ul>
+            <h2 class="h5 fw-semibold mb-3">Recent downloads</h2>
+            <p class="small text-body-secondary mb-2">IP and location appear when events are logged server-side (<code>download.php</code> + service account).</p>
+            <div class="table-responsive">
+                <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="recent" data-default-sort="created_at_ts" data-default-dir="desc">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort="created_at_ts" data-sort-type="number">When</th>
+                            <th scope="col" data-sort="file_name" data-sort-type="string">File</th>
+                            <th scope="col" data-sort="ip" data-sort-type="string">IP</th>
+                            <th scope="col" data-sort="location" data-sort-type="string">Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rgbj-stats-recent"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

@@ -15,8 +15,15 @@
         && data.kind is string
         && data.platform is string
         && (!('version' in data) || data.version == null || data.version is string)
+        && (!('channel' in data) || (data.channel is string && data.channel.size() <= 32))
         && (!('userAgent' in data) || (data.userAgent is string && data.userAgent.size() <= 512))
-        && (!('referer' in data) || (data.referer is string && data.referer.size() <= 512));
+        && (!('referer' in data) || (data.referer is string && data.referer.size() <= 512))
+        && (!('ip' in data) || (data.ip is string && data.ip.size() <= 45))
+        && (!('country' in data) || (data.country is string && data.country.size() <= 80))
+        && (!('region' in data) || (data.region is string && data.region.size() <= 120))
+        && (!('city' in data) || (data.city is string && data.city.size() <= 120))
+        && (!('isp' in data) || (data.isp is string && data.isp.size() <= 120))
+        && (!('acceptLanguage' in data) || (data.acceptLanguage is string && data.acceptLanguage.size() <= 128));
     }
 
     //

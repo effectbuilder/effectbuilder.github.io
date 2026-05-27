@@ -39,16 +39,20 @@ if (!$payload['service_account_readable']) {
     exit;
 }
 
-$payload['test_write'] = rgbj_firestore_log_download([
-    'filePath' => 'downloads/portable/_diagnostic_test.zip',
-    'fileName' => '_diagnostic_test.zip',
-    'version' => 'diagnostic',
-    'kind' => 'portable',
-    'platform' => 'windows',
-    'channel' => 'app-update',
-    'userAgent' => 'RGBJunkieDiagnostic/1.0',
-    'referer' => 'stats/test-server-log.php',
-]);
+$testMeta = rgbj_download_build_log_meta(
+    'downloads/portable/_diagnostic_test.zip',
+    'app-update',
+    '_diagnostic_test.zip',
+    ['version' => 'diagnostic', 'kind' => 'portable', 'platform' => 'windows']
+);
+$testMeta['userAgent'] = 'RGBJunkieDiagnostic/1.0';
+$testMeta['referer'] = 'stats/test-server-log.php';
+$payload['test_ip'] = $testMeta['ip'];
+$payload['test_location'] = trim(
+    $testMeta['city'] . ', ' . $testMeta['region'] . ', ' . $testMeta['country'],
+    ', '
+);
+$payload['test_write'] = rgbj_firestore_log_download($testMeta);
 
 if (!$payload['test_write']) {
     $payload['hint'] =

@@ -11,13 +11,16 @@ require_once __DIR__ . '/site.php';
 require_once __DIR__ . '/installers.php';
 require_once __DIR__ . '/firestore-download-log.php';
 
-function rgbj_download_link(string $webPath, string $channel = 'website'): string
+function rgbj_download_link(string $webPath, string $channel = 'website', bool $skipServerLog = false): string
 {
     $webPath = ltrim(str_replace('\\', '/', $webPath), '/');
     $query = 'f=' . rawurlencode($webPath);
     $channel = rgbj_download_normalize_channel($channel);
     if ($channel !== 'website') {
         $query .= '&channel=' . rawurlencode($channel);
+    }
+    if ($skipServerLog) {
+        $query .= '&nolog=1';
     }
 
     return rgbj_url('download.php?' . $query);
@@ -149,21 +152,18 @@ function rgbj_serve_tracked_download(string $webPath, string $channel = 'website
     $channel = rgbj_download_normalize_channel($channel);
     $fileName = basename($realFile);
     $classified = rgbj_download_classify($webPath, $fileName);
-    $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
-    $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
 
-    if (rgbj_download_should_log_server_side($channel, $userAgent)) {
+    $skipLog = isset($_GET['nolog']) && (string) $_GET['nolog'] === '1';
+    if (!$skipLog && isset($_COOKIE['rgbj_dl_nolog'])) {
+        $expected = hash('sha256', $webPath . '|' . $channel);
+        if (hash_equals($expected, (string) $_COOKIE['rgbj_dl_nolog'])) {
+            $skipLog = true;
+        }
+    }
+
+    if (!$skipLog && rgbj_download_server_logging_enabled()) {
         try {
-            rgbj_firestore_log_download([
-                'filePath' => $webPath,
-                'fileName' => $fileName,
-                'version' => $classified['version'],
-                'kind' => $classified['kind'],
-                'platform' => $classified['platform'],
-                'channel' => $channel,
-                'userAgent' => $userAgent,
-                'referer' => $referer,
-            ]);
+            rgbj_firestore_log_download(rgbj_download_build_log_meta($webPath, $channel, $fileName, $classified));
         } catch (Throwable $e) {
             // Never block installer delivery when optional analytics logging fails.
             error_log('rgbj_firestore_log_download: ' . $e->getMessage());

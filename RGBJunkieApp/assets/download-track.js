@@ -60,12 +60,41 @@
         };
     }
 
-    async function logDownload(meta) {
+    async function logDownloadServer(meta) {
+        const logUrl = window.RGBJ_DOWNLOAD_LOG_URL || '';
+        if (!logUrl) {
+            return false;
+        }
+        try {
+            const res = await fetch(logUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(meta),
+                keepalive: true,
+            });
+            const text = await res.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (parseErr) {
+                console.warn('RGBJ server log: not JSON', res.status, text.slice(0, 200));
+                return false;
+            }
+            if (!res.ok || !data.ok) {
+                console.warn('RGBJ server log failed:', data || res.status);
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.warn('RGBJ server download log failed:', err);
+            return false;
+        }
+    }
+
+    async function logDownloadClient(meta) {
         if (!window.db || !window.addDoc || !window.collection || !window.serverTimestamp) {
             console.warn('RGBJ download tracking: firebase.js not loaded');
-            return;
-        }
-        if (withinCooldown(meta.filePath)) {
             return;
         }
 
@@ -80,6 +109,21 @@
             userAgent: (navigator.userAgent || '').slice(0, 512),
             referer: (document.referrer || '').slice(0, 512),
         });
+    }
+
+    function serverLoggingConfigured() {
+        return Boolean(window.RGBJ_DOWNLOAD_SERVER_LOG);
+    }
+
+    async function logDownload(meta) {
+        if (withinCooldown(meta.filePath)) {
+            return;
+        }
+
+        const serverOk = await logDownloadServer(meta);
+        if (!serverOk && !serverLoggingConfigured()) {
+            await logDownloadClient(meta);
+        }
         markLogged(meta.filePath);
     }
 
@@ -104,7 +148,7 @@
                     .catch(function (err) {
                         console.warn('RGBJ download tracking failed:', err);
                     })
-                    .finally(function () {
+                    .then(function () {
                         var thanksBase = window.RGBJ_DOWNLOAD_THANKS_URL || '';
                         if (thanksBase && meta.filePath) {
                             var sep = thanksBase.indexOf('?') >= 0 ? '&' : '?';

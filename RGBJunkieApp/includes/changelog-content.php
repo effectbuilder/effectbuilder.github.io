@@ -15,6 +15,102 @@ function rgbj_changelog_paths(): array
     ];
 }
 
+/** @param list<string> $versions */
+function rgbj_changelog_sort_versions(array $versions): array
+{
+    $versions = array_values(array_unique(array_filter($versions, static fn (mixed $v): bool => is_string($v) && $v !== '')));
+    usort($versions, static fn (string $a, string $b): int => version_compare($b, $a));
+
+    return $versions;
+}
+
+/**
+ * @return list<array{version: string, html: string, start: int, end: int}>
+ */
+function rgbj_changelog_extract_versioned_releases(string $html): array
+{
+    $releases = [];
+    $marker = '<article class="rgbj-changelog-release rgbj-changelog-release--versioned"';
+    $offset = 0;
+    $len = strlen($html);
+
+    while (($start = strpos($html, $marker, $offset)) !== false) {
+        if (!preg_match('#data-version="([^"]*)"#', $html, $versionMatch, 0, $start)) {
+            $offset = $start + strlen($marker);
+            continue;
+        }
+
+        $tagEnd = strpos($html, '>', $start);
+        if ($tagEnd === false) {
+            break;
+        }
+
+        $pos = $tagEnd + 1;
+        $depth = 1;
+
+        while ($pos < $len && $depth > 0) {
+            $openPos = stripos($html, '<article', $pos);
+            $closePos = stripos($html, '</article>', $pos);
+            if ($closePos === false) {
+                break;
+            }
+            if ($openPos !== false && $openPos < $closePos) {
+                $depth++;
+                $pos = $openPos + 8;
+                continue;
+            }
+            $depth--;
+            $pos = $closePos + 10;
+        }
+
+        if ($depth !== 0) {
+            break;
+        }
+
+        $releases[] = [
+            'version' => $versionMatch[1],
+            'html' => substr($html, $start, $pos - $start),
+            'start' => $start,
+            'end' => $pos,
+        ];
+        $offset = $pos;
+    }
+
+    return $releases;
+}
+
+/**
+ * Reorder versioned release articles newest-first (synced HTML may not match markdown order).
+ */
+function rgbj_changelog_sort_body_html(string $html): string
+{
+    $releases = rgbj_changelog_extract_versioned_releases($html);
+    if ($releases === []) {
+        return $html;
+    }
+
+    usort($releases, static fn (array $a, array $b): int => version_compare($b['version'], $a['version']));
+
+    $sortedBlock = implode('', array_column($releases, 'html'));
+
+    $withoutVersioned = $html;
+    $byStartDesc = $releases;
+    usort($byStartDesc, static fn (array $a, array $b): int => $b['start'] <=> $a['start']);
+    foreach ($byStartDesc as $release) {
+        $withoutVersioned = substr($withoutVersioned, 0, $release['start'])
+            . substr($withoutVersioned, $release['end']);
+    }
+
+    $replaced = preg_replace(
+        '#(<div class="rgbj-changelog-timeline">)#',
+        '$1' . $sortedBlock,
+        $withoutVersioned,
+        1
+    );
+
+    return is_string($replaced) ? $replaced : $html;
+}
+
 /** @return array{appVersion: string, versions: list<string>}|null */
 function rgbj_changelog_versions_meta(): ?array
 {
@@ -34,7 +130,7 @@ function rgbj_changelog_versions_meta(): ?array
     }
     return [
         'appVersion' => is_string($raw['appVersion'] ?? null) ? (string) $raw['appVersion'] : '',
-        'versions' => $versions,
+        'versions' => rgbj_changelog_sort_versions($versions),
     ];
 }
 
@@ -85,7 +181,7 @@ function rgbj_render_changelog_body(): void
 {
     $paths = rgbj_changelog_paths();
     if (is_readable($paths['html'])) {
-        echo file_get_contents($paths['html']);
+        echo rgbj_changelog_sort_body_html((string) file_get_contents($paths['html']));
         return;
     }
 
