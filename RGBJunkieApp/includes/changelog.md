@@ -26,6 +26,10 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 - **LED calibration layout** — **Settings → Colors → Calibration** shows each channel’s percentage on the same row as **Red**, **Green**, and **Blue** (to the right of the label), with the slider directly underneath.
 - **Windows startup** — **Settings → System → Startup → Open RGBJunkie when this computer starts** re-registers the login entry on every launch so portable moves and updates do not leave a broken path in Windows. If **Start minimized** is off, the main window appears after sign-in instead of staying tray-only.
 
+#### Updates and About
+
+- **Release notes after an update check** — if your installed build has an older bundled changelog, **What's new** now loads **v0.3.0** (and other missing versions) from rgbjunkie.com instead of showing “No release notes found.”
+
 ---
 
 ## v0.2.99 — May 26, 2026
