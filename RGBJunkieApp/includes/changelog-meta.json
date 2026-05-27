@@ -1,8 +1,9 @@
 {
   "source": "docs/CHANGELOG.md",
-  "syncedAt": "2026-05-26T23:27:36.412Z",
-  "appVersion": "0.2.99",
+  "syncedAt": "2026-05-27T14:14:30.129Z",
+  "appVersion": "0.3.0",
   "versions": [
+    "0.3.0",
     "0.2.99",
     "0.2.98",
     "0.2.97",

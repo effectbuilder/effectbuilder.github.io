@@ -4,6 +4,24 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.0 — May 27, 2026
+
+#### Install layout
+
+- **No OpenRGB folder in the install directory** — OpenRGB is no longer copied next to the app. On Windows it can still auto-download into app data when RAM/OpenRGB needs it.
+- **Bundled helpers under `runtime/`** — PawnIO and LibreHardwareMonitor now install as `runtime/pawnio/` and `runtime/lhm/` instead of separate top-level folders. Older installs with `pawnio/`, `pawnio-runtime/`, or `lhm/` at the app root are still detected.
+
+#### About
+
+- **Third party** — Settings → About has a **Third party** tab that thanks the open source and bundled helpers RGBJunkie uses (Tauri, Konva, optional Windows sensor/RAM helpers, and others), with license names and project links.
+
+#### Settings
+
+- **LED calibration** — **Settings → Colors → Calibration** shows each color’s percentage on the same line as **Red**, **Green**, and **Blue** (to the right of the name), with the slider on the row below.
+- **Windows startup** — **Settings → System → Startup → Open RGBJunkie when this computer starts** now re-registers the login entry on each launch (fixes stale paths after portable updates). If you do not use **Start minimized**, the window opens normally after sign-in instead of staying hidden in the tray only.
+
+---
+
 ## v0.2.99 — May 26, 2026
 
 #### Effects
