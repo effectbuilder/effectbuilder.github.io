@@ -266,6 +266,8 @@
         const byFile = new Map();
         const byDay = new Map();
         const byCountry = new Map();
+        const byChannel = new Map();
+        const byPlatform = new Map();
         const recent = [];
 
         docs.forEach(function (docSnap) {
@@ -308,6 +310,9 @@
 
                 const country = String(d.country || '').trim() || 'Unknown';
                 byCountry.set(country, (byCountry.get(country) || 0) + 1);
+                byChannel.set(channel, (byChannel.get(channel) || 0) + 1);
+                const platform = d.platform || 'other';
+                byPlatform.set(platform, (byPlatform.get(platform) || 0) + 1);
             }
 
             if (recent.length < 500) {
@@ -338,12 +343,20 @@
         const byCountryList = Array.from(byCountry.entries()).map(function (entry) {
             return { country: entry[0], downloads: entry[1] };
         });
+        const byChannelList = Array.from(byChannel.entries()).map(function (entry) {
+            return { channel: entry[0], downloads: entry[1] };
+        });
+        const byPlatformList = Array.from(byPlatform.entries()).map(function (entry) {
+            return { platform: entry[0], downloads: entry[1] };
+        });
 
         return {
             totals: { all_time: allTime, last_7_days: last7, last_30_days: last30 },
             by_file: byFileList,
             by_day: byDayList,
             by_country: byCountryList,
+            by_channel: byChannelList,
+            by_platform: byPlatformList,
             recent: recent,
         };
     }
@@ -517,6 +530,9 @@
 
         bindSortableTables();
         renderTables();
+        if (typeof window.rgbjStatsRenderCharts === 'function') {
+            window.rgbjStatsRenderCharts(summary);
+        }
     }
 
     async function loadStats(user) {
@@ -559,6 +575,9 @@
         const content = el('rgbj-stats-content');
         if (content) {
             content.hidden = true;
+        }
+        if (typeof window.rgbjStatsDestroyCharts === 'function') {
+            window.rgbjStatsDestroyCharts();
         }
     }
 

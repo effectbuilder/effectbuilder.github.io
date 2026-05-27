@@ -77,6 +77,62 @@ rgbj_subpage_open([
         </div>
     </div>
 
+    <section class="rgbj-stats-charts mb-4" aria-label="Download charts">
+        <h2 class="h5 fw-semibold mb-3"><i class="bi bi-graph-up-arrow me-2 text-info"></i>Charts <span class="text-body-secondary fw-normal small">(last 30 days)</span></h2>
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card border-secondary rgbj-stats-chart-card h-100">
+                    <div class="card-body">
+                        <p class="small text-body-secondary mb-2 mb-md-1">Downloads per day</p>
+                        <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--timeline">
+                            <canvas id="rgbj-chart-timeline" role="img" aria-label="Line chart of downloads per day"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-secondary rgbj-stats-chart-card h-100">
+                    <div class="card-body">
+                        <p class="small text-body-secondary mb-2">By channel</p>
+                        <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--donut">
+                            <canvas id="rgbj-chart-channel" role="img" aria-label="Downloads by channel"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-secondary rgbj-stats-chart-card h-100">
+                    <div class="card-body">
+                        <p class="small text-body-secondary mb-2">By platform</p>
+                        <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--donut">
+                            <canvas id="rgbj-chart-platform" role="img" aria-label="Downloads by platform"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card border-secondary rgbj-stats-chart-card h-100">
+                    <div class="card-body">
+                        <p class="small text-body-secondary mb-2">Top countries</p>
+                        <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--bar">
+                            <canvas id="rgbj-chart-country" role="img" aria-label="Top countries by downloads"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card border-secondary rgbj-stats-chart-card h-100">
+                    <div class="card-body">
+                        <p class="small text-body-secondary mb-2">Top installers <span class="text-body-secondary">(by download count)</span></p>
+                        <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--files">
+                            <canvas id="rgbj-chart-files" role="img" aria-label="Top files by downloads"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <h2 class="h5 fw-semibold mb-3">Downloads per file</h2>
     <div class="table-responsive mb-4">
         <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="file" data-default-sort="version" data-default-dir="desc">
@@ -149,6 +205,8 @@ window.RGBJ_DOWNLOAD_STATS = {
 };
 window.RGBJ_FIREBASE_MODULE = '/js/firebase.js';
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" crossorigin="anonymous" defer></script>
+<script src="<?= rgbj_h(rgbj_url('assets/download-stats-charts.js')) ?>" defer></script>
 <script src="<?= rgbj_h(rgbj_url('assets/download-stats.js')) ?>" defer></script>
 
 <?php
