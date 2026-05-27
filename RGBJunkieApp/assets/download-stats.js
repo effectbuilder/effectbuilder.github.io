@@ -265,6 +265,7 @@
         let last30 = 0;
         const byFile = new Map();
         const byDay = new Map();
+        const byDayAll = new Map();
         const byCountry = new Map();
         const byChannel = new Map();
         const byPlatform = new Map();
@@ -281,6 +282,10 @@
                       : 0;
 
             allTime += 1;
+            const day = dayKey(createdAt);
+            if (day) {
+                byDayAll.set(day, (byDayAll.get(day) || 0) + 1);
+            }
             if (t >= sevenAgo) {
                 last7 += 1;
             }
@@ -303,7 +308,6 @@
                 prev.downloads += 1;
                 byFile.set(fileKey, prev);
 
-                const day = dayKey(createdAt);
                 if (day) {
                     byDay.set(day, (byDay.get(day) || 0) + 1);
                 }
@@ -340,6 +344,9 @@
         const byDayList = Array.from(byDay.entries()).map(function (entry) {
             return { day: entry[0], downloads: entry[1] };
         });
+        const byDayAllList = Array.from(byDayAll.entries()).map(function (entry) {
+            return { day: entry[0], downloads: entry[1] };
+        });
         const byCountryList = Array.from(byCountry.entries()).map(function (entry) {
             return { country: entry[0], downloads: entry[1] };
         });
@@ -354,6 +361,7 @@
             totals: { all_time: allTime, last_7_days: last7, last_30_days: last30 },
             by_file: byFileList,
             by_day: byDayList,
+            by_day_all: byDayAllList,
             by_country: byCountryList,
             by_channel: byChannelList,
             by_platform: byPlatformList,

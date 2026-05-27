@@ -443,6 +443,26 @@
     width: 100%;
 }
 
+.rgbj-stats-timeline-filter .rgbj-stats-date-input {
+    width: 9.5rem;
+    max-width: 100%;
+}
+
+.rgbj-stats-timeline-filter .btn-group .btn.active {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.55);
+    color: #e2e8f0;
+}
+
+.rgbj-stats-chart-wrap canvas {
+    opacity: 0;
+    transition: opacity 0.35s ease-out;
+}
+
+.rgbj-stats-chart-wrap.rgbj-stats-chart-wrap--visible canvas {
+    opacity: 1;
+}
+
 .rgbj-stats-chart-wrap--timeline {
     height: min(320px, 52vw);
     min-height: 220px;

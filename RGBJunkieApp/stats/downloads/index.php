@@ -17,11 +17,6 @@ rgbj_subpage_open([
 ?>
 
 <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-bar-chart me-2 text-info"></i>Download stats</h1>
-<p class="text-body-secondary mb-3">
-    Firestore collection <code><?= rgbj_h(RGBJ_FIRESTORE_DOWNLOADS_COLLECTION) ?></code>
-    · project <code>effect-builder</code> (same as <code>/js/firebase.js</code>).
-    Every tracked download is logged separately. With a service account configured, events include <strong>IP address</strong>, country/region/city, and ISP (via <code>download.php</code>).
-</p>
 <?php if (!$rgbj_server_download_log) : ?>
 <div class="alert alert-warning small mb-3" role="alert">
     <strong>IP / location logging is off.</strong>
@@ -31,20 +26,6 @@ rgbj_subpage_open([
     <code>includes/rgbjunkie-download-logger.json</code> must exist and be readable by PHP.
 </div>
 <?php endif; ?>
-<p class="small text-body-secondary mb-3">
-    If you see a permission error after sign-in, add the <code>rgbjunkie-app-downloads</code> rules from
-    <code>firestore.rules.example</code> in the
-    <a href="https://console.firebase.google.com/project/effect-builder/firestore/rules" target="_blank" rel="noopener">Firebase Console</a>
-    (merge into existing rules, do not replace the whole file).
-</p>
-
-<div id="rgbj-stats-signin-panel" class="mb-4">
-    <p class="small text-body-secondary mb-2">Sign in with your admin Google account to read stats from Firestore (same login as Effect Builder admin).</p>
-    <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-primary" id="rgbj-stats-signin"><i class="bi bi-google me-2"></i>Sign in with Google</button>
-        <button type="button" class="btn btn-outline-secondary d-none" id="rgbj-stats-signout"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
-    </div>
-</div>
 
 <div id="rgbj-stats-status" class="alert alert-info small" hidden></div>
 <div id="rgbj-stats-loading" class="text-body-secondary small py-4">Waiting for sign-in…</div>
@@ -78,12 +59,30 @@ rgbj_subpage_open([
     </div>
 
     <section class="rgbj-stats-charts mb-4" aria-label="Download charts">
-        <h2 class="h5 fw-semibold mb-3"><i class="bi bi-graph-up-arrow me-2 text-info"></i>Charts <span class="text-body-secondary fw-normal small">(last 30 days)</span></h2>
+        <h2 class="h5 fw-semibold mb-3"><i class="bi bi-graph-up-arrow me-2 text-info"></i>Charts <span class="text-body-secondary fw-normal small">(breakdowns: last 30 days)</span></h2>
         <div class="row g-3">
             <div class="col-12">
                 <div class="card border-secondary rgbj-stats-chart-card h-100">
                     <div class="card-body">
-                        <p class="small text-body-secondary mb-2 mb-md-1">Downloads per day</p>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <p class="small text-body-secondary mb-0">Downloads per day</p>
+                            <span class="small text-body-secondary" id="rgbj-chart-range-summary" hidden></span>
+                        </div>
+                        <div class="rgbj-stats-timeline-filter d-flex flex-wrap align-items-end gap-2 gap-md-3 mb-3" role="group" aria-label="Timeline date range">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Quick range">
+                                <button type="button" class="btn btn-outline-secondary" data-rgbj-range="7">7d</button>
+                                <button type="button" class="btn btn-outline-secondary active" data-rgbj-range="30">30d</button>
+                                <button type="button" class="btn btn-outline-secondary" data-rgbj-range="90">90d</button>
+                                <button type="button" class="btn btn-outline-secondary" data-rgbj-range="all">All</button>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <label class="small text-body-secondary mb-0" for="rgbj-chart-from">From</label>
+                                <input type="date" class="form-control form-control-sm rgbj-stats-date-input" id="rgbj-chart-from" aria-label="Start date">
+                                <label class="small text-body-secondary mb-0" for="rgbj-chart-to">To</label>
+                                <input type="date" class="form-control form-control-sm rgbj-stats-date-input" id="rgbj-chart-to" aria-label="End date">
+                                <button type="button" class="btn btn-sm btn-outline-info" id="rgbj-chart-apply-range">Apply</button>
+                            </div>
+                        </div>
                         <div class="rgbj-stats-chart-wrap rgbj-stats-chart-wrap--timeline">
                             <canvas id="rgbj-chart-timeline" role="img" aria-label="Line chart of downloads per day"></canvas>
                         </div>
@@ -149,21 +148,22 @@ rgbj_subpage_open([
         </table>
     </div>
 
-    <h2 class="h5 fw-semibold mb-3">By country (30d)</h2>
-    <div class="table-responsive mb-4">
-        <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="country" data-default-sort="downloads" data-default-dir="desc">
-            <thead>
-                <tr>
-                    <th scope="col" data-sort="country" data-sort-type="string">Country</th>
-                    <th scope="col" class="text-end" data-sort="downloads" data-sort-type="number">Downloads</th>
-                </tr>
-            </thead>
-            <tbody id="rgbj-stats-by-country"></tbody>
-        </table>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-lg-5">
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <h2 class="h5 fw-semibold mb-3">By country (30d)</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="country" data-default-sort="downloads" data-default-dir="desc">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort="country" data-sort-type="string">Country</th>
+                            <th scope="col" class="text-end" data-sort="downloads" data-sort-type="number">Downloads</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rgbj-stats-by-country"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
             <h2 class="h5 fw-semibold mb-3">By day (30d)</h2>
             <div class="table-responsive">
                 <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="day" data-default-sort="day" data-default-dir="desc">
@@ -177,23 +177,22 @@ rgbj_subpage_open([
                 </table>
             </div>
         </div>
-        <div class="col-lg-7">
-            <h2 class="h5 fw-semibold mb-3">Recent downloads</h2>
-            <p class="small text-body-secondary mb-2">IP and location appear when events are logged server-side (<code>download.php</code> + service account).</p>
-            <div class="table-responsive">
-                <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="recent" data-default-sort="created_at_ts" data-default-dir="desc">
-                    <thead>
-                        <tr>
-                            <th scope="col" data-sort="created_at_ts" data-sort-type="number">When</th>
-                            <th scope="col" data-sort="file_name" data-sort-type="string">File</th>
-                            <th scope="col" data-sort="ip" data-sort-type="string">IP</th>
-                            <th scope="col" data-sort="location" data-sort-type="string">Location</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rgbj-stats-recent"></tbody>
-                </table>
-            </div>
-        </div>
+    </div>
+
+    <h2 class="h5 fw-semibold mb-3">Recent downloads</h2>
+    <p class="small text-body-secondary mb-2">IP and location appear when events are logged server-side (<code>download.php</code> + service account).</p>
+    <div class="table-responsive">
+        <table class="table table-sm table-dark table-striped align-middle mb-0 rgbj-stats-sortable" data-stats-table="recent" data-default-sort="created_at_ts" data-default-dir="desc">
+            <thead>
+                <tr>
+                    <th scope="col" data-sort="created_at_ts" data-sort-type="number">When</th>
+                    <th scope="col" data-sort="file_name" data-sort-type="string">File</th>
+                    <th scope="col" data-sort="ip" data-sort-type="string">IP</th>
+                    <th scope="col" data-sort="location" data-sort-type="string">Location</th>
+                </tr>
+            </thead>
+            <tbody id="rgbj-stats-recent"></tbody>
+        </table>
     </div>
 </div>
 
