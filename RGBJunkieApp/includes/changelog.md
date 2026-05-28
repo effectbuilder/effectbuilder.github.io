@@ -21,6 +21,26 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 - **Overview and Third party tabs** — **Settings → About** keeps updates, legal, and version info under **Overview**; **Third party** lists open source and bundled helpers RGBJunkie relies on (Tauri, Konva, Bootstrap, optional Windows sensor/RAM helpers, p5.js for P5 effects, and others) with license names and links to each project.
 
+#### Identify
+
+- **Physical LEDs again** — **Identify** from the sidebar or workspace drives your real lights again, not just the dots on the layout. It works even when you have not placed a component on that channel yet — RGBJunkie uses the channel’s LED count from your device.
+- **Smooth identify breathe** — identify fades the channel accent color up and down on a slow sine curve (fully off at the bottom), instead of a hard on/off blink, so watchdog strips stay steadier.
+- **Layout dots restore when you stop** — stopping identify puts each component’s LED markers back to that canvas tab’s normal look (preview fill, LED Studio paint, and tab accent ring) instead of leaving the pulse colors on the layout.
+- **Identify color matches the channel dot** — hardware identify now uses the same red/green/blue channel accent as the sidebar (fixes swapped green/red on strips and wrong colors when the device id contains dashes).
+
+#### Skydimo serial LED strip
+
+- **COM port devices show up** — **Skydimo LED Strip** (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports again, not only from the HID **SK0902** matrix (`1a86:e316`). Support snapshots now list serial ports so missing strips are easier to diagnose.
+- **COM ports without USB IDs** — when Windows lists a COM port but does not report VID/PID (common with some CH340 drivers), RGBJunkie still tries known single-profile serial plugins (including Skydimo) on that port and passes the path into the plugin so **Moni-A** can confirm the model.
+
+#### Support reports
+
+- **Hardware debug log** — when you email a report from **Settings → Logs**, RGBJunkie refreshes **rgb-hardware-debug.txt** right before send so the latest device snapshot is always included.
+
+#### Component Library
+
+- **Thumbnails on first open** — product photos and LED layout previews now appear as soon as you open the library, without needing to scroll the grid first (fixes blank cards on some PCs where the browser delayed visibility checks).
+
 #### Settings
 
 - **LED calibration layout** — **Settings → Colors → Calibration** shows each channel’s percentage on the same row as **Red**, **Green**, and **Blue** (to the right of the label), with the slider directly underneath.
