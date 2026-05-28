@@ -363,7 +363,7 @@ function rgbj_build_latest_version_manifest(string $siteRoot): ?array
 
     $base = rgbj_public_manifest_base_url();
 
-    return [
+    $manifest = [
         'version' => $version,
         'downloadUrl' => $base . '/' . $webPath,
         'trackedDownloadUrl' => $base . '/download.php?f=' . rawurlencode($webPath) . '&channel=app-update',
@@ -371,6 +371,64 @@ function rgbj_build_latest_version_manifest(string $siteRoot): ?array
         'releaseNotes' => rgbj_version_to_changelog_url($version),
         'portableZipSha256' => strtolower($sha),
     ];
+
+    $linux = $latest['linux'] ?? rgbj_empty_linux_bundle();
+    rgbj_append_linux_download_manifest_fields($manifest, $siteRoot, $base, $linux);
+
+    return $manifest;
+}
+
+/**
+ * Add deb / rpm / AppImage URLs + SHA-256 to latest.json when artifacts exist on disk.
+ *
+ * @param array<string, string> $manifest
+ * @param array{deb:?array,rpm:?array,appimage:?array} $linux
+ */
+function rgbj_append_linux_download_manifest_fields(array &$manifest, string $siteRoot, string $base, array $linux): void
+{
+    $kinds = [
+        'deb' => [
+            'file' => 'linuxDeb',
+            'url' => 'linuxDebUrl',
+            'sha' => 'linuxDebSha256',
+            'tracked' => 'linuxDebTrackedDownloadUrl',
+        ],
+        'rpm' => [
+            'file' => 'linuxRpm',
+            'url' => 'linuxRpmUrl',
+            'sha' => 'linuxRpmSha256',
+            'tracked' => 'linuxRpmTrackedDownloadUrl',
+        ],
+        'appimage' => [
+            'file' => 'linuxAppImage',
+            'url' => 'linuxAppImageUrl',
+            'sha' => 'linuxAppImageSha256',
+            'tracked' => 'linuxAppImageTrackedDownloadUrl',
+        ],
+    ];
+
+    foreach ($kinds as $kind => $keys) {
+        $meta = $linux[$kind] ?? null;
+        if (!is_array($meta)) {
+            continue;
+        }
+        $webPath = ltrim(str_replace('\\', '/', (string) ($meta['webPath'] ?? '')), '/');
+        if ($webPath === '') {
+            continue;
+        }
+        $abs = $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $webPath);
+        if (!is_readable($abs)) {
+            continue;
+        }
+        $sha = rgbj_portable_zip_sha256_hex($abs);
+        if ($sha === null) {
+            continue;
+        }
+        $manifest[$keys['file']] = (string) ($meta['file'] ?? '');
+        $manifest[$keys['url']] = $base . '/' . $webPath;
+        $manifest[$keys['tracked']] = $base . '/download.php?f=' . rawurlencode($webPath) . '&channel=app-update';
+        $manifest[$keys['sha']] = strtolower($sha);
+    }
 }
 
 /**
