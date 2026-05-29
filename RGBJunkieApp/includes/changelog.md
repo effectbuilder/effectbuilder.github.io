@@ -4,6 +4,12 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.2 — May 29, 2026
+
+*(Add release notes for v0.3.2.)*
+
+---
+
 ## v0.3.1 — May 28, 2026
 
 RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** serial-strip detection, polishes support diagnostics and the component library, and extends Linux installs.
@@ -17,8 +23,11 @@ RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** seri
 
 #### Skydimo serial LED strip
 
-- **COM port devices show up** — **Skydimo LED Strip** (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports again, not only from the HID **SK0902** matrix (`1a86:e316`). Support snapshots now list serial ports so missing strips are easier to diagnose.
-- **COM ports without USB IDs** — when Windows lists a COM port but does not report VID/PID (common with some CH340 drivers), RGBJunkie still tries known single-profile serial plugins (including Skydimo) on that port and passes the path into the plugin so **Moni-A** can confirm the model.
+- **COM port devices show up** — **Skydimo LED Strip** (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports when the port reports USB VID/PID, not only from the HID **SK0902** matrix (`1a86:e316`). Support snapshots list serial ports so missing strips are easier to diagnose.
+
+#### Startup
+
+- **Faster boot** — RGBJunkie no longer probes every anonymous COM port at startup (which could add many seconds on PCs with Bluetooth or virtual serial devices). USB-serial gear like Skydimo attaches only when Windows reports the expected USB ID on that COM port.
 
 #### Support reports
 

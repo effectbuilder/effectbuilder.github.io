@@ -4,6 +4,23 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-2" data-version="0.3.2">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.2</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.2.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-1" data-version="0.3.1">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -25,7 +42,11 @@
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Skydimo serial LED strip</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>COM port devices show up</strong> — <strong>Skydimo LED Strip</strong> (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports again, not only from the HID <strong>SK0902</strong> matrix (`1a86:e316`). Support snapshots now list serial ports so missing strips are easier to diagnose.</li><li><strong>COM ports without USB IDs</strong> — when Windows lists a COM port but does not report VID/PID (common with some CH340 drivers), RGBJunkie still tries known single-profile serial plugins (including Skydimo) on that port and passes the path into the plugin so <strong>Moni-A</strong> can confirm the model.</li></ul>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>COM port devices show up</strong> — <strong>Skydimo LED Strip</strong> (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports when the port reports USB VID/PID, not only from the HID <strong>SK0902</strong> matrix (`1a86:e316`). Support snapshots list serial ports so missing strips are easier to diagnose.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Startup</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Faster boot</strong> — RGBJunkie no longer probes every anonymous COM port at startup (which could add many seconds on PCs with Bluetooth or virtual serial devices). USB-serial gear like Skydimo attaches only when Windows reports the expected USB ID on that COM port.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Support reports</span></h5>
