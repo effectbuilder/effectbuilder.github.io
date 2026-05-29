@@ -32,6 +32,12 @@ RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** seri
 
 - **Release notes after an update check** — if your installed build has an older bundled changelog, **What's new** loads missing versions (including **v0.3.1**) from rgbjunkie.com instead of showing “No release notes found.”
 
+#### SteelSeries QcK Prism Cloth
+
+- **More cloth sizes light up** — QcK Prism **Cloth** pads that were mis-detected as the older rigid 12-zone QcK Prism (including **4XL**, **CS:GO Neon Rider XL**, and **Neo Noir XL**) now use the correct **two-zone** driver so top and bottom edges respond again.
+- **Easier USB match** — cloth QcK pads are less picky about which HID interface Windows reports, so they are more likely to show under **Connected** instead of staying unmatched.
+- **Smoother motion** — QcK cloth pads no longer sit at a low update rate with USB traffic that looks like zero and then bursts; effects and forced colors track your other devices more closely.
+
 #### Linux and macOS
 
 - **Settings and logs work on first launch** — RGBJunkie now creates your user folder automatically (`~/.config/RGBJunkie` on Linux, **Application Support** on Mac) instead of expecting Windows **%APPDATA%**. **Settings → Logs** no longer shows **Error loading: No APPDATA** on AppImage or `.deb` installs; profiles, WLED lists, and support reports save there like on Windows.
