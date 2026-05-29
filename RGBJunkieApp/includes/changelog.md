@@ -6,14 +6,11 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.3 — May 29, 2026
 
-#### Network devices
+RGBJunkie **0.3.3** brings back **WLED matrix add-ons** from community Git repos, smooths **Identify** on USB and WLED gear, packs more into support reports, and adds an optional **Wallpaper Engine 2** network plugin.
 
-- **Wallpaper Engine 2 (community plugin)** — RGBJunkie can load the optional **Wallpaper Engine 2** network plugin from your user plugin folder (`plugins\Network\Wallpaper\Wallpaper_Engine.js`). It talks to the Wallpaper Engine / Lively companion over UDP on `127.0.0.1` so your wallpaper matrix can follow RGBJunkie effects. Not bundled with the installer — see the community repo README for install steps.
+#### WLED matrix add-ons
 
-#### Support reports
-
-- **Diagnostic log zip** — **Settings → Logs → Send a report** (and missing-device requests) now attach one **`rgbjunkie-logs.zip`** with every diagnostic file that exists: **`rgbjunkie.log`**, **`hardware-snapshot.txt`**, **`rgb-hardware-debug.txt`**, **`freeze-events.txt`**, and a recent rotated log when present.
-- **Diagnostic files always created** — every launch writes a **`sessionStart`** line to **`freeze-events.txt`** and refreshes **`rgb-hardware-debug.txt`** when hardware detection starts (and again after a successful scan or if detection fails), so support can tell the logging path works even when nothing stalled yet.
+- **Community add-ons load again** — optional **WLED matrix & clock** extras (clock, custom text, pixel art, Libre Hardware Monitor readouts on 2D matrices) install from **Settings → Installed → Git repositories**. Turn the repo **On**, rescan hardware, and **Matrix** settings appear on your WLED device. If nothing new shows up, delete the old add-on files in your user plugins folder and download the repo again.
 
 #### Identify
 
@@ -23,6 +20,15 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 - **Smooth fade, not steps** — layout dots use their own display-rate pulse; physical LEDs use the same engine path as your effects.
 - **Identify matches effect smoothness** — hardware identify now updates every engine tick (not only on the slower hardware sample interval), so the breathe is no longer limited to a handful of brightness steps.
 - **USB identify like WLED** — during identify, small USB HID packets (mice, mousepads, keyboards) go out immediately instead of waiting on the batched flush queue that was capping brightness to a few steps per second. Long LED strips still use the safe batched path.
+
+#### Support reports
+
+- **Diagnostic log zip** — **Settings → Logs → Send a report** (and missing-device requests) now attach one **`rgbjunkie-logs.zip`** with every diagnostic file that exists: **`rgbjunkie.log`**, **`hardware-snapshot.txt`**, **`rgb-hardware-debug.txt`**, **`freeze-events.txt`**, and a recent rotated log when present.
+- **Diagnostic files always created** — every launch writes a **`sessionStart`** line to **`freeze-events.txt`** and refreshes **`rgb-hardware-debug.txt`** when hardware detection starts (and again after a successful scan or if detection fails), so support can tell the logging path works even when nothing stalled yet.
+
+#### Network devices
+
+- **Wallpaper Engine 2 (community plugin)** — RGBJunkie can load the optional **Wallpaper Engine 2** network plugin from your user plugin folder. It talks to the Wallpaper Engine / Lively companion over UDP on your PC so your wallpaper matrix can follow RGBJunkie effects. Not bundled with the installer — see the community repo README for install steps.
 
 ---
 
