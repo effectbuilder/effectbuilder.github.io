@@ -47,6 +47,7 @@
 
 .rgbj-brand-menu-btn::after {
     margin-left: 0;
+    display: none;
 }
 
 .rgbj-brand-menu {
