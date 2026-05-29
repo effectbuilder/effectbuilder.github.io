@@ -4,6 +4,49 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-1" data-version="0.3.1">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.1</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 28, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary">RGBJunkie <strong>0.3.1</strong> brings back physical <strong>Identify</strong>, improves <strong>Skydimo</strong> serial-strip detection, polishes support diagnostics and the component library, and extends Linux installs.</p>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Identify</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Physical LEDs again</strong> — <strong>Identify</strong> from the sidebar or workspace drives your real lights again, not just the dots on the layout. It works even when you have not placed a component on that channel yet — RGBJunkie uses the channel’s LED count from your device.</li><li><strong>Smooth identify breathe</strong> — identify fades the channel accent color up and down on a slow sine curve (fully off at the bottom), instead of a hard on/off blink, so watchdog strips stay steadier.</li><li><strong>Layout dots restore when you stop</strong> — stopping identify puts each component’s LED markers back to that canvas tab’s normal look (preview fill, LED Studio paint, and tab accent ring) instead of leaving the pulse colors on the layout.</li><li><strong>Identify color matches the channel dot</strong> — hardware identify now uses the same red/green/blue channel accent as the sidebar (fixes swapped green/red on strips and wrong colors when the device id contains dashes).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Skydimo serial LED strip</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>COM port devices show up</strong> — <strong>Skydimo LED Strip</strong> (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports again, not only from the HID <strong>SK0902</strong> matrix (`1a86:e316`). Support snapshots now list serial ports so missing strips are easier to diagnose.</li><li><strong>COM ports without USB IDs</strong> — when Windows lists a COM port but does not report VID/PID (common with some CH340 drivers), RGBJunkie still tries known single-profile serial plugins (including Skydimo) on that port and passes the path into the plugin so <strong>Moni-A</strong> can confirm the model.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Support reports</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Hardware debug log</strong> — when you email a report from <strong>Settings → Logs</strong>, RGBJunkie refreshes <strong>rgb-hardware-debug.txt</strong> right before send so the latest device snapshot is always included.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Component Library</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Thumbnails on first open</strong> — product photos and LED layout previews now appear as soon as you open the library, without needing to scroll the grid first (fixes blank cards on some PCs where the browser delayed visibility checks).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates and About</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Release notes after an update check</strong> — if your installed build has an older bundled changelog, <strong>What's new</strong> loads missing versions (including <strong>v0.3.1</strong>) from rgbjunkie.com instead of showing “No release notes found.”</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Linux and macOS</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Settings and logs work on first launch</strong> — RGBJunkie now creates your user folder automatically (`~/.config/RGBJunkie` on Linux, <strong>Application Support</strong> on Mac) instead of expecting Windows <strong>%APPDATA%</strong>. <strong>Settings → Logs</strong> no longer shows <strong>Error loading: No APPDATA</strong> on AppImage or `.deb` installs; profiles, WLED lists, and support reports save there like on Windows.</li><li><strong>AppImage auto-update</strong> — when you run the <strong>AppImage</strong> (not a `.deb` system install), <strong>Settings → About</strong> can download the new <strong>.AppImage</strong> from rgbjunkie.com, replace your file, and restart — same flow as the Windows portable ZIP. <strong>Check for updates on startup</strong> and <strong>Install update automatically</strong> apply on Linux AppImage when <strong>latest.json</strong> includes the AppImage URL and SHA-256.</li><li><strong>Linux download checksums</strong> — release builds now write <strong>`.sha256` sidecar</strong> files for <strong>`.deb`</strong>, <strong>`.rpm`</strong>, and <strong>AppImage</strong> (same as the Windows portable ZIP). <strong>latest.json</strong> lists each Linux installer URL with its SHA-256 so downloads and in-app update checks stay fast and reliable.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-0" data-version="0.3.0">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -28,28 +71,12 @@
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Overview and Third party tabs</strong> — <strong>Settings → About</strong> keeps updates, legal, and version info under <strong>Overview</strong>; <strong>Third party</strong> lists open source and bundled helpers RGBJunkie relies on (Tauri, Konva, Bootstrap, optional Windows sensor/RAM helpers, p5.js for P5 effects, and others) with license names and links to each project.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Identify</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Physical LEDs again</strong> — <strong>Identify</strong> from the sidebar or workspace drives your real lights again, not just the dots on the layout. It works even when you have not placed a component on that channel yet — RGBJunkie uses the channel’s LED count from your device.</li><li><strong>Smooth identify breathe</strong> — identify fades the channel accent color up and down on a slow sine curve (fully off at the bottom), instead of a hard on/off blink, so watchdog strips stay steadier.</li><li><strong>Layout dots restore when you stop</strong> — stopping identify puts each component’s LED markers back to that canvas tab’s normal look (preview fill, LED Studio paint, and tab accent ring) instead of leaving the pulse colors on the layout.</li><li><strong>Identify color matches the channel dot</strong> — hardware identify now uses the same red/green/blue channel accent as the sidebar (fixes swapped green/red on strips and wrong colors when the device id contains dashes).</li></ul>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Skydimo serial LED strip</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>COM port devices show up</strong> — <strong>Skydimo LED Strip</strong> (USB-serial CH340 `1a86:7523`) is detected from Windows COM ports again, not only from the HID <strong>SK0902</strong> matrix (`1a86:e316`). Support snapshots now list serial ports so missing strips are easier to diagnose.</li><li><strong>COM ports without USB IDs</strong> — when Windows lists a COM port but does not report VID/PID (common with some CH340 drivers), RGBJunkie still tries known single-profile serial plugins (including Skydimo) on that port and passes the path into the plugin so <strong>Moni-A</strong> can confirm the model.</li></ul>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Support reports</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Hardware debug log</strong> — when you email a report from <strong>Settings → Logs</strong>, RGBJunkie refreshes <strong>rgb-hardware-debug.txt</strong> right before send so the latest device snapshot is always included.</li></ul>
-</article>
-<article class="rgbj-changelog-feature">
-<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Component Library</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Thumbnails on first open</strong> — product photos and LED layout previews now appear as soon as you open the library, without needing to scroll the grid first (fixes blank cards on some PCs where the browser delayed visibility checks).</li></ul>
-</article>
-<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>LED calibration layout</strong> — <strong>Settings → Colors → Calibration</strong> shows each channel’s percentage on the same row as <strong>Red</strong>, <strong>Green</strong>, and <strong>Blue</strong> (to the right of the label), with the slider directly underneath.</li><li><strong>Windows startup</strong> — <strong>Settings → System → Startup → Open RGBJunkie when this computer starts</strong> re-registers the login entry on every launch so portable moves and updates do not leave a broken path in Windows. If <strong>Start minimized</strong> is off, the main window appears after sign-in instead of staying tray-only.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates and About</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Release notes after an update check</strong> — if your installed build has an older bundled changelog, <strong>What's new</strong> now loads <strong>v0.3.0</strong> (and other missing versions) from rgbjunkie.com instead of showing “No release notes found.”</li></ul>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>What's new on update</strong> — when a newer build is available, the update dialog shows release notes from the bundled changelog (every version between yours and the latest). <strong>All release notes</strong> opens the full in-app history; missing versions can load from rgbjunkie.com.</li></ul>
 </article></div>
 </section>
 </div>

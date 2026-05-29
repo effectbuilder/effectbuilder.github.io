@@ -4,22 +4,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.0 — May 27, 2026
+## v0.3.1 — May 28, 2026
 
-RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after portable updates, and adds a **Third party** page under About.
-
-#### Install layout
-
-- **Smaller install folder** — optional helpers now live under a single **`runtime/`** directory next to the app instead of scattered top-level folders.
-- **`runtime/pawnio/`** — PawnIO DLL and SMBus modules for ENE DRAM RGB on supported boards (Windows).
-- **`runtime/lhm/`** — LibreHardwareMonitor portable for sensor-driven effects (Windows).
-- **No `openrgb/` in the install directory** — OpenRGB is not copied beside the app anymore. On Windows, RAM/OpenRGB integration can still download a portable build into app data the first time it is needed.
-- **In-place upgrades** — if an older install left **`pawnio/`**, **`pawnio-runtime/`**, or top-level **`lhm/`** behind, RGBJunkie still finds them. After you confirm everything works, you can delete those legacy folders; new installs only need **`runtime/`**.
-- **PawnIO folder choice** — when more than one PawnIO folder exists (for example after several portable updates), RGBJunkie prefers the copy that has **both** `PawnIOLib.dll` and bundled `Smbus*.bin` modules.
-
-#### About
-
-- **Overview and Third party tabs** — **Settings → About** keeps updates, legal, and version info under **Overview**; **Third party** lists open source and bundled helpers RGBJunkie relies on (Tauri, Konva, Bootstrap, optional Windows sensor/RAM helpers, p5.js for P5 effects, and others) with license names and links to each project.
+RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** serial-strip detection, polishes support diagnostics and the component library, and extends Linux installs.
 
 #### Identify
 
@@ -41,6 +28,35 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 - **Thumbnails on first open** — product photos and LED layout previews now appear as soon as you open the library, without needing to scroll the grid first (fixes blank cards on some PCs where the browser delayed visibility checks).
 
+#### Updates and About
+
+- **Release notes after an update check** — if your installed build has an older bundled changelog, **What's new** loads missing versions (including **v0.3.1**) from rgbjunkie.com instead of showing “No release notes found.”
+
+#### Linux and macOS
+
+- **Settings and logs work on first launch** — RGBJunkie now creates your user folder automatically (`~/.config/RGBJunkie` on Linux, **Application Support** on Mac) instead of expecting Windows **%APPDATA%**. **Settings → Logs** no longer shows **Error loading: No APPDATA** on AppImage or `.deb` installs; profiles, WLED lists, and support reports save there like on Windows.
+- **AppImage auto-update** — when you run the **AppImage** (not a `.deb` system install), **Settings → About** can download the new **.AppImage** from rgbjunkie.com, replace your file, and restart — same flow as the Windows portable ZIP. **Check for updates on startup** and **Install update automatically** apply on Linux AppImage when **latest.json** includes the AppImage URL and SHA-256.
+- **Linux download checksums** — release builds now write **`.sha256` sidecar** files for **`.deb`**, **`.rpm`**, and **AppImage** (same as the Windows portable ZIP). **latest.json** lists each Linux installer URL with its SHA-256 so downloads and in-app update checks stay fast and reliable.
+
+---
+
+## v0.3.0 — May 27, 2026
+
+RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after portable updates, and adds a **Third party** page under About.
+
+#### Install layout
+
+- **Smaller install folder** — optional helpers now live under a single **`runtime/`** directory next to the app instead of scattered top-level folders.
+- **`runtime/pawnio/`** — PawnIO DLL and SMBus modules for ENE DRAM RGB on supported boards (Windows).
+- **`runtime/lhm/`** — LibreHardwareMonitor portable for sensor-driven effects (Windows).
+- **No `openrgb/` in the install directory** — OpenRGB is not copied beside the app anymore. On Windows, RAM/OpenRGB integration can still download a portable build into app data the first time it is needed.
+- **In-place upgrades** — if an older install left **`pawnio/`**, **`pawnio-runtime/`**, or top-level **`lhm/`** behind, RGBJunkie still finds them. After you confirm everything works, you can delete those legacy folders; new installs only need **`runtime/`**.
+- **PawnIO folder choice** — when more than one PawnIO folder exists (for example after several portable updates), RGBJunkie prefers the copy that has **both** `PawnIOLib.dll` and bundled `Smbus*.bin` modules.
+
+#### About
+
+- **Overview and Third party tabs** — **Settings → About** keeps updates, legal, and version info under **Overview**; **Third party** lists open source and bundled helpers RGBJunkie relies on (Tauri, Konva, Bootstrap, optional Windows sensor/RAM helpers, p5.js for P5 effects, and others) with license names and links to each project.
+
 #### Settings
 
 - **LED calibration layout** — **Settings → Colors → Calibration** shows each channel’s percentage on the same row as **Red**, **Green**, and **Blue** (to the right of the label), with the slider directly underneath.
@@ -48,7 +64,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 #### Updates and About
 
-- **Release notes after an update check** — if your installed build has an older bundled changelog, **What's new** now loads **v0.3.0** (and other missing versions) from rgbjunkie.com instead of showing “No release notes found.”
+- **What's new on update** — when a newer build is available, the update dialog shows release notes from the bundled changelog (every version between yours and the latest). **All release notes** opens the full in-app history; missing versions can load from rgbjunkie.com.
 
 ---
 
