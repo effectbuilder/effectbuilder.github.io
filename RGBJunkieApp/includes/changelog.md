@@ -4,9 +4,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.2 — May 29, 2026
+## v0.3.3 — May 29, 2026
 
-*(Add release notes for v0.3.2.)*
+#### Network devices
+
+- **Wallpaper Engine 2 (community plugin)** — RGBJunkie can load the optional **Wallpaper Engine 2** network plugin from your user plugin folder (`plugins\Network\Wallpaper\Wallpaper_Engine.js`). It talks to the Wallpaper Engine / Lively companion over UDP on `127.0.0.1` so your wallpaper matrix can follow RGBJunkie effects. Not bundled with the installer — see the community repo README for install steps.
+
+#### Support reports
+
+- **Diagnostic log zip** — **Settings → Logs → Send a report** (and missing-device requests) now attach one **`rgbjunkie-logs.zip`** with every diagnostic file that exists: **`rgbjunkie.log`**, **`hardware-snapshot.txt`**, **`rgb-hardware-debug.txt`**, **`freeze-events.txt`**, and a recent rotated log when present.
+- **Diagnostic files always created** — every launch writes a **`sessionStart`** line to **`freeze-events.txt`** and refreshes **`rgb-hardware-debug.txt`** when hardware detection starts (and again after a successful scan or if detection fails), so support can tell the logging path works even when nothing stalled yet.
+
+#### Identify
+
+- **Stop button matches the sidebar** — while identify is running, the bulb button switches to a stop icon with the same accent highlight as the other sidebar controls, instead of a plain black icon.
+- **Quicker, softer pulse** — identify breathes a little faster with a smooth sine fade instead of a hard blink.
+- **Hardware matches the layout fade** — physical LEDs now fade all the way off at the bottom of the pulse, like the layout dots.
+- **Smooth fade, not steps** — layout dots use their own display-rate pulse; physical LEDs use the same engine path as your effects.
+- **Identify matches effect smoothness** — hardware identify now updates every engine tick (not only on the slower hardware sample interval), so the breathe is no longer limited to a handful of brightness steps.
+- **USB identify like WLED** — during identify, small USB HID packets (mice, mousepads, keyboards) go out immediately instead of waiting on the batched flush queue that was capping brightness to a few steps per second. Long LED strips still use the safe batched path.
 
 ---
 
@@ -28,6 +44,7 @@ RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** seri
 #### Startup
 
 - **Faster boot** — RGBJunkie no longer probes every anonymous COM port at startup (which could add many seconds on PCs with Bluetooth or virtual serial devices). USB-serial gear like Skydimo attaches only when Windows reports the expected USB ID on that COM port.
+- **Less work before the UI appears** — serial plugins are matched from a short list instead of re-reading every plugin file from disk; USB detection reuses plugin code already in memory instead of opening each file again; extra layout warm-up runs only when a device still has no LED map; the online effects gallery loads in parallel with USB detection; support debug logs write in the background after devices are ready.
 
 #### Support reports
 
