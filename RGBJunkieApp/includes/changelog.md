@@ -6,12 +6,19 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.5 — May 29, 2026
 
+RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRGB helper, correct process name, Git install path) and keeps **Git repository** downloads organized in per-repo folders.
+
 #### Wallpaper Engine 2
 
+- **Official Git repo install** — RGBJunkie now recognizes **Wallpaper_Engine_RGBJunkie.js** from **Settings → Installed → Git repositories** (the upstream RGBJunkie-Wallpaper-Engine folder), not only the older manual path `Network/Wallpaper/Wallpaper_Engine.js`.
 - **Second monitor uses its own port** — the main desk matrix talks to **127.0.0.1:8133**; a second screen uses **8134** and needs the separate **second-screen** SignalRGB Wallpaper Engine workshop wallpaper on that monitor (not the main-screen one).
 - **No SignalRGB helper required** — the workshop companion now detects RGBJunkie directly (looks for a **RGBJunkie** process), so RGBJunkie no longer starts a bundled `SignalRgb.exe` helper. Dev and release builds now run as **RGBJunkie.exe** so the companion can see the app (older dev builds used `rgbjunkie-led-controller.exe`, which the companion did not recognize).
 - **Smoother desk preview** — color packets are sent in order as one frame, setup is not resent every few seconds (that was reloading the cover image and causing flicker), and a gentle keepalive prevents brief black flashes when the engine hiccups.
 - **Nollie32 stays smooth with Wallpaper Engine on** — the wallpaper plugin slows to **45 fps** while a Nollie-class strip is active so USB lighting keeps priority.
+
+#### Settings → Installed → Git repositories
+
+- **Each repo in its own folder** — plugins and components downloaded from Git now land under **`owner/repo/`** in your user folder (for example `qiangqiang101/SignalRGB-Wallpaper-Engine/RGBJunkie-Wallpaper-Engine/Wallpaper_Engine_RGBJunkie.js`), keeping subfolders from the repository instead of dumping files at the plugins root. Re-downloading a repo replaces its previous files.
 
 ---
 
