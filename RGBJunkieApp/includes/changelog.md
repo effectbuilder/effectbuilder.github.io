@@ -4,9 +4,29 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.4 — May 29, 2026
+
+*(Add release notes for v0.3.4.)*
+
+---
+
 ## v0.3.3 — May 29, 2026
 
 RGBJunkie **0.3.3** brings back **WLED matrix add-ons** from community Git repos, smooths **Identify** on USB and WLED gear, packs more into support reports, and adds an optional **Wallpaper Engine 2** network plugin.
+
+#### Startup and stability
+
+- **App opens again after a crash** — a blank white window after an out-of-memory crash was caused by WebView2 refusing to start with an outdated browser-flag list. RGBJunkie now uses a smaller, compatible set so the UI loads normally on current Edge WebView builds.
+
+#### Wallpaper Engine 2
+
+- **UDP settings packet** — the optional **Wallpaper Engine 2** network plugin no longer fails to send colors when **Show FPS** is off; boolean slider values are converted to bytes before UDP send.
+- **Canvas grid stays in sync** — when you change **Aspect Ratio** or **Display Size** on **Wallpaper Engine 2**, the layout canvas grid updates to match so effect colors sample correctly (previously the plugin and canvas could disagree and the wallpaper stayed black).
+- **Smoother wallpaper streaming** — color packets to the companion on port 8133 are no longer throttled by WLED-style UDP dedup (that path is only for WLED port 21324).
+
+#### Multi-canvas scenes
+
+- **Correct effect per canvas tab** — loading a scene with different effects on canvas 1 and canvas 2 (for example **Audio Party** on one tab and **Keyboard Effects** on the other) no longer swaps or picks the wrong effect when the Effect Library order changes. Each tab now remembers which effect it uses by stable id, not list position.
 
 #### WLED matrix add-ons
 
