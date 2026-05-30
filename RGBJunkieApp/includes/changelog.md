@@ -4,9 +4,36 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.5 — May 29, 2026
+
+#### Wallpaper Engine 2
+
+- **Second monitor uses its own port** — the main desk matrix talks to **127.0.0.1:8133**; a second screen uses **8134** and needs the separate **second-screen** SignalRGB Wallpaper Engine workshop wallpaper on that monitor (not the main-screen one).
+- **No SignalRGB helper required** — the workshop companion now detects RGBJunkie directly (looks for a **RGBJunkie** process), so RGBJunkie no longer starts a bundled `SignalRgb.exe` helper. Dev and release builds now run as **RGBJunkie.exe** so the companion can see the app (older dev builds used `rgbjunkie-led-controller.exe`, which the companion did not recognize).
+- **Smoother desk preview** — color packets are sent in order as one frame, setup is not resent every few seconds (that was reloading the cover image and causing flicker), and a gentle keepalive prevents brief black flashes when the engine hiccups.
+- **Nollie32 stays smooth with Wallpaper Engine on** — the wallpaper plugin slows to **45 fps** while a Nollie-class strip is active so USB lighting keeps priority.
+
+---
+
 ## v0.3.4 — May 29, 2026
 
-*(Add release notes for v0.3.4.)*
+#### Maximized effect preview
+
+- **Cleaner fullscreen canvas** — zoom hints and other tooltips no longer pop up when you move the mouse over a maximized preview.
+- **Effect log hidden while maximized** — the runtime log button stays out of the way until you exit maximized mode.
+- **Exit control fades in on movement** — the exit-maximize button hides while you watch the effect and fades back when you move the mouse.
+
+#### Wallpaper Engine 2
+
+- **Settings resync when effects start** — if the Wallpaper Engine companion starts after RGBJunkie, the plugin sends its settings packet again on the first color frame so the matrix can wake up without toggling a slider.
+- **Clearer wallpaper logs** — the log now reports the first **settings** and first **color** UDP packets separately (port 8133 / 8134), so support can tell whether RGBJunkie is streaming colors or only sent the setup packet.
+- **More reliable UDP on localhost** — wallpaper traffic on 8133 and 8134 no longer shares one send queue keyed only by IP, so two-screen setups do not block each other.
+- **Companion not listening warning** — if nothing is receiving on UDP port 8133, startup logs explain that the Wallpaper Engine workshop wallpaper must be applied (RGBJunkie can send colors while the desk stays blank).
+- **Wallpaper companion wake-up** — the workshop wallpaper only listens for colors when it sees WhirlwindFX **SignalRGB** running. RGBJunkie now starts a tiny bundled helper so the companion opens UDP port **8133** without installing SignalRGB (the desk was staying black even though RGBJunkie was sending colors).
+- **Settings when the companion connects late** — the workshop wallpaper can take up to ~10 seconds to open UDP after RGBJunkie starts. RGBJunkie now waits longer, then sends its setup packet again as soon as port **8133** comes online so the matrix can wake up without restarting the app.
+- **Reliable companion detection on Windows** — the workshop app listens on all interfaces (`0.0.0.0:8133`); RGBJunkie now detects that correctly and keeps resending setup packets until the companion is ready (previously it thought nothing was listening and skipped the resync).
+- **Steadier desk colors** — each wallpaper color frame is sent as one complete group of UDP packets (large grids use three), so the companion no longer mixes pieces of old and new frames and stays black. RGBJunkie also pushes a fresh color frame when the companion first connects, not only the setup packet.
+- **Nollie32 stays smooth with Wallpaper Engine on** — localhost wallpaper UDP no longer queues ahead of USB lighting on the same path, the wallpaper plugin slows to 30 fps while a Nollie-class strip is active, and the periodic settings heartbeat no longer runs a full color render every few seconds.
 
 ---
 

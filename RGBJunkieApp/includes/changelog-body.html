@@ -4,6 +4,28 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-5" data-version="0.3.5">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.5</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine 2</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Second monitor uses its own port</strong> — the main desk matrix talks to <strong>127.0.0.1:8133</strong>; a second screen uses <strong>8134</strong> and needs the separate <strong>second-screen</strong> SignalRGB Wallpaper Engine workshop wallpaper on that monitor (not the main-screen one).</li><li><strong>No SignalRGB helper required</strong> — the workshop companion now detects RGBJunkie directly (looks for a <strong>RGBJunkie</strong> process), so RGBJunkie no longer starts a bundled `SignalRgb.exe` helper. Dev and release builds now run as <strong>RGBJunkie.exe</strong> so the companion can see the app (older dev builds used `rgbjunkie-led-controller.exe`, which the companion did not recognize).</li><li><strong>Smoother desk preview</strong> — color packets are sent in order as one frame, setup is not resent every few seconds (that was reloading the cover image and causing flicker), and a gentle keepalive prevents brief black flashes when the engine hiccups.</li><li><strong>Nollie32 stays smooth with Wallpaper Engine on</strong> — the wallpaper plugin slows to <strong>45 fps</strong> while a Nollie-class strip is active so USB lighting keeps priority.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-4" data-version="0.3.4">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -15,9 +37,18 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.3.4</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.4.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Maximized effect preview</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Cleaner fullscreen canvas</strong> — zoom hints and other tooltips no longer pop up when you move the mouse over a maximized preview.</li><li><strong>Effect log hidden while maximized</strong> — the runtime log button stays out of the way until you exit maximized mode.</li><li><strong>Exit control fades in on movement</strong> — the exit-maximize button hides while you watch the effect and fades back when you move the mouse.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine 2</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Settings resync when effects start</strong> — if the Wallpaper Engine companion starts after RGBJunkie, the plugin sends its settings packet again on the first color frame so the matrix can wake up without toggling a slider.</li><li><strong>Clearer wallpaper logs</strong> — the log now reports the first <strong>settings</strong> and first <strong>color</strong> UDP packets separately (port 8133 / 8134), so support can tell whether RGBJunkie is streaming colors or only sent the setup packet.</li><li><strong>More reliable UDP on localhost</strong> — wallpaper traffic on 8133 and 8134 no longer shares one send queue keyed only by IP, so two-screen setups do not block each other.</li><li><strong>Companion not listening warning</strong> — if nothing is receiving on UDP port 8133, startup logs explain that the Wallpaper Engine workshop wallpaper must be applied (RGBJunkie can send colors while the desk stays blank).</li><li><strong>Wallpaper companion wake-up</strong> — the workshop wallpaper only listens for colors when it sees WhirlwindFX <strong>SignalRGB</strong> running. RGBJunkie now starts a tiny bundled helper so the companion opens UDP port <strong>8133</strong> without installing SignalRGB (the desk was staying black even though RGBJunkie was sending colors).</li><li><strong>Settings when the companion connects late</strong> — the workshop wallpaper can take up to ~10 seconds to open UDP after RGBJunkie starts. RGBJunkie now waits longer, then sends its setup packet again as soon as port <strong>8133</strong> comes online so the matrix can wake up without restarting the app.</li><li><strong>Reliable companion detection on Windows</strong> — the workshop app listens on all interfaces (`0.0.0.0:8133`); RGBJunkie now detects that correctly and keeps resending setup packets until the companion is ready (previously it thought nothing was listening and skipped the resync).</li><li><strong>Steadier desk colors</strong> — each wallpaper color frame is sent as one complete group of UDP packets (large grids use three), so the companion no longer mixes pieces of old and new frames and stays black. RGBJunkie also pushes a fresh color frame when the companion first connects, not only the setup packet.</li><li><strong>Nollie32 stays smooth with Wallpaper Engine on</strong> — localhost wallpaper UDP no longer queues ahead of USB lighting on the same path, the wallpaper plugin slows to 30 fps while a Nollie-class strip is active, and the periodic settings heartbeat no longer runs a full color render every few seconds.</li></ul>
+</article></div>
+</section>
 </div>
 </div>
 </article>
