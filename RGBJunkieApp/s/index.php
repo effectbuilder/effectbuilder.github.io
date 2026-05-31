@@ -3,9 +3,9 @@
  * RGBJunkie — short app-link handoff (SignalRGB-style `s?p=…`).
  *
  * Examples:
- *   /s?p=addon/install&url=https://github.com/owner/repo
- *   /s?p=view/settings/installed
- *   /s?p=effect/apply/Rainbow%20Rise?speed=3
+ *   /s?p=addon%2Finstall&url=https://github.com/owner/repo
+ *   /s?p=view%2Fsettings%2Finstalled
+ *   /s?p=effect%2Fapply%2FRainbow%20Rise&speed=3
  */
 declare(strict_types=1);
 
@@ -22,6 +22,12 @@ function rgbj_handoff_path_from_request(): string {
             && trim((string) $_GET['url']) !== ''
         ) {
             $path .= '?url=' . rawurlencode(trim((string) $_GET['url']));
+        } else {
+            $extra = $_GET;
+            unset($extra['p']);
+            if ($extra !== []) {
+                $path .= '?' . http_build_query($extra);
+            }
         }
         return $path;
     }
@@ -101,7 +107,7 @@ function rgbj_build_deep_link_from_path(string $pathAndQuery): ?string {
 
 $path = rgbj_handoff_path_from_request();
 $deepLink = rgbj_build_deep_link_from_path($path);
-$title = $deepLink ? 'Opening RGBJunkie…' : 'Invalid RGBJunkie link';
+$title = $deepLink ? 'Open in RGBJunkie' : 'Invalid RGBJunkie link';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
@@ -113,27 +119,33 @@ $title = $deepLink ? 'Opening RGBJunkie…' : 'Invalid RGBJunkie link';
     <style>
         body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
         .rgbj-handoff-card { max-width: 32rem; text-align: center; }
-        .rgbj-handoff-card code { word-break: break-all; font-size: 0.85rem; }
+        .rgbj-handoff-card code { word-break: break-all; font-size: 0.85rem; display: block; margin-top: 1rem; }
+        .rgbj-handoff-hint { font-size: 0.92rem; color: #a8b0bc; margin-top: 0.75rem; }
     </style>
 </head>
 <body>
     <div class="rgbj-handoff-card">
         <h1 class="h4 mb-3"><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
         <?php if ($deepLink): ?>
-            <p class="text-secondary">If RGBJunkie is installed, it should open automatically.</p>
-            <p><a class="btn btn-primary" id="rgbj-open-app" href="<?= htmlspecialchars($deepLink, ENT_QUOTES, 'UTF-8') ?>">Open RGBJunkie</a></p>
-            <p class="mt-3"><code><?= htmlspecialchars($deepLink, ENT_QUOTES, 'UTF-8') ?></code></p>
+            <p class="text-secondary mb-3">Click the button below. Your browser may ask to open RGBJunkie — choose <strong>Allow</strong> or <strong>Open</strong>.</p>
+            <p>
+                <a class="btn btn-primary btn-lg" id="rgbj-open-app" href="<?= htmlspecialchars($deepLink, ENT_QUOTES, 'UTF-8') ?>">Open RGBJunkie</a>
+            </p>
+            <p class="rgbj-handoff-hint">If Windows asks about firewall access for RGBJunkie after the app opens, that is normal for LED/WLED control (UDP). Allow it on your private network if you use those features.</p>
+            <code><?= htmlspecialchars($deepLink, ENT_QUOTES, 'UTF-8') ?></code>
             <script>
                 (function () {
-                    var target = <?= json_encode($deepLink, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-                    try { window.location.href = target; } catch (e) {}
-                    setTimeout(function () {
-                        try { window.close(); } catch (e2) {}
-                    }, 1200);
+                    var btn = document.getElementById("rgbj-open-app");
+                    if (!btn) return;
+                    btn.addEventListener("click", function (ev) {
+                        ev.preventDefault();
+                        var target = <?= json_encode($deepLink, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+                        window.location.href = target;
+                    });
                 })();
             </script>
         <?php else: ?>
-            <p class="text-secondary">This link is missing a valid path. See the app link docs on rgbjunkie.com.</p>
+            <p class="text-secondary">This link is missing a valid path. Copy a fresh link from RGBJunkie (Settings, effects, scenes, or Git repos).</p>
             <p><a class="btn btn-outline-light" href="<?= htmlspecialchars(rgbj_url(''), ENT_QUOTES, 'UTF-8') ?>">Back to RGBJunkie</a></p>
         <?php endif; ?>
     </div>
