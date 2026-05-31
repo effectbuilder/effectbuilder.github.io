@@ -6,21 +6,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.29 — May 31, 2026
 
-*(Add release notes for v0.3.29.)*
-
----
-
-## v0.3.28 — May 31, 2026
-
 #### Updates
 
 - **No flashing console during automatic update** — the install helper no longer opens a **timeout** window every second while waiting for RGBJunkie to close; delays run hidden in the background instead.
-
----
-
-## v0.3.27 — May 31, 2026
-
-*(Add release notes for v0.3.27.)*
 
 ---
 
@@ -36,53 +24,11 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.25 — May 31, 2026
-
-*(Add release notes for v0.3.25.)*
-
----
-
 ## v0.3.24 — May 31, 2026
 
 #### Updates
 
 - **Automatic update opens RGBJunkie again** — after files copy, the updater relaunches the app with a small restart helper (no PowerShell). If the first launch does not stick, a background watcher tries again so the window comes back instead of staying closed.
-
----
-
-## v0.3.23 — May 31, 2026
-
-*(Add release notes for v0.3.23.)*
-
----
-
-## v0.3.22 — May 31, 2026
-
-*(Add release notes for v0.3.22.)*
-
----
-
-## v0.3.21 — May 31, 2026
-
-*(Add release notes for v0.3.21.)*
-
----
-
-## v0.3.20 — May 31, 2026
-
-*(Add release notes for v0.3.20.)*
-
----
-
-## v0.3.19 — May 31, 2026
-
-*(Add release notes for v0.3.19.)*
-
----
-
-## v0.3.18 — May 31, 2026
-
-*(Add release notes for v0.3.18.)*
 
 ---
 
