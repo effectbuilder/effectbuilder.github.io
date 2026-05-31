@@ -4,6 +4,112 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.16 — May 31, 2026
+
+*(Add release notes for v0.3.16.)*
+
+---
+
+## v0.3.15 — May 30, 2026
+
+#### App links (web and desktop)
+
+- **Install plugins from a link** — open a GitHub or GitLab repo in RGBJunkie from a website button or bookmark, similar to SignalRGB addon links. Example: `https://www.rgbjunkie.com/RGBJunkieApp/s?p=addon/install&url=https://github.com/qiangqiang101/SignalRGB-Wallpaper-Engine`
+- **Jump to settings, effects, or scenes** — `rgbjunkie://` links can open **Settings** tabs, the effect browser, or load a saved scene by name. Use `silent=1` or `-silentlaunch-` to run an action without restoring the window from the tray.
+- **Batch and Stream Deck friendly** — use `start rgbjunkie://…` on Windows; `%20` encodes spaces in effect and scene names.
+
+#### Wallpaper Engine 2
+
+- **Second screen wakes up on its own** — RGBJunkie now watches **8133** (main) and **8134** (second monitor) separately. When the second-screen workshop wallpaper starts after RGBJunkie, settings and colors are sent again without toggling a slider.
+- **Clearer setup messages** — startup logs name each UDP port (main vs 2nd screen) and point to the correct Steam workshop item when a companion is missing on one monitor.
+- **Browse for cover image without freezing lights** — opening **Browse…** for **Cover Image** no longer stops LED updates while the Windows file picker is open.
+
+---
+
+## v0.3.14 — May 30, 2026
+
+#### Installer
+
+- **Windows setup builds reliably again** — fixed NSIS packaging for the step that stops the bundled sensor helper before files are replaced, so the setup `.exe` ships with the **v0.3.12** install fix.
+
+---
+
+## v0.3.13 — May 30, 2026
+
+#### Updates
+
+- **Portable auto-update helper runs** — **Install update automatically** no longer stops with “Windows cannot find … apply-update.cmd”. The helper now starts through PowerShell `Start-Process` instead of fragile `cmd start` quoting.
+
+---
+
+## v0.3.12 — May 30, 2026
+
+#### Installer
+
+- **Setup can finish while the sensor helper was running** — the Windows installer now closes RGBJunkie and the **bundled** LibreHardwareMonitor copy under `runtime/lhm` before it replaces files. Your own separate LibreHardwareMonitor install is not stopped.
+
+---
+
+## v0.3.11 — May 30, 2026
+
+#### Updates
+
+- **Auto-update respects your LibreHardwareMonitor** — the portable updater stops only the **bundled** copy under `runtime/lhm`, not a separate LibreHardwareMonitor install you already run.
+- **Safer handoff when updating** — RGBJunkie pauses briefly after starting the update helper so Windows does not cancel it when the app closes.
+
+---
+
+## v0.3.10 — May 30, 2026
+
+#### Updates
+
+- **Automatic update starts again on Windows** — the portable updater no longer fails with “Windows cannot find … apply-update.cmd” when you choose **Install update automatically** (launch uses PowerShell instead of fragile `cmd start` quoting).
+
+#### Hardware sensors (LibreHardwareMonitor)
+
+- **Your own LibreHardwareMonitor install works** — if you already run LibreHardwareMonitor with **Options → Remote web server → Run** (port 8085), RGBJunkie uses it for effect sensors and does **not** start a second copy from `runtime/lhm`. Updates only stop the **bundled** helper under the RGBJunkie install folder, not your separate install.
+- **Sensor helper stays in the background** — when RGBJunkie does start the bundled copy, its main window no longer pops up on screen (it still runs in the background for readings).
+- **Setup hints only when you need sensors** — reminders to turn on **Remote web server** in LibreHardwareMonitor show up when a sensor effect is running or you open the sensor picker, and only while readings are not available yet — not at every app start.
+
+---
+
+## v0.3.9 — May 30, 2026
+
+#### Updates
+
+- **Automatic update opens RGBJunkie again** — when **Install update automatically** applies a portable or AppImage update, RGBJunkie now closes, replaces its files, and **starts the new version** instead of leaving the app shut down. The updater also stops the bundled **LibreHardwareMonitor** helper so locked sensor files no longer block the copy step, runs with admin rights when RGBJunkie is elevated (needed under **Program Files**), and still relaunches the app even if a few locked files could not be replaced.
+
+---
+
+## v0.3.8 — May 29, 2026
+
+#### Serial (COM) devices
+
+- **COM port scan works again** — hardware rescan can list USB serial devices without `serial_list_ports not found` in the log.
+
+#### Wallpaper Engine 2
+
+- **Second monitor in the log** — RGBJunkie now reports whether the workshop companion is listening on **8133** (main screen) and **8134** (second screen), and resyncs when the second companion comes online later.
+
+---
+
+## v0.3.7 — May 29, 2026
+
+#### Wallpaper Engine 2
+
+- **Browse for cover image** — **Cover Image** in Wallpaper Engine plugin settings now has a **Browse…** button so you can pick a PNG or JPG from your PC instead of typing the full path. You can still paste a URL in the field.
+- **Saved settings stick on startup** — Wallpaper Engine plugin sliders (aspect ratio, display size, cover image, etc.) are restored from your scene/profile **before** RGBJunkie sends the setup packet to the workshop companion, so a restart or update no longer pushes defaults to the desk matrix first.
+
+---
+
+## v0.3.6 — May 29, 2026
+
+#### Updates (portable Windows)
+
+- **Auto-update restarts after the exe rename** — the portable updater now waits for and closes **`rgbjunkie-led-controller.exe`** as well as **RGBJunkie.exe**, then launches **RGBJunkie.exe** after the update (and removes the old dev-style exe when present). Updating from an older build no longer leaves the app closed when the process name changed.
+
+---
+
 ## v0.3.5 — May 29, 2026
 
 RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRGB helper, correct process name, Git install path) and keeps **Git repository** downloads organized in per-repo folders.
@@ -259,7 +365,9 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ## v0.2.92 — May 25, 2026
 
-*(Add release notes for v0.2.92.)*
+#### Sleep and hibernate
+
+- **Lighter wake recovery on USB strips** — resume no longer kicks off a full hardware rescan when reopening stale HID handles is enough, so Nollie-class strips spend less time dark right after wake.
 
 ---
 

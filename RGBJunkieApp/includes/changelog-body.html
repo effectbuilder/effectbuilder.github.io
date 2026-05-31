@@ -4,6 +4,255 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-16" data-version="0.3.16">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.16</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 31, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.16.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-15" data-version="0.3.15">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.15</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App links (web and desktop)</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Install plugins from a link</strong> — open a GitHub or GitLab repo in RGBJunkie from a website button or bookmark, similar to SignalRGB addon links. Example: `https://www.rgbjunkie.com/RGBJunkieApp/s?p=addon/install&amp;url=https://github.com/qiangqiang101/SignalRGB-Wallpaper-Engine`</li><li><strong>Jump to settings, effects, or scenes</strong> — `rgbjunkie://` links can open <strong>Settings</strong> tabs, the effect browser, or load a saved scene by name. Use `silent=1` or `-silentlaunch-` to run an action without restoring the window from the tray.</li><li><strong>Batch and Stream Deck friendly</strong> — use `start rgbjunkie://…` on Windows; `%20` encodes spaces in effect and scene names.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine 2</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Second screen wakes up on its own</strong> — RGBJunkie now watches <strong>8133</strong> (main) and <strong>8134</strong> (second monitor) separately. When the second-screen workshop wallpaper starts after RGBJunkie, settings and colors are sent again without toggling a slider.</li><li><strong>Clearer setup messages</strong> — startup logs name each UDP port (main vs 2nd screen) and point to the correct Steam workshop item when a companion is missing on one monitor.</li><li><strong>Browse for cover image without freezing lights</strong> — opening <strong>Browse…</strong> for <strong>Cover Image</strong> no longer stops LED updates while the Windows file picker is open.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-14" data-version="0.3.14">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.14</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Installer</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Windows setup builds reliably again</strong> — fixed NSIS packaging for the step that stops the bundled sensor helper before files are replaced, so the setup `.exe` ships with the <strong>v0.3.12</strong> install fix.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-13" data-version="0.3.13">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.13</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Portable auto-update helper runs</strong> — <strong>Install update automatically</strong> no longer stops with “Windows cannot find … apply-update.cmd”. The helper now starts through PowerShell `Start-Process` instead of fragile `cmd start` quoting.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-12" data-version="0.3.12">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.12</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Installer</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Setup can finish while the sensor helper was running</strong> — the Windows installer now closes RGBJunkie and the <strong>bundled</strong> LibreHardwareMonitor copy under `runtime/lhm` before it replaces files. Your own separate LibreHardwareMonitor install is not stopped.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-11" data-version="0.3.11">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.11</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Auto-update respects your LibreHardwareMonitor</strong> — the portable updater stops only the <strong>bundled</strong> copy under `runtime/lhm`, not a separate LibreHardwareMonitor install you already run.</li><li><strong>Safer handoff when updating</strong> — RGBJunkie pauses briefly after starting the update helper so Windows does not cancel it when the app closes.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-10" data-version="0.3.10">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.10</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Automatic update starts again on Windows</strong> — the portable updater no longer fails with “Windows cannot find … apply-update.cmd” when you choose <strong>Install update automatically</strong> (launch uses PowerShell instead of fragile `cmd start` quoting).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Hardware sensors (LibreHardwareMonitor)</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Your own LibreHardwareMonitor install works</strong> — if you already run LibreHardwareMonitor with <strong>Options → Remote web server → Run</strong> (port 8085), RGBJunkie uses it for effect sensors and does <strong>not</strong> start a second copy from `runtime/lhm`. Updates only stop the <strong>bundled</strong> helper under the RGBJunkie install folder, not your separate install.</li><li><strong>Sensor helper stays in the background</strong> — when RGBJunkie does start the bundled copy, its main window no longer pops up on screen (it still runs in the background for readings).</li><li><strong>Setup hints only when you need sensors</strong> — reminders to turn on <strong>Remote web server</strong> in LibreHardwareMonitor show up when a sensor effect is running or you open the sensor picker, and only while readings are not available yet — not at every app start.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-9" data-version="0.3.9">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.9</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Automatic update opens RGBJunkie again</strong> — when <strong>Install update automatically</strong> applies a portable or AppImage update, RGBJunkie now closes, replaces its files, and <strong>starts the new version</strong> instead of leaving the app shut down. The updater also stops the bundled <strong>LibreHardwareMonitor</strong> helper so locked sensor files no longer block the copy step, runs with admin rights when RGBJunkie is elevated (needed under <strong>Program Files</strong>), and still relaunches the app even if a few locked files could not be replaced.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-8" data-version="0.3.8">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.8</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Serial (COM) devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>COM port scan works again</strong> — hardware rescan can list USB serial devices without `serial_list_ports not found` in the log.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine 2</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Second monitor in the log</strong> — RGBJunkie now reports whether the workshop companion is listening on <strong>8133</strong> (main screen) and <strong>8134</strong> (second screen), and resyncs when the second companion comes online later.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-7" data-version="0.3.7">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.7</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine 2</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Browse for cover image</strong> — <strong>Cover Image</strong> in Wallpaper Engine plugin settings now has a <strong>Browse…</strong> button so you can pick a PNG or JPG from your PC instead of typing the full path. You can still paste a URL in the field.</li><li><strong>Saved settings stick on startup</strong> — Wallpaper Engine plugin sliders (aspect ratio, display size, cover image, etc.) are restored from your scene/profile <strong>before</strong> RGBJunkie sends the setup packet to the workshop companion, so a restart or update no longer pushes defaults to the desk matrix first.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-6" data-version="0.3.6">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.6</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates (portable Windows)</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Auto-update restarts after the exe rename</strong> — the portable updater now waits for and closes <strong>`rgbjunkie-led-controller.exe`</strong> as well as <strong>RGBJunkie.exe</strong>, then launches <strong>RGBJunkie.exe</strong> after the update (and removes the old dev-style exe when present). Updating from an older build no longer leaves the app closed when the process name changed.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-5" data-version="0.3.5">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -375,9 +624,14 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.2.92</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.2.92.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sleep and hibernate</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lighter wake recovery on USB strips</strong> — resume no longer kicks off a full hardware rescan when reopening stale HID handles is enough, so Nollie-class strips spend less time dark right after wake.</li></ul>
+</article></div>
+</section>
 </div>
 </div>
 </article>
