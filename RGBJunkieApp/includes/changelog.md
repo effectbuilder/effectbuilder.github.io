@@ -4,9 +4,112 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.29 — May 31, 2026
+
+*(Add release notes for v0.3.29.)*
+
+---
+
+## v0.3.28 — May 31, 2026
+
+#### Updates
+
+- **No flashing console during automatic update** — the install helper no longer opens a **timeout** window every second while waiting for RGBJunkie to close; delays run hidden in the background instead.
+
+---
+
+## v0.3.27 — May 31, 2026
+
+*(Add release notes for v0.3.27.)*
+
+---
+
+## v0.3.26 — May 31, 2026
+
+#### Setup wizard
+
+- **Wizard breathing fades to off** — each channel’s preview color now breathes from fully off to full brightness so it is easier to spot on your desk.
+- **One channel at a time while picking a component** — when you choose a color from the list, only that channel keeps breathing; every other channel (including on high-speed controllers) is forced to black until you finish or go back.
+- **Workspace goes black during setup** — while the wizard is open, your current effect pauses and the canvas stays black so only the hardware breathing colors stand out.
+- **Longer wizard preview on each strip** — the breathing preview now lights up to **200** LEDs on a channel so longer strips are easier to spot.
+- **Wizard colors match their names** — red is **#FF0000**, green **#00FF00**, blue **#0000FF**, and the rest of the list uses saturated values sent to your strips as-is (no soft tints like **#FF3333**).
+
+---
+
+## v0.3.25 — May 31, 2026
+
+*(Add release notes for v0.3.25.)*
+
+---
+
+## v0.3.24 — May 31, 2026
+
+#### Updates
+
+- **Automatic update opens RGBJunkie again** — after files copy, the updater relaunches the app with a small restart helper (no PowerShell). If the first launch does not stick, a background watcher tries again so the window comes back instead of staying closed.
+
+---
+
+## v0.3.23 — May 31, 2026
+
+*(Add release notes for v0.3.23.)*
+
+---
+
+## v0.3.22 — May 31, 2026
+
+*(Add release notes for v0.3.22.)*
+
+---
+
+## v0.3.21 — May 31, 2026
+
+*(Add release notes for v0.3.21.)*
+
+---
+
+## v0.3.20 — May 31, 2026
+
+*(Add release notes for v0.3.20.)*
+
+---
+
+## v0.3.19 — May 31, 2026
+
+*(Add release notes for v0.3.19.)*
+
+---
+
+## v0.3.18 — May 31, 2026
+
+*(Add release notes for v0.3.18.)*
+
+---
+
+## v0.3.17 — May 31, 2026
+
+#### Setup wizard
+
+- **Setup wizard stays responsive** — the initial setup wizard no longer slows the whole window while channels breathe. It skips heavy canvas work, lights only a short preview segment on each strip, and turns off other channels once instead of every frame.
+
+#### Updates
+
+- **Automatic update restarts RGBJunkie again** — after files copy, the updater relaunches the app with plain **cmd start**, trying **RGBJunkie.exe**, the exe that was running during the update, then the legacy **rgbjunkie-led-controller.exe** name from older installs.
+- **No stuck console window during update** — the install helper no longer uses **find** / **findstr** pipes that could leave a blank command window open while waiting for the app to exit.
+
+---
+
 ## v0.3.16 — May 31, 2026
 
-*(Add release notes for v0.3.16.)*
+#### Updates
+
+- **Auto-update runs the install helper again** — the background updater now starts reliably (including under **Program Files**, where Windows may ask for admin approval after RGBJunkie closes), copies the new files, and opens RGBJunkie again instead of stopping at “Restarting…”.
+
+#### App links
+
+- **Website handoff opens RGBJunkie automatically again** — share links on **rgbjunkie.com** redirect to the app on load (no extra click). The fallback **Open RGBJunkie** button is still there if the browser blocks the redirect.
+- **Copy link icons stay subtle** — small chain icons on **Settings** tabs, the **Scene** bar, **Effect browser**, active effects, and **Git** repos in **Installed** stay hidden until you hover that row or header. Release builds copy a **rgbjunkie.com** share link; while developing from source, the same buttons copy an **rgbjunkie://** link so testing does not launch a second copy from **Program Files**.
+- **Share links encode paths correctly** — re-copy links after updating; older ones used slashes that some servers rejected as a bad request.
 
 ---
 
@@ -17,6 +120,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 - **Install plugins from a link** — open a GitHub or GitLab repo in RGBJunkie from a website button or bookmark, similar to SignalRGB addon links. Example: `https://www.rgbjunkie.com/RGBJunkieApp/s?p=addon/install&url=https://github.com/qiangqiang101/SignalRGB-Wallpaper-Engine`
 - **Jump to settings, effects, or scenes** — `rgbjunkie://` links can open **Settings** tabs, the effect browser, or load a saved scene by name. Use `silent=1` or `-silentlaunch-` to run an action without restoring the window from the tray.
 - **Batch and Stream Deck friendly** — use `start rgbjunkie://…` on Windows; `%20` encodes spaces in effect and scene names.
+- **Copy link buttons** — a small link icon on settings tabs, the effect browser, scenes, Git repos, and effects copies the matching shortcut to your clipboard.
 
 #### Wallpaper Engine 2
 
