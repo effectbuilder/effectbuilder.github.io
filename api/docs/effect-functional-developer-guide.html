@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
 <head>
-  <!--
-    SPDX-FileCopyrightText: © 2026 José A Miranda Velez <admin@rgbjunkie.com>
-    SPDX-License-Identifier: LicenseRef-RGBJunkie-Proprietary
-    https://www.rgbjunkie.com
-  -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RGBJunkie functional effects (.mjs)</title>
@@ -40,20 +35,23 @@
     <div class="docs-nav-group">
       <p class="docs-nav-group-title" id="nav-fn-start">Start here</p>
       <ul class="docs-nav-list" aria-labelledby="nav-fn-start">
-        <li><a href="#what-is">What you are writing</a></li>
+        <li><a href="#what-is">How it works</a></li>
         <li><a href="#vs-html">Compared to HTML effects</a></li>
-        <li><a href="#minimal">Minimal working example</a></li>
+        <li><a href="#minimal">Your first effect</a></li>
       </ul>
     </div>
     <div class="docs-nav-group">
       <p class="docs-nav-group-title" id="nav-fn-detail">Authoring</p>
       <ul class="docs-nav-list" aria-labelledby="nav-fn-detail">
-        <li><a href="#meta"><code>meta</code> (catalog)</a></li>
-        <li><a href="#params">Sidebar controls</a></li>
-        <li><a href="#sampleled"><code>sampleLed</code></a></li>
+        <li><a href="#meta">Setting up <code>meta</code></a></li>
+        <li><a href="#params">Adding sidebar controls</a></li>
+        <li><a href="#sampleled">The <code>sampleLed</code> function</a></li>
         <li><a href="#context">Audio &amp; color profiles</a></li>
+        <li class="docs-nav-sub"><a href="#audio-mono">Audio (mono)</a></li>
+        <li class="docs-nav-sub"><a href="#audio-stereo">Stereo</a></li>
+        <li class="docs-nav-sub"><a href="#color-profiles">Color profiles</a></li>
         <li><a href="#rules">Rules &amp; tips</a></li>
-        <li><a href="#install">Install your file</a></li>
+        <li><a href="#install">Testing your file</a></li>
       </ul>
     </div>
     <div class="docs-nav-group">
@@ -66,52 +64,57 @@
   <main class="docs-content">
   <div class="wrap">
     <article>
-      <h1>Functional effects (<code>.mjs</code>)</h1>
+      <h1>Functional Effects (<code>.mjs</code>)</h1>
       <p class="lede">
-        This page is for authors who want a <strong>single JavaScript file</strong> that drives Effect lighting <strong>without a canvas</strong>.
-        You export a small <strong>catalog object</strong> and one <strong>color function</strong>; RGBJunkie calls that function for each LED.
+        Welcome! This guide is for creators who want to build lighting effects using a <strong>single, lightweight JavaScript file</strong>. 
+        There is no need to draw on a canvas or manage animation loops. You simply provide a small <strong>settings object</strong> and one <strong>color function</strong>, and RGBJunkie takes care of the rest—calling your function to light up every single LED!
       </p>
       <p class="lede">
-        For <strong>HTML + canvas</strong> effects (iframe, <code>engine</code>, drawing), use the
+        If you prefer working with <strong>HTML and canvas</strong> drawing (using iframes and the <code>engine</code> API), check out our friendly 
         <a href="/api/docs/effect-developer-guide.html">HTML canvas effect guide</a> instead.
       </p>
       <p class="lede">
         Effect Builder, gallery, and downloads: <a href="https://www.rgbjunkie.com" rel="noopener">rgbjunkie.com</a>
       </p>
 
-      <h2 id="what-is">What you are writing</h2>
-      <p>Save one file with the extension <code>.mjs</code>. It must export two names:</p>
+      <div class="doc-callout">
+        <p class="doc-callout-title">The Short Version</p>
+        <p>You export two things: <code>meta</code> (to give your effect a name and some sidebar controls) and <code>sampleLed</code> (a function that decides the RGB color for one LED). RGBJunkie does the heavy lifting, calling that function thousands of times per second to bring your lights to life.</p>
+      </div>
+
+      <h2 id="what-is">How it works</h2>
+      <p>Getting started is easy. Just save a single file with an <code>.mjs</code> extension. Inside, your code needs to export these two items:</p>
       <table>
-        <thead><tr><th>Export</th><th>Purpose</th></tr></thead>
+        <thead><tr><th>Export</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td><code>meta</code></td><td>Plain object: stable <code>id</code>, human <code>name</code>, optional <code>description</code> / <code>publisher</code>, and <code>params</code> for the sidebar.</td></tr>
-          <tr><td><code>sampleLed</code></td><td>A function <code>(args) =&gt; { r, g, b }</code>. Each channel should be <strong>0–255</strong> (the host clamps if needed).</td></tr>
+          <tr><td><code>meta</code></td><td>A simple object containing your effect's stable <code>id</code>, a human-readable <code>name</code>, an optional <code>description</code>, your name as the <code>publisher</code>, and any <code>params</code> (sliders/toggles) you want in the sidebar.</td></tr>
+          <tr><td><code>sampleLed</code></td><td>Your core logic! It's a function formatted as <code>(args) =&gt; { r, g, b }</code>. It returns the color for a specific LED, with each color channel ranging from <strong>0 to 255</strong>.</td></tr>
         </tbody>
       </table>
       <p>
-        There is <strong>no</strong> <code>&lt;canvas&gt;</code> and <strong>no</strong> <code>requestAnimationFrame</code> in your module.
-        The app passes time as <code>args.tSec</code> (seconds since your effect started) and tells you which LED you are with <code>args.ledIndex</code>, <code>args.ledCount</code>, and often <code>args.stripU</code> (0…1 along the strip).
+        Because there is <strong>no</strong> <code>&lt;canvas&gt;</code> and <strong>no</strong> <code>requestAnimationFrame</code> loop to manage, the app hands you everything you need directly. You'll get the current time via <code>args.tSec</code>, and you'll know exactly which LED you are coloring via <code>args.ledIndex</code>, <code>args.ledCount</code>, and <code>args.stripU</code> (which tells you how far along the strip the LED is, from 0 to 1).
       </p>
 
       <h2 id="vs-html">Compared to HTML canvas effects</h2>
+      <p>Not sure which method to use? Here is a quick breakdown of how Functional effects differ from HTML ones:</p>
       <table>
         <thead><tr><th>Topic</th><th>HTML (<code>.html</code>)</th><th>Functional (<code>.mjs</code>)</th></tr></thead>
         <tbody>
-          <tr><td>Output</td><td>You draw; the host <strong>reads pixels</strong> from your canvas.</td><td>You return <strong>RGB</strong> from <code>sampleLed</code>.</td></tr>
-          <tr><td>Time</td><td>Your own animation loop.</td><td><code>args.tSec</code> and <code>args.frameIndex</code> from the host.</td></tr>
-          <tr><td>Settings</td><td><code>&lt;meta property&gt;</code> → globals on <code>window</code>.</td><td><code>meta.params</code> → <code>args.params[key]</code>.</td></tr>
-          <tr><td>Audio</td><td><code>engine.audio</code></td><td><code>args.context.audio</code> (same idea: 200-bin <code>freq</code>, <code>level</code>, <code>density</code>).</td></tr>
-          <tr><td>Color profiles</td><td>Globals like <code>colorProfileStops</code>.</td><td>Add <code>type: "colorProfile"</code> in <code>params</code>, then <code>args.context.sampleColorProfile(id, t)</code>.</td></tr>
-          <tr><td>Browser APIs</td><td>Allowed inside the iframe.</td><td><strong>Not inside <code>sampleLed</code></strong> — no <code>window</code>, <code>document</code>, or network calls there.</td></tr>
+          <tr><td><strong>Output</strong></td><td>You draw shapes; the host <strong>reads pixels</strong> from your canvas.</td><td>You calculate and return <strong>RGB values</strong> directly from <code>sampleLed</code>.</td></tr>
+          <tr><td><strong>Time</strong></td><td>You manage your own animation loop.</td><td>The host feeds you <code>args.tSec</code> and <code>args.frameIndex</code>.</td></tr>
+          <tr><td><strong>Settings</strong></td><td><code>&lt;meta property&gt;</code> tags become global variables on <code>window</code>.</td><td>You define <code>meta.params</code>, which show up in <code>args.params[key]</code>.</td></tr>
+          <tr><td><strong>Audio</strong></td><td>Read from <code>engine.audio</code>.</td><td>Read from <code>args.context.audio</code>. It has the same shape: <code>freq</code>, <code>level</code>, <code>density</code>, etc.</td></tr>
+          <tr><td><strong>Color profiles</strong></td><td>Global arrays like <code>colorProfileStops</code>.</td><td>Add <code>type: "colorProfile"</code> to your params, then use <code>args.context.sampleColorProfile(id, t)</code>.</td></tr>
+          <tr><td><strong>Browser APIs</strong></td><td>Fully allowed inside the iframe.</td><td><strong>Not allowed inside <code>sampleLed</code>.</strong> You cannot access <code>window</code>, <code>document</code>, or make network calls. Keep it pure math!</td></tr>
         </tbody>
       </table>
 
-      <h2 id="minimal">Minimal working example</h2>
-      <p>Drop this in your user effects folder (or the app’s <code>effects</code> tree while developing) as e.g. <code>MyFirstSweep.mjs</code>. Pick a unique <code>meta.id</code>.</p>
+      <h2 id="minimal">Your first effect</h2>
+      <p>Want to see it in action? Drop this code into your user effects folder (e.g., <code>MyFirstSweep.mjs</code>). Just make sure to pick a unique <code>meta.id</code>!</p>
       <pre><code class="language-javascript">export const meta = {
   id: "my_first_sweep",
   name: "My First Sweep",
-  description: "A hue that travels along the strip using host time.",
+  description: "A friendly, traveling hue that moves along the strip.",
   publisher: "Your Name",
   contractVersion: 1,
   params: [
@@ -119,22 +122,24 @@
   ],
 };
 
+// A handy helper to convert Hue into RGB values
 function hueToRgb(p, q, t) {
   let tt = t;
-  if (tt &lt; 0) tt += 1;
-  if (tt &gt; 1) tt -= 1;
-  if (tt &lt; 1 / 6) return p + (q - p) * 6 * tt;
-  if (tt &lt; 1 / 2) return q;
-  if (tt &lt; 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+  if (tt < 0) tt += 1;
+  if (tt > 1) tt -= 1;
+  if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+  if (tt < 1 / 2) return q;
+  if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
   return p;
 }
 
+// Converts standard HSL (Hue, Saturation, Lightness) to our required RGB format
 function hslToRgb(h, s, l) {
   if (s === 0) {
     const v = Math.round(l * 255);
     return { r: v, g: v, b: v };
   }
-  const q = l &lt; 0.5 ? l * (1 + s) : l + s - l * s;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
   const p = 2 * l - q;
   const r = hueToRgb(p, q, h + 1 / 3);
   const g = hueToRgb(p, q, h);
@@ -146,91 +151,138 @@ function hslToRgb(h, s, l) {
   };
 }
 
+// The star of the show: this runs for every LED!
 export function sampleLed(args) {
   const speed = Number(args.params.speed ?? 80);
   const n = Math.max(1, args.ledCount - 1);
   const su = args.stripU;
+  
+  // Find out where we are on the strip (0.0 to 1.0)
   const u =
-    typeof su === "number" &amp;&amp; Number.isFinite(su)
+    typeof su === "number" && Number.isFinite(su)
       ? Math.max(0, Math.min(1, su))
-      : n &lt;= 0
+      : n <= 0
         ? 0.5
         : args.ledIndex / n;
+        
+  // Calculate the color phase based on time, speed, and position
   const phase = (args.tSec * speed * 0.012 + u) % 1;
+  
   return hslToRgb(phase, 0.85, 0.55);
 }</code></pre>
       <ul>
-        <li><strong><code>stripU</code></strong> is the best way to get “where on the strip” when the host provides it; otherwise divide <code>ledIndex</code> by <code>ledCount - 1</code>.</li>
-        <li>Shipped examples under <code>effects/*.mjs</code> in the RGBJunkie source tree show audio, color profiles, and more patterns.</li>
+        <li><strong><code>stripU</code></strong> is the easiest way to figure out where an LED sits on the strip. If it's not provided, you can always calculate it by dividing <code>ledIndex</code> by <code>ledCount - 1</code>.</li>
+        <li>Feel free to explore the built-in examples in the RGBJunkie <code>effects/*.mjs</code> folder to see how to integrate audio and color profiles!</li>
       </ul>
 
-      <h2 id="meta"><code>meta</code> (catalog)</h2>
+      <h2 id="meta">Setting up <code>meta</code></h2>
       <table>
         <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td><code>id</code></td><td>Yes</td><td>Stable id (profiles use it). Lowercase, digits, underscores.</td></tr>
-          <tr><td><code>name</code></td><td>Yes</td><td>Short title in the effect list.</td></tr>
-          <tr><td><code>params</code></td><td>No</td><td>Array of control definitions (see below).</td></tr>
-          <tr><td><code>description</code></td><td>No</td><td>Shown in the browser / tooltips.</td></tr>
-          <tr><td><code>publisher</code></td><td>No</td><td>Your name or brand.</td></tr>
-          <tr><td><code>contractVersion</code></td><td>No</td><td>Defaults to <code>1</code>.</td></tr>
+          <tr><td><code>id</code></td><td>Yes</td><td>Your effect's unique ID. Use lowercase letters, numbers, and underscores (e.g., <code>my_cool_effect</code>).</td></tr>
+          <tr><td><code>name</code></td><td>Yes</td><td>The nice, readable title that users will click on in the effect list.</td></tr>
+          <tr><td><code>params</code></td><td>No</td><td>An array of sliders, checkboxes, and colors to show in the sidebar (details below).</td></tr>
+          <tr><td><code>description</code></td><td>No</td><td>A helpful blurb shown in tooltips.</td></tr>
+          <tr><td><code>publisher</code></td><td>No</td><td>Let people know you made it!</td></tr>
+          <tr><td><code>contractVersion</code></td><td>No</td><td>Just leave this at <code>1</code>.</td></tr>
         </tbody>
       </table>
 
-      <h2 id="params">Sidebar controls (<code>meta.params</code>)</h2>
-      <p>Each entry needs <code>key</code> and <code>type</code>. Use <code>label</code>, <code>default</code>, <code>min</code>, <code>max</code>, and <code>values</code> (for lists) like you would for HTML metas.</p>
+      <h2 id="params">Adding sidebar controls (<code>meta.params</code>)</h2>
+      <p>Adding controls is a breeze. Each control needs a <code>key</code> (how you reference it in your code) and a <code>type</code>. You can also define a <code>label</code>, <code>default</code>, <code>min</code>, <code>max</code>, and <code>values</code>.</p>
       <table>
-        <thead><tr><th><code>type</code></th><th>Control</th><th><code>args.params[key]</code></th></tr></thead>
+        <thead><tr><th><code>type</code></th><th>What the user sees</th><th>What you get in <code>args.params[key]</code></th></tr></thead>
         <tbody>
-          <tr><td><code>number</code></td><td>Slider</td><td>Number</td></tr>
-          <tr><td><code>boolean</code></td><td>Checkbox</td><td>Boolean</td></tr>
-          <tr><td><code>color</code></td><td>Color picker</td><td>String <code>#rrggbb</code></td></tr>
-          <tr><td><code>string</code></td><td>Text field</td><td>String</td></tr>
-          <tr><td><code>list</code></td><td>Dropdown</td><td>String (one of <code>values</code>)</td></tr>
-          <tr><td><code>colorProfile</code></td><td>Same picker as HTML effects</td><td>String profile id (e.g. <code>Rainbow</code>)</td></tr>
+          <tr><td><code>number</code></td><td>A slider</td><td>A Number</td></tr>
+          <tr><td><code>boolean</code></td><td>A checkbox</td><td>A Boolean (true/false)</td></tr>
+          <tr><td><code>color</code></td><td>A color picker</td><td>A String like <code>#rrggbb</code></td></tr>
+          <tr><td><code>string</code></td><td>A text field</td><td>A String</td></tr>
+          <tr><td><code>list</code></td><td>A dropdown menu</td><td>A String (whichever option they picked)</td></tr>
+          <tr><td><code>colorProfile</code></td><td>A color profile picker</td><td>A String ID (e.g., <code>Rainbow</code>)</td></tr>
         </tbody>
       </table>
-      <p>For <code>colorProfile</code>, set <code>allowNone: true</code> on the param if you want the <strong>None</strong> option (same idea as HTML <code>allowNone="true"</code>).</p>
+      <p><em>Pro tip:</em> For <code>colorProfile</code>, you can add <code>allowNone: true</code> to your parameter if you want users to have the option to turn the profile off.</p>
 
-      <h2 id="sampleled"><code>sampleLed(args)</code></h2>
+      <h2 id="sampleled">The <code>sampleLed(args)</code> function</h2>
+      <p>Here is all the data RGBJunkie hands you inside the <code>args</code> object:</p>
       <table>
         <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><code>tSec</code></td><td>Seconds since the effect was mounted.</td></tr>
-          <tr><td><code>frameIndex</code></td><td>Host frame counter.</td></tr>
-          <tr><td><code>ledIndex</code> / <code>ledCount</code></td><td>Which LED (same ordering the host uses for hardware).</td></tr>
-          <tr><td><code>layout</code></td><td><code>{ x, y }</code> in workspace coordinates.</td></tr>
-          <tr><td><code>stripU</code></td><td><code>0…1</code> along the strip, or <code>null</code>.</td></tr>
-          <tr><td><code>params</code></td><td>Current control values.</td></tr>
-          <tr><td><code>context</code></td><td>Host extras — see below.</td></tr>
+          <tr><td><code>tSec</code></td><td>How many seconds have passed since the effect started running. Great for animations!</td></tr>
+          <tr><td><code>frameIndex</code></td><td>The current frame number.</td></tr>
+          <tr><td><code>ledIndex</code> / <code>ledCount</code></td><td>Exactly which LED you are currently coloring, out of the total.</td></tr>
+          <tr><td><code>layout</code></td><td><code>{ x, y }</code> positions on the visual workspace, if you need 2D spatial awareness.</td></tr>
+          <tr><td><code>stripU</code></td><td>A handy <code>0…1</code> decimal showing the LED's position along the strip.</td></tr>
+          <tr><td><code>params</code></td><td>The live values of all the sidebar controls you set up in your <code>meta</code>.</td></tr>
+          <tr><td><code>context</code></td><td>Bonus features! Audio data and color profiles live here.</td></tr>
         </tbody>
       </table>
-      <p><strong>Performance:</strong> this function may run <em>many</em> times per frame. Keep math tight; avoid allocating large objects per call.</p>
+      <p><strong>Performance tip:</strong> Remember that <code>sampleLed</code> runs <em>a lot</em>—thousands of times a second! Keep your math clean and try to avoid creating large arrays or objects inside the function.</p>
 
       <h2 id="context">Audio &amp; color profiles</h2>
-      <p><strong>Audio</strong> — read <code>args.context.audio</code> when present:</p>
-      <ul>
-        <li><code>freq</code>: array of 200 values, roughly <code>0…255</code> per bin.</li>
-        <li><code>level</code>: overall loudness (about <code>-100…0</code>).</li>
-        <li><code>density</code>: <code>0…1</code> “how much spectrum energy” for simple reactions.</li>
-      </ul>
-      <p><strong>Color profiles</strong> — add a param <code>{ key: "colorProfile", type: "colorProfile", default: "Rainbow" }</code>. At runtime, call:</p>
-      <pre><code class="language-javascript">const fn = args.context &amp;&amp; args.context.sampleColorProfile;
+      
+      <h3 id="audio-mono">Audio (mono mix)</h3>
+      <p>
+        Want your lights to react to music? Inside <code>sampleLed</code>, just peek at <code>args.context.audio</code>. 
+        It contains these core properties:
+      </p>
+      <dl class="doc-api-list">
+        <dt><code>freq</code></dt>
+        <dd>An array of 200 spectrum values (0–255), representing frequencies from deep bass to high treble.</dd>
+        <dt><code>level</code></dt>
+        <dd>The overall volume/loudness (ranging from roughly −100 to 0).</dd>
+        <dt><code>density</code></dt>
+        <dd>A simple 0 to 1 value representing how much energetic sound is currently playing.</dd>
+      </dl>
+
+      <h3 id="audio-stereo">Stereo (left &amp; right)</h3>
+      <p>
+        If the user has stereo audio configured, <code>stereo</code> will be <code>true</code>, and you'll get access to left and right channels separately! 
+        (If they are on mono, just stick to using <code>freq</code> so everything looks even).
+      </p>
+      <dl class="doc-api-list">
+        <dt><code>freqL</code>, <code>freqR</code></dt>
+        <dd>The split 200-bin arrays for the left and right channels.</dd>
+        <dt><code>levelL</code>, <code>levelR</code>, <code>densityL</code>, <code>densityR</code></dt>
+        <dd>Volume and energy, split by channel.</dd>
+        <dt><code>pan</code></dt>
+        <dd>A simple panning value from −1 (hard left) to +1 (hard right).</dd>
+      </dl>
+      <p><strong>Example: Lighting the left side of the strip with the left audio channel:</strong></p>
+      <pre><code class="language-javascript">const a = args.context && args.context.audio;
+if (!a || !Array.isArray(a.freq) || a.freq.length < 2) return { r: 0, g: 0, b: 0 };
+
+const stereo =
+  !!a.stereo &&
+  Array.isArray(a.freqL) && Array.isArray(a.freqR) &&
+  a.freqL.length === a.freq.length &&
+  a.freqR.length === a.freq.length;
+
+const u = typeof args.stripU === "number" ? args.stripU : 0.5;
+
+// If we are on the first half of the strip (u < 0.5), use the left channel!
+const freq = u < 0.5
+  ? (stereo ? a.freqL : a.freq)
+  : (stereo ? a.freqR : a.freq);</code></pre>
+
+      <h3 id="color-profiles">Color profiles</h3>
+      <p>To let users apply their favorite color themes, add a parameter to your <code>meta</code> like this: <code>{ key: "colorProfile", type: "colorProfile", default: "Rainbow" }</code>. Then, inside your code:</p>
+      <pre><code class="language-javascript">const fn = args.context && args.context.sampleColorProfile;
 if (typeof fn === "function") {
   const id = String(args.params.colorProfile ?? "Rainbow");
-  const rgb = fn(id, t01WrappedTo0Through1);
+  // Pass your desired position (0 to 1) to get a beautiful RGB value back!
+  const rgb = fn(id, position0to1); 
 }</code></pre>
-      <p>Built-in effects tint their math through the profile so colors stay on the user’s palette (often by scaling profile RGB by the <strong>luminance</strong> of the color they would have drawn without a profile).</p>
 
-      <h2 id="rules">Rules &amp; tips</h2>
+      <h2 id="rules">Rules &amp; tips for success</h2>
       <ul>
-        <li><strong>Pure <code>sampleLed</code>:</strong> no DOM, no <code>window</code>, no fetches, no timers — only math from the arguments.</li>
-        <li><strong>One file:</strong> put helpers in the same module; avoid importing unknown URLs.</li>
-        <li><strong>Multi-tab workspaces</strong> use the same saved params model as HTML effects; each tab can remember its own effect.</li>
+        <li><strong>Keep it pure:</strong> <code>sampleLed</code> shouldn't try to manipulate the DOM, use <code>window</code>, fetch internet data, or use timers. Only use the math from your <code>args</code>.</li>
+        <li><strong>Everything in its place:</strong> Put all your helper functions inside the same `.mjs` file. Don't try to import unknown external URLs.</li>
+        <li><strong>Play well with tabs:</strong> Users can open multiple workspace tabs, and each tab will remember its own specific settings for your effect!</li>
       </ul>
 
-      <h2 id="install">Install your file</h2>
-      <p>Use the same <strong>user effects</strong> folder (or product-specific path) as for <code>.html</code> effects. The catalog picks up <code>.mjs</code> automatically. Keep the file basename unique next to any <code>.html</code> in the same folder.</p>
+      <h2 id="install">Testing your file</h2>
+      <p>Ready to see your creation? Just save your `.mjs` file into your <strong>user effects</strong> folder (the same place you'd put `.html` effects). RGBJunkie's catalog will detect it automatically. Just make sure the file name is unique!</p>
 
       <footer>
         <p>© RGBJunkie. Documentation for independent effect authors.</p>

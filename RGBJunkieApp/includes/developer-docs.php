@@ -10,7 +10,7 @@ function rgbj_developer_doc_sections(): array
     return [
         [
             'heading' => 'Desktop app API',
-            'intro' => 'Author plugins, effects, and integrations that run inside RGBJunkie for Windows. These guides describe the public plugin and effect APIs — no app source required.',
+            'intro' => 'Author plugins, effects, and integrations that run inside RGBJunkie for Windows. Plain-language guides with examples — no app source required.',
             'items' => [
                 [
                     'icon' => 'bi-plugin',
@@ -21,13 +21,13 @@ function rgbj_developer_doc_sections(): array
                 [
                     'icon' => 'bi-brush',
                     'title' => 'Effect developer guide (HTML canvas)',
-                    'text' => 'Create HTML canvas effects for Effect lighting mode: metadata, settings, engine API, and worked examples.',
+                    'text' => 'Create HTML canvas effects: metadata, sidebar settings, and host APIs (audio, screen, sensors) explained in plain language first.',
                     'href' => '/api/docs/effect-developer-guide.html',
                 ],
                 [
                     'icon' => 'bi-code-slash',
                     'title' => 'Functional effects guide (.mjs)',
-                    'text' => 'Write per-LED functional effects with sampleLed — one module, no canvas document.',
+                    'text' => 'Per-LED effects without a canvas — export meta + sampleLed; audio and color profiles explained step by step.',
                     'href' => '/api/docs/effect-functional-developer-guide.html',
                 ],
                 [

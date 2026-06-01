@@ -237,7 +237,7 @@
       <ol>
         <li><code>rgbjunkie.imageUrl</code> when it is already an <code>https://assets.rgbjunkie.com/images/brands/…</code> URL.</li>
         <li>Otherwise a slug from the plugin path; absolute Windows paths are normalized through <code>/plugins/</code> so the first segment is never a drive letter (<code>C:</code> would wrongly become <code>c</code>).</li>
-        <li>Folders <code>_include</code>, <code>_templates</code>, <code>Default</code>, and <code>Firmware 2.x</code> are organizational (not brand names); <code>Nollie*.js</code> maps to <code>nollie</code>; <code>DRGB*.js</code> maps to <code>drgb</code>. The <code>OemRgb/</code> folder groups shared OEM RGB HID plugins (<code>_include/protocols/oem-rgb-hid.js</code>); it is not one retail brand: <code>DRGB*.js</code>, <code>JPU*.js</code>, <code>NEEDMAX*.js</code>, and <code>YICO*.js</code> there map to <code>drgb</code>, <code>jpu</code>, <code>needmax</code>, <code>yico</code> instead of the folder name (same filename idea as <code>scripts/update-plugin-brand-image-urls.mjs</code>).</li>
+        <li>Folders <code>_include</code>, <code>_templates</code>, and <code>Default</code> are organizational (not brand names). All Nollie controllers are under <code>plugins/Nollie/</code> (Nollie1, Nollie8 v2, Nollie16v3, Nollie32); <code>Nollie*_Nos2.0.js</code> and <code>* CDC Nos2.1.js</code> files there are alternate firmware/transport builds, not separate brands. <code>Nollie*.js</code> maps to <code>nollie</code>; <code>DRGB*.js</code> maps to <code>drgb</code>. The <code>OemRgb/</code> folder groups shared OEM RGB HID plugins (<code>_include/protocols/oem-rgb-hid.js</code>); it is not one retail brand: <code>DRGB*.js</code>, <code>JPU*.js</code>, <code>NEEDMAX*.js</code>, and <code>YICO*.js</code> there map to <code>drgb</code>, <code>jpu</code>, <code>needmax</code>, <code>yico</code> instead of the folder name (same filename idea as <code>scripts/update-plugin-brand-image-urls.mjs</code>).</li>
         <li>Else <code>publisher</code> (canonicalized, e.g. RGBJunkie → <code>rgbjunkie</code>).</li>
       </ol>
       <p>Set <code>rgbjunkie.imageUrl</code> to the brand tile URL when you ship one so the descriptor matches the tree.</p>
@@ -527,11 +527,10 @@ export function __rgbjPostWirePluginExports() {
           <code>SPDX-License-Identifier: GPL-3.0-or-later</code> plus your copyright line.
         </li>
         <li>
-          <strong>Recommended:</strong> <code>GPL-3.0-or-later</code>. RGBJunkie also accepts <code>GPL-2.0-*</code> and <code>AGPL-3.0-*</code> identifiers.
-          Permissive licenses alone (MIT, Apache-2.0, …) are rejected because they do not require publishing derivatives.
+          <strong>Recommended:</strong> <code>GPL-3.0-or-later</code>. Community add-ons often use <code>GPL-2.0-*</code> or <code>AGPL-3.0-*</code> identifiers when copyleft is required for your project.
         </li>
         <li>
-          The host <strong>refuses to load</strong> an add-on without a valid copyleft SPDX header. Stock WLED keeps working.
+          RGBJunkie merges any present <code>wled.addon.js</code> / <code>WLED.addon.js</code> beside stock <code>WLED.js</code>; SPDX headers are author guidance, not a load gate.
         </li>
         <li>Template: <code>plugins/_templates/wled.addon.template.js</code>. Full policy: <code>docs/ADDON-LICENSING.md</code>.</li>
       </ul>

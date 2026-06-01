@@ -395,6 +395,73 @@ details.effect-example-snippet summary:hover {
     line-height: 1.55;
 }
 
+.doc-callout {
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    border-radius: 10px;
+    background: rgba(85, 248, 111, 0.05);
+    padding: 1rem 1.1rem;
+    margin: 1rem 0 1.35rem;
+    line-height: 1.6;
+}
+.doc-callout-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.45rem;
+}
+.doc-callout p:last-child {
+    margin-bottom: 0;
+}
+.doc-guide-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.65rem;
+    margin: 0 0 1.25rem;
+    font-size: 0.92rem;
+}
+.doc-guide-map a {
+    display: inline-block;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.22);
+    text-decoration: none;
+    font-weight: 500;
+}
+.doc-guide-map a:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    background: rgba(85, 248, 111, 0.08);
+}
+.doc-api-list {
+    margin: 0.5rem 0 1rem;
+    padding: 0;
+}
+.doc-api-list dt {
+    font-weight: 600;
+    margin: 0.85rem 0 0.2rem;
+    color: var(--text);
+}
+.doc-api-list dt:first-child {
+    margin-top: 0;
+}
+.doc-api-list dd {
+    margin: 0 0 0.35rem;
+    padding-left: 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+.doc-api-list code {
+    font-size: 0.88em;
+}
+.docs-guide-body h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 1rem 0 0.45rem;
+    color: color-mix(in srgb, var(--accent) 70%, var(--text));
+}
+
 /* Figure slots — replace inner placeholder with <img class="docs-figure-img" src="…" alt="…"> when assets exist */
 .docs-figure {
     margin: 1.25rem 0 1.5rem;
@@ -426,6 +493,14 @@ details.effect-example-snippet summary:hover {
     padding: 0.5rem;
     border-radius: 8px;
 }
+.docs-image-slot--thumb:has(.docs-figure-img) {
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 0;
+}
+.docs-image-slot--thumb .docs-figure-img {
+    border-radius: 7px;
+}
 .docs-image-slot-text {
     font-size: 0.82rem;
     font-weight: 500;
@@ -438,15 +513,34 @@ details.effect-example-snippet summary:hover {
     font-size: 0.86rem;
     color: var(--muted);
     line-height: 1.45;
+    text-align: center;
 }
 .docs-figure-img {
     display: block;
     width: 100%;
+    max-width: 41rem;
     height: auto;
+    margin: 0 auto;
     border-radius: 10px;
     border: 1px solid var(--border);
     object-fit: contain;
     background: var(--code-bg);
+}
+.docs-figure-img--canvas {
+    background: #0a0a12;
+}
+.docs-image-slot .docs-figure-img {
+    width: 100%;
+    max-width: none;
+    border: none;
+    border-radius: 8px;
+}
+.docs-image-slot:has(.docs-figure-img) {
+    padding: 0;
+    min-height: 0;
+    border-style: solid;
+    background: var(--code-bg);
+    overflow: hidden;
 }
 .example-card .docs-image-slot {
     width: 100%;

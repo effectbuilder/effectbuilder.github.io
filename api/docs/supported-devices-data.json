@@ -1,9 +1,9 @@
 {
 	"meta": {
 		"purpose": "RGBJunkie supported-device browser (from device-catalog harvest)",
-		"generatedAt": "2026-05-13T23:44:33.819Z",
+		"generatedAt": "2026-05-29T04:34:33.166Z",
 		"sourceCatalog": "data/device-catalog.json",
-		"entryCount": 695,
+		"entryCount": 691,
 		"deviceKinds": [
 			"aio",
 			"case",
@@ -22,7 +22,6 @@
 			"other",
 			"ram",
 			"speakers",
-			"unknown",
 			"virtual"
 		],
 		"amazonAssociatesTag": "rgbjunkie-20"
@@ -5249,8 +5248,8 @@
 		},
 		{
 			"displayName": "Elgato Stream Deck MK.2",
-			"brand": "Elgato",
-			"relativePath": "Elgato/Streamdeck-MKII.js",
+			"brand": "Corsair-Elgato",
+			"relativePath": "Corsair-Elgato/Streamdeck-MKII.js",
 			"vendorId": 4057,
 			"vendorIdHex": "0x0fd9",
 			"productIdsHex": [
@@ -5272,9 +5271,9 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/elgato.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+MK.2&tag=rgbjunkie-20",
-			"searchBlob": "elgato stream deck mk.2 elgato/streamdeck-mkii.js streamdeck-mkii.js elgato elgato rgbjunkie 0x0fd9 0fd9 4057 0x6d 0x80 6d 80 0x6d 6d 0x80 80 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png elgato-streamdeck-mkii",
-			"permalinkId": "elgato-streamdeck-mkii"
+			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+MK.2+Corsair-Elgato&tag=rgbjunkie-20",
+			"searchBlob": "elgato stream deck mk.2 corsair-elgato/streamdeck-mkii.js streamdeck-mkii.js corsair-elgato corsair-elgato rgbjunkie 0x0fd9 0fd9 4057 0x6d 0x80 6d 80 0x6d 6d 0x80 80 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png corsair-elgato-streamdeck-mkii",
+			"permalinkId": "corsair-elgato-streamdeck-mkii"
 		},
 		{
 			"displayName": "Elgato Stream Deck Neo",
@@ -5302,8 +5301,8 @@
 		},
 		{
 			"displayName": "Elgato Stream Deck Plus",
-			"brand": "Elgato",
-			"relativePath": "Elgato/Streamdeck_Plus.js",
+			"brand": "Corsair-Elgato",
+			"relativePath": "Corsair-Elgato/Streamdeck_Plus.js",
 			"vendorId": 4057,
 			"vendorIdHex": "0x0fd9",
 			"productIdsHex": [
@@ -5320,14 +5319,14 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/elgato.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+Plus&tag=rgbjunkie-20",
-			"searchBlob": "elgato stream deck plus elgato/streamdeck_plus.js streamdeck_plus.js elgato elgato rgbjunkie 0x0fd9 0fd9 4057 0x84 84 0x84 84 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png elgato-streamdeck-plus",
-			"permalinkId": "elgato-streamdeck-plus"
+			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+Plus+Corsair-Elgato&tag=rgbjunkie-20",
+			"searchBlob": "elgato stream deck plus corsair-elgato/streamdeck_plus.js streamdeck_plus.js corsair-elgato corsair-elgato rgbjunkie 0x0fd9 0fd9 4057 0x84 84 0x84 84 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png corsair-elgato-streamdeck-plus",
+			"permalinkId": "corsair-elgato-streamdeck-plus"
 		},
 		{
 			"displayName": "Elgato Stream Deck XL",
-			"brand": "Elgato",
-			"relativePath": "Elgato/Streamdeck-XL.js",
+			"brand": "Corsair-Elgato",
+			"relativePath": "Corsair-Elgato/Streamdeck-XL.js",
 			"vendorId": 4057,
 			"vendorIdHex": "0x0fd9",
 			"productIdsHex": [
@@ -5349,14 +5348,14 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/elgato.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+XL&tag=rgbjunkie-20",
-			"searchBlob": "elgato stream deck xl elgato/streamdeck-xl.js streamdeck-xl.js elgato elgato rgbjunkie 0x0fd9 0fd9 4057 0x6c 0x8f 6c 8f 0x6c 6c 0x8f 8f other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png elgato-streamdeck-xl",
-			"permalinkId": "elgato-streamdeck-xl"
+			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Stream+Deck+XL+Corsair-Elgato&tag=rgbjunkie-20",
+			"searchBlob": "elgato stream deck xl corsair-elgato/streamdeck-xl.js streamdeck-xl.js corsair-elgato corsair-elgato rgbjunkie 0x0fd9 0fd9 4057 0x6c 0x8f 6c 8f 0x6c 6c 0x8f 8f other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png corsair-elgato-streamdeck-xl",
+			"permalinkId": "corsair-elgato-streamdeck-xl"
 		},
 		{
 			"displayName": "Elgato Streamdeck",
-			"brand": "Elgato",
-			"relativePath": "Elgato/Streamdeck_0x0060.js",
+			"brand": "Corsair-Elgato",
+			"relativePath": "Corsair-Elgato/Streamdeck_0x0060.js",
 			"vendorId": 4057,
 			"vendorIdHex": "0x0fd9",
 			"productIdsHex": [
@@ -5373,14 +5372,14 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/elgato.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Streamdeck&tag=rgbjunkie-20",
-			"searchBlob": "elgato streamdeck elgato/streamdeck_0x0060.js streamdeck_0x0060.js elgato elgato rgbjunkie 0x0fd9 0fd9 4057 0x60 60 0x60 60 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png elgato-streamdeck-0x0060",
-			"permalinkId": "elgato-streamdeck-0x0060"
+			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Streamdeck+Corsair-Elgato&tag=rgbjunkie-20",
+			"searchBlob": "elgato streamdeck corsair-elgato/streamdeck_0x0060.js streamdeck_0x0060.js corsair-elgato corsair-elgato rgbjunkie 0x0fd9 0fd9 4057 0x60 60 0x60 60 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png corsair-elgato-streamdeck-0x0060",
+			"permalinkId": "corsair-elgato-streamdeck-0x0060"
 		},
 		{
 			"displayName": "Elgato Streamdeck Mini",
-			"brand": "Elgato",
-			"relativePath": "Elgato/Streamdeck_Mini.js",
+			"brand": "Corsair-Elgato",
+			"relativePath": "Corsair-Elgato/Streamdeck_Mini.js",
 			"vendorId": 4057,
 			"vendorIdHex": "0x0fd9",
 			"productIdsHex": [
@@ -5402,9 +5401,9 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/elgato.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Streamdeck+Mini&tag=rgbjunkie-20",
-			"searchBlob": "elgato streamdeck mini elgato/streamdeck_mini.js streamdeck_mini.js elgato elgato rgbjunkie 0x0fd9 0fd9 4057 0x63 0x90 63 90 0x63 63 0x90 90 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png elgato-streamdeck-mini",
-			"permalinkId": "elgato-streamdeck-mini"
+			"amazonUrl": "https://www.amazon.com/s?k=Elgato+Streamdeck+Mini+Corsair-Elgato&tag=rgbjunkie-20",
+			"searchBlob": "elgato streamdeck mini corsair-elgato/streamdeck_mini.js streamdeck_mini.js corsair-elgato corsair-elgato rgbjunkie 0x0fd9 0fd9 4057 0x63 0x90 63 90 0x63 63 0x90 90 other hid rgbjunkie https://assets.rgbjunkie.com/images/brands/elgato.png corsair-elgato-streamdeck-mini",
+			"permalinkId": "corsair-elgato-streamdeck-mini"
 		},
 		{
 			"displayName": "Epomaker TH85 QMK Keyboard",
@@ -13431,54 +13430,6 @@
 		},
 		{
 			"displayName": "Nollie 8 v2",
-			"brand": "RGBJunkie",
-			"relativePath": "Default/Nollie8 v2.js",
-			"vendorId": 5842,
-			"vendorIdHex": "0x16d2",
-			"productIdsHex": [
-				"0x1f01"
-			],
-			"usbPairs": [
-				{
-					"pidHex": "0x1f01",
-					"label": null
-				}
-			],
-			"productLabels": [],
-			"deviceKind": "unknown",
-			"transportType": "Hid",
-			"publisher": "RGBJunkie",
-			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie+8+v2+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie 8 v2 default/nollie8 v2.js nollie8 v2.js rgbjunkie rgbjunkie 0x16d2 16d2 5842 0x1f01 1f01 0x1f01 1f01 unknown hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png default-nollie8-v2",
-			"permalinkId": "default-nollie8-v2"
-		},
-		{
-			"displayName": "Nollie 8 v2",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie8 v2_Nos2.0.js",
-			"vendorId": 5845,
-			"vendorIdHex": "0x16d5",
-			"productIdsHex": [
-				"0x1f01"
-			],
-			"usbPairs": [
-				{
-					"pidHex": "0x1f01",
-					"label": null
-				}
-			],
-			"productLabels": [],
-			"deviceKind": "lightingcontroller",
-			"transportType": "Hid",
-			"publisher": "RGBJunkie",
-			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie+8+v2+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie 8 v2 firmware 2.x/nollie8 v2_nos2.0.js nollie8 v2_nos2.0.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x1f01 1f01 0x1f01 1f01 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie8-v2-nos2-0",
-			"permalinkId": "firmware-2-x-nollie8-v2-nos2-0"
-		},
-		{
-			"displayName": "Nollie 8 v2",
 			"brand": "Nollie",
 			"relativePath": "Nollie/Nollie8 v2.js",
 			"vendorId": 5842,
@@ -13502,41 +13453,17 @@
 			"permalinkId": "nollie-nollie8-v2"
 		},
 		{
-			"displayName": "Nollie1",
-			"brand": "RGBJunkie",
-			"relativePath": "Default/Nollie1.js",
-			"vendorId": 5842,
-			"vendorIdHex": "0x16d2",
-			"productIdsHex": [
-				"0x1f11"
-			],
-			"usbPairs": [
-				{
-					"pidHex": "0x1f11",
-					"label": null
-				}
-			],
-			"productLabels": [],
-			"deviceKind": "lightingcontroller",
-			"transportType": "Hid",
-			"publisher": "RGBJunkie",
-			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie1+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie1 default/nollie1.js nollie1.js rgbjunkie rgbjunkie 0x16d2 16d2 5842 0x1f11 1f11 0x1f11 1f11 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png default-nollie1",
-			"permalinkId": "default-nollie1"
-		},
-		{
-			"displayName": "Nollie1",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie1_Nos2.0.js",
+			"displayName": "Nollie 8 v2",
+			"brand": "Nollie",
+			"relativePath": "Nollie/Nollie8 v2_Nos2.0.js",
 			"vendorId": 5845,
 			"vendorIdHex": "0x16d5",
 			"productIdsHex": [
-				"0x1f11"
+				"0x1f01"
 			],
 			"usbPairs": [
 				{
-					"pidHex": "0x1f11",
+					"pidHex": "0x1f01",
 					"label": null
 				}
 			],
@@ -13545,9 +13472,9 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie1+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie1 firmware 2.x/nollie1_nos2.0.js nollie1_nos2.0.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x1f11 1f11 0x1f11 1f11 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie1-nos2-0",
-			"permalinkId": "firmware-2-x-nollie1-nos2-0"
+			"amazonUrl": "https://www.amazon.com/s?k=Nollie+8+v2&tag=rgbjunkie-20",
+			"searchBlob": "nollie 8 v2 nollie/nollie8 v2_nos2.0.js nollie8 v2_nos2.0.js nollie nollie rgbjunkie 0x16d5 16d5 5845 0x1f01 1f01 0x1f01 1f01 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png nollie-nollie8-v2-nos2-0",
+			"permalinkId": "nollie-nollie8-v2-nos2-0"
 		},
 		{
 			"displayName": "Nollie1",
@@ -13574,9 +13501,33 @@
 			"permalinkId": "nollie-nollie1"
 		},
 		{
+			"displayName": "Nollie1",
+			"brand": "Nollie",
+			"relativePath": "Nollie/Nollie1_Nos2.0.js",
+			"vendorId": 5845,
+			"vendorIdHex": "0x16d5",
+			"productIdsHex": [
+				"0x1f11"
+			],
+			"usbPairs": [
+				{
+					"pidHex": "0x1f11",
+					"label": null
+				}
+			],
+			"productLabels": [],
+			"deviceKind": "lightingcontroller",
+			"transportType": "Hid",
+			"publisher": "RGBJunkie",
+			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
+			"amazonUrl": "https://www.amazon.com/s?k=Nollie1&tag=rgbjunkie-20",
+			"searchBlob": "nollie1 nollie/nollie1_nos2.0.js nollie1_nos2.0.js nollie nollie rgbjunkie 0x16d5 16d5 5845 0x1f11 1f11 0x1f11 1f11 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png nollie-nollie1-nos2-0",
+			"permalinkId": "nollie-nollie1-nos2-0"
+		},
+		{
 			"displayName": "Nollie1 CDC Nos2.1",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie1 CDC Nos2.1.js",
+			"brand": "Nollie",
+			"relativePath": "Nollie/Nollie1 CDC Nos2.1.js",
 			"vendorId": 5845,
 			"vendorIdHex": "0x16d5",
 			"productIdsHex": [
@@ -13593,62 +13544,9 @@
 			"transportType": "serial",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie1+CDC+Nos2.1+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie1 cdc nos2.1 firmware 2.x/nollie1 cdc nos2.1.js nollie1 cdc nos2.1.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x2a01 2a01 0x2a01 2a01 lightingcontroller serial rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie1-cdc-nos2-1",
-			"permalinkId": "firmware-2-x-nollie1-cdc-nos2-1"
-		},
-		{
-			"displayName": "Nollie16v3",
-			"brand": "RGBJunkie",
-			"relativePath": "Default/Nollie16v3.js",
-			"vendorId": 12385,
-			"vendorIdHex": "0x3061",
-			"productIdsHex": [
-				"0x4716"
-			],
-			"usbPairs": [
-				{
-					"pidHex": "0x4716",
-					"label": null
-				}
-			],
-			"productLabels": [],
-			"deviceKind": "unknown",
-			"transportType": "Hid",
-			"publisher": "RGBJunkie",
-			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie16v3+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie16v3 default/nollie16v3.js nollie16v3.js rgbjunkie rgbjunkie 0x3061 3061 12385 0x4716 4716 0x4716 4716 unknown hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png default-nollie16v3",
-			"permalinkId": "default-nollie16v3"
-		},
-		{
-			"displayName": "Nollie16v3",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie16v3_Nos2.0.js",
-			"vendorId": 5845,
-			"vendorIdHex": "0x16d5",
-			"productIdsHex": [
-				"0x2a16",
-				"0x4716"
-			],
-			"usbPairs": [
-				{
-					"pidHex": "0x2a16",
-					"label": null
-				},
-				{
-					"pidHex": "0x4716",
-					"label": null
-				}
-			],
-			"productLabels": [],
-			"deviceKind": "lightingcontroller",
-			"transportType": "Hid",
-			"publisher": "RGBJunkie",
-			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie16v3+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie16v3 firmware 2.x/nollie16v3_nos2.0.js nollie16v3_nos2.0.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x2a16 0x4716 2a16 4716 0x2a16 2a16 0x4716 4716 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie16v3-nos2-0",
-			"permalinkId": "firmware-2-x-nollie16v3-nos2-0"
+			"amazonUrl": "https://www.amazon.com/s?k=Nollie1+CDC+Nos2.1&tag=rgbjunkie-20",
+			"searchBlob": "nollie1 cdc nos2.1 nollie/nollie1 cdc nos2.1.js nollie1 cdc nos2.1.js nollie nollie rgbjunkie 0x16d5 16d5 5845 0x2a01 2a01 0x2a01 2a01 lightingcontroller serial rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png nollie-nollie1-cdc-nos2-1",
+			"permalinkId": "nollie-nollie1-cdc-nos2-1"
 		},
 		{
 			"displayName": "Nollie16v3",
@@ -13675,22 +13573,22 @@
 			"permalinkId": "nollie-nollie16v3"
 		},
 		{
-			"displayName": "Nollie32",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie32_Nos2.0.js",
+			"displayName": "Nollie16v3",
+			"brand": "Nollie",
+			"relativePath": "Nollie/Nollie16v3_Nos2.0.js",
 			"vendorId": 5845,
 			"vendorIdHex": "0x16d5",
 			"productIdsHex": [
-				"0x2a32",
-				"0x4714"
+				"0x2a16",
+				"0x4716"
 			],
 			"usbPairs": [
 				{
-					"pidHex": "0x2a32",
+					"pidHex": "0x2a16",
 					"label": null
 				},
 				{
-					"pidHex": "0x4714",
+					"pidHex": "0x4716",
 					"label": null
 				}
 			],
@@ -13699,9 +13597,9 @@
 			"transportType": "Hid",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie32+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie32 firmware 2.x/nollie32_nos2.0.js nollie32_nos2.0.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x2a32 0x4714 2a32 4714 0x2a32 2a32 0x4714 4714 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie32-nos2-0",
-			"permalinkId": "firmware-2-x-nollie32-nos2-0"
+			"amazonUrl": "https://www.amazon.com/s?k=Nollie16v3&tag=rgbjunkie-20",
+			"searchBlob": "nollie16v3 nollie/nollie16v3_nos2.0.js nollie16v3_nos2.0.js nollie nollie rgbjunkie 0x16d5 16d5 5845 0x2a16 0x4716 2a16 4716 0x2a16 2a16 0x4716 4716 lightingcontroller hid rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png nollie-nollie16v3-nos2-0",
+			"permalinkId": "nollie-nollie16v3-nos2-0"
 		},
 		{
 			"displayName": "Nollie32",
@@ -13734,8 +13632,8 @@
 		},
 		{
 			"displayName": "Nollie8 CDC Nos2.1",
-			"brand": "RGBJunkie",
-			"relativePath": "Firmware 2.x/Nollie8 CDC Nos2.1.js",
+			"brand": "Nollie",
+			"relativePath": "Nollie/Nollie8 CDC Nos2.1.js",
 			"vendorId": 5845,
 			"vendorIdHex": "0x16d5",
 			"productIdsHex": [
@@ -13752,9 +13650,9 @@
 			"transportType": "serial",
 			"publisher": "RGBJunkie",
 			"imageUrl": "https://assets.rgbjunkie.com/images/brands/nollie.png",
-			"amazonUrl": "https://www.amazon.com/s?k=Nollie8+CDC+Nos2.1+RGBJunkie&tag=rgbjunkie-20",
-			"searchBlob": "nollie8 cdc nos2.1 firmware 2.x/nollie8 cdc nos2.1.js nollie8 cdc nos2.1.js rgbjunkie rgbjunkie 0x16d5 16d5 5845 0x2a08 2a08 0x2a08 2a08 lightingcontroller serial rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png firmware-2-x-nollie8-cdc-nos2-1",
-			"permalinkId": "firmware-2-x-nollie8-cdc-nos2-1"
+			"amazonUrl": "https://www.amazon.com/s?k=Nollie8+CDC+Nos2.1&tag=rgbjunkie-20",
+			"searchBlob": "nollie8 cdc nos2.1 nollie/nollie8 cdc nos2.1.js nollie8 cdc nos2.1.js nollie nollie rgbjunkie 0x16d5 16d5 5845 0x2a08 2a08 0x2a08 2a08 lightingcontroller serial rgbjunkie https://assets.rgbjunkie.com/images/brands/nollie.png nollie-nollie8-cdc-nos2-1",
+			"permalinkId": "nollie-nollie8-cdc-nos2-1"
 		},
 		{
 			"displayName": "NuPhy Air75 V2 QMK Keyboard",
