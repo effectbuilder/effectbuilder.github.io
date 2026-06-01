@@ -415,6 +415,38 @@
     object-fit: contain;
 }
 
+/* Documentation — app deep link reference page */
+.rgbj-deep-link-uri {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.375rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--bs-border-color);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+.rgbj-deep-link-uri code {
+    color: var(--bs-code-color);
+    white-space: pre-wrap;
+    word-break: normal;
+}
+
+.rgbj-deep-link-handoff {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+.rgbj-deep-link-entry .card-title {
+    line-height: 1.35;
+}
+
 /* Documentation hub cards */
 .rgbj-doc-card {
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;

@@ -4,11 +4,41 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.30 — May 31, 2026
+
+*(Add release notes for v0.3.30.)*
+
+---
+
 ## v0.3.29 — May 31, 2026
 
 #### Updates
 
+- **Sensor effects just work — no more digging through LibreHardwareMonitor menus** — when an effect needs CPU/GPU/temperature readings, RGBJunkie now turns on LibreHardwareMonitor's data server for you. Its own bundled copy starts that server automatically, and if you're running your own copy with the server switched off, a one-click **"Turn on sensor server"** button (shown in the sensor picker) restarts it with the server enabled while keeping all your other LibreHardwareMonitor settings. If your copy runs as administrator and RGBJunkie can't manage it, it tells you how to enable it yourself (Options → Remote web server → Run).
+- **Lights no longer freeze when the sensor helper isn't responding** — if LibreHardwareMonitor was running but its built-in web server was turned off (or still starting), the app kept trying to read sensors every fraction of a second, and each try stalled for up to ~2 seconds waiting on the dead connection. That stall briefly held up *all* LED updates, so every device froze on a steady ~2-second beat — even effects that don't use CPU/GPU readings at all. The app now gives up on an unreachable sensor server almost instantly and quietly slows its retries until the server comes back, so your lights keep running smoothly. (If you do want live CPU/GPU/temperature effects, enable **Options → Remote web server → Run** inside LibreHardwareMonitor.)
+- **Lights no longer freeze every few seconds** — the routine "is a device still plugged in?" background check was quietly running a full USB scan on every pass. With many devices connected, that scan briefly tied up the USB lanes and froze *every* strip at once for a second or two, over and over. The check now reuses what it already knows and only does a full scan when Windows actually reports a device was plugged in or unplugged, so your lights keep moving smoothly even with a lot of hardware connected.
 - **No flashing console during automatic update** — the install helper no longer opens a **timeout** window every second while waiting for RGBJunkie to close; delays run hidden in the background instead.
+- **Install-from-link pauses your lights briefly** — opening a Git plugin link pauses LED output only while new plugins are probed on the USB bus, so your other strips keep running smoothly during download and rescan.
+- **Wallpaper Engine goes away when you remove the plugin** — uninstalling the Wallpaper Engine plugin from **Settings → Installed** now removes its two virtual devices from the device tree right away instead of leaving them until you restart the app. Turning off or removing the Git repo does the same.
+- **Wallpaper Engine stays off after you remove it** — the app remembers when you uninstall the plugin so duplicate copies on disk cannot bring the two virtual devices back until you install the plugin again.
+- **Git Wallpaper Engine uninstall is complete** — turning off or removing the Wallpaper Engine Git repo now deletes its whole plugin folder (not only tracked files), clears the two virtual devices immediately, and blocks leftover copies from coming back on rescan.
+- **Effect details show the cover art** — the selected effect’s name area now uses its thumbnail as a softly dimmed background so you can recognize it at a glance.
+- **Smoother strip updates again** — when **Settings → System → Engine → Maximum device FPS** is above 60, lights now use the fast hardware path even if one device (such as WLED) asks for a slower refresh. Before, a single slow plugin could cap every USB strip at ~60 Hz while the UI still felt fine.
+- **Bundled sensor helpers start correctly** — LibreHardwareMonitor and OpenRGB no longer fail to launch with a PowerShell **LiteralPath** error on Windows.
+- **App opens even when the online effect list is slow** — the splash screen dismisses before rgbjunkie.com downloads finish, and restoring a saved gallery effect no longer freezes the whole window while the effect file loads.
+- **Gallery effects no longer freeze the app** — the effect browser opens right away with your local list, online thumbnails load only as you scroll, and switching to another effect is not blocked by a slow rgbjunkie.com download.
+- **Gallery cover art at the top of the list loads** — the first row of effect thumbnails from rgbjunkie.com now appears as soon as you open the browser, not only after you scroll.
+- **Selecting a gallery effect works reliably** — picking an rgbjunkie.com effect now downloads and runs it instead of freezing the app when the effect list and dropdown were out of sync.
+- **rgbjunkie.com gallery effects run like built-in ones again** — gallery effects now use the exact same launch, animation, and hardware path as your local effects. The only difference is the one-time **effect.json** download; everything after that is identical, so the lights respond the same way they do for built-in effects.
+- **Gallery effects stay smooth while running** — rgbjunkie.com exports ship with sensor helper code even when the effect does not use CPU/GPU readings; the app no longer starts LibreHardwareMonitor polling for that boilerplate (which caused ~half-second LED stutters). Built-in effects were never affected.
+- **Gallery effects skip disk hot-reload** — no file-watcher checks for online effects that only live in memory.
+- **Built-in effect cover art shows again** — thumbnails and images bundled with your local effects load correctly in the effect browser (WebView2 blocked the secure asset URL the app uses for those files).
+- **One LibreHardwareMonitor helper, not dozens** — RGBJunkie no longer starts a new sensor helper every time an effect polls before readings are ready; it reuses the bundled copy that is already running and waits less time before your lights start.
+- **Extra workspace canvases animate again** — when you use more than one workspace tab (for example **Canvas 1**), each tab’s effect now keeps moving on its LEDs instead of staying frozen on the first frame.
+- **Two workspace tabs no longer make effects stutter** — running an effect on a second workspace tab used to make your main effect work for half a second, freeze for half a second, and repeat. Each tab now reads its lights only once per update instead of reading the active tab twice, so a heavy gallery effect stays smooth even with another canvas open.
+- **Effects stay smooth when you click away from the app** — clicking another program used to make a busy effect (and the whole RGBJunkie window) stutter, because the app switched to its background "keep the lights moving" mode the moment it lost focus. Now that high-speed background mode only kicks in when the window is actually minimized or hidden in the tray, so an effect you can still see on screen keeps running smoothly even when another app is in front.
+- **Audio Sine and Audio Star work again** — both audio effects draw to the canvas correctly instead of staying black after an incomplete port update.
+- **Audio Sine moves smoothly with the music** — the wave no longer jumps on every spectrum refresh; frequency bars ease in quickly and fall off gently between updates. The wave also keeps a gentle idle scroll and color drift when quiet, and no longer freezes on the first frame.
 
 ---
 

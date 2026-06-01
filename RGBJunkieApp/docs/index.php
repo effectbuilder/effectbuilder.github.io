@@ -3,6 +3,7 @@
 require_once dirname(__DIR__) . '/includes/installers.php';
 require_once dirname(__DIR__) . '/includes/developer-docs.php';
 require_once dirname(__DIR__) . '/includes/user-app-guide.php';
+require_once dirname(__DIR__) . '/includes/app-deep-links.php';
 
 $rgbj_nav_active = 'docs';
 
@@ -25,6 +26,8 @@ rgbj_subpage_open([
 </p>
 
 <?php rgbj_render_user_app_guide(); ?>
+
+<?php rgbj_render_app_deep_links_doc_card(); ?>
 
 <?php rgbj_render_developer_doc_sections(); ?>
 
