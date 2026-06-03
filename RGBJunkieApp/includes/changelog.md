@@ -6,7 +6,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.48 — June 3, 2026
 
-*(Add release notes for v0.3.48.)*
+#### Updates
+
+- **Minor reliability fixes** — small improvements so installs and in-app updates keep working smoothly.
 
 ---
 
