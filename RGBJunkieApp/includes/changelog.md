@@ -4,9 +4,184 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.48 — June 3, 2026
+
+*(Add release notes for v0.3.48.)*
+
+---
+
+## v0.3.47 — June 3, 2026
+
+#### Effects
+
+- **Aurora Borealis uses your full color profile** — choosing a profile in **Color Profile** (not **Custom**) now maps every stop in that gradient, including **Rainbow** and multi-stop presets like **Cyber** or **Sunset**, and those colors **drift with the curtains** instead of staying locked to fixed horizontal bands.
+
+---
+
+## v0.3.46 — June 3, 2026
+
+#### Startup
+
+- **Open at login works on Windows again** — RGBJunkie runs with administrator rights for USB and RAM lighting, so the old startup registry entry often never launched the app. Login startup now uses a Windows scheduled task (refreshed every time you open RGBJunkie) so the app starts when you sign in to Windows.
+- **Update check starts with the app** — when **Settings → System → Startup → Check for updates on startup** is on, RGBJunkie begins loading the update manifest as soon as the program starts (before plugins and devices) and shows the result on the splash screen while the rest of startup continues.
+
+---
+
+## v0.3.45 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Cover / diffuser image stays visible when RGBJunkie starts** — the Lively page no longer wipes cover art when `frame.json` briefly has empty settings; the bridge keeps your cover path in JSON before the LED grid is ready; settings UDP is sent every effect frame (deduped) before colors. The diffuser stays a full-screen image on top of the opaque LED canvas.
+- **Blur, LED shape, padding, and corner radius apply live in Lively** — LEDs render on the bottom canvas (z-index 0); your transparent cover PNG stays on top (z-index 999). Changing those Wallpaper settings forces a fresh UDP settings packet so `frame.json` updates immediately.
+- **Show FPS moves to the top-right** — the Lively wallpaper FPS readout no longer sits in the top-left corner.
+- **Blur and rounded LEDs in Lively look correct** — the LED canvas is fully opaque (background color plus solid LED cells); your transparent cover PNG stays on top. Shaped drawing, rounded corners, and blur apply to that solid grid.
+- **LED Shape draws rectangles or circles in Lively** — **Rectangle** fills square cells; **Circle** (or legacy **Sphere**) draws round dots with even spacing; **Rounded Rectangle** uses the corner-radius slider. The matrix keeps square pixels on your monitor so circles are not stretched into vertical bars.
+
+#### Installers and portable ZIP
+
+- **Legacy SignalRGB shim removed from installs** — the old **SignalRgb.exe** helper under **runtime/wallpaper** is no longer included in the installer or portable ZIP (RGBJunkie uses **RGBJunkieLivelyBridge.exe** for Lively Wallpaper instead).
+
+---
+
+## v0.3.44 — June 3, 2026
+
+*(Add release notes for v0.3.44.)*
+
+---
+
+## v0.3.43 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **21:9 and other aspect ratios no longer show a scrambled grid in Lively** — Wallpaper now sends the full LED frame for the selected grid (not a leftover 48×27 slice), and Lively waits until every color cell is ready before drawing, so **63×27** in `frame.json` matches what you see on screen.
+- **Each release rebuilds the Lively bridge for the installer** — version bumps (for example 0.3.42 → 0.3.43) no longer reuse an old **RGBJunkieLivelyBridge.exe** sitting in the build folder, so auto-update and portable ZIPs ship the bridge built with that release.
+
+---
+
+## v0.3.42 — June 3, 2026
+
+*(Add release notes for v0.3.42.)*
+
+---
+
+## v0.3.41 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Installer and portable ZIP include the new Lively bridge** — release builds now compile **RGBJunkieLivelyBridge.exe** (release) before packaging, so auto-update and fresh installs ship **rgbj-lively-bridge-3** with **http://127.0.0.1:8138/meta.json**, not an old copy left in the build folder.
+
+---
+
+## v0.3.40 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Outdated Lively bridge is replaced automatically** — If **http://127.0.0.1:8138/meta.json** was missing (old **rgbj-lively-bridge-2** still running), RGBJunkie now stops it and starts **rgbj-lively-bridge-3**. Fully quit the app if Task Manager still shows an old **RGBJunkieLivelyBridge.exe**, then run **`npm run bridge:build`** and start RGBJunkie again.
+- **Clearer logs for Lively vs Steam** — startup messages now say when **RGBJunkieLivelyBridge** is your Lively companion versus when UDP 8133/8134 is only Steam’s workshop wallpaper. The log also shows which **RGBJunkieLivelyBridge.exe** path was started (often under **Program Files\\RGBJunkie\\runtime\\wallpaper**).
+- **Aspect ratio, cover image, and Show FPS** — fixes from the prior release now apply once the new bridge is running; reload the Lively Website wallpaper after updating.
+
+---
+
+## v0.3.39 — June 3, 2026
+
+*(Add release notes for v0.3.39.)*
+
+---
+
+## v0.3.38 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Full Wallpaper settings in Lively** — the Lively Website wallpaper now matches the Wallpaper Engine plugin: diffuser **cover image** (local file or URL), stretch modes, LED **shape** (rectangle, rounded, sphere), **padding**, **corner radius**, **blur**, **background** color, and **Show FPS**. Local cover images are served by the bridge so the browser can load them safely.
+- **Aspect ratio and display size** — changing the Wallpaper grid size no longer scrambles the LED pattern; the bridge clears and resizes its buffer when the layout changes, and the Lively page follows the new width and height.
+- **Show FPS and cover image fixes** — the FPS overlay updates live when you turn it on, and cover art loads through the bridge (including local files you pick in Settings).
+
+---
+
+## v0.3.37 — June 3, 2026
+
+*(Add release notes for v0.3.37.)*
+
+---
+
+## v0.3.36 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Two Wallpaper devices, two Lively pages** — RGBJunkie loads **Wallpaper Engine 2** (UDP **8133**) and **Wallpaper Engine 2 (2nd Screen)** (UDP **8134**). Each device is locked to its own UDP port (they no longer share **127.0.0.1** routing). The bundled bridge keeps separate streams: monitor 1 → **`http://127.0.0.1:8138/`**, monitor 2 → **`http://127.0.0.1:8139/`**. For one display only, set `"wallpaperEngineDualMonitor": false` in **media_sources.json**.
+
+---
+
+## v0.3.35 — June 3, 2026
+
+*(Add release notes for v0.3.35.)*
+
+---
+
+## v0.3.34 — June 3, 2026
+
+*(Add release notes for v0.3.34.)*
+
+---
+
+## v0.3.33 — June 2, 2026
+
+*(Add release notes for v0.3.33.)*
+
+---
+
+## v0.3.32 — June 2, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Lively Wallpaper support** — RGBJunkie can run a small bundled bridge that listens for the Wallpaper Engine 2 virtual device (same UDP ports as the Steam workshop wallpaper) and drives an **HTML LED matrix** in Lively. RGBJunkie starts the bridge when the Wallpaper plugin loads and port 8133 is free. In Lively, add a **Website** wallpaper at **`http://127.0.0.1:8138/`** (port **8137** was an early test build that returned JSON on `/`).
+- **Lively matrix smoother** — the bridge wallpaper fills your monitor edge-to-edge (no letterboxing that jumped in Lively), one canvas upload per real frame, and it freezes when you pause the effect in RGBJunkie.
+- **Steam Wallpaper Engine unchanged** — if the workshop companion is already listening on UDP 8133 or 8134, RGBJunkie leaves it alone and keeps sending frames there as before.
+
+---
+
+## v0.3.31 — June 1, 2026
+
+#### Wallpaper Engine plugin
+
+- **Canvas tab stays put when you change settings** — changing any Wallpaper Engine option (blur, aspect ratio, cover image, and so on) no longer jumps the virtual device layout back to your first workspace canvas.
+- **Virtual matrix stays on the canvas you chose** — the Wallpaper Engine layout grid no longer disappears when you tweak settings on another workspace tab; RGBJunkie only re-applies saved positions when the LED grid size actually changes.
+
+---
+
 ## v0.3.30 — May 31, 2026
 
-*(Add release notes for v0.3.30.)*
+#### Audio-reactive effects
+
+- **Developer docs (rgbjunkie.com)** — the **HTML canvas** and **functional (.mjs)** API guides now document **stereo audio**: `freqL` / `freqR`, per-channel loudness, `pan`, and the `stereo` flag, with safe mono fallback examples. Section 6 is rewritten in plain language (audio, stereo, screen, sensors) with quick links instead of one dense table.
+- **Stereo Ring Spectrum** — removed on-screen **L / R** labels; **Layout** adds **Stereo Ring**, **Stereo Bars**, **Dual Arc**, **Mirror Ring**, **Bloom Orbit**, and **Mono Circle**. **Stereo Bars** and **Dual Arc** flip the left channel so bass sits at the top like the right; **Bloom Orbit** left-side blooms use the same flip. **Dual Arc** keeps thick arc segments at any band count (default 64 no longer collapses into dots). **Bass band share** now maps the top of the ring to low-end bins by arc length (lower values shrink the bass region; higher values spread it). **Frequency map** (**Log** / **Linear**) chooses logarithmic or linear bin spacing along the ring. **Low clip** and **High clip** drop FFT bins outside the range and remap the ring to what remains.
+- **Functional effects (on-screen preview)** — the workspace canvas no longer wipes to black while each frame is still being calculated; the previous frame stays visible until the new one is ready (fixes on-screen flicker).
+- **Stereo Spectrum Bands (.mjs)** — **Input gain** now actually scales sensitivity (low values no longer fill the whole strip). **Smoothing** at 0 is instant; higher values slow the fall and rise. **Scroll** shifts the analyzer along the strip again.
+- **Stereo spectrum visualizer** — new **Stereo Spectrum** effect in the gallery: left and right channels shown side by side (split bars, mirror wings, pan scope, or dual orbit). Uses the new stereo audio data when Windows captures stereo playback; mono still works with both channels matched. Brighter defaults; **Bands per channel** no longer wipes the meter when you change it; brief audio dropouts fade smoothly instead of snapping to empty.
+- **Stereo spectrum for new effects, same mono mix for old ones** — `engine.audio.freq`, `level`, and `density` still come from the overall (mono) mix, so existing audio-reactive effects behave exactly as before. When Windows captures stereo playback, effects can also read **`freqL`**, **`freqR`**, per-channel loudness, and **`pan`** (−1 left … +1 right) for left/right visuals.
+
+#### Fan Tracer Pro Max
+
+- **Rails use one serpentine path** — both fan rows act as a single animation path: row 1 runs left→right, row 2 runs right→left, meeting at the junction. The dot head moves onto row 2 right away; the row 1 trail keeps fading without leaving a second head behind. Each row keeps its own trail so motion stays smooth across the junction.
+- **Rail dot matches trail thickness** — the moving head on the rails is the same height as the trail line, not a taller block.
+- **Bounce return tail** — on Bounce, the left-moving return trail and the right-moving outbound trail use separate paths, so when the return tail finishes fading the new outbound trail stays put. At each turnaround the old leg’s head is dropped so it does not stay behind as a stuck dot.
+- **Collide (Loop) on rails** — two dots meet at the junction between rows, move apart (one toward row 1’s left, one toward row 2’s right), then come back together smoothly each cycle instead of snapping on the loop wrap. Inward and outward legs keep separate fading trails so the tail does not reset when direction changes.
+- **Loop (Rev) on rails** — dots travel the serpentine path backward (row 2 toward row 1) instead of matching plain Loop.
+- **Solid Line Spinner + VU Meter rails** — with Circle style set to Solid Line Spinner, each fan ring spins when the audio meter on the rails reaches that fan (top and bottom rows, including VU Meter (Rev)).
+- **VU Meter rails use stereo when available** — with **Rails → Style** set to **VU Meter** or **VU Meter (Rev)**, the top fan row follows the left channel and the bottom row follows the right when Windows captures stereo playback; mono mixes still drive both rows together.
+- **VU Meter (Row 2 Rev)** — **Rails → Style** adds **VU Meter (Row 2 Rev)**: the top row fills left→right as usual; the bottom row fills right→left (handy when the second row’s LEDs run the opposite direction on your build).
+- **Global Audio Sensitivity drives VU meters** — **Audio → Global Audio Sensitivity** now scales rail and tube/stick VU meter height the same way as the rest of the effect (including stereo left/right rails).
+- **Sparkle rails fixed** — Sparkle no longer crashes the effect when rails are enabled.
+- **Solid Line Spinner fan style** — under **Circle → Style**, **Solid Line Spinner** draws a full gradient ring on each fan. When a rail dot passes that fan (using your **Rails** style and speed), the ring spins and coasts to a stop — same spin direction on the return pass as on the way out. **Circle → Speed** and **Rails → Speed** control how hard each pass spins and how fast it slows down.
+- **Random gradient per fan** — under **Circle**, turn on **Random gradient per fan** so each fan ring picks its own spot on the Color Profile instead of marching across the row in order.
+
+#### Documentation
+
+- **App deep link reference on rgbjunkie.com** — **Documentation → App deep links** is its own page with every supported `rgbjunkie://` URL and matching website handoff links, laid out for easy copying into Stream Deck, batch files, or bookmarks.
+
+#### Effect settings
+
+- **Sliders drag reliably again** — after scrolling the effect settings panel, sticky tab rows no longer sit on top of sliders and swallow your clicks; drags also stay on the slider instead of turning into scroll.
 
 ---
 
@@ -14,6 +189,8 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 #### Updates
 
+- **Analog Dream: Custom color profile works again** — choosing **Custom** under Color Profile (or the Custom palette) no longer washed the whole effect white; it now uses your three custom color pickers as intended.
+- **Effect links from rgbjunkie.com stay applied** — opening a share link such as **Analog Dream** (website handoff or `rgbjunkie://effect/apply/…`) switched to that effect for a moment, then snapped back to your last autosaved scene. The link now wins over the saved scene, and your choice is autosaved so it stays put.
 - **Sensor effects just work — no more digging through LibreHardwareMonitor menus** — when an effect needs CPU/GPU/temperature readings, RGBJunkie now turns on LibreHardwareMonitor's data server for you. Its own bundled copy starts that server automatically, and if you're running your own copy with the server switched off, a one-click **"Turn on sensor server"** button (shown in the sensor picker) restarts it with the server enabled while keeping all your other LibreHardwareMonitor settings. If your copy runs as administrator and RGBJunkie can't manage it, it tells you how to enable it yourself (Options → Remote web server → Run).
 - **Lights no longer freeze when the sensor helper isn't responding** — if LibreHardwareMonitor was running but its built-in web server was turned off (or still starting), the app kept trying to read sensors every fraction of a second, and each try stalled for up to ~2 seconds waiting on the dead connection. That stall briefly held up *all* LED updates, so every device froze on a steady ~2-second beat — even effects that don't use CPU/GPU readings at all. The app now gives up on an unreachable sensor server almost instantly and quietly slows its retries until the server comes back, so your lights keep running smoothly. (If you do want live CPU/GPU/temperature effects, enable **Options → Remote web server → Run** inside LibreHardwareMonitor.)
 - **Lights no longer freeze every few seconds** — the routine "is a device still plugged in?" background check was quietly running a full USB scan on every pass. With many devices connected, that scan briefly tied up the USB lanes and froze *every* strip at once for a second or two, over and over. The check now reuses what it already knows and only does a full scan when Windows actually reports a device was plugged in or unplugged, so your lights keep moving smoothly even with a lot of hardware connected.
