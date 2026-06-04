@@ -4,6 +4,14 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.49 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Lively bridge stays smooth during long sessions** — the companion no longer rebuilds the full LED frame on every poll when nothing changed, so FPS on the Lively page stays steady after hours of use. Restart RGBJunkie once after updating so **rgbj-lively-bridge-4** replaces an older bridge.
+
+---
+
 ## v0.3.48 — June 3, 2026
 
 #### Updates
