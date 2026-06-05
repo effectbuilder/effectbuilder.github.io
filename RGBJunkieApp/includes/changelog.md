@@ -4,9 +4,92 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.60 — June 5, 2026
+
+#### Updates
+
+- **Check for updates without restarting** — every check from **Settings → About** loads the latest release from rgbjunkie.com right away instead of reusing a copy fetched at startup, so new versions show up before you restart RGBJunkie. When you're up to date, About shows your installed version and what the website lists.
+
+#### Lively Wallpaper
+
+- **Full canvas from the right tab** — **Stream mode → Full canvas** again captures the effect on the workspace where your Wallpaper Engine virtual device lives, even when that tab is in the background.
+
+---
+
+## v0.3.59 — June 5, 2026
+
+#### Updates
+
+- **www download links work in-app** — portable update installs accept tracked download URLs on **www.rgbjunkie.com** as well as **rgbjunkie.com**.
+
+---
+
+## v0.3.58 — June 5, 2026
+
+#### Build
+
+- **`compile.bat` works again** — the dev build step that refreshes the Lively bridge no longer calls an invalid `cargo build --debug` flag on newer Rust toolchains.
+
+---
+
+## v0.3.57 — June 5, 2026
+
+#### Lively Wallpaper
+
+- **Full canvas stream stays live** — switching the Wallpaper Engine device to **Stream mode → Full canvas** no longer freezes the Lively preview after a moment. JPEG frames are sent in order again so the bridge can rebuild each picture.
+- **Full canvas follows the right tab** — the Lively stream now captures the effect from the tab where the Wallpaper Engine virtual component is placed, instead of whatever tab is currently open. Full canvas works again when that tab is in the background.
+- **Virtual LEDs keep moving after switching modes** — changing back from **Full canvas** to **Virtual LEDs** no longer leaves the LED grid stuck on the first frame. Restart once for **rgbj-lively-bridge-12**.
+- **Full canvas visible in Lively** — the sharp JPEG stream now stays on the bottom effect layer, while your cover image remains available above it like the regular LED canvas.
+- **Full canvas can run smoother** — raising **Target FPS** on the Wallpaper Engine device can now drive the Lively full-canvas stream up to 60 FPS when your PC keeps up. Restart once for **rgbj-lively-bridge-12**.
+- **Wallpaper Engine devices load again** — a bad plugin patch could stop both Wallpaper Engine virtual devices from appearing (“Invalid left-hand side in assignment”). That patch is fixed.
+- **Full canvas actually paints in Lively** — the Lively page had a JavaScript error (`lastDrawnMs = ms`) that stopped the draw loop, kept the workshop cover on top, and drew the JPEG on the tiny LED grid instead of the monitor. Restart RGBJunkie once so **rgbj-lively-bridge-6** replaces bridge-5, then reload the Lively website wallpaper.
+- **Full canvas no longer blinks** — the Lively page keeps the last JPEG on screen while the next one loads, uses stacked fullscreen images instead of clearing a canvas (smoother in Lively/WebView2), skips empty/black frames from the stream, and keeps the FPS label above the cover image. Restart once for **rgbj-lively-bridge-12**.
+
+---
+
+## v0.3.56 — June 5, 2026
+
+#### Lively Wallpaper
+
+- **Full canvas stream for Lively** — on the Wallpaper Engine virtual device, set **Stream mode → Full canvas** to send a sharp JPEG of your active effect to the RGBJunkie Lively bridge instead of the coarse virtual LED grid. **Virtual LEDs** stays the default and still matches the Wallpaper Engine workshop companion. Restart RGBJunkie once after updating so **rgbj-lively-bridge-5** replaces an older bridge.
+
+---
+
+## v0.3.55 — June 5, 2026
+
+#### Devices
+
+- **Strips stop blinking when other USB gadgets come and go** — some PCs have a background virtual or software device that quietly announces itself over and over. Each announcement made RGBJunkie re-scan the whole USB bus, and on Windows a scan briefly freezes every light at once — long enough that a Nollie32 (and other fast strips) would blank and slow-blink for up to a minute before recovering. RGBJunkie now ignores comings and goings from devices that none of your lighting plugins use, so unrelated gadgets can chatter all they want without interrupting your lights. Plugging or unplugging your actual lighting gear still updates instantly.
+
+---
+
+## v0.3.54 — June 5, 2026
+
+*(Add release notes for v0.3.54.)*
+
+---
+
+## v0.3.53 — June 5, 2026
+
+#### WLED
+
+- **WLED add-on loads from Git plugin folders** — matrix/clock `wled.addon.js` (or `WLED.addon.js`) is found under **any** `Network/WLED/` folder in your plugin library, not only beside the built-in `WLED.js`. Add-ons from **Settings → Git repositories** (for example RGBJunkie-Add-Ons) merge again without copying files next to the stock plugin.
+- **Libre Hardware Monitor on WLED matrix** — choosing **Matrix display mode → Libre Hardware Monitor** now starts RGBJunkie’s sensor helper on port **8085** (same as hardware-monitoring effects), so CPU/GPU readings can load on the WLED matrix without running LHM yourself first.
+
+---
+
 ## v0.3.52 — June 5, 2026
 
-*(Add release notes for v0.3.52.)*
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Wallpaper Engine companion receives UDP again** — RGBJunkie no longer starts the Lively bridge on port **8133** when the **Steam workshop** wallpaper is already listening there, so color packets reach the desk companion instead of the Lively HTML bridge. If nothing is on **8133** yet, a small **SignalRgb.exe** helper starts so older workshop builds can open their UDP listener.
+- **Wallpaper plugin sends settings on load** — the virtual device pushes its setup packet as soon as it initializes, and grid resync no longer runs a heavy layout reset every frame (which could stop UDP silently when aspect ratio settings were invalid).
+- **Cover image stretch on Wallpaper Engine works again** — settings UDP packets match the **pre-Lively workshop format** (no extra grid bytes after the cover path). RGBJunkie also repairs a bad **cover image path** in the workshop companion save file when stretch changes, so **Fill** on **21:9** and other layouts apply instead of staying letterboxed.
+- **Cover image stretch on the Lively Website wallpaper** — changing **Cover Image Stretch** (Fill, Uniform, and so on) now reaches the Lively **Website** wallpaper right away, so the diffuser image scales the way you picked instead of staying at the default size.
+
+#### Development
+
+- **`tauri dev` no longer forces a release bridge rebuild** — the dev preflight reuses the **debug** Lively bridge and retries `cargo` with a single job if the compiler crashes, so a flaky `rustc` access violation during `--release` no longer blocks startup.
 
 ---
 
