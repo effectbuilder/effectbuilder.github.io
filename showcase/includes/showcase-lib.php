@@ -142,7 +142,8 @@ function showcase_parse_effect_html(string $html, string $filename, int $index):
 {
     $dom = new DOMDocument();
     $prev = libxml_use_internal_errors(true);
-    $dom->loadHTML($html, LIBXML_NOWARNING | LIBXML_NOERROR);
+    // Effect HTML is UTF-8; without this hint DOMDocument treats bytes as Latin-1 (José → JosÃ©).
+    $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_NOWARNING | LIBXML_NOERROR);
     libxml_clear_errors();
     libxml_use_internal_errors($prev);
 

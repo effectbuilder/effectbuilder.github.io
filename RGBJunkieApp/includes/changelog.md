@@ -4,11 +4,41 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.52 — June 5, 2026
+
+*(Add release notes for v0.3.52.)*
+
+---
+
+## v0.3.51 — June 3, 2026
+
+#### WLED
+
+- **RGBJunkie clears WLED “override UDP” for you** — when a controller was left showing built-in effects (live override / the star in the WLED app), RGBJunkie now tells it to accept UDP realtime again as soon as that device loads, so you do not have to tap the star by hand.
+
+---
+
+## v0.3.50 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Lively bridge starts only when Lively is running** — RGBJunkie no longer launches the companion bridge until **Lively Wallpaper** is open, so the bridge does not sit in the background when you are not using Lively. Open Lively, then start RGBJunkie or reload your layout.
+
+#### Updates
+
+- **Check for updates works without restarting the app** — every check (startup splash and **Settings → About**) now loads **latest.json** live from rgbjunkie.com instead of reusing the copy fetched when RGBJunkie first opened. About shows **Installed** and **rgbjunkie.com lists** so you can confirm what the app saw.
+
+---
+
 ## v0.3.49 — June 3, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
 - **Lively bridge stays smooth during long sessions** — the companion no longer rebuilds the full LED frame on every poll when nothing changed, so FPS on the Lively page stays steady after hours of use. Restart RGBJunkie once after updating so **rgbj-lively-bridge-4** replaces an older bridge.
+
+#### Updates
+
+- **Update check recognizes rgbjunkie.com download links** — fixes in-app install when the update manifest uses **www.rgbjunkie.com** URLs (the button no longer stays **Unavailable** after **0.3.49** is published).
 
 ---
 

@@ -4,6 +4,71 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-52" data-version="0.3.52">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.52</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.52.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-51" data-version="0.3.51">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.51</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>WLED</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RGBJunkie clears WLED “override UDP” for you</strong> — when a controller was left showing built-in effects (live override / the star in the WLED app), RGBJunkie now tells it to accept UDP realtime again as soon as that device loads, so you do not have to tap the star by hand.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-50" data-version="0.3.50">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.50</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine + Lively Wallpaper</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lively bridge starts only when Lively is running</strong> — RGBJunkie no longer launches the companion bridge until <strong>Lively Wallpaper</strong> is open, so the bridge does not sit in the background when you are not using Lively. Open Lively, then start RGBJunkie or reload your layout.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Check for updates works without restarting the app</strong> — every check (startup splash and <strong>Settings → About</strong>) now loads <strong>latest.json</strong> live from rgbjunkie.com instead of reusing the copy fetched when RGBJunkie first opened. About shows <strong>Installed</strong> and <strong>rgbjunkie.com lists</strong> so you can confirm what the app saw.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-49" data-version="0.3.49">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -21,6 +86,10 @@
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper Engine + Lively Wallpaper</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lively bridge stays smooth during long sessions</strong> — the companion no longer rebuilds the full LED frame on every poll when nothing changed, so FPS on the Lively page stays steady after hours of use. Restart RGBJunkie once after updating so <strong>rgbj-lively-bridge-4</strong> replaces an older bridge.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Update check recognizes rgbjunkie.com download links</strong> — fixes in-app install when the update manifest uses <strong>www.rgbjunkie.com</strong> URLs (the button no longer stays <strong>Unavailable</strong> after <strong>0.3.49</strong> is published).</li></ul>
 </article></div>
 </section>
 </div>
