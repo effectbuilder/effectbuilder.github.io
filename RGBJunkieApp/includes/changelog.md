@@ -4,11 +4,41 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.63 — June 6, 2026
+
+*(Add release notes for v0.3.63.)*
+
+---
+
+## v0.3.62 — June 5, 2026
+
+#### Color profiles
+
+- **Generate gradients from a phrase** — in **Settings → Color profiles**, type a short mood or scene (for example “midnight rain”) and click **Generate profile** to add a new gradient. RGBJunkie looks up matching colors online when possible; if that is unavailable, a built-in palette is used instead. Each profile also has a phrase field and sparkle button to rebuild its colors from words.
+- **Smarter offline phrase colors** — when the online lookup is unavailable, the built-in generator recognizes many mood words (for example “devil”, “hell”, “ocean”, “lawyer”) and uses curated multi-stop palettes instead of random hues.
+- **Cleaner generate layout** — the phrase field and **Generate profile** button in **Settings → Color profiles** now match the spacing and button style used elsewhere in Settings.
+- **Cleaner gradient previews** — profile stripe bars no longer show a thin color line on the left edge; previews match the left-to-right colors you set.
+
+#### Fan Tracer Pro Max
+
+- **Color profiles apply again** — choosing a profile under **Circle**, **Rails**, **Master**, or other layers no longer falls back to a rainbow hue sweep when your gradient or a built-in preset is selected.
+
+---
+
+## v0.3.61 — June 5, 2026
+
+#### Scenes
+
+- **Save always asks for a name** — clicking **Save** on the scene bar now opens the name prompt every time, even when a scene is already selected. You can keep the same name to overwrite or type a new one to save a copy.
+
+---
+
 ## v0.3.60 — June 5, 2026
 
 #### Updates
 
 - **Check for updates without restarting** — every check from **Settings → About** loads the latest release from rgbjunkie.com right away instead of reusing a copy fetched at startup, so new versions show up before you restart RGBJunkie. When you're up to date, About shows your installed version and what the website lists.
+- **Smoother in-app update restart** — after an update installs, RGBJunkie closes its Lively bridge helper, restarts without a flashing command or File Explorer window, and comes back more reliably when the app lives under Program Files. A failed update no longer leaves a background watcher that keeps spawning windows you cannot close.
 
 #### Lively Wallpaper
 
