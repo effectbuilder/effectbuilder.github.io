@@ -4,11 +4,216 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.48 — June 3, 2026
+## v0.3.67 — June 7, 2026
+
+#### Updates
+
+- **App opens again after in-app update** — when an update finishes installing, RGBJunkie now relaunches reliably instead of staying closed. The background helper no longer treats a leftover Lively bridge process as “already restarted,” and it always attempts to start the app after copying files.
 
 #### Nollie32
 
 - **Fewer whole-strip blinks** — when the effect canvas briefly drops a frame (for example while the app is busy), Nollie32 and other fast USB strips now hold the last good colors instead of flashing off for a moment. Dark effects and other devices still update normally.
+
+---
+
+## v0.3.66 — June 6, 2026
+
+#### Patch release
+
+No separate release notes for this version. See **v0.3.67** for user-facing changes shipped in this period.
+
+---
+
+## v0.3.65 — June 6, 2026
+
+#### Patch release
+
+No separate release notes for this version. See **v0.3.64** for user-facing changes shipped in this period.
+
+---
+
+## v0.3.64 — June 6, 2026
+
+#### Help Center
+
+- **Eighteen how-to and troubleshooting articles** — the site Help Center now covers the Devices panel, RGB Wizard, Component Library, canvas tabs, effects, WLED, color profiles, LED Studio, installed files, backup, tray and startup, keyboard shortcuts, app links, OpenRGB, wallpaper sync, supported gear, and common “no lights” / “wrong colors” fixes. **Quick start** links to the full set.
+- **Friendlier Help Center tone** — articles read more like the in-app RGB Wizard guide: conversational, less manual-like, same facts.
+- **Alert panels in help articles** — write **Information**, **Caution**, **Warning**, or **Danger** callouts in Markdown (`> [!caution]` on the first line, body on the next quoted lines). They show with colored icons on the site and in the article editor.
+- **Insert alert panels from the Help editor** — the **!** toolbar button opens a panel picker (type + message) so you do not have to type the Markdown by hand.
+- **Help editor panel insert fixed** — **Insert** on the alert panel dialog adds the panel where your cursor was, keeps focus in the editor on the line after the panel, and no longer jumps to the bottom of the article. Panels no longer show the raw `[!caution]` tag or a duplicate title in the editor or on the live site.
+- **Alert panels look right in the Help editor** — colored Information, Caution, Warning, and Danger boxes in the article editor now match the live site (icons and tinted borders), including in light theme. The hidden `[!caution]` marker line no longer shows above the panel text.
+- **Help editor paragraph breaks** — pressing Enter for a new paragraph now shows the same spacing as published articles, and saved articles keep the break on the live site (not one merged block of text).
+
+#### Help tab
+
+- **Settings → Help shows the website Help Center** — the in-app Help tab now loads the same articles as [rgbjunkie.com](https://www.rgbjunkie.com/RGBJunkieApp/help/) (search, categories, and updates when new guides ship). Use **Open in browser** for a full-window view. **Back** returns to the previous Help page you opened in the tab.
+
+---
+
+## v0.3.63 — June 6, 2026
+
+#### RGB Wizard
+
+- **Renamed from “Initial setup wizard”** — the channel setup guide is now called **RGB Wizard** everywhere in the app (Devices panel magic-wand button, dialogs, and **Settings → Help**).
+
+#### App links
+
+- **Open your data folder from a link** — `rgbjunkie://open/appdata` (or `https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata`) opens your RGBJunkie user folder in File Explorer. Add a subfolder path to jump straight there — for example `open/appdata/plugins` or `open/appdata/logs`. The website handoff page and **Documentation → App deep links** list these URLs.
+
+#### Help Center
+
+- **Editor tables match the live article** — markdown tables in the Help article editor now use the same header tint, borders, spacing, centering, and text colors as published help pages (Toast UI’s dark header text is overridden).
+
+---
+
+## v0.3.62 — June 5, 2026
+
+#### Color profiles
+
+- **Generate gradients from a phrase** — in **Settings → Color profiles**, type a short mood or scene (for example “midnight rain”) and click **Generate profile** to add a new gradient. RGBJunkie looks up matching colors online when possible; if that is unavailable, a built-in palette is used instead. Each profile also has a phrase field and sparkle button to rebuild its colors from words.
+- **Smarter offline phrase colors** — when the online lookup is unavailable, the built-in generator recognizes many mood words (for example “devil”, “hell”, “ocean”, “lawyer”) and uses curated multi-stop palettes instead of random hues.
+- **Cleaner generate layout** — the phrase field and **Generate profile** button in **Settings → Color profiles** now match the spacing and button style used elsewhere in Settings.
+- **Cleaner gradient previews** — profile stripe bars no longer show a thin color line on the left edge; previews match the left-to-right colors you set.
+
+#### Fan Tracer Pro Max
+
+- **Color profiles apply again** — choosing a profile under **Circle**, **Rails**, **Master**, or other layers no longer falls back to a rainbow hue sweep when your gradient or a built-in preset is selected.
+
+---
+
+## v0.3.61 — June 5, 2026
+
+#### Scenes
+
+- **Save always asks for a name** — clicking **Save** on the scene bar now opens the name prompt every time, even when a scene is already selected. You can keep the same name to overwrite or type a new one to save a copy.
+
+---
+
+## v0.3.60 — June 5, 2026
+
+#### Updates
+
+- **Check for updates without restarting** — every check from **Settings → About** loads the latest release from rgbjunkie.com right away instead of reusing a copy fetched at startup, so new versions show up before you restart RGBJunkie. When you're up to date, About shows your installed version and what the website lists.
+- **Smoother in-app update restart** — after an update installs, RGBJunkie closes its Lively bridge helper, restarts without a flashing command or File Explorer window, and comes back more reliably when the app lives under Program Files. A failed update no longer leaves a background watcher that keeps spawning windows you cannot close.
+
+#### Lively Wallpaper
+
+- **Full canvas from the right tab** — **Stream mode → Full canvas** again captures the effect on the workspace where your Wallpaper Engine virtual device lives, even when that tab is in the background.
+
+---
+
+## v0.3.59 — June 5, 2026
+
+#### Updates
+
+- **www download links work in-app** — portable update installs accept tracked download URLs on **www.rgbjunkie.com** as well as **rgbjunkie.com**.
+
+---
+
+## v0.3.58 — June 5, 2026
+
+#### Build
+
+- **`compile.bat` works again** — the dev build step that refreshes the Lively bridge no longer calls an invalid `cargo build --debug` flag on newer Rust toolchains.
+
+---
+
+## v0.3.57 — June 5, 2026
+
+#### Lively Wallpaper
+
+- **Full canvas stream stays live** — switching the Wallpaper Engine device to **Stream mode → Full canvas** no longer freezes the Lively preview after a moment. JPEG frames are sent in order again so the bridge can rebuild each picture.
+- **Full canvas follows the right tab** — the Lively stream now captures the effect from the tab where the Wallpaper Engine virtual component is placed, instead of whatever tab is currently open. Full canvas works again when that tab is in the background.
+- **Virtual LEDs keep moving after switching modes** — changing back from **Full canvas** to **Virtual LEDs** no longer leaves the LED grid stuck on the first frame. Restart once for **rgbj-lively-bridge-12**.
+- **Full canvas visible in Lively** — the sharp JPEG stream now stays on the bottom effect layer, while your cover image remains available above it like the regular LED canvas.
+- **Full canvas can run smoother** — raising **Target FPS** on the Wallpaper Engine device can now drive the Lively full-canvas stream up to 60 FPS when your PC keeps up. Restart once for **rgbj-lively-bridge-12**.
+- **Wallpaper Engine devices load again** — a bad plugin patch could stop both Wallpaper Engine virtual devices from appearing (“Invalid left-hand side in assignment”). That patch is fixed.
+- **Full canvas actually paints in Lively** — the Lively page had a JavaScript error (`lastDrawnMs = ms`) that stopped the draw loop, kept the workshop cover on top, and drew the JPEG on the tiny LED grid instead of the monitor. Restart RGBJunkie once so **rgbj-lively-bridge-6** replaces bridge-5, then reload the Lively website wallpaper.
+- **Full canvas no longer blinks** — the Lively page keeps the last JPEG on screen while the next one loads, uses stacked fullscreen images instead of clearing a canvas (smoother in Lively/WebView2), skips empty/black frames from the stream, and keeps the FPS label above the cover image. Restart once for **rgbj-lively-bridge-12**.
+
+---
+
+## v0.3.56 — June 5, 2026
+
+#### Lively Wallpaper
+
+- **Full canvas stream for Lively** — on the Wallpaper Engine virtual device, set **Stream mode → Full canvas** to send a sharp JPEG of your active effect to the RGBJunkie Lively bridge instead of the coarse virtual LED grid. **Virtual LEDs** stays the default and still matches the Wallpaper Engine workshop companion. Restart RGBJunkie once after updating so **rgbj-lively-bridge-5** replaces an older bridge.
+
+---
+
+## v0.3.55 — June 5, 2026
+
+#### Devices
+
+- **Strips stop blinking when other USB gadgets come and go** — some PCs have a background virtual or software device that quietly announces itself over and over. Each announcement made RGBJunkie re-scan the whole USB bus, and on Windows a scan briefly freezes every light at once — long enough that a Nollie32 (and other fast strips) would blank and slow-blink for up to a minute before recovering. RGBJunkie now ignores comings and goings from devices that none of your lighting plugins use, so unrelated gadgets can chatter all they want without interrupting your lights. Plugging or unplugging your actual lighting gear still updates instantly.
+
+---
+
+## v0.3.54 — June 5, 2026
+
+#### Patch release
+
+No separate release notes for this version. See **v0.3.55** for user-facing changes shipped in this period.
+
+---
+
+## v0.3.53 — June 5, 2026
+
+#### WLED
+
+- **WLED add-on loads from Git plugin folders** — matrix/clock `wled.addon.js` (or `WLED.addon.js`) is found under **any** `Network/WLED/` folder in your plugin library, not only beside the built-in `WLED.js`. Add-ons from **Settings → Git repositories** (for example RGBJunkie-Add-Ons) merge again without copying files next to the stock plugin.
+- **Libre Hardware Monitor on WLED matrix** — choosing **Matrix display mode → Libre Hardware Monitor** now starts RGBJunkie’s sensor helper on port **8085** (same as hardware-monitoring effects), so CPU/GPU readings can load on the WLED matrix without running LHM yourself first.
+
+---
+
+## v0.3.52 — June 5, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Wallpaper Engine companion receives UDP again** — RGBJunkie no longer starts the Lively bridge on port **8133** when the **Steam workshop** wallpaper is already listening there, so color packets reach the desk companion instead of the Lively HTML bridge. If nothing is on **8133** yet, a small **SignalRgb.exe** helper starts so older workshop builds can open their UDP listener.
+- **Wallpaper plugin sends settings on load** — the virtual device pushes its setup packet as soon as it initializes, and grid resync no longer runs a heavy layout reset every frame (which could stop UDP silently when aspect ratio settings were invalid).
+- **Cover image stretch on Wallpaper Engine works again** — settings UDP packets match the **pre-Lively workshop format** (no extra grid bytes after the cover path). RGBJunkie also repairs a bad **cover image path** in the workshop companion save file when stretch changes, so **Fill** on **21:9** and other layouts apply instead of staying letterboxed.
+- **Cover image stretch on the Lively Website wallpaper** — changing **Cover Image Stretch** (Fill, Uniform, and so on) now reaches the Lively **Website** wallpaper right away, so the diffuser image scales the way you picked instead of staying at the default size.
+
+#### Development
+
+- **`tauri dev` no longer forces a release bridge rebuild** — the dev preflight reuses the **debug** Lively bridge and retries `cargo` with a single job if the compiler crashes, so a flaky `rustc` access violation during `--release` no longer blocks startup.
+
+---
+
+## v0.3.51 — June 3, 2026
+
+#### WLED
+
+- **RGBJunkie clears WLED “override UDP” for you** — when a controller was left showing built-in effects (live override / the star in the WLED app), RGBJunkie now tells it to accept UDP realtime again as soon as that device loads, so you do not have to tap the star by hand.
+
+---
+
+## v0.3.50 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Lively bridge starts only when Lively is running** — RGBJunkie no longer launches the companion bridge until **Lively Wallpaper** is open, so the bridge does not sit in the background when you are not using Lively. Open Lively, then start RGBJunkie or reload your layout.
+
+#### Updates
+
+- **Check for updates works without restarting the app** — every check (startup splash and **Settings → About**) now loads **latest.json** live from rgbjunkie.com instead of reusing the copy fetched when RGBJunkie first opened. About shows **Installed** and **rgbjunkie.com lists** so you can confirm what the app saw.
+
+---
+
+## v0.3.49 — June 3, 2026
+
+#### Wallpaper Engine + Lively Wallpaper
+
+- **Lively bridge stays smooth during long sessions** — the companion no longer rebuilds the full LED frame on every poll when nothing changed, so FPS on the Lively page stays steady after hours of use. Restart RGBJunkie once after updating so **rgbj-lively-bridge-4** replaces an older bridge.
+
+#### Updates
+
+- **Update check recognizes rgbjunkie.com download links** — fixes in-app install when the update manifest uses **www.rgbjunkie.com** URLs (the button no longer stays **Unavailable** after **0.3.49** is published).
+
+---
+
+## v0.3.48 — June 3, 2026
 
 #### Updates
 
@@ -51,7 +256,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.44 — June 3, 2026
 
-*(Add release notes for v0.3.44.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.45** for user-facing changes shipped in this period.
 
 ---
 
@@ -66,7 +273,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.42 — June 3, 2026
 
-*(Add release notes for v0.3.42.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.43** for user-facing changes shipped in this period.
 
 ---
 
@@ -90,7 +299,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.39 — June 3, 2026
 
-*(Add release notes for v0.3.39.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.40** for user-facing changes shipped in this period.
 
 ---
 
@@ -106,7 +317,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.37 — June 3, 2026
 
-*(Add release notes for v0.3.37.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.38** for user-facing changes shipped in this period.
 
 ---
 
@@ -120,19 +333,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.35 — June 3, 2026
 
-*(Add release notes for v0.3.35.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.36** for user-facing changes shipped in this period.
 
 ---
 
 ## v0.3.34 — June 3, 2026
 
-*(Add release notes for v0.3.34.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.36** for user-facing changes shipped in this period.
 
 ---
 
 ## v0.3.33 — June 2, 2026
 
-*(Add release notes for v0.3.33.)*
+#### Patch release
+
+No separate release notes for this version. See **v0.3.36** for user-facing changes shipped in this period.
 
 ---
 
