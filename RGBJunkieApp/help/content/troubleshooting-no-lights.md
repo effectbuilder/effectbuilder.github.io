@@ -20,7 +20,7 @@ Most “dead strip” moments come down to one of these. Go in order — you’l
 7. **Right Scene, right tab** — load the Scene you expect; check the active **canvas tab**.
 
 > [!CAUTION]
-> Close other RGB apps (iCUE, SignalRGB, OpenRGB GUI, vendor tools) before troubleshooting — they often lock the device and make it look like RGBJunkie isn't working.
+> Close other RGB apps (iCUE, SignalRGB, vendor tools) before troubleshooting — they often lock the device and make it look like RGBJunkie isn't working.
 
 ## USB and “something else owns my controller”
 

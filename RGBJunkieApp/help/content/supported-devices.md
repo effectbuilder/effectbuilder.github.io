@@ -19,7 +19,7 @@ Worth a look before you buy — or when something doesn’t show up after **Resc
 
 * **USB** controllers we ship plugins for
 * **WLED** on your LAN after you add the IP — [WLED setup](wled-setup)
-* **OpenRGB** RAM, GPU, and board lighting when the helper is running — [OpenRGB, RAM, and GPU lighting](openrgb-ram-gpu-lighting)
+* **RAM and graphics-card RGB** built into the app on Windows — [RAM and GPU lighting](ram-gpu-lighting)
 
 Some gear still needs a **layout** from the [RGB Wizard](rgb-wizard) or [Component Library](component-library) before anything lights up. Detection ≠ instant rainbow.
 

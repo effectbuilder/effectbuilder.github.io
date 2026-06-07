@@ -6,6 +6,34 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.67 — June 7, 2026
 
+#### About
+
+- **Release notes show for every version again** — **Settings → About → Release notes** (and the update dialog) now display the full text for each version, including patch releases and older entries that only had a short paragraph under the heading.
+
+#### Settings
+
+- **Consistent layout on every tab** — Overview, App look, Colors, Hardware, System, Installed files, Help, and About now share the same scroll behavior (section title stays put while content scrolls), matching card spacing, sub-tab styling, and heading rhythm.
+- **Settings opens a bit larger by default** — the settings window starts at **1200×900** so tabs like **Colors** have more room; your size and position are still remembered after you move or resize it.
+- **About matches the rest of Settings** — **Settings → About** now uses the same full-width cards, headings, and sub-tab layout as Colors, System, and Installed files.
+- **OpenRGB removed from the app** — **Settings → Hardware → RAM** no longer shows an OpenRGB section. RAM and GPU lighting use built-in scanning only; help text and translations were updated to match.
+- **Installed files uses the same sub-tabs as other sections** — **Settings → Installed files** now has top-level tabs for **Git repositories**, **Plugins**, **Components**, and **Effects** (like Colors or System), instead of nested tabs inside one card.
+- **Git repositories table fills the card again** — the repo list and header now span the full width, and the empty download log box no longer shows as a grey rectangle at the bottom.
+
+#### Help Center
+
+- **RAM and GPU help updated** — the Help Center article describes built-in **Settings → Hardware → RAM** and **GPU** on Windows (no separate helper app).
+
+#### Startup
+
+- **Simpler splash while loading** — the startup screen now shows the logo, one short status line, and the version number. Detailed hardware and plugin steps stay in the app log instead of flashing on screen.
+
+#### Devices
+
+- **Wallpaper Engine shows its name on the main screen** — the first Wallpaper Engine virtual device now lists **Wallpaper Engine 2** under the device header, matching the second-screen layout.
+- **Each Wallpaper Engine screen keeps its own canvas** — the main and second-screen virtual devices no longer share the same canvas tab after reload or layout refresh. Main defaults to the first canvas; second screen defaults to the second when you have two tabs.
+- **Wallpaper Engine reads the canvas you picked** — each screen’s virtual device now samples colors from its own canvas tab (not the other monitor’s tab), including when you use different tabs for main and second screen.
+- **Wallpaper canvas picks survive reload** — after startup or a layout refresh, main and second-screen Wallpaper Engine rows keep the canvas tab you saved (for example PC on canvas 1 and second screen on canvas 3), and background effect previews resync before colors are sent.
+
 #### Updates
 
 - **App opens again after in-app update** — when an update finishes installing, RGBJunkie now relaunches reliably instead of staying closed. The background helper no longer treats a leftover Lively bridge process as “already restarted,” and it always attempts to start the app after copying files.

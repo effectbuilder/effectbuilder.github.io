@@ -19,6 +19,26 @@
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>About</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Release notes show for every version again</strong> — <strong>Settings → About → Release notes</strong> (and the update dialog) now display the full text for each version, including patch releases and older entries that only had a short paragraph under the heading.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Settings</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Consistent layout on every tab</strong> — Overview, App look, Colors, Hardware, System, Installed files, Help, and About now share the same scroll behavior (section title stays put while content scrolls), matching card spacing, sub-tab styling, and heading rhythm.</li><li><strong>Settings opens a bit larger by default</strong> — the settings window starts at <strong>1200×900</strong> so tabs like <strong>Colors</strong> have more room; your size and position are still remembered after you move or resize it.</li><li><strong>About matches the rest of Settings</strong> — <strong>Settings → About</strong> now uses the same full-width cards, headings, and sub-tab layout as Colors, System, and Installed files.</li><li><strong>OpenRGB removed from the app</strong> — <strong>Settings → Hardware → RAM</strong> no longer shows an OpenRGB section. RAM and GPU lighting use built-in scanning only; help text and translations were updated to match.</li><li><strong>Installed files uses the same sub-tabs as other sections</strong> — <strong>Settings → Installed files</strong> now has top-level tabs for <strong>Git repositories</strong>, <strong>Plugins</strong>, <strong>Components</strong>, and <strong>Effects</strong> (like Colors or System), instead of nested tabs inside one card.</li><li><strong>Git repositories table fills the card again</strong> — the repo list and header now span the full width, and the empty download log box no longer shows as a grey rectangle at the bottom.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Help Center</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>RAM and GPU help updated</strong> — the Help Center article describes built-in <strong>Settings → Hardware → RAM</strong> and <strong>GPU</strong> on Windows (no separate helper app).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Startup</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Simpler splash while loading</strong> — the startup screen now shows the logo, one short status line, and the version number. Detailed hardware and plugin steps stay in the app log instead of flashing on screen.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Wallpaper Engine shows its name on the main screen</strong> — the first Wallpaper Engine virtual device now lists <strong>Wallpaper Engine 2</strong> under the device header, matching the second-screen layout.</li><li><strong>Each Wallpaper Engine screen keeps its own canvas</strong> — the main and second-screen virtual devices no longer share the same canvas tab after reload or layout refresh. Main defaults to the first canvas; second screen defaults to the second when you have two tabs.</li><li><strong>Wallpaper Engine reads the canvas you picked</strong> — each screen’s virtual device now samples colors from its own canvas tab (not the other monitor’s tab), including when you use different tabs for main and second screen.</li><li><strong>Wallpaper canvas picks survive reload</strong> — after startup or a layout refresh, main and second-screen Wallpaper Engine rows keep the canvas tab you saved (for example PC on canvas 1 and second screen on canvas 3), and background effect previews resync before colors are sent.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>App opens again after in-app update</strong> — when an update finishes installing, RGBJunkie now relaunches reliably instead of staying closed. The background helper no longer treats a leftover Lively bridge process as “already restarted,” and it always attempts to start the app after copying files.</li></ul>
 </article>

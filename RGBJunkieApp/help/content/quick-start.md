@@ -82,7 +82,7 @@ Dig in wherever you are stuck — or just curious:
 
 **Save and share your work** — [Scene profiles](scene-profiles), [Installed files](installed-files), [Backup your data](backup-restore), [App links](app-links)
 
-**Network and extras** — [WLED setup](wled-setup), [OpenRGB, RAM, and GPU lighting](openrgb-ram-gpu-lighting), [Wallpaper and screen sync](wallpaper-screen-sync), [Tray and startup](tray-and-startup), [Keyboard shortcuts](keyboard-shortcuts)
+**Network and extras** — [WLED setup](wled-setup), [RAM and GPU lighting](ram-gpu-lighting), [Wallpaper and screen sync](wallpaper-screen-sync), [Tray and startup](tray-and-startup), [Keyboard shortcuts](keyboard-shortcuts)
 
 **Something broke?** — [Supported devices](supported-devices), [Troubleshooting — no lights](troubleshooting-no-lights), [Troubleshooting — wrong colors](troubleshooting-wrong-colors), [Send a support report](send-support-report)
 
