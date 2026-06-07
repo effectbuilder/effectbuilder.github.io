@@ -10,7 +10,7 @@ $rgbj_help_active_tag = rgbj_help_resolve_active_tag(rgbj_help_active_tag_from_r
 $pageTitle = 'Help Center | RGBJunkie for Windows';
 $pageDesc = 'Self-help guides, tips, and troubleshooting for RGBJunkie for Windows and rgbjunkie.com web tools.';
 
-rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
+rgbj_help_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
 rgbj_page_analytics();
 rgbj_render_page_nav();
 rgbj_subpage_open([

@@ -13,7 +13,7 @@ if ($article === null) {
     $pageTitle = 'Article not found | RGBJunkie Help';
     $pageDesc = 'The requested help article could not be found.';
 
-    rgbj_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
+    rgbj_help_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
     rgbj_page_analytics();
     rgbj_render_page_nav();
     rgbj_subpage_open([
@@ -44,7 +44,7 @@ $pageHeadOpts = ['title' => $pageTitle, 'description' => $pageDesc];
 if ($rgbj_help_load_prism) {
     $pageHeadOpts['extra_css'] = ['https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css'];
 }
-rgbj_page_head($pageHeadOpts);
+rgbj_help_page_head($pageHeadOpts);
 rgbj_page_analytics();
 rgbj_render_page_nav();
 rgbj_subpage_open([

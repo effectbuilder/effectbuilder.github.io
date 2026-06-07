@@ -982,9 +982,6 @@
     z-index: 2;
 }
 
-/* Help Center article typography (shared with editor — help-article-content.css) */
-@import url('help-article-content.css');
-
 .rgbj-help-pre {
     margin: 1rem 0 1.25rem;
     padding: 0 !important;
@@ -1131,6 +1128,10 @@
     border-left: 3px solid rgba(0, 240, 255, 0.55);
     background: rgba(0, 240, 255, 0.06);
     border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.rgbj-help-panel {
+    margin: 1.25rem 0;
 }
 
 .rgbj-help-divider {
@@ -1319,36 +1320,6 @@ body.rgbj-help-lightbox-open {
     border-color: rgba(15, 23, 42, 0.12);
 }
 
-.rgbj-help-table-wrap {
-    margin: 1.25rem auto 1.5rem;
-    width: fit-content;
-    max-width: 100%;
-}
-
-.rgbj-help-table {
-    width: auto;
-    max-width: 100%;
-    margin-bottom: 0;
-    --bs-table-bg: transparent;
-    border-color: rgba(255, 255, 255, 0.14) !important;
-}
-
-.rgbj-help-table thead th {
-    background: rgba(0, 240, 255, 0.08);
-    color: var(--bs-body-emphasis);
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.rgbj-help-table td,
-.rgbj-help-table th {
-    vertical-align: top;
-}
-
-[data-bs-theme="light"] .rgbj-help-table thead th {
-    background: rgba(8, 145, 178, 0.1);
-}
-
 [data-bs-theme="light"] .rgbj-help-code-block__title {
     color: rgba(15, 23, 42, 0.82);
 }
@@ -1452,9 +1423,17 @@ body.rgbj-help-lightbox-open {
     overflow: auto;
 }
 
-.rgbj-help-doc-map__category {
-    margin: 0.85rem 0 0.35rem;
-    padding: 0 0.35rem;
+.rgbj-help-doc-map__section.is-empty {
+    display: none;
+}
+
+.rgbj-help-doc-map__group-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0.35rem;
+    padding: 0 0.45rem;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -1462,32 +1441,28 @@ body.rgbj-help-lightbox-open {
     color: var(--bs-secondary-color);
 }
 
-.rgbj-help-doc-map__category:first-child {
-    margin-top: 0.15rem;
+.rgbj-help-doc-map__section:first-of-type .rgbj-help-doc-map__group-label {
+    margin-top: 0.65rem;
 }
 
-.rgbj-help-doc-map__link {
-    display: block;
-    padding: 0.45rem 0.55rem;
-    border-radius: 0.45rem;
-    color: var(--bs-body-color);
-    text-decoration: none;
-    font-size: 0.92rem;
-    line-height: 1.35;
-    transition: background-color 0.15s ease, color 0.15s ease;
+.rgbj-help-doc-map__section + .rgbj-help-doc-map__section .rgbj-help-doc-map__group-label {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.rgbj-help-doc-map__link:hover,
-.rgbj-help-doc-map__link:focus-visible {
-    background: rgba(0, 240, 255, 0.08);
-    color: var(--bs-body-emphasis);
-}
-
-.rgbj-help-doc-map__link.is-active {
-    background: rgba(0, 240, 255, 0.14);
-    color: var(--bs-body-emphasis);
+.rgbj-help-doc-map__group-count {
+    flex-shrink: 0;
+    font-size: 0.68rem;
     font-weight: 600;
-    box-shadow: inset 2px 0 0 rgba(0, 240, 255, 0.85);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--bs-secondary-color);
+    opacity: 0.85;
+}
+
+.rgbj-help-doc-map__articles {
+    margin: 0;
 }
 
 .rgbj-help-tags {
@@ -1617,11 +1592,17 @@ body.rgbj-help-lightbox-open {
 }
 
 .rgbj-help-toc__link:hover,
-.rgbj-help-toc__link:focus-visible,
-.rgbj-help-toc__link.is-active {
+.rgbj-help-toc__link:focus-visible {
     color: var(--bs-body-emphasis);
     background: rgba(0, 240, 255, 0.08);
     border-left-color: rgba(0, 240, 255, 0.75);
+}
+
+.rgbj-help-toc__link.is-active {
+    color: var(--bs-body-emphasis);
+    background: rgba(0, 240, 255, 0.14);
+    border-left-color: rgba(0, 240, 255, 0.85);
+    font-weight: 600;
 }
 
 .rgbj-help-heading {
@@ -1692,6 +1673,10 @@ body.rgbj-help-lightbox-open {
 
 [data-bs-theme="light"] .rgbj-help-sidebar-panel {
     background: rgba(255, 255, 255, 0.92);
+}
+
+[data-bs-theme="light"] .rgbj-help-doc-map__section + .rgbj-help-doc-map__section .rgbj-help-doc-map__group-label {
+    border-top-color: rgba(0, 0, 0, 0.08);
 }
 
 [data-bs-theme="light"] .rgbj-help-search__results,

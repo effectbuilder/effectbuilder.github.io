@@ -4,9 +4,21 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.64 — June 6, 2026
+
+*(Add release notes for v0.3.64.)*
+
+---
+
 ## v0.3.63 — June 6, 2026
 
-*(Add release notes for v0.3.63.)*
+#### RGB Wizard
+
+- **Renamed from “Initial setup wizard”** — the channel setup guide is now called **RGB Wizard** everywhere in the app (Devices panel magic-wand button, dialogs, and **Settings → Help**).
+
+#### App links
+
+- **Open your data folder from a link** — `rgbjunkie://open/appdata` (or `https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata`) opens your RGBJunkie user folder in File Explorer. Add a subfolder path to jump straight there — for example `open/appdata/plugins` or `open/appdata/logs`. The website handoff page and **Documentation → App deep links** list these URLs.
 
 ---
 

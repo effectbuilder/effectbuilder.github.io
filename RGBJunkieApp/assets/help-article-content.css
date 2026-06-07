@@ -68,8 +68,8 @@
     padding-left: 1.35rem;
 }
 
-.rgbj-help-article__body blockquote,
-.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote {
+.rgbj-help-article__body blockquote:not(.rgbj-help-panel):not([data-rgbj-panel]),
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:not(.rgbj-help-panel):not([data-rgbj-panel]) {
     margin: 1rem 0;
     padding: 0.75rem 1rem;
     border-left: 3px solid rgba(0, 240, 255, 0.55);
@@ -78,35 +78,405 @@
     color: inherit;
 }
 
-.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote :is(p, ul, ol) {
-    color: inherit;
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel]) {
+    margin: 1.25rem 0;
+    padding: 0.85rem 1rem 0.95rem 1.15rem;
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    border-radius: 0.35rem;
+    color: var(--bs-body-color);
+    border-left-style: solid;
 }
 
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel]) > p:first-of-type {
+    margin-top: 0;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]) {
+    border-left-color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.28);
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]) .rgbj-help-panel__header {
+    color: #93c5fd;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]) {
+    border-left-color: #facc15;
+    border-color: rgba(250, 204, 21, 0.28);
+    background: rgba(234, 179, 8, 0.14);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]) .rgbj-help-panel__header {
+    color: #fde047;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]) {
+    border-left-color: #fb923c;
+    border-color: rgba(251, 146, 60, 0.3);
+    background: rgba(249, 115, 22, 0.14);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]) .rgbj-help-panel__header {
+    color: #fdba74;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]) {
+    border-left-color: #f87171;
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(239, 68, 68, 0.14);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]) .rgbj-help-panel__header {
+    color: #fca5a5;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]) {
+    border-left-color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.22);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]) .rgbj-help-panel__header {
+    color: #1d4ed8;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]) {
+    border-left-color: #ca8a04;
+    border-color: rgba(202, 138, 4, 0.24);
+    background: rgba(234, 179, 8, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]) .rgbj-help-panel__header {
+    color: #a16207;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]) {
+    border-left-color: #ea580c;
+    border-color: rgba(234, 88, 12, 0.24);
+    background: rgba(249, 115, 22, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]) .rgbj-help-panel__header {
+    color: #c2410c;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]) {
+    border-left-color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.24);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]) .rgbj-help-panel__header {
+    color: #b91c1c;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel]) :is(p, ul, ol) {
+    color: inherit;
+    font-family: var(--rgbj-editor-font, inherit);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel])[data-rgbj-has-marker-line="1"] > p:first-of-type,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel]) > p.rgbj-help-panel__marker-line {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    overflow: hidden;
+    visibility: hidden;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]):not(:has(> .rgbj-help-panel__header))::before {
+    content: 'Information';
+    display: block;
+    margin-bottom: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #93c5fd;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]):not(:has(> .rgbj-help-panel__header))::before {
+    content: 'Caution';
+    display: block;
+    margin-bottom: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fde047;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]):not(:has(> .rgbj-help-panel__header))::before {
+    content: 'Warning';
+    display: block;
+    margin-bottom: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fdba74;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]):not(:has(> .rgbj-help-panel__header))::before {
+    content: 'Danger';
+    display: block;
+    margin-bottom: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fca5a5;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--information, [data-rgbj-panel="information"]):not(:has(> .rgbj-help-panel__header))::before {
+    color: #1d4ed8;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--caution, [data-rgbj-panel="caution"]):not(:has(> .rgbj-help-panel__header))::before {
+    color: #a16207;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--warning, [data-rgbj-panel="warning"]):not(:has(> .rgbj-help-panel__header))::before {
+    color: #c2410c;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel--danger, [data-rgbj-panel="danger"]):not(:has(> .rgbj-help-panel__header))::before {
+    color: #b91c1c;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:is(.rgbj-help-panel, [data-rgbj-panel]) > .rgbj-help-panel__header {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Alert panels — information, caution, warning, danger */
+.rgbj-help-panel {
+    margin: 1.25rem 0;
+    padding: 0.85rem 1rem 0.95rem 1.15rem;
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    border-radius: 0.35rem;
+    color: var(--bs-body-color);
+}
+
+.rgbj-help-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.rgbj-help-panel__icon {
+    font-size: 1.05rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.rgbj-help-panel__title {
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.rgbj-help-panel__body :is(p, ul, ol):last-child {
+    margin-bottom: 0;
+}
+
+.rgbj-help-panel__body a {
+    font-weight: 600;
+    text-underline-offset: 0.12em;
+}
+
+.rgbj-help-panel--information {
+    border-left-color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.28);
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.rgbj-help-panel--information .rgbj-help-panel__header,
+.rgbj-help-panel--information .rgbj-help-panel__body a {
+    color: #93c5fd;
+}
+
+.rgbj-help-panel--caution {
+    border-left-color: #facc15;
+    border-color: rgba(250, 204, 21, 0.28);
+    background: rgba(234, 179, 8, 0.14);
+}
+
+.rgbj-help-panel--caution .rgbj-help-panel__header,
+.rgbj-help-panel--caution .rgbj-help-panel__body a {
+    color: #fde047;
+}
+
+.rgbj-help-panel--warning {
+    border-left-color: #fb923c;
+    border-color: rgba(251, 146, 60, 0.3);
+    background: rgba(249, 115, 22, 0.14);
+}
+
+.rgbj-help-panel--warning .rgbj-help-panel__header,
+.rgbj-help-panel--warning .rgbj-help-panel__body a {
+    color: #fdba74;
+}
+
+.rgbj-help-panel--danger {
+    border-left-color: #f87171;
+    border-color: rgba(248, 113, 113, 0.3);
+    background: rgba(239, 68, 68, 0.14);
+}
+
+.rgbj-help-panel--danger .rgbj-help-panel__header,
+.rgbj-help-panel--danger .rgbj-help-panel__body a {
+    color: #fca5a5;
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--information {
+    border-left-color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.22);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--information .rgbj-help-panel__header,
+[data-bs-theme="light"] .rgbj-help-panel--information .rgbj-help-panel__body a {
+    color: #1d4ed8;
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--caution {
+    border-left-color: #ca8a04;
+    border-color: rgba(202, 138, 4, 0.24);
+    background: rgba(234, 179, 8, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--caution .rgbj-help-panel__header,
+[data-bs-theme="light"] .rgbj-help-panel--caution .rgbj-help-panel__body a {
+    color: #a16207;
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--warning {
+    border-left-color: #ea580c;
+    border-color: rgba(234, 88, 12, 0.24);
+    background: rgba(249, 115, 22, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--warning .rgbj-help-panel__header,
+[data-bs-theme="light"] .rgbj-help-panel--warning .rgbj-help-panel__body a {
+    color: #c2410c;
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--danger {
+    border-left-color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.24);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-panel--danger .rgbj-help-panel__header,
+[data-bs-theme="light"] .rgbj-help-panel--danger .rgbj-help-panel__body a {
+    color: #b91c1c;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:not(.rgbj-help-panel):not([data-rgbj-panel]) {
+    background: rgba(15, 23, 42, 0.04);
+    border-left-color: rgba(15, 23, 42, 0.25);
+}
+
+/* Tables — shared with rgbj_help_render_table() on published articles */
+.rgbj-help-table-wrap {
+    margin: 1.25rem auto 1.5rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.rgbj-help-article__body .rgbj-help-table,
 .rgbj-help-article__body table,
 .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table {
-    width: auto;
+    display: table;
+    width: 100%;
+    min-width: min(100%, 36rem);
     max-width: 100%;
-    margin: 1rem auto;
+    margin-left: auto;
+    margin-right: auto;
     border-collapse: collapse;
-}
-
-.rgbj-help-article__body th,
-.rgbj-help-article__body td,
-.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(th, td) {
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    padding: 0.45rem 0.65rem;
-}
-
-.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body th {
+    border-spacing: 0;
+    table-layout: fixed;
     background: transparent;
-    color: inherit;
-    font-weight: 700;
+    color: var(--bs-body-color);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: rgba(255, 255, 255, 0.14);
 }
 
-.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(td p, th p) {
+.rgbj-help-table .rgbj-help-table__col-tool {
+    width: 34%;
+}
+
+.rgbj-help-table .rgbj-help-table__col-desc {
+    width: 66%;
+}
+
+/* Toast UI tables omit colgroup — keep the same 34/66 split as published HTML */
+.rgbj-help-article__body table:has(tr > :nth-child(2):last-child) tr > :first-child,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table:has(tr > :nth-child(2):last-child) tr > :first-child {
+    width: 34%;
+}
+
+.rgbj-help-article__body table:has(tr > :nth-child(2):last-child) tr > :nth-child(2),
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table:has(tr > :nth-child(2):last-child) tr > :nth-child(2) {
+    width: 66%;
+}
+
+.rgbj-help-table-wrap .rgbj-help-table {
+    margin: 0;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table {
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.rgbj-help-article__body .rgbj-help-table thead th,
+.rgbj-help-article__body table thead th,
+.rgbj-help-article__body table tbody > tr:first-child > th,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table thead th,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table tbody > tr:first-child > th {
+    background: rgba(0, 240, 255, 0.08) !important;
+    color: var(--bs-body-emphasis) !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+}
+
+.rgbj-help-article__body .rgbj-help-table td,
+.rgbj-help-article__body .rgbj-help-table th,
+.rgbj-help-article__body table td,
+.rgbj-help-article__body table th,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table :is(td, th) {
+    display: table-cell;
+    height: auto !important;
+    min-height: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    padding: 0.45rem 0.65rem !important;
+    vertical-align: top;
+    color: var(--bs-body-color) !important;
+    background: transparent !important;
+    font-weight: inherit;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+.rgbj-help-article__body table tbody > tr:first-child > th,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table tbody > tr:first-child > th {
+    background: rgba(0, 240, 255, 0.08) !important;
+    color: var(--bs-body-emphasis) !important;
+}
+
+.rgbj-help-article__body table :is(td p, th p),
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table :is(td p, th p) {
     margin: 0;
     padding: 0;
-    color: inherit;
+    color: inherit !important;
+    line-height: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table :is(td, th) > * {
+    color: inherit !important;
 }
 
 .rgbj-help-article__body img,
@@ -151,16 +521,28 @@
     border-color: rgba(255, 255, 255, 0.12);
 }
 
-[data-bs-theme="light"] .rgbj-help-article__body blockquote,
-[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote {
+[data-bs-theme="light"] .rgbj-help-article__body blockquote:not(.rgbj-help-panel):not([data-rgbj-panel]),
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote:not(.rgbj-help-panel):not([data-rgbj-panel]) {
     background: rgba(15, 23, 42, 0.04);
     border-left-color: rgba(15, 23, 42, 0.25);
 }
 
-[data-bs-theme="light"] .rgbj-help-article__body th,
-[data-bs-theme="light"] .rgbj-help-article__body td,
-[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(th, td) {
-    border-color: rgba(15, 23, 42, 0.14);
+[data-bs-theme="light"] .rgbj-help-article__body .rgbj-help-table thead th,
+[data-bs-theme="light"] .rgbj-help-article__body table thead th,
+[data-bs-theme="light"] .rgbj-help-article__body table tbody > tr:first-child > th,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table thead th,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table tbody > tr:first-child > th {
+    background: rgba(8, 145, 178, 0.1) !important;
+    color: var(--bs-body-emphasis) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-article__body .rgbj-help-table td,
+[data-bs-theme="light"] .rgbj-help-article__body .rgbj-help-table th,
+[data-bs-theme="light"] .rgbj-help-article__body table td,
+[data-bs-theme="light"] .rgbj-help-article__body table th,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table :is(td, th) {
+    border-color: rgba(15, 23, 42, 0.14) !important;
+    --bs-table-border-color: rgba(15, 23, 42, 0.14);
 }
 
 [data-bs-theme="light"] .rgbj-help-article__body pre,

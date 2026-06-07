@@ -10,6 +10,7 @@
     var tagFilterBanner = document.querySelector('[data-rgbj-help-tag-filter]');
     var tagButtons = Array.prototype.slice.call(document.querySelectorAll('[data-rgbj-help-tag]'));
     var docMapItems = Array.prototype.slice.call(document.querySelectorAll('.rgbj-help-doc-map__item[data-tag-slugs]'));
+    var docMapSections = Array.prototype.slice.call(document.querySelectorAll('.rgbj-help-doc-map__section'));
 
     var entries = [];
     if (dataEl) {
@@ -178,12 +179,20 @@
             docMapItems.forEach(function (item) {
                 item.classList.remove('is-tag-hidden');
             });
+            docMapSections.forEach(function (section) {
+                section.classList.remove('is-empty');
+            });
             return;
         }
 
         docMapItems.forEach(function (item) {
             var slugs = (item.getAttribute('data-tag-slugs') || '').split(/\s+/).filter(Boolean);
             item.classList.toggle('is-tag-hidden', slugs.indexOf(activeTag) === -1);
+        });
+
+        docMapSections.forEach(function (section) {
+            var visibleItems = section.querySelectorAll('.rgbj-help-doc-map__item[data-tag-slugs]:not(.is-tag-hidden)');
+            section.classList.toggle('is-empty', visibleItems.length === 0);
         });
     }
 

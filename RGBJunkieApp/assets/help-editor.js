@@ -83,6 +83,739 @@ import {
     var STATUS_FADE_MS = 400;
     var FRONTMATTER_OPEN_KEY = 'rgbj-help-editor-frontmatter-open';
     var selectedThematicBreak = null;
+    var helpPanelDecorateTimer = null;
+    var helpPanelSubmitting = false;
+    var helpPanelInsertContext = null;
+
+    var HELP_PANEL_TYPES = {
+        info: 'information',
+        information: 'information',
+        note: 'information',
+        caution: 'caution',
+        warning: 'warning',
+        danger: 'danger',
+        important: 'danger',
+    };
+
+    var HELP_PANEL_LABELS = {
+        information: 'Information',
+        caution: 'Caution',
+        warning: 'Warning',
+        danger: 'Danger',
+    };
+
+    var HELP_PANEL_ICONS = {
+        information: 'bi-info-circle',
+        caution: 'bi-exclamation-triangle',
+        warning: 'bi-exclamation-triangle-fill',
+        danger: 'bi-exclamation-octagon',
+    };
+
+    function findHelpPanelMarkerParagraph(blockquote) {
+        if (!blockquote) {
+            return null;
+        }
+
+        return (
+            blockquote.querySelector(':scope > p.rgbj-help-panel__marker-line') ||
+            blockquote.querySelector(':scope > p:first-of-type')
+        );
+    }
+
+    function decorateHelpPanels() {
+        if (!editorBodyEl) {
+            return;
+        }
+
+        editorBodyEl
+            .querySelectorAll('.ProseMirror blockquote, .toastui-editor-contents blockquote')
+            .forEach(function (blockquote) {
+                var firstParagraph = findHelpPanelMarkerParagraph(blockquote);
+                if (!firstParagraph) {
+                    return;
+                }
+
+                var sourceText = firstParagraph.textContent || '';
+                var match = sourceText.match(/^\[!([a-z]+)\]\s*(.*)$/is);
+                if (!match) {
+                    return;
+                }
+
+                var panelType = HELP_PANEL_TYPES[match[1].toLowerCase()];
+                if (!panelType) {
+                    return;
+                }
+
+                var remaining = String(match[2] || '').trim();
+                if (remaining === '') {
+                    firstParagraph.classList.add('rgbj-help-panel__marker-line');
+                } else if (remaining !== '' && firstParagraph.getAttribute('data-rgbj-panel-parsed') !== panelType) {
+                    suppressEditorChange = true;
+                    try {
+                        firstParagraph.textContent = remaining;
+                        firstParagraph.setAttribute('data-rgbj-panel-parsed', panelType);
+                    } finally {
+                        suppressEditorChange = false;
+                    }
+                }
+            });
+    }
+
+    function isBlockQuoteNode(node) {
+        return !!(node && (node.type.name === 'blockQuote' || node.type.name === 'blockquote'));
+    }
+
+    function detectHelpPanelTypeFromBlockQuote(node) {
+        if (!isBlockQuoteNode(node)) {
+            return null;
+        }
+
+        var htmlAttrs = node.attrs.htmlAttrs || {};
+        if (htmlAttrs['data-rgbj-panel']) {
+            return normalizeHelpPanelType(htmlAttrs['data-rgbj-panel']);
+        }
+
+        for (var i = 0; i < node.childCount; i++) {
+            var child = node.child(i);
+            if (!child.isTextblock) {
+                continue;
+            }
+
+            var match = String(child.textContent || '').match(/^\[!([a-z]+)\]\s*(.*)$/is);
+            if (match) {
+                return HELP_PANEL_TYPES[match[1].toLowerCase()] || null;
+            }
+
+            break;
+        }
+
+        return null;
+    }
+
+    function blockQuoteHasMarkerOnlyLine(node) {
+        if (!node || node.childCount === 0) {
+            return false;
+        }
+
+        var first = node.child(0);
+        if (!first.isTextblock) {
+            return false;
+        }
+
+        return /^\[!([a-z]+)\]\s*$/i.test(String(first.textContent || '').trim());
+    }
+
+    function buildHelpPanelHeaderWidget(panelType) {
+        var header = document.createElement('div');
+        header.className = 'rgbj-help-panel__header';
+        header.contentEditable = 'false';
+
+        var icon = document.createElement('i');
+        icon.className = 'bi ' + HELP_PANEL_ICONS[panelType] + ' rgbj-help-panel__icon';
+        icon.setAttribute('aria-hidden', 'true');
+
+        var title = document.createElement('span');
+        title.className = 'rgbj-help-panel__title';
+        title.textContent = HELP_PANEL_LABELS[panelType];
+
+        header.appendChild(icon);
+        header.appendChild(title);
+        return header;
+    }
+
+    function scheduleHelpPanelDecoration() {
+        if (helpPanelDecorateTimer) {
+            window.clearTimeout(helpPanelDecorateTimer);
+        }
+
+        helpPanelDecorateTimer = window.setTimeout(function () {
+            helpPanelDecorateTimer = null;
+            decorateHelpPanels();
+        }, 0);
+    }
+
+    function normalizeHelpPanelType(rawType) {
+        var panelType = HELP_PANEL_TYPES[String(rawType || '').toLowerCase()];
+        return panelType || 'information';
+    }
+
+    function buildHelpPanelMarkdown(panelType, body) {
+        panelType = normalizeHelpPanelType(panelType);
+        body = String(body || '').trim() || 'Replace this text.';
+
+        var lines = body.split(/\r?\n/);
+        var markdown = '> [!' + panelType + ']\n';
+        lines.forEach(function (line) {
+            markdown += '> ' + line + '\n';
+        });
+
+        return markdown + '\n';
+    }
+
+    function getBlockQuoteNodeType(schema) {
+        if (!schema || !schema.nodes) {
+            return null;
+        }
+
+        return schema.nodes.blockQuote || schema.nodes.blockquote || null;
+    }
+
+    function createHelpPanelNodes(schema, panelType, body) {
+        var blockquote = getBlockQuoteNodeType(schema);
+        var paragraph = schema.nodes.paragraph;
+        if (!blockquote || !paragraph) {
+            return null;
+        }
+
+        panelType = normalizeHelpPanelType(panelType);
+        body = String(body || '').trim() || 'Replace this text.';
+
+        var children = [paragraph.create(null, schema.text('[!' + panelType + ']'))];
+        body.split(/\r?\n/).forEach(function (line) {
+            children.push(paragraph.create(null, schema.text(line)));
+        });
+
+        return {
+            panelNode: blockquote.create(
+                {
+                    htmlAttrs: {
+                        class: 'rgbj-help-panel rgbj-help-panel--' + panelType,
+                        'data-rgbj-panel': panelType,
+                        'data-rgbj-has-marker-line': '1',
+                    },
+                },
+                children
+            ),
+            trailingParagraph: paragraph.create(),
+        };
+    }
+
+    function insertHelpPanelIntoView(view, panelType, body, selectionRange) {
+        if (!view) {
+            return false;
+        }
+
+        var state = view.state;
+        var nodes = createHelpPanelNodes(state.schema, panelType, body);
+        if (!nodes) {
+            return false;
+        }
+
+        var TextSelection = state.selection.constructor;
+        var from =
+            selectionRange && typeof selectionRange.from === 'number'
+                ? selectionRange.from
+                : state.selection.from;
+        var to =
+            selectionRange && typeof selectionRange.to === 'number'
+                ? selectionRange.to
+                : state.selection.to;
+        var maxPos = state.doc.content.size;
+
+        from = Math.max(0, Math.min(from, maxPos));
+        to = Math.max(from, Math.min(to, maxPos));
+
+        var panelNode = nodes.panelNode;
+        var trailingParagraph = nodes.trailingParagraph;
+        var tr = state.tr;
+
+        if (from !== to) {
+            tr = tr.deleteRange(from, to);
+        }
+
+        var insertAnchor = tr.mapping.map(from);
+        insertAnchor = Math.max(0, Math.min(insertAnchor, tr.doc.content.size));
+        if (insertAnchor === 0 && tr.doc.content.size > 1) {
+            insertAnchor = 1;
+        } else if (insertAnchor >= tr.doc.content.size && tr.doc.content.size > 1) {
+            insertAnchor = tr.doc.content.size - 1;
+        }
+        var $from = tr.doc.resolve(insertAnchor);
+        var replacedEmptyBlock = false;
+
+        if ($from.parent.isTextblock && $from.parent.content.size === 0) {
+            for (var depth = $from.depth; depth > 0; depth -= 1) {
+                if ($from.node(depth - 1).type.name === 'doc') {
+                    var replaceFrom = $from.before(depth);
+                    var replaceTo = $from.after(depth);
+                    try {
+                        tr = tr.replaceWith(replaceFrom, replaceTo, [panelNode, trailingParagraph]);
+                        tr = tr.setSelection(TextSelection.near(tr.doc.resolve(replaceFrom + 1), 1));
+                        replacedEmptyBlock = true;
+                    } catch (replaceErr) {
+                        return false;
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!replacedEmptyBlock) {
+            var insertPos = null;
+
+            if ($from.depth === 0) {
+                insertPos = 0;
+            } else {
+                for (var blockDepth = $from.depth; blockDepth > 0; blockDepth -= 1) {
+                    if ($from.node(blockDepth - 1).type.name === 'doc' && $from.node(blockDepth).isBlock) {
+                        insertPos = $from.after(blockDepth);
+                        break;
+                    }
+                }
+            }
+
+            if (insertPos === null) {
+                return false;
+            }
+
+            try {
+                tr = tr.insert(insertPos, panelNode);
+                tr = tr.insert(insertPos + panelNode.nodeSize, trailingParagraph);
+                tr = tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos + 1), 1));
+            } catch (insertErr) {
+                return false;
+            }
+        }
+
+        if (!tr.docChanged) {
+            return false;
+        }
+
+        try {
+            view.dispatch(tr);
+        } catch (err) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function getEditorWwScrollEl() {
+        if (!editorBodyEl) {
+            return null;
+        }
+
+        return (
+            editorBodyEl.querySelector('.toastui-editor-ww-container') ||
+            editorBodyEl.querySelector('.toastui-editor-contents') ||
+            editorBodyEl
+        );
+    }
+
+    function focusEditorAfterHelpPanelInsert(panelType, body, done) {
+        panelType = normalizeHelpPanelType(panelType);
+        var bodyLine = String(body || '').split(/\r?\n/)[0];
+
+        function finish() {
+            var view = getWwEditorView();
+            if (view) {
+                view.focus();
+            }
+            if (typeof done === 'function') {
+                done();
+            }
+        }
+
+        window.setTimeout(function () {
+            scheduleHelpPanelDecoration();
+            if (restoreHelpPanelCursorFromDom(panelType, bodyLine)) {
+                finish();
+                return;
+            }
+
+            window.setTimeout(function () {
+                restoreHelpPanelCursorFromDom(panelType, bodyLine);
+                finish();
+            }, 60);
+        }, 0);
+    }
+
+    function refreshEditorFromMarkdown(markdown, options) {
+        options = options || {};
+        markdown = normalizeLineEndings(String(markdown || ''));
+        markdown = repairNewTabLinksInMarkdown(markdown);
+        markdown = normalizeHelpTablesInMarkdown(markdown);
+        codeBlockTitleByIndex = extractCodeBlockTitlesFromMarkdown(markdown);
+
+        var scrollEl = getEditorWwScrollEl();
+        var savedScrollTop = scrollEl ? scrollEl.scrollTop : 0;
+
+        editor.setMarkdown(absolutizeImagePathsForEditor(stripCodeFenceTitlesForEditor(markdown)), false);
+        syncCodeBlockTitlesFromMarkdown(markdown);
+        normalizeCodeBlockLanguageAttrs();
+        sanitizeCodeBlocksInDocument();
+        syncCodeBlockTitlesFromMarkdown(markdown);
+
+        if (scrollEl) {
+            scrollEl.scrollTop = savedScrollTop;
+        }
+
+        window.setTimeout(function () {
+            lastSyncedEditorHeight = 0;
+            refreshEditorImages();
+            applyEditorSiteStyles();
+            sanitizeCodeBlocksInDocument();
+            normalizeCodeBlockLanguageAttrs();
+            syncCodeBlockTitlesFromMarkdown(markdown);
+            syncEditorHeight();
+            syncTableToolbarState();
+            decorateHelpPanels();
+            if (scrollEl) {
+                scrollEl.scrollTop = savedScrollTop;
+            }
+            if (typeof options.onSettled === 'function') {
+                options.onSettled();
+            }
+        }, 100);
+    }
+
+    function getHelpPanelInsertRange() {
+        var view = getWwEditorView();
+        if (!view) {
+            return null;
+        }
+
+        var maxPos = view.state.doc.content.size;
+        if (helpPanelInsertContext) {
+            var from = Math.max(0, Math.min(helpPanelInsertContext.from, maxPos));
+            var to = Math.max(from, Math.min(helpPanelInsertContext.to, maxPos));
+            return { from: from, to: to };
+        }
+
+        return {
+            from: view.state.selection.from,
+            to: view.state.selection.to,
+        };
+    }
+
+    function splitMarkdownBodyBlocks(markdown) {
+        markdown = normalizeLineEndings(String(markdown || ''));
+        if (markdown.trim() === '') {
+            return [''];
+        }
+
+        var blocks = [];
+        var current = [];
+        var lines = markdown.split('\n');
+        var inFence = false;
+
+        lines.forEach(function (line) {
+            var trimmed = line.trim();
+            if (/^```/.test(trimmed)) {
+                inFence = !inFence;
+                current.push(line);
+                return;
+            }
+
+            if (!inFence && trimmed === '' && current.length) {
+                blocks.push(current.join('\n'));
+                current = [];
+                return;
+            }
+
+            current.push(line);
+        });
+
+        if (current.length) {
+            blocks.push(current.join('\n'));
+        }
+
+        return blocks.length ? blocks : [''];
+    }
+
+    function joinMarkdownBodyBlocks(blocks) {
+        return blocks
+            .map(function (block) {
+                return String(block || '').trimEnd();
+            })
+            .filter(function (block, index, arr) {
+                return block !== '' || arr.length === 1;
+            })
+            .join('\n\n');
+    }
+
+    function getMarkdownInsertPlan(view, range) {
+        var doc = view.state.doc;
+        var from = range.from;
+        var targetIndex = doc.childCount;
+        var replaceBlock = false;
+        var found = false;
+
+        doc.forEach(function (node, offset, index) {
+            if (found) {
+                return;
+            }
+
+            var end = offset + node.nodeSize;
+            if (from >= offset && from <= end) {
+                if (node.type.name === 'paragraph' && node.content.size === 0) {
+                    targetIndex = index;
+                    replaceBlock = true;
+                } else {
+                    targetIndex = index + 1;
+                }
+                found = true;
+            }
+        });
+
+        return { index: targetIndex, replace: replaceBlock };
+    }
+
+    function restoreHelpPanelCursorFromDom(panelType, bodyLine) {
+        var view = getWwEditorView();
+        if (!view || !editorBodyEl) {
+            return false;
+        }
+
+        panelType = normalizeHelpPanelType(panelType);
+        bodyLine = String(bodyLine || '');
+
+        decorateHelpPanels();
+
+        var target =
+            editorBodyEl.querySelector('blockquote[data-rgbj-panel-insert-active="1"]') ||
+            null;
+
+        if (!target) {
+            var blockquotes = editorBodyEl.querySelectorAll('.ProseMirror blockquote, .toastui-editor-contents blockquote');
+            for (var i = blockquotes.length - 1; i >= 0; i -= 1) {
+                var candidate = blockquotes[i];
+                var text = candidate.textContent || '';
+                if (text.indexOf(bodyLine) !== -1 && text.indexOf('[!' + panelType) !== -1) {
+                    target = candidate;
+                    break;
+                }
+                if (
+                    bodyLine &&
+                    candidate.getAttribute('data-rgbj-panel') === panelType &&
+                    text.indexOf(bodyLine) !== -1
+                ) {
+                    target = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (!target) {
+            return false;
+        }
+
+        var TextSelection = view.state.selection.constructor;
+        var focusEl = target.nextElementSibling;
+
+        if (focusEl && focusEl.tagName === 'P') {
+            try {
+                var startPos = view.posAtDOM(focusEl, 0);
+                if (startPos >= 0) {
+                    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, startPos)));
+                    target.removeAttribute('data-rgbj-panel-insert-active');
+                    scrollHelpPanelIntoView(target, focusEl);
+                    return true;
+                }
+            } catch (err) {
+                // try fallback below
+            }
+        }
+
+        var lastParagraph = target.querySelector('p:last-child');
+        if (lastParagraph) {
+            try {
+                var endPos = view.posAtDOM(lastParagraph, lastParagraph.childNodes.length);
+                if (endPos >= 0) {
+                    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, endPos)));
+                    target.removeAttribute('data-rgbj-panel-insert-active');
+                    scrollHelpPanelIntoView(target, lastParagraph);
+                    return true;
+                }
+            } catch (err2) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    function scrollHelpPanelIntoView(panelEl, cursorEl) {
+        var scrollEl = getEditorWwScrollEl();
+        var targetEl = cursorEl || panelEl;
+        if (!targetEl) {
+            return;
+        }
+
+        if (scrollEl && typeof scrollEl.scrollTo === 'function') {
+            var scrollRect = scrollEl.getBoundingClientRect();
+            var targetRect = targetEl.getBoundingClientRect();
+            var nextTop =
+                scrollEl.scrollTop +
+                (targetRect.top - scrollRect.top) -
+                Math.max(0, (scrollRect.height - targetRect.height) / 3);
+
+            scrollEl.scrollTo({
+                top: Math.max(0, nextTop),
+                behavior: 'auto',
+            });
+            return;
+        }
+
+        if (typeof targetEl.scrollIntoView === 'function') {
+            targetEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    }
+
+    function insertHelpPanelViaMarkdownAtCursor(panelType, body, range, onSettled) {
+        if (!editor) {
+            return false;
+        }
+
+        var view = getWwEditorView();
+        if (!view || !range) {
+            return false;
+        }
+
+        panelType = normalizeHelpPanelType(panelType);
+        body = String(body || '').trim();
+        if (body === '') {
+            return false;
+        }
+
+        var plan = getMarkdownInsertPlan(view, range);
+        var blocks = splitMarkdownBodyBlocks(editor.getMarkdown() || '');
+        var panelMd = buildHelpPanelMarkdown(panelType, body).trimEnd();
+        var blockIndex;
+
+        if (plan.replace && plan.index < blocks.length) {
+            blocks[plan.index] = panelMd;
+            blockIndex = plan.index;
+        } else {
+            var insertAt = Math.max(0, Math.min(plan.index, blocks.length));
+            blocks.splice(insertAt, 0, panelMd);
+            blockIndex = insertAt;
+            if (insertAt === blocks.length - 1) {
+                blocks.push('');
+            }
+        }
+
+        suppressEditorChange = true;
+        try {
+            refreshEditorFromMarkdown(joinMarkdownBodyBlocks(blocks), {
+                onSettled: function () {
+                    if (typeof onSettled === 'function') {
+                        onSettled({ blockIndex: blockIndex });
+                    }
+                },
+            });
+        } catch (err) {
+            return null;
+        } finally {
+            suppressEditorChange = false;
+        }
+
+        return { blockIndex: blockIndex };
+    }
+
+    function captureHelpPanelInsertContext() {
+        var view = getWwEditorView();
+        if (!view) {
+            return;
+        }
+
+        helpPanelInsertContext = {
+            from: view.state.selection.from,
+            to: view.state.selection.to,
+        };
+    }
+
+    function initHelpPanelSelectionTracking() {
+        if (!editorBodyEl || editorBodyEl.dataset.rgbjHelpPanelSelectionInit) {
+            return;
+        }
+
+        editorBodyEl.dataset.rgbjHelpPanelSelectionInit = '1';
+
+        ['mouseup', 'keyup', 'click'].forEach(function (eventName) {
+            editorBodyEl.addEventListener(
+                eventName,
+                function (event) {
+                    if (!editorBodyEl.contains(event.target)) {
+                        return;
+                    }
+
+                    window.setTimeout(captureHelpPanelInsertContext, 0);
+                },
+                true
+            );
+        });
+    }
+
+    function insertHelpPanel(panelType, body, onComplete) {
+        if (!editor) {
+            if (typeof onComplete === 'function') {
+                onComplete(false);
+            }
+            return false;
+        }
+
+        panelType = normalizeHelpPanelType(panelType);
+        body = String(body || '').trim();
+        if (body === '') {
+            if (typeof onComplete === 'function') {
+                onComplete(false);
+            }
+            return false;
+        }
+
+        if (!helpPanelInsertContext) {
+            captureHelpPanelInsertContext();
+        }
+
+        var range = getHelpPanelInsertRange();
+        if (!range) {
+            if (typeof onComplete === 'function') {
+                onComplete(false);
+            }
+            return false;
+        }
+
+        var view = getWwEditorView();
+        var insertPlan = view ? getMarkdownInsertPlan(view, range) : null;
+        var focusBlockIndex =
+            insertPlan && typeof insertPlan.index === 'number' ? insertPlan.index : null;
+
+        window.__rgbjLastPanelInsert = {
+            panelType: panelType,
+            bodyLine: body.split(/\r?\n/)[0],
+            blockIndex: focusBlockIndex,
+        };
+
+        if (view && insertHelpPanelIntoView(view, panelType, body, range)) {
+            focusEditorAfterHelpPanelInsert(panelType, body, function () {
+                window.__rgbjLastPanelInsert = null;
+                if (typeof onComplete === 'function') {
+                    onComplete(true);
+                }
+            });
+            return true;
+        }
+
+        var markdownResult = insertHelpPanelViaMarkdownAtCursor(panelType, body, range, function () {
+            focusEditorAfterHelpPanelInsert(panelType, body, function () {
+                window.__rgbjLastPanelInsert = null;
+                if (typeof onComplete === 'function') {
+                    onComplete(true);
+                }
+            });
+        });
+
+        if (!markdownResult) {
+            window.__rgbjLastPanelInsert = null;
+            if (typeof onComplete === 'function') {
+                onComplete(false);
+            }
+            return false;
+        }
+
+        return true;
+    }
 
     function todayIsoDateLocal() {
         var d = new Date();
@@ -233,8 +966,79 @@ import {
         populateMetaForm(text);
     }
 
+    function sanitizeHelpPanelMarkdownForSave(markdown) {
+        markdown = normalizeLineEndings(String(markdown || ''));
+
+        Object.keys(HELP_PANEL_LABELS).forEach(function (panelType) {
+                var label = HELP_PANEL_LABELS[panelType];
+                var labelPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                markdown = markdown.replace(
+                    new RegExp('(^|\\n)> ' + labelPattern + '\\s*\\r?\\n(?=> \\[!' + panelType + '\\])', 'gim'),
+                    '$1'
+                );
+
+                markdown = markdown.replace(
+                    new RegExp(
+                        '((?:^|\\n)> \\[!' +
+                            panelType +
+                            '\\]\\s*\\r?\\n)> \\[!' +
+                            panelType +
+                            '\\]\\s*\\r?\\n',
+                        'gim'
+                    ),
+                    '$1'
+                );
+            });
+
+        return markdown;
+    }
+
+    function restoreHelpPanelMarkersBeforeSave() {
+        if (!editorBodyEl) {
+            return;
+        }
+
+        editorBodyEl
+            .querySelectorAll('.ProseMirror blockquote[data-rgbj-panel], .toastui-editor-contents blockquote[data-rgbj-panel]')
+            .forEach(function (blockquote) {
+                var panelType = blockquote.getAttribute('data-rgbj-panel');
+                if (!panelType) {
+                    return;
+                }
+
+                var markerParagraph = null;
+                if (blockquote.getAttribute('data-rgbj-has-marker-line') === '1') {
+                    markerParagraph = findHelpPanelMarkerParagraph(blockquote);
+                } else {
+                    markerParagraph = blockquote.querySelector(':scope > p.rgbj-help-panel__marker-line');
+                }
+
+                var firstParagraph = markerParagraph || findHelpPanelMarkerParagraph(blockquote);
+                if (!firstParagraph) {
+                    return;
+                }
+
+                var sourceText = firstParagraph.textContent || '';
+                if (/^\[!([a-z]+)\]/i.test(sourceText)) {
+                    return;
+                }
+
+                suppressEditorChange = true;
+                try {
+                    firstParagraph.textContent = '[!' + panelType + ']' + (sourceText ? ' ' + sourceText : '');
+                    firstParagraph.classList.remove('rgbj-help-panel__marker-line');
+                    firstParagraph.removeAttribute('data-rgbj-panel-parsed');
+                } finally {
+                    suppressEditorChange = false;
+                }
+            });
+    }
+
     function getArticleMarkdown() {
+        restoreHelpPanelMarkersBeforeSave();
         var body = editor ? sanitizeMarkdownBodyForSave(editor.getMarkdown()) : '';
+        body = sanitizeHelpPanelMarkdownForSave(body);
+        scheduleHelpPanelDecoration();
         return getFrontMatterText() + body;
     }
 
@@ -244,6 +1048,9 @@ import {
         if (editor) {
             suppressEditorChange = true;
             var body = normalizeLineEndings(parts.body.trim() === '' ? ' ' : parts.body);
+            body = repairNewTabLinksInMarkdown(body);
+            body = normalizeHelpTablesInMarkdown(body);
+            body = expandSingleNewlineParagraphBreaks(body);
             codeBlockTitleByIndex = extractCodeBlockTitlesFromMarkdown(body);
             editor.setMarkdown(
                 absolutizeImagePathsForEditor(stripCodeFenceTitlesForEditor(body)),
@@ -263,6 +1070,7 @@ import {
                 syncEditorHeight();
                 syncTableToolbarState();
                 clearThematicBreakSelection();
+                scheduleHelpPanelDecoration();
             }, 100);
             suppressEditorChange = false;
         }
@@ -2239,9 +3047,182 @@ import {
         });
     }
 
+    function parseMarkdownTableRow(line) {
+        line = String(line || '').trim();
+        if (line.charAt(0) !== '|') {
+            return [];
+        }
+
+        line = line.replace(/^\|/, '').replace(/\|$/, '');
+        if (line === '') {
+            return [''];
+        }
+
+        return line.split('|').map(function (cell) {
+            return cell.trim();
+        });
+    }
+
+    function isMarkdownTableSeparatorLine(line) {
+        var cells = parseMarkdownTableRow(line);
+        if (cells.length === 0) {
+            return false;
+        }
+
+        return cells.every(function (cell) {
+            return /^:?-+:?$/.test(cell);
+        });
+    }
+
+    function splitTwoColumnTableCell(text) {
+        text = String(text || '').trim();
+        if (text === '') {
+            return ['', ''];
+        }
+
+        var match = text.match(
+            /^(.+?)\s+((?:Spaces|Lines|Moves|Mirrors|Resizes|Toggles|Treats|Turn|Adjust|Shows|Snaps|Breaks|Paints|Scales|Groups|Ungroups|While|Each|LED|Fill|Match|Group|Ungroup|Snap|Show|Center|Flip|Distribute|Align).+)$/
+        );
+        if (match) {
+            return [match[1].trim(), match[2].trim()];
+        }
+
+        return [text, ''];
+    }
+
+    function formatMarkdownTableRow(cells) {
+        return '| ' + cells.join(' | ') + ' |';
+    }
+
+    function normalizeHelpTableBlock(block) {
+        if (block.length === 0) {
+            return block;
+        }
+
+        var headerCells = parseMarkdownTableRow(block[0]);
+        var columnCount = headerCells.length;
+        if (columnCount === 0) {
+            return block;
+        }
+
+        if (block.length >= 2 && !isMarkdownTableSeparatorLine(block[1])) {
+            block.splice(
+                1,
+                0,
+                formatMarkdownTableRow(
+                    headerCells.map(function () {
+                        return '---';
+                    })
+                )
+            );
+        }
+
+        var dataStart = isMarkdownTableSeparatorLine(block[1]) ? 2 : 1;
+        for (var i = dataStart; i < block.length; i += 1) {
+            if (isMarkdownTableSeparatorLine(block[i])) {
+                continue;
+            }
+
+            var cells = parseMarkdownTableRow(block[i]);
+            if (cells.length >= columnCount) {
+                continue;
+            }
+
+            if (columnCount === 2 && cells.length === 1) {
+                cells = splitTwoColumnTableCell(cells[0]);
+            }
+
+            while (cells.length < columnCount) {
+                cells.push('');
+            }
+            block[i] = formatMarkdownTableRow(cells.slice(0, columnCount));
+        }
+
+        return block;
+    }
+
+    function normalizeHelpTablesInMarkdown(body) {
+        var lines = String(body || '').split('\n');
+        var out = [];
+        var index = 0;
+
+        while (index < lines.length) {
+            var line = lines[index];
+            if (!/^\s*\|/.test(line)) {
+                out.push(line);
+                index += 1;
+                continue;
+            }
+
+            var block = [];
+            while (index < lines.length && /^\s*\|/.test(lines[index])) {
+                block.push(lines[index]);
+                index += 1;
+            }
+
+            out.push.apply(out, normalizeHelpTableBlock(block));
+        }
+
+        return out.join('\n');
+    }
+
+    function isMarkdownBlockStarterLine(line) {
+        var trimmed = String(line || '').trim();
+        return (
+            trimmed === '' ||
+            /^#{1,6}\s/.test(trimmed) ||
+            /^>\s?/.test(trimmed) ||
+            /^[-*+]\s/.test(trimmed) ||
+            /^\d+\.\s/.test(trimmed) ||
+            /^!\[/.test(trimmed) ||
+            /^(```|~~~)/.test(trimmed) ||
+            /^(?:-{3,}|\*{3,}|_{3,})\s*$/.test(trimmed) ||
+            /^\|/.test(trimmed)
+        );
+    }
+
+    function expandSingleNewlineParagraphBreaks(body) {
+        body = normalizeLineEndings(body);
+        var lines = body.split('\n');
+        var out = [];
+        var inFence = false;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var trimmed = line.trim();
+
+            if (/^```/.test(trimmed)) {
+                inFence = !inFence;
+                out.push(line);
+                continue;
+            }
+
+            if (inFence) {
+                out.push(line);
+                continue;
+            }
+
+            if (trimmed !== '' && !isMarkdownBlockStarterLine(trimmed) && out.length > 0) {
+                var prev = out[out.length - 1];
+                if (prev && prev.trim() !== '' && !isMarkdownBlockStarterLine(prev)) {
+                    if (/[.!?)]["']?\s*$/.test(prev.trim()) && /^[A-Z*]/.test(trimmed)) {
+                        out.push('');
+                    }
+                }
+            }
+
+            out.push(line);
+        }
+
+        return out.join('\n');
+    }
+
     function sanitizeMarkdownBodyForSave(body) {
         body = normalizeLineEndings(body);
         body = normalizeCodeFencesInMarkdown(body);
+        body = normalizeHelpTablesInMarkdown(body);
+        body = expandSingleNewlineParagraphBreaks(body);
+        body = repairNewTabLinksInMarkdown(body);
         body = relativizeImagePathsForSave(body);
         body = body.replace(/\\(\.)/g, '$1');
         return body;
@@ -3011,6 +3992,858 @@ import {
         });
     }
 
+    var linkPopupBodyEl = null;
+    var linkEditContext = null;
+
+    function escapeHtmlAttr(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;');
+    }
+
+    function escapeHtmlText(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function getLinkMarkTextNode(nodeInfo) {
+        if (!nodeInfo) {
+            return null;
+        }
+
+        if (nodeInfo.node && nodeInfo.node.isText) {
+            return nodeInfo.node;
+        }
+
+        if (nodeInfo.parent && nodeInfo.parent.isText) {
+            return nodeInfo.parent;
+        }
+
+        return null;
+    }
+
+    function buildLinkInnerHtmlFromTextNode(textNode, linkType) {
+        if (!textNode || !textNode.isText) {
+            return '';
+        }
+
+        var text = String(textNode.text || '');
+        if (text === '') {
+            return '';
+        }
+
+        var marks = textNode.marks.filter(function (mark) {
+            return mark.type !== linkType;
+        });
+        var inner = escapeHtmlText(text);
+        var hasCode = marks.some(function (mark) {
+            return mark.type.name === 'code';
+        });
+        var hasStrong = marks.some(function (mark) {
+            return mark.type.name === 'strong';
+        });
+        var hasEm = marks.some(function (mark) {
+            return mark.type.name === 'em';
+        });
+
+        if (hasCode) {
+            return '<code>' + inner + '</code>';
+        }
+
+        if (hasStrong) {
+            inner = '<strong>' + inner + '</strong>';
+        }
+
+        if (hasEm) {
+            inner = '<em>' + inner + '</em>';
+        }
+
+        return inner;
+    }
+
+    function repairNewTabLinksInMarkdown(body) {
+        body = String(body || '');
+
+        body = body.replace(
+            /<a\s+[^>]*?\shref=(["'])([^"']+)\1[^>]*\starget\s*=\s*["']?_blank[^>]*>\s*<\/a>`([^`]+)`<a\s+[^>]*?\shref=\1[^"']+\1[^>]*\starget\s*=\s*["']?_blank[^>]*>\s*<\/a>/gi,
+            function (_match, _quote, url, codeText) {
+                return (
+                    '<a href="' +
+                    url +
+                    '" target="_blank" rel="noopener noreferrer"><code>' +
+                    escapeHtmlText(codeText) +
+                    '</code></a>'
+                );
+            }
+        );
+
+        body = body.replace(
+            /<a\s+[^>]*?\shref=(["'])([^"']+)\1[^>]*\starget\s*=\s*["']?_blank[^>]*>\s*<\/a>([^<`]+?)<a\s+[^>]*?\shref=\1[^"']+\1[^>]*\starget\s*=\s*["']?_blank[^>]*>\s*<\/a>/gi,
+            function (_match, _quote, url, plainText) {
+                return (
+                    '<a href="' +
+                    url +
+                    '" target="_blank" rel="noopener noreferrer">' +
+                    escapeHtmlText(plainText) +
+                    '</a>'
+                );
+            }
+        );
+
+        body = body.replace(
+            /(<a\s+[^>]*?\starget\s*=\s*["']?_blank[^>]*><code>([^<]+)<\/code><\/a>)`([^`]+)`/gi,
+            function (match, anchor, innerText, backtickText) {
+                return innerText === backtickText ? anchor : match;
+            }
+        );
+
+        return body;
+    }
+
+    function getLinkMarkRange(doc, pos, markType) {
+        if (!markType) {
+            return null;
+        }
+
+        pos = Math.max(0, Math.min(pos, doc.content.size));
+        var $pos = doc.resolve(pos);
+        if (!$pos.parent || !$pos.parent.isTextblock) {
+            return null;
+        }
+
+        var parent = $pos.parent;
+        var parentStart = $pos.start();
+        var segment = parent.childAfter($pos.parentOffset);
+
+        if (!segment.node || !markType.isInSet(segment.node.marks)) {
+            segment = parent.childBefore($pos.parentOffset);
+        }
+
+        if (!segment.node || !markType.isInSet(segment.node.marks)) {
+            return null;
+        }
+
+        var startIndex = segment.index;
+        var endIndex = startIndex + 1;
+        var from = parentStart + segment.offset;
+        var to = from + segment.node.nodeSize;
+
+        while (startIndex > 0 && markType.isInSet(parent.child(startIndex - 1).marks)) {
+            startIndex -= 1;
+            from -= parent.child(startIndex).nodeSize;
+        }
+
+        while (endIndex < parent.childCount && markType.isInSet(parent.child(endIndex).marks)) {
+            to += parent.child(endIndex).nodeSize;
+            endIndex += 1;
+        }
+
+        return { from: from, to: to };
+    }
+
+    function findLinkMarkInRange(doc, from, to, markType) {
+        var found = null;
+
+        doc.nodesBetween(from, to, function (node) {
+            if (found || !node.isText) {
+                return;
+            }
+
+            found = markType.isInSet(node.marks);
+        });
+
+        return found;
+    }
+
+    function getLinkEditContext(view) {
+        if (!view) {
+            return {
+                from: 0,
+                to: 0,
+                linkUrl: '',
+                linkText: '',
+                openInNewTab: false,
+            };
+        }
+
+        var state = view.state;
+        var linkType = state.schema.marks.link;
+        if (!linkType) {
+            return {
+                from: state.selection.from,
+                to: state.selection.to,
+                linkUrl: '',
+                linkText: state.doc.textBetween(state.selection.from, state.selection.to, ' '),
+                openInNewTab: false,
+            };
+        }
+
+        var from = state.selection.from;
+        var to = state.selection.to;
+        var range = getLinkMarkRange(state.doc, from, linkType);
+
+        if (!range && to > from) {
+            range = getLinkMarkRange(state.doc, to - 1, linkType);
+        }
+
+        if (range) {
+            from = range.from;
+            to = range.to;
+        }
+
+        var linkMark = findLinkMarkInRange(state.doc, from, to, linkType);
+
+        if (!linkMark) {
+            return {
+                from: state.selection.from,
+                to: state.selection.to,
+                linkUrl: '',
+                linkText: state.doc.textBetween(state.selection.from, state.selection.to, ' '),
+                openInNewTab: false,
+            };
+        }
+
+        var htmlAttrs = linkMark.attrs.htmlAttrs || null;
+        return {
+            from: from,
+            to: to,
+            linkUrl: String(linkMark.attrs.linkUrl || ''),
+            linkText: state.doc.textBetween(from, to, ''),
+            openInNewTab: !!(htmlAttrs && htmlAttrs.target === '_blank'),
+        };
+    }
+
+    function resetLinkPopupForm() {
+        if (!linkPopupBodyEl) {
+            return;
+        }
+
+        linkEditContext = getLinkEditContext(getWwEditorView());
+
+        var urlInput = linkPopupBodyEl.querySelector('#rgbj-help-link-url');
+        var textInput = linkPopupBodyEl.querySelector('#rgbj-help-link-text');
+        var newTabInput = linkPopupBodyEl.querySelector('#rgbj-help-link-new-tab');
+
+        if (urlInput) {
+            urlInput.value = linkEditContext.linkUrl || '';
+            urlInput.classList.remove('wrong');
+        }
+        if (textInput) {
+            textInput.value = linkEditContext.linkText || '';
+        }
+        if (newTabInput) {
+            newTabInput.checked = !!linkEditContext.openInNewTab;
+        }
+    }
+
+    function submitLinkPopup() {
+        if (!editor || !linkPopupBodyEl) {
+            return;
+        }
+
+        var urlInput = linkPopupBodyEl.querySelector('#rgbj-help-link-url');
+        var textInput = linkPopupBodyEl.querySelector('#rgbj-help-link-text');
+        var newTabInput = linkPopupBodyEl.querySelector('#rgbj-help-link-new-tab');
+        var linkUrl = urlInput ? urlInput.value.trim() : '';
+        var linkText = textInput ? textInput.value.trim() : '';
+        var openInNewTab = !!(newTabInput && newTabInput.checked);
+
+        if (urlInput) {
+            urlInput.classList.remove('wrong');
+        }
+
+        if (linkUrl === '') {
+            if (urlInput) {
+                urlInput.classList.add('wrong');
+            }
+            return;
+        }
+
+        if (linkText === '') {
+            linkText = linkUrl;
+        }
+
+        var context = linkEditContext || getLinkEditContext(getWwEditorView());
+        editor.exec('rgbjAddLink', {
+            linkUrl: linkUrl,
+            linkText: linkText,
+            openInNewTab: openInNewTab,
+            from: context.from,
+            to: context.to,
+        });
+        markDirty();
+        closeEditorPopup();
+    }
+
+    function buildLinkPopupBody() {
+        var container = document.createElement('div');
+        container.className = 'rgbj-help-link-popup';
+        container.setAttribute('aria-label', 'Insert or edit link');
+        container.innerHTML =
+            '<label for="rgbj-help-link-url">Link URL</label>' +
+            '<input id="rgbj-help-link-url" type="text" autocomplete="off" placeholder="https://example.com">' +
+            '<label for="rgbj-help-link-text">Link text</label>' +
+            '<input id="rgbj-help-link-text" type="text" autocomplete="off" placeholder="Text shown in the article">' +
+            '<label class="rgbj-help-link-popup__new-tab">' +
+            '<input id="rgbj-help-link-new-tab" type="checkbox"> Open in new tab' +
+            '</label>';
+
+        var buttonRow = document.createElement('div');
+        buttonRow.className = 'toastui-editor-button-container';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'toastui-editor-close-button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            closeEditorPopup();
+        });
+
+        var okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'toastui-editor-ok-button';
+        okBtn.textContent = 'OK';
+        okBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            submitLinkPopup();
+        });
+
+        buttonRow.appendChild(cancelBtn);
+        buttonRow.appendChild(okBtn);
+        container.appendChild(buttonRow);
+
+        linkPopupBodyEl = container;
+        return container;
+    }
+
+    function buildLinkToolbarItem() {
+        return {
+            name: 'link',
+            tooltip: 'Insert link',
+            className: 'link toastui-editor-toolbar-icons',
+            popup: {
+                className: 'toastui-editor-popup-add-link',
+                body: buildLinkPopupBody(),
+                style: { width: '420px' },
+            },
+        };
+    }
+
+    function initLinkPopupForm() {
+        var toolbar = getEditorToolbar();
+        var linkBtn = toolbar ? toolbar.querySelector('button.link') : null;
+        if (!linkBtn || linkBtn.dataset.rgbjLinkPopupInit) {
+            return;
+        }
+
+        linkBtn.dataset.rgbjLinkPopupInit = '1';
+        linkBtn.addEventListener('click', function () {
+            window.setTimeout(resetLinkPopupForm, 0);
+        });
+    }
+
+    var helpPanelPopupBodyEl = null;
+
+    function selectHelpPanelType(panelType) {
+        if (!helpPanelPopupBodyEl) {
+            return;
+        }
+
+        helpPanelPopupBodyEl.querySelectorAll('.rgbj-help-panel-picker__btn').forEach(function (btn) {
+            var isMatch = btn.getAttribute('data-type') === panelType;
+            btn.classList.toggle('is-selected', isMatch);
+            btn.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+        });
+    }
+
+    function resetHelpPanelPopupForm() {
+        if (!helpPanelPopupBodyEl || !editor) {
+            return;
+        }
+
+        var bodyEl = helpPanelPopupBodyEl.querySelector('#rgbj-help-panel-body');
+        var selected = (editor.getSelectedText() || '').trim();
+        if (bodyEl) {
+            bodyEl.value = selected;
+            bodyEl.classList.remove('wrong');
+        }
+
+        selectHelpPanelType('information');
+    }
+
+    function submitHelpPanelPopup() {
+        if (helpPanelSubmitting) {
+            return;
+        }
+
+        var popupRoot = helpPanelPopupBodyEl;
+        if (!popupRoot && editorBodyEl) {
+            popupRoot = editorBodyEl.querySelector('.rgbj-help-panel-popup');
+        }
+        if (!editor || !popupRoot) {
+            setStatus('Alert panel dialog is not ready. Reload the editor page.', true);
+            return;
+        }
+
+        var bodyEl = popupRoot.querySelector('#rgbj-help-panel-body');
+        var selectedBtn = popupRoot.querySelector('.rgbj-help-panel-picker__btn.is-selected');
+        var panelType = selectedBtn ? selectedBtn.getAttribute('data-type') : 'information';
+        var body = bodyEl ? bodyEl.value.trim() : '';
+
+        if (bodyEl) {
+            bodyEl.classList.remove('wrong');
+        }
+
+        if (body === '') {
+            if (bodyEl) {
+                bodyEl.classList.add('wrong');
+                bodyEl.focus();
+            }
+            return;
+        }
+
+        helpPanelSubmitting = true;
+
+        insertHelpPanel(panelType, body, function (inserted) {
+            helpPanelSubmitting = false;
+
+            if (!inserted) {
+                setStatus('Could not insert the panel. Click in the article and try again.', true);
+                return;
+            }
+
+            helpPanelInsertContext = null;
+            markDirty();
+            closeEditorPopup();
+            setStatus('Alert panel inserted.');
+        });
+    }
+
+    function buildHelpPanelPopupBody() {
+        var container = document.createElement('div');
+        container.className = 'rgbj-help-panel-popup';
+        container.setAttribute('aria-label', 'Insert alert panel');
+
+        var typeLabel = document.createElement('p');
+        typeLabel.className = 'rgbj-help-panel-popup__label';
+        typeLabel.textContent = 'Panel type';
+        container.appendChild(typeLabel);
+
+        var typeRow = document.createElement('div');
+        typeRow.className = 'rgbj-help-panel-popup__types';
+        typeRow.setAttribute('role', 'group');
+        typeRow.setAttribute('aria-label', 'Panel type');
+
+        [
+            { type: 'information', label: 'Information', icon: 'bi-info-circle' },
+            { type: 'caution', label: 'Caution', icon: 'bi-exclamation-triangle' },
+            { type: 'warning', label: 'Warning', icon: 'bi-exclamation-triangle-fill' },
+            { type: 'danger', label: 'Danger', icon: 'bi-exclamation-octagon' },
+        ].forEach(function (item) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className =
+                'rgbj-help-panel-picker__btn rgbj-help-panel-picker__btn--' + item.type;
+            btn.setAttribute('data-type', item.type);
+            btn.setAttribute('aria-pressed', item.type === 'information' ? 'true' : 'false');
+            btn.innerHTML =
+                '<i class="bi ' +
+                item.icon +
+                '" aria-hidden="true"></i><span>' +
+                item.label +
+                '</span>';
+            if (item.type === 'information') {
+                btn.classList.add('is-selected');
+            }
+            btn.addEventListener('click', function (event) {
+                event.preventDefault();
+                selectHelpPanelType(item.type);
+            });
+            typeRow.appendChild(btn);
+        });
+
+        container.appendChild(typeRow);
+
+        var bodyLabel = document.createElement('label');
+        bodyLabel.setAttribute('for', 'rgbj-help-panel-body');
+        bodyLabel.textContent = 'Message';
+        container.appendChild(bodyLabel);
+
+        var bodyInput = document.createElement('textarea');
+        bodyInput.id = 'rgbj-help-panel-body';
+        bodyInput.className = 'rgbj-help-panel-popup__body-input';
+        bodyInput.rows = 4;
+        bodyInput.placeholder = 'What should readers know? Each line becomes a paragraph in the panel.';
+        bodyInput.addEventListener('keydown', function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                submitHelpPanelPopup();
+            }
+        });
+        container.appendChild(bodyInput);
+
+        var buttonRow = document.createElement('div');
+        buttonRow.className = 'toastui-editor-button-container';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'toastui-editor-close-button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            closeEditorPopup();
+        });
+
+        var okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'toastui-editor-ok-button';
+        okBtn.textContent = 'Insert';
+        okBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            submitHelpPanelPopup();
+        });
+
+        buttonRow.appendChild(cancelBtn);
+        buttonRow.appendChild(okBtn);
+        container.appendChild(buttonRow);
+
+        helpPanelPopupBodyEl = container;
+        return container;
+    }
+
+    function buildHelpPanelToolbarItem() {
+        return {
+            name: 'helpPanel',
+            tooltip: 'Insert alert panel',
+            className: 'rgbj-help-panel-tool toastui-editor-toolbar-icons',
+            style: {
+                backgroundImage: 'none',
+                fontSize: '15px',
+                fontWeight: '700',
+            },
+            text: '!',
+            popup: {
+                className: 'toastui-editor-popup-add-panel',
+                body: buildHelpPanelPopupBody(),
+                style: { width: '460px' },
+            },
+        };
+    }
+
+    function initHelpPanelPopupForm() {
+        if (editorBodyEl && !editorBodyEl.dataset.rgbjHelpPanelSubmitInit) {
+            editorBodyEl.dataset.rgbjHelpPanelSubmitInit = '1';
+            editorBodyEl.addEventListener(
+                'click',
+                function (event) {
+                    var okBtn = event.target.closest('.rgbj-help-panel-popup .toastui-editor-ok-button');
+                    if (!okBtn) {
+                        return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    submitHelpPanelPopup();
+                },
+                true
+            );
+        }
+
+        var toolbar = getEditorToolbar();
+        var panelBtn = toolbar ? toolbar.querySelector('button.rgbj-help-panel-tool') : null;
+        if (!panelBtn || panelBtn.dataset.rgbjHelpPanelPopupInit) {
+            return;
+        }
+
+        panelBtn.dataset.rgbjHelpPanelPopupInit = '1';
+        panelBtn.addEventListener(
+            'mousedown',
+            function () {
+                captureHelpPanelInsertContext();
+            },
+            true
+        );
+        panelBtn.addEventListener('click', function () {
+            window.setTimeout(resetHelpPanelPopupForm, 0);
+        });
+    }
+
+    function collectNonLinkMarksInRange(doc, from, to, linkType) {
+        var marks = [];
+        var seen = {};
+
+        doc.nodesBetween(from, to, function (node) {
+            if (!node.isText) {
+                return;
+            }
+
+            node.marks.forEach(function (mark) {
+                if (mark.type === linkType) {
+                    return;
+                }
+
+                var key = mark.type.name + ':' + JSON.stringify(mark.attrs || {});
+                if (seen[key]) {
+                    return;
+                }
+
+                seen[key] = true;
+                marks.push(mark);
+            });
+        });
+
+        return marks;
+    }
+
+    function rgbjHelpTablePlugin() {
+        return {
+            toHTMLRenderers: {
+                table: function (_node, context) {
+                    var result = context.origin ? context.origin() : null;
+                    if (!result || !context.entering) {
+                        return result;
+                    }
+
+                    result.attributes = Object.assign({}, result.attributes || {}, {
+                        class: 'rgbj-help-table',
+                    });
+
+                    return result;
+                },
+            },
+        };
+    }
+
+    function rgbjHelpLinkPlugin() {
+        return {
+            wysiwygCommands: {
+                rgbjAddLink: function (payload, state, dispatch) {
+                    payload = payload || {};
+                    var linkUrl = String(payload.linkUrl || '').trim();
+                    var linkText = String(payload.linkText || '').trim();
+                    var openInNewTab = !!payload.openInNewTab;
+                    var from = typeof payload.from === 'number' ? payload.from : state.selection.from;
+                    var to = typeof payload.to === 'number' ? payload.to : state.selection.to;
+
+                    if (linkUrl === '') {
+                        return false;
+                    }
+
+                    if (linkText === '') {
+                        linkText = linkUrl;
+                    }
+
+                    var linkType = state.schema.marks.link;
+                    if (!linkType) {
+                        return false;
+                    }
+
+                    from = Math.max(0, Math.min(from, state.doc.content.size));
+                    to = Math.max(from, Math.min(to, state.doc.content.size));
+
+                    var expanded = getLinkMarkRange(state.doc, from, linkType);
+                    if (expanded) {
+                        from = expanded.from;
+                        to = expanded.to;
+                    }
+
+                    var attrs = {
+                        linkUrl: linkUrl,
+                        htmlAttrs: openInNewTab
+                            ? { target: '_blank', rel: 'noopener noreferrer' }
+                            : null,
+                    };
+                    var linkMark = linkType.create(attrs);
+                    var tr = state.tr;
+                    var currentText = from < to ? state.doc.textBetween(from, to, '') : '';
+
+                    if (from < to && linkText === currentText) {
+                        tr.removeMark(from, to, linkType);
+                        tr.addMark(from, to, linkMark);
+                        dispatch(tr.scrollIntoView());
+                        return true;
+                    }
+
+                    var marks = [linkMark];
+                    if (from < to) {
+                        marks = collectNonLinkMarksInRange(state.doc, from, to, linkType).concat(marks);
+                    }
+
+                    tr.replaceRangeWith(from, to, state.schema.text(linkText, marks));
+                    dispatch(tr.scrollIntoView());
+                    return true;
+                },
+            },
+            toMarkdownRenderers: {
+                link: function (nodeInfo, context) {
+                    var result = context.origin ? context.origin() : {};
+                    var node = nodeInfo.node;
+                    var htmlAttrs = node.attrs.htmlAttrs;
+
+                    if (!htmlAttrs || htmlAttrs.target !== '_blank') {
+                        return result;
+                    }
+
+                    var linkType = node.type;
+                    var textNode = getLinkMarkTextNode(nodeInfo);
+                    var innerHtml = buildLinkInnerHtmlFromTextNode(textNode, linkType);
+
+                    if (innerHtml === '') {
+                        return result;
+                    }
+
+                    var url = String(node.attrs.linkUrl || '');
+
+                    return {
+                        rawHTML:
+                            '<a href="' +
+                            escapeHtmlAttr(url) +
+                            '" target="_blank" rel="noopener noreferrer">' +
+                            innerHtml +
+                            '</a>',
+                    };
+                },
+            },
+        };
+    }
+
+    function rgbjHelpPanelPlugin(context) {
+        var wysiwygCommands = {
+            rgbjInsertHelpPanel: function (payload, state, dispatch) {
+                payload = payload || {};
+                var view = {
+                    state: state,
+                    dispatch: dispatch,
+                    focus: function () {},
+                };
+                var range = null;
+
+                if (typeof payload.from === 'number') {
+                    range = {
+                        from: payload.from,
+                        to: typeof payload.to === 'number' ? payload.to : payload.from,
+                    };
+                }
+
+                if (!insertHelpPanelIntoView(view, payload.panelType, payload.body, range)) {
+                    return false;
+                }
+
+                return true;
+            },
+        };
+
+        if (!context || !context.pmState || !context.pmView) {
+            return { wysiwygCommands: wysiwygCommands };
+        }
+
+        var Plugin = context.pmState.Plugin;
+        var PluginKey = context.pmState.PluginKey;
+        var Decoration = context.pmView.Decoration;
+        var DecorationSet = context.pmView.DecorationSet;
+        var helpPanelPluginKey = new PluginKey('rgbjHelpPanel');
+
+        return {
+            wysiwygPlugins: [
+                function () {
+                    return new Plugin({
+                        key: helpPanelPluginKey,
+                        appendTransaction: function (_transactions, _oldState, newState) {
+                            var tr = null;
+
+                            newState.doc.descendants(function (node, pos) {
+                                var panelType = detectHelpPanelTypeFromBlockQuote(node);
+                                if (!panelType) {
+                                    return;
+                                }
+
+                                var prevAttrs = node.attrs.htmlAttrs || {};
+                                var nextClass = 'rgbj-help-panel rgbj-help-panel--' + panelType;
+                                var nextHtmlAttrs = Object.assign({}, prevAttrs, {
+                                    class: nextClass,
+                                    'data-rgbj-panel': panelType,
+                                });
+
+                                if (blockQuoteHasMarkerOnlyLine(node)) {
+                                    nextHtmlAttrs['data-rgbj-has-marker-line'] = '1';
+                                } else {
+                                    delete nextHtmlAttrs['data-rgbj-has-marker-line'];
+                                }
+
+                                if (
+                                    prevAttrs.class === nextHtmlAttrs.class &&
+                                    prevAttrs['data-rgbj-panel'] === nextHtmlAttrs['data-rgbj-panel'] &&
+                                    prevAttrs['data-rgbj-has-marker-line'] === nextHtmlAttrs['data-rgbj-has-marker-line']
+                                ) {
+                                    return;
+                                }
+
+                                tr = tr || newState.tr;
+                                tr.setNodeMarkup(
+                                    pos,
+                                    undefined,
+                                    Object.assign({}, node.attrs, { htmlAttrs: nextHtmlAttrs })
+                                );
+                            });
+
+                            return tr;
+                        },
+                        props: {
+                            decorations: function (state) {
+                                var decos = [];
+
+                                state.doc.descendants(function (node, pos) {
+                                    var panelType = detectHelpPanelTypeFromBlockQuote(node);
+                                    if (!panelType) {
+                                        return;
+                                    }
+
+                                    var nodeAttrs = {
+                                        class: 'rgbj-help-panel rgbj-help-panel--' + panelType,
+                                        'data-rgbj-panel': panelType,
+                                    };
+
+                                    if (blockQuoteHasMarkerOnlyLine(node)) {
+                                        nodeAttrs['data-rgbj-has-marker-line'] = '1';
+
+                                        var markerNode = node.child(0);
+                                        var markerPos = pos + 1;
+                                        decos.push(
+                                            Decoration.node(markerPos, markerPos + markerNode.nodeSize, {
+                                                class: 'rgbj-help-panel__marker-line',
+                                            })
+                                        );
+                                    }
+
+                                    decos.push(
+                                        Decoration.node(pos, pos + node.nodeSize, nodeAttrs)
+                                    );
+
+                                    decos.push(
+                                        Decoration.widget(
+                                            pos + 1,
+                                            function () {
+                                                return buildHelpPanelHeaderWidget(panelType);
+                                            },
+                                            { side: -1, key: 'rgbj-help-panel-header-' + pos }
+                                        )
+                                    );
+                                });
+
+                                return DecorationSet.create(state.doc, decos);
+                            },
+                        },
+                    });
+                },
+            ],
+            wysiwygCommands: wysiwygCommands,
+        };
+    }
+
     async function geminiApiFetch(body) {
         var token = await getIdToken();
         var response = await fetch(geminiUrl, {
@@ -3393,6 +5226,8 @@ import {
                 el.style.setProperty('font-family', siteFont, 'important');
             }
         });
+
+        scheduleHelpPanelDecoration();
     }
 
     function initMetaForm() {
@@ -3947,6 +5782,8 @@ import {
         hr: 'Horizontal line',
         hrline: 'Horizontal line',
         quote: 'Blockquote',
+        helpPanel: 'Insert alert panel',
+        'rgbj-help-panel-tool': 'Insert alert panel',
         ul: 'Bullet list',
         'bullet-list': 'Bullet list',
         ol: 'Numbered list',
@@ -3993,14 +5830,17 @@ import {
         if (popup.classList.contains('toastui-editor-popup-add-heading')) {
             return toolbar.querySelector('button.heading');
         }
+        if (popup.classList.contains('toastui-editor-popup-add-link') || popup.querySelector('.rgbj-help-link-popup')) {
+            return toolbar.querySelector('button.link');
+        }
         if (popup.classList.contains('toastui-editor-popup-add-image') || popup.querySelector('.rgbj-help-image-popup')) {
             return toolbar.querySelector('button.image');
         }
-        if (popup.classList.contains('toastui-editor-popup-add-link')) {
-            return toolbar.querySelector('button.link');
-        }
         if (popup.classList.contains('toastui-editor-popup-add-table')) {
             return toolbar.querySelector('button.table');
+        }
+        if (popup.classList.contains('toastui-editor-popup-add-panel') || popup.querySelector('.rgbj-help-panel-popup')) {
+            return toolbar.querySelector('button.rgbj-help-panel-tool');
         }
         if (popup.classList.contains('rgbj-help-gemini-toolbar-popup') || popup.querySelector('.rgbj-help-gemini-popup')) {
             return toolbar.querySelector('button.gemini');
@@ -4014,8 +5854,11 @@ import {
             popup.classList.contains('toastui-editor-popup-add-link') ||
             popup.classList.contains('toastui-editor-popup-add-image') ||
             popup.classList.contains('toastui-editor-popup-add-table') ||
+            popup.classList.contains('toastui-editor-popup-add-panel') ||
             popup.classList.contains('rgbj-help-gemini-toolbar-popup') ||
+            !!popup.querySelector('.rgbj-help-link-popup') ||
             !!popup.querySelector('.rgbj-help-image-popup') ||
+            !!popup.querySelector('.rgbj-help-panel-popup') ||
             !!popup.querySelector('.rgbj-help-gemini-popup')
         );
     }
@@ -4324,7 +6167,9 @@ import {
         }
 
         var geminiToolbarItem = buildGeminiToolbarItem();
+        var linkToolbarItem = buildLinkToolbarItem();
         var imageToolbarItem = buildImageToolbarItem();
+        var helpPanelToolbarItem = buildHelpPanelToolbarItem();
         var codeSyntaxHighlight = getCodeSyntaxHighlightPlugin();
         var editorOptions = {
             el: editorBodyEl,
@@ -4337,10 +6182,10 @@ import {
             autofocus: true,
             toolbarItems: [
                 toolbarGroup('heading', 'bold', 'italic', 'strike'),
-                toolbarGroup('hr', 'quote'),
+                toolbarGroup('hr', 'quote', helpPanelToolbarItem),
                 toolbarGroup('ul', 'ol', 'task'),
                 toolbarGroup('table').concat(buildTableToolbarItems()),
-                toolbarGroup('link', imageToolbarItem, geminiToolbarItem),
+                toolbarGroup(linkToolbarItem, imageToolbarItem, geminiToolbarItem),
                 toolbarGroup('code', 'codeblock'),
             ],
             hooks: {
@@ -4354,6 +6199,7 @@ import {
                     markDirty();
                     syncEditorHeight();
                     syncTableToolbarState();
+                    scheduleHelpPanelDecoration();
                 },
             },
         };
@@ -4362,6 +6208,9 @@ import {
             rgbjHelpListContinuationPlugin,
             rgbjHelpHardBreakShortcutPlugin,
             rgbjHelpListImageLayoutPlugin,
+            rgbjHelpTablePlugin,
+            rgbjHelpLinkPlugin,
+            rgbjHelpPanelPlugin,
             rgbjHelpInlineImagePlugin,
             rgbjHelpBlockCursorAffordancePlugin,
             rgbjHelpCodeBlockChromePlugin,
@@ -4389,6 +6238,9 @@ import {
         initTableToolbarStateSync();
         initHorizontalRuleSelection();
         initListBackspaceHandler();
+        initLinkPopupForm();
+        initHelpPanelPopupForm();
+        initHelpPanelSelectionTracking();
         initImagePopupLibrary();
         initGemini();
 

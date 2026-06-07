@@ -1059,9 +1059,91 @@ function rgbj_help_replace_markdown_links(string $text): string
     return $result . $remaining;
 }
 
+function rgbj_help_repair_split_html_links(string $text): string
+{
+    $updated = preg_replace_callback(
+        '/<a\s+[^>]*?href=(["\'])([^"\']+)\1[^>]*\starget\s*=\s*["\']?_blank[^>]*>\s*<\/a>`([^`]+)`<a\s+[^>]*?href=\1[^"\']+\1[^>]*\starget\s*=\s*["\']?_blank[^>]*>\s*<\/a>/iu',
+        static function (array $matches): string {
+            $href = htmlspecialchars($matches[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $code = htmlspecialchars($matches[3], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+            return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer"><code>' . $code . '</code></a>';
+        },
+        $text
+    );
+
+    if (!is_string($updated)) {
+        return $text;
+    }
+
+    $updated = preg_replace_callback(
+        '/<a\s+[^>]*?href=(["\'])([^"\']+)\1[^>]*\starget\s*=\s*["\']?_blank[^>]*>\s*<\/a>([^<`]+?)<a\s+[^>]*?href=\1[^"\']+\1[^>]*\starget\s*=\s*["\']?_blank[^>]*>\s*<\/a>/iu',
+        static function (array $matches): string {
+            $href = htmlspecialchars($matches[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $label = htmlspecialchars($matches[3], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+            return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer">' . $label . '</a>';
+        },
+        $updated
+    );
+
+    return is_string($updated) ? $updated : $text;
+}
+
+/**
+ * @return array{0: string, 1: array<string, string>}
+ */
+function rgbj_help_preserve_html_links(string $text): array
+{
+    $placeholders = [];
+    $index = 0;
+
+    $updated = preg_replace_callback(
+        '/<a\s+[^>]*?href=(["\'])([^"\']*)\1[^>]*>.*?<\/a>/is',
+        static function (array $matches) use (&$placeholders, &$index): string {
+            $token = '%%RGBJ_HTML_LINK_' . $index . '%%';
+            $placeholders[$token] = rgbj_help_normalize_html_link($matches[0]);
+            $index++;
+
+            return $token;
+        },
+        $text
+    );
+
+    return [$updated ?? $text, $placeholders];
+}
+
+function rgbj_help_normalize_html_link(string $html): string
+{
+    if (!preg_match('/href=(["\'])([^"\']+)\1/is', $html, $hrefMatch)) {
+        return $html;
+    }
+
+    $href = $hrefMatch[2];
+    if (!rgbj_help_is_external_href($href)) {
+        $href = rgbj_help_article_url($href);
+    }
+
+    $targetBlank = (bool) preg_match('/\btarget\s*=\s*["\']?_blank/i', $html);
+    $label = '';
+    if (preg_match('/>(.*?)<\/a>/is', $html, $labelMatch)) {
+        $label = $labelMatch[1];
+    }
+
+    $out = '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"';
+    if ($targetBlank) {
+        $out .= ' target="_blank" rel="noopener noreferrer"';
+    }
+    $out .= '>' . $label . '</a>';
+
+    return $out;
+}
+
 function rgbj_help_inline_markdown(string $text): string
 {
     $breakToken = '%%RGBJ_LINE_BREAK%%';
+    $text = rgbj_help_repair_split_html_links($text);
+    [$text, $htmlLinkPlaceholders] = rgbj_help_preserve_html_links($text);
     $text = preg_replace('/<br\s*\/?>/i', $breakToken, $text) ?? $text;
 
     $escaped = htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -1078,7 +1160,13 @@ function rgbj_help_inline_markdown(string $text): string
     $escaped = rgbj_help_replace_markdown_images($escaped);
     $escaped = rgbj_help_replace_markdown_links($escaped);
 
-    return str_replace($breakToken, '<br>', $escaped);
+    $escaped = str_replace($breakToken, '<br>', $escaped);
+
+    foreach ($htmlLinkPlaceholders as $token => $html) {
+        $escaped = str_replace($token, $html, $escaped);
+    }
+
+    return $escaped;
 }
 
 function rgbj_help_heading_tag(int $level): string
@@ -1119,6 +1207,40 @@ function rgbj_help_parse_table_row(string $line): array
     return array_map('trim', explode('|', $line));
 }
 
+/** @param list<string> $cells */
+function rgbj_help_normalize_table_row(array $cells, int $columnCount): array
+{
+    if ($columnCount <= 0) {
+        return $cells;
+    }
+
+    if (count($cells) >= $columnCount) {
+        return array_slice(array_pad($cells, $columnCount, ''), 0, $columnCount);
+    }
+
+    if ($columnCount === 2 && count($cells) === 1) {
+        $text = trim($cells[0]);
+        if (
+            $text !== ''
+            && preg_match(
+                '/^(.+?)\h+((?:Spaces|Lines|Moves|Mirrors|Resizes|Toggles|Treats|Turn|Adjust|Shows|Snaps|Breaks|Paints|Scales|Groups|Ungroups|While|Each|LED|Fill|Match|Group|Ungroup|Snap|Show|Center|Flip|Distribute|Align).+)$/u',
+                $text,
+                $matches
+            ) === 1
+        ) {
+            return [trim($matches[1]), trim($matches[2])];
+        }
+    }
+
+    return array_slice(array_pad($cells, $columnCount, ''), 0, $columnCount);
+}
+
+/** @param list<string> $cells */
+function rgbj_help_format_table_row(array $cells): string
+{
+    return '| ' . implode(' | ', $cells) . ' |';
+}
+
 function rgbj_help_is_table_separator(string $line): bool
 {
     $cells = rgbj_help_parse_table_row($line);
@@ -1142,7 +1264,11 @@ function rgbj_help_render_table(array $header, array $rows): string
         return '';
     }
 
-    $html = '<div class="table-responsive rgbj-help-table-wrap"><table class="table table-sm table-bordered rgbj-help-table">';
+    $columnCount = count($header);
+    $html = '<div class="rgbj-help-table-wrap"><table class="rgbj-help-table">';
+    if ($columnCount === 2) {
+        $html .= '<colgroup><col class="rgbj-help-table__col-tool"><col class="rgbj-help-table__col-desc"></colgroup>';
+    }
     $html .= '<thead><tr>';
     foreach ($header as $cell) {
         $html .= '<th scope="col">' . rgbj_help_inline_markdown($cell) . '</th>';
@@ -1150,8 +1276,9 @@ function rgbj_help_render_table(array $header, array $rows): string
     $html .= '</tr></thead><tbody>';
 
     foreach ($rows as $row) {
+        $row = rgbj_help_normalize_table_row($row, $columnCount);
         $html .= '<tr>';
-        for ($i = 0, $cols = count($header); $i < $cols; $i++) {
+        for ($i = 0; $i < $columnCount; $i++) {
             $cell = $row[$i] ?? '';
             $html .= '<td>' . rgbj_help_inline_markdown($cell) . '</td>';
         }
@@ -1161,6 +1288,146 @@ function rgbj_help_render_table(array $header, array $rows): string
     $html .= '</tbody></table></div>';
 
     return $html;
+}
+
+function rgbj_help_normalize_panel_type(string $raw): ?string
+{
+    $key = strtolower(trim($raw));
+    $aliases = [
+        'info' => 'information',
+        'information' => 'information',
+        'note' => 'information',
+        'caution' => 'caution',
+        'warning' => 'warning',
+        'danger' => 'danger',
+        'important' => 'danger',
+    ];
+
+    return $aliases[$key] ?? null;
+}
+
+function rgbj_help_panel_label(string $type): string
+{
+    return match ($type) {
+        'information' => 'Information',
+        'caution' => 'Caution',
+        'warning' => 'Warning',
+        'danger' => 'Danger',
+        default => ucfirst($type),
+    };
+}
+
+function rgbj_help_panel_icon(string $type): string
+{
+    return match ($type) {
+        'information' => 'bi-info-circle',
+        'caution' => 'bi-exclamation-triangle',
+        'warning' => 'bi-exclamation-triangle-fill',
+        'danger' => 'bi-exclamation-octagon',
+        default => 'bi-info-circle',
+    };
+}
+
+function rgbj_help_render_panel_body(string $bodyMarkdown): string
+{
+    $bodyMarkdown = trim($bodyMarkdown);
+    if ($bodyMarkdown === '') {
+        return '';
+    }
+
+    $rendered = rgbj_help_markdown_to_html($bodyMarkdown);
+
+    return $rendered['html'];
+}
+
+function rgbj_help_render_panel(string $type, string $bodyMarkdown): string
+{
+    $typeEsc = htmlspecialchars($type, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $labelEsc = htmlspecialchars(rgbj_help_panel_label($type), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $icon = rgbj_help_panel_icon($type);
+
+    return '<aside class="rgbj-help-panel rgbj-help-panel--' . $typeEsc . '" role="note">'
+        . '<div class="rgbj-help-panel__header">'
+        . '<i class="bi ' . $icon . ' rgbj-help-panel__icon" aria-hidden="true"></i>'
+        . '<span class="rgbj-help-panel__title">' . $labelEsc . '</span>'
+        . '</div>'
+        . '<div class="rgbj-help-panel__body">' . rgbj_help_render_panel_body($bodyMarkdown) . '</div>'
+        . '</aside>';
+}
+
+/**
+ * @param list<string> $lines
+ * @return array{html: string, nextIndex: int}|null
+ */
+function rgbj_help_try_parse_blockquote_block(array $lines, int $startIndex): ?array
+{
+    $lineCount = count($lines);
+    if ($startIndex >= $lineCount || !preg_match('/^>\s?(.*)$/', $lines[$startIndex])) {
+        return null;
+    }
+
+    $quoteLines = [];
+    for ($i = $startIndex; $i < $lineCount; $i++) {
+        if (!preg_match('/^>\s?(.*)$/', $lines[$i], $m)) {
+            break;
+        }
+        $quoteLines[] = $m[1];
+    }
+
+    if ($quoteLines === []) {
+        return null;
+    }
+
+    $firstLine = trim($quoteLines[0]);
+    $bodyLines = array_slice($quoteLines, 1);
+
+        if (preg_match('/^\[!([a-z]+)\]\s*(.*)$/i', $firstLine, $panelMatch)) {
+        $type = rgbj_help_normalize_panel_type($panelMatch[1]);
+        if ($type !== null) {
+            $leadingBody = trim($panelMatch[2] ?? '');
+            if ($leadingBody !== '') {
+                array_unshift($bodyLines, $leadingBody);
+            }
+
+            $label = rgbj_help_panel_label($type);
+            $bodyLines = array_values(array_filter($bodyLines, static function (string $line) use ($type, $label): bool {
+                $trimmed = trim($line);
+                if ($trimmed === '') {
+                    return false;
+                }
+                if (preg_match('/^\[!([a-z]+)\]\s*$/i', $trimmed)) {
+                    return false;
+                }
+                if (strcasecmp($trimmed, $label) === 0) {
+                    return false;
+                }
+
+                return true;
+            }));
+
+            return [
+                'html' => rgbj_help_render_panel($type, trim(implode("\n", $bodyLines))),
+                'nextIndex' => $startIndex + count($quoteLines),
+            ];
+        }
+    }
+
+    if (count($quoteLines) === 1) {
+        $content = trim($quoteLines[0]);
+
+        return [
+            'html' => '<blockquote class="rgbj-help-callout">' . rgbj_help_inline_markdown($content) . '</blockquote>',
+            'nextIndex' => $startIndex + 1,
+        ];
+    }
+
+    $body = trim(implode("\n", $quoteLines));
+    $rendered = rgbj_help_markdown_to_html($body);
+
+    return [
+        'html' => '<blockquote class="rgbj-help-callout">' . $rendered['html'] . '</blockquote>',
+        'nextIndex' => $startIndex + count($quoteLines),
+    ];
 }
 
 /**
@@ -1179,14 +1446,35 @@ function rgbj_help_try_parse_table_block(array $lines, int $startIndex): ?array
         $tableLines[] = $lines[$i];
     }
 
-    if (count($tableLines) < 2 || !rgbj_help_is_table_separator($tableLines[1])) {
+    if (count($tableLines) < 2) {
         return null;
+    }
+
+    if (rgbj_help_is_table_separator($tableLines[1])) {
+        $header = rgbj_help_parse_table_row($tableLines[0]);
+        $rows = [];
+        for ($t = 2, $tMax = count($tableLines); $t < $tMax; $t++) {
+            $rows[] = rgbj_help_normalize_table_row(rgbj_help_parse_table_row($tableLines[$t]), count($header));
+        }
+
+        return [
+            'html' => rgbj_help_render_table($header, $rows),
+            'nextIndex' => $startIndex + count($tableLines),
+        ];
     }
 
     $header = rgbj_help_parse_table_row($tableLines[0]);
     $rows = [];
-    for ($t = 2, $tMax = count($tableLines); $t < $tMax; $t++) {
-        $rows[] = rgbj_help_parse_table_row($tableLines[$t]);
+    for ($t = 1, $tMax = count($tableLines); $t < $tMax; $t++) {
+        if (rgbj_help_is_table_separator($tableLines[$t])) {
+            continue;
+        }
+
+        $rows[] = rgbj_help_normalize_table_row(rgbj_help_parse_table_row($tableLines[$t]), count($header));
+    }
+
+    if ($header === [] || $rows === []) {
+        return null;
     }
 
     return [
@@ -1327,7 +1615,7 @@ function rgbj_help_markdown_to_html(string $markdown): array
             continue;
         }
 
-        if (preg_match('/^-\s+(.+)$/', $line, $m)) {
+        if (preg_match('/^[-*+]\s+(.+)$/', $line, $m)) {
             $flushParagraph();
             if ($inOl) {
                 $flushOpenListItem();
@@ -1366,10 +1654,12 @@ function rgbj_help_markdown_to_html(string $markdown): array
             continue;
         }
 
-        if (preg_match('/^>\s*(.+)$/', $line, $m)) {
+        $blockquoteBlock = rgbj_help_try_parse_blockquote_block($lines, $lineIndex);
+        if ($blockquoteBlock !== null) {
             $flushParagraph();
             $closeLists();
-            $html[] = '<blockquote class="rgbj-help-callout">' . rgbj_help_inline_markdown(trim($m[1])) . '</blockquote>';
+            $html[] = $blockquoteBlock['html'];
+            $lineIndex = $blockquoteBlock['nextIndex'] - 1;
             continue;
         }
 
@@ -1534,6 +1824,7 @@ function rgbj_help_markdown_plain_text(string $markdown): string
     $markdown = preg_replace('/!\[[^\]]*\]\([^)]+\)/', ' ', $markdown) ?? $markdown;
     $markdown = preg_replace('/\[([^\]]+)\]\([^)]+\)/', '$1', $markdown) ?? $markdown;
     $markdown = preg_replace('/^#{1,6}\s+/m', ' ', $markdown) ?? $markdown;
+    $markdown = preg_replace('/^>\s*\[!([a-z]+)\]\s*/im', ' ', $markdown) ?? $markdown;
     $markdown = preg_replace('/^>\s+/m', ' ', $markdown) ?? $markdown;
     $markdown = preg_replace('/^\|.*\|$/m', ' ', $markdown) ?? $markdown;
     $markdown = preg_replace('/[*_`>#-]+/', ' ', $markdown) ?? $markdown;
@@ -1602,24 +1893,31 @@ function rgbj_render_help_doc_map(?string $activeSlug, bool $includeDrafts = fal
         </div>
         <div class="rgbj-help-sidebar-panel__body">
             <ul class="rgbj-help-doc-map list-unstyled mb-0">
-                <li class="rgbj-help-doc-map__item">
-                    <a href="<?= rgbj_h(rgbj_help_index_url()) ?>" class="rgbj-help-doc-map__link<?= $activeSlug === null && $activeTagSlug === null ? ' is-active' : '' ?>">
+                <li class="rgbj-help-toc__item">
+                    <a href="<?= rgbj_h(rgbj_help_index_url()) ?>" class="rgbj-help-toc__link<?= $activeSlug === null && $activeTagSlug === null ? ' is-active' : '' ?>">
                         <i class="bi bi-grid me-2 opacity-75" aria-hidden="true"></i>Help Center home
                     </a>
                 </li>
                 <?php foreach ($grouped as $category => $articles) : ?>
-                <li class="rgbj-help-doc-map__category"><?= rgbj_h($category) ?></li>
-                <?php foreach ($articles as $article) :
-                    $isActive = $activeSlug === $article['slug'];
-                    ?>
-                <li class="rgbj-help-doc-map__item" data-tag-slugs="<?= rgbj_h(rgbj_help_article_tag_slugs($article['tags'])) ?>">
-                    <a
-                        href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>"
-                        class="rgbj-help-doc-map__link<?= $isActive ? ' is-active' : '' ?>"
-                        <?= $isActive ? ' aria-current="page"' : '' ?>
-                    ><?= rgbj_h($article['title']) ?></a>
+                <li class="rgbj-help-doc-map__section">
+                    <p class="rgbj-help-doc-map__group-label">
+                        <?= rgbj_h($category) ?>
+                        <span class="rgbj-help-doc-map__group-count"><?= count($articles) ?></span>
+                    </p>
+                    <ul class="rgbj-help-doc-map__articles list-unstyled mb-0">
+                        <?php foreach ($articles as $article) :
+                            $isActive = $activeSlug === $article['slug'];
+                            ?>
+                        <li class="rgbj-help-toc__item rgbj-help-toc__item--depth-3 rgbj-help-doc-map__item" data-tag-slugs="<?= rgbj_h(rgbj_help_article_tag_slugs($article['tags'])) ?>">
+                            <a
+                                href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>"
+                                class="rgbj-help-toc__link<?= $isActive ? ' is-active' : '' ?>"
+                                <?= $isActive ? ' aria-current="page"' : '' ?>
+                            ><?= rgbj_h($article['title']) ?></a>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
                 </li>
-                <?php endforeach; ?>
                 <?php endforeach; ?>
             </ul>
 
@@ -1675,6 +1973,27 @@ function rgbj_render_help_toc(array $headings): void
         </div>
     </nav>
     <?php
+}
+
+function rgbj_help_article_content_css_url(): string
+{
+    $path = rgbj_app_root() . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'help-article-content.css';
+    $v = is_file($path) ? (string) filemtime($path) : '1';
+
+    return rgbj_url('assets/help-article-content.css?v=' . $v);
+}
+
+/**
+ * Help Center pages need help-article-content.css linked directly in the head.
+ * A mid-file @import inside rgbjunkie-app.css is ignored by browsers.
+ *
+ * @param array{title: string, description: string, og?: bool, app_css?: bool, extra_css?: list<string>} $opts
+ */
+function rgbj_help_page_head(array $opts): void
+{
+    $extraCss = $opts['extra_css'] ?? [];
+    $opts['extra_css'] = array_merge([rgbj_help_article_content_css_url()], $extraCss);
+    rgbj_page_head($opts);
 }
 
 function rgbj_help_page_scripts(): void

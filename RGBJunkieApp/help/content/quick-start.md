@@ -24,14 +24,14 @@ This guide will swiftly take you from downloading RGBJunkie to illuminating your
 
 ## Know the layout
 
-### Devices Panel
+### Devices panel
 
-The devices panel contains all the devices automatically detected by RGGBJunkie. It will also contain any device you may add manually, such as network devices (WLED), or virtual devices created by plugins. Each device may contain sub-devices, and/or channels. And each channel will contain either fixed components, such as keyboards and mice, or manually added components.
+Everything RGBJunkie sees lives here — USB controllers, WLED you added by hand, virtual devices from plugins. Devices split into **channels** (one strip, one fan header…), and channels hold **components** on your canvas — except fixed-layout keyboards and mice, which come pre-mapped.
 ![Devices Panel](images/image-3.png)
 
-### Canvas Panel
+### Canvas panel
 
-A visual preview of your LED Layouts. This panel also includes the Scene selector, used to store all the settings of whatever is on the screen at a given time. RGBJunkie is multi-canvas. You can use one canvas for your PC, another for your mouse or keyboard, etc. Possibilities are limitless!
+Your LED layout, live on screen. The **Scene** picker in the bar above saves everything you see — tabs, components, effects, sliders. Use multiple **canvas tabs** for different zones (PC case, desk, keyboard…). Go wild.
 ![Canvas Panel](images/image-5.png)
 
 > Need more room to admire your setup? Feel free to collapse either side panel with a click! The handy **fullscreen** button on the canvas will maximize your visual preview, letting you see your lighting in all its glory! Just press **Escape** to return.
@@ -46,10 +46,10 @@ This is where the real fun is! This panel gives you access to a large number of 
 Time to plug in your awesome USB lighting gear! If a device doesn't appear right away, double-check our [supported gear list](/RGBJunkieApp/supported/) – we're always expanding it!
 
 1. In the **Devices** panel on the left, you'll see your connected gear. Keep an eye out for any channels that still need a layout assigned.
-2. For a super quick setup, simply click the **magic-wand** button to launch our intuitive **setup wizard**. Alternatively, if you prefer a hands-on approach, use the **+ Add** button on a channel row to open the **Component Library** and precisely place your components (like LED strips, keyboard zones, and more).
+2. For a super quick setup, click the **magic-wand** button to launch the **RGB Wizard**. Alternatively, use the **+ Add** button on a channel row to open the **Component Library** and place your components (LED strips, keyboard zones, and more).
 
 ![Devices panel showing a device needing setup, with the magic wand button highlighted](images/image-8.png)
-Both the wizard and the Component Library will guide you through the process of matching your physical LEDs to the visual canvas preview, making setup a breeze!
+The RGB Wizard and Component Library guide you through matching physical LEDs to the canvas preview.
 
 ## Choose an effect
 
@@ -74,12 +74,19 @@ Want to learn more about copying, overwriting, and managing your Scenes like a p
 
 ## Where to go next
 
-* **In-app help** — **Settings → Help** or the toolbar **Help** button (full guide in your language)
-* **Help Center** — more articles on this site under [Help](/RGBJunkieApp/help/)
-* **Changelog** — [what changed](/RGBJunkieApp/changelog/) in each release
-* **Browser tools** — prototype effects at [Effect Builder](/) before you install plugins
+Dig in wherever you are stuck — or just curious:
 
-> Stuck on a device or driver? Browse [supported gear](/RGBJunkieApp/supported/) and send a report from **Settings → Logs** if you need support.
+**Getting your layout right** — [RGB Wizard](rgb-wizard), [Devices panel](devices-panel), [Component Library](component-library), [Workspace editor](workspace-editor), [Canvas tabs](canvas-tabs)
+
+**Effects and color** — [Effects — browse and tune](effects-browse-and-tune), [Color profiles](color-profiles), [LED Studio](led-studio)
+
+**Save and share your work** — [Scene profiles](scene-profiles), [Installed files](installed-files), [Backup your data](backup-restore), [App links](app-links)
+
+**Network and extras** — [WLED setup](wled-setup), [OpenRGB, RAM, and GPU lighting](openrgb-ram-gpu-lighting), [Wallpaper and screen sync](wallpaper-screen-sync), [Tray and startup](tray-and-startup), [Keyboard shortcuts](keyboard-shortcuts)
+
+**Something broke?** — [Supported devices](supported-devices), [Troubleshooting — no lights](troubleshooting-no-lights), [Troubleshooting — wrong colors](troubleshooting-wrong-colors), [Send a support report](send-support-report)
+
+**Also worth bookmarking** — **Settings → Help** in the app, [Check for updates](check-for-updates), the full [Help Center](/RGBJunkieApp/help/), [Changelog](/RGBJunkieApp/changelog/), and the [Effect Builder](/) in your browser
 
 ***
 

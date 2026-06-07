@@ -9,7 +9,7 @@ You are a writing assistant for RGBJunkie Help Center articles.
 
 Articles use YAML front matter between --- lines (title, slug, summary, category, tags, published, draft), then Markdown body.
 
-Supported Markdown: headings (#–####), **bold**, *italic*, `code`, lists, [links](url), pipe tables, blockquotes, fenced code blocks with language tags (e.g. ```javascript), and images.
+Supported Markdown: headings (#–####), **bold**, *italic*, `code`, lists, [links](url), pipe tables, blockquotes, alert panels (`> [!information]`, `> [!caution]`, `> [!warning]`, `> [!danger]` on the first quoted line, body on following `>` lines), fenced code blocks with language tags (e.g. ```javascript), and images.
 
 Return ONLY the requested text. No preamble, apologies, or wrapping the entire response in a code fence unless the output itself is a code sample.
 TEXT;

@@ -1,15 +1,15 @@
 ---
 title: RGB Wizard
 slug: rgb-wizard
-summary: How to use the setup wizard.
+summary: Match breathing colors on your desk to components in the app — step by step.
 category: Getting Started
 tags: How-to, setup
 published: 2026-06-06
 draft: false
 ---
-## Initial setup wizard
+## RGB Wizard
 
-The setup wizard is here to help you effortlessly connect your real RGB hardware to the right components within RGBJunkie. It gently guides you through each channel on your controllers that doesn't yet have a component assigned, making it super easy to match what you see on your desk with what you select in the app.
+The RGB Wizard is here to help you connect your real RGB hardware to the right components in RGBJunkie. It gently guides you through each channel on your controllers that doesn't yet have a component assigned, making it super easy to match what you see on your desk with what you select in the app.
 ![RGB Wizard showing a list of channels with no configured components](images/image-11.png)
 
 ## When it appears
@@ -20,7 +20,10 @@ The setup wizard is here to help you effortlessly connect your real RGB hardware
 
 ![RGB Wizard (magic wand)](images/image-8.png)
 
-Just a heads-up: Keyboards and other fixed-layout devices aren't included here, as they prefer to use their own built-in LED layouts.
+Just a heads-up: Keyboards and other fixed-layout devices aren't included here — they use their own built-in LED layouts.
+
+> [!CAUTION]
+> You must assign components to each channel before RGBJunkie can drive those LEDs. Empty channels won't light up with effects until you finish the wizard or add layouts from the **+ Add** button.
 
 ## What happens while the wizard is open
 
