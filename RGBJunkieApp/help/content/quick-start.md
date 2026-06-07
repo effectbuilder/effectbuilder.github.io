@@ -9,7 +9,7 @@ draft: false
 ---
 # Quick start
 
-This guide will swiftly take you from downloading RGBJunkie to illuminating your entire desk! For an even deeper dive into all the features, shortcuts, and troubleshooting tips, simply open **Settings → Help** right inside RGBJunkie. It's your comprehensive in-app manual!
+This guide will swiftly take you from downloading RGBJunkie to illuminating your entire desk! For an even deeper dive into all the features, shortcuts, and troubleshooting tips, open **Settings → Help** in the app — it loads the full Help Center from rgbjunkie.com.
 ![RGBJunkie main interface with Settings](images/image-1.png)
 
 ## Download and install

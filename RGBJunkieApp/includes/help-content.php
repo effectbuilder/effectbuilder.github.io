@@ -338,14 +338,40 @@ function rgbj_help_get_article(string $slug, bool $includeDrafts = false): ?arra
     return null;
 }
 
+function rgbj_help_embed_mode(): bool
+{
+    return isset($_GET['embed']) && (string) $_GET['embed'] === '1';
+}
+
+function rgbj_help_embed_css_url(): string
+{
+    $path = rgbj_app_root() . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'help-embed.css';
+    $v = is_file($path) ? (string) @filemtime($path) : '1';
+
+    return rgbj_url('assets/help-embed.css?v=' . $v);
+}
+
+function rgbj_help_link_url(string $url): string
+{
+    if (!rgbj_help_embed_mode() || $url === '') {
+        return $url;
+    }
+
+    if (preg_match('/(?:^|[?&])embed=1(?:&|$)/', $url)) {
+        return $url;
+    }
+
+    return $url . (str_contains($url, '?') ? '&' : '?') . 'embed=1';
+}
+
 function rgbj_help_article_url(string $slug): string
 {
-    return rgbj_url('help/' . rawurlencode($slug) . '/');
+    return rgbj_help_link_url(rgbj_url('help/' . rawurlencode($slug) . '/'));
 }
 
 function rgbj_help_index_url(): string
 {
-    return rgbj_url('help/');
+    return rgbj_help_link_url(rgbj_url('help/'));
 }
 
 function rgbj_help_editor_url(): string
@@ -1992,8 +2018,38 @@ function rgbj_help_article_content_css_url(): string
 function rgbj_help_page_head(array $opts): void
 {
     $extraCss = $opts['extra_css'] ?? [];
-    $opts['extra_css'] = array_merge([rgbj_help_article_content_css_url()], $extraCss);
+    $extraCss = array_merge([rgbj_help_article_content_css_url()], $extraCss);
+    if (rgbj_help_embed_mode()) {
+        $extraCss[] = rgbj_help_embed_css_url();
+    }
+    $opts['extra_css'] = $extraCss;
     rgbj_page_head($opts);
+}
+
+function rgbj_help_shell_open(): void
+{
+    if (rgbj_help_embed_mode()) {
+        echo '<body class="rgbj-help-embed d-flex flex-column min-vh-100">';
+        echo '<main class="flex-grow-1 rgbj-help-embed__main">';
+        echo '<div class="container-fluid px-3 py-3 rgbj-help-page">';
+
+        return;
+    }
+
+    rgbj_page_analytics();
+    rgbj_render_page_nav();
+}
+
+function rgbj_help_shell_close(): void
+{
+    if (!rgbj_help_embed_mode()) {
+        return;
+    }
+
+    echo '</div></main>';
+    rgbj_help_page_scripts();
+    echo '<script src="' . rgbj_h(rgbj_url('assets/help-embed.js')) . '" defer></script>';
+    rgbj_page_scripts_end();
 }
 
 function rgbj_help_page_scripts(): void

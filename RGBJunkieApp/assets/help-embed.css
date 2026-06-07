@@ -1,0 +1,52 @@
+/**
+ * Help Center — embedded in the RGBJunkie desktop app (Settings → Help).
+ */
+body.rgbj-help-embed {
+    background: var(--bs-body-bg, #0b0f14);
+}
+
+body.rgbj-help-embed .rgbj-help-embed__main {
+    padding: 0;
+}
+
+body.rgbj-help-embed .rgbj-help-intro-app-hint {
+    display: none !important;
+}
+
+body.rgbj-help-embed .breadcrumb {
+    display: none !important;
+}
+
+body.rgbj-help-embed .rgbj-help-editor-link-wrap {
+    display: none !important;
+}
+
+body.rgbj-help-embed .rgbj-help-admin-only {
+    display: none !important;
+}
+
+body.rgbj-help-embed footer.rgbj-site-footer,
+body.rgbj-help-embed .rgbj-site-footer {
+    display: none !important;
+}
+
+body.rgbj-help-embed .rgbj-subpage-glow::before,
+body.rgbj-help-embed .rgbj-subpage-glow::after {
+    display: none !important;
+}
+
+body.rgbj-help-embed .rgbj-help-layout {
+    --bs-gutter-y: 1rem;
+}
+
+body.rgbj-help-embed .rgbj-help-doc-map {
+    position: static;
+    max-height: none;
+}
+
+@media (min-width: 1200px) {
+    body.rgbj-help-embed .rgbj-help-doc-map {
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
+}

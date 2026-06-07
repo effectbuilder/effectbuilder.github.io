@@ -11,12 +11,13 @@ $pageTitle = 'Help Center | RGBJunkie for Windows';
 $pageDesc = 'Self-help guides, tips, and troubleshooting for RGBJunkie for Windows and rgbjunkie.com web tools.';
 
 rgbj_help_page_head(['title' => $pageTitle, 'description' => $pageDesc]);
-rgbj_page_analytics();
-rgbj_render_page_nav();
-rgbj_subpage_open([
-    ['label' => 'RGBJunkie for Windows', 'href' => rgbj_url()],
-    ['label' => 'Help Center'],
-], 'col-12 rgbj-help-page');
+rgbj_help_shell_open();
+if (!rgbj_help_embed_mode()) {
+    rgbj_subpage_open([
+        ['label' => 'RGBJunkie for Windows', 'href' => rgbj_url()],
+        ['label' => 'Help Center'],
+    ], 'col-12 rgbj-help-page');
+}
 
 rgbj_render_help_search_bar($includeDrafts);
 ?>
@@ -31,7 +32,7 @@ rgbj_render_help_search_bar($includeDrafts);
         <p class="text-body-secondary mb-4">
             Step-by-step guides and troubleshooting for the Windows app and rgbjunkie.com tools.
             For developer documentation (plugins, effects, APIs), see the <a href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a> page.
-            Inside the desktop app, open <strong>Settings → Help</strong> for the full in-app guide in your language.
+            <span class="rgbj-help-intro-app-hint">Inside the desktop app, open <strong>Settings → Help</strong> for the full Help Center.</span>
         </p>
 
         <div class="alert alert-secondary border-secondary d-none mb-4" data-rgbj-help-index-empty role="status">
@@ -48,6 +49,11 @@ rgbj_render_help_search_bar($includeDrafts);
 </div>
 
 <?php
+if (rgbj_help_embed_mode()) {
+    rgbj_help_shell_close();
+    exit;
+}
+
 rgbj_subpage_close();
 $rgbj_footer_blurb = 'Self-help articles for RGBJunkie for Windows and web tools.';
 require dirname(__DIR__) . '/includes/page-footer.php';
