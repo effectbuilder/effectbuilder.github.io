@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 
 require_once __DIR__ . '/../includes/site.php';
+require_once __DIR__ . '/../includes/app-deep-links.php';
 
 
 
@@ -183,6 +184,28 @@ function rgbj_build_deep_link_from_path(string $pathAndQuery): ?string {
             ? 'rgbjunkie://view/' . $rest . $qs
 
             : 'rgbjunkie://view/overview' . $qs;
+
+    }
+
+
+
+    if ($segments[0] === 'open' && ($segments[1] ?? '') === 'appdata') {
+
+        $sub = rgbj_normalize_appdata_deep_link_subpath(implode('/', array_slice($segments, 2)));
+
+        if ($sub === null) {
+
+            return null;
+
+        }
+
+        $qs = $queryPart !== '' ? '?' . $queryPart : '';
+
+        return $sub !== ''
+
+            ? 'rgbjunkie://open/appdata/' . $sub . $qs
+
+            : 'rgbjunkie://open/appdata' . $qs;
 
     }
 

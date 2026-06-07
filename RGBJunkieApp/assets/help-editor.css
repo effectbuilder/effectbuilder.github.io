@@ -1,0 +1,1471 @@
+/* Help article editor — layout + Toast UI chrome (typography from help-article-content.css) */
+.rgbj-help-editor-workspace {
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.rgbj-help-editor-pane {
+    min-width: 0;
+    height: auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    overflow: visible;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.rgbj-help-editor-pane--edit {
+    display: block;
+    height: auto;
+}
+
+.rgbj-help-editor-frontmatter {
+    flex-shrink: 0;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.rgbj-help-editor-frontmatter summary {
+    cursor: pointer;
+}
+
+.rgbj-help-editor-meta-form .form-label {
+    margin-bottom: 0.25rem;
+}
+
+.rgbj-help-editor-body {
+    --rgbj-editor-font: "Rajdhani", system-ui, "Segoe UI", sans-serif;
+    flex: 0 0 auto;
+    display: block;
+    height: auto !important;
+    min-height: 240px;
+}
+
+.rgbj-help-editor-body.auto-height,
+.rgbj-help-editor-body.auto-height .toastui-editor-defaultUI {
+    height: auto !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-defaultUI {
+    display: block !important;
+    position: relative;
+    border: none !important;
+    border-radius: 0;
+    background: transparent;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-defaultUI > .toastui-editor-main {
+    flex: 0 0 auto;
+    height: auto !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-main-container {
+    position: relative !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-ww-container {
+    overflow: visible !important;
+    height: auto !important;
+    display: block !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-ww-container > .toastui-editor,
+.rgbj-help-editor-body .toastui-editor-ww-container .toastui-editor-contents {
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-contents {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+.rgbj-help-editor-body .ProseMirror {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 8rem;
+}
+
+/* overflow-x on body breaks position:sticky in Chrome — allow normal flow on editor page */
+body:has(.rgbj-help-editor-page) {
+    overflow-x: visible !important;
+}
+
+.rgbj-help-editor-page main,
+.rgbj-help-editor-page .rgbj-help-editor-workspace,
+.rgbj-help-editor-page .rgbj-help-editor-pane {
+    overflow: visible !important;
+}
+
+.rgbj-help-toolbar-pin-anchor {
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.rgbj-help-toolbar-pin-spacer {
+    display: block;
+}
+
+.rgbj-help-toolbar-pin-spacer[hidden] {
+    display: none !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-defaultUI-toolbar,
+.rgbj-help-editor-body .toastui-editor-toolbar,
+.rgbj-help-editor-body .toastui-editor-toolbar-group {
+    align-items: center !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-toolbar-item-wrapper:has(.rgbj-help-table-tool) {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: auto !important;
+    height: 32px !important;
+    margin: 7px 5px !important;
+    line-height: 1 !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-defaultUI-toolbar.is-pinned {
+    position: fixed !important;
+    top: 0;
+    z-index: 1030;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    background-color: rgba(18, 22, 30, 0.98) !important;
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-body .toastui-editor-defaultUI-toolbar.is-pinned {
+    background-color: rgba(248, 249, 250, 0.98) !important;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+    border-bottom-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-tooltip {
+    z-index: 1045 !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-popup {
+    z-index: 1045 !important;
+    margin: 0 !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-defaultUI .toastui-editor-popup[style*="position: fixed"],
+.rgbj-help-editor-body .toastui-editor-defaultUI .toastui-editor-popup.rgbj-help-popup-fixed {
+    position: fixed !important;
+}
+
+/* Keep Toast dark-theme icon sprites (background-position-y: -49px) — never wipe background-image */
+.rgbj-help-editor-page .toastui-editor-defaultUI-toolbar button {
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    font: inherit;
+    line-height: 1;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-defaultUI-toolbar {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-toolbar-icons:not(.rgbj-help-table-tool):not(.rgbj-help-heading-tool):not(.rgbj-help-gemini-tool) {
+    background-position-y: -49px !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-toolbar-icons:not(.rgbj-help-table-tool):not(.rgbj-help-heading-tool):not(.rgbj-help-gemini-tool):not(:disabled):hover,
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-toolbar-icons:not(.rgbj-help-table-tool):not(.rgbj-help-heading-tool):not(.rgbj-help-gemini-tool).active {
+    background-color: rgba(0, 240, 255, 0.12) !important;
+    background-position-y: -49px !important;
+    border-color: rgba(0, 240, 255, 0.25) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-toolbar-divider {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 3px;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: inherit;
+    line-height: 1;
+    color: #c8cdd3 !important;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool__icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool:not(:disabled) {
+    color: #f0f3f6 !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool:not(:disabled):hover {
+    color: #fff !important;
+    background-color: rgba(0, 240, 255, 0.12) !important;
+    border-color: rgba(0, 240, 255, 0.25) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool--danger:not(:disabled) {
+    color: #e8b4b8 !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool--danger:not(:disabled):hover {
+    color: #ffb3b8 !important;
+    background-color: rgba(220, 53, 69, 0.14) !important;
+    border-color: rgba(220, 53, 69, 0.4) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-table-tool:disabled {
+    opacity: 0.72;
+    color: #8f939f !important;
+    cursor: not-allowed;
+}
+
+/* Popups / heading menu — dark theme sheet handles base colors; match site text */
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup {
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    border-radius: 0.5rem;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup-add-heading ul li {
+    color: var(--bs-body-color) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup-add-heading ul li:hover {
+    background-color: rgba(0, 240, 255, 0.12) !important;
+}
+
+.rgbj-help-editor-body .toastui-editor-main-container {
+    flex: 0 0 auto;
+}
+
+.rgbj-help-editor-body .toastui-editor-ww-container {
+    background: transparent;
+}
+
+/* Published typography: help-article-content.css (via rgbjunkie-app.css) */
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-ww-container {
+    background-color: transparent !important;
+}
+
+.rgbj-help-editor-body :is(.toastui-editor-contents, .ProseMirror).rgbj-help-article__body {
+    padding: 1rem 1.15rem !important;
+    min-height: 0;
+}
+
+/* Toast UI monospace for inline UI only — article code/pre use shared article styles */
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(code, pre, pre code) {
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+    font-weight: 400;
+    letter-spacing: normal;
+}
+
+/* Lists — native markers (Toast rtl ::before counters conflict with theme) */
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol {
+    display: block;
+    color: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul {
+    list-style-type: disc;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol {
+    list-style-type: decimal;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul > li,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol > li {
+    display: list-item;
+    position: static;
+    color: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul > li::before,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol > li::before {
+    content: none !important;
+    display: none !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul > li > p,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol > li > p {
+    margin: 0;
+    display: inline;
+    line-height: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol > li::marker {
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 600;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul > li::marker {
+    color: rgba(0, 240, 255, 0.72);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ol > li::marker {
+    color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body ul > li::marker {
+    color: rgba(13, 110, 253, 0.72);
+}
+
+/* Code block chrome via ProseMirror widget decorations */
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__bar--widget,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__footer--widget,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__bar--widget {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin: 1rem 0 0;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-bottom: none;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.35rem;
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input:focus {
+    outline: none;
+    border-color: rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.12);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 7.5rem;
+    max-width: 9.5rem;
+    margin: 0;
+    padding: 0.2rem 1.75rem 0.2rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.35rem;
+    background-color: rgba(0, 0, 0, 0.28);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23ffffff' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.45rem center;
+    background-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+    color-scheme: dark;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select option {
+    background-color: #121218;
+    color: #e8eaed;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select:focus {
+    outline: none;
+    border-color: rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.12);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title {
+    min-width: 0;
+    flex: 1 1 auto;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.82);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title--fallback {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: none;
+    border-bottom: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome--footerless {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0 0 0.5rem 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__bar--widget + .rgbj-help-code-block-chrome {
+    margin-top: 0;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.toastui-editor-ww-code-block-highlighting {
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Toast syntax plugin language chip — we use our own title bar */
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.toastui-editor-ww-code-block-highlighting::after {
+    display: none !important;
+    content: none !important;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome pre,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome .toastui-editor-ww-code-block-highlighting,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome .toastui-editor-ww-code-block-highlighting pre {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    white-space: pre !important;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome pre code {
+    display: block;
+    white-space: pre !important;
+    line-height: 1.5;
+    color: unset !important;
+    background: transparent !important;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome pre code br {
+    display: none;
+}
+
+/* Clip only the pre viewport when folded (matches published article structure) */
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed > pre,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed pre[class*="language-"] {
+    max-height: calc(var(--rgbj-code-fold-visible-lines, 12) * 1.5em + 1.7rem);
+    overflow: hidden !important;
+    position: relative;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed > pre::after,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed pre[class*="language-"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.75rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.92));
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__footer--widget {
+    width: 100%;
+    margin: 0 0 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0 0 0.5rem 0.5rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome + .rgbj-help-code-block__footer--widget {
+    margin-top: -1px;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    margin: 0;
+    padding: 0.55rem 0.85rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgba(0, 240, 255, 0.9);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget:hover,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget:focus-visible {
+    background: rgba(0, 240, 255, 0.1);
+    color: #9ef6ff;
+    outline: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget.is-collapsed .rgbj-help-code-fold__toggle-hide,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold.is-collapsed .rgbj-help-code-fold__toggle-hide {
+    display: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget:not(.is-collapsed) .rgbj-help-code-fold__toggle-show,
+.rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold:not(.is-collapsed) .rgbj-help-code-fold__toggle-show {
+    display: none;
+}
+
+.rgbj-help-editor-page .toastui-editor-code-block-language {
+    z-index: 30;
+}
+
+.rgbj-help-editor-page .toastui-editor-code-block-language-input input {
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+    font-size: 0.8125rem;
+}
+
+.rgbj-help-editor-body .rgbj-help-article__body img.rgbj-help-image--preview {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    object-fit: contain;
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI .ProseMirror table,
+.rgbj-help-editor-page .toastui-editor-defaultUI .toastui-editor-contents table {
+    width: auto;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Toast UI thematicBreak nodes are not ProseMirror-selectable — custom hit target + selection */
+.rgbj-help-editor-page .ProseMirror div:has(> hr) {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    border-radius: 0.25rem;
+}
+
+.rgbj-help-editor-page .ProseMirror div:has(> hr)::before {
+    content: '';
+    display: block;
+    width: 100%;
+    border-top: 2px solid rgba(255, 255, 255, 0.42);
+}
+
+.rgbj-help-editor-page .ProseMirror div:has(> hr).rgbj-help-hr-selected {
+    outline: 2px solid rgba(0, 240, 255, 0.55);
+    outline-offset: 1px;
+    background: rgba(0, 240, 255, 0.08);
+}
+
+.rgbj-help-editor-page .ProseMirror div:has(> hr).rgbj-help-hr-selected::before {
+    border-top-color: rgba(0, 240, 255, 0.75);
+}
+
+.rgbj-help-editor-page .ProseMirror hr {
+    display: none;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror div:has(> hr)::before {
+    border-top-color: rgba(15, 23, 42, 0.3);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror div:has(> hr).rgbj-help-hr-selected {
+    outline-color: rgba(13, 110, 253, 0.55);
+    background: rgba(13, 110, 253, 0.08);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror div:has(> hr).rgbj-help-hr-selected::before {
+    border-top-color: rgba(13, 110, 253, 0.65);
+}
+
+/* Inline images in the editor (WordPress-style — select + Backspace/Delete to remove) */
+.rgbj-help-editor-page .ProseMirror p:has(> .rgbj-help-editor-inline-image) {
+    text-align: center;
+}
+
+.rgbj-help-editor-page .ProseMirror :is(ul, ol) > li > p:has(> .rgbj-help-editor-inline-image) {
+    text-align: left;
+}
+
+.rgbj-help-editor-page .ProseMirror :is(ul, ol) > li > p:has(.rgbj-help-editor-inline-image--centered) {
+    display: block;
+    width: 100%;
+}
+
+.rgbj-help-editor-page .ProseMirror :is(ul, ol) > li .rgbj-help-editor-inline-image--centered {
+    display: block;
+    width: fit-content;
+    max-width: min(520px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rgbj-help-editor-page .ProseMirror :is(ul, ol) > li .rgbj-help-editor-inline-image--centered.rgbj-help-editor-inline-image--video {
+    max-width: min(720px, 100%);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image {
+    display: inline-block;
+    max-width: min(520px, 100%);
+    vertical-align: bottom;
+    cursor: default;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image__caption-input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0.35rem 0 0;
+    padding: 0.2rem 0.45rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--bs-secondary-color);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    box-shadow: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image__caption-input:focus {
+    color: var(--bs-body-color);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(0, 240, 255, 0.35);
+    outline: none;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image__caption-input::placeholder {
+    color: var(--bs-secondary-color);
+    font-style: italic;
+    opacity: 0.85;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image__caption-input:focus {
+    background: rgba(13, 110, 253, 0.05);
+    border-color: rgba(13, 110, 253, 0.35);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image video.rgbj-help-video--preview {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    max-height: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    object-fit: contain;
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image.ProseMirror-selectednode {
+    outline: 2px solid rgba(0, 240, 255, 0.55);
+    outline-offset: 3px;
+    border-radius: 0.35rem;
+    background: rgba(0, 240, 255, 0.06);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-editor-inline-image.ProseMirror-selectednode {
+    outline-color: rgba(13, 110, 253, 0.55);
+    background: rgba(13, 110, 253, 0.06);
+}
+
+.rgbj-help-block-cursor-zone {
+    display: block;
+    width: 100%;
+    height: 0.75rem;
+    margin: 0;
+    cursor: text;
+    line-height: 0;
+    border-radius: 0.2rem;
+}
+
+.rgbj-help-block-cursor-zone:hover {
+    background: rgba(0, 240, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.22);
+}
+
+[data-bs-theme="light"] .rgbj-help-block-cursor-zone:hover {
+    background: rgba(13, 110, 253, 0.07);
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.2);
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-block-cursor-zone--before:first-child {
+    margin-top: 0.15rem;
+}
+
+.rgbj-help-editor-page .ProseMirror .rgbj-help-block-cursor-zone--after:last-child {
+    margin-bottom: 0.15rem;
+}
+
+@media (max-width: 991.98px) {
+    .rgbj-help-editor-pane {
+        min-height: 0;
+    }
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-pane {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: #fff;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-frontmatter {
+    background: rgba(15, 23, 42, 0.03);
+    border-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-body .toastui-editor-defaultUI-toolbar {
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI-toolbar button.toastui-editor-toolbar-icons {
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-dark .rgbj-help-article__body,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-dark .rgbj-help-article__body p,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-dark .rgbj-help-article__body li {
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-body .rgbj-help-article__body img {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.04);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__bar--widget {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.03);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input,
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select {
+    border-color: rgba(15, 23, 42, 0.14);
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #334155;
+    color-scheme: light;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%23334155' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select option {
+    background-color: #ffffff;
+    color: #334155;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input::placeholder {
+    color: rgba(15, 23, 42, 0.4);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title-input:focus,
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__language-select:focus {
+    border-color: rgba(8, 145, 178, 0.35);
+    box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome--footerless {
+    border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title {
+    color: rgba(15, 23, 42, 0.82);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__title--fallback {
+    color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.06);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed > pre::after,
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block-chrome.is-collapsed pre[class*="language-"]::after {
+    background: linear-gradient(to bottom, rgba(248, 249, 250, 0), rgba(241, 245, 249, 0.98));
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-block__footer--widget {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.04);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget {
+    color: #0e7490;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget:hover,
+[data-bs-theme="light"] .rgbj-help-editor-page .ProseMirror .rgbj-help-code-fold__toggle--widget:focus-visible {
+    background: rgba(8, 145, 178, 0.1);
+    color: #155e75;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-ww-code-block-highlighting.rgbj-help-code-block {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.06);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-block__bar {
+    border-bottom-color: rgba(15, 23, 42, 0.1);
+    background: rgba(15, 23, 42, 0.03);
+}
+
+[data-bs-theme="light"] .rgbj-help-code-block__title {
+    color: rgba(15, 23, 42, 0.82);
+}
+
+[data-bs-theme="light"] .rgbj-help-code-block__title--fallback {
+    color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-block__copy {
+    border-color: rgba(15, 23, 42, 0.14);
+    background: rgba(255, 255, 255, 0.72);
+    color: #334155;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-block__copy:hover,
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-block__copy:focus-visible {
+    background: rgba(8, 145, 178, 0.1);
+    border-color: rgba(8, 145, 178, 0.25);
+    color: #0e7490;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-block__copy.is-copied {
+    border-color: rgba(21, 128, 61, 0.28);
+    background: rgba(21, 128, 61, 0.08);
+    color: #15803d;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-fold.is-collapsed .rgbj-help-code-fold__viewport::after {
+    background: linear-gradient(to bottom, rgba(248, 249, 250, 0), rgba(241, 245, 249, 0.98));
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-fold__toggle {
+    border-top-color: rgba(15, 23, 42, 0.1);
+    background: rgba(15, 23, 42, 0.04);
+    color: #0e7490;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-fold__toggle:hover,
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-code-fold__toggle:focus-visible {
+    background: rgba(8, 145, 178, 0.1);
+    color: #155e75;
+}
+
+/* Floating status toast */
+.rgbj-help-editor-status {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 1040;
+    max-width: min(28rem, calc(100vw - 2.5rem));
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--bs-body-color);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.5rem;
+    background: rgba(18, 22, 30, 0.96);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(0.35rem);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.rgbj-help-editor-status.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.rgbj-help-editor-status.is-hiding {
+    opacity: 0;
+    transform: translateY(0.35rem);
+}
+
+.rgbj-help-editor-status.is-selectable {
+    pointer-events: auto;
+    user-select: text;
+    cursor: text;
+    max-height: min(40vh, 16rem);
+    overflow: auto;
+}
+
+.rgbj-help-editor-status.is-error {
+    color: #ff8a8a;
+    border-color: rgba(220, 53, 69, 0.45);
+    background: rgba(48, 16, 20, 0.96);
+}
+
+.rgbj-help-editor-status.is-success {
+    color: #8ef0c8;
+    border-color: rgba(25, 135, 84, 0.45);
+    background: rgba(12, 32, 24, 0.96);
+}
+
+@media (max-width: 575.98px) {
+    .rgbj-help-editor-status {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        max-width: none;
+    }
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-status {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(15, 23, 42, 0.12);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-status.is-error {
+    color: #b02a37;
+    background: #fff5f5;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-status.is-success {
+    color: #146c43;
+    background: #f0fff7;
+}
+
+.rgbj-help-gemini .card-body,
+.rgbj-help-gemini-popup {
+    padding: 0.25rem 0.15rem;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup {
+    padding: 0.85rem 1rem 1rem;
+    max-width: min(520px, 92vw);
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-gemini-toolbar-popup {
+    background-color: #232428;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: var(--bs-body-color);
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-popup,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini {
+    color: var(--bs-body-color);
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-popup a,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini a {
+    color: rgba(0, 240, 255, 0.92);
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-popup h2,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini h2,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-popup .form-label,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini .form-label {
+    color: var(--bs-body-emphasis, var(--bs-body-color));
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-popup p,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini p {
+    color: var(--bs-secondary-color);
+}
+
+/* Bootstrap outline buttons are low-contrast inside Toast's dark popup */
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-action,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-outline-secondary {
+    color: #e8ecf4 !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    box-shadow: none !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-action:hover,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-action:focus-visible,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-outline-secondary:hover,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-outline-secondary:focus-visible {
+    color: #fff !important;
+    border-color: rgba(0, 240, 255, 0.45) !important;
+    background-color: rgba(0, 240, 255, 0.12) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .form-control {
+    color: var(--bs-body-color) !important;
+    background-color: rgba(0, 0, 0, 0.28) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .form-control::placeholder {
+    color: rgba(232, 236, 244, 0.42);
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .form-control:focus {
+    border-color: rgba(0, 240, 255, 0.45) !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 240, 255, 0.15) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup #rgbj-help-gemini-run.btn-info {
+    color: #031015 !important;
+    background-color: #00f0ff !important;
+    border-color: #00f0ff !important;
+    font-weight: 600;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup #rgbj-help-gemini-run.btn-info:hover,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup #rgbj-help-gemini-run.btn-info:focus-visible {
+    color: #020b0d !important;
+    background-color: #5cf4ff !important;
+    border-color: #5cf4ff !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup #rgbj-help-gemini-run.btn-info:disabled {
+    opacity: 0.65;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-primary {
+    color: #031015 !important;
+    background-color: rgba(0, 240, 255, 0.88) !important;
+    border-color: rgba(0, 240, 255, 0.88) !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-primary:hover,
+.rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-primary:focus-visible {
+    color: #020b0d !important;
+    background-color: #5cf4ff !important;
+    border-color: #5cf4ff !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup {
+    background-color: #fff;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-action,
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-outline-secondary {
+    color: var(--bs-body-color) !important;
+    border-color: rgba(15, 23, 42, 0.22) !important;
+    background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .rgbj-help-gemini-action:hover,
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .btn-outline-secondary:hover {
+    color: var(--bs-body-emphasis) !important;
+    border-color: rgba(8, 145, 178, 0.45) !important;
+    background-color: rgba(8, 145, 178, 0.08) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup .form-control {
+    background-color: #fff !important;
+    border-color: rgba(15, 23, 42, 0.18) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-gemini-toolbar-popup #rgbj-help-gemini-run.btn-info {
+    color: #fff !important;
+    background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+    border-color: transparent !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-gemini-tool.toastui-editor-toolbar-icons {
+    background-image: none !important;
+    color: #67ccff !important;
+    font-size: 15px !important;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-gemini-tool.toastui-editor-toolbar-icons:not(:disabled):hover,
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-gemini-tool.toastui-editor-toolbar-icons.active {
+    background-image: none !important;
+    background-color: rgba(0, 240, 255, 0.12) !important;
+    color: #9ef6ff !important;
+}
+
+/* Heading tool — show H1/H2/… or Text for the current line (no sprite icon) */
+.rgbj-help-editor-page button.heading.toastui-editor-toolbar-icons,
+.rgbj-help-editor-page button.heading.rgbj-help-heading-tool.toastui-editor-toolbar-icons {
+    background: none !important;
+    background-image: none !important;
+    background-size: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-width: 3rem !important;
+    height: 32px !important;
+    padding: 0 0.45rem !important;
+    font-family: inherit;
+    line-height: 1 !important;
+    vertical-align: middle;
+}
+
+.rgbj-help-editor-page button.heading.toastui-editor-toolbar-icons::before,
+.rgbj-help-editor-page button.heading.toastui-editor-toolbar-icons::after {
+    content: none !important;
+    display: none !important;
+}
+
+.rgbj-help-editor-page .rgbj-help-heading-tool__label {
+    display: block;
+    min-width: 2.1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: #c8cdd3;
+    text-transform: none;
+    text-align: center;
+}
+
+.rgbj-help-editor-page button.heading.rgbj-help-heading-tool--heading .rgbj-help-heading-tool__label {
+    color: #9ef6ff;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark button.heading.toastui-editor-toolbar-icons:not(:disabled):hover,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.toastui-editor-toolbar-icons.active,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.rgbj-help-heading-tool.toastui-editor-toolbar-icons:not(:disabled):hover,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.rgbj-help-heading-tool.toastui-editor-toolbar-icons.active {
+    background: none !important;
+    background-image: none !important;
+    background-color: rgba(0, 240, 255, 0.12) !important;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark button.heading.toastui-editor-toolbar-icons:not(:disabled):hover .rgbj-help-heading-tool__label,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.toastui-editor-toolbar-icons.active .rgbj-help-heading-tool__label,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.rgbj-help-heading-tool.toastui-editor-toolbar-icons:not(:disabled):hover .rgbj-help-heading-tool__label,
+.rgbj-help-editor-page .toastui-editor-dark button.heading.rgbj-help-heading-tool.toastui-editor-toolbar-icons.active .rgbj-help-heading-tool__label {
+    color: #fff;
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page .rgbj-help-heading-tool__label {
+    color: rgba(15, 23, 42, 0.72);
+}
+
+[data-bs-theme="light"] .rgbj-help-editor-page button.heading.rgbj-help-heading-tool--heading .rgbj-help-heading-tool__label {
+    color: #0e7490;
+}
+
+.rgbj-help-image-library-panel {
+    margin-top: 0.35rem;
+}
+
+/* Custom insert-image popup — match Toast UI tab + form layout */
+.rgbj-help-editor-page .rgbj-help-image-popup .toastui-editor-tabs,
+.rgbj-help-editor-page .toastui-editor-popup-add-image .toastui-editor-tabs {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    margin: 5px 0 10px;
+}
+
+.rgbj-help-editor-page .rgbj-help-image-popup .toastui-editor-tabs .tab-item,
+.rgbj-help-editor-page .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item {
+    border-bottom: 1px solid #dadde6;
+    box-sizing: border-box;
+    color: #333;
+    cursor: pointer;
+    display: inline-block;
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 600;
+    height: 40px;
+    line-height: 40px;
+    min-width: 60px;
+    padding: 0 10px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.rgbj-help-editor-page .rgbj-help-image-popup .toastui-editor-tabs .tab-item:hover,
+.rgbj-help-editor-page .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item:hover {
+    border-bottom-color: #cbcfdb;
+}
+
+.rgbj-help-editor-page .rgbj-help-image-popup .toastui-editor-tabs .tab-item.active,
+.rgbj-help-editor-page .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item.active {
+    border-bottom: 2px solid #00a9ff;
+    color: #00a9ff;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-image-popup .toastui-editor-tabs .tab-item,
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item {
+    border-bottom-color: #292e37;
+    color: #eee;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-image-popup .toastui-editor-tabs .tab-item:hover,
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item:hover {
+    border-bottom-color: #3c424d;
+}
+
+.rgbj-help-editor-page .toastui-editor-dark .rgbj-help-image-popup .toastui-editor-tabs .tab-item.active,
+.rgbj-help-editor-page .toastui-editor-dark .toastui-editor-popup-add-image .toastui-editor-tabs .tab-item.active {
+    border-bottom-color: #67ccff;
+    color: #67ccff;
+}
+
+.rgbj-help-editor-page .rgbj-help-image-popup__file-panel .toastui-editor-file-name {
+    margin-bottom: 0.35rem;
+}
+
+.rgbj-help-image-library-panel__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: min-content;
+    align-items: start;
+    max-height: 320px;
+    overflow: auto;
+    padding-right: 0.15rem;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid__item {
+    height: auto;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid__pick {
+    height: auto;
+    min-height: 0;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid__thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 0.35rem;
+    margin-bottom: 0.35rem;
+    background: rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid__thumb img,
+.rgbj-help-image-library-panel .rgbj-help-images-grid__thumb video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    object-fit: cover;
+}
+
+.rgbj-help-image-library-panel .rgbj-help-images-grid__thumb {
+    position: relative;
+}
+
+.rgbj-help-images-grid__badge {
+    position: absolute;
+    right: 0.35rem;
+    bottom: 0.35rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.72);
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+
+.rgbj-help-gemini-result--error {
+    color: #ff8a8a !important;
+    background: rgba(48, 16, 20, 0.35) !important;
+    border-color: rgba(220, 53, 69, 0.45) !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-gemini #rgbj-help-gemini-result.rgbj-help-gemini-result--error {
+    color: #b02a37 !important;
+    background: #fff5f5 !important;
+}
+
+[data-bs-theme="light"] .rgbj-help-gemini #rgbj-help-gemini-result {
+    background: #fff;
+}
+
+.rgbj-help-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.rgbj-help-images-grid__item {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rgbj-help-images-grid__pick {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding: 0.45rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.rgbj-help-images-grid__pick:hover,
+.rgbj-help-images-grid__pick:focus-visible {
+    outline: none;
+}
+
+.rgbj-help-images-grid__item:hover,
+.rgbj-help-images-grid__item:focus-within {
+    border-color: rgba(0, 240, 255, 0.35);
+}
+
+.rgbj-help-images-grid__delete {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(18, 22, 30, 0.92);
+    color: #ff8a8a;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.rgbj-help-images-grid__delete:hover,
+.rgbj-help-images-grid__delete:focus-visible {
+    background: rgba(220, 53, 69, 0.85);
+    color: #fff;
+    opacity: 1;
+}
+
+.rgbj-help-images-grid__pick img,
+.rgbj-help-images-grid__pick video {
+    display: block;
+    width: 100%;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    margin-bottom: 0.35rem;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.rgbj-help-images-grid__caption {
+    display: block;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    word-break: break-all;
+}
+
+.rgbj-help-images-grid__meta {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--bs-secondary-color);
+}
+
+[data-bs-theme="light"] .rgbj-help-images-grid__item {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: #fff;
+}
+
+[data-bs-theme="light"] .rgbj-help-images-grid__delete {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-image-library-panel .rgbj-help-images-grid__thumb {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+[data-bs-theme="light"] .rgbj-help-images-grid__pick img {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.rgbj-help-images-grid__item:hover .rgbj-help-images-grid__delete,
+.rgbj-help-images-grid__item:focus-within .rgbj-help-images-grid__delete {
+    opacity: 1;
+}

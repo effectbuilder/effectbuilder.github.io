@@ -15,6 +15,7 @@ generator/index.html
 /RGBJunkieApp/downloads
 /RGBJunkieApp/data/
 /RGBJunkieApp/includes/download-stats-secret.php
+/RGBJunkieApp/includes/help-gemini-secret.php
 /RGBJunkieApp/data/geo-cache/
 /RGBJunkieApp/includes/firebase-service-account.json
 /RGBJunkieApp/includes/rgbjunkie-download-logger.json

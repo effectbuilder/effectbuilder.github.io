@@ -22,6 +22,9 @@
         document.querySelectorAll('.rgbj-admin-stats-nav').forEach(function (el) {
             el.classList.toggle('d-none', !visible);
         });
+        document.querySelectorAll('.rgbj-help-admin-only').forEach(function (el) {
+            el.classList.toggle('d-none', !visible);
+        });
     }
 
     if (!adminUid) {

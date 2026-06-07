@@ -1,0 +1,174 @@
+/**
+ * Help Center article typography — shared by published pages and the WYSIWYG editor.
+ * Editor selectors override Toast UI .toastui-editor-contents defaults.
+ */
+
+.rgbj-help-article__body,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body {
+    color: var(--bs-body-color);
+    line-height: 1.65;
+    font-family: var(--bs-body-font-family, var(--bs-font-sans-serif, system-ui, sans-serif));
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 1rem;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :not(table) {
+    box-sizing: border-box;
+    line-height: inherit;
+}
+
+.rgbj-help-article__body h1,
+.rgbj-help-article__body h2,
+.rgbj-help-article__body h3,
+.rgbj-help-article__body h4,
+.rgbj-help-article__body h5,
+.rgbj-help-article__body h6,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(h1, h2, h3, h4, h5, h6) {
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: inherit;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(h1, h2, h3, h4, h5, h6) {
+    font-size: revert;
+    color: inherit;
+}
+
+.rgbj-help-article__body h2,
+.rgbj-help-article__body h3,
+.rgbj-help-article__body h4,
+.rgbj-help-article__body h5,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(h2, h3, h4, h5) {
+    color: var(--bs-body-emphasis);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.rgbj-help-article__body h2:first-child,
+.rgbj-help-article__body h3:first-child,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(h2, h3):first-child {
+    margin-top: 0;
+}
+
+.rgbj-help-article__body p,
+.rgbj-help-article__body ul,
+.rgbj-help-article__body ol,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(p, ul, ol) {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.rgbj-help-article__body ul,
+.rgbj-help-article__body ol,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(ul, ol) {
+    padding-left: 1.35rem;
+}
+
+.rgbj-help-article__body blockquote,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid rgba(0, 240, 255, 0.55);
+    background: rgba(0, 240, 255, 0.06);
+    border-radius: 0 0.5rem 0.5rem 0;
+    color: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote :is(p, ul, ol) {
+    color: inherit;
+}
+
+.rgbj-help-article__body table,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body table {
+    width: auto;
+    max-width: 100%;
+    margin: 1rem auto;
+    border-collapse: collapse;
+}
+
+.rgbj-help-article__body th,
+.rgbj-help-article__body td,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(th, td) {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 0.45rem 0.65rem;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body th {
+    background: transparent;
+    color: inherit;
+    font-weight: 700;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(td p, th p) {
+    margin: 0;
+    padding: 0;
+    color: inherit;
+}
+
+.rgbj-help-article__body img,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body img {
+    max-width: min(520px, 100%);
+    max-height: 360px;
+    height: auto;
+}
+
+.rgbj-help-article__body code,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :not(pre) > code {
+    font-size: 0.9em;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    background: rgba(0, 240, 255, 0.08);
+    color: inherit;
+    letter-spacing: normal;
+}
+
+.rgbj-help-article__body pre,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body pre {
+    margin: 1rem 0;
+    padding: 0.85rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.35);
+    overflow-x: auto;
+}
+
+.rgbj-help-article__body pre code,
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body a {
+    color: rgba(0, 240, 255, 0.92);
+}
+
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body hr {
+    margin: 1.5rem 0;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-bs-theme="light"] .rgbj-help-article__body blockquote,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body blockquote {
+    background: rgba(15, 23, 42, 0.04);
+    border-left-color: rgba(15, 23, 42, 0.25);
+}
+
+[data-bs-theme="light"] .rgbj-help-article__body th,
+[data-bs-theme="light"] .rgbj-help-article__body td,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(th, td) {
+    border-color: rgba(15, 23, 42, 0.14);
+}
+
+[data-bs-theme="light"] .rgbj-help-article__body pre,
+[data-bs-theme="light"] .rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body pre {
+    background: rgba(15, 23, 42, 0.06);
+}
+
+/* Loaded after toastui-editor.min.css on the editor page — override Toast line-height: 160% on paragraphs */
+.rgbj-help-editor-page .toastui-editor-defaultUI :is(.ProseMirror, .toastui-editor-contents).rgbj-help-article__body :is(p, li, td, th, blockquote) {
+    line-height: inherit;
+}

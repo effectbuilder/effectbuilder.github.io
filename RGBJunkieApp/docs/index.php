@@ -22,7 +22,7 @@ rgbj_subpage_open([
 <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-journal-code me-2 text-info"></i>Documentation</h1>
 <p class="text-body-secondary mb-4">
     Extend RGBJunkie with custom plugins and effects, or use the free browser tools to prototype before you install the Windows app.
-    End-user hardware lists live on the <a href="<?= rgbj_h(rgbj_url('supported/')) ?>">supported gear</a> page; the API reference below is aimed at authors.
+    End-user guides and troubleshooting live in the <a href="<?= rgbj_h(rgbj_url('help/')) ?>">Help Center</a>; hardware lists are on the <a href="<?= rgbj_h(rgbj_url('supported/')) ?>">supported gear</a> page. The API reference below is aimed at authors.
 </p>
 
 <?php rgbj_render_user_app_guide(); ?>

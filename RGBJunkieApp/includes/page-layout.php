@@ -88,6 +88,7 @@ function rgbj_render_page_nav(): void
     $dropClass = static fn (string $page): string => rgbj_nav_is_active($page) ? ' active' : '';
     $dropCurrent = static fn (string $page): string => rgbj_nav_is_active($page) ? ' aria-current="page"' : '';
     $moreActive = in_array($active, ['releases', 'changelog', 'terms', 'privacy'], true);
+    $helpHref = rgbj_url('help/');
     ?>
 <body class="d-flex flex-column min-vh-100">
     <nav class="navbar navbar-expand-xl bg-body-tertiary border-bottom rgbj-site-nav">
@@ -114,6 +115,7 @@ function rgbj_render_page_nav(): void
                         <li><a class="dropdown-item<?= $dropClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $dropCurrent('changelog') ?>>Changelog</a></li>
                         <li><a class="dropdown-item<?= $dropClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $dropCurrent('supported') ?>>Supported gear</a></li>
                         <li><a class="dropdown-item<?= $dropClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $dropCurrent('docs') ?>>Documentation</a></li>
+                        <li><a class="dropdown-item<?= $dropClass('help') ?>" href="<?= rgbj_h($helpHref) ?>"<?= $dropCurrent('help') ?>>Help Center</a></li>
                     </ul>
                 </div>
             </div>
@@ -129,6 +131,7 @@ function rgbj_render_page_nav(): void
                     <?php endif; ?>
                     <li class="nav-item"><a class="nav-link rgbj-nav-link<?= $navClass('supported') ?>" href="<?= rgbj_h(rgbj_url('supported/')) ?>"<?= $navCurrent('supported') ?>><i class="bi bi-usb-symbol rgbj-nav-icon" aria-hidden="true"></i><span>Supported gear</span></a></li>
                     <li class="nav-item"><a class="nav-link rgbj-nav-link<?= $navClass('docs') ?>" href="<?= rgbj_h(rgbj_url('docs/')) ?>"<?= $navCurrent('docs') ?>><i class="bi bi-journal-code rgbj-nav-icon" aria-hidden="true"></i><span>Documentation</span></a></li>
+                    <li class="nav-item"><a class="nav-link rgbj-nav-link<?= $navClass('help') ?>" href="<?= rgbj_h($helpHref) ?>"<?= $navCurrent('help') ?>><i class="bi bi-life-preserver rgbj-nav-icon" aria-hidden="true"></i><span>Help</span></a></li>
                     <li class="nav-item dropdown rgbj-nav-more">
                         <a class="nav-link dropdown-toggle rgbj-nav-link<?= $moreActive ? ' active' : '' ?>" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-three-dots rgbj-nav-icon" aria-hidden="true"></i><span>More</span>
@@ -136,6 +139,7 @@ function rgbj_render_page_nav(): void
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><a class="dropdown-item<?= $dropClass('releases') ?>" href="<?= rgbj_h(rgbj_url('releases/')) ?>"<?= $dropCurrent('releases') ?>>Previous releases</a></li>
                             <li><a class="dropdown-item<?= $dropClass('changelog') ?>" href="<?= rgbj_h(rgbj_url('changelog/')) ?>"<?= $dropCurrent('changelog') ?>>Changelog</a></li>
+                            <li><a class="dropdown-item<?= $dropClass('help') ?>" href="<?= rgbj_h($helpHref) ?>"<?= $dropCurrent('help') ?>>Help Center</a></li>
                             <li><a class="dropdown-item<?= $dropClass('terms') ?>" href="<?= rgbj_h(rgbj_url('terms/')) ?>"<?= $dropCurrent('terms') ?>>Terms of Service</a></li>
                             <li><a class="dropdown-item<?= $dropClass('privacy') ?>" href="<?= rgbj_h(rgbj_url('privacy/')) ?>"<?= $dropCurrent('privacy') ?>>Privacy Policy</a></li>
                             <?php if ($isHome) : ?>
@@ -170,13 +174,16 @@ function rgbj_render_page_nav(): void
 function rgbj_subpage_open(array $breadcrumb = [], string $columnClass = ''): void
 {
     $w = 'div';
+    $isHelpPage = strpos($columnClass, 'rgbj-help-page') !== false;
+    $containerClass = $isHelpPage ? 'container-fluid px-3 px-lg-4 px-xxl-5' : 'container';
+    $rowClass = $isHelpPage ? 'row' : 'row justify-content-center';
     $colClass = ($columnClass !== '' && str_starts_with($columnClass, 'col-'))
         ? $columnClass
         : 'col-lg-10 col-xl-9' . ($columnClass !== '' ? ' ' . $columnClass : '');
     ?>
-    <main class="flex-grow-1 py-4 rgbj-subpage-glow">
-        <<?= $w ?> class="container">
-            <<?= $w ?> class="row justify-content-center">
+    <main class="flex-grow-1 py-4 rgbj-subpage-glow<?= $isHelpPage ? ' rgbj-subpage-glow--help' : '' ?>">
+        <<?= $w ?> class="<?= rgbj_h($containerClass) ?>">
+            <<?= $w ?> class="<?= rgbj_h($rowClass) ?>">
                 <<?= $w ?> class="<?= rgbj_h($colClass) ?>">
     <?php
     if ($breadcrumb !== []) {

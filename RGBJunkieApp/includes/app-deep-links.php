@@ -13,6 +13,26 @@ function rgbj_handoff_url(string $pathAndQuery): string
     return rgbj_url('s/') . '?p=' . rawurlencode($p);
 }
 
+/** Validate a relative path under the RGBJunkie user data folder (matches desktop app parser). */
+function rgbj_normalize_appdata_deep_link_subpath(string $raw): ?string
+{
+    $trimmed = trim(str_replace('\\', '/', $raw), " \t\n\r\0\x0B/");
+    if ($trimmed === '') {
+        return '';
+    }
+    if (strlen($trimmed) > 240) {
+        return null;
+    }
+    $segments = array_values(array_filter(explode('/', $trimmed), static fn ($s) => $s !== ''));
+    foreach ($segments as $segment) {
+        if ($segment === '.' || $segment === '..' || !preg_match('/^[a-z0-9._-]+$/i', $segment)) {
+            return null;
+        }
+    }
+
+    return implode('/', $segments);
+}
+
 /**
  * @return list<array{group: string, rows: list<array{action: string, app: string, handoff: string, note?: string}>}>
  */
@@ -72,6 +92,42 @@ function rgbj_app_deep_link_catalog(): array
                     'action' => 'Restart RGBJunkie',
                     'app' => 'rgbjunkie://app/restart',
                     'handoff' => 'app/restart',
+                ],
+            ],
+        ],
+        [
+            'group' => 'User data folder',
+            'rows' => [
+                [
+                    'action' => 'Open RGBJunkie user data folder',
+                    'app' => 'rgbjunkie://open/appdata',
+                    'handoff' => 'open/appdata',
+                    'note' => 'Windows: %APPDATA%\\RGBJunkie. Missing subfolders are created before opening.',
+                ],
+                [
+                    'action' => 'Open user plugins folder',
+                    'app' => 'rgbjunkie://open/appdata/plugins',
+                    'handoff' => 'open/appdata/plugins',
+                ],
+                [
+                    'action' => 'Open user components folder',
+                    'app' => 'rgbjunkie://open/appdata/components',
+                    'handoff' => 'open/appdata/components',
+                ],
+                [
+                    'action' => 'Open user effects folder',
+                    'app' => 'rgbjunkie://open/appdata/effects',
+                    'handoff' => 'open/appdata/effects',
+                ],
+                [
+                    'action' => 'Open logs folder',
+                    'app' => 'rgbjunkie://open/appdata/logs',
+                    'handoff' => 'open/appdata/logs',
+                ],
+                [
+                    'action' => 'Open scene profiles folder',
+                    'app' => 'rgbjunkie://open/appdata/profiles/scenes',
+                    'handoff' => 'open/appdata/profiles/scenes',
                 ],
             ],
         ],

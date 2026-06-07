@@ -1,0 +1,10 @@
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Clean URLs: /help/scene-profiles/ -> article.php?slug=scene-profiles
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([a-z0-9]+(?:-[a-z0-9]+)*)/?$ article.php?slug=$1 [L,QSA,NC]
+</IfModule>

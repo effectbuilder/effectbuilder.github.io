@@ -18,6 +18,8 @@ declare(strict_types=1);
                 <p class="small text-body-secondary mb-0">
                     <a href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a>
                     <span class="text-muted mx-1">·</span>
+                    <a href="<?= rgbj_h(rgbj_url('help/')) ?>">Help Center</a>
+                    <span class="text-muted mx-1">·</span>
                     <a href="<?= rgbj_h(rgbj_url('changelog/')) ?>">Changelog</a>
                     <span class="text-muted mx-1">·</span>
                     <a href="<?= rgbj_h(rgbj_url('terms/')) ?>">Terms of Service</a>

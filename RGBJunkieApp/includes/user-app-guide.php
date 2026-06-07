@@ -10,7 +10,7 @@ function rgbj_render_user_app_guide(): void
     <section class="mb-5" id="using-the-app">
         <h2 class="h4 fw-bold text-body-emphasis mb-2"><i class="bi bi-window-sidebar me-2 text-info"></i>Using RGBJunkie for Windows</h2>
         <p class="text-body-secondary col-lg-10 mb-4">
-            Quick reference for the desktop app. Open <strong>Settings → Help</strong> (or the toolbar <strong>Help</strong> button) inside RGBJunkie for the full guide in your language, including keyboard shortcuts and troubleshooting.
+            Quick reference for the desktop app. Browse the <a href="<?= rgbj_h(rgbj_url('help/')) ?>">Help Center</a> for step-by-step guides, or open <strong>Settings → Help</strong> (or the toolbar <strong>Help</strong> button) inside RGBJunkie for the full guide in your language, including keyboard shortcuts and troubleshooting.
         </p>
 
         <div class="row g-4">
