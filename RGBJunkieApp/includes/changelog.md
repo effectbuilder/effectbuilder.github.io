@@ -4,12 +4,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.69 — June 7, 2026
+
+#### Build
+
+- **Changelog syncs after Windows builds** — **Build menu** option **6** (and full release builds that include it) now refresh the local marketing site changelog automatically after a successful installer build, so you no longer need a separate **Sync changelog** step.
+- **Release notes follow the version bump** — a release build now retitles the top **CHANGELOG** section from the old app version to the new one (your dev notes ship under the correct version), then adds a stub for the next development cycle. Full release builds also sync the marketing site changelog again at the very end.
+
+---
+
 ## v0.3.68 — June 7, 2026
 
 #### Website
 
 - **Changelog version picker** — on **Changelog**, **By app version** is a compact dropdown instead of a long grid of version buttons.
 - **Changelog dropdown readable in dark mode** — the version list uses a dark background and light text so every release is easy to read when the menu is open.
+
+#### Settings
+
+- **Performance charts per device** — **Settings → Hardware → Performance** lists each output device in an expandable card with live frame-rate and data-rate pills plus four charts: frame rate, **bus I/O** (USB, HID, and WLED writes per second), frame spacing, and data rate (~30 seconds of history while the tab is open).
 
 ---
 
