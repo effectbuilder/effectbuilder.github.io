@@ -41,14 +41,40 @@ require dirname(__DIR__) . '/includes/page-footer.php';
 ?>
 <script>
     (function () {
-        var hash = window.location.hash;
-        if (!hash) return;
-        var el = document.querySelector(hash);
-        if (el) {
-            requestAnimationFrame(function () {
-                el.scrollIntoView({ behavior: "smooth", block: "start" });
+        var select = document.getElementById("rgbj-changelog-version-select");
+
+        function scrollToHash(hash, smooth) {
+            if (!hash) return;
+            var el = document.querySelector(hash);
+            if (!el) return;
+            el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+        }
+
+        function syncSelectFromHash() {
+            if (!select) return;
+            var hash = window.location.hash;
+            if (!hash) return;
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === hash) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (select) {
+            select.addEventListener("change", function () {
+                var hash = select.value;
+                if (!hash) return;
+                history.replaceState(null, "", hash);
+                scrollToHash(hash, true);
             });
         }
+
+        window.addEventListener("hashchange", syncSelectFromHash);
+
+        syncSelectFromHash();
+        scrollToHash(window.location.hash, !!window.location.hash);
     })();
 </script>
 <?php rgbj_page_scripts_end(); ?>

@@ -147,15 +147,20 @@ function rgbj_render_changelog_versions_nav(): void
     }
     $current = $meta['appVersion'];
     ?>
-    <nav class="rgbj-changelog-versions-nav" aria-label="Jump to a version">
-        <p class="rgbj-changelog-versions-nav__label"><i class="bi bi-tags me-1" aria-hidden="true"></i>By app version</p>
-        <?php foreach ($meta['versions'] as $version) :
-            $slug = rgbj_changelog_version_slug($version);
-            $isCurrent = $version === $current;
-            ?>
-        <a href="#<?= rgbj_h($slug) ?>"<?= $isCurrent ? ' class="rgbj-changelog-versions-nav__current"' : '' ?> title="Release notes for v<?= rgbj_h($version) ?>">v<?= rgbj_h($version) ?></a>
-        <?php endforeach; ?>
-    </nav>
+    <div class="rgbj-changelog-versions-nav" role="navigation" aria-label="Jump to a version">
+        <label class="rgbj-changelog-versions-nav__label" for="rgbj-changelog-version-select">
+            <i class="bi bi-tags me-1" aria-hidden="true"></i>By app version
+        </label>
+        <select id="rgbj-changelog-version-select" class="rgbj-changelog-versions-nav__select form-select form-select-sm" aria-describedby="rgbj-changelog-version-select-hint">
+            <?php foreach ($meta['versions'] as $version) :
+                $slug = rgbj_changelog_version_slug($version);
+                $isCurrent = $version === $current;
+                ?>
+            <option value="#<?= rgbj_h($slug) ?>"<?= $isCurrent ? ' selected' : '' ?>>v<?= rgbj_h($version) ?><?= $isCurrent ? ' (latest)' : '' ?></option>
+            <?php endforeach; ?>
+        </select>
+        <span id="rgbj-changelog-version-select-hint" class="rgbj-changelog-versions-nav__hint visually-hidden">Jump to release notes for the selected version.</span>
+    </div>
     <?php
 }
 

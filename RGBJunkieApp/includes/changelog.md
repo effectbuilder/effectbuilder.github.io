@@ -4,6 +4,15 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.68 — June 7, 2026
+
+#### Website
+
+- **Changelog version picker** — on **Changelog**, **By app version** is a compact dropdown instead of a long grid of version buttons.
+- **Changelog dropdown readable in dark mode** — the version list uses a dark background and light text so every release is easy to read when the menu is open.
+
+---
+
 ## v0.3.67 — June 7, 2026
 
 #### About
