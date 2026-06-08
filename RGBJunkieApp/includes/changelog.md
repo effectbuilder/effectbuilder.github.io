@@ -6,11 +6,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.70 — June 7, 2026
 
-*(Add release notes for v0.3.70.)*
+#### Settings
 
----
-
-## v0.3.69 — June 7, 2026
+- **Device throughput charts** — **Settings → Hardware → Throughput** shows live charts for frame rate, USB/HID/WLED traffic, frame spacing, and data sent to each connected device (~30 seconds of history while the tab is open).
 
 #### Effects
 
@@ -37,7 +35,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 - **Audio Waveform Sim defaults** — **Amplitude** 45, **Line Thickness** 11, **Flow on Sound** 19, **Repeat** 6 (Rainbow profile, black background).
 - **Bio-Neural Automata fills your layout** — the slime-mold simulation runs at your engine canvas size (for example **640×400**) instead of staying stuck in the old **320×200** box.
 - **Bio-Neural Automata scales cleanly** — the colony simulates at your full layout size with scaled agent count and trail physics, so **640×400** matches **320×200** in feel with smoother, finer trails instead of chunky upscaled blocks.
-- **Chuck Norris legend image loads again** — the app reads `legend.gif` from disk when the effect starts and passes it into the iframe, so the animated legend shows even when the preview iframe cannot fetch sibling files on its own.
+- **Chuck Norris legend image loads again** — the animated legend GIF shows when the effect starts; the app loads it from disk so the preview iframe does not need to fetch sibling files on its own.
 - **Butterchurn SRGB fills your layout** — the visualizer stretches to your full engine canvas instead of sitting in a small box at the top-left (stable **320×200** render, upscaled to fit).
 - **Bioluminescent Deep is back to the organic spore look** — the glowing cyan deep-water clusters return (the bay wave scene that replaced them is removed). The effect still fills your layout size with crisp pixels.
 - **Bioluminescent Deep softer bass pulse** — beat highlights stay on the spores instead of flashing the whole layout white; **Bass highlight** defaults lower for a gentler look.
@@ -47,7 +45,8 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 #### Effect switching
 
-- **Audio-reactive effects receive music data** — effects that read the spectrum through `engine?.audio` (including **Bioluminescent Deep**) now get live audio from the app instead of staying silent. — choosing an HTML effect after an **MJS** effect always reloads the effect canvas instead of sometimes reusing the empty MJS placeholder, so your lights and preview match the new effect.
+- **Audio-reactive effects receive music data** — effects that read the spectrum through `engine?.audio` (including **Bioluminescent Deep**) now get live audio from the app instead of staying silent.
+- **HTML effects reload after MJS effects** — choosing an HTML effect after an **MJS** effect always reloads the effect canvas instead of sometimes reusing the empty MJS placeholder, so your lights and preview match the new effect.
 - **Effect switching checks the loaded page** — when you pick a different HTML effect, the app verifies the canvas page title matches before reusing it, so you do not keep seeing the previous effect’s visuals.
 
 #### Audio Visualizer
@@ -60,6 +59,15 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 #### Nollie32
 
 - **Fewer whole-strip blinks (fixed)** — when the effect canvas briefly drops a frame, Nollie32 now keeps showing the last good colors **and** keeps sending USB refresh traffic. A previous hold-colors path skipped that refresh, which made the strip blink off anyway.
+
+---
+
+## v0.3.69 — June 7, 2026
+
+#### Build
+
+- **Changelog syncs after Windows builds** — **Build menu** option **6** (and full release builds that include it) now refresh the local marketing site changelog automatically after a successful installer build, so you no longer need a separate **Sync changelog** step.
+- **Release notes follow the version bump** — a release build now retitles the top **CHANGELOG** section from the old app version to the new one (your dev notes ship under the correct version), then adds a stub for the next development cycle. Full release builds also sync the marketing site changelog again at the very end.
 
 ---
 
@@ -81,6 +89,10 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 - **Changelog version picker** — on **Changelog**, **By app version** is a compact dropdown instead of a long grid of version buttons.
 - **Changelog dropdown readable in dark mode** — the version list uses a dark background and light text so every release is easy to read when the menu is open.
+
+#### Settings
+
+- **Performance charts per device** — **Settings → Hardware → Performance** lists each output device in an expandable card with live frame-rate and data-rate pills plus four charts: frame rate, **bus I/O** (USB, HID, and WLED writes per second), frame spacing, and data rate (~30 seconds of history while the tab is open).
 
 ---
 
