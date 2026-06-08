@@ -4,25 +4,83 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.70 — June 7, 2026
+
+*(Add release notes for v0.3.70.)*
+
+---
+
 ## v0.3.69 — June 7, 2026
 
-#### Build
+#### Effects
 
-- **Changelog syncs after Windows builds** — **Build menu** option **6** (and full release builds that include it) now refresh the local marketing site changelog automatically after a successful installer build, so you no longer need a separate **Sync changelog** step.
-- **Release notes follow the version bump** — a release build now retitles the top **CHANGELOG** section from the old app version to the new one (your dev notes ship under the correct version), then adds a stub for the next development cycle. Full release builds also sync the marketing site changelog again at the very end.
+- **Comet uses Color profile** — the Lian Li–style comet band reads **Color profile** and **Settings → Color profiles** instead of only the old per-object gradient pickers.
+- **Comet reacts to music** — bass drives beat flashes, brightness, and comet speed again (audio was off by default and never fed into the animation loop).
+- **ORGB: Comet color profile & bass** — profile colors resolve correctly from the host, and **Bass boost** brightens and speeds the horizontal comet on the beat.
+- **Audio Bubbles thicker rings by default** — new installs and **Reset to defaults** use a **Bubbles Thickness** of **160** so rings read clearly on wide layouts (same as the recommended share preset).
+- **Audio Eclipse ring renders again** — the rotating spectrum ring and central void show on your layout; a bad canvas handoff had been drawing an empty buffer instead of the eclipse pixels.
+- **Audio Eclipse uses Color profile** — **Palette** and **Amplitude Hue** modes read **Color profile** and **Settings → Color profiles** (the old Ocean / Lava palette list is removed).
+- **Audio Eclipse tuned defaults** — new installs and **Reset to defaults** match the recommended share preset: tighter ring beams, brighter corona, larger star field, and stronger audio response.
+- **Audio Eclipse fits your layout** — the eclipse, ring, stars, and comets draw at your engine canvas size (for example **640×400**), scaled proportionally so it stays centered and fills the layout with no black borders.
+- **Audio Eclipse runs smoother** — the spectrum ring uses precomputed color tables and a tighter pixel loop, so large layouts stay more responsive without blowing out to white.
+- **Audio Sine fills your layout** — the wave draws at your engine canvas size (for example **640×400**) instead of staying stuck at the old **320×200** preset box.
+- **Audio Sine uses the full spectrum** — the wave shape is built from all **200** frequency bins (one partial per bin), so bass, mids, and treble each push different ripples instead of one averaged bump.
+- **Audio Sine runs smoother** — colors and wave shape are precomputed per column, so large layouts stay responsive without recalculating every pixel.
+- **Audio Star runs smoother** — spoke colors use a precomputed profile table and ray weights are baked per pixel, so large layouts (for example **640×400**) stay responsive without recalculating every color on every frame.
+- **Audio Star Star Points work again** — **Star Points** now draws the number of rays you pick (3–12). The old pattern used a sine formula that doubled the count and washed out the shape, so the slider looked like it did nothing.
+- **Audio Star spectrum spins** — **Rotation Speed** now rotates the frequency bins and star rays together around the center. **Color Flow** still scrolls profile colors separately when music is playing.
+- **Audio Star tuned defaults** — new installs and **Reset to defaults** use a slower **Rotation Speed** of **8** so the star drifts gently instead of spinning fast out of the box (matches the recommended share preset).
+- **Audio Waveform Sim uses Color profile** — the simulated waveform reads **Color profile** and **Settings → Color profiles** instead of a single **Wave Color** picker. **Color Flow** scrolls the gradient along the wave.
+- **Audio Waveform Sim wave position** — the line sits at the same height as before the color-profile update (original **320×200** center), while still drawing across your full layout width.
+- **Audio Waveform Sim smoother wave** — the line is rebuilt each frame from the spectrum (same idea as **Audio Sine**), so there is no flat edge or blobby beads at the start. **Flow on Sound** drifts the wave when music is playing.
+- **Audio Waveform Sim Repeat** — **Repeat** sets how many wave cycles fit across your layout (same as **Audio Sine**).
+- **Audio Waveform Sim defaults** — **Amplitude** 45, **Line Thickness** 11, **Flow on Sound** 19, **Repeat** 6 (Rainbow profile, black background).
+- **Bio-Neural Automata fills your layout** — the slime-mold simulation runs at your engine canvas size (for example **640×400**) instead of staying stuck in the old **320×200** box.
+- **Bio-Neural Automata scales cleanly** — the colony simulates at your full layout size with scaled agent count and trail physics, so **640×400** matches **320×200** in feel with smoother, finer trails instead of chunky upscaled blocks.
+- **Chuck Norris legend image loads again** — the app reads `legend.gif` from disk when the effect starts and passes it into the iframe, so the animated legend shows even when the preview iframe cannot fetch sibling files on its own.
+- **Butterchurn SRGB fills your layout** — the visualizer stretches to your full engine canvas instead of sitting in a small box at the top-left (stable **320×200** render, upscaled to fit).
+- **Bioluminescent Deep is back to the organic spore look** — the glowing cyan deep-water clusters return (the bay wave scene that replaced them is removed). The effect still fills your layout size with crisp pixels.
+- **Bioluminescent Deep softer bass pulse** — beat highlights stay on the spores instead of flashing the whole layout white; **Bass highlight** defaults lower for a gentler look.
+- **Bioluminescent Deep — separate audio controls** — **Audio agitation** stirs the spore currents on the beat (movement only); **Bass highlight** is its own brightness pulse.
+- **Bioluminescent Deep settings** — color options live in one **Colors** tab instead of split **Color** / **Colors** tabs.
+- **Bioluminescent Deep bass highlight fixed** — **Bass highlight** gets live spectrum data again and pulses on the beat like before (the app had skipped audio for this effect).
+
+#### Effect switching
+
+- **Audio-reactive effects receive music data** — effects that read the spectrum through `engine?.audio` (including **Bioluminescent Deep**) now get live audio from the app instead of staying silent. — choosing an HTML effect after an **MJS** effect always reloads the effect canvas instead of sometimes reusing the empty MJS placeholder, so your lights and preview match the new effect.
+- **Effect switching checks the loaded page** — when you pick a different HTML effect, the app verifies the canvas page title matches before reusing it, so you do not keep seeing the previous effect’s visuals.
+
+#### Audio Visualizer
+
+- **Motion / spin works on every layout** — **Motion / spin** now rotates the radial ring and scrolls the spectrum on linear-style layouts. Before, it only affected Orbit, Spiral, Rings, Bloom, and Tunnel, so **Linear** and **Radial** looked frozen.
+- **Motion / spin on Radial (fixed again)** — the **Audio Visualizer** effect file in the catalog was an older copy that never applied spin on **Radial**; it now matches the main visualizer and reads **Motion / spin** reliably.
+- **One Audio Visualizer in the list** — the multi-mode visualizer (Linear, **Radial**, Orbit, …) is now **Audio Visualizer**. The older circular blob effect was renamed **Spectrum Blob** so it no longer replaces the wrong file in the effect list.
+- **Audio Visualizer tuned defaults** — new installs and **Reset to defaults** turn on **Mirror spectrum** to match the recommended share preset (Linear layout, **Motion / spin** 25, profile bar colors).
+
+#### Nollie32
+
+- **Fewer whole-strip blinks (fixed)** — when the effect canvas briefly drops a frame, Nollie32 now keeps showing the last good colors **and** keeps sending USB refresh traffic. A previous hold-colors path skipped that refresh, which made the strip blink off anyway.
 
 ---
 
 ## v0.3.68 — June 7, 2026
 
+#### Color profiles
+
+- **Your color profiles stay in the app** — gradients you create under **Settings → Color profiles** are saved in one app-wide library, so they still appear after restart and are not tied to a single scene preset. Existing profiles in your scene files are merged in automatically the first time you open the updated app.
+
+#### Effects
+
+- **Audio Sine stays on screen** — the wave no longer jumps above or below the layout when music is loud; height still follows the spectrum and **Audio Reactivity**.
+- **Audio Sine centered on your layout** — the wave sits in the middle of the strip instead of hugging the bottom, and still grows with louder music.
+- **Audio Sine Repeat matches wave count** — **Repeat** only changes how many sine waves fit across your layout; it no longer blends in extra smoothing or spectrum detail at higher values.
+- **Audio Sine Flow on Sound works again** — the wave drifts sideways with music at a speed that matches the **Flow on Sound** slider (it was barely moving before).
+- **Audio Bubbles uses Color profile only** — bubble colors come from **Color profile** and **Settings → Color profiles** (the old Ocean / Vaporwave preset list is removed); each new bubble cycles through every color in the profile instead of staying in the bass end of the spectrum.
+
 #### Website
 
 - **Changelog version picker** — on **Changelog**, **By app version** is a compact dropdown instead of a long grid of version buttons.
 - **Changelog dropdown readable in dark mode** — the version list uses a dark background and light text so every release is easy to read when the menu is open.
-
-#### Settings
-
-- **Performance charts per device** — **Settings → Hardware → Performance** lists each output device in an expandable card with live frame-rate and data-rate pills plus four charts: frame rate, **bus I/O** (USB, HID, and WLED writes per second), frame spacing, and data rate (~30 seconds of history while the tab is open).
 
 ---
 
