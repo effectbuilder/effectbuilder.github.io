@@ -4,7 +4,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.70 — June 7, 2026
+## v0.3.72 — June 8, 2026
+
+*(Add release notes for v0.3.72.)*
+
+---
+
+## v0.3.71 — June 8, 2026
+
+#### Scenes
+
+- **Unsaved scene changes after restart** — if you edit a loaded scene and restart without saving, switching or reloading that scene again asks whether to save first (the app keeps the last clean snapshot on disk instead of treating autosave as already saved).
+
+#### Sleep and hibernate
+
+- **App stays fast after wake** — resuming from sleep or hibernate now restarts the lighting and effect loop right away (not only after a tab visibility change), and pauses automatic memory cleanup for about a minute so wake recovery is not competing with a background trim.
+
+#### Performance
+
+- **Always full-speed renderer** — RGBJunkie no longer switches WebView2 into low-memory mode during **Free RAM**, auto-trim, or tray/minimize. Lights and effects stay at full performance even when the window is hidden.
 
 #### Settings
 
