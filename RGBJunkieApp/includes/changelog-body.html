@@ -4,6 +4,40 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-74" data-version="0.3.74">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.74</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 11, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.74.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-73" data-version="0.3.73">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.73</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 11, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.72.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-72" data-version="0.3.72">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -15,9 +49,30 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.3.72</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 8, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.72.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights no longer freeze when the app is in focus</strong> — with a fast USB controller (Nollie-class) connected, clicking on the RGBJunkie window could stop all your other lights (WLED, wallpaper, RGB RAM) while the on-screen effect kept animating. Clicking away made them update again. The lighting loop now keeps itself running whether or not the window has focus.</li><li><strong>Effects run at monitor refresh again</strong> — HTML effects no longer crawl at ~10–12 FPS when <strong>Settings → Hardware</strong> uses a high device update cap (default <strong>120 FPS</strong>). The workspace preview composites on its own display-timed loop again; your strips still sample the live effect frame on each hardware tick so Nollie-class controllers stay smooth.</li><li><strong>Smoother effect preview with high-FPS USB</strong> — with a Nollie or similar device connected, the main lighting loop stays on display refresh while USB keeps its own fast timer, so the effect iframe is not starved by ~100 Hz canvas work on one thread.</li><li><strong>Effect FPS no longer stuck at 0–1</strong> — fixed a regression where the status bar and preview could freeze after the unique-frame counter change; compositing and scheduling work correctly again with the USB sidecar.</li><li><strong>Effect preview keeps up while USB is busy</strong> — when the preview is fed frame-by-frame from the effect (common with fast USB gear connected), several frames can now be on the way at once instead of one at a time. Effects that dropped to a slideshow while strips were updating move smoothly again.</li><li><strong>Effect FPS tells the truth</strong> — the status bar now counts only frames where the effect picture actually changed, instead of counting every repaint of the same frame. If you ever see a low number there again, it matches what your eyes see — and hovering the FPS cell shows how the preview is being fed.</li><li><strong>Wallpaper backgrounds no longer cause stutter</strong> — running one or more Wallpaper effects no longer makes everything periodically freeze for a fraction of a second and drop to a slideshow. The capture used to make a fresh full-size copy of the picture every frame; it now reuses one.</li><li><strong>&quot;Full canvas&quot; wallpaper mode removed</strong> — the Wallpaper stream-mode option that sent a sharp JPEG of your whole effect every frame is gone. It kept piling up memory and stuttering, and a saved scene could quietly turn it back on. Wallpaper effects now always use the <strong>Virtual LEDs</strong> grid, which stays smooth. If an older scene still had Full canvas selected, it switches to the grid automatically — nothing for you to change.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Pick one wallpaper app when two are open</strong> — if you have both <strong>Lively Wallpaper</strong> and <strong>Wallpaper Engine</strong> running, RGBJunkie now asks which one you want to light up instead of quietly fighting over them (they share the same connection, so only one can work at a time). RGBJunkie closes the other for you and remembers your pick. To switch later, just close the app you don't want and open the other — RGBJunkie follows whichever one is open and will ask again the next time both are running.</li><li><strong>Wallpaper device renamed to &quot;Live Wallpaper&quot;</strong> — the wallpaper device in your device tree now shows as <strong>Live Wallpaper</strong> (and <strong>Live Wallpaper (2nd Screen)</strong>) instead of &quot;Wallpaper Engine 2,&quot; since it lights up either Lively Wallpaper or Wallpaper Engine.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Status bar</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Hardware min / max FPS is visible again</strong> — the bottom bar shows slowest and fastest device rates as <strong>60 / 120 fps</strong> when you have gear connected (not only a single number). The FPS column is wide enough that the hardware line is not cut off, and device count stays accurate even when USB stagger skips a plugin for a frame.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Nollie32</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>High-FPS strips reach their target again</strong> — Nollie-class controllers no longer sit at ~10 fps when the main loop is busy sampling the canvas. USB `Render()` runs on its own fast timer using the last good colors while the engine resamples effects at monitor refresh (~60 Hz).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>RGB RAM</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Adding RAM sticks no longer slows everything down</strong> — color updates for RGB RAM ride a very slow bus, and each extra stick makes every update take longer. Those updates used to block the whole app while they ran, so installing more RGB RAM could drop effects and USB strips to a slideshow. RAM updates now run in the background: your effects, preview, and other devices keep full speed no matter how many sticks are installed.</li><li><strong>Faster wake from sleep with RGB RAM</strong> — the RAM reconnect step after waking your PC no longer freezes the app for a couple of seconds while it waits for the memory controllers to settle.</li></ul>
+</article></div>
+</section>
 </div>
 </div>
 </article>
