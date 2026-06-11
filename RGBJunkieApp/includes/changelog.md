@@ -9,18 +9,25 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 #### Effects
 
 - **Lights no longer freeze when the app is in focus** — with a fast USB controller (Nollie-class) connected, clicking on the RGBJunkie window could stop all your other lights (WLED, wallpaper, RGB RAM) while the on-screen effect kept animating. Clicking away made them update again. The lighting loop now keeps itself running whether or not the window has focus.
+
+#### Wallpaper
+
+- **Pick one wallpaper app when two are open** — if you have both **Lively Wallpaper** and **Wallpaper Engine** running, RGBJunkie now asks which one you want to light up instead of quietly fighting over them (they share the same connection, so only one can work at a time). RGBJunkie closes the other for you and remembers your pick. To switch later, just close the app you don't want and open the other — RGBJunkie follows whichever one is open and will ask again the next time both are running.
+- **"Full canvas" wallpaper mode removed** — the Wallpaper stream-mode option that sent a sharp JPEG of your whole effect every frame is gone. It kept piling up memory and stuttering, and a saved scene could quietly turn it back on. Wallpaper effects now always use the **Virtual LEDs** grid, which stays smooth. If an older scene still had Full canvas selected, it switches to the grid automatically — nothing for you to change.
+- **Wallpaper device renamed to "Live Wallpaper"** — the wallpaper device in your device tree now shows as **Live Wallpaper** (and **Live Wallpaper (2nd Screen)**) instead of "Wallpaper Engine 2," since it lights up either Lively Wallpaper or Wallpaper Engine.
+
+---
+
+## v0.3.72 — June 8, 2026
+
+#### Effects
+
 - **Effects run at monitor refresh again** — HTML effects no longer crawl at ~10–12 FPS when **Settings → Hardware** uses a high device update cap (default **120 FPS**). The workspace preview composites on its own display-timed loop again; your strips still sample the live effect frame on each hardware tick so Nollie-class controllers stay smooth.
 - **Smoother effect preview with high-FPS USB** — with a Nollie or similar device connected, the main lighting loop stays on display refresh while USB keeps its own fast timer, so the effect iframe is not starved by ~100 Hz canvas work on one thread.
 - **Effect FPS no longer stuck at 0–1** — fixed a regression where the status bar and preview could freeze after the unique-frame counter change; compositing and scheduling work correctly again with the USB sidecar.
 - **Effect preview keeps up while USB is busy** — when the preview is fed frame-by-frame from the effect (common with fast USB gear connected), several frames can now be on the way at once instead of one at a time. Effects that dropped to a slideshow while strips were updating move smoothly again.
 - **Effect FPS tells the truth** — the status bar now counts only frames where the effect picture actually changed, instead of counting every repaint of the same frame. If you ever see a low number there again, it matches what your eyes see — and hovering the FPS cell shows how the preview is being fed.
 - **Wallpaper backgrounds no longer cause stutter** — running one or more Wallpaper effects no longer makes everything periodically freeze for a fraction of a second and drop to a slideshow. The capture used to make a fresh full-size copy of the picture every frame; it now reuses one.
-- **"Full canvas" wallpaper mode removed** — the Wallpaper stream-mode option that sent a sharp JPEG of your whole effect every frame is gone. It kept piling up memory and stuttering, and a saved scene could quietly turn it back on. Wallpaper effects now always use the **Virtual LEDs** grid, which stays smooth. If an older scene still had Full canvas selected, it switches to the grid automatically — nothing for you to change.
-
-#### Wallpaper
-
-- **Pick one wallpaper app when two are open** — if you have both **Lively Wallpaper** and **Wallpaper Engine** running, RGBJunkie now asks which one you want to light up instead of quietly fighting over them (they share the same connection, so only one can work at a time). RGBJunkie closes the other for you and remembers your pick. To switch later, just close the app you don't want and open the other — RGBJunkie follows whichever one is open and will ask again the next time both are running.
-- **Wallpaper device renamed to "Live Wallpaper"** — the wallpaper device in your device tree now shows as **Live Wallpaper** (and **Live Wallpaper (2nd Screen)**) instead of "Wallpaper Engine 2," since it lights up either Lively Wallpaper or Wallpaper Engine.
 
 #### Status bar
 
