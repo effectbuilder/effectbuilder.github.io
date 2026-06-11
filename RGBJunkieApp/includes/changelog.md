@@ -4,19 +4,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.74 — June 11, 2026
-
-*(Add release notes for v0.3.74.)*
-
----
-
 ## v0.3.73 — June 11, 2026
-
-*(Add release notes for v0.3.72.)*
-
----
-
-## v0.3.72 — June 8, 2026
 
 #### Effects
 
