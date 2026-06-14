@@ -4,7 +4,17 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.76 — June 13, 2026
+## v0.3.78 — June 14, 2026
+
+*(Add release notes for v0.3.78.)*
+
+---
+
+## v0.3.77 — June 14, 2026
+
+#### Effects
+
+- **Pac-Man for Stream Deck Plus** — new arcade-style Pac-Man effect for the eight LCD keys and touch strip.
 
 #### Reliability
 
@@ -18,6 +28,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 - **Stream Deck Plus no longer pauses your other USB lights** — the Stream Deck's screen sends large image updates. Previously those shared a limited pool of USB send slots with all your other controllers, and the screen was also being refreshed on a timer it didn't need (its image stays on screen by itself). On a busy setup — for example a Stream Deck next to a high-speed strip — the extra traffic could overwhelm the screen and freeze every USB device for several seconds. The Stream Deck screen now sends on its own dedicated lane, only when the picture actually changes, and without the unnecessary timer refresh — so it keeps showing your effect smoothly while your keyboards, mice, pads, and strips keep running.
 - **Stream Deck Plus screen stays smooth and doesn't lock up** — a full screen update is a big burst of image data, and sending it all at once could overrun the Stream Deck and leave its screen frozen on the last picture. RGBJunkie now spaces out those image updates just enough for the screen to keep up, so the live effect keeps flowing on the buttons and dial strip instead of getting stuck.
+- **Stream Deck Plus edge alignment** — the workspace layout box now matches the plugin’s 160×100 screen shape (instead of a taller 4×3 LED grid), so any effect you assign reaches the bottom of the keys and dial strip without a thin gap. LCD sampling uses the full device canvas, and the touch strip reads the whole strip band top to bottom.
+- **Stream Deck Plus shows the full effect on each LCD key and the touch strip** — sampling was mapped through the small LED marker grid (about four columns by three rows) instead of the whole device layout box, so only the center of your effect reached the hardware — roughly a 15% crop from every edge. Canvas-style Stream Deck plugins now map the full layout region, so ghosts, icons, and maze art fit the keys and dial strip without zooming in.
+- **Stream Deck Plus touch strip no longer stretches your art** — the plugin was sampling a wide-but-short slice of the effect (about 159×21 pixels) and stretching it to the dial strip’s 800×100 JPEG. That mismatch squashed or stretched anything on the touch bar. The plugin now samples an 8:1 region aligned with the key row (same aspect as the hardware JPEG), so maze lines, icons, and text keep their shape on the strip.
 - **Forced color now works on the Stream Deck Plus screen** — setting the device's Lighting Mode to **Forced** had no effect on the buttons or dial strip; they kept showing the effect. Forced mode now paints the whole screen your chosen Forced color, and switching mode or picking a new color updates the screen right away.
 
 ---

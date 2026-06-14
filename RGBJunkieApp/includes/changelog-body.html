@@ -4,7 +4,7 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-76" data-version="0.3.76">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-78" data-version="0.3.78">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -12,13 +12,34 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.76</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 13, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.78</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 14, 2026</p>
+</div>
+<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.78.)</em></p>
+</header>
+<div class="rgbj-changelog-release__body">
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-77" data-version="0.3.77">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.77</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 14, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Pac-Man for Stream Deck Plus</strong> — new arcade-style Pac-Man effect for the eight LCD keys and touch strip.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>One slow USB device can't freeze the rest anymore</strong> — RGBJunkie used to send to all your USB lights through a shared handoff, so if any single device got stuck mid-update (a screen flooded with image data, a controller that stopped responding), every other light would pause with it until that device recovered. Each USB device now has its own private send line, so a stuck or slow device only ever holds up itself — your other keyboards, mice, pads, strips, and screens keep updating without a hitch.</li></ul>
 </article>
@@ -28,7 +49,7 @@
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck Plus no longer pauses your other USB lights</strong> — the Stream Deck's screen sends large image updates. Previously those shared a limited pool of USB send slots with all your other controllers, and the screen was also being refreshed on a timer it didn't need (its image stays on screen by itself). On a busy setup — for example a Stream Deck next to a high-speed strip — the extra traffic could overwhelm the screen and freeze every USB device for several seconds. The Stream Deck screen now sends on its own dedicated lane, only when the picture actually changes, and without the unnecessary timer refresh — so it keeps showing your effect smoothly while your keyboards, mice, pads, and strips keep running.</li><li><strong>Stream Deck Plus screen stays smooth and doesn't lock up</strong> — a full screen update is a big burst of image data, and sending it all at once could overrun the Stream Deck and leave its screen frozen on the last picture. RGBJunkie now spaces out those image updates just enough for the screen to keep up, so the live effect keeps flowing on the buttons and dial strip instead of getting stuck.</li><li><strong>Forced color now works on the Stream Deck Plus screen</strong> — setting the device's Lighting Mode to <strong>Forced</strong> had no effect on the buttons or dial strip; they kept showing the effect. Forced mode now paints the whole screen your chosen Forced color, and switching mode or picking a new color updates the screen right away.</li></ul>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck Plus no longer pauses your other USB lights</strong> — the Stream Deck's screen sends large image updates. Previously those shared a limited pool of USB send slots with all your other controllers, and the screen was also being refreshed on a timer it didn't need (its image stays on screen by itself). On a busy setup — for example a Stream Deck next to a high-speed strip — the extra traffic could overwhelm the screen and freeze every USB device for several seconds. The Stream Deck screen now sends on its own dedicated lane, only when the picture actually changes, and without the unnecessary timer refresh — so it keeps showing your effect smoothly while your keyboards, mice, pads, and strips keep running.</li><li><strong>Stream Deck Plus screen stays smooth and doesn't lock up</strong> — a full screen update is a big burst of image data, and sending it all at once could overrun the Stream Deck and leave its screen frozen on the last picture. RGBJunkie now spaces out those image updates just enough for the screen to keep up, so the live effect keeps flowing on the buttons and dial strip instead of getting stuck.</li><li><strong>Stream Deck Plus edge alignment</strong> — the workspace layout box now matches the plugin’s 160×100 screen shape (instead of a taller 4×3 LED grid), so any effect you assign reaches the bottom of the keys and dial strip without a thin gap. LCD sampling uses the full device canvas, and the touch strip reads the whole strip band top to bottom.</li><li><strong>Stream Deck Plus shows the full effect on each LCD key and the touch strip</strong> — sampling was mapped through the small LED marker grid (about four columns by three rows) instead of the whole device layout box, so only the center of your effect reached the hardware — roughly a 15% crop from every edge. Canvas-style Stream Deck plugins now map the full layout region, so ghosts, icons, and maze art fit the keys and dial strip without zooming in.</li><li><strong>Stream Deck Plus touch strip no longer stretches your art</strong> — the plugin was sampling a wide-but-short slice of the effect (about 159×21 pixels) and stretching it to the dial strip’s 800×100 JPEG. That mismatch squashed or stretched anything on the touch bar. The plugin now samples an 8:1 region aligned with the key row (same aspect as the hardware JPEG), so maze lines, icons, and text keep their shape on the strip.</li><li><strong>Forced color now works on the Stream Deck Plus screen</strong> — setting the device's Lighting Mode to <strong>Forced</strong> had no effect on the buttons or dial strip; they kept showing the effect. Forced mode now paints the whole screen your chosen Forced color, and switching mode or picking a new color updates the screen right away.</li></ul>
 </article></div>
 </section>
 </div>
