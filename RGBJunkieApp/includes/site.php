@@ -29,7 +29,7 @@ function rgbj_base_path(): string
     }
 
   // Nested paths under RGBJunkieApp (e.g. stats/downloads/) — strip all section segments.
-    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'deep-links', 'changelog', 'help', 'edit', 'api', 'stats', 'downloads', 'thanks'];
+    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'deep-links', 'changelog', 'help', 'edit', 'admin', 'api', 'stats', 'downloads', 'thanks'];
     while ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
         array_pop($segments);
     }

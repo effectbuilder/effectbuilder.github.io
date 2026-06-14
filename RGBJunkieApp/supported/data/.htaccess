@@ -1,0 +1,4 @@
+# Validation registry — read/write via supported/api/validations.php only.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>

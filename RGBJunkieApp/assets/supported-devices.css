@@ -109,6 +109,10 @@
     letter-spacing: 0.045em;
     text-transform: uppercase;
     color: var(--bs-emphasis-color);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.65rem;
 }
 
 .sd-card-share {
@@ -330,4 +334,118 @@
 
 .sd-row-flash {
     animation: sd-card-flash 1.4s ease-out 1;
+}
+
+.sd-view-tabs .nav-link {
+    color: var(--bs-secondary-color);
+    border: 1px solid transparent;
+}
+
+.sd-view-tabs .nav-link.active {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.35);
+    color: var(--bs-emphasis-color);
+}
+
+.sd-validated-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: #9ef0c8;
+    background: rgba(25, 135, 84, 0.22);
+    border: 1px solid rgba(25, 135, 84, 0.45);
+    vertical-align: middle;
+}
+
+.sd-validated-badge--inline {
+    margin-left: 0.35rem;
+}
+
+.sd-experimental-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: #ffd98a;
+    background: rgba(255, 193, 7, 0.18);
+    border: 1px solid rgba(255, 193, 7, 0.45);
+    vertical-align: middle;
+}
+
+.sd-experimental-badge--inline {
+    margin-left: 0.35rem;
+}
+
+.sd-admin-device-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.sd-admin-row {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.9rem;
+    background: var(--bs-body-bg);
+}
+
+.sd-admin-row--validated {
+    border-color: rgba(25, 135, 84, 0.45);
+    background: rgba(25, 135, 84, 0.06);
+}
+
+.sd-admin-row--experimental {
+    border-color: rgba(255, 193, 7, 0.45);
+    background: rgba(255, 193, 7, 0.06);
+}
+
+.sd-admin-row--busy {
+    opacity: 0.65;
+}
+
+.sd-admin-row__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.sd-admin-row__head .sd-admin-status {
+    width: auto;
+    min-width: 9.5rem;
+    margin-left: auto;
+}
+
+.sd-admin-row__toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+    cursor: pointer;
+}
+
+.sd-admin-row__name {
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+}
+
+.sd-admin-row__meta {
+    margin-bottom: 0.5rem;
+}
+
+.sd-admin-notes:disabled {
+    opacity: 0.55;
 }

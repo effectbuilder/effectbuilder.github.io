@@ -1,0 +1,95 @@
+{
+    "meta": {
+        "purpose": "RGBJunkie supported-device validation registry (admin-maintained)",
+        "updatedAt": "2026-06-14T02:04:17+00:00",
+        "updatedBy": "joseamirandavelez@gmail.com",
+        "entryCount": 17
+    },
+    "entries": {
+        "Nollie/Nollie8 v2.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:46:13+00:00",
+            "notes": ""
+        },
+        "Nollie/Nollie8 v2_Nos2.0.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:46:14+00:00",
+            "notes": ""
+        },
+        "Nollie/Nollie32.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:46:21+00:00",
+            "notes": ""
+        },
+        "Nollie/Nollie8 CDC Nos2.1.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:46:24+00:00",
+            "notes": ""
+        },
+        "AsRock/Asrock_Motherboard_Controller.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:47:08+00:00",
+            "notes": ""
+        },
+        "Razer/Razer_Legacy_Mouse.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:47:57+00:00",
+            "notes": ""
+        },
+        "Razer/Razer_Modern_Mouse.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:47:58+00:00",
+            "notes": ""
+        },
+        "Razer/Razer_Soundbar.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:48:57+00:00",
+            "notes": ""
+        },
+        "PrismRGB/Prism_Mini.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:49:36+00:00",
+            "notes": ""
+        },
+        "Steelseries/Steelseries_Qck_Mousepad_Controller.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:49:45+00:00",
+            "notes": ""
+        },
+        "Keychron/Q Series/Pro/Keychron_Q5_Pro_QMK_ANSI_Keyboard.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:02+00:00",
+            "notes": ""
+        },
+        "Keychron/Keychron_Q5_Pro_QMK_ANSI_Keyboard.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:11+00:00",
+            "notes": ""
+        },
+        "Network/WLED/WLED.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:24+00:00",
+            "notes": ""
+        },
+        "Network/WLED/WLED_Text.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:26+00:00",
+            "notes": ""
+        },
+        "Network/WLED/WLED_Text_ZH.min.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:30+00:00",
+            "notes": ""
+        },
+        "Asus/ENE_RAM.js": {
+            "status": "validated",
+            "validatedAt": "2026-06-14T00:50:47+00:00",
+            "notes": ""
+        },
+        "Corsair-Elgato/Streamdeck-MKII.js": {
+            "status": "experimental",
+            "validatedAt": "2026-06-14T02:04:17+00:00",
+            "notes": ""
+        }
+    }
+}

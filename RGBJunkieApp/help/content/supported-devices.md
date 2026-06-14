@@ -13,6 +13,8 @@ We add USB and network devices over time. The live list lives here:
 
 **[Supported gear](/RGBJunkieApp/supported/)**
 
+Use **All devices** for the full catalog, **Validated** for gear we have tested and confirmed working, or **Experimental** for early support that may need extra setup. Look for the green **Validated** or amber **Experimental** badge on individual cards too.
+
 Worth a look before you buy — or when something doesn’t show up after **Rescan**.
 
 ## What usually just works

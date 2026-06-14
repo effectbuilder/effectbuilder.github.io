@@ -4,17 +4,58 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.73 — June 11, 2026
+## v0.3.76 — June 13, 2026
+
+#### Reliability
+
+- **One slow USB device can't freeze the rest anymore** — RGBJunkie used to send to all your USB lights through a shared handoff, so if any single device got stuck mid-update (a screen flooded with image data, a controller that stopped responding), every other light would pause with it until that device recovered. Each USB device now has its own private send line, so a stuck or slow device only ever holds up itself — your other keyboards, mice, pads, strips, and screens keep updating without a hitch.
+
+#### Website
+
+- **Experimental gear on the supported devices page** — on [Supported gear](https://rgbjunkie.com/RGBJunkieApp/supported/), the validation admin can now mark devices as **Experimental** (early or partial support) as well as **Validated**. The public list has an **Experimental** tab and amber badge on cards, alongside the existing **Validated** tab and green badge.
+
+#### Devices
+
+- **Stream Deck Plus no longer pauses your other USB lights** — the Stream Deck's screen sends large image updates. Previously those shared a limited pool of USB send slots with all your other controllers, and the screen was also being refreshed on a timer it didn't need (its image stays on screen by itself). On a busy setup — for example a Stream Deck next to a high-speed strip — the extra traffic could overwhelm the screen and freeze every USB device for several seconds. The Stream Deck screen now sends on its own dedicated lane, only when the picture actually changes, and without the unnecessary timer refresh — so it keeps showing your effect smoothly while your keyboards, mice, pads, and strips keep running.
+- **Stream Deck Plus screen stays smooth and doesn't lock up** — a full screen update is a big burst of image data, and sending it all at once could overrun the Stream Deck and leave its screen frozen on the last picture. RGBJunkie now spaces out those image updates just enough for the screen to keep up, so the live effect keeps flowing on the buttons and dial strip instead of getting stuck.
+- **Forced color now works on the Stream Deck Plus screen** — setting the device's Lighting Mode to **Forced** had no effect on the buttons or dial strip; they kept showing the effect. Forced mode now paints the whole screen your chosen Forced color, and switching mode or picking a new color updates the screen right away.
+
+---
+
+## v0.3.75 — June 13, 2026
+
+#### Reliability
+
+- **The app recovers on its own if the window goes blank** — after a long session with many lights connected, the RGBJunkie window could occasionally go blank or freeze and stop updating your devices until you closed and reopened it. RGBJunkie now notices when this happens and brings the window back automatically — reloading it, or fully restarting the app if the whole window engine has been shut down (for example when Windows is low on memory) — so your lights come back without you doing anything. If it ever keeps happening in a row, it stops retrying so it can't get stuck in a loop, and it records what went wrong in the log (**Settings → System → Logs**) so support can see the cause.
+- **A flaky USB device no longer freezes all your lights** — a controller or accessory that rapidly disconnects and reconnects (a loose cable, a misbehaving device) used to make RGBJunkie re-scan every USB device each time, which could stall **all** your lights for several seconds at a time and slowly use more and more memory over a long session. RGBJunkie now groups these rapid reconnects together and re-scans once things settle, and it eases off automatically when scanning is running slow — so a single chatty device can't drag everything else down.
+- **Uses noticeably less memory** — during very long sessions the app's display window could slowly build up memory until it ran out and went blank. RGBJunkie now keeps an eye on that and tidies up automatically before it becomes a problem (and, in the rare case it's still climbing, briefly restarts the on-screen effect to reclaim it). It also starts up much leaner: it switches off a wider set of background browser features it never uses (casting, translation, autofill, content suggestions, automatic downloads), runs in a built-in memory-saver mode, and holds itself to a tighter memory ceiling. The result is a smaller, steadier footprint — especially when you're sitting on a static color or have effects paused — over hours of running. The memory-saver mode is on by default and you can turn it off under **Settings → System → Engine → Advanced → Lower-memory mode** if a heavy full-screen effect ever looks less crisp (the change applies after a restart).
+
+#### Workspace
+
+- **Layout parts hide when you unplug the device** — if you disconnect USB gear, its component no longer stays on the workspace canvas while the device is gone. Your saved layout is kept so it comes back when you plug the device in again.
+- **Copy workspace preview matches what you see** — right-click **Copy workspace preview** now copies only the effect and layout canvas at engine resolution, without the extra margin band around the preview that used to show up in the pasted image.
 
 #### Effects
 
 - **Lights no longer freeze when the app is in focus** — with a fast USB controller (Nollie-class) connected, clicking on the RGBJunkie window could stop all your other lights (WLED, wallpaper, RGB RAM) while the on-screen effect kept animating. Clicking away made them update again. The lighting loop now keeps itself running whether or not the window has focus.
+- **Full Canvas Fire reaches the top again** — flames now always climb to the top edge at every speed setting. **Upward speed** at the low end is much slower (a gentle rise over many seconds); turn the slider up for a fast flicker.
+- **Full Canvas Fire audio bursts spread out** — bass-driven extra particles no longer all spawn on the same frame; they trickle in smoothly on the beat instead of popping in as one wall of fire.
+- **Full Canvas Fire stays thick to the top** — flame blobs no longer shrink to specks before they reach the top; they stay large through most of the climb and only taper near the tip.
+- **Slow Full Canvas Fire no longer piles up at the bottom** — at low **Upward speed**, spawn timing eases off enough to avoid a lump at the base while keeping the flame full and lively.
 
 #### Wallpaper
 
 - **Pick one wallpaper app when two are open** — if you have both **Lively Wallpaper** and **Wallpaper Engine** running, RGBJunkie now asks which one you want to light up instead of quietly fighting over them (they share the same connection, so only one can work at a time). RGBJunkie closes the other for you and remembers your pick. To switch later, just close the app you don't want and open the other — RGBJunkie follows whichever one is open and will ask again the next time both are running.
 - **"Full canvas" wallpaper mode removed** — the Wallpaper stream-mode option that sent a sharp JPEG of your whole effect every frame is gone. It kept piling up memory and stuttering, and a saved scene could quietly turn it back on. Wallpaper effects now always use the **Virtual LEDs** grid, which stays smooth. If an older scene still had Full canvas selected, it switches to the grid automatically — nothing for you to change.
 - **Wallpaper device renamed to "Live Wallpaper"** — the wallpaper device in your device tree now shows as **Live Wallpaper** (and **Live Wallpaper (2nd Screen)**) instead of "Wallpaper Engine 2," since it lights up either Lively Wallpaper or Wallpaper Engine.
+
+#### Status bar
+
+- **Your version is always in view** — the RGBJunkie version number now shows at the right end of the bottom status bar. Click it to jump straight to the **About** screen.
+
+#### Website
+
+- **Validated gear on the supported devices page** — the [Supported gear](https://rgbjunkie.com/RGBJunkieApp/supported/) list now has a **Validated** tab for devices we have tested and confirmed working. Validated entries show a green badge on the full list too.
 
 ---
 

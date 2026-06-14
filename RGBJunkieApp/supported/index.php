@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/installers.php';
+require_once dirname(__DIR__) . '/includes/help-editor-auth.php';
 
 $rgbj_nav_active = 'supported';
 
@@ -9,6 +10,7 @@ $pageDesc = 'Search RGBJunkie supported USB lighting devices by brand, type, and
 
 $devicesJsonUrl = '/api/docs/supported-devices-data.json';
 $gearJsonUrl = rgbj_url('_supported-data.json');
+$validationsJsonUrl = rgbj_url('supported/api/validations.php');
 $amazonLogoUrl = rgbj_url('images/amazon-wordmark-on-dark.svg');
 
 rgbj_page_head([
@@ -36,8 +38,26 @@ rgbj_subpage_open([
 <div
     id="supported-devices-root"
     data-devices-json="<?= rgbj_h($devicesJsonUrl) ?>"
+    data-validations-json="<?= rgbj_h($validationsJsonUrl) ?>"
     data-amazon-logo="<?= rgbj_h($amazonLogoUrl) ?>"
 >
+    <ul class="nav nav-pills gap-2 mb-3 sd-view-tabs" id="sd-view-tabs" role="tablist" aria-label="Device list view">
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link active" id="sd-view-all" data-sd-view="all" role="tab" aria-selected="true" aria-controls="sd-list">All devices</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link" id="sd-view-validated" data-sd-view="validated" role="tab" aria-selected="false" aria-controls="sd-list">Validated</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link" id="sd-view-experimental" data-sd-view="experimental" role="tab" aria-selected="false" aria-controls="sd-list">Experimental</button>
+        </li>
+    </ul>
+    <p id="sd-validated-summary" class="small text-body-secondary mb-3 d-none"></p>
+    <p id="sd-admin-link-wrap" class="sd-admin-link-wrap d-none mb-3">
+        <a class="btn btn-sm btn-outline-info" href="<?= rgbj_h(rgbj_url('supported/admin/')) ?>">
+            <i class="bi bi-patch-check me-1" aria-hidden="true"></i>Manage device validations
+        </a>
+    </p>
     <div class="card border-secondary shadow-sm mb-4 rgbj-sd-filters">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -111,6 +131,13 @@ $rgbj_footer_blurb = 'USB devices and layout parts that ship with RGBJunkie for 
 require dirname(__DIR__) . '/includes/page-footer.php';
 ?>
 
+<script>
+    window.RGBJ_SUPPORTED_PAGE = {
+        adminUid: <?= json_encode(rgbj_help_editor_admin_uid(), JSON_THROW_ON_ERROR) ?>,
+        adminUrl: <?= json_encode(rgbj_url('supported/admin/'), JSON_THROW_ON_ERROR) ?>
+    };
+</script>
 <script src="<?= rgbj_h(rgbj_url('supported/supported-devices.js')) ?>" defer></script>
 <script src="<?= rgbj_h(rgbj_url('supported/gear-components.js')) ?>" defer></script>
+<script type="module" src="<?= rgbj_h(rgbj_url('assets/supported-admin-link.js?v=' . (string) @filemtime(dirname(__DIR__) . '/assets/supported-admin-link.js'))) ?>"></script>
 <?php rgbj_page_scripts_end(); ?>

@@ -4,7 +4,7 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-73" data-version="0.3.73">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-76" data-version="0.3.76">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -12,19 +12,65 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.73</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 11, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.76</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 13, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
 <section class="rgbj-changelog-group card border-secondary border-opacity-50">
 <div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>One slow USB device can't freeze the rest anymore</strong> — RGBJunkie used to send to all your USB lights through a shared handoff, so if any single device got stuck mid-update (a screen flooded with image data, a controller that stopped responding), every other light would pause with it until that device recovered. Each USB device now has its own private send line, so a stuck or slow device only ever holds up itself — your other keyboards, mice, pads, strips, and screens keep updating without a hitch.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Website</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Experimental gear on the supported devices page</strong> — on <a href="https://rgbjunkie.com/RGBJunkieApp/supported/" rel="noopener noreferrer">Supported gear</a>, the validation admin can now mark devices as <strong>Experimental</strong> (early or partial support) as well as <strong>Validated</strong>. The public list has an <strong>Experimental</strong> tab and amber badge on cards, alongside the existing <strong>Validated</strong> tab and green badge.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck Plus no longer pauses your other USB lights</strong> — the Stream Deck's screen sends large image updates. Previously those shared a limited pool of USB send slots with all your other controllers, and the screen was also being refreshed on a timer it didn't need (its image stays on screen by itself). On a busy setup — for example a Stream Deck next to a high-speed strip — the extra traffic could overwhelm the screen and freeze every USB device for several seconds. The Stream Deck screen now sends on its own dedicated lane, only when the picture actually changes, and without the unnecessary timer refresh — so it keeps showing your effect smoothly while your keyboards, mice, pads, and strips keep running.</li><li><strong>Stream Deck Plus screen stays smooth and doesn't lock up</strong> — a full screen update is a big burst of image data, and sending it all at once could overrun the Stream Deck and leave its screen frozen on the last picture. RGBJunkie now spaces out those image updates just enough for the screen to keep up, so the live effect keeps flowing on the buttons and dial strip instead of getting stuck.</li><li><strong>Forced color now works on the Stream Deck Plus screen</strong> — setting the device's Lighting Mode to <strong>Forced</strong> had no effect on the buttons or dial strip; they kept showing the effect. Forced mode now paints the whole screen your chosen Forced color, and switching mode or picking a new color updates the screen right away.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-75" data-version="0.3.75">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.75</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 13, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>The app recovers on its own if the window goes blank</strong> — after a long session with many lights connected, the RGBJunkie window could occasionally go blank or freeze and stop updating your devices until you closed and reopened it. RGBJunkie now notices when this happens and brings the window back automatically — reloading it, or fully restarting the app if the whole window engine has been shut down (for example when Windows is low on memory) — so your lights come back without you doing anything. If it ever keeps happening in a row, it stops retrying so it can't get stuck in a loop, and it records what went wrong in the log (<strong>Settings → System → Logs</strong>) so support can see the cause.</li><li><strong>A flaky USB device no longer freezes all your lights</strong> — a controller or accessory that rapidly disconnects and reconnects (a loose cable, a misbehaving device) used to make RGBJunkie re-scan every USB device each time, which could stall <strong>all</strong> your lights for several seconds at a time and slowly use more and more memory over a long session. RGBJunkie now groups these rapid reconnects together and re-scans once things settle, and it eases off automatically when scanning is running slow — so a single chatty device can't drag everything else down.</li><li><strong>Uses noticeably less memory</strong> — during very long sessions the app's display window could slowly build up memory until it ran out and went blank. RGBJunkie now keeps an eye on that and tidies up automatically before it becomes a problem (and, in the rare case it's still climbing, briefly restarts the on-screen effect to reclaim it). It also starts up much leaner: it switches off a wider set of background browser features it never uses (casting, translation, autofill, content suggestions, automatic downloads), runs in a built-in memory-saver mode, and holds itself to a tighter memory ceiling. The result is a smaller, steadier footprint — especially when you're sitting on a static color or have effects paused — over hours of running. The memory-saver mode is on by default and you can turn it off under <strong>Settings → System → Engine → Advanced → Lower-memory mode</strong> if a heavy full-screen effect ever looks less crisp (the change applies after a restart).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Layout parts hide when you unplug the device</strong> — if you disconnect USB gear, its component no longer stays on the workspace canvas while the device is gone. Your saved layout is kept so it comes back when you plug the device in again.</li><li><strong>Copy workspace preview matches what you see</strong> — right-click <strong>Copy workspace preview</strong> now copies only the effect and layout canvas at engine resolution, without the extra margin band around the preview that used to show up in the pasted image.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
-<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights no longer freeze when the app is in focus</strong> — with a fast USB controller (Nollie-class) connected, clicking on the RGBJunkie window could stop all your other lights (WLED, wallpaper, RGB RAM) while the on-screen effect kept animating. Clicking away made them update again. The lighting loop now keeps itself running whether or not the window has focus.</li></ul>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights no longer freeze when the app is in focus</strong> — with a fast USB controller (Nollie-class) connected, clicking on the RGBJunkie window could stop all your other lights (WLED, wallpaper, RGB RAM) while the on-screen effect kept animating. Clicking away made them update again. The lighting loop now keeps itself running whether or not the window has focus.</li><li><strong>Full Canvas Fire reaches the top again</strong> — flames now always climb to the top edge at every speed setting. <strong>Upward speed</strong> at the low end is much slower (a gentle rise over many seconds); turn the slider up for a fast flicker.</li><li><strong>Full Canvas Fire audio bursts spread out</strong> — bass-driven extra particles no longer all spawn on the same frame; they trickle in smoothly on the beat instead of popping in as one wall of fire.</li><li><strong>Full Canvas Fire stays thick to the top</strong> — flame blobs no longer shrink to specks before they reach the top; they stay large through most of the climb and only taper near the tip.</li><li><strong>Slow Full Canvas Fire no longer piles up at the bottom</strong> — at low <strong>Upward speed</strong>, spawn timing eases off enough to avoid a lump at the base while keeping the flame full and lively.</li></ul>
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Wallpaper</span></h5>
 <ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Pick one wallpaper app when two are open</strong> — if you have both <strong>Lively Wallpaper</strong> and <strong>Wallpaper Engine</strong> running, RGBJunkie now asks which one you want to light up instead of quietly fighting over them (they share the same connection, so only one can work at a time). RGBJunkie closes the other for you and remembers your pick. To switch later, just close the app you don't want and open the other — RGBJunkie follows whichever one is open and will ask again the next time both are running.</li><li><strong>&quot;Full canvas&quot; wallpaper mode removed</strong> — the Wallpaper stream-mode option that sent a sharp JPEG of your whole effect every frame is gone. It kept piling up memory and stuttering, and a saved scene could quietly turn it back on. Wallpaper effects now always use the <strong>Virtual LEDs</strong> grid, which stays smooth. If an older scene still had Full canvas selected, it switches to the grid automatically — nothing for you to change.</li><li><strong>Wallpaper device renamed to &quot;Live Wallpaper&quot;</strong> — the wallpaper device in your device tree now shows as <strong>Live Wallpaper</strong> (and <strong>Live Wallpaper (2nd Screen)</strong>) instead of &quot;Wallpaper Engine 2,&quot; since it lights up either Lively Wallpaper or Wallpaper Engine.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Status bar</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Your version is always in view</strong> — the RGBJunkie version number now shows at the right end of the bottom status bar. Click it to jump straight to the <strong>About</strong> screen.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Website</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Validated gear on the supported devices page</strong> — the <a href="https://rgbjunkie.com/RGBJunkieApp/supported/" rel="noopener noreferrer">Supported gear</a> list now has a <strong>Validated</strong> tab for devices we have tested and confirmed working. Validated entries show a green badge on the full list too.</li></ul>
 </article></div>
 </section>
 </div>

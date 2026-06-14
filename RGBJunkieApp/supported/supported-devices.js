@@ -4,6 +4,7 @@
 
     var amazonLogo = root.getAttribute('data-amazon-logo') || '/RGBJunkieApp/images/amazon-wordmark-on-dark.svg';
     var dataUrl = root.getAttribute('data-devices-json') || 'supported-devices-data.json';
+    var validationsUrl = root.getAttribute('data-validations-json') || '';
 
     var KIND_LABELS = {
         keyboard: 'Keyboard',
@@ -100,6 +101,119 @@
             .replace(/"/g, '&quot;');
     }
 
+    var validationEntries = {};
+    var viewMode = 'all';
+
+    function entryValidationStatus(entry) {
+        var path = entry && entry.relativePath;
+        if (!path || !validationEntries[path]) return null;
+        var row = validationEntries[path];
+        var s = row.status ? String(row.status).toLowerCase() : 'validated';
+        return s === 'experimental' ? 'experimental' : 'validated';
+    }
+
+    function isEntryValidated(entry) {
+        return entryValidationStatus(entry) === 'validated';
+    }
+
+    function isEntryExperimental(entry) {
+        return entryValidationStatus(entry) === 'experimental';
+    }
+
+    function validationNotes(entry) {
+        var path = entry && entry.relativePath;
+        if (!path) return '';
+        var row = validationEntries[path];
+        return row && row.notes ? String(row.notes) : '';
+    }
+
+    function validatedCount() {
+        var n = 0;
+        for (var i = 0; i < allEntries.length; i++) {
+            if (isEntryValidated(allEntries[i])) n++;
+        }
+        return n;
+    }
+
+    function experimentalCount() {
+        var n = 0;
+        for (var i = 0; i < allEntries.length; i++) {
+            if (isEntryExperimental(allEntries[i])) n++;
+        }
+        return n;
+    }
+
+    function validationBadgeHtml(entry) {
+        var status = entryValidationStatus(entry);
+        var notes = validationNotes(entry);
+        var title = notes ? ' title="' + esc(notes) + '"' : '';
+        if (status === 'validated') {
+            return (
+                '<span class="sd-validated-badge"' +
+                title +
+                '><i class="bi bi-patch-check-fill" aria-hidden="true"></i> Validated</span>'
+            );
+        }
+        if (status === 'experimental') {
+            return (
+                '<span class="sd-experimental-badge"' +
+                title +
+                '><i class="bi bi-flask" aria-hidden="true"></i> Experimental</span>'
+            );
+        }
+        return '';
+    }
+
+    function syncViewTabs() {
+        var tabs = root.querySelectorAll('[data-sd-view]');
+        for (var i = 0; i < tabs.length; i++) {
+            var btn = tabs[i];
+            var mode = btn.getAttribute('data-sd-view') || 'all';
+            var active = mode === viewMode;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        }
+        var summary = document.getElementById('sd-validated-summary');
+        if (summary) {
+            var vCount = validatedCount();
+            var eCount = experimentalCount();
+            if (viewMode === 'validated') {
+                summary.textContent =
+                    vCount === 1
+                        ? '1 device has been tested and confirmed working with RGBJunkie.'
+                        : vCount + ' devices have been tested and confirmed working with RGBJunkie.';
+                summary.classList.remove('d-none');
+            } else if (viewMode === 'experimental') {
+                summary.textContent =
+                    eCount === 1
+                        ? '1 device has early or partial support in RGBJunkie — check notes on the card if present.'
+                        : eCount + ' devices have early or partial support in RGBJunkie — check notes on the card if present.';
+                summary.classList.remove('d-none');
+            } else if (vCount > 0 || eCount > 0) {
+                var parts = [];
+                if (vCount > 0) parts.push(vCount + ' validated');
+                if (eCount > 0) parts.push(eCount + ' experimental');
+                summary.textContent = parts.join(' · ') + ' · ' + allEntries.length + ' total in catalog.';
+                summary.classList.remove('d-none');
+            } else {
+                summary.textContent = '';
+                summary.classList.add('d-none');
+            }
+        }
+    }
+
+    function setViewMode(mode) {
+        viewMode = mode === 'validated' || mode === 'experimental' ? mode : 'all';
+        syncViewTabs();
+        try {
+            var u = new URL(window.location.href);
+            if (viewMode === 'all') u.searchParams.delete('view');
+            else u.searchParams.set('view', viewMode);
+            history.replaceState(null, '', u.pathname + u.search + u.hash);
+        } catch (err) { /* ignore */ }
+        applyFilters();
+    }
+
     function vidCell(entry) {
         if (entry.vendorIdHex == null && entry.vendorId == null) {
             return '<span class="sd-muted">—</span>';
@@ -186,6 +300,7 @@
                       '<span class="visually-hidden">Share</span></a>'
                     : '';
             var nameUpper = esc(String(e.displayName || '')).toUpperCase();
+            var badge = validationBadgeHtml(e);
             var techBlock =
                 '<div class="sd-tech-block">' +
                 '<div class="sd-meta-grid sd-meta-grid--tech">' +
@@ -211,6 +326,7 @@
                 '<div class="sd-device-card__head-top">' +
                 '<p class="sd-device-card__name">' +
                 nameUpper +
+                badge +
                 '</p>' +
                 share +
                 '</div>' +
@@ -299,6 +415,8 @@
         } else {
             for (var i = 0; i < allEntries.length; i++) {
                 var e = allEntries[i];
+                if (viewMode === 'validated' && !isEntryValidated(e)) continue;
+                if (viewMode === 'experimental' && !isEntryExperimental(e)) continue;
                 if (kind && e.deviceKind !== kind) continue;
                 if (!entryMatchesBrand(e, brand)) continue;
                 if (!entryMatches(e, q)) continue;
@@ -311,12 +429,18 @@
         brandEl.disabled = !!linkedOnly;
 
         syncPermalinkBanner(perm, linkedEntry);
+        syncViewTabs();
         render(out, markId);
 
         var countEl = document.getElementById('sd-count');
         if (countEl) {
             if (linkedOnly) {
                 countEl.textContent = '1 device (shared link) · ' + allEntries.length + ' total';
+            } else if (viewMode === 'validated') {
+                countEl.textContent = out.length + ' validated shown · ' + validatedCount() + ' total validated';
+            } else if (viewMode === 'experimental') {
+                countEl.textContent =
+                    out.length + ' experimental shown · ' + experimentalCount() + ' total experimental';
             } else {
                 countEl.textContent = out.length + ' / ' + allEntries.length + ' shown';
             }
@@ -371,12 +495,35 @@
 
     window.addEventListener('hashchange', applyFilters);
 
-    fetch(dataUrl)
-        .then(function (r) {
+    var viewTabButtons = root.querySelectorAll('[data-sd-view]');
+    for (var vi = 0; vi < viewTabButtons.length; vi++) {
+        viewTabButtons[vi].addEventListener('click', function () {
+            setViewMode(this.getAttribute('data-sd-view') || 'all');
+        });
+    }
+
+    var validationsPromise = validationsUrl
+        ? fetch(validationsUrl)
+              .then(function (r) {
+                  if (!r.ok) return { entries: {} };
+                  return r.json();
+              })
+              .catch(function () {
+                  return { entries: {} };
+              })
+        : Promise.resolve({ entries: {} });
+
+    Promise.all([
+        fetch(dataUrl).then(function (r) {
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();
-        })
-        .then(function (data) {
+        }),
+        validationsPromise,
+    ])
+        .then(function (results) {
+            var data = results[0];
+            var valData = results[1];
+            validationEntries = (valData && valData.entries) || {};
             allEntries = data.entries || [];
             var metaEl = document.getElementById('meta-updated');
             if (metaEl && data.meta && data.meta.generatedAt) {
@@ -402,6 +549,10 @@
             var params = new URLSearchParams(window.location.search);
             var qs = params.get('search');
             if (qs && searchInput) searchInput.value = qs;
+            var viewParam = params.get('view');
+            if (viewParam === 'validated' || viewParam === 'experimental') {
+                viewMode = viewParam;
+            }
             var bq = params.get('brand');
             if (bq !== null && bq !== '') {
                 var brandSel = document.getElementById('sd-brand');
