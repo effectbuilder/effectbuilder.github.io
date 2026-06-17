@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Dragon Skin 2</title>
-    <meta description="Immerse yourself in Dragon Skin 2, a highly customizable, audio-reactive procedural rendering engine. Featuring 21 stunning mythical color profiles, dynamic geometry, organic breathing animations, and deep sound responsiveness. Tailor every scale, twist, and flash to craft your perfect interactive visualizer. This version uses less resources.">
+    <meta description="Procedural dragon hide with Hibernation Guard, zero-reset rotation, and structural density control.">
     <meta publisher="José Miranda">
 
     <meta property="scale_shape" label="Scale Shape" type="combobox" values="Classic,Diamond,Rounded,Hexagon" default="Classic" tooltip="Changes the geometric silhouette of each individual armor plate.">
@@ -34,6 +34,9 @@
 <meta property="flash_density" label="Flash Density" type="number" min="1" max="100" default="50" tooltip="Percentage of scales affected by each 'Random' flash trigger.">
 <meta property="flash_attack" label="Flash Attack Speed" type="number" min="1" max="100" default="100" tooltip="How quickly the flash reaches maximum brightness.">
 <meta property="flash_decay" label="Flash Decay Speed" type="number" min="1" max="100" default="20" tooltip="How slowly the flash fades back to the base color.">
+<meta property="flash_color_mode" label="Flash Color" type="combobox" values="White,Color Scheme,Custom" default="Color Scheme" tooltip="The color of the audio reaction. 'Color Scheme' brightens each scale's own color; 'Custom' uses the color below.">
+<meta property="flash_color" label="Custom Flash Color" type="color" default="#ffffff" tooltip="The flash color used when 'Flash Color' is set to 'Custom'.">
+<meta property="flash_intensity" label="Flash Intensity" type="number" min="0" max="100" default="100" tooltip="How strongly the flash color overrides the scale's base color at peak.">
     <style>
         body { margin: 0; padding: 0; background: #000; overflow: hidden; }
     </style>
@@ -119,6 +122,16 @@
             return hslToRgb(hsl.h, hsl.s, hsl.l);
         }
         function lerpColor(c1, c2, t) { return { r: lerp(c1.r, c2.r, t), g: lerp(c1.g, c2.g, t), b: lerp(c1.b, c2.b, t) }; }
+
+        // Resolves the target color for an audio flash based on the chosen Flash Color mode.
+        function getFlashTarget(sRgb) {
+            if (flash_color_mode === "Custom") return hexToRgb(flash_color);
+            if (flash_color_mode === "Color Scheme") {
+                const hsl = rgbToHsl(sRgb.r, sRgb.g, sRgb.b);
+                return hslToRgb(hsl.h, Math.min(1, hsl.s * 0.85 + 0.1), 0.85);
+            }
+            return { r: 255, g: 255, b: 255 };
+        }
 
         function drawShapePath(r, type) {
             ctx.beginPath();
@@ -303,25 +316,16 @@
                     fVal = Math.max(fVal, impact * w.strength);
                 }
 
-                drawScale(cx, cy, r, {r: sRgb.r*0.3, g: sRgb.g*0.3, b: sRgb.b*0.3}, {r: sRgb.r + (255-sRgb.r)*fVal, g: sRgb.g + (255-sRgb.g)*fVal, b: sRgb.b + (220-sRgb.b)*fVal}, fVal > 0.5 ? {r:255,g:255,b:255} : {r: sRgb.r*1.5, g: sRgb.g*1.5, b: sRgb.b*1.5}, rot, scale_shape);
+                const flashTarget = getFlashTarget(sRgb);
+                const flashAmt = fVal * (flash_intensity / 100);
+                const midRgb = lerpColor(sRgb, flashTarget, flashAmt);
+                const highRgb = fVal > 0.5 ? flashTarget : {r: sRgb.r*1.5, g: sRgb.g*1.5, b: sRgb.b*1.5};
+                drawScale(cx, cy, r, {r: sRgb.r*0.3, g: sRgb.g*0.3, b: sRgb.b*0.3}, midRgb, highRgb, rot, scale_shape);
             });
             requestAnimationFrame(render);
         }
 
         requestAnimationFrame(render);
     </script>
-    <script type="application/json" class="effect-preset">
-    {
-    "name": "Mix: Scale Shape = Hexagon, Layout Mode = Spiral, Structural Density = 77 +19 more \ud83c\udfb2",
-    "url": "https://go.signalrgb.com/app/effect/apply/Dragon%20Skin%202/?scale_shape=Hexagon&layout_mode=Spiral&struct_density=77&reverse_layout=false&scale_size=77&scale_jitter=29&rot_speed=-200&rot_offset=-88&breathe_speed=49&breathe_depth=53&profile=Red+Greatwyrm+%28Fire%29&map_mode=Linear+D&cycle_speed=33&sat_mult=178&light_mult=132&color_scale1=%23affa45&color_scale2=%23057f65&color_scale3=%23391924&color_scale4=%2374a9ee&audio_reactive=true&flash_pattern=Radial&bass_sensitivity=56&flash_density=51&flash_attack=75&flash_decay=83"
-}
-    </script>
-    <script type="application/json" class="effect-preset">
-    {
-    "name": "Mix: Scale Shape = Rounded, Structural Density = 60, Reverse Layering = On +19 more \ud83c\udfb2",
-    "url": "https://go.signalrgb.com/app/effect/apply/Dragon%20Skin%202/?scale_shape=Rounded&layout_mode=Grid&struct_density=60&reverse_layout=true&scale_size=70&scale_jitter=86&rot_speed=-127&rot_offset=1&breathe_speed=100&breathe_depth=90&profile=Venomspitter+%28Toxic%29&map_mode=Linear+D&cycle_speed=76&sat_mult=132&light_mult=126&color_scale1=%231bdfb7&color_scale2=%232b8d10&color_scale3=%237e8ab2&color_scale4=%23918767&audio_reactive=true&flash_pattern=Wave+V&bass_sensitivity=22&flash_density=50&flash_attack=14&flash_decay=53"
-}
-    </script>
-
 </body>
 </html>

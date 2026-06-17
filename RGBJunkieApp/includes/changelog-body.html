@@ -15,9 +15,18 @@
 <span class="rgbj-changelog-version-badge" title="App version">v0.3.78</span>
 <p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 14, 2026</p>
 </div>
-<p class="rgbj-changelog-release__summary"><em>(Add release notes for v0.3.78.)</em></p>
 </header>
 <div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck Plus LCD layout</strong> — key and strip sample regions now follow measured physical spacing on the 160×100 canvas (15 mm keys, 2 mm strip-to-key inset, 12.5 mm gap above the strip). Horizontal gap between keys is calculated so the margin on the right matches the left inset on the canvas.</li><li><strong>Stream Deck Plus layout in RGBJunkie</strong> — the workspace device box no longer treats the Plus as a simple 4×3 grid, and the right-side keys and touch strip no longer collapse into thin lines on the canvas. Each LED marker sits on the fixed 160×100 hardware map (key size, gaps, and touch strip), matching where the plugin samples the effect.</li><li><strong>Stream Deck Plus LCD geometry</strong> — button and strip positions on the Plus are fixed hardware layout, not sliders in device settings. Use the <strong>Stream Deck Plus Calibration</strong> effect if you want to see that map on screen.</li><li><strong>Stream Deck Plus LCD refresh</strong> — all eight keys and the touch strip are sent every frame so a button image never gets stuck when the effect keeps moving. Lower <strong>LCD refresh rate (FPS)</strong> in device settings if USB load is too high.</li><li><strong>Plugin hot-reload</strong> — with <strong>Settings → Engine → Hot-reload user plugins</strong> on (on by default when running from source), saving a device plugin reloads only that device’s driver; other gear keeps running. Reload runs when the OS reports a file save (not on a timer), skips work when the file content did not change, and waits one second after the last save before touching USB.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck Plus Calibration</strong> — simple layout grid for tuning the Plus on your desk: two rows of four hollow buttons (each row has its own x/y; shared width, height, and gap) plus a full-width strip from the bottom of row 2 to the screen edge. The inner bright rectangle is the 8∶1 band sent to the dial; vertical lines mark the four dial zones. Default values match the calibrated plugin layout.</li><li><strong>Pac-Man for Stream Deck Plus</strong> — Pac-Man and the ghosts stay the same size on the touch strip as on the LCD keys.</li><li><strong>Pac-Man for Stream Deck Plus</strong> — the maze is one open grid: Pac-Man can move anywhere, including the old ghost-house cells. When you eat a scared ghost, its eyes zip through the maze to a new spot away from Pac-Man, then the ghost pops back in there. Pac-Man no longer hesitates at the center keys when a ghost is nearby on another cell. At the start of a round, both ghosts begin as far from Pac-Man as the maze allows. <strong>You control Pac-Man</strong> is on by default — use <strong>arrow keys</strong> or <strong>WASD</strong> while RGBJunkie is focused; your turn is remembered and applies at the next corner (turn it off in the effect settings to watch the computer play).</li></ul>
+</article></div>
+</section>
 </div>
 </div>
 </article>

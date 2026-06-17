@@ -6,7 +6,19 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.78 — June 14, 2026
 
-*(Add release notes for v0.3.78.)*
+#### Devices
+
+- **Stream Deck Plus LCD layout** — key and strip sample regions now follow measured physical spacing on the 160×100 canvas (15 mm keys, 2 mm strip-to-key inset, 12.5 mm gap above the strip). Horizontal gap between keys is calculated so the margin on the right matches the left inset on the canvas.
+- **Stream Deck Plus layout in RGBJunkie** — the workspace device box no longer treats the Plus as a simple 4×3 grid, and the right-side keys and touch strip no longer collapse into thin lines on the canvas. Each LED marker sits on the fixed 160×100 hardware map (key size, gaps, and touch strip), matching where the plugin samples the effect.
+- **Stream Deck Plus LCD geometry** — button and strip positions on the Plus are fixed hardware layout, not sliders in device settings. Use the **Stream Deck Plus Calibration** effect if you want to see that map on screen.
+- **Stream Deck Plus LCD refresh** — all eight keys and the touch strip are sent every frame so a button image never gets stuck when the effect keeps moving. Lower **LCD refresh rate (FPS)** in device settings if USB load is too high.
+- **Plugin hot-reload** — with **Settings → Engine → Hot-reload user plugins** on (on by default when running from source), saving a device plugin reloads only that device’s driver; other gear keeps running. Reload runs when the OS reports a file save (not on a timer), skips work when the file content did not change, and waits one second after the last save before touching USB.
+
+#### Effects
+
+- **Stream Deck Plus Calibration** — simple layout grid for tuning the Plus on your desk: two rows of four hollow buttons (each row has its own x/y; shared width, height, and gap) plus a full-width strip from the bottom of row 2 to the screen edge. The inner bright rectangle is the 8∶1 band sent to the dial; vertical lines mark the four dial zones. Default values match the calibrated plugin layout.
+- **Pac-Man for Stream Deck Plus** — Pac-Man and the ghosts stay the same size on the touch strip as on the LCD keys.
+- **Pac-Man for Stream Deck Plus** — the maze is one open grid: Pac-Man can move anywhere, including the old ghost-house cells. When you eat a scared ghost, its eyes zip through the maze to a new spot away from Pac-Man, then the ghost pops back in there. Pac-Man no longer hesitates at the center keys when a ghost is nearby on another cell. At the start of a round, both ghosts begin as far from Pac-Man as the maze allows. **You control Pac-Man** is on by default — use **arrow keys** or **WASD** while RGBJunkie is focused; your turn is remembered and applies at the next corner (turn it off in the effect settings to watch the computer play).
 
 ---
 
