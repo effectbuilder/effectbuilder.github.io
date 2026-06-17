@@ -6,6 +6,12 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.78 — June 14, 2026
 
+#### Workspace
+
+- **Effects keep the right size when you switch canvases** — with more than one canvas tab, switching away and back no longer shrinks effects (for example Pac-Man on a Stream Deck Plus looked about half size). Each canvas now keeps its own effect framing when the app updates background tabs.
+- **Switching canvas tabs no longer restarts your effect** — if that tab already had the effect running, RGBJunkie keeps it going instead of reloading and firing a burst of resize events (which made lights flicker and reset things like Pac-Man mid-game).
+- **Color Profile stays with each canvas tab** — switching canvases no longer applies another tab's gradient to the effect you are viewing; each tab keeps its own Color Profile choice in the effect and in the settings panel.
+
 #### Devices
 
 - **Stream Deck Plus LCD layout** — key and strip sample regions now follow measured physical spacing on the 160×100 canvas (15 mm keys, 2 mm strip-to-key inset, 12.5 mm gap above the strip). Horizontal gap between keys is calculated so the margin on the right matches the left inset on the canvas.
@@ -17,7 +23,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 #### Effects
 
 - **Stream Deck Plus Calibration** — simple layout grid for tuning the Plus on your desk: two rows of four hollow buttons (each row has its own x/y; shared width, height, and gap) plus a full-width strip from the bottom of row 2 to the screen edge. The inner bright rectangle is the 8∶1 band sent to the dial; vertical lines mark the four dial zones. Default values match the calibrated plugin layout.
-- **Pac-Man for Stream Deck Plus** — Pac-Man and the ghosts stay the same size on the touch strip as on the LCD keys.
+- **Pac-Man for Stream Deck Plus** — runs at engine resolution (320×200 by default) instead of a fixed 160×100 bitmap; maze layout scales with **Settings → Engine → Resolution** so keys and the touch strip stay aligned on the Plus.
 - **Pac-Man for Stream Deck Plus** — the maze is one open grid: Pac-Man can move anywhere, including the old ghost-house cells. When you eat a scared ghost, its eyes zip through the maze to a new spot away from Pac-Man, then the ghost pops back in there. Pac-Man no longer hesitates at the center keys when a ghost is nearby on another cell. At the start of a round, both ghosts begin as far from Pac-Man as the maze allows. **You control Pac-Man** is on by default — use **arrow keys** or **WASD** while RGBJunkie is focused; your turn is remembered and applies at the next corner (turn it off in the effect settings to watch the computer play).
 
 ---
