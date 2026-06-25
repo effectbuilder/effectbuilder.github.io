@@ -6,22 +6,16 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ## v0.3.82 — June 24, 2026
 
-#### WLED matrix add-on
-
-- **Scroll only when needed** — if your message fits on the matrix, it stays still (centered). Scrolling kicks in only when the text is wider than the panel.
-- **Weather icons** — insert **`weather_icon`** in the weather format string (or pick **Condition icon** from the tag dropdown) to show a small sun/cloud/rain/snow glyph inline with your text. Default layout is icon + temperature on the first row.
-- **System Sensors matrix mode** — a new display mode uses the **same sensor list as effects** (CPU load, GPU temp, fans, and the rest). Pick up to three sensors from the tree picker, then lay them out with a format string (`slot1`, `slot2`, `slot3`) — same idea as weather and Libre Hardware Monitor tags.
-- **Weather refresh in minutes** — **Weather refresh** is now in **minutes** (1–60, default 15) instead of milliseconds.
-- **Weather matrix mode** — WLED matrix add-ons include a **Weather** display mode. Pick a city (or enter latitude,longitude), choose Fahrenheit or Celsius, and show current temperature and conditions on your matrix. Data comes from [Open-Meteo](https://open-meteo.com/) (free, no API key). Customize the layout with the format string — same idea as Libre Hardware Monitor tags (`weather_temp`, `weather_cond`, `weather_humidity`, and more). The weather format field is a multi-line text box so you can lay out rows easily. City lookups understand **City, region** entries like **Isabela, PR** (Open-Meteo does not match the full string as one search).
-- **Format tag pickers respect your cursor** — when you insert an LHM or weather format tag from the dropdown, it goes at the text cursor instead of always at the end of the field.
-- **Padding Y shows in text modes** — the WLED matrix add-on’s **Padding Y** setting now appears when **Matrix display mode** is Time, Custom Text, or Libre Hardware Monitor, not only Pixel Art. Use it to nudge clock, custom, or sensor text up or down on the matrix.
-- **Matrix text scroll stays steady during Identify** — scrolling text (clock, custom message, or Libre Hardware Monitor readout) no longer speeds up when you click **Identify** on a WLED device. Scroll speed now follows wall-clock time, like pixel art already did.
-- **Matrix scroll waits for a clean exit** — in Time, Custom Text, Libre Hardware Monitor, and Weather modes, scrolling text now enters from off screen, crosses the matrix, leaves completely, then starts again (instead of looping while text is still visible).
-- **Ping-Pong scroll bounces at the edges** — in Ping-Pong mode, text reverses when the start or end reaches the matrix edge (left-aligned ↔ right-aligned), not after scrolling fully off screen.
-
 #### Scenes
 
-- **Loading a scene keeps your devices** — switching scenes now changes the effect and your canvas layout (positions, tabs, groupings) but leaves the components you have assigned to each device alone. So you can flip between looks on the same setup without RGBJunkie rebuilding your strips and fans every time. A new **Keep devices** toggle sits next to the Scene **Save** and **Reload** buttons: leave it on (the default) to swap just the look, or turn it off to go back to the old behavior where a scene fully replaces your devices with the ones saved in it. Your choice is remembered.
+- **Load a scene without swapping your devices** — next to **Load scene**, a new toggle controls what a saved scene replaces. **Keep devices** (default) applies the scene’s effects and canvas layout to the gear already on your desk. **Full replace** restores the scene’s saved device list the way older builds did. Click the button to switch modes; your choice is remembered.
+
+#### Effects
+
+- **FlowField respects audio toggles** — turning off **Audio Reactive** or **Flash on Beat** in **FlowField** no longer leaves a white pulse on the beat.
+- **Many built-in effects fill your engine canvas** — effects that were stuck drawing in a small corner (including **Festive Lights**, **Waves**, **Storm**, **VJ Lightning**, **Plasma Sphere**, **Topographic Contours**, **Multizone V2**, **Multi Radar**, **Rainbow Collection**, and dozens of ported classics) now stretch to **Settings → System → Engine → Engine resolution** so your lights and preview thumbnails match what you see.
+- **Shadertoy effect removed** — the experimental Shadertoy integration is no longer included in RGBJunkie.
+- **Refreshed effect preview images** — built-in effect cover art was regenerated so thumbnails in the browser and effect header look like the live effect again.
 
 #### Wallpaper Engine helper
 
