@@ -4,13 +4,51 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.82 — June 24, 2026
+
+#### WLED matrix add-on
+
+- **Scroll only when needed** — if your message fits on the matrix, it stays still (centered). Scrolling kicks in only when the text is wider than the panel.
+- **Weather icons** — insert **`weather_icon`** in the weather format string (or pick **Condition icon** from the tag dropdown) to show a small sun/cloud/rain/snow glyph inline with your text. Default layout is icon + temperature on the first row.
+- **System Sensors matrix mode** — a new display mode uses the **same sensor list as effects** (CPU load, GPU temp, fans, and the rest). Pick up to three sensors from the tree picker, then lay them out with a format string (`slot1`, `slot2`, `slot3`) — same idea as weather and Libre Hardware Monitor tags.
+- **Weather refresh in minutes** — **Weather refresh** is now in **minutes** (1–60, default 15) instead of milliseconds.
+- **Weather matrix mode** — WLED matrix add-ons include a **Weather** display mode. Pick a city (or enter latitude,longitude), choose Fahrenheit or Celsius, and show current temperature and conditions on your matrix. Data comes from [Open-Meteo](https://open-meteo.com/) (free, no API key). Customize the layout with the format string — same idea as Libre Hardware Monitor tags (`weather_temp`, `weather_cond`, `weather_humidity`, and more). The weather format field is a multi-line text box so you can lay out rows easily. City lookups understand **City, region** entries like **Isabela, PR** (Open-Meteo does not match the full string as one search).
+- **Format tag pickers respect your cursor** — when you insert an LHM or weather format tag from the dropdown, it goes at the text cursor instead of always at the end of the field.
+- **Padding Y shows in text modes** — the WLED matrix add-on’s **Padding Y** setting now appears when **Matrix display mode** is Time, Custom Text, or Libre Hardware Monitor, not only Pixel Art. Use it to nudge clock, custom, or sensor text up or down on the matrix.
+- **Matrix text scroll stays steady during Identify** — scrolling text (clock, custom message, or Libre Hardware Monitor readout) no longer speeds up when you click **Identify** on a WLED device. Scroll speed now follows wall-clock time, like pixel art already did.
+- **Matrix scroll waits for a clean exit** — in Time, Custom Text, Libre Hardware Monitor, and Weather modes, scrolling text now enters from off screen, crosses the matrix, leaves completely, then starts again (instead of looping while text is still visible).
+- **Ping-Pong scroll bounces at the edges** — in Ping-Pong mode, text reverses when the start or end reaches the matrix edge (left-aligned ↔ right-aligned), not after scrolling fully off screen.
+
+#### Scenes
+
+- **Loading a scene keeps your devices** — switching scenes now changes the effect and your canvas layout (positions, tabs, groupings) but leaves the components you have assigned to each device alone. So you can flip between looks on the same setup without RGBJunkie rebuilding your strips and fans every time. A new **Keep devices** toggle sits next to the Scene **Save** and **Reload** buttons: leave it on (the default) to swap just the look, or turn it off to go back to the old behavior where a scene fully replaces your devices with the ones saved in it. Your choice is remembered.
+
+#### Wallpaper Engine helper
+
+- **Wallpaper helper uses the correct name** — the small companion process under **runtime/wallpaper** is now **RGBJunkieWallpaperShim.exe** instead of being mislabeled as SignalRGB. Upgrades remove the old **SignalRgb.exe** copy from earlier builds.
+
+---
+
+## v0.3.81 — June 24, 2026
+
+#### Effect browser cover art
+
+- **Built-in effect preview images show again** — thumbnails in the effect browser grid and the selected-effect header load correctly instead of staying on the placeholder gradient.
+
+---
+
 ## v0.3.80 — June 16, 2026
+
+#### Stream Deck Plus
+
+- **Deck Vitals for SignalRGB** — a SignalRGB-compatible copy of the Stream Deck Plus **Deck Vitals** dashboard is included under **Stream Deck Plus srgb**. It uses the same eight-key layout and four touch-strip history lanes, reads sensors through SignalRGB’s **engine.getSensorValue** API, and ships with sensible default sensor names (CPU Load, CPU Package, GPU Core, and so on). Pick your accent palette and dial style in Effect Settings; SignalRGB Pro unlocks the full sensor list.
 
 #### App look
 
 - **Borderless startup splash** — while RGBJunkie loads, the app opens as a small window centered on your screen with no title bar. When loading finishes, it expands to the full main window with the normal frame again. The splash now paints with its styling right away instead of flashing unstyled content first.
 - **Canvas fills the center panel** — the workspace canvas no longer keeps a padded margin or inset frame around the drawable area; it uses the full center column (aspect-ratio letterboxing still applies when the canvas does not match your window shape).
 - **Single-channel devices sit tighter in the list** — when a device has only one lighting channel, its components now appear directly under the device row without the extra gap that multi-channel gear keeps between the device name and the first control. The tinted block under each channel is now a soft gradient (stronger at the top, fading down) with no leftover vertical line on the left edge.
+- **Selected components are clearly highlighted in the list** — when you click a component on the canvas (or in the list), its row in the Devices panel now stands out with a soft accent-colored highlight and a matching accent bar down its left edge, so it's easy to see which component is selected. Before, the selected row looked the same as all the others.
 - **Expanded devices read as one connected group** — when you open a device, its name row and everything underneath (brightness, position, and each component) are now wrapped together in a single soft, rounded block, with the device name styled as the header of that block. A thin line in the channel's color runs down the left edge of the components, so at a glance it's obvious each control and component belongs to the device above it instead of looking like a separate item in the list.
 - **Calmer, more spacious device list** — the Devices panel now reads like a clean navigation menu: each device is a roomy, full-width row that leads with its icon and name, with plenty of vertical breathing room and no boxes, borders, divider lines, or expand arrow. The eye and gear controls tuck to the right edge and fade in only when you hover a row or it's selected, so the list stays uncluttered. Click a device to expand its channels and components into a full-width panel right underneath it — shaded a touch differently so it's clear everything inside belongs to that device — and the selected device is marked by a quiet neutral highlight. The rest of the app keeps the same flat, minimal styling and your chosen accent colors.
 - **Fresh cyber-neon interface** — RGBJunkie has a new high-tech look: deep dark backgrounds, glowing accent highlights on buttons and active toggles, and smoother hover and focus feedback across the whole app.
@@ -22,6 +60,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 #### Workspace
 
+- **Lights stay smooth in fullscreen canvas** — maximizing the workspace canvas no longer slows your physical LEDs. The full-screen preview was quietly redrawing the whole effect at monitor size every frame in the background, which stole time from sending colors to your devices. The big preview still fills the screen, but that hidden work is now done at a small size, so your lights keep updating at full speed while maximized.
+- **Smoother lighting with big, busy setups** — the part of RGBJunkie that reads your effect and pushes colors to your gear now does much less throwaway work on every update, especially when you have lots of devices or large layouts (full keyboards, LED matrices, long strips). The result is steadier, smoother lights with fewer tiny hitches, particularly on more modest PCs.
+- **Shorter effect details card** — in the Effects panel, the selected effect summary uses the same card layout with or without preview artwork. Effects with a PNG show it full-size behind the text; effects without one keep the neutral placeholder background.
 - **Effect settings dropdowns open reliably again** — with the new floating panels, the dropdown menus in the Effect Settings area (Mode, Look, Monitor, color profile, and similar) could fail to appear when clicked. They now open in the right place every time.
 - **Device settings dropdowns open reliably again** — in a device's settings window, the dropdown menus (Lighting Mode, color order, per-zone modes, and similar) could open hidden behind the window, so clicking seemed to do nothing. They now appear in front, on top of the window, every time.
 - **Fold buttons for the side panels stay put** — the collapse/expand handles for the Devices (left) and Effects (right) panels are now pinned to the outside edge of the window, so they no longer jump to a new spot when you fold a panel. The button stays exactly where you left it, so folding and unfolding is one easy click in the same place.
@@ -30,6 +71,9 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 #### Devices
 
+- **USB lights recover after a bus glitch without restarting** — when Windows briefly drops and restores your USB gear (same cables, same device names), RGBJunkie could keep every USB light dark until you closed and reopened the app. **Rescan hardware** and automatic reconnect now drop stale USB handles and reopen them the same way a full restart does, so your keyboards, mice, pads, and controllers light up again.
+- **RAM lights recover after hibernate** — waking the PC could leave your memory sticks dark even though USB gear came back. Wake recovery now re-scans RAM right away (with retries while the motherboard SMBus wakes up), and **Rescan hardware** in the Devices panel runs the same RAM scan as **Settings → Hardware → RAM → Scan now**.
+- **Identify now works on RAM** — the Identify button (the lightbulb that makes a device gently pulse so you can spot it) did nothing for memory (RAM) modules. RAM lights are sent over a different connection than your USB gear, and that path was being skipped while identifying. Now your RAM breathes in the highlight color just like every other device, so it's easy to tell which stick is which.
 - **Lights no longer freeze from a stray color value** — if a device ever received an invalid color byte (for example from a misbehaving plugin or effect), the whole batch of colors for that device could fail to send, leaving it stuck on its last frame and filling the log with errors. Out-of-range values are now cleaned up automatically, so the device keeps updating smoothly instead of locking up.
 - **Turning off a device's built-in lighting mode no longer slows your other lights** — some devices (such as Asrock motherboards) have a setting that hands lighting back to the device's own onboard modes. Switching it off used to make that device talk to its hardware far more often than it was meant to, which bogged down every other USB light. RGBJunkie now follows the device's own update pacing in that mode, so the rest of your gear keeps running smoothly.
 - **Device settings use RGBJunkie's name** — a few device settings that came from other lighting software mentioned that app by name (for example a “…Canvas Support” toggle). Those labels and notes now read **RGBJunkie** instead.
@@ -39,7 +83,8 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 - **Click a zone row to fold it away** — in the Devices list, the lighting-zone rows under a device (such as a motherboard's ARGB headers) now collapse when you click them, just like the device rows do. Click once to tuck the zone's components out of sight and tidy up a long list; click again to open it back up.
 - **ASRock motherboards show their real board model** — the ASRock device used to come up with a blank/placeholder model in its name. RGBJunkie now reads the actual board model from your system, so it reads like "Asrock X570 Steel Legend" instead of a meaningless number.
 - **PrismRGB Prism Mini is detected again** — the Prism Mini controller wasn't being recognized because its plugin file was packaged without the right file ending, so RGBJunkie skipped it entirely. It's fixed, and the Prism Mini now shows up and lights like the other Prism devices.
-- **SteelSeries QcK Prism Cloth pads now light up** — the cloth QcK Prism mousepads (including the **3XL**, plus the Medium, XL, XL Destiny, and 4XL sizes) weren't recognized. They're now detected and controllable alongside the QcK Prism hard pad.
+- **SteelSeries QcK Prism Cloth pads now light up** — cloth QcK Prism mousepads (including the **3XL**, Medium, XL, XL Destiny, and **4XL**) were skipped during USB detection because the app looked for a differently named plugin file. They now match the correct two-zone driver and light up alongside the rigid QcK Prism hard pad.
+- **QcK Prism Cloth top and bottom zones line up** — the two-zone cloth mousepad driver stacks **top** and **bottom** on the canvas with a **gap row** between them (matching the dead zone on the pad), and samples the upper and lower parts of your effect instead of diagonal corners.
 - **Razer Leviathan soundbars stay on when USB rediscovers them** — the Leviathan V2 and V2X sometimes drop off USB and come back while RGBJunkie is running. Reconnecting no longer runs the full setup sequence again (which could reset the soundbar or knock it off). RGBJunkie only checks that software lighting is still on and keeps sending your colors.
 - **More Razer mice light up and show their picture** — some Razer mice (for example the Basilisk V3) were detected and listed but stayed dark, with no device picture in the device tree even though the effect looked right on the canvas. These mice set up their lights and LED map a moment after connecting; RGBJunkie now picks that up, so the mouse gets its picture, lands on the canvas, and lights with your effect.
 - **Lighting reaches the right part of the mouse** — for these Razer mice, color is now sent to the mouse's lighting connection instead of its button/input connection, so the LEDs actually change instead of staying off.
@@ -52,6 +97,29 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 #### Effects
 
+- **Full Canvas Fire rises and fades naturally** — flame blobs now start fully below the bottom edge and keep climbing until the whole glow has left the top, instead of popping in or vanishing the moment the center hits the frame.
+- **Full Canvas Fire Flame look** — under **Effect Settings → Look**, pick **Flame** for tall flickering tongues and a warm base glow. **Glow** keeps the original soft blobs. Both use your **Color profile**. The experimental **Ember** look has been removed.
+- **Desk Clock Bold vs Digital** — **Bold** now uses **larger outlined digits** (not gray plates). **Digital** stays the lighter single-weight layout. Keys, gaps, and strip unfilled areas are **pure black**.
+- **Desk Clock layout tweaks** — on the bottom row, **AM/PM** and **weekday** swapped places (12-hour mode). **Seconds** digits use the full key height, and the **Seconds** strip bar fills the full touch strip.
+- **Desk Clock styles tuned for Stream Deck Plus** — removed analog, arc, and ring layouts that were too cramped on the small keys. **Clock style** is now **Digital**, **Wide**, **Bold**, or **Split** (all readable digit layouts). Monospace digits and a **:** between hours and minutes on per-key styles.
+- **Mini Spectrum left and right rows** — the **top row** shows the **left channel** and the **bottom row** shows the **right channel** (four bands each). Settings are **Left row style** and **Right row style**. Mono audio shows the same levels on both rows.
+- **Mini Spectrum button and strip styles** — pick **Left row style** and **Right row style** for the keys (**Fill**, **VBar**, **HBar**, **Ring**, **Segments**, **Ticks**, **Line**). **Strip mode** adds **Mirror**, **Line**, **Segments**, and **Wave Line** (scrolling trace without the fill).
+- **Mini Spectrum waveform line is thinner** — the scrolling trace on the touch strip uses a finer stroke so it reads more like a line and less like a thick band.
+- **Mini Spectrum waveform scrolls** — **Waveform** strip mode traces the **average of the four key meters**, scrolls in from the right, and **scales to the loudest point on screen** so the trace uses the full strip height without drifting upward over time.
+- **Deck Vitals and Mini Spectrum use black key backgrounds** — every LCD key is filled **black** behind the dials or meters (no gray gauge tracks or dark blue canvas).
+- **Mini Spectrum backgrounds are black** — the canvas, keys, and touch strip all use a **black** background (no dark gray meter tracks).
+- **Mini Spectrum for Stream Deck Plus** — new audio-reactive effect mapped to the Plus layout: live and peak meters fill each key edge-to-edge, and the touch strip shows a full-width **spectrum** or a matching **waveform** (same live audio shape, filled edge to edge). Tune sensitivity, smoothing, and colors under **Effect Settings**.
+- **Stream Deck Plus LCD keys no longer look squashed** — each key LCD expects a square picture, but the layout math made the sampled region slightly taller than wide on the 160×100 canvas, so rings and numbers looked compressed vertically. Keys now crop a centered square that matches the hardware.
+- **Deck Vitals dial styles** — pick how each key shows its reading under **Effect Settings → Display → Dial style**: **Arc** (default), **Ring**, **Bar**, **VBar** (vertical bar), **Pie**, **Ticks**, or **Segments**.
+- **Deck Vitals strip charts line up** — all four history curves start at the same horizontal position, with labels tucked right up against the chart start.
+- **Deck Vitals Effect Settings use key grid names** — sensor and caption fields are labeled **C1R1**, **C1R2**, and so on (**column**, **row**) to match the eight keys on the Stream Deck Plus.
+- **Deck Vitals dials glide smoothly** — gauge rings and live numbers ease between sensor updates instead of jumping every poll. Use **Settings → Smoothing** to make them steadier or more responsive.
+- **Deck Vitals strip chart** — the touch-strip history panel is **black** (no gray panel), and each curve is labeled on the left in **larger text** using that row’s **load caption** (for example **CPU Load**, **GPU Load**).
+- **Effect sensor pickers show one control again** — hardware sensor settings no longer show a second dropdown underneath the picker (a hidden accessibility list was accidentally styled like a normal combobox).
+- **Deck Vitals fan speed shows RPM** — the fan key now includes the **RPM** unit next to the reading (no space between the number and unit, same as **%** and **°** on the other keys).
+- **Deck Vitals labels and cleaner gauges** — each sensor slot has its own **label** text (shown under the live reading in a smaller font). The extra horizontal bar under each dial ring is removed.
+- **Deck Vitals for Stream Deck Plus** — new autoplay dashboard mapped to the Plus layout: each column shows CPU, GPU, RAM, or system load and temperature on the two keys, with four stacked history lanes across the **full width** of the touch strip. Sensors are picked automatically from LibreHardwareMonitor; override any slot under **Effect Settings** if you prefer different readings.
+- **Aurora Borealis blends where the profile wraps** — when **Color Profile** is not **Custom**, the gradient now smoothly connects the last color stop back to the first as the curtains drift, instead of a hard jump at that boundary.
 - **Game integrations — effects can watch part of your screen** — effects can now read a specific section of your screen that the effect picks (a top, left, width, and height), so your lights can follow a single corner of a game instead of the whole display. Great for matching a health bar, a map, or a glowing UI panel.
 - **Effects can read text on your screen** — effects can capture a small area and recognize the text inside it (for example a score, ammo count, or health number) using the text recognition built into Windows, then turn that into color or brightness — picture your lights sliding from green to red as your health drops. A ready-made **Game HUD Reader** example is included in your user effects folder (under **examples**) to try it out and copy from. Reading text needs a Windows language with text recognition installed; if it isn't available, the example falls back gracefully.
 - **Effects can measure how much of an area is a color** — effects can ask what percentage of a screen section is a particular color (say, how much of a health bar is still green) and drive your lights from that percentage. The **Game HUD Reader** example adds a **Color coverage** mode that lights up by how much of the region matches a color you pick, with an adjustable match tolerance.

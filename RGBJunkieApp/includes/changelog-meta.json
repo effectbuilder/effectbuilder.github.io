@@ -1,8 +1,10 @@
 {
   "source": "docs/CHANGELOG.md",
-  "syncedAt": "2026-06-21T16:24:40.463Z",
-  "appVersion": "0.3.79",
+  "syncedAt": "2026-06-24T22:36:32.930Z",
+  "appVersion": "0.3.82",
   "versions": [
+    "0.3.82",
+    "0.3.81",
     "0.3.80",
     "0.3.79",
     "0.3.77",
