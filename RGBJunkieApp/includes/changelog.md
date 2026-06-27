@@ -4,9 +4,44 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.84 — June 24, 2026
+## v0.3.85 — June 26, 2026
 
-*(Add release notes for v0.3.84.)*
+*(Development notes for v0.3.85 — add bullets here before the next build; shipped when build.bat bumps to this version.)*
+
+---
+
+## v0.3.84 — June 26, 2026
+
+#### Colors
+
+- **LED Studio size slider** — dense strips and keyboards can crowd the paint preview; use the **LED size** slider above the layout to enlarge markers for easier brushing (up to 400%).
+- **LED Studio matches the canvas** — markers use the same real LED positions and circle/rectangle shape as the workspace canvas (**Settings → App look → LED shape**), and labels follow the workspace **LED numbers** toggle.
+- **LED Studio grid no longer stretched or overlapping** — keyboards and other layouts keep their LEDs in the right spots with a small gap between them, so the paint preview lines up with the canvas instead of looking squished, oversized, or merged together.
+- **LED Studio paint and erase** — in **Paint** mode, drag on empty LEDs to color them; click or drag over a painted LED to clear it. **Erase** mode still clears every LED you touch.
+
+#### Window &amp; Settings
+
+- **The app remembers its window** — RGBJunkie reopens at the same position, size, and monitor you left it on, and stays maximized if you closed it maximized, instead of always re-centering at a default size. (First launch still opens centered.)
+- **Roomier Settings window** — Settings now opens nearly full-screen so you can see more options at once, and it no longer hides behind a frosted blur of the workspace. It also opens already centered instead of flashing in a corner first.
+- **Settings window stays put** — the Settings window is a fixed size and can no longer be dragged or resized by accident.
+- **Windows ease open** — pop-ups and panels (Settings, effect browser, dialogs, the release notes, dropdowns, and more) now fade and rise in gently instead of snapping onto the screen.
+
+#### Workspace
+
+- **Keyboards show their real layout** — keys now appear in their actual positions (with the proper gaps around wider keys), instead of being packed into a plain left-to-right grid. The same true-to-life layout is used on the canvas and in **Settings → Colors → LED Studio**. (Fans, strimers, tube sleeves, and other shaped devices keep their familiar shapes.)
+- **LED numbers on the canvas** — the workspace toolbar has a new **LED numbers** toggle. Turn it on to see each marker’s index (0, 1, 2…) while you line up strips and keyboards; turn it off for a clean layout view. Your choice is remembered. Numbers stay readable when you zoom and on dense layouts (hex panels, long strips), draw on top of each marker, and flip to white or dark text to match your LED fill color. Plugins that export LED names (keyboards, Stream Deck zones, etc.) show those names instead of bare numbers. The same toggle controls labels in **Settings → Colors → LED Studio**.
+- **LED Studio key shapes** — rectangle markers in the paint preview use the same uniform grid cells as the workspace canvas (not stretched into thin bars).
+- **LED Studio label centering** — when **LED numbers** is on, index and plugin names stay centered inside each marker instead of spilling across the grid.
+
+#### Development
+
+- **Startup splash shows again during dev** — the loading window stays small and centered with the logo and status text instead of a blank white full-size window. The WebView also uses the splash dark background until the page paints, and debug builds can open **tray → Open developer tools** without an extra flag.
+- **Splash dismisses when the app is ready** — the loading screen no longer stays on top showing “Ready.” after boot; the main workspace appears as soon as layout and profiles are loaded.
+- **`compile.bat` opens in its own elevated window again** — from Cursor or a normal terminal, dev still launches a standalone Administrator window via UAC (same as before). **`compile.bat build`** stays in the current terminal when you only want the debug `.exe` with no launch. Debug builds no longer hit “requires elevation” at startup; installed release builds still run elevated for USB access.
+
+#### Effects
+
+- **rgbjunkie.com gallery duplicates** — when the online catalog lists several copies of the same effect name, RGBJunkie now keeps the newest published copy instead of the first broken one. **Fan and Strimers** and similar gallery effects load their real animation again instead of the “not exported yet” placeholder.
 
 ---
 
@@ -29,7 +64,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.81 — June 24, 2026
+## v0.3.84 — June 26, 2026
 
 #### Effect browser cover art
 
@@ -146,7 +181,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.79 — June 16, 2026
+## v0.3.84 — June 26, 2026
 
 #### Workspace
 
@@ -195,7 +230,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.75 — June 13, 2026
+## v0.3.84 — June 26, 2026
 
 #### Reliability
 
@@ -258,7 +293,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.71 — June 8, 2026
+## v0.3.84 — June 26, 2026
 
 #### Scenes
 
@@ -337,7 +372,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.68 — June 7, 2026
+## v0.3.84 — June 26, 2026
 
 #### Color profiles
 
@@ -402,7 +437,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.66 — June 6, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -418,7 +453,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.64 — June 6, 2026
+## v0.3.84 — June 26, 2026
 
 #### Help Center
 
@@ -452,7 +487,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.62 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Color profiles
 
@@ -475,7 +510,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.60 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Updates
 
@@ -496,7 +531,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.58 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Build
 
@@ -519,7 +554,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.56 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Lively Wallpaper
 
@@ -535,7 +570,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.54 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -552,7 +587,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.52 — June 5, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -575,7 +610,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.50 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -599,7 +634,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.48 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Updates
 
@@ -615,7 +650,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.46 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Startup
 
@@ -640,7 +675,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.44 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -657,7 +692,7 @@ No separate release notes for this version. See **v0.3.45** for user-facing chan
 
 ---
 
-## v0.3.42 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -673,7 +708,7 @@ No separate release notes for this version. See **v0.3.43** for user-facing chan
 
 ---
 
-## v0.3.40 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -691,7 +726,7 @@ No separate release notes for this version. See **v0.3.40** for user-facing chan
 
 ---
 
-## v0.3.38 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -709,7 +744,7 @@ No separate release notes for this version. See **v0.3.38** for user-facing chan
 
 ---
 
-## v0.3.36 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -725,7 +760,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.34 — June 3, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -741,7 +776,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.32 — June 2, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -760,7 +795,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.30 — May 31, 2026
+## v0.3.84 — June 26, 2026
 
 #### Audio-reactive effects
 
@@ -830,7 +865,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.26 — May 31, 2026
+## v0.3.84 — June 26, 2026
 
 #### Setup wizard
 
@@ -850,7 +885,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.17 — May 31, 2026
+## v0.3.84 — June 26, 2026
 
 #### Setup wizard
 
@@ -877,7 +912,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.15 — May 30, 2026
+## v0.3.84 — June 26, 2026
 
 #### App links (web and desktop)
 
@@ -902,7 +937,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.13 — May 30, 2026
+## v0.3.84 — June 26, 2026
 
 #### Updates
 
@@ -918,7 +953,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.11 — May 30, 2026
+## v0.3.84 — June 26, 2026
 
 #### Updates
 
@@ -941,7 +976,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.9 — May 30, 2026
+## v0.3.84 — June 26, 2026
 
 #### Updates
 
@@ -961,7 +996,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.7 — May 29, 2026
+## v0.3.84 — June 26, 2026
 
 #### Wallpaper Engine 2
 
@@ -978,7 +1013,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.5 — May 29, 2026
+## v0.3.84 — June 26, 2026
 
 RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRGB helper, correct process name, Git install path) and keeps **Git repository** downloads organized in per-repo folders.
 
@@ -1018,7 +1053,7 @@ RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRG
 
 ---
 
-## v0.3.3 — May 29, 2026
+## v0.3.84 — June 26, 2026
 
 RGBJunkie **0.3.3** brings back **WLED matrix add-ons** from community Git repos, smooths **Identify** on USB and WLED gear, packs more into support reports, and adds an optional **Wallpaper Engine 2** network plugin.
 
@@ -1106,7 +1141,7 @@ RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** seri
 
 ---
 
-## v0.3.0 — May 27, 2026
+## v0.3.84 — June 26, 2026
 
 RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after portable updates, and adds a **Third party** page under About.
 
@@ -1175,7 +1210,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.98 — May 25, 2026
+## v0.3.84 — June 26, 2026
 
 #### Sleep and hibernate
 
@@ -1195,7 +1230,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.96 — May 25, 2026
+## v0.3.84 — June 26, 2026
 
 #### Sleep and hibernate
 
@@ -1215,7 +1250,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.94 — May 25, 2026
+## v0.3.84 — June 26, 2026
 
 #### Sleep and hibernate
 
@@ -1231,7 +1266,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.92 — May 25, 2026
+## v0.3.84 — June 26, 2026
 
 #### Sleep and hibernate
 
@@ -1247,7 +1282,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.90 — May 24, 2026
+## v0.3.84 — June 26, 2026
 
 #### Sleep and hibernate
 
@@ -1323,7 +1358,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.2.88 — May 23, 2026
+## v0.3.84 — June 26, 2026
 
 #### Hardware update cap slider and high-FPS devices
 
@@ -1410,7 +1445,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 - **`compile.bat devtools`** — runs elevated `tauri dev` with **`RGBJUNKIE_OPEN_DEVTOOLS=1`** so WebView2 DevTools open on startup (tray → **Open developer tools** remains available). Plain **`compile.bat`** is unchanged.
 - **Tray FPS diagnostics** — in Edge DevTools, **`window.rgbEngine.getFrameTickDriverStatus()`** reports whether the background Web Worker tick driver is active while the window is minimized or in the tray (`workerActive`, `pageHidden`, target interval).
 
-## v0.2.78 — May 21, 2026
+## v0.3.84 — June 26, 2026
 
 #### Settings → Hardware — Performance tab
 
@@ -1480,7 +1515,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 - **Settings → User media folders** — action buttons no longer stack Chinese text vertically; intro, tabs, **删除**, and **重新扫描硬件** are fully localized.
 - **Settings → System → Startup** help text uses **退出** / **关于** instead of English **Quit** / **About**; update copy no longer says **ZIP** alone.
 
-## v0.2.68 — May 21, 2026
+## v0.3.84 — June 26, 2026
 
 #### Light, dark, and system color scheme
 
@@ -1741,7 +1776,7 @@ When you save an effect `.html` file while it is running, RGBJunkie reloads **th
 
 **[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
 
-## v0.2.63 — May 19, 2026
+## v0.3.84 — June 26, 2026
 
 #### Linux: correct status-bar memory and bundled effects
 
@@ -1763,7 +1798,7 @@ The toolbar **Discord** button now uses [discord.gg/adHsQG8czv](https://discord.
 
 No separate release notes for this version. See **v0.2.64** for user-facing changes shipped in this period.
 
-## v0.2.61 — May 19, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -1807,7 +1842,7 @@ The LED Studio controls are laid out in one horizontal strip: **Component** (dev
 
 Destructive or important actions no longer use the WebView’s **“localhost says”** `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio **Clear all**, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).
 
-## v0.2.59 — May 19, 2026
+## v0.3.84 — June 26, 2026
 
 #### Right-click → LED Studio on every component
 
@@ -1827,7 +1862,7 @@ When you click **Save current layout** or **Save current effect settings**, a sh
 
 The embedded WebView no longer shows the **Edge-style default context menu** (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. **Ctrl+F** / **F3** Find on page, **Ctrl+P** print, **Ctrl+R** / **F5** reload, and **Ctrl+Plus/Minus** zoom are disabled so the app feels like a desktop tool, not a browser tab. Your **canvas and component right-click menus** (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the **devtools** feature is enabled.
 
-## v0.2.57 — May 18, 2026
+## v0.3.84 — June 26, 2026
 
 #### Patch release
 
@@ -1839,7 +1874,7 @@ No separate release notes for this version. See **v0.2.58** for user-facing chan
 
 No separate release notes for this version. See **v0.2.58** for user-facing changes shipped in this period.
 
-## v0.2.48 — May 18, 2026
+## v0.3.84 — June 26, 2026
 
 #### Languages: English, Español, 简体中文
 
