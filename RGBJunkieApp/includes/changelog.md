@@ -4,13 +4,191 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.85 — June 26, 2026
+## v0.3.93 — June 29, 2026
 
-*(Development notes for v0.3.85 — add bullets here before the next build; shipped when build.bat bumps to this version.)*
+*(Development notes for v0.3.93 — add bullets here before the next build; shipped when build.bat bumps to this version.)*
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.92 — June 29, 2026
+
+#### Workspace
+
+- **Plugin settings stay sharp behind the panel** — opening a device’s settings no longer blurs the workspace underneath; the dim overlay stays, but your layout stays crisp while you adjust options.
+- **Clearer plugin settings layout** — device options are grouped under one **Lighting** or **Settings** heading each (Live Wallpaper and similar plugins no longer repeat the same section), color pickers show the hex code beside the swatch, and sliders show the live value on the same row.
+
+- **Live Wallpaper grid on the layout canvas** — the Live Wallpaper (Lively / Wallpaper Engine) device now shows its virtual LED matrix on the workspace canvas, so you can see where each screen cell is sampled and resize or move the block like any other fixed layout.
+
+- **Other canvas tabs stay off the layout** — components assigned to another workspace tab no longer appear dimmed on the canvas you are editing. They are hidden by default; use the eye button on the tab strip if you want to see every tab’s layout at once.
+
+#### Devices
+
+- **Layout restore uses one stable key per device** — USB gear (like your Razer Leviathan), PawnIO RAM, WLED, and everything else on the desk is matched by a stable hardware key when your scene loads, not by internal ids that can change between launches. Positions stick after startup, rescan, and scene reload.
+- **OpenRGB removed** — RGBJunkie no longer bundles or talks to OpenRGB. RAM lighting uses PawnIO only. OpenRGB.exe still appears in **Settings → Hardware → Conflicting apps** if you run it separately, so RGBJunkie can warn you when it fights for control of your lights.
+
+- **RAM sticks keep their place on the desk** — PawnIO memory lighting no longer jumps back to the center of the layout after startup or a RAM rescan. Reloading your scene puts your sticks where you left them.
+- **USB soundbars and speakers keep their place too** — devices like the Razer Leviathan V2X no longer show up as a fresh layout block in the center after startup. RGBJunkie matches them by the physical USB connection, not just an internal id that can change between launches, so your saved position sticks when the scene reloads.
+
+- **Smarter "Conflicting apps" list** — the Conflicting apps page (Settings → Hardware → Conflicting apps) now also flags the background software tied to the devices you actually have connected, not just the built-in list of well-known RGB programs. If one of your devices ships an app that's known to fight RGBJunkie for control of its lights, it now shows up here automatically — listed by the device that needs it — so you can end it in one click (or have RGBJunkie end it on startup) and keep your lighting under RGBJunkie's control.
+- **Onboard lighting settings reach the device** — hardware-lighting and firmware settings (Prism Mini, SRGBmods LC, and similar controllers) are now sent on their own after the LED stream, and RGBJunkie runs the plugin’s deferred settings pass about three seconds after you change a device option — no plugin changes required.
+- **Enable Hardware Lighting takes over the strip** — when **Enable Hardware Lighting** is on, RGBJunkie stops sending live canvas colors to that controller so the onboard rainbow, solid, or breathing effect can run even while an effect is playing.
+- **Runtime mouse settings show up in Plugin Settings** — Razer, Logitech, and Corsair plugins that register DPI and control options after the device connects (like **Enable Setting Control**, DPI stages, and per-stage sliders) now appear in the settings panel alongside the built-in lighting options.
+- **Mouse and keyboard settings reach the device** — Razer, Logitech, Corsair, HyperX, and similar plugins can now read firmware responses and apply DPI, polling, LOD, and other hardware options from Plugin Settings (not just lighting). Side buttons and DPI-stage input on supported mice work again too.
+- **Razer mouse DPI stays put on startup** — RGBJunkie no longer pushes DPI changes to your mouse when the app starts unless you change a mouse option in Plugin Settings with **Enable Setting Control** on. Saved profile values still load into the panel, but they are not sent to the device until you adjust a setting yourself.
+- **Choose which apps RGBJunkie may close** — each app in the Conflicting apps list now has its own checkbox. Leave it checked to let RGBJunkie end that app, or uncheck it to always keep it running. Your choices are remembered and apply both to the "End conflicting apps" button and the automatic check on startup, so you stay in control of exactly which programs get closed.
+- **NollieRGB added to the Conflicting apps list** — if the NollieRGB companion app is running, RGBJunkie now spots it and can close it so the two don't fight over your Nollie lights.
+- **Conflicting apps sorted A–Z** — the Conflicting apps list in Settings is now sorted alphabetically by app name so it's easier to scan.
+
+#### Startup
+
+- **No more squished window on launch** — the loading screen now stays the right size until the app is ready. Before, the full window could briefly appear cramped into the small loading-screen size before snapping out to its normal size; now it grows back behind the loading screen, so you only see the main window once it's the correct size.
+- **Loading screen fills the window** — the startup splash now stretches edge to edge in the small borderless window instead of leaving empty space around a smaller box inside it. The loading window is sized comfortably again so the logo and status text are not cramped.
+- **Animated startup splash** — while RGBJunkie loads, the splash shows the same lightning mark as the app icon with a soft green glow and a thin progress line at the bottom. The main line says what step is running; the detail line uses plain language (for example “Connecting to WLED lights…” or “Connecting to Lively Wallpaper…”) without file paths, IP addresses, or port numbers. The splash stays up until loading finishes, then disappears cleanly when the main window opens.
+- **Matching logo in the toolbar** — the lightning mark and **RGBJunkie** name on the top-left match the app icon and loading screen; click either one to open rgbjunkie.com in your browser. A **Website** button (globe icon) next to **Discord** on the right opens the site too. Layout tools (align, snap, grid, and so on) stay centered in the top bar and use the space between the logo and the right-side buttons — no horizontal scroll bar.
+
+#### Tray
+
+- **Restart from the tray** — right-click the RGBJunkie tray icon and choose **Restart** to save your layout, turn off your lights cleanly, and open RGBJunkie again — handy after changing a setting that needs a relaunch or when something feels stuck.
+
+---
+
+## v0.3.91 — June 28, 2026
+
+#### Performance
+
+- **Lower background CPU use** — RGBJunkie now runs its behind-the-scenes health checks far less often. Several routine checks used to run every few seconds the whole time the app was open; they now run on a relaxed schedule, so the app uses less CPU while sitting idle and while effects are playing. That means less fan noise without any change to how your lights look.
+- **Quieter while minimized** — when RGBJunkie is hidden in the tray, it no longer keeps checking effect files for edits in the background, trimming a bit more idle CPU.
+
+---
+
+## v0.3.90 — June 27, 2026
+
+
+---
+
+## v0.3.89 — June 27, 2026
+
+#### App look
+
+- **Tidier in Task Manager and the taskbar** — RGBJunkie's helper processes now group together under one "RGBJunkie" entry instead of scattering as separate items, matching how other apps appear. Easier to find the app and see its total resource use at a glance.
+
+#### Reliability
+
+- **WLED layouts no longer disappear** — components placed on a WLED device could vanish from your layout if the device was still connecting when RGBJunkie loaded your scene, and once that happened the loss became permanent on the next save. RGBJunkie now holds onto a connecting WLED device's components until it finishes coming online, so its lights stay in your layout the same way wired devices do.
+
+#### App look
+
+- **Matching panel titles** — the "Devices" heading on the left panel now uses the same bright, bold style as the "Effects" heading on the right, with a slightly larger font, and both headings now have a matching thin divider line beneath them so the two side panels look consistent.
+- **Even side panels** — the right (Effects) panel now has the same thin divider line along its bottom as the left (Devices) panel, so both sides are framed the same way.
+
+#### Performance
+
+- **Lights keep full speed when you click another app** — effects no longer slow to about half rate when RGBJunkie loses focus but stays on screen (for example on a second monitor). The effect now keeps running at full cadence in that state, so your LEDs stay smooth while you work elsewhere.
+
+---
+
+## v0.3.88 — June 27, 2026
+
+#### App look
+
+- **Cleaner app background** — removed the faint repeating texture behind the workspace that could look like a subtle grid; the background is now a smooth, plain gradient.
+
+#### Effects
+
+- **Aurora Borealis runs at a steady speed** — the aurora no longer speeds up when its canvas tab is in the background (not selected). Its motion is now time-based, so it looks the same whether the tab is showing or parked behind another.
+
+#### Performance
+
+- **Lights keep full speed when RGBJunkie isn't the active window** — clicking another app used to roughly halve the update rate sent to fast controllers (for example a Nollie dropping from ~40 to ~20 updates per second), causing visible stutter while you worked elsewhere. RGBJunkie now holds the faster timing in the background, so effects stay smooth on your LEDs even when the window doesn't have focus.
+
+---
+
+## v0.3.87 — June 27, 2026
+
+#### Reliability
+
+- **Really fixed the blank white window on launch** — the installed app could still open to an empty white window that never finished loading and was closed by Windows as "not responding". A performance tweak that limited how RGBJunkie used your processor turned out to freeze the app at startup on installed copies. That tweak is now off, so RGBJunkie opens to your layout normally. (Your processor use is still kept in check by **Settings → System → Engine → Hardware update cap**.)
+
+---
+
+## v0.3.86 — June 27, 2026
+
+#### Reliability
+
+- **Fixed the blank white window on launch** — after installing, RGBJunkie could open to an empty white window that never finished loading. The app now starts up and shows your layout normally.
+
+---
+
+## v0.3.85 — June 26, 2026
+
+#### Effects
+
+- **Chromatic Split drifts at a calmer pace** — default **Drift speed** is tuned so shapes glide slowly across the canvas instead of racing; motion is time-based (smooth at any frame rate), and **Drift speed** at zero holds still.
+- **Chromatic Split shapes stay on screen** — blobs stay inside the canvas with room for the RGB split fringe, instead of drifting off the bottom or right edge.
+- **Chromatic Split matches your layout size** — shapes and RGB split scale with the engine canvas and **Settings → System → Resolution scale**, not a fixed 320×200 preview size. Blob positions use the same reference coordinates as other RGBJunkie effects so they stay centered on your layout.
+- **Chromatic Split fades in gently** — new shapes ramp up over several seconds, grow from small to full size, and soften near the edges (including the glow, not just the center) so they do not pop or blink on your LEDs.
+- **Chromatic Split pure black background** — turn on **Pure black background** in **Colors** for a true black backdrop instead of a dim tint from the color profile.
+- **Chromatic Split spreads shapes across the layout** — blobs spawn anywhere on the canvas and can drift close to the edges; only the outer glow softens near the border so they do not pop on your LEDs.
+- **Ink Drops matches your layout size** — marbling fills the engine canvas and drop size scales with **Settings → System → Resolution scale**, not a fixed 320×200 area.
+- **Ink Drops pure black background** — **Pure black background** lives under the **Colors** tab; when it is on, the backdrop is true black and every stop in the color profile is used for ink drops instead of reserving one for the background.
+- **Liquid Metal runs faster** — color profiles are cached instead of recomputed for every pixel, large layouts skip an extra noise pass, and default **Render Quality** is tuned for smoother playback (raise it in **Surface** if you want more detail).
+- **Liquid Metal pure black background** — turn on **Pure black background** in **Colors** so creases and low areas stay true black while chrome ridges keep your profile colors.
+- **Neon Hex looks right again** — glowing lines use additive blending and smooth trails like the original effect, color profiles from **Settings → Color profiles** work correctly, and cell size scales with your layout instead of clumping in a corner.
+- **Neon Hex defaults tuned** — fresh installs and **Reset to defaults** use a tighter hex grid with shorter trails, more spark, and stronger pulse (matching the curated Neon Hex preset).
+- **ORGB Audio Visualizer fills your layout** — the equalizer bars and background patterns scale with the engine canvas instead of staying locked to a 320×200 corner.
+- **ORGB Audio Visualizer clearer bars** — log-spaced frequency bands with log-normalized levels and per-frame spectral balancing; **Sensitivity** sets overall bar height again (default 110). Also tune **Smoothing** and **Bar width** under **Audio**.
+- **ORGB Audio Visualizer color wheels run smoothly** — **Color Wheel**, **Color Wheel 2**, and **Original** backgrounds no longer redraw every pixel each frame, so those modes stay responsive on large layouts.
+- **ORGB Bouncing Ball works again** — the ball is drawn to the live canvas buffer (not a blank back buffer), scales with your layout size, and physics time is capped so the first frame does not break the bounce.
+- **ORGB Bubbles is faster with more bubbles** — rings draw only near each bubble instead of repainting every pixel, spawns scale with time and layout, and defaults allow up to **16** bubbles more often (**Rarity** **28**).
+- **ORGB Bubbles sound sensitivity** — settings are grouped under **Motion**, **Colors**, and **Audio**; **Sound sensitivity** above **0** spawns bubbles only when audio hits (silence stays empty), with **thick rings for bass** and **thin rings for treble**; **Speed** still controls ring growth; **0** keeps the timed bubble loop.
+- **ORGB Bubbles renders reliably again** — bass and treble use peak levels from the spectrum, new rings start visible right away, and thin treble rings are no longer clamped to the same width as bass.
+- **ORGB Clock fills your layout** — hour, minute, and second markers span the full engine canvas width and scale with **Settings → System → Resolution scale**, not a fixed 320×200 strip.
+- **ORGB Color Wheel works again** — the rotating wheel fills your layout using a fast canvas gradient (not a per-pixel loop that could stall on large canvases), and draws to the live canvas buffer.
+- **ORGB Comet color speed is separate** — **Speed** controls travel only; new **Color speed** under **Colors** sets how fast the tail cycles through your profile (default **25**, **0** keeps a fixed gradient on the tail).
+- **ORGB Custom Gradient Wave works again** — a duplicate canvas buffer declaration prevented the effect from loading; the wave now renders and scales with your layout.
+- **ORGB Custom Gradient Wave uses Color profile only** — the old **Color Preset** list is removed; wave colors come from **Color profile** and **Settings → Color profiles** (with **Custom** slots when selected). Motion controls live under **Wave**, colors under **Colors**.
+- **ORGB Double Rotating Rainbow spins more smoothly** — rotation is time-based with capped frame steps, band spacing scales with your layout, colors blend smoothly through your profile, and the effect renders on a fast fixed-size buffer then scales to your layout so frame rate stays up on wide strips.
+- **ORGB Hypnotoad runs faster and smoother** — rings render on a fixed-size buffer scaled to your layout, colors use your **Settings → Color profiles** lookup table, and distance/angle math is cached so wide layouts no longer stall the frame rate.
+- **ORGB Lightning works again** — a missing color variable stopped the effect from loading; strikes and fade now run on the full canvas with your **Color profile**.
+- **ORGB Mask is easier to use in layers** — pick **Rectangle**, **Ellipse**, or **Rounded** shapes, soften the edge with **Edge softness** (low values stay tight to the border), and set **Inside color** / **Outside color** under **Colors** (or use your **Color profile**). **Corner radius** on **Rounded** now rounds the window the right way. The mask redraws when your layout size changes.
+- **ORGB Moving Panes runs faster and fills your layout** — vertical panes still slide in opposite directions, but motion is time-based with capped frame steps, colors use a cached profile lookup table, and the effect renders on a fixed-size buffer then scales to your engine canvas so wide strips stay smooth.
+- **ORGB Noise Map runs faster on wide layouts** — noise renders at a capped reference resolution (scaled up to your canvas) so long strips stay responsive; **Render quality** defaults to **75%**, audio bands use peak levels with smoother response, and **Turbulence** jitters less harshly. **Flash** contour highlights no longer dim the whole palette.
+- **ORGB Noise Map audio sensitivity** — **Audio sensitivity** now scales Flash, Pulse, and Turbulence predictably after auto-leveling (50 = balanced; lower is subtler, higher is stronger), including when you switch **Audio response band**.
+- **ORGB Noise Map pure black background** — turn on **Pure black background** under **Colors** so low valleys fade to true black while brighter lava contours keep your **Color profile** colors; off restores the normal profile-tinted lows.
+- **ORGB Policing runs faster** — the scanner renders on a fixed-size buffer then scales to your layout instead of thousands of canvas draws per frame, with time-based motion and the same direction-change flash.
+- **ORGB Radial Rainbow runs faster** — rings render on a fixed-size buffer scaled to your layout, distance from the center is cached, colors use a profile lookup table, and motion is time-based so wide strips stay smooth.
+- **ORGB Rain runs faster** — drops render only in their small on-screen streaks on a fixed-size buffer scaled to your layout, instead of testing every drop at every pixel; each drop keeps its profile color when it spawns.
+- **ORGB Rainbow Wave runs faster** — sliding bands render on a fixed-size buffer scaled to your layout, with cached column phase and a profile color lookup table instead of thousands of canvas fills per frame.
+- **ORGB Random Marquee bar width and gap work again** — **Bar width** and **Bar gap** always control stripe size (they were being overwritten each cycle); the effect also renders on a fixed-size buffer scaled to your layout for smoother playback on wide strips.
+- **ORGB Random Spin keeps moving** — brief random pauses no longer freeze for many seconds at low **Speed**; spin and pause timing use real seconds, the effect starts spinning right away, and bands render on a fixed-size buffer scaled to your layout. While paused it skips redundant redraws; while spinning it fills one row and copies it to the rest of the buffer for smoother playback on wide strips.
+- **ORGB Rotating Beam runs faster** — the beam renders on a fixed-size buffer scaled to your layout, colors use a profile lookup table, glow falloff is precomputed, and only pixels near the beam are updated instead of repainting the whole canvas every frame.
+- **ORGB Rotating Rainbow runs faster** — the spinning rainbow renders on a fixed-size buffer scaled to your layout, colors use a cached profile lookup table, and rotation math reuses precomputed row and column offsets instead of recomputing every pixel on wide strips.
+- **ORGB Sequence runs faster** — solid color steps render on a fixed-size buffer scaled to your layout; while a color is held steady the effect skips redundant buffer uploads instead of repainting the full canvas every frame.
+- **ORGB Smooth Blink runs faster** — **Solid** mode renders on a fixed-size buffer and skips redundant uploads when the blended color has not changed; **Circle** mode caches distance from the center and uses a color blend lookup table instead of per-pixel math on wide strips, and uses the same fast solid path during the hold interval between pulse bursts.
+- **ORGB Custom Blink runs faster** — vertical band patterns render on a fixed-size buffer (one row copied to the full height) then scale to your layout, instead of thousands of full-height canvas draws per frame on wide strips.
+- **ORGB Sparkle Fade runs faster** — fade in, hold, and sparkle fade out render on a fixed-size buffer scaled to your layout; solid phases skip redundant uploads, and each sparkle pixel uses a color blend lookup table instead of per-frame object updates on wide strips.
+- **ORGB Spectrum Cycling runs faster** — solid profile colors render on a fixed-size buffer scaled to your layout; a cached color cycle lookup table and stepped hue updates skip redundant buffer uploads between color changes instead of repainting the full canvas every frame.
+- **ORGB Stack runs faster** — horizontal and vertical fills render on a fixed-size buffer scaled to your layout; each band uses a brightness lookup table and row or column replication instead of writing every pixel on wide strips.
+- **ORGB Starry Night runs faster** — stars simulate on a fixed-size buffer scaled to your layout; the background fills in one pass and only active star pixels are updated instead of repainting every LED on wide strips each frame.
+- **ORGB Sunrise runs faster** — the radial sun renders on a fixed-size buffer scaled to your layout; distance from the center is cached when motion is off, profile colors use a lookup table instead of a canvas gradient readback, and unchanged frames skip redundant buffer uploads.
+- **ORGB Swap runs faster** — the left-to-right color wipe renders on a fixed-size buffer (one row copied to full height) scaled to your layout; edge blending uses a color lookup table and unchanged wipe steps skip redundant buffer uploads instead of repainting every pixel on wide strips.
+- **ORGB Swirl Circles Audio runs faster** — the twin glowing orbs render on a fixed-size buffer scaled to your layout; glow falloff uses a cached lookup table instead of per-pixel power math on wide strips, and pixels far from both circles stay black without extra blending work.
+- **ORGB Visor runs faster** — the hard-edge color wipe renders on a fixed-size buffer (one row copied to full height) scaled to your layout, and unchanged wipe steps skip redundant buffer uploads instead of thousands of full-height canvas draws per frame on wide strips.
+- **Stream Deck canvas keeps updating** — several optimized ORGB effects were skipping a final canvas refresh when nothing changed on screen; the workspace preview and Stream Deck LCD could look frozen even though the effect was still running. Those effects now present every frame again so your deck keys and touch strip stay in sync with the canvas.
+- **Deck Vitals on a second canvas tab works again** — when Deck Vitals (or any sensor dashboard) runs on a Stream Deck workspace while you work on another tab, live readings and the touch-strip history no longer freeze; background workspace effects keep their animation timer and LibreHardwareMonitor polling stays on.
+- **Gradient Wave uses Color profile** — **ORGB: Gradient Wave** (and other wave-style ORGB ports that share the same color helper) now follow **Color profile** and **Settings → Color profiles** instead of a fixed red-to-blue sweep.
+- **Gradient Pinwheel uses Color profile** — pick a built-in or saved gradient under **Color profile**, or stay on **Custom** to blend your color slots around the wheel. The **Rainbow** toggle still switches to the classic hue sweep.
+- **Gradient Pinwheel opens its own folder** — the effect now lives under **Gradient Pinwheel** (not the old **SolarSystemOld** path shared with **Solar System**), so **Open effect folder** in the browser and saved presets point at the right file.
+
+#### Performance
+
+- **Memory stays steady during long sessions** — RGBJunkie now reads the canvas through the GPU by default, so memory no longer creeps up over time on busy layouts with lots of lights running. If an effect ever looks wrong, you can switch back under **Settings → System → Engine → Advanced → Lower-memory mode**.
+- **Watching the Performance charts no longer slows your lights** — the live graphs under **Settings → System → Performance** only draw the device you have expanded, instead of redrawing every device's charts in the background. Opening that page to check on a device no longer causes a visible dip in your LED frame rate.
+- **Smoother output on big USB controllers** — frames now go out to USB lighting controllers in a compact form, so large controllers (like a 5120-LED Nollie32) stay steadier and less jumpy instead of stuttering when a busy effect is running. If a USB device ever misbehaves, you can switch back under **Settings → System → Engine → Advanced → Fast USB delivery**.
+
+---
+
+## v0.3.84 — June 24, 2026
 
 #### Colors
 
@@ -64,7 +242,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.81 — June 24, 2026
 
 #### Effect browser cover art
 
@@ -181,7 +359,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.79 — June 16, 2026
 
 #### Workspace
 
@@ -230,7 +408,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.75 — June 13, 2026
 
 #### Reliability
 
@@ -293,7 +471,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.71 — June 8, 2026
 
 #### Scenes
 
@@ -372,7 +550,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.68 — June 7, 2026
 
 #### Color profiles
 
@@ -437,7 +615,7 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.66 — June 6, 2026
 
 #### Patch release
 
@@ -453,7 +631,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.64 — June 6, 2026
 
 #### Help Center
 
@@ -487,7 +665,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.62 — June 5, 2026
 
 #### Color profiles
 
@@ -510,7 +688,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.60 — June 5, 2026
 
 #### Updates
 
@@ -531,7 +709,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.58 — June 5, 2026
 
 #### Build
 
@@ -554,7 +732,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.56 — June 5, 2026
 
 #### Lively Wallpaper
 
@@ -570,7 +748,7 @@ No separate release notes for this version. See **v0.3.64** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.54 — June 5, 2026
 
 #### Patch release
 
@@ -587,7 +765,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.52 — June 5, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -610,7 +788,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.50 — June 3, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -634,7 +812,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.48 — June 3, 2026
 
 #### Updates
 
@@ -650,7 +828,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.46 — June 3, 2026
 
 #### Startup
 
@@ -675,7 +853,7 @@ No separate release notes for this version. See **v0.3.55** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.44 — June 3, 2026
 
 #### Patch release
 
@@ -692,7 +870,7 @@ No separate release notes for this version. See **v0.3.45** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.42 — June 3, 2026
 
 #### Patch release
 
@@ -708,7 +886,7 @@ No separate release notes for this version. See **v0.3.43** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.40 — June 3, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -726,7 +904,7 @@ No separate release notes for this version. See **v0.3.40** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.38 — June 3, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -744,7 +922,7 @@ No separate release notes for this version. See **v0.3.38** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.36 — June 3, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -760,7 +938,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.34 — June 3, 2026
 
 #### Patch release
 
@@ -776,7 +954,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.32 — June 2, 2026
 
 #### Wallpaper Engine + Lively Wallpaper
 
@@ -795,7 +973,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.30 — May 31, 2026
 
 #### Audio-reactive effects
 
@@ -865,7 +1043,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.26 — May 31, 2026
 
 #### Setup wizard
 
@@ -885,7 +1063,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.17 — May 31, 2026
 
 #### Setup wizard
 
@@ -912,7 +1090,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.15 — May 30, 2026
 
 #### App links (web and desktop)
 
@@ -937,7 +1115,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.13 — May 30, 2026
 
 #### Updates
 
@@ -953,7 +1131,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.11 — May 30, 2026
 
 #### Updates
 
@@ -976,7 +1154,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.9 — May 30, 2026
 
 #### Updates
 
@@ -996,7 +1174,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.7 — May 29, 2026
 
 #### Wallpaper Engine 2
 
@@ -1013,7 +1191,7 @@ No separate release notes for this version. See **v0.3.36** for user-facing chan
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.5 — May 29, 2026
 
 RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRGB helper, correct process name, Git install path) and keeps **Git repository** downloads organized in per-repo folders.
 
@@ -1053,7 +1231,7 @@ RGBJunkie **0.3.5** improves **Wallpaper Engine 2** companion setup (no SignalRG
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.3 — May 29, 2026
 
 RGBJunkie **0.3.3** brings back **WLED matrix add-ons** from community Git repos, smooths **Identify** on USB and WLED gear, packs more into support reports, and adds an optional **Wallpaper Engine 2** network plugin.
 
@@ -1141,7 +1319,7 @@ RGBJunkie **0.3.1** brings back physical **Identify**, improves **Skydimo** seri
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.3.0 — May 27, 2026
 
 RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after portable updates, and adds a **Third party** page under About.
 
@@ -1210,7 +1388,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.98 — May 25, 2026
 
 #### Sleep and hibernate
 
@@ -1230,7 +1408,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.96 — May 25, 2026
 
 #### Sleep and hibernate
 
@@ -1250,7 +1428,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.94 — May 25, 2026
 
 #### Sleep and hibernate
 
@@ -1266,7 +1444,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.92 — May 25, 2026
 
 #### Sleep and hibernate
 
@@ -1282,7 +1460,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.90 — May 24, 2026
 
 #### Sleep and hibernate
 
@@ -1358,7 +1536,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 
 ---
 
-## v0.3.84 — June 26, 2026
+## v0.2.88 — May 23, 2026
 
 #### Hardware update cap slider and high-FPS devices
 
@@ -1445,7 +1623,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 - **`compile.bat devtools`** — runs elevated `tauri dev` with **`RGBJUNKIE_OPEN_DEVTOOLS=1`** so WebView2 DevTools open on startup (tray → **Open developer tools** remains available). Plain **`compile.bat`** is unchanged.
 - **Tray FPS diagnostics** — in Edge DevTools, **`window.rgbEngine.getFrameTickDriverStatus()`** reports whether the background Web Worker tick driver is active while the window is minimized or in the tray (`workerActive`, `pageHidden`, target interval).
 
-## v0.3.84 — June 26, 2026
+## v0.2.78 — May 21, 2026
 
 #### Settings → Hardware — Performance tab
 
@@ -1515,7 +1693,7 @@ RGBJunkie **0.3.0** tidies the install folder, fixes Windows login startup after
 - **Settings → User media folders** — action buttons no longer stack Chinese text vertically; intro, tabs, **删除**, and **重新扫描硬件** are fully localized.
 - **Settings → System → Startup** help text uses **退出** / **关于** instead of English **Quit** / **About**; update copy no longer says **ZIP** alone.
 
-## v0.3.84 — June 26, 2026
+## v0.2.68 — May 21, 2026
 
 #### Light, dark, and system color scheme
 
@@ -1776,7 +1954,7 @@ When you save an effect `.html` file while it is running, RGBJunkie reloads **th
 
 **[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
 
-## v0.3.84 — June 26, 2026
+## v0.2.63 — May 19, 2026
 
 #### Linux: correct status-bar memory and bundled effects
 
@@ -1798,7 +1976,7 @@ The toolbar **Discord** button now uses [discord.gg/adHsQG8czv](https://discord.
 
 No separate release notes for this version. See **v0.2.64** for user-facing changes shipped in this period.
 
-## v0.3.84 — June 26, 2026
+## v0.2.61 — May 19, 2026
 
 #### Patch release
 
@@ -1842,7 +2020,7 @@ The LED Studio controls are laid out in one horizontal strip: **Component** (dev
 
 Destructive or important actions no longer use the WebView’s **“localhost says”** `confirm()` box. RGBJunkie shows a styled in-app dialog instead — LED Studio **Clear all**, removing a canvas component, deleting device/effect profiles, resetting effect parameters, setup wizard prompts, and similar confirmations in Settings (color profiles, WLED devices, installed files, Git disable-all).
 
-## v0.3.84 — June 26, 2026
+## v0.2.59 — May 19, 2026
 
 #### Right-click → LED Studio on every component
 
@@ -1862,7 +2040,7 @@ When you click **Save current layout** or **Save current effect settings**, a sh
 
 The embedded WebView no longer shows the **Edge-style default context menu** (Back, Refresh, Inspect, etc.) when you right-click outside RGBJunkie’s own menus. **Ctrl+F** / **F3** Find on page, **Ctrl+P** print, **Ctrl+R** / **F5** reload, and **Ctrl+Plus/Minus** zoom are disabled so the app feels like a desktop tool, not a browser tab. Your **canvas and component right-click menus** (move, copy preview, component actions) are unchanged — those are part of RGBJunkie. Developer builds can still open WebView tools from the tray when the **devtools** feature is enabled.
 
-## v0.3.84 — June 26, 2026
+## v0.2.57 — May 18, 2026
 
 #### Patch release
 
@@ -1874,7 +2052,7 @@ No separate release notes for this version. See **v0.2.58** for user-facing chan
 
 No separate release notes for this version. See **v0.2.58** for user-facing changes shipped in this period.
 
-## v0.3.84 — June 26, 2026
+## v0.2.48 — May 18, 2026
 
 #### Languages: English, Español, 简体中文
 

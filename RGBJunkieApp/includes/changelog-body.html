@@ -4,6 +4,196 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-92" data-version="0.3.92">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.92</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Workspace</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Plugin settings stay sharp behind the panel</strong> — opening a device’s settings no longer blurs the workspace underneath; the dim overlay stays, but your layout stays crisp while you adjust options.</li><li><strong>Clearer plugin settings layout</strong> — device options are grouped under one <strong>Lighting</strong> or <strong>Settings</strong> heading each (Live Wallpaper and similar plugins no longer repeat the same section), color pickers show the hex code beside the swatch, and sliders show the live value on the same row.</li><li><strong>Live Wallpaper grid on the layout canvas</strong> — the Live Wallpaper (Lively / Wallpaper Engine) device now shows its virtual LED matrix on the workspace canvas, so you can see where each screen cell is sampled and resize or move the block like any other fixed layout.</li><li><strong>Other canvas tabs stay off the layout</strong> — components assigned to another workspace tab no longer appear dimmed on the canvas you are editing. They are hidden by default; use the eye button on the tab strip if you want to see every tab’s layout at once.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Layout restore uses one stable key per device</strong> — USB gear (like your Razer Leviathan), PawnIO RAM, WLED, and everything else on the desk is matched by a stable hardware key when your scene loads, not by internal ids that can change between launches. Positions stick after startup, rescan, and scene reload.</li><li><strong>OpenRGB removed</strong> — RGBJunkie no longer bundles or talks to OpenRGB. RAM lighting uses PawnIO only. OpenRGB.exe still appears in <strong>Settings → Hardware → Conflicting apps</strong> if you run it separately, so RGBJunkie can warn you when it fights for control of your lights.</li><li><strong>RAM sticks keep their place on the desk</strong> — PawnIO memory lighting no longer jumps back to the center of the layout after startup or a RAM rescan. Reloading your scene puts your sticks where you left them.</li><li><strong>USB soundbars and speakers keep their place too</strong> — devices like the Razer Leviathan V2X no longer show up as a fresh layout block in the center after startup. RGBJunkie matches them by the physical USB connection, not just an internal id that can change between launches, so your saved position sticks when the scene reloads.</li><li><strong>Smarter &quot;Conflicting apps&quot; list</strong> — the Conflicting apps page (Settings → Hardware → Conflicting apps) now also flags the background software tied to the devices you actually have connected, not just the built-in list of well-known RGB programs. If one of your devices ships an app that's known to fight RGBJunkie for control of its lights, it now shows up here automatically — listed by the device that needs it — so you can end it in one click (or have RGBJunkie end it on startup) and keep your lighting under RGBJunkie's control.</li><li><strong>Onboard lighting settings reach the device</strong> — hardware-lighting and firmware settings (Prism Mini, SRGBmods LC, and similar controllers) are now sent on their own after the LED stream, and RGBJunkie runs the plugin’s deferred settings pass about three seconds after you change a device option — no plugin changes required.</li><li><strong>Enable Hardware Lighting takes over the strip</strong> — when <strong>Enable Hardware Lighting</strong> is on, RGBJunkie stops sending live canvas colors to that controller so the onboard rainbow, solid, or breathing effect can run even while an effect is playing.</li><li><strong>Runtime mouse settings show up in Plugin Settings</strong> — Razer, Logitech, and Corsair plugins that register DPI and control options after the device connects (like <strong>Enable Setting Control</strong>, DPI stages, and per-stage sliders) now appear in the settings panel alongside the built-in lighting options.</li><li><strong>Mouse and keyboard settings reach the device</strong> — Razer, Logitech, Corsair, HyperX, and similar plugins can now read firmware responses and apply DPI, polling, LOD, and other hardware options from Plugin Settings (not just lighting). Side buttons and DPI-stage input on supported mice work again too.</li><li><strong>Razer mouse DPI stays put on startup</strong> — RGBJunkie no longer pushes DPI changes to your mouse when the app starts unless you change a mouse option in Plugin Settings with <strong>Enable Setting Control</strong> on. Saved profile values still load into the panel, but they are not sent to the device until you adjust a setting yourself.</li><li><strong>Choose which apps RGBJunkie may close</strong> — each app in the Conflicting apps list now has its own checkbox. Leave it checked to let RGBJunkie end that app, or uncheck it to always keep it running. Your choices are remembered and apply both to the &quot;End conflicting apps&quot; button and the automatic check on startup, so you stay in control of exactly which programs get closed.</li><li><strong>NollieRGB added to the Conflicting apps list</strong> — if the NollieRGB companion app is running, RGBJunkie now spots it and can close it so the two don't fight over your Nollie lights.</li><li><strong>Conflicting apps sorted A–Z</strong> — the Conflicting apps list in Settings is now sorted alphabetically by app name so it's easier to scan.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Startup</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>No more squished window on launch</strong> — the loading screen now stays the right size until the app is ready. Before, the full window could briefly appear cramped into the small loading-screen size before snapping out to its normal size; now it grows back behind the loading screen, so you only see the main window once it's the correct size.</li><li><strong>Loading screen fills the window</strong> — the startup splash now stretches edge to edge in the small borderless window instead of leaving empty space around a smaller box inside it. The loading window is sized comfortably again so the logo and status text are not cramped.</li><li><strong>Animated startup splash</strong> — while RGBJunkie loads, the splash shows the same lightning mark as the app icon with a soft green glow and a thin progress line at the bottom. The main line says what step is running; the detail line uses plain language (for example “Connecting to WLED lights…” or “Connecting to Lively Wallpaper…”) without file paths, IP addresses, or port numbers. The splash stays up until loading finishes, then disappears cleanly when the main window opens.</li><li><strong>Matching logo in the toolbar</strong> — the lightning mark and <strong>RGBJunkie</strong> name on the top-left match the app icon and loading screen; click either one to open rgbjunkie.com in your browser. A <strong>Website</strong> button (globe icon) next to <strong>Discord</strong> on the right opens the site too. Layout tools (align, snap, grid, and so on) stay centered in the top bar and use the space between the logo and the right-side buttons — no horizontal scroll bar.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Tray</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Restart from the tray</strong> — right-click the RGBJunkie tray icon and choose <strong>Restart</strong> to save your layout, turn off your lights cleanly, and open RGBJunkie again — handy after changing a setting that needs a relaunch or when something feels stuck.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-91" data-version="0.3.91">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.91</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 28, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Performance</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lower background CPU use</strong> — RGBJunkie now runs its behind-the-scenes health checks far less often. Several routine checks used to run every few seconds the whole time the app was open; they now run on a relaxed schedule, so the app uses less CPU while sitting idle and while effects are playing. That means less fan noise without any change to how your lights look.</li><li><strong>Quieter while minimized</strong> — when RGBJunkie is hidden in the tray, it no longer keeps checking effect files for edits in the background, trimming a bit more idle CPU.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-89" data-version="0.3.89">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.89</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 27, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App look</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Tidier in Task Manager and the taskbar</strong> — RGBJunkie's helper processes now group together under one &quot;RGBJunkie&quot; entry instead of scattering as separate items, matching how other apps appear. Easier to find the app and see its total resource use at a glance.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>WLED layouts no longer disappear</strong> — components placed on a WLED device could vanish from your layout if the device was still connecting when RGBJunkie loaded your scene, and once that happened the loss became permanent on the next save. RGBJunkie now holds onto a connecting WLED device's components until it finishes coming online, so its lights stay in your layout the same way wired devices do.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App look</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Matching panel titles</strong> — the &quot;Devices&quot; heading on the left panel now uses the same bright, bold style as the &quot;Effects&quot; heading on the right, with a slightly larger font, and both headings now have a matching thin divider line beneath them so the two side panels look consistent.</li><li><strong>Even side panels</strong> — the right (Effects) panel now has the same thin divider line along its bottom as the left (Devices) panel, so both sides are framed the same way.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Performance</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights keep full speed when you click another app</strong> — effects no longer slow to about half rate when RGBJunkie loses focus but stays on screen (for example on a second monitor). The effect now keeps running at full cadence in that state, so your LEDs stay smooth while you work elsewhere.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-88" data-version="0.3.88">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.88</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 27, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>App look</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Cleaner app background</strong> — removed the faint repeating texture behind the workspace that could look like a subtle grid; the background is now a smooth, plain gradient.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Aurora Borealis runs at a steady speed</strong> — the aurora no longer speeds up when its canvas tab is in the background (not selected). Its motion is now time-based, so it looks the same whether the tab is showing or parked behind another.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Performance</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Lights keep full speed when RGBJunkie isn't the active window</strong> — clicking another app used to roughly halve the update rate sent to fast controllers (for example a Nollie dropping from ~40 to ~20 updates per second), causing visible stutter while you worked elsewhere. RGBJunkie now holds the faster timing in the background, so effects stay smooth on your LEDs even when the window doesn't have focus.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-87" data-version="0.3.87">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.87</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 27, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Really fixed the blank white window on launch</strong> — the installed app could still open to an empty white window that never finished loading and was closed by Windows as &quot;not responding&quot;. A performance tweak that limited how RGBJunkie used your processor turned out to freeze the app at startup on installed copies. That tweak is now off, so RGBJunkie opens to your layout normally. (Your processor use is still kept in check by <strong>Settings → System → Engine → Hardware update cap</strong>.)</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-86" data-version="0.3.86">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.86</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 27, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Reliability</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Fixed the blank white window on launch</strong> — after installing, RGBJunkie could open to an empty white window that never finished loading. The app now starts up and shows your layout normally.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-85" data-version="0.3.85">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.85</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effects</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Chromatic Split drifts at a calmer pace</strong> — default <strong>Drift speed</strong> is tuned so shapes glide slowly across the canvas instead of racing; motion is time-based (smooth at any frame rate), and <strong>Drift speed</strong> at zero holds still.</li><li><strong>Chromatic Split shapes stay on screen</strong> — blobs stay inside the canvas with room for the RGB split fringe, instead of drifting off the bottom or right edge.</li><li><strong>Chromatic Split matches your layout size</strong> — shapes and RGB split scale with the engine canvas and <strong>Settings → System → Resolution scale</strong>, not a fixed 320×200 preview size. Blob positions use the same reference coordinates as other RGBJunkie effects so they stay centered on your layout.</li><li><strong>Chromatic Split fades in gently</strong> — new shapes ramp up over several seconds, grow from small to full size, and soften near the edges (including the glow, not just the center) so they do not pop or blink on your LEDs.</li><li><strong>Chromatic Split pure black background</strong> — turn on <strong>Pure black background</strong> in <strong>Colors</strong> for a true black backdrop instead of a dim tint from the color profile.</li><li><strong>Chromatic Split spreads shapes across the layout</strong> — blobs spawn anywhere on the canvas and can drift close to the edges; only the outer glow softens near the border so they do not pop on your LEDs.</li><li><strong>Ink Drops matches your layout size</strong> — marbling fills the engine canvas and drop size scales with <strong>Settings → System → Resolution scale</strong>, not a fixed 320×200 area.</li><li><strong>Ink Drops pure black background</strong> — <strong>Pure black background</strong> lives under the <strong>Colors</strong> tab; when it is on, the backdrop is true black and every stop in the color profile is used for ink drops instead of reserving one for the background.</li><li><strong>Liquid Metal runs faster</strong> — color profiles are cached instead of recomputed for every pixel, large layouts skip an extra noise pass, and default <strong>Render Quality</strong> is tuned for smoother playback (raise it in <strong>Surface</strong> if you want more detail).</li><li><strong>Liquid Metal pure black background</strong> — turn on <strong>Pure black background</strong> in <strong>Colors</strong> so creases and low areas stay true black while chrome ridges keep your profile colors.</li><li><strong>Neon Hex looks right again</strong> — glowing lines use additive blending and smooth trails like the original effect, color profiles from <strong>Settings → Color profiles</strong> work correctly, and cell size scales with your layout instead of clumping in a corner.</li><li><strong>Neon Hex defaults tuned</strong> — fresh installs and <strong>Reset to defaults</strong> use a tighter hex grid with shorter trails, more spark, and stronger pulse (matching the curated Neon Hex preset).</li><li><strong>ORGB Audio Visualizer fills your layout</strong> — the equalizer bars and background patterns scale with the engine canvas instead of staying locked to a 320×200 corner.</li><li><strong>ORGB Audio Visualizer clearer bars</strong> — log-spaced frequency bands with log-normalized levels and per-frame spectral balancing; <strong>Sensitivity</strong> sets overall bar height again (default 110). Also tune <strong>Smoothing</strong> and <strong>Bar width</strong> under <strong>Audio</strong>.</li><li><strong>ORGB Audio Visualizer color wheels run smoothly</strong> — <strong>Color Wheel</strong>, <strong>Color Wheel 2</strong>, and <strong>Original</strong> backgrounds no longer redraw every pixel each frame, so those modes stay responsive on large layouts.</li><li><strong>ORGB Bouncing Ball works again</strong> — the ball is drawn to the live canvas buffer (not a blank back buffer), scales with your layout size, and physics time is capped so the first frame does not break the bounce.</li><li><strong>ORGB Bubbles is faster with more bubbles</strong> — rings draw only near each bubble instead of repainting every pixel, spawns scale with time and layout, and defaults allow up to <strong>16</strong> bubbles more often (<strong>Rarity</strong> <strong>28</strong>).</li><li><strong>ORGB Bubbles sound sensitivity</strong> — settings are grouped under <strong>Motion</strong>, <strong>Colors</strong>, and <strong>Audio</strong>; <strong>Sound sensitivity</strong> above <strong>0</strong> spawns bubbles only when audio hits (silence stays empty), with <strong>thick rings for bass</strong> and <strong>thin rings for treble</strong>; <strong>Speed</strong> still controls ring growth; <strong>0</strong> keeps the timed bubble loop.</li><li><strong>ORGB Bubbles renders reliably again</strong> — bass and treble use peak levels from the spectrum, new rings start visible right away, and thin treble rings are no longer clamped to the same width as bass.</li><li><strong>ORGB Clock fills your layout</strong> — hour, minute, and second markers span the full engine canvas width and scale with <strong>Settings → System → Resolution scale</strong>, not a fixed 320×200 strip.</li><li><strong>ORGB Color Wheel works again</strong> — the rotating wheel fills your layout using a fast canvas gradient (not a per-pixel loop that could stall on large canvases), and draws to the live canvas buffer.</li><li><strong>ORGB Comet color speed is separate</strong> — <strong>Speed</strong> controls travel only; new <strong>Color speed</strong> under <strong>Colors</strong> sets how fast the tail cycles through your profile (default <strong>25</strong>, <strong>0</strong> keeps a fixed gradient on the tail).</li><li><strong>ORGB Custom Gradient Wave works again</strong> — a duplicate canvas buffer declaration prevented the effect from loading; the wave now renders and scales with your layout.</li><li><strong>ORGB Custom Gradient Wave uses Color profile only</strong> — the old <strong>Color Preset</strong> list is removed; wave colors come from <strong>Color profile</strong> and <strong>Settings → Color profiles</strong> (with <strong>Custom</strong> slots when selected). Motion controls live under <strong>Wave</strong>, colors under <strong>Colors</strong>.</li><li><strong>ORGB Double Rotating Rainbow spins more smoothly</strong> — rotation is time-based with capped frame steps, band spacing scales with your layout, colors blend smoothly through your profile, and the effect renders on a fast fixed-size buffer then scales to your layout so frame rate stays up on wide strips.</li><li><strong>ORGB Hypnotoad runs faster and smoother</strong> — rings render on a fixed-size buffer scaled to your layout, colors use your <strong>Settings → Color profiles</strong> lookup table, and distance/angle math is cached so wide layouts no longer stall the frame rate.</li><li><strong>ORGB Lightning works again</strong> — a missing color variable stopped the effect from loading; strikes and fade now run on the full canvas with your <strong>Color profile</strong>.</li><li><strong>ORGB Mask is easier to use in layers</strong> — pick <strong>Rectangle</strong>, <strong>Ellipse</strong>, or <strong>Rounded</strong> shapes, soften the edge with <strong>Edge softness</strong> (low values stay tight to the border), and set <strong>Inside color</strong> / <strong>Outside color</strong> under <strong>Colors</strong> (or use your <strong>Color profile</strong>). <strong>Corner radius</strong> on <strong>Rounded</strong> now rounds the window the right way. The mask redraws when your layout size changes.</li><li><strong>ORGB Moving Panes runs faster and fills your layout</strong> — vertical panes still slide in opposite directions, but motion is time-based with capped frame steps, colors use a cached profile lookup table, and the effect renders on a fixed-size buffer then scales to your engine canvas so wide strips stay smooth.</li><li><strong>ORGB Noise Map runs faster on wide layouts</strong> — noise renders at a capped reference resolution (scaled up to your canvas) so long strips stay responsive; <strong>Render quality</strong> defaults to <strong>75%</strong>, audio bands use peak levels with smoother response, and <strong>Turbulence</strong> jitters less harshly. <strong>Flash</strong> contour highlights no longer dim the whole palette.</li><li><strong>ORGB Noise Map audio sensitivity</strong> — <strong>Audio sensitivity</strong> now scales Flash, Pulse, and Turbulence predictably after auto-leveling (50 = balanced; lower is subtler, higher is stronger), including when you switch <strong>Audio response band</strong>.</li><li><strong>ORGB Noise Map pure black background</strong> — turn on <strong>Pure black background</strong> under <strong>Colors</strong> so low valleys fade to true black while brighter lava contours keep your <strong>Color profile</strong> colors; off restores the normal profile-tinted lows.</li><li><strong>ORGB Policing runs faster</strong> — the scanner renders on a fixed-size buffer then scales to your layout instead of thousands of canvas draws per frame, with time-based motion and the same direction-change flash.</li><li><strong>ORGB Radial Rainbow runs faster</strong> — rings render on a fixed-size buffer scaled to your layout, distance from the center is cached, colors use a profile lookup table, and motion is time-based so wide strips stay smooth.</li><li><strong>ORGB Rain runs faster</strong> — drops render only in their small on-screen streaks on a fixed-size buffer scaled to your layout, instead of testing every drop at every pixel; each drop keeps its profile color when it spawns.</li><li><strong>ORGB Rainbow Wave runs faster</strong> — sliding bands render on a fixed-size buffer scaled to your layout, with cached column phase and a profile color lookup table instead of thousands of canvas fills per frame.</li><li><strong>ORGB Random Marquee bar width and gap work again</strong> — <strong>Bar width</strong> and <strong>Bar gap</strong> always control stripe size (they were being overwritten each cycle); the effect also renders on a fixed-size buffer scaled to your layout for smoother playback on wide strips.</li><li><strong>ORGB Random Spin keeps moving</strong> — brief random pauses no longer freeze for many seconds at low <strong>Speed</strong>; spin and pause timing use real seconds, the effect starts spinning right away, and bands render on a fixed-size buffer scaled to your layout. While paused it skips redundant redraws; while spinning it fills one row and copies it to the rest of the buffer for smoother playback on wide strips.</li><li><strong>ORGB Rotating Beam runs faster</strong> — the beam renders on a fixed-size buffer scaled to your layout, colors use a profile lookup table, glow falloff is precomputed, and only pixels near the beam are updated instead of repainting the whole canvas every frame.</li><li><strong>ORGB Rotating Rainbow runs faster</strong> — the spinning rainbow renders on a fixed-size buffer scaled to your layout, colors use a cached profile lookup table, and rotation math reuses precomputed row and column offsets instead of recomputing every pixel on wide strips.</li><li><strong>ORGB Sequence runs faster</strong> — solid color steps render on a fixed-size buffer scaled to your layout; while a color is held steady the effect skips redundant buffer uploads instead of repainting the full canvas every frame.</li><li><strong>ORGB Smooth Blink runs faster</strong> — <strong>Solid</strong> mode renders on a fixed-size buffer and skips redundant uploads when the blended color has not changed; <strong>Circle</strong> mode caches distance from the center and uses a color blend lookup table instead of per-pixel math on wide strips, and uses the same fast solid path during the hold interval between pulse bursts.</li><li><strong>ORGB Custom Blink runs faster</strong> — vertical band patterns render on a fixed-size buffer (one row copied to the full height) then scale to your layout, instead of thousands of full-height canvas draws per frame on wide strips.</li><li><strong>ORGB Sparkle Fade runs faster</strong> — fade in, hold, and sparkle fade out render on a fixed-size buffer scaled to your layout; solid phases skip redundant uploads, and each sparkle pixel uses a color blend lookup table instead of per-frame object updates on wide strips.</li><li><strong>ORGB Spectrum Cycling runs faster</strong> — solid profile colors render on a fixed-size buffer scaled to your layout; a cached color cycle lookup table and stepped hue updates skip redundant buffer uploads between color changes instead of repainting the full canvas every frame.</li><li><strong>ORGB Stack runs faster</strong> — horizontal and vertical fills render on a fixed-size buffer scaled to your layout; each band uses a brightness lookup table and row or column replication instead of writing every pixel on wide strips.</li><li><strong>ORGB Starry Night runs faster</strong> — stars simulate on a fixed-size buffer scaled to your layout; the background fills in one pass and only active star pixels are updated instead of repainting every LED on wide strips each frame.</li><li><strong>ORGB Sunrise runs faster</strong> — the radial sun renders on a fixed-size buffer scaled to your layout; distance from the center is cached when motion is off, profile colors use a lookup table instead of a canvas gradient readback, and unchanged frames skip redundant buffer uploads.</li><li><strong>ORGB Swap runs faster</strong> — the left-to-right color wipe renders on a fixed-size buffer (one row copied to full height) scaled to your layout; edge blending uses a color lookup table and unchanged wipe steps skip redundant buffer uploads instead of repainting every pixel on wide strips.</li><li><strong>ORGB Swirl Circles Audio runs faster</strong> — the twin glowing orbs render on a fixed-size buffer scaled to your layout; glow falloff uses a cached lookup table instead of per-pixel power math on wide strips, and pixels far from both circles stay black without extra blending work.</li><li><strong>ORGB Visor runs faster</strong> — the hard-edge color wipe renders on a fixed-size buffer (one row copied to full height) scaled to your layout, and unchanged wipe steps skip redundant buffer uploads instead of thousands of full-height canvas draws per frame on wide strips.</li><li><strong>Stream Deck canvas keeps updating</strong> — several optimized ORGB effects were skipping a final canvas refresh when nothing changed on screen; the workspace preview and Stream Deck LCD could look frozen even though the effect was still running. Those effects now present every frame again so your deck keys and touch strip stay in sync with the canvas.</li><li><strong>Deck Vitals on a second canvas tab works again</strong> — when Deck Vitals (or any sensor dashboard) runs on a Stream Deck workspace while you work on another tab, live readings and the touch-strip history no longer freeze; background workspace effects keep their animation timer and LibreHardwareMonitor polling stays on.</li><li><strong>Gradient Wave uses Color profile</strong> — <strong>ORGB: Gradient Wave</strong> (and other wave-style ORGB ports that share the same color helper) now follow <strong>Color profile</strong> and <strong>Settings → Color profiles</strong> instead of a fixed red-to-blue sweep.</li><li><strong>Gradient Pinwheel uses Color profile</strong> — pick a built-in or saved gradient under <strong>Color profile</strong>, or stay on <strong>Custom</strong> to blend your color slots around the wheel. The <strong>Rainbow</strong> toggle still switches to the classic hue sweep.</li><li><strong>Gradient Pinwheel opens its own folder</strong> — the effect now lives under <strong>Gradient Pinwheel</strong> (not the old <strong>SolarSystemOld</strong> path shared with <strong>Solar System</strong>), so <strong>Open effect folder</strong> in the browser and saved presets point at the right file.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Performance</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Memory stays steady during long sessions</strong> — RGBJunkie now reads the canvas through the GPU by default, so memory no longer creeps up over time on busy layouts with lots of lights running. If an effect ever looks wrong, you can switch back under <strong>Settings → System → Engine → Advanced → Lower-memory mode</strong>.</li><li><strong>Watching the Performance charts no longer slows your lights</strong> — the live graphs under <strong>Settings → System → Performance</strong> only draw the device you have expanded, instead of redrawing every device's charts in the background. Opening that page to check on a device no longer causes a visible dip in your LED frame rate.</li><li><strong>Smoother output on big USB controllers</strong> — frames now go out to USB lighting controllers in a compact form, so large controllers (like a 5120-LED Nollie32) stay steadier and less jumpy instead of stuttering when a busy effect is running. If a USB device ever misbehaves, you can switch back under <strong>Settings → System → Engine → Advanced → Fast USB delivery</strong>.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -13,7 +203,7 @@
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
 <span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 24, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -72,7 +262,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-81" data-version="0.3.81">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -80,8 +270,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.81</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 24, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -144,7 +334,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-79" data-version="0.3.79">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -152,8 +342,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.79</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 16, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -208,7 +398,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-75" data-version="0.3.75">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -216,8 +406,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.75</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 13, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -284,7 +474,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-71" data-version="0.3.71">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -292,8 +482,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.71</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 8, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -356,7 +546,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-68" data-version="0.3.68">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -364,8 +554,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.68</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 7, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -436,7 +626,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-66" data-version="0.3.66">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -444,8 +634,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.66</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 6, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -480,7 +670,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-64" data-version="0.3.64">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -488,8 +678,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.64</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 6, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -536,7 +726,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-62" data-version="0.3.62">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -544,8 +734,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.62</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -584,7 +774,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-60" data-version="0.3.60">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -592,8 +782,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.60</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -632,7 +822,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-58" data-version="0.3.58">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -640,8 +830,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.58</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -676,7 +866,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-56" data-version="0.3.56">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -684,8 +874,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.56</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -720,7 +910,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-54" data-version="0.3.54">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -728,8 +918,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.54</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -764,7 +954,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-52" data-version="0.3.52">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -772,8 +962,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.52</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 5, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -812,7 +1002,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-50" data-version="0.3.50">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -820,8 +1010,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.50</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -864,7 +1054,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-48" data-version="0.3.48">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -872,8 +1062,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.48</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -908,7 +1098,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-46" data-version="0.3.46">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -916,8 +1106,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.46</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -956,7 +1146,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-44" data-version="0.3.44">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -964,8 +1154,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.44</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1000,7 +1190,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-42" data-version="0.3.42">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1008,8 +1198,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.42</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1044,7 +1234,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-40" data-version="0.3.40">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1052,8 +1242,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.40</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1088,7 +1278,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-38" data-version="0.3.38">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1096,8 +1286,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.38</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1132,7 +1322,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-36" data-version="0.3.36">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1140,8 +1330,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.36</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1176,7 +1366,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-34" data-version="0.3.34">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1184,8 +1374,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.34</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 3, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1220,7 +1410,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-32" data-version="0.3.32">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1228,8 +1418,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.32</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 2, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1264,7 +1454,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-30" data-version="0.3.30">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1272,8 +1462,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.30</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 31, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1320,7 +1510,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-26" data-version="0.3.26">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1328,8 +1518,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.26</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 31, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1364,7 +1554,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-17" data-version="0.3.17">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1372,8 +1562,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.17</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 31, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1416,7 +1606,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-15" data-version="0.3.15">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1424,8 +1614,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.15</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1464,7 +1654,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-13" data-version="0.3.13">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1472,8 +1662,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.13</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1508,7 +1698,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-11" data-version="0.3.11">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1516,8 +1706,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.11</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1556,7 +1746,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-9" data-version="0.3.9">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1564,8 +1754,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.9</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 30, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1604,7 +1794,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-7" data-version="0.3.7">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1612,8 +1802,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.7</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1648,7 +1838,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-5" data-version="0.3.5">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1656,8 +1846,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.5</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
 </div>
 <p class="rgbj-changelog-release__summary">RGBJunkie <strong>0.3.5</strong> improves <strong>Wallpaper Engine 2</strong> companion setup (no SignalRGB helper, correct process name, Git install path) and keeps <strong>Git repository</strong> downloads organized in per-repo folders.</p>
 </header>
@@ -1701,7 +1891,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-3" data-version="0.3.3">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1709,8 +1899,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.3</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 29, 2026</p>
 </div>
 <p class="rgbj-changelog-release__summary">RGBJunkie <strong>0.3.3</strong> brings back <strong>WLED matrix add-ons</strong> from community Git repos, smooths <strong>Identify</strong> on USB and WLED gear, packs more into support reports, and adds an optional <strong>Wallpaper Engine 2</strong> network plugin.</p>
 </header>
@@ -1799,7 +1989,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-0" data-version="0.3.0">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1807,8 +1997,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.0</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 27, 2026</p>
 </div>
 <p class="rgbj-changelog-release__summary">RGBJunkie <strong>0.3.0</strong> tidies the install folder, fixes Windows login startup after portable updates, and adds a <strong>Third party</strong> page under About.</p>
 </header>
@@ -1868,7 +2058,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-98" data-version="0.2.98">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1876,8 +2066,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.98</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1916,7 +2106,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-96" data-version="0.2.96">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1924,8 +2114,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.96</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -1964,7 +2154,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-94" data-version="0.2.94">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -1972,8 +2162,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.94</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2008,7 +2198,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-92" data-version="0.2.92">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2016,8 +2206,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.92</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 25, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2052,7 +2242,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-90" data-version="0.2.90">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2060,8 +2250,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.90</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 24, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2112,7 +2302,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-88" data-version="0.2.88">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2120,8 +2310,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.88</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 23, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2204,7 +2394,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-78" data-version="0.2.78">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2212,8 +2402,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.78</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 21, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2292,7 +2482,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-68" data-version="0.2.68">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2300,8 +2490,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.68</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 21, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2529,7 +2719,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-63" data-version="0.2.63">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2537,8 +2727,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.63</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2582,7 +2772,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-61" data-version="0.2.61">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2590,8 +2780,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.61</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2658,7 +2848,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-59" data-version="0.2.59">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2666,8 +2856,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.59</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 19, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2710,7 +2900,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-57" data-version="0.2.57">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2718,8 +2908,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.57</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2754,7 +2944,7 @@
 </div>
 </div>
 </article>
-<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-84" data-version="0.3.84">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-2-48" data-version="0.2.48">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
 <span class="rgbj-changelog-timeline-line"></span>
@@ -2762,8 +2952,8 @@
 <div class="rgbj-changelog-release__card card border-secondary shadow-sm">
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
-<span class="rgbj-changelog-version-badge" title="App version">v0.3.84</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 26, 2026</p>
+<span class="rgbj-changelog-version-badge" title="App version">v0.2.48</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>May 18, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
