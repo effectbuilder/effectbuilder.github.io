@@ -4,6 +4,36 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-94" data-version="0.3.94">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.94</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 29, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Interface</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>On/off switch for each device</strong> — in <strong>Settings → Hardware → Connected</strong>, the control that turns a device’s lights on or off is now a sliding toggle switch — green with the knob to the right when output is on, red with the knob to the left when it’s off — so each device’s state is obvious at a glance.</li><li><strong>Performance graphs now live with each device</strong> — the separate <strong>Performance</strong> tab is gone. Expand any device in <strong>Settings → Hardware → Connected</strong> and you’ll see that device’s live speed, data rate, and timing graphs right there in its panel, next to its on/off switch and layout options.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Updates</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Update download stops when you close the dialog</strong> — closing the “new version available” window cancels the in-progress download instead of leaving it running in the background. Starting again shows a steady progress bar without flicker.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Performance</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Nollie (and similar) controllers refresh faster</strong> — controllers that need a constant refresh now send to the device on their own dedicated lane instead of taking turns with your other USB lights. On a desk with several USB devices they were waiting in line for a turn, which held their effect rate down; now they update much more smoothly and keep up with your chosen refresh rate.</li><li><strong>Stays at full speed when minimized</strong> — RGBJunkie now keeps your lights and effects running at the same rate whether the window is on screen or minimized to the taskbar or tray, and it tells Windows not to slow the app down the moment you minimize it. While minimized it also asks Windows to keep its lighting work a higher priority, so your effects stay smooth even when other programs are busy on the CPU; that extra priority is dropped again as soon as you bring the window back up. It also no longer works <em>harder</em> in the background than on screen. Lower your <strong>Settings → System → Engine → Hardware update cap</strong> for an even quieter background.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-92" data-version="0.3.92">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>

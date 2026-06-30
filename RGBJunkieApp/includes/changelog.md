@@ -4,9 +4,26 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
+## v0.3.94 — June 29, 2026
+
+#### Interface
+
+- **On/off switch for each device** — in **Settings → Hardware → Connected**, the control that turns a device’s lights on or off is now a sliding toggle switch — green with the knob to the right when output is on, red with the knob to the left when it’s off — so each device’s state is obvious at a glance.
+- **Performance graphs now live with each device** — the separate **Performance** tab is gone. Expand any device in **Settings → Hardware → Connected** and you’ll see that device’s live speed, data rate, and timing graphs right there in its panel, next to its on/off switch and layout options.
+
+#### Updates
+
+- **Update download stops when you close the dialog** — closing the “new version available” window cancels the in-progress download instead of leaving it running in the background. Starting again shows a steady progress bar without flicker.
+
+#### Performance
+
+- **Nollie (and similar) controllers refresh faster** — controllers that need a constant refresh now send to the device on their own dedicated lane instead of taking turns with your other USB lights. On a desk with several USB devices they were waiting in line for a turn, which held their effect rate down; now they update much more smoothly and keep up with your chosen refresh rate.
+- **Stays at full speed when minimized** — RGBJunkie now keeps your lights and effects running at the same rate whether the window is on screen or minimized to the taskbar or tray, and it tells Windows not to slow the app down the moment you minimize it. While minimized it also asks Windows to keep its lighting work a higher priority, so your effects stay smooth even when other programs are busy on the CPU; that extra priority is dropped again as soon as you bring the window back up. It also no longer works *harder* in the background than on screen. Lower your **Settings → System → Engine → Hardware update cap** for an even quieter background.
+
+---
+
 ## v0.3.93 — June 29, 2026
 
-*(Development notes for v0.3.93 — add bullets here before the next build; shipped when build.bat bumps to this version.)*
 
 ---
 
