@@ -29,7 +29,7 @@ function rgbj_base_path(): string
     }
 
   // Nested paths under RGBJunkieApp (e.g. stats/downloads/) — strip all section segments.
-    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'deep-links', 'changelog', 'help', 'edit', 'admin', 'api', 'stats', 'downloads', 'thanks'];
+    $sectionDirs = ['releases', 'terms', 'privacy', 'supported', 'docs', 'deep-links', 'changelog', 'help', 'edit', 'admin', 'api', 'stats', 'downloads', 'thanks', 's'];
     while ($segments !== [] && in_array($segments[count($segments) - 1], $sectionDirs, true)) {
         array_pop($segments);
     }
@@ -99,8 +99,8 @@ function rgbj_web_tools(): array
     return [
         [
             'label' => 'Effect Builder',
-            'href' => '/',
-            'description' => 'Design custom lighting effects in the browser and export them for SignalRGB.',
+            'href' => '/effect-builder/',
+            'description' => 'Design custom lighting effects in the browser and export them for RGBJunkie.',
             'icon' => 'bi-magic',
         ],
         [

@@ -26,11 +26,13 @@ And it’s not just effect sliders. Scenes remember **which components** sit on 
     ![Scene panel](images/image-10.png)
 3. Enter a name when prompted — even if a scene is already selected, Save always asks so you can overwrite or save a copy.
 
-Scene files live under <a href="https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/profiles/scenes"><code>profiles/scenes</code></a> in your RGBJunkie AppData folder.
+Scene files live under <a href="handoff:open/appdata/profiles/scenes"><code>profiles/scenes</code></a> in your RGBJunkie AppData folder.
 
 ## Load a Scene
 
 Use the **Scene picker** in the same bar above the canvas tabs. Pick one and RGBJunkie restores the saved layout and effect settings.
+
+**Keep devices** (toggle next to Save) controls whether loading a Scene replaces USB device layout rows or only updates effects and canvas layout. Turn it **on** when you want to keep the hardware list you already have connected.
 
 > **Tip:** **Settings → Help** has more Scene tricks and keyboard shortcuts in your language.
 

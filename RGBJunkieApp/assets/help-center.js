@@ -6,11 +6,8 @@
     var resultsEl = document.querySelector('[data-rgbj-help-search-results]');
     var indexCards = Array.prototype.slice.call(document.querySelectorAll('[data-rgbj-help-index-card]'));
     var indexSections = Array.prototype.slice.call(document.querySelectorAll('[data-rgbj-help-index-section]'));
+    var startHereEl = document.querySelector('[data-rgbj-help-start-here]');
     var noResultsEl = document.querySelector('[data-rgbj-help-index-empty]');
-    var tagFilterBanner = document.querySelector('[data-rgbj-help-tag-filter]');
-    var tagButtons = Array.prototype.slice.call(document.querySelectorAll('[data-rgbj-help-tag]'));
-    var docMapItems = Array.prototype.slice.call(document.querySelectorAll('.rgbj-help-doc-map__item[data-tag-slugs]'));
-    var docMapSections = Array.prototype.slice.call(document.querySelectorAll('.rgbj-help-doc-map__section'));
 
     var entries = [];
     if (dataEl) {
@@ -21,50 +18,8 @@
         }
     }
 
-    var activeTag = null;
-
     function normalizeQuery(value) {
         return String(value || '').trim().toLowerCase();
-    }
-
-    function readTagFromUrl() {
-        try {
-            var params = new URLSearchParams(window.location.search);
-            return normalizeQuery(params.get('tag')).replace(/\s+/g, '-');
-        } catch (err) {
-            return '';
-        }
-    }
-
-    function cardMatchesTag(card, tagSlug) {
-        if (!tagSlug) {
-            return true;
-        }
-        var slugs = (card.getAttribute('data-tag-slugs') || '').split(/\s+/).filter(Boolean);
-        return slugs.indexOf(tagSlug) !== -1;
-    }
-
-    function setActiveTag(tagSlug) {
-        activeTag = tagSlug || null;
-        tagButtons.forEach(function (button) {
-            var slug = button.getAttribute('data-rgbj-help-tag') || '';
-            var isActive = !!activeTag && slug === activeTag;
-            button.classList.toggle('is-active', isActive);
-            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
-
-        if (tagFilterBanner) {
-            tagFilterBanner.classList.toggle('d-none', !activeTag);
-            var label = tagFilterBanner.querySelector('[data-rgbj-help-tag-filter-label]');
-            if (label && activeTag) {
-                var activeButton = tagButtons.find(function (button) {
-                    return (button.getAttribute('data-rgbj-help-tag') || '') === activeTag;
-                });
-                label.textContent = activeButton
-                    ? (activeButton.getAttribute('data-rgbj-help-tag-label') || activeTag)
-                    : activeTag;
-            }
-        }
     }
 
     function scoreEntry(entry, query) {
@@ -155,9 +110,7 @@
         var visibleCount = 0;
         indexCards.forEach(function (card) {
             var haystack = card.getAttribute('data-search-text') || '';
-            var matchesSearch = !query || haystack.indexOf(query) !== -1;
-            var matchesTag = cardMatchesTag(card, activeTag);
-            var show = matchesSearch && matchesTag;
+            var show = !query || haystack.indexOf(query) !== -1;
             card.classList.toggle('d-none', !show);
             if (show) {
                 visibleCount++;
@@ -165,50 +118,36 @@
         });
 
         indexSections.forEach(function (section) {
+            section.querySelectorAll('[data-rgbj-help-index-subgroup]').forEach(function (subgroup) {
+                var subgroupCards = subgroup.querySelectorAll('[data-rgbj-help-index-card]:not(.d-none)');
+                subgroup.classList.toggle('d-none', subgroupCards.length === 0);
+            });
+
             var sectionCards = section.querySelectorAll('[data-rgbj-help-index-card]:not(.d-none)');
             section.classList.toggle('d-none', sectionCards.length === 0);
         });
 
         if (noResultsEl) {
-            noResultsEl.classList.toggle('d-none', visibleCount > 0 || (!query && !activeTag));
+            noResultsEl.classList.toggle('d-none', visibleCount > 0 || !query);
+        }
+
+        if (startHereEl) {
+            startHereEl.classList.toggle('d-none', !!query);
         }
     }
 
-    function filterDocMapItems() {
-        if (!activeTag || docMapItems.length === 0) {
-            docMapItems.forEach(function (item) {
-                item.classList.remove('is-tag-hidden');
-            });
-            docMapSections.forEach(function (section) {
-                section.classList.remove('is-empty');
-            });
-            return;
-        }
-
-        docMapItems.forEach(function (item) {
-            var slugs = (item.getAttribute('data-tag-slugs') || '').split(/\s+/).filter(Boolean);
-            item.classList.toggle('is-tag-hidden', slugs.indexOf(activeTag) === -1);
-        });
-
-        docMapSections.forEach(function (section) {
-            var visibleItems = section.querySelectorAll('.rgbj-help-doc-map__item[data-tag-slugs]:not(.is-tag-hidden)');
-            section.classList.toggle('is-empty', visibleItems.length === 0);
-        });
-    }
-
-    function applyFilters() {
+    function applySearch() {
         var query = input ? normalizeQuery(input.value) : '';
         renderResults(filterEntries(query));
         filterIndexCards(query);
-        filterDocMapItems();
     }
 
     if (input && resultsEl) {
-        input.addEventListener('input', applyFilters);
+        input.addEventListener('input', applySearch);
 
         input.addEventListener('focus', function () {
             if (normalizeQuery(input.value)) {
-                applyFilters();
+                applySearch();
             }
         });
 
@@ -222,17 +161,11 @@
         input.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 input.value = '';
-                applyFilters();
+                applySearch();
                 resultsEl.classList.add('d-none');
                 resultsEl.classList.remove('is-open');
             }
         });
-    }
-
-    var initialTag = readTagFromUrl();
-    if (initialTag) {
-        setActiveTag(initialTag);
-        applyFilters();
     }
 
     var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.rgbj-help-toc__link'));

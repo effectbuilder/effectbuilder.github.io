@@ -104,7 +104,9 @@ function rgbj_render_page_nav(): void
                     </button>
                     <ul class="dropdown-menu dropdown-menu-start shadow mt-2 rgbj-brand-menu">
                         <li class="dropdown-header small text-body-secondary">Web tools</li>
-                        <li><a class="dropdown-item" href="/">Effect Builder</a></li>
+                        <li><a class="dropdown-item" href="/">RGBJunkie home</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/effect-builder/">Effect Builder</a></li>
                         <li><a class="dropdown-item" href="/builder/">Component Builder</a></li>
                         <li><a class="dropdown-item" href="/combiner/">Effect Combiner</a></li>
                         <li><a class="dropdown-item" href="/skydimo/">Skydimo LUA Builder</a></li>

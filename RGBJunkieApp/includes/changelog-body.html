@@ -4,6 +4,66 @@
 <p class="rgbj-changelog-intro__lead"><strong>Version tags:</strong> Headings use semver and date (for example <strong>v0.2.48 — May 18, 2026</strong>). The website and in-app update dialog link to these notes.</p>
 </header>
 <div class="rgbj-changelog-timeline">
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-96" data-version="0.3.96">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.96</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>July 1, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Help Center</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Cleaner Help Center home</strong> — the site Help Center index is easier to read: a comfortable system font, a narrower centered column, indented article lists under each section, and rows that show a short title plus one summary line. Use search to find articles — tag filtering was removed from the home page. Article pages still show the full sidebar and on-page contents.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Plugin developer guide</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Parameter and format docs in every section</strong> — the published plugin guide now explains what each export, lifecycle argument, and `device.*` call accepts (types, byte order, report sizes, settings row fields, `match` / `visibleWhen`, add-on hooks, and common patterns with example flows), not only a single API appendix.</li><li><strong>How to make an add-on (Section 8.7)</strong> — step-by-step guide for external authors: create the file, register settings, wire `__rgbjPostWirePluginExports`, split helpers with `@rgbj-include`, and test — without RGBJunkie source or repo build tools.</li><li><strong>Easier to follow from the top</strong> — the guide now opens with an on-page contents list, a five-step “how a plugin runs” mental model, and a single complete copy-and-run plugin with a plain-language walkthrough and load steps, so you can get lights working before diving into the full API reference (which gained a quick “what do I need?” cheat sheet).</li><li><strong>Developer guides now live in the Help Center</strong> — the plugin guide and both effect guides (HTML canvas and functional `.mjs`) open as regular Help Center articles, so they match the rest of the site: the same header, search, breadcrumbs, and on-page contents, and they turn up when you search Help. Code samples keep their copy button and syntax labels, and every in-page link still jumps to the right spot. The searchable supported devices reference stays on its own page.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
+<article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-95" data-version="0.3.95">
+<div class="rgbj-changelog-release__rail" aria-hidden="true">
+<span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
+<span class="rgbj-changelog-timeline-line"></span>
+</div>
+<div class="rgbj-changelog-release__card card border-secondary shadow-sm">
+<header class="rgbj-changelog-release__header">
+<div class="rgbj-changelog-release__heading">
+<span class="rgbj-changelog-version-badge" title="App version">v0.3.95</span>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>July 1, 2026</p>
+</div>
+</header>
+<div class="rgbj-changelog-release__body">
+<section class="rgbj-changelog-group card border-secondary border-opacity-50">
+<div class="rgbj-changelog-features"><article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Stream Deck</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Pause button shows Play when stopped</strong> — the effect transport pause control now swaps to a play icon (green highlight) while paused or when lights are toggled off from Stream Deck. The in-app pause button uses the same lights-off behavior as <strong>Toggle Lights</strong>.</li><li><strong>Toggle all lights off</strong> — assign <strong>RGBJunkie Toggle Lights</strong> on any Stream Deck key to pause your effect and black out every connected device; press again to resume. Reinstall RGBJunkie-Deck <strong>1.2.2</strong>. Shortcut: `rgbjunkie://lights/toggle?silent=1`.</li><li><strong>More Stream Deck + dials</strong> — <strong>Cycle Effect (Dial)</strong> and <strong>Cycle Scene (Dial)</strong> step through effects or saved scenes as you rotate. <strong>Pause + Brightness (Dial)</strong> pauses lights on press/touch and adjusts master brightness on rotate. Reinstall RGBJunkie-Deck <strong>1.2.0</strong> and use a current RGBJunkie build.</li><li><strong>Master brightness dial (Stream Deck +)</strong> — assign <strong>RGBJunkie Master Brightness</strong> to a <strong>dial</strong> on Stream Deck + (open a dial slot, not a regular key). Rotate to dim or brighten all lights; press the dial or touch the LCD to jump back to 100%. <strong>Brightness Up</strong> / <strong>Brightness Down</strong> keys work on any Stream Deck. Reinstall RGBJunkie-Deck <strong>1.2.0</strong> and use a current RGBJunkie build.</li><li><strong>Stream Deck effect buttons resume playback</strong> — choosing an effect from a Stream Deck button no longer leaves the effect paused if it was stopped earlier.</li><li><strong>Scene buttons load the scene you picked</strong> — the Stream Deck property inspector now saves your scene choice as soon as you change the dropdown, and the button sends that exact saved file to RGBJunkie instead of reloading whatever scene is already open. Reinstall RGBJunkie-Deck <strong>1.2.0</strong>.</li><li><strong>Scene bar stays in sync from Stream Deck</strong> — when you change scenes with a Stream Deck button or `rgbjunkie://scene/…` link, the <strong>Scene</strong> dropdown in RGBJunkie now shows the scene you switched to.</li><li><strong>Pick which canvas a Stream Deck button controls</strong> — effect and previous/next effect actions can target a specific canvas tab instead of whichever tab is selected in RGBJunkie. Choose <strong>Selected canvas</strong> to keep the old behavior. Reinstall RGBJunkie-Deck <strong>1.2.0</strong> for the latest Stream Deck plugin fixes.</li><li><strong>Stream Deck scene list skips internal files</strong> — the scene picker no longer lists `session_profile_baseline`, `user_color_profiles`, or `wled_devices` (RGBJunkie data files, not saved scenes). <strong>Previous</strong> and <strong>Next scene</strong> buttons and scene cycle links skip those files too.</li><li><strong>Previous and next effect or scene from a link</strong> — `rgbjunkie://effect/applyprevious`, `applynext`, and the same for `scene` step through your lists without opening the app window (`silent=1` keeps it in the tray). Use these in the RGBJunkie Stream Deck plugin or any shortcut that opens `rgbjunkie://` links.</li><li><strong>Previous/next effect updates lights right away</strong> — Stream Deck previous and next effect buttons (and the same deep links) now start the new effect on your lights immediately. This works for the canvas tab you have open and for background canvas tabs you pick in the Stream Deck settings.</li><li><strong>Stream Deck no longer asks to run RGBJunkie every press</strong> — when the app is already open, shortcuts and the RGBJunkie-Deck plugin send commands through your user data folder instead of relaunching the app (which used to trigger an administrator prompt on each button).</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Plugin host parity</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Fan and pump control</strong> — fan-controller and AIO plugins can register fans/pumps, show speed sliders and live RPM in <strong>Plugin Settings</strong>, and read your target level each frame. Turn all fan control off under <strong>Settings → Hardware → Fan and pump control</strong>. Slider values are remembered per device in your profiles.</li><li><strong>Temperature readouts</strong> — liquid and probe temperatures from cooler plugins appear as read-only rows in <strong>Plugin Settings</strong>.</li><li><strong>Raw USB for select devices</strong> — Lian Li Uni Fan and Aqua Computer Farbwerk plugins can use USB control and bulk transfers again (lighting on those hubs should behave as the plugin authors intended).</li><li><strong>Panel brightness (monitors)</strong> — LG UltraGear and similar monitor plugins get a <strong>Panel brightness</strong> slider; on Windows RGBJunkie can adjust the display through DDC/CI when the monitor supports it.</li><li><strong>Plugin keyboard/mouse input (opt-in)</strong> — <strong>Settings → System → Allow plugins to send keyboard/mouse input</strong> is <strong>off</strong> by default. Turning it on shows a security warning; only enable it for plugins you trust (macro remapping from Razer/Corsair-style devices).</li><li><strong>Battery level in Devices panel</strong> — wireless mice, keyboards, and headsets that report battery over HID now show the live percentage next to the device name (for example <strong>72%</strong>). A small charging icon appears while plugged in; hover for the full status. Low levels are highlighted in red. Wired Razer mice (such as the Basilisk V3) no longer show a false battery reading — the app filters those reports in the host, without changing upstream plugin files.</li><li><strong>Host parity test device (virtual)</strong> — enable with `localStorage.setItem(&quot;rgbjunkie.hostParityTestDevice&quot;,&quot;1&quot;)` in DevTools (or `window.__rgbjEnableHostParityTestDevice(true)`), then reload. A fake AIO appears with fan sliders, temperature readouts, panel brightness, and a Battery badge — no USB hub required.</li><li><strong>Plugin Settings scrolls smoothly</strong> — long device option lists scroll normally again. Live fan RPM and temperature updates no longer jump the panel back to the top, and dragging sliders no longer fights the scroll wheel.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Help and developer docs</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Updated guides for the new layout</strong> — Help Center articles now describe collapsible <strong>Devices</strong> and <strong>Effects</strong> docks, the <strong>Scene</strong> bar above canvas tabs, effect transport controls, per-device <strong>Output on/off</strong>, and the <strong>RGBJunkie-Deck</strong> Stream Deck plugin.</li><li><strong>Plugin developer guide rewritten</strong> — the public plugin guide now centers on the <strong>export-function format</strong> (`Name()`, `VendorId()`, `Initialize()`, `Render()`, …) used by the importable device library, with the optional <strong>`rgbjunkie` descriptor</strong> documented as an advanced path. The <strong>`device` API</strong> section now explains that vendor hardware settings (DPI, polling, onboard modes, and similar) work through Plugin Settings, and lists which legacy APIs are intentional no-ops.</li></ul>
+</article>
+<article class="rgbj-changelog-feature">
+<h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Devices</span></h5>
+<ul class="rgbj-changelog-list rgbj-changelog-list--compact"><li><strong>Stream Deck stays untouched when output is off</strong> — restarting or quitting RGBJunkie no longer blacks your Stream Deck LCD or clears button icons when that device is turned off in <strong>Settings → Hardware → Connected</strong>. RGBJunkie also skips the Stream Deck shutdown pass on exit so your Elgato button icons are not wiped when you close or restart the app. During startup, Stream Deck HID stays blocked until your saved settings load and the splash screen finishes. Turning output back <strong>on</strong> runs full hardware init and restarts the LCD update loop. Elgato Friendly mode (and legacy <strong>Elgato-Friendly</strong> lighting mode) still keeps RGBJunkie from driving the panel.</li><li><strong>Toggle all lights off resets on restart</strong> — the temporary “all lights off” state from <strong>Toggle Lights</strong> (Stream Deck or the in-app pause control) no longer carries over after you quit and reopen the app.</li><li><strong>Off stays off after unplug</strong> — if you turn a USB device’s lights off in <strong>Settings → Hardware → Connected</strong> and then unplug and plug it back in, it stays off instead of turning itself back on.</li><li><strong>Off stays off after restart</strong> — turning a device off and reloading RGBJunkie no longer clears that setting during startup layout restore.</li></ul>
+</article></div>
+</section>
+</div>
+</div>
+</article>
 <article class="rgbj-changelog-release rgbj-changelog-release--versioned" id="v-0-3-94" data-version="0.3.94">
 <div class="rgbj-changelog-release__rail" aria-hidden="true">
 <span class="rgbj-changelog-date-badge rgbj-changelog-date-badge--release rgbj-changelog-date-badge--version"><i class="bi bi-tag-fill" aria-hidden="true"></i></span>
@@ -13,7 +73,7 @@
 <header class="rgbj-changelog-release__header">
 <div class="rgbj-changelog-release__heading">
 <span class="rgbj-changelog-version-badge" title="App version">v0.3.94</span>
-<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 29, 2026</p>
+<p class="rgbj-changelog-release__date-label"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>June 30, 2026</p>
 </div>
 </header>
 <div class="rgbj-changelog-release__body">
@@ -2743,7 +2803,7 @@
 </article>
 <article class="rgbj-changelog-feature">
 <h5 class="rgbj-changelog-feature__title"><i class="bi bi-stars" aria-hidden="true"></i><span>Effect developer guide: scaling shapes to canvas size</span></h5>
-<p class="rgbj-changelog-feature__text"><strong>`EFFECT-DEVELOPER-GUIDE.md`</strong> (and the HTML guide on the site) now documents <strong>§2.2</strong> — how to scale radii, spacing, and stroke width using <strong>`canvas.width`/`height`</strong>, <strong>`engine.canvas`</strong>, <strong>`rgbjSetupCanvas`</strong>, and the 320×200 reference size.</p>
+<p class="rgbj-changelog-feature__text"><strong>`EFFECT-DEVELOPER-GUIDE.md`</strong> (and the HTML guide on the site) now documents <strong>Section 2.2</strong> — how to scale radii, spacing, and stroke width using <strong>`canvas.width`/`height`</strong>, <strong>`engine.canvas`</strong>, <strong>`rgbjSetupCanvas`</strong>, and the 320×200 reference size.</p>
 </article></div>
 </section>
 </div>

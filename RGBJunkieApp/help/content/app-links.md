@@ -13,18 +13,20 @@ Links on **rgbjunkie.com** (or `rgbjunkie://` URLs) can open RGBJunkie or your *
 
 RGBJunkie needs to be installed and registered for the link scheme. Clicked a link and nothing happened? Launch the app once from the Start menu, then try again.
 
+When RGBJunkie is **already running**, website handoff links apply silently — no User Account Control prompt. If the app is **closed**, Windows may ask once to start RGBJunkie (the installed app runs as administrator so it can talk to USB lighting devices).
+
 ## Open your user data folder
 
 These handoff links work in any browser:
 
 | Link | Opens |
 | ---- | ----- |
-| [Open RGBJunkie user folder](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata) | Root of your AppData folder |
-| [plugins/](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/plugins) | Installed plugins |
-| [effects/](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/effects) | User effects |
-| [components/](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/components) | User components |
-| [profiles/scenes/](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/profiles/scenes) | Scene files |
-| [logs/](https://www.rgbjunkie.com/RGBJunkieApp/s?p=open/appdata/logs) | Log files |
+| [Open RGBJunkie user folder](handoff:open/appdata) | Root of your AppData folder |
+| [plugins/](handoff:open/appdata/plugins) | Installed plugins |
+| [effects/](handoff:open/appdata/effects) | User effects |
+| [components/](handoff:open/appdata/components) | User components |
+| [profiles/scenes/](handoff:open/appdata/profiles/scenes) | Scene files |
+| [logs/](handoff:open/appdata/logs) | Log files |
 
 Handy while following [Installed files](installed-files), [Backup your data](backup-restore), or [Send a support report](send-support-report).
 
@@ -44,6 +46,12 @@ Website handoff examples:
 
 | Handoff `p=` value | Opens |
 | ------------------ | ----- |
+| `effect/applyprevious` / `effect/applynext` | Step through effects (`workspace=` optional for a canvas tab) |
+| `scene/applyprevious` / `scene/applynext` | Step through saved Scenes |
+| `brightness/set/50` | Set master brightness to 50% |
+| `brightness/adjust?delta=+5` | Nudge brightness |
+| `effect/togglepause` | Pause or resume the active effect |
+| `lights/toggle` | Pause and black out all LEDs (toggle) |
 | `view/settings/installed` | **Settings → Installed files** |
 | `view/settings/hardware` | **Settings → Hardware** |
 | `view/settings/colors` | **Settings → Colors** |

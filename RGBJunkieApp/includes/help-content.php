@@ -275,29 +275,114 @@ function rgbj_help_articles_by_category(bool $includeDrafts = false): array
         $grouped[$category][] = $article;
     }
 
-    uksort($grouped, 'strcasecmp');
+    return rgbj_help_sort_category_groups($grouped);
+}
+
+/** @param array<string, list<array<string, mixed>>> $grouped */
+function rgbj_help_sort_category_groups(array $grouped): array
+{
+    $order = [
+        'Getting Started' => 0,
+        'How-To' => 1,
+        'Troubleshooting' => 2,
+        'Reference' => 3,
+        'Developer' => 4,
+    ];
+
+    uksort($grouped, static function (string $a, string $b) use ($order): int {
+        $rankA = $order[$a] ?? 99;
+        $rankB = $order[$b] ?? 99;
+        if ($rankA !== $rankB) {
+            return $rankA <=> $rankB;
+        }
+
+        return strcasecmp($a, $b);
+    });
 
     return $grouped;
 }
 
-/** @return array<string, int> Tag label => article count */
-function rgbj_help_tag_counts(bool $includeDrafts = false): array
+/** @return list<string> */
+function rgbj_help_start_here_slugs(): array
 {
-    $counts = [];
-    foreach (rgbj_help_load_articles($includeDrafts) as $article) {
-        foreach ($article['tags'] as $tag) {
-            $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+    return [
+        'quick-start',
+        'troubleshooting-no-lights',
+        'supported-devices',
+        'check-for-updates',
+    ];
+}
+
+/**
+ * Split long categories into smaller browse groups on the Help Center index.
+ *
+ * @param list<array<string, mixed>> $articles
+ * @return list<array{label: string, articles: list<array<string, mixed>>}>
+ */
+function rgbj_help_index_subgroups(string $category, array $articles): array
+{
+    if ($category !== 'How-To') {
+        return [['label' => '', 'articles' => $articles]];
+    }
+
+    $order = [
+        'Workspace & layout' => ['canvas-tabs', 'workspace-editor', 'component-library'],
+        'Effects & color' => ['effects-browse-and-tune', 'color-profiles', 'led-studio'],
+        'Devices & hardware' => ['wled-setup', 'stream-deck', 'ram-gpu-lighting', 'wallpaper-screen-sync'],
+        'Settings & files' => ['backup-restore', 'installed-files', 'tray-and-startup'],
+    ];
+
+    $bySlug = [];
+    foreach ($articles as $article) {
+        $bySlug[$article['slug']] = $article;
+    }
+
+    $groups = [];
+    $used = [];
+    foreach ($order as $label => $slugs) {
+        $bucket = [];
+        foreach ($slugs as $slug) {
+            if (isset($bySlug[$slug])) {
+                $bucket[] = $bySlug[$slug];
+                $used[$slug] = true;
+            }
+        }
+        if ($bucket !== []) {
+            $groups[] = ['label' => $label, 'articles' => $bucket];
         }
     }
 
-    uksort($counts, 'strcasecmp');
+    $rest = [];
+    foreach ($articles as $article) {
+        if (!isset($used[$article['slug']])) {
+            $rest[] = $article;
+        }
+    }
+    if ($rest !== []) {
+        $groups[] = ['label' => 'More', 'articles' => $rest];
+    }
 
-    return $counts;
+    return $groups;
 }
 
-function rgbj_help_index_url_with_tag(string $tag): string
+/**
+ * Short index headline + one summary line (strip redundant taglines baked into titles).
+ *
+ * @return array{primary: string, summary: string}
+ */
+function rgbj_help_index_article_lines(string $title, string $summary): array
 {
-    return rgbj_help_index_url() . '?tag=' . rawurlencode(rgbj_help_tag_slug($tag));
+    $primary = trim($title);
+    if (preg_match('/^(.+?)\s+[—–-]\s+(.+)$/u', $title, $m)) {
+        $primary = trim($m[1]);
+    }
+
+    $summary = trim($summary);
+    if ($summary === '' && preg_match('/^(.+?)\s+[—–-]\s+(.+)$/u', $title, $m)) {
+        $summary = trim($m[2]);
+    }
+
+    return ['primary' => $primary, 'summary' => $summary];
 }
 
 function rgbj_help_active_tag_from_request(): ?string
@@ -305,21 +390,6 @@ function rgbj_help_active_tag_from_request(): ?string
     $raw = trim((string) ($_GET['tag'] ?? ''));
 
     return $raw !== '' ? $raw : null;
-}
-
-function rgbj_help_resolve_active_tag(?string $tagSlug, bool $includeDrafts = false): ?string
-{
-    if ($tagSlug === null || $tagSlug === '') {
-        return null;
-    }
-
-    foreach (array_keys(rgbj_help_tag_counts($includeDrafts)) as $tag) {
-        if (rgbj_help_tag_slug($tag) === $tagSlug) {
-            return $tag;
-        }
-    }
-
-    return null;
 }
 
 function rgbj_help_get_article(string $slug, bool $includeDrafts = false): ?array
@@ -367,6 +437,27 @@ function rgbj_help_link_url(string $url): string
 function rgbj_help_article_url(string $slug): string
 {
     return rgbj_help_link_url(rgbj_url('help/' . rawurlencode($slug) . '/'));
+}
+
+/**
+ * Resolve an internal article link that may carry a "#anchor" fragment
+ * (e.g. "plugin-developer-guide#device-api"). The slug portion is turned into
+ * the article URL and the fragment is re-appended untouched.
+ */
+function rgbj_help_resolve_article_link(string $target): string
+{
+    $anchor = '';
+    $hashPos = strpos($target, '#');
+    if ($hashPos !== false) {
+        $anchor = substr($target, $hashPos);
+        $target = substr($target, 0, $hashPos);
+    }
+
+    if ($target === '') {
+        return $anchor;
+    }
+
+    return rgbj_help_article_url($target) . $anchor;
 }
 
 function rgbj_help_index_url(): string
@@ -613,7 +704,69 @@ function rgbj_help_is_external_href(string $href): bool
         return true;
     }
 
-    return preg_match('#^(https?://|/|mailto:)#i', $href) === 1;
+    return preg_match('#^(https?://|/|mailto:|handoff:)#i', $href) === 1;
+}
+
+/** Extract `p=` path from a website handoff URL on this site or rgbjunkie.com. */
+function rgbj_help_handoff_path_from_href(string $href): ?string
+{
+    $parsed = parse_url($href);
+    if ($parsed === false || !isset($parsed['path'])) {
+        return null;
+    }
+
+    $path = rtrim(str_replace('\\', '/', $parsed['path']), '/');
+    if (!preg_match('#(?:/RGBJunkieApp)?/s$#i', $path)) {
+        return null;
+    }
+
+    if (!isset($parsed['query']) || $parsed['query'] === '') {
+        return null;
+    }
+
+    parse_str($parsed['query'], $qs);
+    if (!isset($qs['p']) || !is_string($qs['p']) || trim($qs['p']) === '') {
+        return null;
+    }
+
+    $handoffPath = trim($qs['p']);
+    unset($qs['p']);
+    if ($qs !== []) {
+        $handoffPath .= '?' . http_build_query($qs);
+    }
+
+    return $handoffPath;
+}
+
+/** Resolve Help Center links, including `handoff:…` and website handoff URLs. */
+function rgbj_help_resolve_link_href(string $href): string
+{
+    if (preg_match('#^handoff:(.+)$#i', $href, $m)) {
+        if (!function_exists('rgbj_handoff_url')) {
+            require_once __DIR__ . '/app-deep-links.php';
+        }
+
+        return rgbj_handoff_url($m[1]);
+    }
+
+    if (preg_match('#^https?://#i', $href)) {
+        $handoffPath = rgbj_help_handoff_path_from_href($href);
+        if ($handoffPath !== null) {
+            if (!function_exists('rgbj_handoff_url')) {
+                require_once __DIR__ . '/app-deep-links.php';
+            }
+
+            return rgbj_handoff_url($handoffPath);
+        }
+
+        return $href;
+    }
+
+    if (!rgbj_help_is_external_href($href)) {
+        return rgbj_help_resolve_article_link($href);
+    }
+
+    return $href;
 }
 
 function rgbj_help_images_dir(): string
@@ -1073,10 +1226,7 @@ function rgbj_help_replace_markdown_links(string $text): string
         $result .= substr($remaining, 0, $pos);
 
         $label = $m[1][0];
-        $href = $m[2][0];
-        if (!rgbj_help_is_external_href($href)) {
-            $href = rgbj_help_article_url($href);
-        }
+        $href = rgbj_help_resolve_link_href($m[2][0]);
 
         $result .= '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">' . $label . '</a>';
         $remaining = substr($remaining, $pos + $len);
@@ -1145,10 +1295,7 @@ function rgbj_help_normalize_html_link(string $html): string
         return $html;
     }
 
-    $href = $hrefMatch[2];
-    if (!rgbj_help_is_external_href($href)) {
-        $href = rgbj_help_article_url($href);
-    }
+    $href = rgbj_help_resolve_link_href($hrefMatch[2]);
 
     $targetBlank = (bool) preg_match('/\btarget\s*=\s*["\']?_blank/i', $html);
     $label = '';
@@ -1629,8 +1776,15 @@ function rgbj_help_markdown_to_html(string $markdown): array
             $level = strlen($m[1]);
             $tag = rgbj_help_heading_tag($level);
             $headingSource = trim($m[2]);
+            $headingCustomId = null;
+            if (preg_match('/^(.*?)\s*\{#([A-Za-z0-9_-]+)\}\s*$/', $headingSource, $idMatch)) {
+                $headingSource = trim($idMatch[1]);
+                $headingCustomId = $idMatch[2];
+            }
             $headingPlain = rgbj_help_heading_plain_text($headingSource);
-            $headingId = rgbj_help_make_heading_id($headingPlain, $usedHeadingIds);
+            $headingId = $headingCustomId !== null
+                ? rgbj_help_register_unique_heading_id($headingCustomId, $usedHeadingIds)
+                : rgbj_help_make_heading_id($headingPlain, $usedHeadingIds);
             $headings[] = [
                 'level' => $level,
                 'id' => $headingId,
@@ -1717,6 +1871,40 @@ function rgbj_help_show_drafts(): bool
     return isset($_GET['preview']) && $_GET['preview'] === '1';
 }
 
+function rgbj_render_help_start_here(bool $includeDrafts = false): void
+{
+    $articles = [];
+    foreach (rgbj_help_start_here_slugs() as $slug) {
+        $article = rgbj_help_get_article($slug, $includeDrafts);
+        if ($article !== null) {
+            $articles[] = $article;
+        }
+    }
+
+    if ($articles === []) {
+        return;
+    }
+    ?>
+    <section class="rgbj-help-start-here mb-4" data-rgbj-help-start-here aria-label="Start here">
+        <h2 class="rgbj-help-index-section-title">Start here</h2>
+        <ul class="rgbj-help-start-here__list list-unstyled mb-0">
+            <?php foreach ($articles as $article) :
+                $lines = rgbj_help_index_article_lines($article['title'], $article['summary']);
+                ?>
+            <li>
+                <a href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>" class="rgbj-help-start-here__link">
+                    <span class="rgbj-help-index-item__title"><?= rgbj_h($lines['primary']) ?></span>
+                    <?php if ($lines['summary'] !== '') : ?>
+                    <span class="rgbj-help-index-item__summary"><?= rgbj_h($lines['summary']) ?></span>
+                    <?php endif; ?>
+                </a>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
+    <?php
+}
+
 function rgbj_render_help_index(): void
 {
     $includeDrafts = rgbj_help_show_drafts();
@@ -1733,53 +1921,59 @@ function rgbj_render_help_index(): void
         echo '<p class="small text-warning mb-4"><i class="bi bi-eye me-1"></i>Preview mode — draft articles are visible. Remove <code>?preview=1</code> from the URL before sharing.</p>';
     }
 
+    rgbj_render_help_start_here($includeDrafts);
+
+    echo '<div class="rgbj-help-index-sections">';
+
     foreach ($grouped as $category => $articles) {
         ?>
-        <section class="rgbj-help-category mb-4" data-rgbj-help-index-section>
-            <h2 class="h5 fw-bold text-body-emphasis mb-3"><i class="bi bi-folder2-open me-2 text-info"></i><?= rgbj_h($category) ?></h2>
-            <div class="row g-3">
-                <?php foreach ($articles as $article) :
-                    $searchText = strtolower(
-                        $article['title'] . ' ' . $article['summary'] . ' ' . $article['category'] . ' '
-                        . implode(' ', $article['tags']) . ' ' . ($article['plain_text'] ?? '')
-                    );
-                    ?>
-                <div
-                    class="col-md-6"
-                    data-rgbj-help-index-card
-                    data-search-text="<?= rgbj_h($searchText) ?>"
-                    data-tag-slugs="<?= rgbj_h(rgbj_help_article_tag_slugs($article['tags'])) ?>"
-                >
-                    <div class="card h-100 border-secondary shadow-sm rgbj-help-card position-relative">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
-                                <h3 class="h6 card-title text-body-emphasis mb-0"><?= rgbj_h($article['title']) ?></h3>
-                                <?php rgbj_render_help_article_admin_actions($article['slug'], $article['title']); ?>
-                            </div>
-                            <?php if ($article['summary'] !== '') : ?>
-                            <p class="card-text text-body-secondary small mb-2"><?= rgbj_h($article['summary']) ?></p>
+        <section class="rgbj-help-index-section" data-rgbj-help-index-section>
+            <h2 class="rgbj-help-index-section-title"><?= rgbj_h($category) ?></h2>
+            <?php if ($category === 'Developer') : ?>
+            <p class="rgbj-help-index-section-note small text-body-secondary mb-3">Long-form guides for plugin and effect authors.</p>
+            <?php endif; ?>
+            <?php foreach (rgbj_help_index_subgroups($category, $articles) as $subgroup) : ?>
+            <div class="rgbj-help-index-subgroup" data-rgbj-help-index-subgroup>
+                <?php if ($subgroup['label'] !== '') : ?>
+                <h3 class="rgbj-help-index-subgroup-title"><?= rgbj_h($subgroup['label']) ?></h3>
+                <?php endif; ?>
+                <ul class="rgbj-help-index-list list-unstyled mb-0">
+                    <?php foreach ($subgroup['articles'] as $article) :
+                        $lines = rgbj_help_index_article_lines($article['title'], $article['summary']);
+                        $searchText = strtolower(
+                            $article['title'] . ' ' . $article['summary'] . ' ' . $article['category'] . ' '
+                            . implode(' ', $article['tags']) . ' ' . ($article['plain_text'] ?? '')
+                        );
+                        ?>
+                    <li
+                        class="rgbj-help-index-item"
+                        data-rgbj-help-index-card
+                        data-search-text="<?= rgbj_h($searchText) ?>"
+                    >
+                        <a href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>" class="rgbj-help-index-item__link">
+                            <span class="rgbj-help-index-item__text">
+                                <span class="rgbj-help-index-item__title"><?= rgbj_h($lines['primary']) ?></span>
+                                <?php if ($lines['summary'] !== '') : ?>
+                                <span class="rgbj-help-index-item__summary"><?= rgbj_h($lines['summary']) ?></span>
+                                <?php endif; ?>
+                            </span>
+                        </a>
+                        <div class="rgbj-help-index-item__meta">
+                            <?php if ($article['draft']) : ?>
+                            <span class="badge text-bg-warning">Draft</span>
                             <?php endif; ?>
-                            <p class="card-text small text-body-secondary mb-0">
-                                <?php if ($article['draft']) : ?>
-                                <span class="badge text-bg-warning me-1">Draft</span>
-                                <?php endif; ?>
-                                <?php if ($article['published'] !== '') : ?>
-                                <i class="bi bi-calendar3 me-1 opacity-75"></i><?= rgbj_h(rgbj_help_format_date_label($article['published'])) ?>
-                                <?php endif; ?>
-                            </p>
-                            <a
-                                href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>"
-                                class="stretched-link"
-                                aria-label="Read <?= rgbj_h($article['title']) ?>"
-                            ></a>
+                            <?php rgbj_render_help_article_admin_actions($article['slug'], $article['title']); ?>
                         </div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
+            <?php endforeach; ?>
         </section>
         <?php
     }
+
+    echo '</div>';
 }
 
 function rgbj_render_help_article(array $article): void
@@ -1829,6 +2023,17 @@ function rgbj_help_make_heading_id(string $text, array &$used): string
 {
     $base = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $text) ?? 'section');
     $base = trim($base, '-');
+
+    return rgbj_help_register_unique_heading_id($base, $used);
+}
+
+/**
+ * Register a heading id (used verbatim for explicit {#custom-id} headings),
+ * appending -2, -3, … on collision so anchors stay unique per article.
+ */
+function rgbj_help_register_unique_heading_id(string $base, array &$used): string
+{
+    $base = trim($base);
     if ($base === '') {
         $base = 'section';
     }
@@ -1883,13 +2088,14 @@ function rgbj_help_search_entries(bool $includeDrafts = false): array
     return $entries;
 }
 
-function rgbj_render_help_search_bar(bool $includeDrafts = false): void
+function rgbj_render_help_search_bar(bool $includeDrafts = false, bool $compact = false): void
 {
     $entries = rgbj_help_search_entries($includeDrafts);
+    $sizeClass = $compact ? '' : ' input-group-lg';
     ?>
-    <div class="rgbj-help-search mb-4" data-rgbj-help-search>
+    <div class="rgbj-help-search mb-3" data-rgbj-help-search>
         <label class="form-label visually-hidden" for="rgbj-help-search-input">Search help articles</label>
-        <div class="input-group input-group-lg rgbj-help-search__input-wrap">
+        <div class="input-group<?= $sizeClass ?> rgbj-help-search__input-wrap">
             <span class="input-group-text border-secondary"><i class="bi bi-search" aria-hidden="true"></i></span>
             <input
                 type="search"
@@ -1910,18 +2116,14 @@ function rgbj_render_help_search_bar(bool $includeDrafts = false): void
 function rgbj_render_help_doc_map(?string $activeSlug, bool $includeDrafts = false): void
 {
     $grouped = rgbj_help_articles_by_category($includeDrafts);
-    $tagCounts = rgbj_help_tag_counts($includeDrafts);
-    $activeTagSlug = rgbj_help_active_tag_from_request();
     ?>
     <nav class="rgbj-help-sidebar-panel" aria-label="Help articles">
-        <div class="rgbj-help-sidebar-panel__header">
-            <i class="bi bi-map me-2 text-info" aria-hidden="true"></i>All articles
-        </div>
+        <div class="rgbj-help-sidebar-panel__header">All articles</div>
         <div class="rgbj-help-sidebar-panel__body">
             <ul class="rgbj-help-doc-map list-unstyled mb-0">
                 <li class="rgbj-help-toc__item">
-                    <a href="<?= rgbj_h(rgbj_help_index_url()) ?>" class="rgbj-help-toc__link<?= $activeSlug === null && $activeTagSlug === null ? ' is-active' : '' ?>">
-                        <i class="bi bi-grid me-2 opacity-75" aria-hidden="true"></i>Help Center home
+                    <a href="<?= rgbj_h(rgbj_help_index_url()) ?>" class="rgbj-help-toc__link<?= $activeSlug === null ? ' is-active' : '' ?>">
+                        Help Center home
                     </a>
                 </li>
                 <?php foreach ($grouped as $category => $articles) : ?>
@@ -1934,7 +2136,7 @@ function rgbj_render_help_doc_map(?string $activeSlug, bool $includeDrafts = fal
                         <?php foreach ($articles as $article) :
                             $isActive = $activeSlug === $article['slug'];
                             ?>
-                        <li class="rgbj-help-toc__item rgbj-help-toc__item--depth-3 rgbj-help-doc-map__item" data-tag-slugs="<?= rgbj_h(rgbj_help_article_tag_slugs($article['tags'])) ?>">
+                        <li class="rgbj-help-toc__item rgbj-help-toc__item--depth-3 rgbj-help-doc-map__item">
                             <a
                                 href="<?= rgbj_h(rgbj_help_article_url($article['slug'])) ?>"
                                 class="rgbj-help-toc__link<?= $isActive ? ' is-active' : '' ?>"
@@ -1946,27 +2148,6 @@ function rgbj_render_help_doc_map(?string $activeSlug, bool $includeDrafts = fal
                 </li>
                 <?php endforeach; ?>
             </ul>
-
-            <?php if ($tagCounts !== []) : ?>
-            <div class="rgbj-help-tags">
-                <p class="rgbj-help-tags__label"><i class="bi bi-tags me-1" aria-hidden="true"></i>Tags</p>
-                <div class="rgbj-help-tags__list" role="list" aria-label="Article tags">
-                    <?php foreach ($tagCounts as $tag => $count) :
-                        $tagSlug = rgbj_help_tag_slug($tag);
-                        $isTagActive = $activeTagSlug === $tagSlug;
-                        ?>
-                    <a
-                        href="<?= rgbj_h(rgbj_help_index_url_with_tag($tag)) ?>"
-                        class="rgbj-help-tag<?= $isTagActive ? ' is-active' : '' ?>"
-                        role="listitem"
-                        data-rgbj-help-tag="<?= rgbj_h($tagSlug) ?>"
-                        data-rgbj-help-tag-label="<?= rgbj_h($tag) ?>"
-                        aria-pressed="<?= $isTagActive ? 'true' : 'false' ?>"
-                    ><?= rgbj_h($tag) ?><span class="rgbj-help-tag__count"><?= (int) $count ?></span></a>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            <?php endif; ?>
             <?php rgbj_help_editor_nav_link(); ?>
         </div>
     </nav>
@@ -2102,6 +2283,18 @@ function rgbj_help_editor_nav_link(): void
     }
     ?>
     <p class="small mb-0 mt-3 pt-3 border-top rgbj-help-editor-link-wrap d-none rgbj-help-admin-only">
+        <a href="<?= rgbj_h(rgbj_help_editor_url()) ?>" class="link-info"><i class="bi bi-pencil-square me-1"></i>Edit articles</a>
+    </p>
+    <?php
+}
+
+function rgbj_help_editor_nav_link_standalone(): void
+{
+    if (!rgbj_help_admin_ui_enabled()) {
+        return;
+    }
+    ?>
+    <p class="small mb-0 mt-4 pt-3 border-top rgbj-help-editor-link-wrap d-none rgbj-help-admin-only">
         <a href="<?= rgbj_h(rgbj_help_editor_url()) ?>" class="link-info"><i class="bi bi-pencil-square me-1"></i>Edit articles</a>
     </p>
     <?php

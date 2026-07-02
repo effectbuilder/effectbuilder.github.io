@@ -46,9 +46,11 @@ Not sure which physical strip matches a row? **Identify** flashes that channel o
 
 Click a **channel name** or its colored **dot** to select its components on the canvas.
 
-## Plugin settings
+## Plugin settings and hardware output
 
 The **gear** on a device row opens that plugin’s options — IP addresses, brightness caps, whatever that device needs. **Escape** closes it.
+
+In **Settings → Hardware → Connected**, each device fold shows an **Output on / Output off** toggle. **Output off** stops RGBJunkie from sending colors to that device (useful for Stream Deck panels you want to leave alone, or gear you control elsewhere). The setting survives unplug and app restart.
 
 ## Move stuff between canvas tabs
 

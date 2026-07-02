@@ -4,7 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '../effect-builder/index.html'), 'utf8');
 
 function extractBetween(startMarker, endMarker) {
     const i = html.indexOf(startMarker);

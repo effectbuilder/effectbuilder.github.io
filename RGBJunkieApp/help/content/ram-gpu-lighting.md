@@ -18,7 +18,7 @@ On startup and when you **Rescan** in the Devices panel, matching kits are added
 
 If nothing shows up:
 
-* Quit other RGB suites (iCUE, Aura, Mystic Light, SignalRGB, vendor tools) that may lock the same chips
+* Quit other RGB suites (iCUE, Aura, Mystic Light, vendor tools) that may lock the same chips
 * In **Settings → Hardware → RAM**, use **Install SMBus modules**, then **Scan now**
 * If Windows blocked the driver, install [PawnIO](https://github.com/namazso/PawnIO/releases) as Administrator and restart RGBJunkie as Administrator
 * Unplug/replug is rarely needed for RAM — a **Rescan** after closing conflicting apps is usually enough

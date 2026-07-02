@@ -4,7 +4,64 @@ Plain-language release notes for the desktop app. Newest changes are listed firs
 
 **Version tags:** Headings use semver and date (for example **v0.2.48 — May 18, 2026**). The website and in-app update dialog link to these notes.
 
-## v0.3.94 — June 29, 2026
+## v0.3.96 — July 1, 2026
+
+#### Help Center
+
+- **Cleaner Help Center home** — the site Help Center index is easier to read: a comfortable system font, a narrower centered column, indented article lists under each section, and rows that show a short title plus one summary line. Use search to find articles — tag filtering was removed from the home page. Article pages still show the full sidebar and on-page contents.
+
+#### Plugin developer guide
+
+- **Parameter and format docs in every section** — the published plugin guide now explains what each export, lifecycle argument, and `device.*` call accepts (types, byte order, report sizes, settings row fields, `match` / `visibleWhen`, add-on hooks, and common patterns with example flows), not only a single API appendix.
+- **How to make an add-on (Section 8.7)** — step-by-step guide for external authors: create the file, register settings, wire `__rgbjPostWirePluginExports`, split helpers with `@rgbj-include`, and test — without RGBJunkie source or repo build tools.
+- **Easier to follow from the top** — the guide now opens with an on-page contents list, a five-step “how a plugin runs” mental model, and a single complete copy-and-run plugin with a plain-language walkthrough and load steps, so you can get lights working before diving into the full API reference (which gained a quick “what do I need?” cheat sheet).
+- **Developer guides now live in the Help Center** — the plugin guide and both effect guides (HTML canvas and functional `.mjs`) open as regular Help Center articles, so they match the rest of the site: the same header, search, breadcrumbs, and on-page contents, and they turn up when you search Help. Code samples keep their copy button and syntax labels, and every in-page link still jumps to the right spot. The searchable supported devices reference stays on its own page.
+
+---
+
+## v0.3.95 — July 1, 2026
+
+#### Stream Deck
+
+- **Pause button shows Play when stopped** — the effect transport pause control now swaps to a play icon (green highlight) while paused or when lights are toggled off from Stream Deck. The in-app pause button uses the same lights-off behavior as **Toggle Lights**.
+- **Toggle all lights off** — assign **RGBJunkie Toggle Lights** on any Stream Deck key to pause your effect and black out every connected device; press again to resume. Reinstall RGBJunkie-Deck **1.2.2**. Shortcut: `rgbjunkie://lights/toggle?silent=1`.
+- **More Stream Deck + dials** — **Cycle Effect (Dial)** and **Cycle Scene (Dial)** step through effects or saved scenes as you rotate. **Pause + Brightness (Dial)** pauses lights on press/touch and adjusts master brightness on rotate. Reinstall RGBJunkie-Deck **1.2.0** and use a current RGBJunkie build.
+- **Master brightness dial (Stream Deck +)** — assign **RGBJunkie Master Brightness** to a **dial** on Stream Deck + (open a dial slot, not a regular key). Rotate to dim or brighten all lights; press the dial or touch the LCD to jump back to 100%. **Brightness Up** / **Brightness Down** keys work on any Stream Deck. Reinstall RGBJunkie-Deck **1.2.0** and use a current RGBJunkie build.
+- **Stream Deck effect buttons resume playback** — choosing an effect from a Stream Deck button no longer leaves the effect paused if it was stopped earlier.
+- **Scene buttons load the scene you picked** — the Stream Deck property inspector now saves your scene choice as soon as you change the dropdown, and the button sends that exact saved file to RGBJunkie instead of reloading whatever scene is already open. Reinstall RGBJunkie-Deck **1.2.0**.
+- **Scene bar stays in sync from Stream Deck** — when you change scenes with a Stream Deck button or `rgbjunkie://scene/…` link, the **Scene** dropdown in RGBJunkie now shows the scene you switched to.
+- **Pick which canvas a Stream Deck button controls** — effect and previous/next effect actions can target a specific canvas tab instead of whichever tab is selected in RGBJunkie. Choose **Selected canvas** to keep the old behavior. Reinstall RGBJunkie-Deck **1.2.0** for the latest Stream Deck plugin fixes.
+- **Stream Deck scene list skips internal files** — the scene picker no longer lists `session_profile_baseline`, `user_color_profiles`, or `wled_devices` (RGBJunkie data files, not saved scenes). **Previous** and **Next scene** buttons and scene cycle links skip those files too.
+- **Previous and next effect or scene from a link** — `rgbjunkie://effect/applyprevious`, `applynext`, and the same for `scene` step through your lists without opening the app window (`silent=1` keeps it in the tray). Use these in the RGBJunkie Stream Deck plugin or any shortcut that opens `rgbjunkie://` links.
+- **Previous/next effect updates lights right away** — Stream Deck previous and next effect buttons (and the same deep links) now start the new effect on your lights immediately. This works for the canvas tab you have open and for background canvas tabs you pick in the Stream Deck settings.
+- **Stream Deck no longer asks to run RGBJunkie every press** — when the app is already open, shortcuts and the RGBJunkie-Deck plugin send commands through your user data folder instead of relaunching the app (which used to trigger an administrator prompt on each button).
+
+#### Plugin host parity
+
+- **Fan and pump control** — fan-controller and AIO plugins can register fans/pumps, show speed sliders and live RPM in **Plugin Settings**, and read your target level each frame. Turn all fan control off under **Settings → Hardware → Fan and pump control**. Slider values are remembered per device in your profiles.
+- **Temperature readouts** — liquid and probe temperatures from cooler plugins appear as read-only rows in **Plugin Settings**.
+- **Raw USB for select devices** — Lian Li Uni Fan and Aqua Computer Farbwerk plugins can use USB control and bulk transfers again (lighting on those hubs should behave as the plugin authors intended).
+- **Panel brightness (monitors)** — LG UltraGear and similar monitor plugins get a **Panel brightness** slider; on Windows RGBJunkie can adjust the display through DDC/CI when the monitor supports it.
+- **Plugin keyboard/mouse input (opt-in)** — **Settings → System → Allow plugins to send keyboard/mouse input** is **off** by default. Turning it on shows a security warning; only enable it for plugins you trust (macro remapping from Razer/Corsair-style devices).
+- **Battery level in Devices panel** — wireless mice, keyboards, and headsets that report battery over HID now show the live percentage next to the device name (for example **72%**). A small charging icon appears while plugged in; hover for the full status. Low levels are highlighted in red. Wired Razer mice (such as the Basilisk V3) no longer show a false battery reading — the app filters those reports in the host, without changing upstream plugin files.
+- **Host parity test device (virtual)** — enable with `localStorage.setItem("rgbjunkie.hostParityTestDevice","1")` in DevTools (or `window.__rgbjEnableHostParityTestDevice(true)`), then reload. A fake AIO appears with fan sliders, temperature readouts, panel brightness, and a Battery badge — no USB hub required.
+- **Plugin Settings scrolls smoothly** — long device option lists scroll normally again. Live fan RPM and temperature updates no longer jump the panel back to the top, and dragging sliders no longer fights the scroll wheel.
+
+#### Help and developer docs
+
+- **Updated guides for the new layout** — Help Center articles now describe collapsible **Devices** and **Effects** docks, the **Scene** bar above canvas tabs, effect transport controls, per-device **Output on/off**, and the **RGBJunkie-Deck** Stream Deck plugin.
+- **Plugin developer guide rewritten** — the public plugin guide now centers on the **export-function format** (`Name()`, `VendorId()`, `Initialize()`, `Render()`, …) used by the importable device library, with the optional **`rgbjunkie` descriptor** documented as an advanced path. The **`device` API** section now explains that vendor hardware settings (DPI, polling, onboard modes, and similar) work through Plugin Settings, and lists which legacy APIs are intentional no-ops.
+
+#### Devices
+
+- **Stream Deck stays untouched when output is off** — restarting or quitting RGBJunkie no longer blacks your Stream Deck LCD or clears button icons when that device is turned off in **Settings → Hardware → Connected**. RGBJunkie also skips the Stream Deck shutdown pass on exit so your Elgato button icons are not wiped when you close or restart the app. During startup, Stream Deck HID stays blocked until your saved settings load and the splash screen finishes. Turning output back **on** runs full hardware init and restarts the LCD update loop. Elgato Friendly mode (and legacy **Elgato-Friendly** lighting mode) still keeps RGBJunkie from driving the panel.
+- **Toggle all lights off resets on restart** — the temporary “all lights off” state from **Toggle Lights** (Stream Deck or the in-app pause control) no longer carries over after you quit and reopen the app.
+- **Off stays off after unplug** — if you turn a USB device’s lights off in **Settings → Hardware → Connected** and then unplug and plug it back in, it stays off instead of turning itself back on.
+- **Off stays off after restart** — turning a device off and reloading RGBJunkie no longer clears that setting during startup layout restore.
+
+---
+
+## v0.3.94 — June 30, 2026
 
 #### Interface
 
@@ -1969,7 +2026,7 @@ When you save an effect `.html` file while it is running, RGBJunkie reloads **th
 
 #### Effect developer guide: scaling shapes to canvas size
 
-**[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **§2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
+**[`EFFECT-DEVELOPER-GUIDE.md`](EFFECT-DEVELOPER-GUIDE.md)** (and the HTML guide on the site) now documents **Section 2.2** — how to scale radii, spacing, and stroke width using **`canvas.width`/`height`**, **`engine.canvas`**, **`rgbjSetupCanvas`**, and the 320×200 reference size.
 
 ## v0.2.63 — May 19, 2026
 

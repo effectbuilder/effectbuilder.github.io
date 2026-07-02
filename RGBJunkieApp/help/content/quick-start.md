@@ -31,14 +31,14 @@ Everything RGBJunkie sees lives here — USB controllers, WLED you added by hand
 
 ### Canvas panel
 
-Your LED layout, live on screen. The **Scene** picker in the bar above saves everything you see — tabs, components, effects, sliders. Use multiple **canvas tabs** for different zones (PC case, desk, keyboard…). Go wild.
+Your LED layout, live on screen. The **Scene** bar and **canvas tabs** sit in the strip above the workspace. The **Devices** and **Effects** panels are **collapsible docks** — use the chevrons on the panel edges when you need more canvas room.
 ![Canvas Panel](images/image-5.png)
 
 > Need more room to admire your setup? Feel free to collapse either side panel with a click! The handy **fullscreen** button on the canvas will maximize your visual preview, letting you see your lighting in all its glory! Just press **Escape** to return.
 
-### Effects Panel
+### Effects panel
 
-This is where the real fun is! This panel gives you access to a large number of gorgeous built-in effects, as well as the whole database of community effects available in [RGBJunkie.com](RGBJunkie.com). The effect settings are displayed on this panel. Changes to effect settings are automatically saved for each effect, regardless of if they are saved in a scene or not.
+This is where the fun is! **Browse effects** opens the full catalog. **Master brightness**, transport controls (shuffle, previous, next, pause/play, auto cycle), and per-effect sliders live in the right **Effects** dock. Effect settings appear below when an effect is running.
 ![Effects Panel](images/image-7.png)
 
 ## Connect and set up gear
@@ -82,11 +82,11 @@ Dig in wherever you are stuck — or just curious:
 
 **Save and share your work** — [Scene profiles](scene-profiles), [Installed files](installed-files), [Backup your data](backup-restore), [App links](app-links)
 
-**Network and extras** — [WLED setup](wled-setup), [RAM and GPU lighting](ram-gpu-lighting), [Wallpaper and screen sync](wallpaper-screen-sync), [Tray and startup](tray-and-startup), [Keyboard shortcuts](keyboard-shortcuts)
+**Network and extras** — [WLED setup](wled-setup), [RAM and GPU lighting](ram-gpu-lighting), [Wallpaper and screen sync](wallpaper-screen-sync), [Stream Deck](stream-deck), [Tray and startup](tray-and-startup), [Keyboard shortcuts](keyboard-shortcuts)
 
 **Something broke?** — [Supported devices](supported-devices), [Troubleshooting — no lights](troubleshooting-no-lights), [Troubleshooting — wrong colors](troubleshooting-wrong-colors), [Send a support report](send-support-report)
 
-**Also worth bookmarking** — **Settings → Help** in the app, [Check for updates](check-for-updates), the full [Help Center](/RGBJunkieApp/help/), [Changelog](/RGBJunkieApp/changelog/), and the [Effect Builder](/) in your browser
+**Also worth bookmarking** — **Settings → Help** in the app, [Check for updates](check-for-updates), the full [Help Center](/RGBJunkieApp/help/), [Changelog](/RGBJunkieApp/changelog/), and the [Effect Builder](/effect-builder/) in your browser
 
 ***
 

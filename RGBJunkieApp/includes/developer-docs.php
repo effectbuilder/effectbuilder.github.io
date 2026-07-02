@@ -15,20 +15,20 @@ function rgbj_developer_doc_sections(): array
                 [
                     'icon' => 'bi-plugin',
                     'title' => 'Plugin developer guide',
-                    'text' => 'Build USB HID lighting plugins: plugin descriptor, lifecycle exports, and the device API.',
-                    'href' => '/api/docs/plugin-developer-guide.html',
+                    'text' => 'Build USB HID lighting plugins: export-function format (recommended), optional ABI descriptor, lifecycle exports, and the device API.',
+                    'href' => rgbj_url('help/plugin-developer-guide/'),
                 ],
                 [
                     'icon' => 'bi-brush',
                     'title' => 'Effect developer guide (HTML canvas)',
                     'text' => 'Create HTML canvas effects: metadata, sidebar settings, and host APIs (audio, screen, sensors) explained in plain language first.',
-                    'href' => '/api/docs/effect-developer-guide.html',
+                    'href' => rgbj_url('help/effect-developer-guide/'),
                 ],
                 [
                     'icon' => 'bi-code-slash',
                     'title' => 'Functional effects guide (.mjs)',
                     'text' => 'Per-LED effects without a canvas — export meta + sampleLed; audio and color profiles explained step by step.',
-                    'href' => '/api/docs/effect-functional-developer-guide.html',
+                    'href' => rgbj_url('help/effect-functional-developer-guide/'),
                 ],
                 [
                     'icon' => 'bi-usb-plug',
@@ -46,7 +46,7 @@ function rgbj_developer_doc_sections(): array
                     'icon' => 'bi-palette2',
                     'title' => 'RGBJunkie Effect Builder',
                     'text' => 'Design interactive canvas effects with a visual editor — the classic RGBJunkie starting point.',
-                    'href' => '/',
+                    'href' => '/effect-builder/',
                 ],
                 [
                     'icon' => 'bi-bounding-box-circles',

@@ -9,12 +9,13 @@ draft: false
 ---
 ## Where the fun lives
 
-The **Effects** panel on the right is where you pick looks and twist knobs:
+The **Effects** panel on the right is a **collapsible dock** — use the chevron on the panel edge to hide it for more canvas room. Inside you’ll find:
 
+* **Master brightness** — scales all output before it hits hardware
 * **Browse effects** — the full catalog
-* Transport — previous, next, shuffle, auto cycle, **Pause**
-* **Brightness** — turns everything up or down before it hits your hardware
-* **Sliders and toggles** — whatever the active effect exposes (speed, colors, direction, audio, you name it)
+* **Transport** — shuffle, previous, next, pause/play, and **Auto** cycle
+* **Auto-cycle every** — how long each effect stays active when Auto is playing (remembered **per canvas tab**)
+* **Effect settings** — sliders and toggles for the active effect appear below when an effect is running
 
 The **Scene** picker lives in the bar **above the workspace canvas**, not in this column. Scenes remember which effect and slider values you had when you saved — see [Scene profiles](scene-profiles).
 
@@ -39,7 +40,7 @@ Handy keys while the browser is open:
 | **Prev / Next** | Step through the list |
 | **Shuffle** | Surprise me |
 | **Auto cycle** | Keep advancing on its own |
-| **Pause** | Freeze on hardware (preview may still move depending on the effect) |
+| **Pause** | Freeze effect output on hardware. Shows a **play** icon while paused or when **Toggle Lights** turned everything off. |
 
 ## Tune an effect
 
@@ -62,4 +63,5 @@ Effect and hardware frame rates show up in the **bottom status bar** if you’re
 * [Scene profiles](scene-profiles)
 * [Canvas tabs](canvas-tabs)
 * [Installed files](installed-files) — add community effects
+* [Stream Deck](stream-deck) — Elgato keys and dials
 * [Troubleshooting — wrong colors](troubleshooting-wrong-colors)

@@ -36,7 +36,7 @@ const backfillProgressEl = document.getElementById('backfill-progress');
  * Builder root (sibling of /admin/) — matches "Return to Editor" (../).
  * Using only origin + '/' breaks when the app lives in a subdirectory.
  */
-const BUILDER_PAGE_BASE = new URL('../', window.location.href).href;
+const BUILDER_PAGE_BASE = new URL('/effect-builder/', window.location.origin).href;
 
 let backfillAbort = false;
 let backfillIframe = null;

@@ -31,8 +31,9 @@ function rgbj_render_user_app_guide(): void
                     <div class="card-body">
                         <h3 class="h6 card-title text-body-emphasis"><i class="bi bi-layout-three-columns me-2 text-info"></i>Layout</h3>
                         <p class="card-text text-body-secondary small mb-0">
-                            <strong>Devices</strong> on the left, <strong>Scene + Effects</strong> on the right, canvas tabs centered above the workspace.
-                            Collapse either side panel for more room. The <strong>fullscreen</strong> button (lower-right of the canvas) maximizes the layout preview on the current screen;
+                            <strong>Devices</strong> (left) and <strong>Effects</strong> (right) are collapsible docks — chevrons on the panel edges hide either side for more canvas room.
+                            The <strong>Scene</strong> bar and canvas tabs sit centered above the workspace.
+                            The <strong>fullscreen</strong> button (lower-right of the canvas) maximizes the layout preview;
                             press <kbd>Escape</kbd> or the button again to return.
                         </p>
                     </div>
@@ -46,6 +47,28 @@ function rgbj_render_user_app_guide(): void
                             The magic-wand button in the <strong>Devices</strong> panel runs the <strong>initial setup wizard</strong> for channels without components.
                             <strong>+ Add</strong> on a <strong>channel</strong> row opens the <strong>Component Library</strong> (LED layout thumbnails when no product photo is available).
                             <kbd>Escape</kbd> closes the wizard, library, and most other overlays.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 card-title text-body-emphasis"><i class="bi bi-grid-3x3-gap me-2 text-info"></i>Stream Deck</h3>
+                        <p class="card-text text-body-secondary small mb-0">
+                            Install the separate <strong>RGBJunkie-Deck</strong> plugin for Elgato Stream Deck to switch effects and Scenes, control brightness, and toggle all lights from your keys and dials.
+                            See the Help Center article <a href="<?= rgbj_h(rgbj_url('help/article.php?slug=stream-deck')) ?>">Stream Deck</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 card-title text-body-emphasis"><i class="bi bi-usb-plug me-2 text-info"></i>Per-device output</h3>
+                        <p class="card-text text-body-secondary small mb-0">
+                            <strong>Settings → Hardware → Connected</strong> includes an <strong>Output on / Output off</strong> toggle per device.
+                            Turn output off when you want RGBJunkie to leave that hardware alone (for example a Stream Deck LCD managed elsewhere).
                         </p>
                     </div>
                 </div>

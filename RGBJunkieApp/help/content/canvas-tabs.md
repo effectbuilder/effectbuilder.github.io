@@ -15,7 +15,7 @@ The strip **above the workspace canvas** is your tab bar. Each tab is its own la
 * **Desk** — peripherals and monitor bias
 * **Keyboard** — its own zone
 
-Every **component** lives on exactly one tab. Effect slider values are remembered **per tab**, so switching tabs won’t stomp on another tab’s tuning.
+Every **component** lives on exactly one tab. Effect slider values and **auto-cycle interval** are remembered **per tab**, so switching tabs won’t stomp on another tab’s tuning.
 
 ## Add, rename, switch
 

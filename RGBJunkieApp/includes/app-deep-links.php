@@ -220,8 +220,8 @@ function rgbj_render_app_deep_links_page_content(): void
         browser bookmarks, or automation tools. When RGBJunkie is already running, a second launch forwards the link to the first window.
     </p>
     <p class="text-body-secondary col-lg-10 mb-4">
-        On the website, short <strong>handoff</strong> links under <code>/s?p=…</code> open the desktop app the same way
-        (SignalRGB-style). Each entry below includes a clickable handoff link for this server.
+        On the website, short <strong>handoff</strong> links under <code>/s?p=…</code> open the desktop app from a browser or bookmark.
+        Each entry below includes a clickable handoff link for this server.
     </p>
 
     <h2 class="h6 fw-semibold text-body-emphasis mb-2">Silent launch</h2>

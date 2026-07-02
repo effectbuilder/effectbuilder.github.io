@@ -5,7 +5,11 @@ require_once dirname(__DIR__) . '/includes/help-content.php';
 
 $rgbj_nav_active = 'help';
 $includeDrafts = rgbj_help_show_drafts();
-$rgbj_help_active_tag = rgbj_help_resolve_active_tag(rgbj_help_active_tag_from_request(), $includeDrafts);
+
+if (rgbj_help_active_tag_from_request() !== null) {
+    header('Location: ' . rgbj_help_index_url(), true, 302);
+    exit;
+}
 
 $pageTitle = 'Help Center | RGBJunkie for Windows';
 $pageDesc = 'Self-help guides, tips, and troubleshooting for RGBJunkie for Windows and rgbjunkie.com web tools.';
@@ -18,33 +22,29 @@ if (!rgbj_help_embed_mode()) {
         ['label' => 'Help Center'],
     ], 'col-12 rgbj-help-page');
 }
-
-rgbj_render_help_search_bar($includeDrafts);
 ?>
 
-<div class="row g-4 rgbj-help-layout">
-    <aside class="col-12 col-xl-2">
-        <?php rgbj_render_help_doc_map(null, $includeDrafts); ?>
-    </aside>
+<div class="rgbj-help-index-shell">
+    <?php rgbj_render_help_search_bar($includeDrafts, true); ?>
 
-    <div class="col-12 col-xl-10">
-        <h1 class="h2 fw-bold text-body-emphasis mb-2"><i class="bi bi-life-preserver me-2 text-info"></i>Help Center</h1>
-        <p class="text-body-secondary mb-4">
-            Step-by-step guides and troubleshooting for the Windows app and rgbjunkie.com tools.
-            For developer documentation (plugins, effects, APIs), see the <a href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a> page.
-            <span class="rgbj-help-intro-app-hint">Inside the desktop app, open <strong>Settings → Help</strong> for the full Help Center.</span>
-        </p>
+    <div class="rgbj-help-index">
+        <header class="rgbj-help-index-header mb-4">
+            <h1 class="h2 fw-bold text-body-emphasis mb-2">Help Center</h1>
+            <p class="text-body-secondary mb-0 rgbj-help-index-lead">
+                Guides and troubleshooting for RGBJunkie for Windows and rgbjunkie.com tools.
+                <?php if (!rgbj_help_embed_mode()) : ?>
+                Plugin and effect authors can also browse the <a href="<?= rgbj_h(rgbj_url('docs/')) ?>">Documentation</a> hub.
+                <?php endif; ?>
+                <span class="rgbj-help-intro-app-hint">In the desktop app, open <strong>Settings → Help</strong> for the same articles.</span>
+            </p>
+        </header>
 
         <div class="alert alert-secondary border-secondary d-none mb-4" data-rgbj-help-index-empty role="status">
-            No articles match your search. Try different keywords or browse the map on the left.
-        </div>
-
-        <div class="alert alert-info border-info mb-4 rgbj-help-tag-filter-banner<?= $rgbj_help_active_tag ? '' : ' d-none' ?>" data-rgbj-help-tag-filter role="status">
-            <span>Showing articles tagged <strong data-rgbj-help-tag-filter-label><?= rgbj_h($rgbj_help_active_tag ?? '') ?></strong>.</span>
-            <a href="<?= rgbj_h(rgbj_help_index_url()) ?>" class="btn btn-sm btn-outline-secondary ms-auto">Clear tag</a>
+            No articles match your search. Try different keywords.
         </div>
 
         <?php rgbj_render_help_index(); ?>
+        <?php rgbj_help_editor_nav_link_standalone(); ?>
     </div>
 </div>
 

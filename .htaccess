@@ -2,6 +2,11 @@
 RewriteEngine On
 RewriteBase /
 
+DirectoryIndex index.php index.html
+
+# Effect Builder moved from / to /effect-builder/ — preserve bookmarks and share links
+RewriteRule ^index\.html$ /effect-builder/ [R=301,L,QSA]
+
 # Dynamic component catalog JSON (PHP + Firestore REST)
 RewriteRule ^builder/components-catalog\.json$ /builder/components-catalog.php [L,QSA]
 RewriteRule ^builder/component-catalog-image$ /builder/component-catalog-image.php [L,QSA]
