@@ -6897,6 +6897,16 @@ document.addEventListener('DOMContentLoaded', async function () {
      * @param {object} workspace - The workspace object to load.
      */
 
+    function shouldReplaceEffectHistory(docId) {
+        const params = new URLSearchParams(window.location.search);
+        const currentEffectId = params.get('effectId');
+        if (!currentEffectId) {
+            return true;
+        }
+
+        return currentEffectId === docId;
+    }
+
     function loadWorkspace(workspace) {
         if (!workspace || !workspace.configs) {
             showToast(window.tr("toast_workspace_invalid"), 'danger');
@@ -6948,7 +6958,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (workspace.docId) {
                 const newUrl = `${window.location.pathname}?effectId=${workspace.docId}`;
                 const effectTitle = getControlValues()['title'] || "RGBJunkie Effect Builder";
-                window.history.pushState({ effectId: workspace.docId }, effectTitle, newUrl);
+                const state = { effectId: workspace.docId };
+                if (shouldReplaceEffectHistory(workspace.docId)) {
+                    window.history.replaceState(state, effectTitle, newUrl);
+                } else {
+                    window.history.pushState(state, effectTitle, newUrl);
+                }
             }
             updateAll();
         } catch (error) {
